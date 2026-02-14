@@ -1,9 +1,9 @@
-import { Client, Environment } from "square";
+import { SquareClient, SquareEnvironment } from "square";
 
-export const squareClient = new Client({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN || "",
+export const squareClient = new SquareClient({
+  token: process.env.SQUARE_ACCESS_TOKEN || "",
   environment:
     process.env.NODE_ENV === "production"
-      ? Environment.Production
-      : Environment.Sandbox,
+      ? SquareEnvironment.Production
+      : SquareEnvironment.Sandbox,
 });
