@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Topbar from "../../components/Topbar";
 import Link from "next/link";
-import NewDeliveryForm from "./NewDeliveryForm.tsx";
-
+import NewDeliveryForm from "./NewDeliveryForm";
 export default async function NewDeliveryPage() {
   const supabase = await createClient();
   const { data: orgs } = await supabase
