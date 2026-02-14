@@ -1,0 +1,238 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import Badge from "../components/Badge";
+
+interface CalendarViewProps {
+  deliveries: any[];
+  moves: any[];
+  crews: any[];
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  retail: "#C9A962",
+  designer: "#8B6CC1",
+  hospitality: "#D48A29",
+  gallery: "#4A7CE5",
+  b2c: "#2D9F5A",
+};
+
+export default function CalendarView({ deliveries, moves, crews }: CalendarViewProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragType, setDragType] = useState<"delivery" | "move" | null>(null);
+
+  // Generate week days (Mon Feb 9 - Sun Feb 15)
+  const weekStart = new Date("2026-02-09");
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const getEventsForDay = (date: Date) => {
+    const dateStr = date.toISOString().split("T")[0];
+    const dayNum = date.getDate();
+
+    const dels = deliveries.filter((d) => {
+      if (d.scheduled_date === dateStr) return true;
+      // Also match "Feb X" format
+      const match = d.scheduled_date?.match(/Feb\s*(\d+)/);
+      return match && parseInt(match[1]) === dayNum;
+    });
+
+    const mvs = moves.filter((m) => {
+      const match = m.scheduled_date?.match(/Feb\s*(\d+)/);
+      return match && parseInt(match[1]) === dayNum;
+    });
+
+    return { dels, mvs };
+  };
+
+  const handleDrop = async (date: Date) => {
+    if (!dragId || !dragType) return;
+    const dateStr = date.toISOString().split("T")[0];
+
+    if (dragType === "delivery") {
+      await supabase
+        .from("deliveries")
+        .update({ scheduled_date: dateStr })
+        .eq("id", dragId);
+    } else {
+      await supabase
+        .from("moves")
+        .update({ scheduled_date: `Feb ${date.getDate()}` })
+        .eq("id", dragId);
+    }
+
+    setDragId(null);
+    setDragType(null);
+    router.refresh();
+  };
+
+  const isToday = (date: Date) => {
+    const now = new Date();
+    return date.toDateString() === now.toDateString();
+  };
+
+  const unassigned = deliveries.filter((d) => d.status === "pending").length;
+  const totalWeek = days.reduce((sum, day) => {
+    const { dels, mvs } = getEventsForDay(day);
+    return sum + dels.length + mvs.length;
+  }, 0);
+
+  return (
+    <>
+      {/* Week Header */}
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex gap-1.5">
+          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D]">
+            + Schedule Job
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">◀</button>
+          <span className="text-[13px] font-bold">February 9 – 15, 2026</span>
+          <button className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">▶</button>
+        </div>
+      </div>
+
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-[3px] mb-1">
+        {days.map((day) => (
+          <div
+            key={day.toISOString()}
+            className={`text-center text-[8px] font-bold uppercase tracking-wider ${
+              isToday(day) ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+            }`}
+          >
+            {day.toLocaleDateString("en-US", { weekday: "short" })} {day.getDate()}
+            {isToday(day) && (
+              <span className="ml-1 bg-[var(--gdim)] px-1 py-[1px] rounded text-[7px]">TODAY</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-[3px]" style={{ minHeight: 360 }}>
+        {days.map((day) => {
+          const { dels, mvs } = getEventsForDay(day);
+          const today = isToday(day);
+
+          return (
+            <div
+              key={day.toISOString()}
+              className={`bg-[var(--card)] border rounded-lg p-1.5 min-h-[120px] transition-all ${
+                today ? "border-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,.2)]" : "border-[var(--brd)]"
+              }`}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(day)}
+            >
+              {dels.map((d) => {
+                const color = CATEGORY_COLORS[d.category] || CATEGORY_COLORS.retail;
+                return (
+                  <div
+                    key={d.id}
+                    draggable
+                    onDragStart={() => { setDragId(d.id); setDragType("delivery"); }}
+                    onClick={() => router.push(`/admin/deliveries/${d.id}`)}
+                    className="px-1.5 py-1 rounded mb-[3px] cursor-pointer transition-all hover:opacity-80"
+                    style={{ borderLeft: `3px solid ${color}`, background: `${color}11` }}
+                  >
+                    <div className="text-[9px] font-bold truncate" style={{ color }}>
+                      {d.customer_name}
+                    </div>
+                    <div className="text-[8px] text-[var(--tx3)]">
+                      {d.time_slot}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {mvs.map((m) => (
+                <div
+                  key={m.id}
+                  draggable
+                  onDragStart={() => { setDragId(m.id); setDragType("move"); }}
+                  className="px-1.5 py-1 rounded mb-[3px] cursor-pointer transition-all hover:opacity-80"
+                  style={{ borderLeft: `3px solid #2D9F5A`, background: `#2D9F5A11` }}
+                >
+                  <div className="text-[9px] font-bold truncate text-[#2D9F5A]">
+                    🏠 {m.client_name}
+                  </div>
+                  <div className="text-[8px] text-[var(--tx3)]">{m.time || ""}</div>
+                </div>
+              ))}
+
+              {dels.length === 0 && mvs.length === 0 && (
+                <div className="text-center py-5 text-[var(--tx3)] text-[8px]">No jobs</div>
+              )}
+
+              <div className="text-center text-[8px] text-[var(--tx3)] opacity-40 mt-1">+ drop here</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-3 mt-3 flex-wrap">
+        {[
+          ["Retail", "#C9A962"],
+          ["Designer", "#8B6CC1"],
+          ["Hospitality", "#D48A29"],
+          ["B2C Move", "#2D9F5A"],
+        ].map(([label, color]) => (
+          <div key={label} className="flex items-center gap-1 text-[9px] text-[var(--tx3)]">
+            <div className="w-2.5 h-[3px] rounded" style={{ background: color }} />
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* Crew + Week Summary */}
+      <div className="grid grid-cols-2 gap-3 mt-4">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
+          <h3 className="text-[13px] font-bold mb-3">Crew Assignments</h3>
+          {crews.map((c) => {
+            const jobCount = deliveries.filter((d) =>
+              d.crew_id === c.id
+            ).length;
+            return (
+              <div key={c.id} className="flex items-center gap-2.5 mb-1">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold text-[var(--gold)] bg-[var(--gdim)]">
+                  {c.name?.replace("Team ", "")}
+                </div>
+                <div className="flex-1">
+                  <div className="text-[11px] font-semibold">{c.name} • {(c.members || []).join(", ")}</div>
+                  <div className="text-[9px] text-[var(--tx3)]">{jobCount} jobs this week</div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-[var(--grn)]" />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
+          <h3 className="text-[13px] font-bold mb-3">Week Summary</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ["Total Jobs", totalWeek, ""],
+              ["B2B", deliveries.length, ""],
+              ["B2C Moves", moves.length, ""],
+              ["Unassigned", unassigned, "text-[var(--org)]"],
+            ].map(([label, value, color]) => (
+              <div key={label as string} className="bg-[var(--bg)] p-2 rounded-lg border border-[var(--brd)]">
+                <div className="text-[8px] text-[var(--tx3)] uppercase font-bold">{label}</div>
+                <div className={`text-xl font-bold font-serif ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
