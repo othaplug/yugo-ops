@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import "leaflet/dist/leaflet.css";
+
+
 
 interface Crew {
   id: string;
@@ -21,7 +24,6 @@ export default function CrewMap({ crews }: { crews: Crew[] }) {
 
     // Dynamic import — only runs in browser
     import("leaflet").then((L) => {
-      import("leaflet/dist/leaflet.css");
 
       const map = L.map(mapRef.current!, { zoomControl: false }).setView([43.665, -79.385], 13);
 
