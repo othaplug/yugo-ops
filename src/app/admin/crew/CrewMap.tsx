@@ -1,9 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import "leaflet/dist/leaflet.css";
-
-
 
 interface Crew {
   id: string;
@@ -22,9 +19,16 @@ export default function CrewMap({ crews }: { crews: Crew[] }) {
   useEffect(() => {
     if (!mapRef.current || loaded) return;
 
+    // Load leaflet CSS via link tag
+    if (!document.querySelector('link[href*="leaflet"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+
     // Dynamic import — only runs in browser
     import("leaflet").then((L) => {
-
       const map = L.map(mapRef.current!, { zoomControl: false }).setView([43.665, -79.385], 13);
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
