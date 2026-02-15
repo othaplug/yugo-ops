@@ -100,8 +100,23 @@ export default function PlatformSettingsClient() {
               />
             </div>
           ))}
-          <button onClick={() => toast("Rates saved", "check")} className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
-            Save Rates
+          <button
+            onClick={async () => {
+              setRatesSaving(true);
+              try {
+                localStorage.setItem(RATES_KEY, JSON.stringify(rates));
+                await new Promise((r) => setTimeout(r, 400));
+                toast("Rates saved", "check");
+              } catch (_) {
+                toast("Failed to save", "x");
+              } finally {
+                setRatesSaving(false);
+              }
+            }}
+            disabled={ratesSaving}
+            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+          >
+            {ratesSaving ? "Saving…" : "Save Rates"}
           </button>
         </div>
       </div>
@@ -123,7 +138,7 @@ export default function PlatformSettingsClient() {
               className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] w-32"
             />
             <button onClick={addTeam} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
-              + Add Team
+              + Add Team Member
             </button>
           </div>
         </div>
@@ -152,9 +167,16 @@ export default function PlatformSettingsClient() {
               </div>
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)]">
-                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select members</div>
-                  <div className="flex flex-wrap gap-2">
-                    {ALL_CREW.map((m) => (
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Add team member</div>
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search name…"
+                    className="w-full mb-2 px-3 py-2 rounded-lg text-[11px] bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  />
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                    {filteredCrew.map((m) => (
                       <label key={m} className="flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
@@ -211,11 +233,19 @@ export default function PlatformSettingsClient() {
 
       {/* Partners Management */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="handshake" className="w-[16px] h-[16px]" /> Partners Management
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Retail, designers, hospitality, galleries</p>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
+          <div>
+            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+              <Icon name="handshake" className="w-[16px] h-[16px]" /> Partners Management
+            </h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Retail, designers, hospitality, galleries</p>
+          </div>
+          <button
+            onClick={() => setInvitePartnerOpen(true)}
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+          >
+            Invite Partner
+          </button>
         </div>
         <div className="px-5 py-5 space-y-2">
           {[
@@ -258,11 +288,17 @@ export default function PlatformSettingsClient() {
             </div>
             <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--bldim)] text-[var(--blue)]">Dispatcher</span>
           </div>
-          <button onClick={() => toast("Invite user coming soon", "mail")} className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all">
+          <button
+            onClick={() => setInviteUserOpen(true)}
+            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          >
             + Invite User
           </button>
         </div>
       </div>
+
+      <InviteUserModal open={inviteUserOpen} onClose={() => setInviteUserOpen(false)} />
+      <InvitePartnerModal open={invitePartnerOpen} onClose={() => setInvitePartnerOpen(false)} />
 
       {/* Danger Zone */}
       <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
