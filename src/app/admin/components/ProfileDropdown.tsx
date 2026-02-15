@@ -33,7 +33,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="size-9 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[10px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
+        className="size-8 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[9px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
       >
         {initials}
       </button>

@@ -21,6 +21,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
     const root = document.documentElement.style;
     if (theme === "light") {
       root.setProperty("--bg", "#F5F5F2");
@@ -30,6 +31,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.setProperty("--tx2", "#555");
       root.setProperty("--tx3", "#999");
       root.setProperty("--brd", "#E0DDD8");
+      root.setProperty("--gdim", "rgba(201,169,98,0.2)");
     } else {
       root.setProperty("--bg", "#0F0F0F");
       root.setProperty("--bg2", "#1A1A1A");

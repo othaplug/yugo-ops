@@ -182,7 +182,7 @@ export default function MessagesClient({
   };
 
   return (
-    <div className="h-[calc(100dvh-8rem)] flex flex-col max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="h-[calc(100dvh-5.5rem)] min-h-[400px] flex flex-col max-w-[1400px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
       {/* Connect banner - when Slack not connected */}
       {!isConnected && (
@@ -223,10 +223,10 @@ export default function MessagesClient({
         </div>
       )}
 
-      {/* Channel layout - Slack style */}
-      <div className="flex-1 min-h-0 flex border border-[var(--brd)] rounded-xl overflow-hidden bg-[var(--card)]">
-        {/* Channel list */}
-        <div className="w-[260px] md:w-[280px] border-r border-[var(--brd)] flex flex-col shrink-0">
+      {/* Channel layout - Slack style, mobile: thread list or messages */}
+      <div className="flex-1 min-h-[360px] sm:min-h-[420px] flex border border-[var(--brd)] rounded-xl overflow-hidden bg-[var(--card)]">
+        {/* Channel list - hidden on mobile when thread open */}
+        <div className={`w-full sm:w-[280px] md:w-[320px] border-r border-[var(--brd)] flex flex-col shrink-0 ${openThread ? "hidden sm:flex" : "flex"}`}>
           <div className="px-4 py-3 border-b border-[var(--brd)]">
             <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Channels</div>
             <div className="text-[13px] font-semibold text-[var(--tx)] mt-0.5"># ops-inbox</div>
@@ -278,33 +278,40 @@ export default function MessagesClient({
         </div>
 
         {/* Message area - Slack channel style */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 ${!openThread ? "hidden sm:flex" : "flex"}`}>
           {selectedMsgs ? (
             <>
-              <div className="px-4 py-3 border-b border-[var(--brd)] shrink-0">
-                <div className="text-[13px] font-semibold text-[var(--tx)]">
-                  {selectedMsgs[selectedMsgs.length - 1]?.sender_name || "Thread"}
+              <div className="px-4 py-3 border-b border-[var(--brd)] shrink-0 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOpenThread(null)}
+                  className="sm:hidden p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx2)]"
+                  aria-label="Back to threads"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">Conversation</div>
                 </div>
-                <div className="text-[10px] text-[var(--tx3)] mt-0.5">Conversation</div>
               </div>
 
-              <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-5">
-                {selectedMsgs.map((msg) => (
-                  <div key={msg.id} className="flex gap-3 group p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                    <div className="w-10 h-10 rounded-lg bg-[var(--bg)] flex items-center justify-center shrink-0 text-[11px] font-bold text-[var(--tx2)]">
-                      {getInitials(msg.sender_name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[13px] font-semibold text-[var(--tx)]">{msg.sender_name}</span>
-                        <span className="text-[11px] text-[var(--tx3)]">{formatTime(msg.created_at)}</span>
-                      </div>
-                      <div className="text-[14px] text-[var(--tx2)] mt-1.5 leading-relaxed whitespace-pre-wrap">
+              <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+                {selectedMsgs.map((msg) => {
+                  const isAdmin = msg.sender_type === "admin";
+                  return (
+                    <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[78%] py-2 px-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
+                          isAdmin
+                            ? "bg-[rgba(201,169,98,0.14)] text-[var(--tx)] rounded-br-md"
+                            : "bg-[var(--card)]/80 text-[var(--tx2)] border border-[var(--brd)]/60 rounded-bl-md"
+                        }`}
+                      >
                         {msg.content}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
 

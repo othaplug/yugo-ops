@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/AppIcons";
 
 interface ModalOverlayProps {
@@ -11,19 +13,26 @@ interface ModalOverlayProps {
 }
 
 export default function ModalOverlay({ open, onClose, title, children, maxWidth = "md" }: ModalOverlayProps) {
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
 
   const maxW = maxWidth === "sm" ? "max-w-sm" : maxWidth === "lg" ? "max-w-lg" : "max-w-md";
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex min-h-screen items-center justify-center p-4 overflow-y-auto">
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative w-full ${maxW} max-h-[90vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl animate-fade-up overflow-hidden m-auto`}
+        className={`relative w-full ${maxW} max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl animate-fade-up overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
@@ -40,4 +49,6 @@ export default function ModalOverlay({ open, onClose, title, children, maxWidth 
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

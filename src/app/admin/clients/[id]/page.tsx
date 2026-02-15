@@ -22,6 +22,12 @@ export default async function ClientDetailPage({
 
   if (!client) notFound();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: platformUser } = user
+    ? await supabase.from("platform_users").select("role").eq("user_id", user.id).single()
+    : { data: null };
+  const isAdmin = platformUser?.role === "admin";
+
   const { data: deliveries } = await supabase
     .from("deliveries")
     .select("*")
@@ -61,6 +67,7 @@ export default async function ClientDetailPage({
       partnerSince={partnerSince}
       partnerDuration={partnerDuration}
       backHref={backHref}
+      isAdmin={!!isAdmin}
     />
   );
 }

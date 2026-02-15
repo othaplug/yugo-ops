@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Badge from "../../components/Badge";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
+import EditPartnerModal from "./EditPartnerModal";
 
 interface ClientDetailClientProps {
   client: any;
@@ -13,6 +15,7 @@ interface ClientDetailClientProps {
   partnerSince: Date | null;
   partnerDuration: string | null;
   backHref: string;
+  isAdmin?: boolean;
 }
 
 export default function ClientDetailClient({
@@ -23,8 +26,11 @@ export default function ClientDetailClient({
   partnerSince,
   partnerDuration,
   backHref,
+  isAdmin,
 }: ClientDetailClientProps) {
+  const router = useRouter();
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
@@ -33,9 +39,10 @@ export default function ClientDetailClient({
       </Link>
 
       {/* Header */}
-      <div className="mb-4">
-        <div className="font-heading text-xl">{client.name}</div>
-        <div className="text-[10px] text-[var(--tx3)]">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <div className="font-heading text-xl">{client.name}</div>
+          <div className="text-[10px] text-[var(--tx3)]">
           {client.type} •{" "}
           <button
             type="button"
@@ -45,7 +52,16 @@ export default function ClientDetailClient({
             {client.contact_name}
           </button>
           {" • "}{client.email}
+          </div>
         </div>
+        {isAdmin && (
+          <button
+            onClick={() => setEditModalOpen(true)}
+            className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          >
+            Edit partner
+          </button>
+        )}
       </div>
 
       {/* Partner since card */}
@@ -136,6 +152,14 @@ export default function ClientDetailClient({
           company: client.name,
         }}
       />
+      {isAdmin && (
+        <EditPartnerModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          client={client}
+          onSaved={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

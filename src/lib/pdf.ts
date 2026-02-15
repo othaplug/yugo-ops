@@ -13,10 +13,10 @@ export function generateInvoicePDF(invoice: {
   // Header
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.text("YUGO", 20, 30);
+  doc.text("OPS+", 20, 30);
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text("PREMIUM LOGISTICS", 20, 36);
+  doc.text("Invoice", 20, 36);
 
   // Invoice info
   doc.setFontSize(14);
@@ -56,7 +56,7 @@ export function generateInvoicePDF(invoice: {
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text("Yugo Premium Logistics • Toronto • yugo.ca", 20, 280);
+  doc.text("OPS+ • opsplus.co", 20, 280);
 
   return doc;
 }
@@ -65,58 +65,134 @@ export function generateDeliveryPDF(delivery: {
   delivery_number: string;
   client_name: string;
   customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
   pickup_address: string;
   delivery_address: string;
   scheduled_date: string;
   delivery_window: string;
-  items: string[];
+  items: (string | { name: string; qty?: number })[];
   instructions: string;
   status: string;
+  quoted_price?: number;
+  special_handling?: boolean;
 }) {
   const doc = new jsPDF();
+  const gold = [201, 169, 98] as [number, number, number];
+  const dark = [13, 13, 13] as [number, number, number];
+  const gray = [100, 100, 100] as [number, number, number];
 
-  doc.setFontSize(24);
+  // Header
+  doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("YUGO", 20, 30);
+  doc.setTextColor(...dark);
+  doc.text("OPS+", 20, 22);
   doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("DELIVERY MANIFEST", 20, 36);
+  doc.setTextColor(...gray);
+  doc.text("Project Overview", 20, 28);
 
-  doc.setFontSize(14);
-  doc.setTextColor(0);
-  doc.text(delivery.delivery_number, 20, 55);
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`Client: ${delivery.client_name}`, 20, 63);
-  doc.text(`Customer: ${delivery.customer_name}`, 20, 70);
-  doc.text(`Status: ${delivery.status}`, 20, 77);
+  // Project number & status
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text(delivery.delivery_number, 20, 42);
+  doc.setFontSize(9);
+  doc.setTextColor(...gray);
+  doc.text(`Status: ${delivery.status}`, 100, 42);
+  if (delivery.special_handling) {
+    doc.setTextColor(245, 158, 11);
+    doc.text("Special Handling Required", 130, 42);
+  }
 
-  doc.text(`From: ${delivery.pickup_address}`, 20, 90);
-  doc.text(`To: ${delivery.delivery_address}`, 20, 97);
-  doc.text(`Date: ${delivery.scheduled_date} • ${delivery.delivery_window}`, 20, 104);
+  // Divider
+  doc.setDrawColor(220, 220, 220);
+  doc.line(20, 48, 190, 48);
 
-  if (delivery.items?.length) {
-    autoTable(doc, {
-      startY: 115,
-      head: [["#", "Item"]],
-      body: delivery.items.map((item, i) => [i + 1, item]),
-      theme: "grid",
-      headStyles: { fillColor: [201, 169, 98], textColor: [13, 13, 13] },
+  let y = 58;
+
+  // Customer Information
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...gray);
+  doc.text("CUSTOMER INFORMATION", 20, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...dark);
+  doc.text(`Name: ${delivery.customer_name}`, 20, y);
+  y += 5;
+  if (delivery.customer_email) {
+    doc.text(`Email: ${delivery.customer_email}`, 20, y);
+    y += 5;
+  }
+  if (delivery.customer_phone) {
+    doc.text(`Phone: ${delivery.customer_phone}`, 20, y);
+    y += 5;
+  }
+  doc.text(`Client: ${delivery.client_name}`, 20, y);
+  y += 10;
+
+  // Delivery Details
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...gray);
+  doc.text("DELIVERY DETAILS", 20, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...dark);
+  doc.text(`Scheduled: ${delivery.scheduled_date}${delivery.delivery_window ? ` • ${delivery.delivery_window}` : ""}`, 20, y);
+  y += 6;
+  doc.text(`Pickup: ${delivery.pickup_address || "Not specified"}`, 20, y);
+  y += 5;
+  doc.text(`Delivery: ${delivery.delivery_address || "Not specified"}`, 20, y);
+  y += 10;
+
+  // Items
+  const items = delivery.items || [];
+  if (items.length > 0) {
+    const itemRows = items.map((item, i) => {
+      const name = typeof item === "string" ? item : (item as { name: string; qty?: number })?.name || "";
+      const qty = typeof item === "object" && (item as { qty?: number })?.qty != null ? (item as { qty: number }).qty : 1;
+      return [i + 1, name, String(qty)];
     });
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Item", "Qty"]],
+      body: itemRows,
+      theme: "grid",
+      headStyles: { fillColor: gold, textColor: dark, fontStyle: "bold" },
+      styles: { fontSize: 9 },
+    });
+    y = (doc as any).lastAutoTable?.finalY + 8;
   }
 
+  // Pricing
+  if (delivery.quoted_price != null) {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gray);
+    doc.text("PRICING", 20, y);
+    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...dark);
+    doc.text(`Quoted: $${Number(delivery.quoted_price).toFixed(2)}`, 20, y);
+    y += 10;
+  }
+
+  // Instructions
   if (delivery.instructions) {
-    const y = (doc as any).lastAutoTable?.finalY || 140;
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text("Instructions:", 20, y + 15);
-    doc.setTextColor(100);
-    doc.text(delivery.instructions, 20, y + 22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gray);
+    doc.text("SPECIAL INSTRUCTIONS", 20, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    const lines = doc.splitTextToSize(delivery.instructions, 170);
+    doc.text(lines, 20, y);
+    y += lines.length * 5 + 5;
   }
 
+  // Footer
   doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("Yugo Premium Logistics • Toronto • yugo.ca", 20, 280);
+  doc.setTextColor(...gray);
+  doc.text("OPS+ • opsplus.co", 20, 285);
 
   return doc;
 }

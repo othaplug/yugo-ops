@@ -40,8 +40,9 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
       time_slot: form.get("time_slot"),
       delivery_window: form.get("delivery_window"),
       status: "scheduled",
-      category: org?.type || "retail",
+      category: form.get("project_type") || org?.type || "retail",
       instructions: form.get("instructions"),
+      special_handling: !!form.get("special_handling"),
     });
 
     setLoading(false);
@@ -55,6 +56,15 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
     <>
       <div className="mb-4"><BackButton label="Back" /></div>
       <form onSubmit={handleSubmit} className="space-y-3">
+      <Field label="Project Type">
+        <select name="project_type" required className="field-input">
+          <option value="retail">Retail</option>
+          <option value="designer">Designer</option>
+          <option value="hospitality">Hospitality</option>
+          <option value="gallery">Art Gallery</option>
+          <option value="b2c">B2C / Residential</option>
+        </select>
+      </Field>
       <Field label="Client">
         <select name="org_id" required className="field-input">
           <option value="">Select client...</option>
@@ -87,12 +97,18 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
       <Field label="Instructions">
         <textarea name="instructions" rows={2} placeholder="Special instructions..." className="field-input resize-y" />
       </Field>
+      <Field label="Special Handling">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input name="special_handling" type="checkbox" className="rounded border-[var(--brd)] bg-[var(--bg)] text-[var(--gold)] focus:ring-[var(--gold)]" />
+          <span className="text-[12px] text-[var(--tx)]">Requires special handling (fragile, high-value, etc.)</span>
+        </label>
+      </Field>
       <button
         type="submit"
         disabled={loading}
         className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
       >
-        {loading ? "Creating..." : "Create Delivery"}
+        {loading ? "Creating..." : "Create Project"}
       </button>
     </form>
     </>

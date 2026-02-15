@@ -2,36 +2,17 @@
 
 import { useState } from "react";
 import { useToast } from "../../components/Toast";
+import { generateDeliveryPDF } from "@/lib/pdf";
 
 export default function DownloadPDFButton({ delivery }: { delivery: any }) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setLoading(true);
-    const text = [
-      `YUGO DELIVERY CONFIRMATION`,
-      ``,
-      `Delivery: ${delivery.delivery_number}`,
-      `Customer: ${delivery.customer_name}`,
-      `Status: ${delivery.status}`,
-      `Date: ${delivery.scheduled_date}`,
-      `Pickup: ${delivery.pickup_address}`,
-      `Delivery: ${delivery.delivery_address}`,
-      `Items: ${(delivery.items || []).join(", ")}`,
-      `Instructions: ${delivery.instructions || "None"}`,
-      ``,
-      `--- Yugo Luxury Transport & Logistics ---`,
-    ].join("\n");
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${delivery.delivery_number || "delivery"}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast("Delivery summary downloaded", "file");
+    const doc = generateDeliveryPDF(delivery);
+    doc.save(`${delivery.delivery_number || "project"}.pdf`);
+    toast("Project PDF downloaded", "file");
     setLoading(false);
   };
 

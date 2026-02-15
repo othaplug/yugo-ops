@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: "Yugo Ops <notifications@yugo.ca>",
+      from: "OPS+ <notifications@opsplus.co>",
       to,
       subject,
       html,

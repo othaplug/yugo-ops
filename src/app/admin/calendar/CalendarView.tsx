@@ -14,7 +14,7 @@ interface CalendarViewProps {
 
 const CATEGORY_COLORS: Record<string, string> = {
   retail: "#C9A962",
-  designer: "#8B6CC1",
+  designer: "#C9A962",
   hospitality: "#D48A29",
   gallery: "#4A7CE5",
   b2c: "#2D9F5A",
@@ -101,24 +101,24 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
 
   return (
     <>
-      {/* Week Header */}
-      <div className="flex justify-between items-center mb-3">
+      {/* Week Header - responsive */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
         <div className="flex gap-1.5">
           <Link href="/admin/deliveries/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
             + Schedule Job
           </Link>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setWeekOffset((o) => o - 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">◀</button>
-          <span className="text-[13px] font-bold">
+        <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-3">
+          <button onClick={() => setWeekOffset((o) => o - 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all touch-manipulation">◀</button>
+          <span className="text-[11px] sm:text-[13px] font-bold text-center">
             {weekStart.toLocaleDateString("en-US", { month: "long" })} {weekStart.getDate()} – {new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).getDate()}, {weekStart.getFullYear()}
           </span>
-          <button onClick={() => setWeekOffset((o) => o + 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">▶</button>
+          <button onClick={() => setWeekOffset((o) => o + 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all touch-manipulation">▶</button>
         </div>
       </div>
 
-      {/* Day Headers - highlighted when in view */}
-      <div className="grid grid-cols-7 gap-[3px] mb-1">
+      {/* Day Headers - highlighted when in view, better mobile spacing */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-[3px] mb-2">
         {days.map((day) => {
           const dateStr = day.toISOString().split("T")[0];
           const today = isToday(day);
@@ -139,11 +139,11 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
         })}
       </div>
 
-      {/* Calendar Grid - whole cell clickable, touch swipe */}
+      {/* Calendar Grid - whole cell clickable, touch swipe, better mobile */}
       <div
         ref={gridRef}
-        className="grid grid-cols-7 gap-[3px] select-none"
-        style={{ minHeight: 360 }}
+        className="grid grid-cols-7 gap-1 sm:gap-[3px] select-none"
+        style={{ minHeight: 320 }}
         onTouchStart={(e) => setTouchStart(e.touches[0].clientX)}
         onTouchEnd={(e) => {
           if (touchStart === null) return;
@@ -168,7 +168,7 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
           return (
             <div
               key={day.toISOString()}
-              className={`bg-[var(--card)] border rounded-lg p-1.5 min-h-[120px] transition-all cursor-pointer hover:border-[var(--gold)]/50 ${
+              className={`bg-[var(--card)] border rounded-lg p-2 sm:p-1.5 min-h-[100px] sm:min-h-[120px] transition-all cursor-pointer hover:border-[var(--gold)]/50 ${
                 today ? "border-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,.2)] bg-[var(--gdim)]/30" : "border-[var(--brd)]"
               } ${isSelected ? "ring-2 ring-[var(--gold)]/40 ring-inset" : ""}`}
               onDragOver={(e) => e.preventDefault()}
@@ -236,7 +236,7 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
       <div className="flex gap-3 mt-3 flex-wrap">
         {[
           ["Retail", "#C9A962"],
-          ["Designer", "#8B6CC1"],
+          ["Designer", "#C9A962"],
           ["Hospitality", "#D48A29"],
           ["B2C Move", "#2D9F5A"],
         ].map(([label, color]) => (
@@ -247,8 +247,8 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
         ))}
       </div>
 
-      {/* Crew + Week Summary */}
-      <div className="grid grid-cols-2 gap-3 mt-4">
+      {/* Crew + Week Summary - stack on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
           <h3 className="text-[13px] font-bold mb-3">Crew Assignments</h3>
           {crews.map((c) => {

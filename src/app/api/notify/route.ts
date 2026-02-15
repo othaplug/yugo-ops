@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { deliveryNotificationEmail } from "@/lib/email-templates";
+import { getResend } from "@/lib/resend";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,15 +17,21 @@ export async function POST(req: NextRequest) {
     });
 
     if (process.env.RESEND_API_KEY && body.to) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-        body: JSON.stringify({
-          from: "Yugo Ops <notifications@opsplus.co>",
-          to: body.to,
-          subject: `Delivery Update: ${body.deliveryNumber}`,
-          html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;"><h2>Yugo Delivery Update</h2><p>Hi ${body.customerName},</p><p>Your delivery <strong>${body.deliveryNumber}</strong> status: <strong>${body.status}</strong></p><p>Delivery to: ${body.deliveryAddress}</p><hr/><p style="color:#999;font-size:12px;">Yugo Luxury Transport & Logistics</p></div>`,
-        }),
+      const resend = getResend();
+      const html = deliveryNotificationEmail({
+        delivery_number: body.deliveryNumber,
+        customer_name: body.customerName,
+        delivery_address: body.deliveryAddress || "",
+        scheduled_date: body.scheduledDate || "",
+        delivery_window: body.deliveryWindow || "",
+        status: body.status,
+      });
+      await resend.emails.send({
+        from: "OPS+ <notifications@opsplus.co>",
+        to: body.to,
+        subject: `Delivery Update: ${body.deliveryNumber}`,
+        html,
+        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
       });
     }
 

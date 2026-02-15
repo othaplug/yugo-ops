@@ -5,18 +5,28 @@ import ThemeToggle from "./ThemeToggle";
 import NotificationToggles from "./NotificationToggles";
 import Enable2FAButton from "./Enable2FAButton";
 import IntegrationButtons from "./IntegrationButtons";
+import PartnerProfileSettings from "./PartnerProfileSettings";
+import EditableEmailSection from "./EditableEmailSection";
 import { Icon } from "@/components/AppIcons";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { data: platformUser } = user
+    ? await supabase.from("platform_users").select("role, two_factor_enabled").eq("user_id", user.id).single()
+    : { data: null };
+  const { data: partnerUser } = user
+    ? await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single()
+    : { data: null };
+  const isPartner = !!partnerUser && !platformUser;
+  const roleLabel = platformUser?.role === "admin" ? "Administrator" : "Dispatcher";
 
   return (
     <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 space-y-6 animate-fade-up">
         <div className="mb-4"><BackButton label="Back" /></div>
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <a href="#personal" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Personal</a>
+          <a href={isPartner ? "#partner-profile" : "#personal"} className="text-[12px] font-semibold text-[var(--gold)] hover:underline">{isPartner ? "Profile" : "Personal"}</a>
           <span className="text-[11px] text-[var(--tx3)]">/</span>
           <a href="#security" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Security</a>
           <span className="text-[11px] text-[var(--tx3)]">/</span>
@@ -26,28 +36,28 @@ export default async function SettingsPage() {
           <span className="text-[11px] text-[var(--tx3)]">/</span>
           <a href="#integrations" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Integrations</a>
         </div>
-        {/* Personal Account Section */}
+        {/* Partner Profile (partners only) */}
+        {isPartner && <PartnerProfileSettings />}
+        {/* Personal Account Section (platform users only) */}
+        {!isPartner && (
         <div id="personal" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
           <div className="px-5 py-5 border-b border-[var(--brd)] bg-[var(--bg2)]">
             <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Personal Account</h2>
             <p className="text-[12px] text-[var(--tx3)] mt-1.5">Manage your profile and credentials</p>
           </div>
           <div className="px-5 py-5 space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email Address</label>
-              <div className="text-[13px] text-[var(--tx)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5">
-                {user?.email}
-              </div>
-            </div>
+            <EditableEmailSection currentEmail={user?.email || ""} />
             <div>
               <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
               <div className="text-[13px] text-[var(--tx)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5 inline-flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />
-                Administrator
+                {platformUser ? roleLabel : "Administrator"}
               </div>
+              <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change user roles</p>
             </div>
           </div>
         </div>
+        )}
 
         {/* Security Section */}
         <div id="security" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
@@ -65,8 +75,8 @@ export default async function SettingsPage() {
             <div>
               <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Two-Factor Authentication</label>
               <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
-                <span className="text-[12px] text-[var(--tx2)]">2FA not enabled</span>
-                <Enable2FAButton />
+                <span className="text-[12px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active — code sent to email on each login" : "2FA not enabled"}</span>
+                <Enable2FAButton enabled={platformUser?.two_factor_enabled} />
               </div>
             </div>
           </div>

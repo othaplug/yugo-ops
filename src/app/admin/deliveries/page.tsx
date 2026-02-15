@@ -22,7 +22,7 @@ export default async function DeliveriesPage() {
             href="/admin/deliveries/new"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all duration-200"
           >
-            + New Delivery
+            + New Project
           </Link>
         </div>
       </div>

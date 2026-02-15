@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
+import { referralReceivedEmail } from "@/lib/email-templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,21 +31,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (agent_email && typeof agent_email === "string" && agent_email.trim()) {
-      const html = `
-        <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #E8E5E0;">Referral Received — Yugo OPS+</h2>
-          <p style="color: #999;">Hi ${agent_name},</p>
-          <p style="color: #999;">Your referral for <strong>${client_name || property || "this property"}</strong> has been received and added to our pipeline.</p>
-          <p style="color: #999;">We'll be in touch as we process the lead.</p>
-          <p style="color: #666; font-size: 12px;">Thank you for partnering with Yugo OPS+.</p>
-        </div>
-      `;
       if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_your_api_key_here") {
+        const resend = getResend();
+        const html = referralReceivedEmail({
+          agentName: agent_name.trim(),
+          clientName: client_name || "",
+          property: property || "",
+        });
         await resend.emails.send({
-          from: "Yugo OPS+ <notifications@yugo.ca>",
+          from: "OPS+ <notifications@opsplus.co>",
           to: agent_email.trim(),
-          subject: "Referral received — Yugo OPS+",
+          subject: "Referral received — OPS+",
           html,
+          headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });
       }
     }

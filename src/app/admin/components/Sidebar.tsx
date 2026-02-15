@@ -7,9 +7,9 @@ import { Icon } from "@/components/AppIcons";
 const NAV = [
   { label: "Dashboard", items: [
     { name: "Command Center", icon: "target", href: "/admin" },
-    { name: "All Deliveries", icon: "package", href: "/admin/deliveries" },
+    { name: "All Projects", icon: "package", href: "/admin/deliveries" },
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
-    { name: "Crew Tracking", icon: "mapPin", href: "/admin/crew" },
+    { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
   { label: "B2B Partners", items: [
     { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
@@ -40,8 +40,9 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 bottom-0 w-[220px] bg-[var(--bg2)] border-r border-[var(--brd)] overflow-y-auto z-50">
       {/* Logo */}
       <div className="px-4 py-[18px] border-b border-[var(--brd)]">
-        <span className="font-heading text-lg tracking-[2px]">YUGO</span>
-        <span className="text-[8px] font-bold text-[var(--gold)] bg-[var(--gdim)] px-1.5 py-0.5 rounded-full tracking-[1px] ml-1">OPS+</span>
+        <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.06)] backdrop-blur-xl border border-[rgba(201,169,98,0.35)] text-[var(--gold)] font-heading text-[13px] font-semibold tracking-[3px] shadow-[0_0_24px_rgba(201,169,98,0.06),inset_0_1px_0_rgba(255,255,255,0.03)]">
+          OPS+
+        </span>
       </div>
 
       {/* Nav Sections */}

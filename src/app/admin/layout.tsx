@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminShell from "./components/AdminShell";
+import ChangePasswordGate from "./components/ChangePasswordGate";
+import TwoFAGate from "./components/TwoFAGate";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -10,5 +12,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  return <AdminShell user={user}>{children}</AdminShell>;
+  return (
+    <ChangePasswordGate>
+      <TwoFAGate>
+        <AdminShell user={user}>{children}</AdminShell>
+      </TwoFAGate>
+    </ChangePasswordGate>
+  );
 }

@@ -19,6 +19,8 @@ export default function NotifyClientButton({ delivery }: { delivery: any }) {
           deliveryNumber: delivery.delivery_number,
           status: delivery.status,
           deliveryAddress: delivery.delivery_address,
+          scheduledDate: delivery.scheduled_date || "",
+          deliveryWindow: delivery.delivery_window || "",
         }),
       });
       toast(`Notification sent to ${delivery.customer_name}`, "mail");

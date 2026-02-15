@@ -8,6 +8,7 @@ type Notification = {
   title: string;
   time: string;
   read: boolean;
+  link?: string;
 };
 
 type NotificationContextType = {
@@ -20,17 +21,32 @@ type NotificationContextType = {
 
 const STORAGE_KEY = "yugo-notifications";
 const DEFAULT: Notification[] = [
-  { id: "1", icon: "party", title: "New delivery created: DEL-1047", time: "2 min ago", read: false },
-  { id: "2", icon: "dollar", title: "Invoice INV-2891 paid", time: "1 hour ago", read: false },
-  { id: "3", icon: "mail", title: "Message from Restoration Hardware", time: "3 hours ago", read: true },
-  { id: "4", icon: "truck", title: "Delivery DEL-1046 completed", time: "5 hours ago", read: true },
+  { id: "1", icon: "party", title: "New delivery created: DEL-1047", time: "2 min ago", read: false, link: "/admin/deliveries" },
+  { id: "2", icon: "dollar", title: "Invoice INV-2891 paid", time: "1 hour ago", read: false, link: "/admin/invoices" },
+  { id: "3", icon: "mail", title: "Message from Restoration Hardware", time: "3 hours ago", read: true, link: "/admin/messages" },
+  { id: "4", icon: "truck", title: "Delivery DEL-1046 completed", time: "5 hours ago", read: true, link: "/admin/deliveries" },
 ];
+
+function getLinkForNotification(notif: { icon?: string; title?: string }): string {
+  const t = (notif.title || "").toLowerCase();
+  const icon = notif.icon || "";
+  if (t.includes("delivery") || icon === "truck" || icon === "party") return "/admin/deliveries";
+  if (t.includes("invoice") || icon === "dollar") return "/admin/invoices";
+  if (t.includes("message") || icon === "mail") return "/admin/messages";
+  return "/admin";
+}
 
 function loadNotifications(): Notification[] {
   if (typeof window === "undefined") return DEFAULT;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored) as Notification[];
+      return parsed.map((n) => ({
+        ...n,
+        link: n.link || getLinkForNotification(n),
+      }));
+    }
   } catch {}
   return DEFAULT;
 }
@@ -65,7 +81,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }, []);
 
-  const addNotification = useCallback((notif: Omit<Notification, "id" | "read">) => {
+  const addNotification = useCallback((notif: Omit<Notification, "id" | "read"> & { link?: string }) => {
     setNotifications(prev => [
       { ...notif, id: Date.now().toString(), read: false },
       ...prev

@@ -7,6 +7,7 @@ import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
 import InvitePartnerModal from "./InvitePartnerModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
+import UserDetailModal from "./UserDetailModal";
 import { useRouter } from "next/navigation";
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
@@ -22,13 +23,17 @@ interface Team {
 
 interface PlatformSettingsClientProps {
   initialTeams?: Team[];
+  currentUserId?: string;
 }
 
-export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSettingsClientProps) {
+export default function PlatformSettingsClient({ initialTeams = [], currentUserId }: PlatformSettingsClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
+  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string }[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string } | null>(null);
   const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const [crewTracking, setCrewTracking] = useState(true);
   const [partnerPortal, setPartnerPortal] = useState(false);
@@ -42,12 +47,29 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
-  const [memberSearch, setMemberSearch] = useState("");
+  const [addTeamModalOpen, setAddTeamModalOpen] = useState(false);
+  const [addTeamName, setAddTeamName] = useState("");
+  const [addTeamMembers, setAddTeamMembers] = useState<string[]>([]);
   const [ratesSaving, setRatesSaving] = useState(false);
 
   useEffect(() => {
     setTeams(initialTeams);
   }, [initialTeams]);
+
+  const fetchUsers = () => {
+    setUsersLoading(true);
+    fetch("/api/admin/users")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setUsers(data);
+      })
+      .catch(() => {})
+      .finally(() => setUsersLoading(false));
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -60,9 +82,12 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
     } catch (_) {}
   }, []);
 
-  const filteredCrew = memberSearch.trim()
-    ? ALL_CREW.filter((m) => m.toLowerCase().includes(memberSearch.toLowerCase()))
-    : ALL_CREW;
+  useEffect(() => {
+    if (!addTeamModalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [addTeamModalOpen]);
 
   const toggleMember = async (teamIdx: number, member: string) => {
     const team = teams[teamIdx];
@@ -86,9 +111,8 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
   };
 
   const addTeam = async () => {
-    if (!newTeamName.trim()) return;
-    const name = newTeamName.trim();
-    setNewTeamName("");
+    const name = addTeamName.trim();
+    if (!name) return;
     const res = await fetch("/api/crews/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,15 +123,37 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
       toast(data.error || "Failed to add team", "x");
       return;
     }
-    setTeams([...teams, { id: data.id || String(Date.now()), label: name, memberIds: [], active: true }]);
+    const newId = data.id || String(Date.now());
+    if (addTeamMembers.length > 0) {
+      await fetch("/api/crews/update-members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crewId: newId, members: addTeamMembers }),
+      });
+    }
+    setTeams([...teams, { id: newId, label: name, memberIds: addTeamMembers, active: true }]);
+    setAddTeamModalOpen(false);
+    setAddTeamName("");
+    setAddTeamMembers([]);
     toast("Team added", "check");
     router.refresh();
   };
 
   return (
     <div className="space-y-6">
+      {/* Quick shortcuts - same look as profile settings */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <a href="#pricing" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Pricing</a>
+        <span className="text-[11px] text-[var(--tx3)]">/</span>
+        <a href="#crews" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Crews & Teams</a>
+        <span className="text-[11px] text-[var(--tx3)]">/</span>
+        <a href="#app" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">App</a>
+        <span className="text-[11px] text-[var(--tx3)]">/</span>
+        <a href="#partners" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Partners</a>
+      </div>
+
       {/* Pricing & Rates - editable */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div id="pricing" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4 min-w-0">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
             <Icon name="dollar" className="w-[16px] h-[16px]" /> Pricing & Rates
@@ -116,7 +162,7 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
         </div>
         <div className="px-5 py-5 space-y-3">
           {rates.map((r, i) => (
-            <div key={r.tier} className="flex items-center justify-between gap-3 py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
+            <div key={r.tier} className="flex items-center justify-between gap-3 py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg min-w-0">
               <input
                 value={r.tier}
                 onChange={(e) => {
@@ -168,7 +214,7 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
       </div>
 
       {/* Crews & Teams - view & edit members */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
@@ -177,13 +223,10 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team to view and edit members</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <input
-              value={newTeamName}
-              onChange={(e) => setNewTeamName(e.target.value)}
-              placeholder="New team name"
-              className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] w-32"
-            />
-            <button onClick={addTeam} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
+            <button
+              onClick={() => setAddTeamModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+            >
               + Add Team
             </button>
             <button onClick={() => setAddTeamMemberOpen(true)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
@@ -216,24 +259,17 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
               </div>
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)]">
-                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Add team member</div>
-                  <input
-                    type="text"
-                    value={memberSearch}
-                    onChange={(e) => setMemberSearch(e.target.value)}
-                    placeholder="Search name…"
-                    className="w-full mb-2 px-3 py-2 rounded-lg text-[11px] bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-                  />
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                    {filteredCrew.map((m) => (
-                      <label key={m} className="flex items-center gap-1.5 cursor-pointer">
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select team members</div>
+                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-1">
+                    {ALL_CREW.map((m) => (
+                      <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
                         <input
                           type="checkbox"
                           checked={team.memberIds.includes(m)}
                           onChange={() => toggleMember(i, m)}
-                          className="rounded border-[var(--brd)]"
+                          className="checkbox-elegant"
                         />
-                        <span className="text-[11px] text-[var(--tx)]">{m}</span>
+                        <span className="text-[12px] text-[var(--tx)]">{m}</span>
                       </label>
                     ))}
                   </div>
@@ -245,7 +281,7 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
       </div>
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div id="app" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
             <Icon name="settings" className="w-[16px] h-[16px]" /> App
@@ -281,7 +317,7 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
       </div>
 
       {/* Partners Management */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div id="partners" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
@@ -316,37 +352,128 @@ export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSe
 
       {/* User Management */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
-        </div>
-        <div className="px-5 py-5 space-y-3">
-          <div className="flex items-center justify-between py-3 border-b border-[var(--brd)]">
-            <div>
-              <div className="text-[13px] font-semibold text-[var(--tx)]">Administrator</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Full access to all features</div>
-            </div>
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--gdim)] text-[var(--gold)]">Admin</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="text-[13px] font-semibold text-[var(--tx)]">Dispatcher</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Manage deliveries and crew</div>
-            </div>
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--bldim)] text-[var(--blue)]">Dispatcher</span>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
+            </h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
           </div>
           <button
             onClick={() => setInviteUserOpen(true)}
-            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
           >
             + Invite User
           </button>
         </div>
+        <div className="px-5 py-5">
+          {usersLoading ? (
+            <div className="py-8 text-center text-[13px] text-[var(--tx3)]">Loading users…</div>
+          ) : users.length === 0 ? (
+            <div className="py-10 px-4 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--gdim)] border border-[rgba(201,169,98,0.25)] mb-4">
+                <Icon name="users" className="w-6 h-6 text-[var(--gold)]" />
+              </div>
+              <p className="text-[14px] font-medium text-[var(--tx)] mb-1">No users yet</p>
+              <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
+              <button
+                onClick={() => setInviteUserOpen(true)}
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+              >
+                Invite your first user
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => setSelectedUser(u)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)] bg-[var(--bg)] hover:bg-[var(--card)] transition-all text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold text-[var(--tx)] truncate">{u.name || u.email}</div>
+                    <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"}`}>
+                      {u.status === "activated" ? "Activated" : "Pending"}
+                    </span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
+                      {u.role === "admin" ? "Admin" : "Dispatcher"}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <InviteUserModal open={inviteUserOpen} onClose={() => setInviteUserOpen(false)} />
+      {/* Add Team Modal */}
+      {addTeamModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAddTeamModalOpen(false)} aria-hidden="true" />
+            <div className="relative w-full max-w-md max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden animate-fade-up" onClick={(e) => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
+                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">Add Team</h2>
+                <button onClick={() => setAddTeamModalOpen(false)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx2)] transition-colors" aria-label="Close">
+                  <Icon name="x" className="w-[16px] h-[16px]" />
+                </button>
+              </div>
+              <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
+                <div>
+                  <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+                  <input
+                    value={addTeamName}
+                    onChange={(e) => setAddTeamName(e.target.value)}
+                    placeholder="e.g. Team A"
+                    className="w-full px-4 py-2.5 rounded-lg text-[13px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
+                  <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
+                    {ALL_CREW.map((m) => (
+                      <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={addTeamMembers.includes(m)}
+                          onChange={() => setAddTeamMembers((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m])}
+                          className="checkbox-elegant"
+                        />
+                        <span className="text-[12px] text-[var(--tx)] group-hover:text-[var(--tx)]">{m}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={addTeam}
+                  disabled={!addTeamName.trim()}
+                  className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Team
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
+      <InviteUserModal open={inviteUserOpen} onClose={() => { setInviteUserOpen(false); fetchUsers(); }} />
+      {selectedUser && (
+        <UserDetailModal
+          open={!!selectedUser}
+          onClose={() => setSelectedUser(null)}
+          user={selectedUser}
+          currentUserId={currentUserId}
+          onSaved={(updates) => {
+            setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, ...updates } : u)));
+            setSelectedUser((u) => (u ? { ...u, ...updates } : null));
+          }}
+          onDeleted={(id) => { setUsers((prev) => prev.filter((u) => u.id !== id)); setSelectedUser(null); }}
+        />
+      )}
       <InvitePartnerModal open={invitePartnerOpen} onClose={() => setInvitePartnerOpen(false)} />
       <AddTeamMemberModal
         open={addTeamMemberOpen}
