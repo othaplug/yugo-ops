@@ -16,13 +16,14 @@ export default async function DeliveryDetailPage({ params }: { params: { id: str
 
   if (error || !delivery) notFound();
 
-  const statusColor = {
+  const statusColorMap: Record<string, string> = {
     pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
     confirmed: "text-[var(--blu)] bg-[rgba(59,130,246,0.1)]",
     "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
     delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
     cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
-  }[delivery.status] || "text-[var(--tx3)] bg-[var(--card)]";
+  };
+  const statusColor = statusColorMap[delivery.status] || "text-[var(--tx3)] bg-[var(--card)]";
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5">
