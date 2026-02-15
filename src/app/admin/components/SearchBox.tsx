@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Icon } from "@/components/AppIcons";
 
 export default function SearchBox() {
   const [query, setQuery] = useState("");
@@ -54,19 +55,19 @@ export default function SearchBox() {
 
   return (
     <div ref={ref} className="relative hidden sm:block">
-      <div className="flex items-center gap-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-[8px] px-2.5 py-1.5 w-[200px] md:w-[240px] focus-within:border-[var(--gold)] transition-colors">
-        <span className="text-[var(--tx3)] text-[12px]">🔍</span>
+      <div className="flex items-center gap-2 h-9 bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 w-[180px] md:w-[220px] focus-within:border-[var(--gold)] transition-colors duration-200">
+        <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search everything..."
+          placeholder="Search..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          className="flex-1 bg-transparent border-none text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
+          className="flex-1 min-w-0 bg-transparent border-none text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
         />
       </div>
       {open && results.length > 0 && (
-        <div className="absolute right-0 top-full mt-1 w-[320px] max-h-[400px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50">
+        <div className="absolute right-0 top-full mt-1 w-[320px] max-h-[400px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
           <div className="px-3 py-2 text-[11px] font-bold border-b border-[var(--brd)]">
             Search: &quot;{query}&quot; ({results.length} results)
           </div>
@@ -74,7 +75,7 @@ export default function SearchBox() {
             <div
               key={r.href + r.name}
               onClick={() => { router.push(r.href); setOpen(false); setQuery(""); }}
-              className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors"
+              className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors duration-200"
             >
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-semibold truncate">{r.name}</div>

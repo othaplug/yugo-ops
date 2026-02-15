@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       entity_id: invoiceNumber,
       event_type: "created",
       description: `Invoice ${invoiceNumber} created for ${clientName} ($${amount})`,
-      icon: "💰",
+      icon: "dollar",
     });
 
     return NextResponse.json({ ok: true, invoice: data });

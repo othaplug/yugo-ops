@@ -21,9 +21,9 @@ export default function NotifyClientButton({ delivery }: { delivery: any }) {
           deliveryAddress: delivery.delivery_address,
         }),
       });
-      toast(`Notification sent to ${delivery.customer_name}`, "📧");
+      toast(`Notification sent to ${delivery.customer_name}`, "mail");
     } catch { 
-      toast(`Notification queued for ${delivery.customer_name}`, "📧"); 
+      toast(`Notification queued for ${delivery.customer_name}`, "mail"); 
     }
     setLoading(false);
   };
@@ -34,7 +34,7 @@ export default function NotifyClientButton({ delivery }: { delivery: any }) {
       disabled={loading}
       className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--blu)] text-white hover:opacity-90 transition-all disabled:opacity-50"
     >
-      {loading ? "Sending..." : "📧 Notify Client"}
+      {loading ? "Sending..." : "Notify Client"}
     </button>
   );
 }

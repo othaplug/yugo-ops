@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { Icon } from "@/components/AppIcons";
 
 const BADGE_MAP: Record<string, string> = {
   pending: "b-go",
@@ -41,10 +42,10 @@ export default async function AdminPage() {
   const b2cUpcoming = allMoves.filter((m) => m.status === "confirmed" || m.status === "scheduled");
 
   const categoryIcons: Record<string, string> = {
-    retail: "🛋️",
-    designer: "🎨",
-    hospitality: "🏨",
-    gallery: "🖼️",
+    retail: "sofa",
+    designer: "palette",
+    hospitality: "hotel",
+    gallery: "image",
   };
   const categoryBgs: Record<string, string> = {
     retail: "var(--gdim)",
@@ -62,29 +63,29 @@ export default async function AdminPage() {
     { m: "Feb", v: 38.4 },
   ];
   const activityItems = [
-    { ic: "📦", bg: "var(--gdim)", t: "DEL in transit", tm: "9:12 AM" },
-    { ic: "✅", bg: "var(--grdim)", t: "INV paid ($1,800)", tm: "8:45 AM" },
-    { ic: "🏠", bg: "var(--gdim)", t: "MV-001 materials delivered", tm: "8:30 AM" },
-    { ic: "📋", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM" },
+    { ic: "package", bg: "var(--gdim)", t: "DEL in transit", tm: "9:12 AM", href: "/admin/deliveries" },
+    { ic: "check", bg: "var(--grdim)", t: "INV paid ($1,800)", tm: "8:45 AM", href: "/admin/invoices" },
+    { ic: "home", bg: "var(--gdim)", t: "MV-001 materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
+    { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
       {/* Metrics - .metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <Link href="/admin/deliveries" className="mc">
           <div className="mc-l">Today</div>
           <div className="mc-v">{todayDeliveries.length}</div>
         </Link>
-        <div className="mc">
+        <Link href="/admin/deliveries?filter=pending" className="mc">
           <div className="mc-l">Pending</div>
           <div className="mc-v text-[var(--org)]">{pendingCount}</div>
-        </div>
-        <div className="mc">
+        </Link>
+        <Link href="/admin/revenue" className="mc">
           <div className="mc-l">Revenue (Feb)</div>
           <div className="mc-v">$38.4K</div>
           <div className="mc-c up">↑ 23%</div>
-        </div>
+        </Link>
         <Link href="/admin/invoices" className="mc">
           <div className="mc-l">Overdue</div>
           <div className="mc-v text-[var(--red)]">${(overdueAmount / 1000).toFixed(1)}K</div>
@@ -108,10 +109,10 @@ export default async function AdminPage() {
             className="dc"
           >
             <div
-              className="dc-ic"
+              className="dc-ic flex items-center justify-center text-[var(--tx2)]"
               style={{ background: categoryBgs[d.category] || "var(--gdim)" }}
             >
-              {categoryIcons[d.category] || "📦"}
+              <Icon name={categoryIcons[d.category] || "package"} className="w-[16px] h-[16px]" />
             </div>
             <div className="dc-i">
               <div className="dc-t">{d.customer_name} ({d.client_name})</div>
@@ -132,11 +133,11 @@ export default async function AdminPage() {
         {b2cUpcoming.slice(0, 5).map((m) => (
           <Link
             key={m.id}
-            href={`/admin/moves/residential`}
+            href={`/admin/moves/${m.id}`}
             className="dc"
           >
-            <div className="dc-ic" style={{ background: "var(--gdim)" }}>
-              {m.move_type === "office" ? "🏢" : "🏠"}
+            <div className="dc-ic flex items-center justify-center text-[var(--tx2)]" style={{ background: "var(--gdim)" }}>
+              <Icon name={m.move_type === "office" ? "building" : "home"} className="w-[16px] h-[16px]" />
             </div>
             <div className="dc-i">
               <div className="dc-t">{m.client_name}</div>
@@ -187,13 +188,13 @@ export default async function AdminPage() {
             <div className="sh-t">Activity</div>
           </div>
           {activityItems.map((a) => (
-            <div key={a.t} className="act-item">
-              <div className="act-dot" style={{ background: a.bg }}>{a.ic}</div>
+            <Link key={a.t} href={a.href} className="act-item block hover:opacity-90 transition-opacity">
+              <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}><Icon name={a.ic} className="w-[14px] h-[14px]" /></div>
               <div className="act-body">
                 <div className="act-t">{a.t}</div>
                 <div className="act-tm">{a.tm}</div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

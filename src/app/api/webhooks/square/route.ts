@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             entity_id: invoice.invoice_number,
             event_type: "payment",
             description: `${invoice.invoice_number} paid by ${invoice.client_name} ($${invoice.amount})`,
-            icon: "✅",
+            icon: "check",
           });
         }
       }

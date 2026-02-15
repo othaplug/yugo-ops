@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       entity_id: body.deliveryNumber,
       event_type: "notification",
       description: `Notification sent to ${body.customerName}: Status is ${body.status}`,
-      icon: "📧",
+      icon: "mail",
     });
 
     if (process.env.RESEND_API_KEY && body.to) {

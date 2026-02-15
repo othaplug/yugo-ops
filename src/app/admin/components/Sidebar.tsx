@@ -2,33 +2,34 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Icon } from "@/components/AppIcons";
 
 const NAV = [
   { label: "Dashboard", items: [
-    { name: "Command Center", icon: "🎯", href: "/admin" },
-    { name: "All Deliveries", icon: "📦", href: "/admin/deliveries" },
-    { name: "Calendar", icon: "📅", href: "/admin/calendar" },
-    { name: "Crew Tracking", icon: "📍", href: "/admin/crew" },
+    { name: "Command Center", icon: "target", href: "/admin" },
+    { name: "All Deliveries", icon: "package", href: "/admin/deliveries" },
+    { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
+    { name: "Crew Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
   { label: "B2B Partners", items: [
-    { name: "Retail", icon: "🛋️", href: "/admin/partners/retail" },
-    { name: "Designers", icon: "🎨", href: "/admin/partners/designers" },
-    { name: "Hospitality", icon: "🏨", href: "/admin/partners/hospitality" },
-    { name: "Art Gallery", icon: "🖼️", href: "/admin/partners/gallery" },
-    { name: "Realtors", icon: "🤝", href: "/admin/partners/realtors" },
+    { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
+    { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
+    { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },
+    { name: "Art Gallery", icon: "image", href: "/admin/partners/gallery" },
+    { name: "Realtors", icon: "handshake", href: "/admin/partners/realtors" },
   ]},
   { label: "Moves", items: [
-    { name: "Residential", icon: "🏠", href: "/admin/moves/residential" },
-    { name: "Office", icon: "🏢", href: "/admin/moves/office" },
+    { name: "Residential", icon: "home", href: "/admin/moves/residential" },
+    { name: "Office", icon: "building", href: "/admin/moves/office" },
   ]},
   { label: "Finance", items: [
-    { name: "Invoices", icon: "📄", href: "/admin/invoices" },
-    { name: "Revenue", icon: "💰", href: "/admin/revenue" },
+    { name: "Invoices", icon: "fileText", href: "/admin/invoices" },
+    { name: "Revenue", icon: "dollarSign", href: "/admin/revenue" },
   ]},
   { label: "System", items: [
-    { name: "All Clients", icon: "👥", href: "/admin/clients" },
-    { name: "Messages", icon: "💬", href: "/admin/messages" },
-    { name: "Settings", icon: "⚙️", href: "/admin/settings" },
+    { name: "All Clients", icon: "users", href: "/admin/clients" },
+    { name: "Messages", icon: "messageSquare", href: "/admin/messages" },
+    { name: "Settings", icon: "settings", href: "/admin/settings" },
   ]},
 ];
 
@@ -39,7 +40,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 bottom-0 w-[220px] bg-[var(--bg2)] border-r border-[var(--brd)] overflow-y-auto z-50">
       {/* Logo */}
       <div className="px-4 py-[18px] border-b border-[var(--brd)]">
-        <span className="font-serif text-lg tracking-[2px]">YUGO</span>
+        <span className="font-heading text-lg tracking-[2px]">YUGO</span>
         <span className="text-[8px] font-bold text-[var(--gold)] bg-[var(--gdim)] px-1.5 py-0.5 rounded-full tracking-[1px] ml-1">OPS+</span>
       </div>
 
@@ -62,7 +63,7 @@ export default function Sidebar() {
                     : "text-[var(--tx2)] border-transparent hover:bg-[var(--gdim)] hover:text-[var(--tx)]"
                   }`}
               >
-                <span className="text-[13px] w-[18px] text-center">{item.icon}</span>
+                <span className="text-[var(--tx3)]"><Icon name={item.icon} className="w-[15px] h-[15px]" /></span>
                 {item.name}
               </Link>
             );

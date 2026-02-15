@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback } from "react";
+import { Icon } from "@/components/AppIcons";
 
 interface ToastContextType {
   toast: (message: string, icon?: string) => void;
@@ -15,11 +16,11 @@ export function useToast() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
-  const [icon, setIcon] = useState("✅");
+  const [iconKey, setIconKey] = useState("check");
 
-  const toast = useCallback((msg: string, ic = "✅") => {
+  const toast = useCallback((msg: string, ic = "check") => {
     setMessage(msg);
-    setIcon(ic);
+    setIconKey(ic);
     setVisible(true);
     setTimeout(() => setVisible(false), 2500);
   }, []);
@@ -28,8 +29,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {visible && (
-        <div className="fixed bottom-4 right-4 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-1.5 z-[200] text-[11px] font-medium animate-fade-up">
-          <span className="text-[13px]">{icon}</span>
+        <div className="fixed bottom-4 right-4 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 z-[200] text-[11px] font-medium animate-fade-up">
+          <span className="text-[var(--grn)]"><Icon name={iconKey} className="w-[14px] h-[14px]" /></span>
           <span>{message}</span>
         </div>
       )}

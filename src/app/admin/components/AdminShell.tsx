@@ -7,48 +7,49 @@ import { ToastProvider } from "./Toast";
 import { NotificationProvider } from "./NotificationContext";
 import { ThemeProvider } from "./ThemeContext";
 import NotificationDropdown from "./NotificationDropdown";
+import ProfileDropdown from "./ProfileDropdown";
 import SearchBox from "./SearchBox";
+import { Icons } from "./SidebarIcons";
 
 const SIDEBAR_SECTIONS = [
   {
     label: "Dashboard",
     items: [
-      { href: "/admin", label: "Command Center", icon: "🎯" },
-      { href: "/admin/deliveries", label: "All Deliveries", icon: "📦" },
-      { href: "/admin/calendar", label: "Calendar", icon: "📅" },
-      { href: "/admin/crew", label: "Crew Tracking", icon: "📍" },
+      { href: "/admin", label: "Command Center", Icon: Icons.target },
+      { href: "/admin/deliveries", label: "All Deliveries", Icon: Icons.package },
+      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar },
+      { href: "/admin/crew", label: "Crew Tracking", Icon: Icons.mapPin },
     ],
   },
   {
     label: "B2B Partners",
     items: [
-      { href: "/admin/partners/retail", label: "Retail", icon: "🛋️" },
-      { href: "/admin/partners/designers", label: "Designers", icon: "🎨" },
-      { href: "/admin/partners/hospitality", label: "Hospitality", icon: "🏨" },
-      { href: "/admin/partners/gallery", label: "Art Gallery", icon: "🖼️" },
-      { href: "/admin/partners/realtors", label: "Realtors", icon: "🤝" },
+      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa },
+      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette },
+      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel },
+      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image },
+      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake },
     ],
   },
   {
     label: "Moves",
     items: [
-      { href: "/admin/moves/residential", label: "Residential", icon: "🏠" },
-      { href: "/admin/moves/office", label: "Office / Commercial", icon: "🏢" },
+      { href: "/admin/moves/residential", label: "Residential", Icon: Icons.home },
+      { href: "/admin/moves/office", label: "Office / Commercial", Icon: Icons.building },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/admin/invoices", label: "Invoices", icon: "📄" },
-      { href: "/admin/revenue", label: "Revenue", icon: "💰" },
+      { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText },
+      { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign },
     ],
   },
   {
     label: "System",
     items: [
-      { href: "/admin/clients", label: "All Clients", icon: "👥" },
-      { href: "/admin/messages", label: "Messages", icon: "💬" },
-      { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+      { href: "/admin/clients", label: "All Clients", Icon: Icons.users },
+      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare },
     ],
   },
 ];
@@ -69,20 +70,25 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/revenue": { title: "Revenue", subtitle: "Financial overview" },
   "/admin/clients": { title: "All Clients", subtitle: "Account management" },
   "/admin/messages": { title: "Messages", subtitle: "Communications" },
-  "/admin/settings": { title: "Settings", subtitle: "Configuration" },
+  "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
   "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
 };
 
 function getPageTitle(pathname: string): { title: string; subtitle: string } {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   if (pathname.startsWith("/admin/deliveries/")) return { title: "Delivery Detail", subtitle: "" };
+  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project Detail", subtitle: "" };
   if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "" };
   if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Delivery", subtitle: "" };
+  if (pathname.match(/^\/admin\/moves\/[a-f0-9-]+$/i)) return { title: "Move Detail", subtitle: "" };
   return { title: "OPS+", subtitle: "" };
 }
 
+const SIDEBAR_WIDTH = 220;
+
 export default function AdminShell({ user, children }: { user: any; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
   const { title, subtitle } = getPageTitle(pathname);
 
@@ -104,89 +110,98 @@ export default function AdminShell({ user, children }: { user: any; children: Re
               />
             )}
 
-            {/* Sidebar - matches prototype .sb */}
-            <aside className={`
-              fixed md:sticky top-0 left-0 z-50 h-screen w-[220px]
-              bg-[var(--bg2)] border-r border-[var(--brd)] overflow-y-auto
-              flex flex-col transition-transform duration-200 ease-out
-              ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-            `}>
-              {/* Logo - .sb-hd */}
-              <div className="px-4 py-[18px] border-b border-[var(--brd)]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="font-serif text-[18px] tracking-[2px] text-[var(--tx)]">YUGO</span>
-                    <span className="text-[8px] font-bold tracking-[1px] text-[var(--gold)] bg-[var(--gdim)] px-[6px] py-[2px] rounded-[10px] ml-1">
+            {/* Sidebar - glass, collapsible */}
+            <aside
+              className={`
+                fixed top-0 left-0 z-50 h-screen flex flex-col
+                bg-[var(--bg2)]/70 backdrop-blur-xl border-r border-[var(--brd)]/50
+                transition-all duration-300 ease-out sidebar-scroll
+                ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+                ${sidebarCollapsed ? "md:w-0 md:overflow-hidden md:border-0" : "w-[220px]"}
+              `}
+              style={sidebarCollapsed ? { minWidth: 0 } : undefined}
+            >
+              {/* Logo bar - completely transparent, floating text only */}
+              <div className="h-14 px-4 flex items-center shrink-0 bg-transparent">
+                <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${sidebarCollapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : ""}`}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-heading text-[17px] tracking-[2px] text-[var(--tx)] font-semibold drop-shadow-sm">YUGO</span>
+                    <span className="text-[8px] font-bold tracking-[1.2px] text-[var(--gold)] px-[7px] py-[3px] rounded-md drop-shadow-sm">
                       OPS+
                     </span>
                   </div>
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="md:hidden p-1.5 rounded-[8px] hover:bg-[var(--card)] transition-colors"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx2)" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                      aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={sidebarCollapsed ? "rotate-180" : ""}>
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setSidebarOpen(false)}
+                      className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Nav sections */}
-              <nav className="flex-1 py-2">
+              {/* Nav sections - scrollable */}
+              <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden min-h-0 ${sidebarCollapsed ? "md:hidden" : ""}`}>
                 {SIDEBAR_SECTIONS.map((section) => (
-                  <div key={section.label} className="py-2">
-                    <div className="text-[9px] font-bold tracking-[0.8px] uppercase text-[var(--tx3)] px-4 pt-2 pb-1">
+                  <div key={section.label} className="mb-4 last:mb-0">
+                    <div className="text-[9px] font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 font-heading">
                       {section.label}
                     </div>
-                    {section.items.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-2 px-4 py-[7px] text-[11px] font-medium transition-all border-l-2 ${
-                          isActive(item.href)
-                            ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                            : "text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] border-l-transparent"
-                        }`}
-                      >
-                        <span className="text-[13px] w-[18px] text-center">{item.icon}</span>
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const active = isActive(item.href);
+                        const ItemIcon = item.Icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 ease-out border-l-2 -ml-px ${
+                              active
+                                ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)]"
+                                : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
+                            }`}
+                          >
+                            <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                              <ItemIcon />
+                            </span>
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </nav>
-
-              {/* Footer - .sb-ft */}
-              <div className="px-4 py-3 border-t border-[var(--brd)] mt-auto">
-                <Link
-                  href="/admin/settings"
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 p-1.5 rounded-[8px] hover:bg-[var(--gdim)] transition-all cursor-pointer"
-                >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
-                    {user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() || "JO"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] font-semibold text-[var(--tx)] truncate">
-                      {user?.email?.split("@")[0] || "Admin"}
-                    </div>
-                    <div className="text-[8px] text-[var(--tx3)]">Admin</div>
-                  </div>
-                </Link>
-              </div>
             </aside>
 
+            {/* Spacer for fixed sidebar on desktop */}
+            <div className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-0" : "w-[220px]"}`} />
+
             {/* Main - .main */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 md:ml-0">
-              {/* Topbar - .topbar */}
-              <div className="flex items-center justify-between gap-2 px-4 md:px-6 py-3 border-b border-[var(--brd)] bg-[var(--bg2)] sticky top-0 z-30">
-                <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 pt-14">
+              {/* Topbar - floating, static */}
+              <div
+                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-4 z-30 shrink-0 bg-[var(--bg)]/80 backdrop-blur-md border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] transition-all duration-300 ${sidebarCollapsed ? "left-0 pl-2 pr-4 md:pl-3 md:pr-6" : "left-0 px-4 md:left-[220px] md:px-6"}`}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="md:hidden min-w-[44px] min-h-[44px] -m-2 flex items-center justify-center rounded-[8px] hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)]"
-                    aria-label="Open menu"
+                    onClick={() => (sidebarCollapsed ? setSidebarCollapsed(false) : setSidebarOpen(true))}
+                    className={`size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "md:flex" : "md:hidden"}`}
+                    aria-label={sidebarCollapsed ? "Open sidebar" : "Open menu"}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="3" y1="6" x2="21" y2="6" />
@@ -194,20 +209,21 @@ export default function AdminShell({ user, children }: { user: any; children: Re
                       <line x1="3" y1="18" x2="21" y2="18" />
                     </svg>
                   </button>
-                  <div className="min-w-0">
-                    <h2 className="text-[14px] font-semibold text-[var(--tx)] truncate">{title}</h2>
-                    {subtitle && <div className="text-[10px] text-[var(--tx3)] truncate">{subtitle}</div>}
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
+                    {subtitle && <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">{subtitle}</div>}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <SearchBox />
                   <NotificationDropdown />
+                  <ProfileDropdown user={user} />
                 </div>
               </div>
 
-              {/* Content - .cnt */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {/* Content - key forces fade-in on route change */}
+              <div key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden animate-fade-in min-h-0">
                 {children}
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Badge from "../components/Badge";
+import { Icon } from "@/components/AppIcons";
 
 interface Delivery {
   id: string;
@@ -17,10 +18,10 @@ interface Delivery {
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
-  retail: "🛋️",
-  designer: "🎨",
-  hospitality: "🏨",
-  gallery: "🖼️",
+  retail: "sofa",
+  designer: "palette",
+  hospitality: "hotel",
+  gallery: "image",
 };
 
 const CATEGORY_BGS: Record<string, string> = {
@@ -80,11 +81,11 @@ export default function DeliveryFilters({
             className="flex items-center gap-2 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] active:bg-[var(--gdim)] transition-all min-h-[52px] touch-manipulation"
           >
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--tx2)] shrink-0 ${
                 CATEGORY_BGS[d.category] || "bg-[var(--gdim)]"
               }`}
             >
-              {CATEGORY_ICONS[d.category] || "📦"}
+              <Icon name={CATEGORY_ICONS[d.category] || "package"} className="w-[16px] h-[16px]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[11px] sm:text-[11px] font-semibold truncate">

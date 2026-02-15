@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "./NotificationContext";
+import { Icon } from "@/components/AppIcons";
 
 export default function NotificationDropdown() {
   const [open, setOpen] = useState(false);
@@ -22,7 +23,7 @@ export default function NotificationDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative min-w-[44px] min-h-[44px] w-9 h-9 rounded-lg border border-[var(--brd)] bg-[var(--card)] hover:bg-[var(--gdim)] hover:border-[var(--gold)] transition-all flex items-center justify-center touch-manipulation"
+        className="relative size-9 rounded-lg border border-[var(--brd)] bg-[var(--card)] hover:bg-[var(--gdim)] hover:border-[var(--gold)] transition-all duration-200 flex items-center justify-center touch-manipulation shrink-0"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -36,9 +37,9 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] max-w-[320px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] max-w-[320px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
-            <div className="text-[13px] font-bold">Notifications</div>
+            <div className="font-heading text-[13px] font-bold">Notifications</div>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -66,7 +67,7 @@ export default function NotificationDropdown() {
                   {!notif.read && (
                     <div className="w-2 h-2 rounded-full bg-[var(--gold)] mt-1.5 flex-shrink-0" />
                   )}
-                  <div className="text-[20px] flex-shrink-0">{notif.icon}</div>
+                  <div className="flex-shrink-0 text-[var(--tx2)]"><Icon name={notif.icon} className="w-[18px] h-[18px]" /></div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-[11px] ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
                       {notif.title}

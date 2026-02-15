@@ -12,15 +12,15 @@ export default function SettingsForm() {
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 6) {
-      toast("Password must be at least 6 characters", "❌");
+      toast("Password must be at least 6 characters", "x");
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast("Error: " + error.message, "❌");
+      toast("Error: " + error.message, "x");
     } else {
-      toast("Password updated successfully", "✅");
+      toast("Password updated successfully", "check");
       setNewPassword("");
     }
     setLoading(false);

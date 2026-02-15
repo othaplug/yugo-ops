@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Badge from "../components/Badge";
+import { Icon } from "@/components/AppIcons";
 
 interface CalendarViewProps {
   deliveries: any[];
@@ -24,9 +26,12 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
   const supabase = createClient();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragType, setDragType] = useState<"delivery" | "move" | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // Generate week days (Mon Feb 9 - Sun Feb 15)
-  const weekStart = new Date("2026-02-09");
+  // Generate week days
+  const baseDate = new Date("2026-02-09");
+  const weekStart = new Date(baseDate);
+  weekStart.setDate(baseDate.getDate() + weekOffset * 7);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
@@ -89,14 +94,16 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
       {/* Week Header */}
       <div className="flex justify-between items-center mb-3">
         <div className="flex gap-1.5">
-          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D]">
+          <Link href="/admin/deliveries/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
             + Schedule Job
-          </button>
+          </Link>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">◀</button>
-          <span className="text-[13px] font-bold">February 9 – 15, 2026</span>
-          <button className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">▶</button>
+          <button onClick={() => setWeekOffset((o) => o - 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">◀</button>
+          <span className="text-[13px] font-bold">
+            {weekStart.toLocaleDateString("en-US", { month: "long" })} {weekStart.getDate()} – {new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).getDate()}, {weekStart.getFullYear()}
+          </span>
+          <button onClick={() => setWeekOffset((o) => o + 1)} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">▶</button>
         </div>
       </div>
 
@@ -158,11 +165,12 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
                   key={m.id}
                   draggable
                   onDragStart={() => { setDragId(m.id); setDragType("move"); }}
+                  onClick={() => router.push(`/admin/moves/${m.id}`)}
                   className="px-1.5 py-1 rounded mb-[3px] cursor-pointer transition-all hover:opacity-80"
                   style={{ borderLeft: `3px solid #2D9F5A`, background: `#2D9F5A11` }}
                 >
-                  <div className="text-[9px] font-bold truncate text-[#2D9F5A]">
-                    🏠 {m.client_name}
+                  <div className="text-[9px] font-bold truncate text-[#2D9F5A] flex items-center gap-1">
+                    <Icon name="home" className="w-[10px] h-[10px]" /> {m.client_name}
                   </div>
                   <div className="text-[8px] text-[var(--tx3)]">{m.time || ""}</div>
                 </div>
@@ -227,7 +235,7 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
             ].map(([label, value, color]) => (
               <div key={label as string} className="bg-[var(--bg)] p-2 rounded-lg border border-[var(--brd)]">
                 <div className="text-[8px] text-[var(--tx3)] uppercase font-bold">{label}</div>
-                <div className={`text-xl font-bold font-serif ${color}`}>{value}</div>
+                <div className={`text-xl font-bold font-heading ${color}`}>{value}</div>
               </div>
             ))}
           </div>

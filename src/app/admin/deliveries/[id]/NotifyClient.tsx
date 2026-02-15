@@ -18,9 +18,9 @@ export default function NotifyClient({ delivery }: { delivery: any }) {
         }),
       });
 
-      toast("Client notified via email", "📧");
+      toast("Client notified via email", "mail");
     } catch {
-      toast("Notification failed", "❌");
+      toast("Notification failed", "x");
     }
   };
 

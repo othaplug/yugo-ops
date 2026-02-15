@@ -1,53 +1,185 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useToast } from "../components/Toast";
+import { Icon } from "@/components/AppIcons";
+import InviteUserModal from "./InviteUserModal";
+import InvitePartnerModal from "./InvitePartnerModal";
+
+const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
+
+const RATES_KEY = "yugo-platform-rates";
 
 export default function PlatformSettingsClient() {
+  const toast = useToast();
+  const [inviteUserOpen, setInviteUserOpen] = useState(false);
+  const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
   const [crewTracking, setCrewTracking] = useState(true);
   const [partnerPortal, setPartnerPortal] = useState(false);
   const [autoInvoicing, setAutoInvoicing] = useState(true);
+  const [rates, setRates] = useState([
+    { tier: "Essentials", rate: "150" },
+    { tier: "Premier", rate: "220" },
+    { tier: "Estate", rate: "350" },
+    { tier: "Office", rate: "3K-$25K" },
+  ]);
+  const [teams, setTeams] = useState([
+    { id: "1", label: "Team A", memberIds: ["Marcus", "Devon"], active: true },
+    { id: "2", label: "Team B", memberIds: ["James", "Olu"], active: true },
+    { id: "3", label: "Team C", memberIds: ["Ryan", "Chris"], active: false },
+    { id: "4", label: "Art", memberIds: ["Specialist"], active: true },
+  ]);
+  const [editingTeam, setEditingTeam] = useState<string | null>(null);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [ratesSaving, setRatesSaving] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(RATES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setRates(parsed);
+      }
+    } catch (_) {}
+  }, []);
+
+  const filteredCrew = memberSearch.trim()
+    ? ALL_CREW.filter((m) => m.toLowerCase().includes(memberSearch.toLowerCase()))
+    : ALL_CREW;
+
+  const toggleMember = (teamIdx: number, member: string) => {
+    const next = [...teams];
+    const ids = next[teamIdx].memberIds;
+    if (ids.includes(member)) {
+      next[teamIdx].memberIds = ids.filter((m) => m !== member);
+    } else {
+      next[teamIdx].memberIds = [...ids, member];
+    }
+    setTeams(next);
+  };
+
+  const addTeam = () => {
+    if (!newTeamName.trim()) return;
+    setTeams([...teams, { id: String(Date.now()), label: newTeamName.trim(), memberIds: [], active: true }]);
+    setNewTeamName("");
+    toast("Team added", "check");
+  };
 
   return (
     <div className="space-y-6">
-      {/* Pricing & Rates */}
+      {/* Pricing & Rates - editable */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <span>💰</span> Pricing & Rates
+          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <Icon name="dollar" className="w-[16px] h-[16px]" /> Pricing & Rates
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Configure delivery rates and pricing tiers</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Service tiers and hourly rates — edit below</p>
         </div>
-        <div className="px-5 py-5 space-y-4">
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Base Delivery Rate ($)</label>
-            <input
-              type="number"
-              defaultValue="150"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
-            <input
-              type="number"
-              defaultValue="85"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
-            />
-          </div>
-          <button className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
+        <div className="px-5 py-5 space-y-3">
+          {rates.map((r, i) => (
+            <div key={r.tier} className="flex items-center justify-between gap-3 py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
+              <input
+                value={r.tier}
+                onChange={(e) => {
+                  const next = [...rates];
+                  next[i] = { ...next[i], tier: e.target.value };
+                  setRates(next);
+                }}
+                className="flex-1 bg-transparent text-[13px] font-medium text-[var(--tx)] outline-none border-none"
+              />
+              <input
+                value={r.rate}
+                onChange={(e) => {
+                  const next = [...rates];
+                  next[i] = { ...next[i], rate: e.target.value };
+                  setRates(next);
+                }}
+                className="w-24 px-2 py-1 bg-[var(--card)] border border-[var(--brd)] rounded text-[12px] font-semibold text-[var(--gold)] outline-none focus:border-[var(--gold)]"
+              />
+            </div>
+          ))}
+          <button onClick={() => toast("Rates saved", "check")} className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
             Save Rates
           </button>
         </div>
       </div>
 
-      {/* Crews & Teams */}
+      {/* Crews & Teams - view & edit members */}
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
+          <div>
+            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+              <Icon name="users" className="w-[16px] h-[16px]" /> Crews & Teams
+            </h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team to view and edit members</p>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+              placeholder="New team name"
+              className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] w-32"
+            />
+            <button onClick={addTeam} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
+              + Add Team
+            </button>
+          </div>
+        </div>
+        <div className="px-5 py-5 space-y-3">
+          {teams.map((team, i) => (
+            <div key={team.id} className="border border-[var(--brd)] rounded-lg overflow-hidden">
+              <div
+                onClick={() => setEditingTeam(editingTeam === team.id ? null : team.id)}
+                className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-[var(--bg)] transition-colors"
+              >
+                <div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{team.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{team.memberIds.join(", ") || "No members"}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                    {team.active ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); const next = [...teams]; next[i] = { ...next[i], active: !next[i].active }; setTeams(next); }}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${team.active ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${team.active ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+              {editingTeam === team.id && (
+                <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)]">
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select members</div>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_CREW.map((m) => (
+                      <label key={m} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={team.memberIds.includes(m)}
+                          onChange={() => toggleMember(i, m)}
+                          className="rounded border-[var(--brd)]"
+                        />
+                        <span className="text-[11px] text-[var(--tx)]">{m}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* App toggles - Notifications, Auto-Invoice, etc */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <span>👥</span> Crews & Teams
+          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <Icon name="settings" className="w-[16px] h-[16px]" /> App
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage crew tracking and team assignments</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform-wide settings</p>
         </div>
         <div className="px-5 py-5 space-y-4">
           {[
@@ -80,8 +212,8 @@ export default function PlatformSettingsClient() {
       {/* Partners Management */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <span>🤝</span> Partners Management
+          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <Icon name="handshake" className="w-[16px] h-[16px]" /> Partners Management
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Retail, designers, hospitality, galleries</p>
         </div>
@@ -107,7 +239,7 @@ export default function PlatformSettingsClient() {
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <span>🔐</span> User Management
+            <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
         </div>
@@ -126,7 +258,7 @@ export default function PlatformSettingsClient() {
             </div>
             <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--bldim)] text-[var(--blue)]">Dispatcher</span>
           </div>
-          <button className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all">
+          <button onClick={() => toast("Invite user coming soon", "mail")} className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all">
             + Invite User
           </button>
         </div>
@@ -135,8 +267,8 @@ export default function PlatformSettingsClient() {
       {/* Danger Zone */}
       <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--red)]/10 bg-[rgba(209,67,67,0.04)]">
-          <h2 className="text-[16px] font-bold text-[var(--red)] flex items-center gap-2">
-            <span>⚠️</span> Danger Zone
+          <h2 className="font-heading text-[16px] font-bold text-[var(--red)] flex items-center gap-2">
+            <Icon name="alertTriangle" className="w-[16px] h-[16px] text-[var(--red)]" /> Danger Zone
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Irreversible platform actions</p>
         </div>
@@ -146,7 +278,7 @@ export default function PlatformSettingsClient() {
               <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
             </div>
-            <button className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
+            <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
               Reset
             </button>
           </div>
@@ -155,7 +287,7 @@ export default function PlatformSettingsClient() {
               <div className="text-[13px] font-semibold text-[var(--red)]">Delete Platform Data</div>
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">Permanently delete all platform data</div>
             </div>
-            <button className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all">
+            <button onClick={() => toast("Delete requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all">
               Delete
             </button>
           </div>

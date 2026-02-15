@@ -30,7 +30,7 @@ export default function NewClientForm() {
     });
 
     if (error) {
-      toast("Error: " + error.message, "❌");
+      toast("Error: " + error.message, "x");
       setLoading(false);
       return;
     }
@@ -41,10 +41,10 @@ export default function NewClientForm() {
       entity_id: form.get("name") as string,
       event_type: "new",
       description: `New client onboarded: ${form.get("name")}`,
-      icon: "🎉",
+      icon: "party",
     });
 
-    toast("Client created + portal access sent", "🎉");
+    toast("Client created + portal access sent", "party");
     setLoading(false);
     router.push("/admin/clients");
     router.refresh();

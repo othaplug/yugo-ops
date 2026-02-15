@@ -29,7 +29,7 @@ export default function CrewGPSPage() {
             })
             .eq("id", crewId);
 
-          setStatus(`📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)} — sent`);
+          setStatus(`GPS ${latitude.toFixed(4)}, ${longitude.toFixed(4)} — sent`);
         },
         (err) => setStatus(`GPS error: ${err.message}`),
         { enableHighAccuracy: true }
@@ -56,7 +56,7 @@ export default function CrewGPSPage() {
     <main className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
       <div className="w-full max-w-sm space-y-4">
         <div className="text-center">
-          <div className="font-serif text-lg tracking-[2px]">YUGO</div>
+          <div className="font-heading text-lg tracking-[2px]">YUGO</div>
           <div className="text-[8px] font-bold text-[#C9A962] tracking-wider">CREW TRACKING</div>
         </div>
 

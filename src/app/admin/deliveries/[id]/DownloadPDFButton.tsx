@@ -31,7 +31,7 @@ export default function DownloadPDFButton({ delivery }: { delivery: any }) {
     a.download = `${delivery.delivery_number || "delivery"}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast("Delivery summary downloaded", "📄");
+    toast("Delivery summary downloaded", "file");
     setLoading(false);
   };
 
@@ -41,7 +41,7 @@ export default function DownloadPDFButton({ delivery }: { delivery: any }) {
       disabled={loading}
       className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
     >
-      {loading ? "Generating..." : "📄 Download"}
+      {loading ? "Generating..." : "Download"}
     </button>
   );
 }

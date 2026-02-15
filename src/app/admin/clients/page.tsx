@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import ClientRow from "./ClientRow";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -11,13 +12,19 @@ export default async function ClientsPage() {
   const all = clients || [];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
         <div className="flex gap-1.5 mb-3">
           <Link
             href="/admin/clients/new"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
           >
             + Add Client
+          </Link>
+          <Link
+            href="/admin/revenue"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          >
+            Export
           </Link>
         </div>
 
@@ -35,11 +42,9 @@ export default async function ClientsPage() {
             </thead>
             <tbody>
               {all.map((c) => (
-                <tr key={c.id} className="hover:bg-[var(--gdim)] transition-colors cursor-pointer">
-                  <td className="px-3 py-2 text-[10px] font-semibold border-b border-[var(--brd)]">
-                    <Link href={`/admin/clients/${c.id}`} className="hover:text-[var(--gold)]">
-                      {c.name}
-                    </Link>
+                <ClientRow key={c.id} href={`/admin/clients/${c.id}`}>
+                  <td className="px-3 py-2 text-[10px] font-semibold border-b border-[var(--brd)] group-hover:text-[var(--gold)] transition-colors">
+                    {c.name}
                   </td>
                   <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type}</td>
                   <td className="px-3 py-2 border-b border-[var(--brd)]">
@@ -53,7 +58,7 @@ export default async function ClientsPage() {
                   <td className="px-3 py-2 border-b border-[var(--brd)]">
                     <div className={`w-2 h-2 rounded-full ${c.health === "good" ? "bg-[var(--grn)]" : "bg-[var(--org)]"}`} />
                   </td>
-                </tr>
+                </ClientRow>
               ))}
             </tbody>
           </table>
