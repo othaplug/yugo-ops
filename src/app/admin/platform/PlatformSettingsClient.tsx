@@ -6,15 +6,17 @@ import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
 import InvitePartnerModal from "./InvitePartnerModal";
+import AddTeamMemberModal from "./AddTeamMemberModal";
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
 
 const RATES_KEY = "yugo-platform-rates";
 
 export default function PlatformSettingsClient() {
-  const toast = useToast();
+  const { toast } = useToast();
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
+  const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const [crewTracking, setCrewTracking] = useState(true);
   const [partnerPortal, setPartnerPortal] = useState(false);
   const [autoInvoicing, setAutoInvoicing] = useState(true);
@@ -36,6 +38,7 @@ export default function PlatformSettingsClient() {
   const [ratesSaving, setRatesSaving] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
       const stored = localStorage.getItem(RATES_KEY);
       if (stored) {
@@ -102,13 +105,22 @@ export default function PlatformSettingsClient() {
           ))}
           <button
             onClick={async () => {
+              if (typeof window === "undefined") {
+                toast("Cannot save in this environment", "x");
+                return;
+              }
               setRatesSaving(true);
               try {
-                localStorage.setItem(RATES_KEY, JSON.stringify(rates));
+                const data = JSON.stringify(rates);
+                localStorage.setItem(RATES_KEY, data);
                 await new Promise((r) => setTimeout(r, 400));
                 toast("Rates saved", "check");
-              } catch (_) {
-                toast("Failed to save", "x");
+              } catch (e: unknown) {
+                const err = e as Error;
+                const msg = err?.name === "QuotaExceededError"
+                  ? "Storage full — clear some data"
+                  : "Failed to save rates";
+                toast(msg, "x");
               } finally {
                 setRatesSaving(false);
               }
@@ -130,14 +142,17 @@ export default function PlatformSettingsClient() {
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team to view and edit members</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
               placeholder="New team name"
               className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] w-32"
             />
-            <button onClick={addTeam} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
+            <button onClick={addTeam} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
+              + Add Team
+            </button>
+            <button onClick={() => setAddTeamMemberOpen(true)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
               + Add Team Member
             </button>
           </div>
@@ -299,6 +314,12 @@ export default function PlatformSettingsClient() {
 
       <InviteUserModal open={inviteUserOpen} onClose={() => setInviteUserOpen(false)} />
       <InvitePartnerModal open={invitePartnerOpen} onClose={() => setInvitePartnerOpen(false)} />
+      <AddTeamMemberModal
+        open={addTeamMemberOpen}
+        onClose={() => setAddTeamMemberOpen(false)}
+        teams={teams}
+        onTeamsChange={setTeams}
+      />
 
       {/* Danger Zone */}
       <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
