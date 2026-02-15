@@ -9,6 +9,7 @@ import { ThemeProvider } from "./ThemeContext";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 import SearchBox from "./SearchBox";
+import ClientDate from "./ClientDate";
 import { Icons } from "./SidebarIcons";
 
 const SIDEBAR_SECTIONS = [
@@ -54,8 +55,8 @@ const SIDEBAR_SECTIONS = [
   },
 ];
 
-const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/admin": { title: "Command Center", subtitle: new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) },
+const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDate?: boolean }> = {
+  "/admin": { title: "Command Center", subtitle: "", useClientDate: true },
   "/admin/deliveries": { title: "All Deliveries", subtitle: "Scheduling & tracking" },
   "/admin/calendar": { title: "Crew Calendar", subtitle: "Feb 10-14, 2026" },
   "/admin/crew": { title: "Crew Tracking", subtitle: "Live GPS positions" },
@@ -74,14 +75,14 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
 };
 
-function getPageTitle(pathname: string): { title: string; subtitle: string } {
+function getPageTitle(pathname: string): { title: string; subtitle: string; useClientDate?: boolean } {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  if (pathname.startsWith("/admin/deliveries/")) return { title: "Delivery Detail", subtitle: "" };
-  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project Detail", subtitle: "" };
-  if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "" };
-  if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Delivery", subtitle: "" };
-  if (pathname.match(/^\/admin\/moves\/[a-f0-9-]+$/i)) return { title: "Move Detail", subtitle: "" };
-  return { title: "OPS+", subtitle: "" };
+  if (pathname.startsWith("/admin/deliveries/")) return { title: "Delivery Detail", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project Detail", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Delivery", subtitle: "", useClientDate: false };
+  if (pathname.match(/^\/admin\/moves\/[a-f0-9-]+$/i)) return { title: "Move Detail", subtitle: "", useClientDate: false };
+  return { title: "OPS+", subtitle: "", useClientDate: false };
 }
 
 const SIDEBAR_WIDTH = 220;
@@ -90,7 +91,7 @@ export default function AdminShell({ user, children }: { user: any; children: Re
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
-  const { title, subtitle } = getPageTitle(pathname);
+  const { title, subtitle, useClientDate } = getPageTitle(pathname);
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -211,7 +212,11 @@ export default function AdminShell({ user, children }: { user: any; children: Re
                   </button>
                   <div className="min-w-0 flex-1 py-0.5">
                     <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
-                    {subtitle && <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">{subtitle}</div>}
+                    {(subtitle || useClientDate) && (
+                      <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">
+                        {useClientDate ? <ClientDate /> : subtitle}
+                      </div>
+                    )}
                   </div>
                 </div>
 
