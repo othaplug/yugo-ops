@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../../components/Topbar";
 import Badge from "../../components/Badge";
 
 export default async function OfficeMovesPage() {
@@ -15,9 +14,7 @@ export default async function OfficeMovesPage() {
   const pipeline = all.reduce((sum, m) => sum + Number(m.estimate || 0), 0);
 
   return (
-    <>
-      <Topbar title="Office Moves" subtitle="Commercial logistics" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
         {/* Metrics */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
@@ -60,7 +57,6 @@ export default async function OfficeMovesPage() {
             </div>
           ))}
         </div>
-      </div>
-    </>
+    </div>
   );
 }

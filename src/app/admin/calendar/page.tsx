@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../components/Topbar";
 import CalendarView from "./CalendarView";
 
 export default async function CalendarPage() {
@@ -12,15 +11,12 @@ export default async function CalendarPage() {
   ]);
 
   return (
-    <>
-      <Topbar title="Crew Calendar" subtitle="Feb 2026" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
-        <CalendarView
-          deliveries={deliveries || []}
-          moves={moves || []}
-          crews={crews || []}
-        />
-      </div>
-    </>
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
+      <CalendarView
+        deliveries={deliveries || []}
+        moves={moves || []}
+        crews={crews || []}
+      />
+    </div>
   );
 }

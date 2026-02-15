@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../../components/Topbar";
 import Badge from "../../components/Badge";
 
 export default async function DesignersPage() {
@@ -10,9 +9,7 @@ export default async function DesignersPage() {
   ]);
 
   return (
-    <>
-      <Topbar title="Designer Dashboard" subtitle="Projects & vendors" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
             <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Partners</div>
@@ -48,7 +45,6 @@ export default async function DesignersPage() {
             </div>
           ))}
         </div>
-      </div>
-    </>
+    </div>
   );
 }

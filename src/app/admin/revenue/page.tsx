@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../components/Topbar";
 
 export default async function RevenuePage() {
   const supabase = await createClient();
@@ -25,9 +24,7 @@ export default async function RevenuePage() {
     .slice(0, 5);
 
   return (
-    <>
-      <Topbar title="Revenue" subtitle="Financial overview" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
@@ -84,7 +81,6 @@ export default async function RevenuePage() {
             })}
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

@@ -7,9 +7,7 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <>
-      <Topbar title="Settings" subtitle="Account & platform configuration" />
-      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 space-y-6">
         {/* Account Section */}
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
@@ -206,7 +204,6 @@ export default async function SettingsPage() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
