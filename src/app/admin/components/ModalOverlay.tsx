@@ -16,17 +16,17 @@ export default function ModalOverlay({ open, onClose, title, children, maxWidth 
   const maxW = maxWidth === "sm" ? "max-w-sm" : maxWidth === "lg" ? "max-w-lg" : "max-w-md";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-end sm:justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative w-full ${maxW} bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl animate-fade-up ml-auto sm:ml-0`}
+        className={`relative w-full ${maxW} max-h-[90vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl animate-fade-up overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
           <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">{title}</h2>
           <button
             onClick={onClose}
@@ -36,7 +36,7 @@ export default function ModalOverlay({ open, onClose, title, children, maxWidth 
             <Icon name="x" className="w-[16px] h-[16px]" />
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto flex-1 min-h-0">{children}</div>
       </div>
     </div>
   );

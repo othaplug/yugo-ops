@@ -330,22 +330,13 @@ export default function PlatformSettingsClient() {
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Irreversible platform actions</p>
         </div>
         <div className="px-5 py-5 space-y-3">
-          <div className="flex items-center justify-between py-3 border-b border-[var(--brd)]">
+          <div className="flex items-center justify-between py-3">
             <div>
               <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
             </div>
             <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
               Reset
-            </button>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="text-[13px] font-semibold text-[var(--red)]">Delete Platform Data</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Permanently delete all platform data</div>
-            </div>
-            <button onClick={() => toast("Delete requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all">
-              Delete
             </button>
           </div>
         </div>

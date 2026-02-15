@@ -50,14 +50,14 @@ export default function EditDeliveryModal({ delivery }: EditDeliveryModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-end sm:justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setOpen(false)} aria-hidden="true" />
-      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full sm:w-[480px] max-w-[480px] max-h-[85dvh] overflow-y-auto shadow-2xl ml-auto sm:ml-0" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
+      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full sm:w-[480px] max-w-[480px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
           <h3 className="text-[13px] font-bold">Edit {delivery.delivery_number}</h3>
           <button onClick={() => setOpen(false)} className="text-[var(--tx3)] text-lg">&times;</button>
         </div>
-        <form onSubmit={handleSave} className="p-4 space-y-3">
+        <form onSubmit={handleSave} className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           <Field label="Customer">
             <input name="customer_name" defaultValue={delivery.customer_name} className="field-input" />
           </Field>
