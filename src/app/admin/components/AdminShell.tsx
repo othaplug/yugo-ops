@@ -58,7 +58,7 @@ const SIDEBAR_SECTIONS = [
 const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDate?: boolean }> = {
   "/admin": { title: "Command Center", subtitle: "", useClientDate: true },
   "/admin/deliveries": { title: "All Deliveries", subtitle: "Scheduling & tracking" },
-  "/admin/calendar": { title: "Crew Calendar", subtitle: "Feb 10-14, 2026" },
+  "/admin/calendar": { title: "Calendar", subtitle: "Feb 10-14, 2026" },
   "/admin/crew": { title: "Crew Tracking", subtitle: "Live GPS positions" },
   "/admin/partners/retail": { title: "Retail Partners", subtitle: "White-glove delivery" },
   "/admin/partners/designers": { title: "Designer Dashboard", subtitle: "Projects & vendors" },
@@ -127,7 +127,7 @@ export default function AdminShell({ user, children }: { user: any; children: Re
                 <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${sidebarCollapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : ""}`}>
                   <div className="flex items-center gap-1.5">
                     <span className="font-heading text-[17px] tracking-[2px] text-[var(--tx)] font-semibold drop-shadow-sm">YUGO</span>
-                    <span className="text-[8px] font-bold tracking-[1.2px] text-[var(--gold)] px-[7px] py-[3px] rounded-md drop-shadow-sm">
+                    <span className="text-[9px] font-bold tracking-[2px] text-[var(--gold)] px-[8px] py-[4px] rounded-md bg-[var(--gdim)]/60 border border-[var(--gold)]/20 shadow-[0_0_12px_rgba(201,169,98,0.15)]">
                       OPS+
                     </span>
                   </div>

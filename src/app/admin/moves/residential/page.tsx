@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import Badge from "../../components/Badge";
 import { Icon } from "@/components/AppIcons";
+import BackButton from "../../components/BackButton";
+import MoveNotifyButton from "../MoveNotifyButton";
 
 export default async function ResidentialMovesPage() {
   const supabase = await createClient();
@@ -17,6 +19,7 @@ export default async function ResidentialMovesPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+        <div className="mb-4"><BackButton label="Back" /></div>
         {/* Metrics - clickable */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
           <Link href="/admin/moves/residential" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
@@ -39,28 +42,32 @@ export default async function ResidentialMovesPage() {
         {/* Move List */}
         <div className="flex flex-col gap-1">
           {all.map((m) => (
-            <Link
+            <div
               key={m.id}
-              href={`/admin/moves/${m.id}`}
-              className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all duration-200"
+              className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all duration-200 group"
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--gdim)] shrink-0 text-[var(--tx2)]">
-                <Icon name="home" className="w-[16px] h-[16px]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-semibold truncate">{m.client_name}</div>
-                <div className="text-[9px] text-[var(--tx3)] truncate">
-                  {m.from_address} → {m.to_address}
+              <Link href={`/admin/moves/${m.id}`} className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--gdim)] shrink-0 text-[var(--tx2)]">
+                  <Icon name="home" className="w-[16px] h-[16px]" />
                 </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-[10px] text-[var(--tx3)]">{m.scheduled_date}</div>
-                <div className="text-[10px] font-bold text-[var(--gold)]">
-                  ${Number(m.estimate || 0).toLocaleString()}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] font-semibold truncate">{m.client_name}</div>
+                  <div className="text-[9px] text-[var(--tx3)] truncate">
+                    {m.from_address} → {m.to_address}
+                  </div>
                 </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[10px] text-[var(--tx3)]">{m.scheduled_date}</div>
+                  <div className="text-[10px] font-bold text-[var(--gold)]">
+                    ${Number(m.estimate || 0).toLocaleString()}
+                  </div>
+                </div>
+                <Badge status={m.status} />
+              </Link>
+              <div className="shrink-0">
+                <MoveNotifyButton move={m} />
               </div>
-              <Badge status={m.status} />
-            </Link>
+            </div>
           ))}
         </div>
     </div>

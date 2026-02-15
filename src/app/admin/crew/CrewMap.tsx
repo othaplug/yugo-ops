@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ModalOverlay from "../components/ModalOverlay";
 
 interface Crew {
   id: string;
@@ -15,6 +16,7 @@ interface Crew {
 export default function CrewMap({ crews }: { crews: Crew[] }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || loaded) return;
@@ -30,6 +32,7 @@ export default function CrewMap({ crews }: { crews: Crew[] }) {
     // Dynamic import — only runs in browser
     import("leaflet").then((L) => {
       const map = L.map(mapRef.current!, { zoomControl: false }).setView([43.665, -79.385], 13);
+      (map.getContainer() as HTMLElement).style.zIndex = "1";
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
         maxZoom: 19,
@@ -58,27 +61,64 @@ export default function CrewMap({ crews }: { crews: Crew[] }) {
 
   return (
     <>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-3">
+      <div className="mb-4">
+        <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Crew Tracking</h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team for details</p>
+      </div>
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
         <div
           ref={mapRef}
-          className="w-full rounded-lg border border-[var(--brd)]"
-          style={{ height: 350 }}
+          className="w-full rounded-lg border border-[var(--brd)] relative z-0"
+          style={{ height: 380 }}
         />
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="grid md:grid-cols-2 gap-3">
         {crews.map((c) => (
-          <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold text-[var(--gold)] bg-[var(--gdim)]">
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => setSelectedCrew(c)}
+            className="flex items-center gap-3 px-4 py-3.5 bg-[var(--card)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)] transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
               {c.name?.replace("Team ", "")}
             </div>
-            <div className="flex-1">
-              <div className="text-[11px] font-semibold">{c.name} — {(c.members || []).join(", ")}</div>
-              <div className="text-[9px] text-[var(--tx3)]">{c.status === "en-route" ? `En route • ${c.current_job}` : c.current_job || "Standby"}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] font-bold text-[var(--tx)]">{c.name}</div>
+              <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">{(c.members || []).join(", ")}</div>
+              <div className="text-[9px] text-[var(--tx2)] mt-0.5">{c.status === "en-route" ? `En route • ${c.current_job}` : c.current_job || "Standby"}</div>
             </div>
-            <div className={`w-2 h-2 rounded-full ${c.status === "en-route" ? "bg-[var(--org)]" : "bg-[var(--grn)]"}`} />
-          </div>
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.status === "en-route" ? "bg-[var(--org)] animate-pulse" : "bg-[var(--grn)]"}`} />
+          </button>
         ))}
       </div>
+
+      <ModalOverlay open={!!selectedCrew} onClose={() => setSelectedCrew(null)} title={selectedCrew?.name || ""} maxWidth="sm">
+        {selectedCrew && (
+          <div className="p-5 space-y-4">
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</div>
+              <div className={`text-[13px] font-semibold ${selectedCrew.status === "en-route" ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+                {selectedCrew.status === "en-route" ? "En route" : "Standby"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current Job</div>
+              <div className="text-[13px] text-[var(--tx)]">{selectedCrew.current_job || "No active job"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team Members</div>
+              <div className="flex flex-wrap gap-2">
+                {(selectedCrew.members || []).map((m) => (
+                  <span key={m} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </ModalOverlay>
     </>
   );
 }

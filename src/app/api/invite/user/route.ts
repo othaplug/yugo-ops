@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resend } from "@/lib/resend";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,6 +8,18 @@ export async function POST(req: NextRequest) {
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { error: insertError } = await supabase.from("invitations").insert({
+      email: email.trim().toLowerCase(),
+      name: (name || "").trim(),
+      role: role || "dispatcher",
+      status: "pending",
+    });
+
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 400 });
     }
 
     const roleLabel = role === "admin" ? "Administrator" : "Dispatcher";
@@ -30,14 +43,14 @@ export async function POST(req: NextRequest) {
     if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_your_api_key_here") {
       await resend.emails.send({
         from: "Yugo OPS+ <notifications@yugo.ca>",
-        to: email,
+        to: email.trim(),
         subject,
         html,
       });
     }
 
     return NextResponse.json({ ok: true, message: "Invitation sent" });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to send invitation" }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to send invitation" }, { status: 500 });
   }
 }

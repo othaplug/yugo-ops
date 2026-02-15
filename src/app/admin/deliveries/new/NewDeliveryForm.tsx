@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BackButton from "../../components/BackButton";
 
 interface Org {
   id: string;
@@ -12,6 +13,8 @@ interface Org {
 
 export default function NewDeliveryForm({ organizations }: { organizations: Org[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateFromUrl = searchParams.get("date") || "";
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +52,9 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <>
+      <div className="mb-4"><BackButton label="Back" /></div>
+      <form onSubmit={handleSubmit} className="space-y-3">
       <Field label="Client">
         <select name="org_id" required className="field-input">
           <option value="">Select client...</option>
@@ -68,7 +73,7 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
         <input name="delivery_address" required placeholder="Delivery address" className="field-input" />
       </Field>
       <Field label="Date">
-        <input name="scheduled_date" type="date" required className="field-input" />
+        <input name="scheduled_date" type="date" required className="field-input" defaultValue={dateFromUrl} />
       </Field>
       <Field label="Time Slot">
         <input name="time_slot" placeholder="e.g. 9:00 AM" className="field-input" />
@@ -90,6 +95,7 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
         {loading ? "Creating..." : "Create Delivery"}
       </button>
     </form>
+    </>
   );
 }
 

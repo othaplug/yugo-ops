@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import BackButton from "../components/BackButton";
 import SettingsForm from "./SettingsForm";
 import ThemeToggle from "./ThemeToggle";
 import NotificationToggles from "./NotificationToggles";
@@ -12,6 +13,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 space-y-6 animate-fade-up">
+        <div className="mb-4"><BackButton label="Back" /></div>
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <a href="#personal" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Personal</a>

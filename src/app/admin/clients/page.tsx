@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import BackButton from "../components/BackButton";
 import ClientRow from "./ClientRow";
 
 export default async function ClientsPage() {
@@ -13,7 +14,9 @@ export default async function ClientsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
-        <div className="flex gap-1.5 mb-3">
+        <div className="flex items-center justify-between mb-4">
+          <BackButton label="Back" />
+          <div className="flex gap-1.5">
           <Link
             href="/admin/clients/new"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
@@ -26,6 +29,7 @@ export default async function ClientsPage() {
           >
             Export
           </Link>
+          </div>
         </div>
 
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">

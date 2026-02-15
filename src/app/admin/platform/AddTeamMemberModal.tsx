@@ -30,7 +30,9 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
     ? ALL_CREW.filter((m) => m.toLowerCase().includes(search.toLowerCase()))
     : ALL_CREW;
 
-  const handleAdd = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleAdd = async () => {
     if (!selectedMember || !selectedTeamId) {
       toast("Select a member and team", "x");
       return;
@@ -42,9 +44,25 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
       toast(`${selectedMember} is already in ${team.label}`, "x");
       return;
     }
+    const newMembers = [...team.memberIds, selectedMember];
     const next = [...teams];
-    next[teamIdx] = { ...next[teamIdx], memberIds: [...next[teamIdx].memberIds, selectedMember] };
+    next[teamIdx] = { ...next[teamIdx], memberIds: newMembers };
     onTeamsChange(next);
+
+    setSaving(true);
+    const res = await fetch("/api/crews/update-members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crewId: team.id, members: newMembers }),
+    });
+    setSaving(false);
+
+    if (!res.ok) {
+      const data = await res.json();
+      toast(data.error || "Failed to add member", "x");
+      onTeamsChange(teams);
+      return;
+    }
     toast(`${selectedMember} added to ${team.label}`, "check");
     setSelectedMember(null);
     setSelectedTeamId("");
@@ -114,10 +132,10 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           </button>
           <button
             type="submit"
-            disabled={!selectedMember || !selectedTeamId}
+            disabled={!selectedMember || !selectedTeamId || saving}
             className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
-            Add to Team
+            {saving ? "Adding…" : "Add to Team"}
           </button>
         </div>
       </form>

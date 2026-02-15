@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Project } from "../projectsData";
+import BackButton from "../../../components/BackButton";
 import ViewDesignerModal from "./ViewDesignerModal";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -35,16 +36,7 @@ export default function ProjectDetailClient({ project }: { project: Project }) {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5 animate-fade-up">
-      {/* Back link */}
-      <Link
-        href="/admin/partners/designers"
-        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        Back to Designer Dashboard
-      </Link>
+      <div className="mb-2"><BackButton label="Back" /></div>
 
       {/* Header */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">

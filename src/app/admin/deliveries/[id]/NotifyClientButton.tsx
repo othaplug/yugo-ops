@@ -32,7 +32,7 @@ export default function NotifyClientButton({ delivery }: { delivery: any }) {
     <button 
       onClick={handleNotify} 
       disabled={loading}
-      className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--blu)] text-white hover:opacity-90 transition-all disabled:opacity-50"
+      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all disabled:opacity-50"
     >
       {loading ? "Sending..." : "Notify Client"}
     </button>

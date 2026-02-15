@@ -1,45 +1,67 @@
 import { createClient } from "@/lib/supabase/server";
-import MessageThreads from "./MessageThreads";
+import MessagesClient from "./MessagesClient";
+import { SAMPLE_MESSAGES } from "./sampleMessages";
 
 export default async function MessagesPage() {
   const supabase = await createClient();
-  const { data: messages } = await supabase
-    .from("messages")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let all: { id: string; thread_id: string; sender_name: string; sender_type: string; content: string; is_read: boolean; created_at: string }[] = [];
 
-  const all = messages || [];
+  try {
+    const { data: messages } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: true });
+    all = messages || [];
+
+    // Seed sample messages when table is empty (dev/demo)
+    if (all.length === 0) {
+      const toInsert = SAMPLE_MESSAGES.map(({ thread_id, sender_name, sender_type, content, is_read, created_at }) => ({
+        thread_id,
+        sender_name,
+        sender_type,
+        content,
+        is_read,
+        created_at,
+      }));
+      const { error } = await supabase.from("messages").insert(toInsert);
+      if (!error) {
+        const { data: seeded } = await supabase
+          .from("messages")
+          .select("*")
+          .order("created_at", { ascending: true });
+        all = seeded || [];
+      }
+    }
+  } catch {
+    // Table may not exist yet; pass empty threads
+  }
 
   // Group messages by thread_id
-  const threads: Record<string, typeof all> = {};
+  let threads: Record<string, typeof all> = {};
   all.forEach((msg) => {
     if (!threads[msg.thread_id]) threads[msg.thread_id] = [];
     threads[msg.thread_id].push(msg);
   });
 
+  // Fallback: use sample data when DB is empty (e.g. table doesn't exist)
+  if (Object.keys(threads).length === 0) {
+    threads = SAMPLE_MESSAGES.reduce((acc, m, i) => {
+      const row = { ...m, id: `sample-${i}` };
+      if (!acc[m.thread_id]) acc[m.thread_id] = [];
+      acc[m.thread_id].push(row as typeof all[0]);
+      return acc;
+    }, {} as Record<string, typeof all>);
+    all = Object.values(threads).flat();
+  }
+
   const unreadCount = all.filter((m) => !m.is_read).length;
+  const slackConnected = !!process.env.SLACK_BOT_TOKEN;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
-        {/* Metrics */}
-        <div className="grid grid-cols-2 gap-2 mb-4 max-w-[200px]">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Threads</div>
-            <div className="text-xl font-bold font-heading">{Object.keys(threads).length}</div>
-          </div>
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Unread</div>
-            <div className="text-xl font-bold font-heading text-[var(--gold)]">{unreadCount}</div>
-          </div>
-        </div>
-
-        {/* Slack integration note */}
-        <div className="mb-4 px-4 py-2.5 bg-[var(--gdim)]/50 border border-[var(--gold)]/20 rounded-lg">
-          <div className="text-[10px] font-semibold text-[var(--gold)]">Slack connected</div>
-          <div className="text-[9px] text-[var(--tx3)] mt-0.5">Messages sync with #ops-inbox. Reply from admin or Slack.</div>
-        </div>
-
-        <MessageThreads threads={threads} />
-    </div>
+    <MessagesClient
+      initialThreads={threads}
+      initialUnreadCount={unreadCount}
+      slackConnected={slackConnected}
+    />
   );
 }

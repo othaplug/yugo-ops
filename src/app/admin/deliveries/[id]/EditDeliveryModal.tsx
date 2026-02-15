@@ -50,9 +50,9 @@ export default function EditDeliveryModal({ delivery }: EditDeliveryModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
-      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full sm:w-[480px] max-w-[480px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full sm:w-[480px] max-w-[480px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden m-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
           <h3 className="text-[13px] font-bold">Edit {delivery.delivery_number}</h3>
           <button onClick={() => setOpen(false)} className="text-[var(--tx3)] text-lg">&times;</button>

@@ -1,59 +1,72 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import Badge from "../../components/Badge";
+import BackButton from "../../components/BackButton";
 import { Icon } from "@/components/AppIcons";
+import MoveNotifyButton from "../MoveNotifyButton";
+import ModalOverlay from "../../components/ModalOverlay";
 
 interface MoveDetailClientProps {
   move: any;
   isOffice?: boolean;
 }
 
+const TEAM_MEMBERS = ["Michael T.", "Sarah K.", "James L.", "Elena M."];
+
 export default function MoveDetailClient({ move, isOffice }: MoveDetailClientProps) {
+  const [crewModalOpen, setCrewModalOpen] = useState(false);
+  const [assignedMembers, setAssignedMembers] = useState<Set<string>>(new Set(TEAM_MEMBERS));
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
   const daysUntil = move.scheduled_date ? Math.ceil((new Date(move.scheduled_date).getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
 
+  const toggleMember = (name: string) => {
+    setAssignedMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5 animate-fade-up">
-      <Link href={isOffice ? "/admin/moves/office" : "/admin/moves/residential"} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors">
-        ← Back
-      </Link>
+      <BackButton label="Back" />
 
       {/* Header */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{move.client_name}</h1>
-          <Badge status={move.status} />
-          <span className="text-[11px] text-[var(--tx3)]">
-            <Icon name={isOffice ? "building" : "home"} className="w-[14px] h-[14px] inline-block align-middle mr-1" />
-            {isOffice ? "Office" : "Residential"} Move
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{move.client_name}</h1>
+            <Badge status={move.status} />
+            <span className="text-[11px] text-[var(--tx3)]">
+              <Icon name={isOffice ? "building" : "home"} className="w-[14px] h-[14px] inline-block align-middle mr-1" />
+              {isOffice ? "Office" : "Residential"} Move
+            </span>
+          </div>
+          <MoveNotifyButton move={move} />
         </div>
 
-        {/* Ops Status Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 py-3 px-4 bg-[var(--bg)] rounded-lg border border-[var(--brd)]">
-          <div>
+        {/* Status Stage Card - upgraded */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-4 px-4 bg-[var(--bg)] rounded-xl border border-[var(--brd)]">
+          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Status</div>
-            <div className="text-[11px] font-semibold text-[var(--tx)] capitalize">{move.status}</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)] capitalize mt-0.5">{move.status}</div>
           </div>
-          <div>
+          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Stage</div>
-            <div className="text-[11px] font-semibold text-[var(--tx)]">Scheduled</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">Scheduled</div>
           </div>
-          <div>
+          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Next Action</div>
-            <div className="text-[11px] font-semibold text-[var(--tx)]">Delivery reusable totes</div>
+            <div className="text-[12px] font-semibold text-[var(--gold)] mt-0.5">Deliver Supplies</div>
           </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Risk Level</div>
-            <div className="text-[11px] font-semibold text-[var(--grn)]">Low</div>
-          </div>
-          <div>
+          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Last Updated</div>
-            <div className="text-[11px] font-semibold text-[var(--tx2)]">2 hours ago</div>
+            <div className="text-[12px] font-semibold text-[var(--tx2)] mt-0.5">2 hours ago</div>
           </div>
         </div>
       </div>
@@ -70,10 +83,14 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Crew Lead</div>
             <div className="text-[12px] font-semibold text-[var(--tx)]">Michael T.</div>
           </div>
-          <div>
+          <button
+            type="button"
+            onClick={() => setCrewModalOpen(true)}
+            className="text-left hover:bg-[var(--bg)] rounded-lg p-2 -m-2 transition-colors"
+          >
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Crew Size</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">4</div>
-          </div>
+            <div className="text-[12px] font-semibold text-[var(--gold)] hover:underline">{assignedMembers.size}</div>
+          </button>
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Truck</div>
             <div className="text-[12px] font-semibold text-[var(--tx)]">Sprinter 3</div>
@@ -84,6 +101,25 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
           </div>
         </div>
       </div>
+
+      <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Team Members" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <p className="text-[11px] text-[var(--tx3)]">Check or uncheck members to assign to this job.</p>
+          <div className="space-y-2">
+            {TEAM_MEMBERS.map((m) => (
+              <label key={m} className="flex items-center gap-3 p-3 rounded-lg border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={assignedMembers.has(m)}
+                  onChange={() => toggleMember(m)}
+                  className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                />
+                <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </ModalOverlay>
 
       {/* Time Intelligence */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">

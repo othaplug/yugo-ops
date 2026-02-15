@@ -7,12 +7,25 @@ import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
 import InvitePartnerModal from "./InvitePartnerModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
+import { useRouter } from "next/navigation";
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
 
 const RATES_KEY = "yugo-platform-rates";
 
-export default function PlatformSettingsClient() {
+interface Team {
+  id: string;
+  label: string;
+  memberIds: string[];
+  active: boolean;
+}
+
+interface PlatformSettingsClientProps {
+  initialTeams?: Team[];
+}
+
+export default function PlatformSettingsClient({ initialTeams = [] }: PlatformSettingsClientProps) {
+  const router = useRouter();
   const { toast } = useToast();
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
@@ -26,16 +39,15 @@ export default function PlatformSettingsClient() {
     { tier: "Estate", rate: "350" },
     { tier: "Office", rate: "3K-$25K" },
   ]);
-  const [teams, setTeams] = useState([
-    { id: "1", label: "Team A", memberIds: ["Marcus", "Devon"], active: true },
-    { id: "2", label: "Team B", memberIds: ["James", "Olu"], active: true },
-    { id: "3", label: "Team C", memberIds: ["Ryan", "Chris"], active: false },
-    { id: "4", label: "Art", memberIds: ["Specialist"], active: true },
-  ]);
+  const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [ratesSaving, setRatesSaving] = useState(false);
+
+  useEffect(() => {
+    setTeams(initialTeams);
+  }, [initialTeams]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -52,22 +64,44 @@ export default function PlatformSettingsClient() {
     ? ALL_CREW.filter((m) => m.toLowerCase().includes(memberSearch.toLowerCase()))
     : ALL_CREW;
 
-  const toggleMember = (teamIdx: number, member: string) => {
+  const toggleMember = async (teamIdx: number, member: string) => {
+    const team = teams[teamIdx];
+    const ids = team.memberIds.includes(member)
+      ? team.memberIds.filter((m) => m !== member)
+      : [...team.memberIds, member];
     const next = [...teams];
-    const ids = next[teamIdx].memberIds;
-    if (ids.includes(member)) {
-      next[teamIdx].memberIds = ids.filter((m) => m !== member);
-    } else {
-      next[teamIdx].memberIds = [...ids, member];
-    }
+    next[teamIdx] = { ...next[teamIdx], memberIds: ids };
     setTeams(next);
+
+    const res = await fetch("/api/crews/update-members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crewId: team.id, members: ids }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      toast(data.error || "Failed to update", "x");
+      setTeams(teams);
+    }
   };
 
-  const addTeam = () => {
+  const addTeam = async () => {
     if (!newTeamName.trim()) return;
-    setTeams([...teams, { id: String(Date.now()), label: newTeamName.trim(), memberIds: [], active: true }]);
+    const name = newTeamName.trim();
     setNewTeamName("");
+    const res = await fetch("/api/crews/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || "Failed to add team", "x");
+      return;
+    }
+    setTeams([...teams, { id: data.id || String(Date.now()), label: name, memberIds: [], active: true }]);
     toast("Team added", "check");
+    router.refresh();
   };
 
   return (

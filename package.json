@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "seed:messages": "npx tsx scripts/seed-messages.ts"
   },
   "dependencies": {
     "@hubspot/api-client": "^13.4.0",
@@ -32,6 +33,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "supabase": "^2.76.8",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

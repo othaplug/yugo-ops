@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/AppIcons";
-import ModalOverlay from "../../../components/ModalOverlay";
+import ModalOverlay from "@/app/admin/components/ModalOverlay";
 
 interface DesignerInfo {
   name: string;

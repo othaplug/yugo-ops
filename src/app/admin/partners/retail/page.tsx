@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 import { Icon } from "@/components/AppIcons";
 import Badge from "../../components/Badge";
 
@@ -16,6 +17,7 @@ export default async function RetailPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
+        <div className="mb-4"><BackButton label="Back" /></div>
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">

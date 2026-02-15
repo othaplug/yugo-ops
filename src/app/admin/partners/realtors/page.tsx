@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import BackButton from "../../components/BackButton";
 import Badge from "../../components/Badge";
+import { AddReferralButton } from "./RealtorsClient";
 
 export default async function RealtorsPage() {
   const supabase = await createClient();
@@ -15,6 +17,7 @@ export default async function RealtorsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+      <div className="mb-4"><BackButton label="Back" /></div>
       {/* Metrics - clickable */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <Link href="/admin/clients" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
@@ -38,9 +41,7 @@ export default async function RealtorsPage() {
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referral Pipeline</h3>
-          <Link href="/admin/clients/new" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-            + Add referral
-          </Link>
+          <AddReferralButton />
         </div>
         <table className="w-full border-collapse">
           <thead>

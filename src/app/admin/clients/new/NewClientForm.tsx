@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "../../components/Toast";
 
 export default function NewClientForm() {
   const router = useRouter();
-  const supabase = createClient();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [clientType, setClientType] = useState("retail");
@@ -17,37 +15,33 @@ export default function NewClientForm() {
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
-
-    // Insert organization
-    const { error } = await supabase.from("organizations").insert({
+    const payload = {
       name: form.get("name"),
       type: form.get("type"),
       contact_name: form.get("contact_name"),
       email: form.get("email"),
       phone: form.get("phone"),
       address: form.get("address"),
-      health: "good",
-    });
+    };
 
-    if (error) {
-      toast("Error: " + error.message, "x");
+    try {
+      const res = await fetch("/api/clients/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Failed to create client");
+
+      toast("Client created + portal access sent", "party");
+      router.push("/admin/clients");
+      router.refresh();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to create client", "x");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Log event
-    await supabase.from("status_events").insert({
-      entity_type: "client",
-      entity_id: form.get("name") as string,
-      event_type: "new",
-      description: `New client onboarded: ${form.get("name")}`,
-      icon: "party",
-    });
-
-    toast("Client created + portal access sent", "party");
-    setLoading(false);
-    router.push("/admin/clients");
-    router.refresh();
   };
 
   return (
