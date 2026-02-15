@@ -4,7 +4,7 @@ export default function GalleryPage() {
   return (
     <>
       <Topbar title="Art Gallery" subtitle="Transport & exhibitions" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         <div className="grid grid-cols-4 gap-2 mb-4">
           {[
             ["Partners", "3"],

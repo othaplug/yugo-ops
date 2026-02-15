@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Topbar from "../../components/Topbar";
 import EditDeliveryModal from "./EditDeliveryModal";
 import GenerateInvoiceButton from "./GenerateInvoiceButton";
 import NotifyClientButton from "./NotifyClientButton";
@@ -26,9 +25,7 @@ export default async function DeliveryDetailPage({ params }: { params: { id: str
   }[delivery.status] || "text-[var(--tx3)] bg-[var(--card)]";
 
   return (
-    <>
-      <Topbar title={`Delivery ${delivery.delivery_number}`} subtitle={delivery.customer_name} />
-      <div className="max-w-[1000px] mx-auto px-4 md:px-6 py-5 space-y-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5">
         {/* Header Card */}
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -132,7 +129,6 @@ export default async function DeliveryDetailPage({ params }: { params: { id: str
             <p className="text-[13px] text-[var(--tx)] leading-relaxed">{delivery.instructions}</p>
           </div>
         )}
-      </div>
-    </>
+    </div>
   );
 }

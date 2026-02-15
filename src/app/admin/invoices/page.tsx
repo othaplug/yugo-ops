@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../components/Topbar";
 import Badge from "../components/Badge";
 import InvoiceActions from "./InvoiceActions";
 
@@ -13,9 +12,7 @@ export default async function InvoicesPage() {
   const all = invoices || [];
 
   return (
-    <>
-      <Topbar title="Invoices" subtitle="Billing & payments" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <table className="w-full border-collapse">
             <thead>
@@ -54,7 +51,6 @@ export default async function InvoicesPage() {
             </tbody>
           </table>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

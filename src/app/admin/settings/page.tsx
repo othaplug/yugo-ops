@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../components/Topbar";
 import SettingsForm from "./SettingsForm";
 import ThemeToggle from "./ThemeToggle";
 

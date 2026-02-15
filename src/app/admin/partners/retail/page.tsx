@@ -16,7 +16,7 @@ export default async function RetailPage() {
   return (
     <>
       <Topbar title="Retail Partners" subtitle="White-glove delivery" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">

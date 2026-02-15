@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Topbar from "../components/Topbar";
 import Link from "next/link";
 
 export default async function ClientsPage() {
@@ -12,9 +11,7 @@ export default async function ClientsPage() {
   const all = clients || [];
 
   return (
-    <>
-      <Topbar title="All Clients" subtitle="Account management" />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
         <div className="flex gap-1.5 mb-3">
           <Link
             href="/admin/clients/new"
@@ -61,7 +58,6 @@ export default async function ClientsPage() {
             </tbody>
           </table>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
