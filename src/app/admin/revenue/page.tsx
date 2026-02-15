@@ -68,20 +68,29 @@ export default async function RevenuePage() {
       {/* 6-Month Trend */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 mb-6">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">6-Month Trend</h3>
-        <div className="flex items-end justify-between gap-2 h-[120px]">
-          {months.map((m, i) => (
-            <div key={m} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-[10px] font-semibold text-[var(--tx2)]">${(trendData[i] / 1000).toFixed(0)}K</span>
-              <div
-                className="w-full rounded-t transition-all duration-500"
-                style={{
-                  height: `${Math.max(12, (trendData[i] / 40000) * 100)}%`,
-                  background: i === 5 ? "var(--gold)" : "var(--brd)",
-                }}
-              />
-              <span className="text-[9px] text-[var(--tx3)]">{m}</span>
-            </div>
-          ))}
+        <div className="flex items-end justify-between gap-3 h-[140px]">
+          {months.map((m, i) => {
+            const maxVal = 40000;
+            const barHeight = Math.max(16, Math.round((trendData[i] / maxVal) * 100));
+            return (
+              <div key={m} className="flex-1 flex flex-col items-center gap-2 min-w-0">
+                <span className="text-[10px] font-semibold text-[var(--tx2)]">${(trendData[i] / 1000).toFixed(0)}K</span>
+                <div className="w-full flex-1 flex flex-col justify-end min-h-[60px]">
+                  <div
+                    className="w-full rounded-t-md transition-all duration-700 ease-out"
+                    style={{
+                      height: `${barHeight}px`,
+                      background: i === 5
+                        ? "linear-gradient(180deg, var(--gold2) 0%, var(--gold) 100%)"
+                        : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, var(--brd) 100%)",
+                      boxShadow: i === 5 ? "0 -2px 8px rgba(212,175,55,0.3)" : "none",
+                    }}
+                  />
+                </div>
+                <span className="text-[9px] font-medium text-[var(--tx3)]">{m}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

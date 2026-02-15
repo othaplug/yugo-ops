@@ -27,19 +27,19 @@ export default function ProfileDropdown({ user }: { user: any }) {
     router.refresh();
   };
 
-  const initials = user?.email?.charAt(0).toUpperCase() || "U";
+  const initials = user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() || "JO";
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="min-w-[44px] min-h-[44px] w-9 h-9 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[11px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation"
+        className="size-9 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[10px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
       >
         {initials}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[min(220px,calc(100vw-2rem))] max-w-[220px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-[min(220px,calc(100vw-2rem))] max-w-[220px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up">
           <div className="px-4 py-3 border-b border-[var(--brd)]">
             <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{user?.email}</div>
             <div className="text-[9px] text-[var(--tx3)]">Administrator</div>
@@ -81,7 +81,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
                 <polyline points="16 17 21 12 16 7" />
                 <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
-              Sign Out
+              Logout
             </button>
           </div>
         </div>

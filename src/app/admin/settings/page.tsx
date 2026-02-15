@@ -13,18 +13,22 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 space-y-6 animate-fade-up">
         {/* Quick actions */}
-        <div className="flex flex-wrap gap-2">
-          <a href="#personal" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Personal</a>
-          <a href="#security" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Security</a>
-          <a href="#appearance" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Appearance</a>
-          <a href="#notifications" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Notifications</a>
-          <a href="#integrations" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Integrations</a>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <a href="#personal" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Personal</a>
+          <span className="text-[11px] text-[var(--tx3)]">/</span>
+          <a href="#security" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Security</a>
+          <span className="text-[11px] text-[var(--tx3)]">/</span>
+          <a href="#appearance" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Appearance</a>
+          <span className="text-[11px] text-[var(--tx3)]">/</span>
+          <a href="#notifications" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Notifications</a>
+          <span className="text-[11px] text-[var(--tx3)]">/</span>
+          <a href="#integrations" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Integrations</a>
         </div>
         {/* Personal Account Section */}
         <div id="personal" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">Personal Account</h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage your profile and credentials</p>
+          <div className="px-5 py-5 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Personal Account</h2>
+            <p className="text-[12px] text-[var(--tx3)] mt-1.5">Manage your profile and credentials</p>
           </div>
           <div className="px-5 py-5 space-y-4">
             <div>
