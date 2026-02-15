@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Topbar from "../components/Topbar";
 import SettingsForm from "./SettingsForm";
+import ThemeToggle from "./ThemeToggle";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -9,7 +10,7 @@ export default async function SettingsPage() {
   return (
     <>
       <Topbar title="Settings" subtitle="Account & platform configuration" />
-      <div className="max-w-[720px] px-4 md:px-6 py-6 space-y-6">
+      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Account Section */}
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
@@ -34,6 +35,26 @@ export default async function SettingsPage() {
               <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Change Password</label>
               <SettingsForm />
             </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Two-Factor Authentication</label>
+              <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
+                <span className="text-[12px] text-[var(--tx2)]">2FA not enabled</span>
+                <button className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all">
+                  Enable 2FA
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Appearance Section */}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <h2 className="text-[16px] font-bold text-[var(--tx)]">Appearance</h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Theme and display preferences</p>
+          </div>
+          <div className="px-5 py-5">
+            <ThemeToggle />
           </div>
         </div>
 

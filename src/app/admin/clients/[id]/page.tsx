@@ -38,7 +38,7 @@ export default async function ClientDetailPage({
   return (
     <>
       <Topbar title="Client Detail" subtitle={client.name} />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         <Link href="/admin/clients" className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-3">
           ← Back
         </Link>

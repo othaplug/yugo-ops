@@ -77,7 +77,7 @@ export default function DeliveryFilters({
           <Link
             key={d.id}
             href={`/admin/deliveries/${d.id}`}
-            className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all"
+            className="flex items-center gap-2 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] active:bg-[var(--gdim)] transition-all min-h-[52px] touch-manipulation"
           >
             <div
               className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
@@ -87,17 +87,18 @@ export default function DeliveryFilters({
               {CATEGORY_ICONS[d.category] || "📦"}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-semibold truncate">
+              <div className="text-[11px] sm:text-[11px] font-semibold truncate">
                 {d.customer_name} ({d.client_name})
               </div>
               <div className="text-[9px] text-[var(--tx3)] truncate">
                 {d.items?.length || 0} items • {d.delivery_number}
               </div>
             </div>
-            <div className="text-[10px] text-[var(--tx3)] shrink-0 text-right">
+            <div className="hidden sm:block text-[10px] text-[var(--tx3)] shrink-0 text-right">
               <div>{d.scheduled_date}</div>
               <div>{d.time_slot}</div>
             </div>
+            <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{d.scheduled_date}</div>
             <Badge status={d.status} />
           </Link>
         ))}

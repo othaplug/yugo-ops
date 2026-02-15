@@ -9,7 +9,7 @@ export default async function CrewPage() {
   return (
     <>
       <Topbar title="Crew Tracking" subtitle="Live GPS positions" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         <CrewMap crews={crews || []} />
       </div>
     </>

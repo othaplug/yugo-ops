@@ -15,7 +15,7 @@ export default async function InvoicesPage() {
   return (
     <>
       <Topbar title="Invoices" subtitle="Billing & payments" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <table className="w-full border-collapse">
             <thead>

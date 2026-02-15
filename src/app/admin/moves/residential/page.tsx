@@ -17,7 +17,7 @@ export default async function ResidentialMovesPage() {
   return (
     <>
       <Topbar title="Residential Moves" subtitle="Client tracking" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         {/* Metrics */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">

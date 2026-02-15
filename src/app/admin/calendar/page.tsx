@@ -14,7 +14,7 @@ export default async function CalendarPage() {
   return (
     <>
       <Topbar title="Crew Calendar" subtitle="Feb 2026" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         <CalendarView
           deliveries={deliveries || []}
           moves={moves || []}

@@ -1,98 +1,137 @@
-import NotifyClient from "./NotifyClient";
-import DownloadPDF from "./DownloadPDF";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import Topbar from "../../components/Topbar";
-import Badge from "../../components/Badge";
 import Link from "next/link";
-import StatusUpdater from "./StatusUpdater";
+import Topbar from "../../components/Topbar";
 import EditDeliveryModal from "./EditDeliveryModal";
+import GenerateInvoiceButton from "./GenerateInvoiceButton";
+import NotifyClientButton from "./NotifyClientButton";
+import DownloadPDFButton from "./DownloadPDFButton";
 
-export default async function DeliveryDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default async function DeliveryDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
-  const { data: delivery } = await supabase
+  const { data: delivery, error } = await supabase
     .from("deliveries")
     .select("*")
-    .eq("id", id)
+    .eq("id", params.id)
     .single();
 
-  if (!delivery) notFound();
+  if (error || !delivery) notFound();
+
+  const statusColor = {
+    pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
+    confirmed: "text-[var(--blu)] bg-[rgba(59,130,246,0.1)]",
+    "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
+    delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
+    cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+  }[delivery.status] || "text-[var(--tx3)] bg-[var(--card)]";
 
   return (
     <>
-      <Topbar title="Delivery Detail" subtitle={delivery.delivery_number} />
-      <div className="max-w-[1200px] px-6 py-5">
-        <Link
-          href="/admin/deliveries"
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-3"
-        >
-          ← Back
-        </Link>
-
-        {/* Header */}
-        <div className="flex justify-between items-start flex-wrap gap-2 mb-4">
-          <div>
-            <div className="font-serif text-xl">{delivery.customer_name}</div>
-            <div className="text-[10px] text-[var(--tx3)]">
-              {delivery.delivery_number} • {delivery.client_name}
+      <Topbar title={`Delivery ${delivery.delivery_number}`} subtitle={delivery.customer_name} />
+      <div className="max-w-[1000px] mx-auto px-4 md:px-6 py-5 space-y-5">
+        {/* Header Card */}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-[20px] font-bold text-[var(--tx)]">{delivery.delivery_number}</h1>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusColor}`}>
+                  {delivery.status}
+                </span>
+              </div>
+              <div className="text-[12px] text-[var(--tx3)]">
+                Created {new Date(delivery.created_at).toLocaleDateString()} • Customer: {delivery.customer_name}
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 [&_button]:min-h-[44px] [&_button]:touch-manipulation">
+              <EditDeliveryModal delivery={delivery} />
+              <GenerateInvoiceButton delivery={delivery} />
+              <NotifyClientButton delivery={delivery} />
+              <DownloadPDFButton delivery={delivery} />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge status={delivery.status} />
-            <StatusUpdater deliveryId={delivery.id} currentStatus={delivery.status} />
+        </div>
+
+        {/* Details Grid */}
+        <div className="grid md:grid-cols-2 gap-5">
+          {/* Customer Info */}
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Customer Information</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.customer_name}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.customer_email || "Not provided"}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.customer_phone || "Not provided"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Info */}
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Delivery Details</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Scheduled Date</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.scheduled_date || "Not scheduled"}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Pickup Address</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.pickup_address || "Not specified"}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Delivery Address</div>
+                <div className="text-[13px] text-[var(--tx)]">{delivery.delivery_address || "Not specified"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Items */}
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Items</h3>
+            {delivery.items && delivery.items.length > 0 ? (
+              <ul className="space-y-2">
+                {delivery.items.map((item: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2 text-[13px] text-[var(--tx)]">
+                    <span className="text-[var(--gold)]">•</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-[12px] text-[var(--tx3)]">No items listed</div>
+            )}
+          </div>
+
+          {/* Pricing */}
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Pricing</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] text-[var(--tx3)]">Quoted Price</span>
+                <span className="text-[15px] font-bold text-[var(--gold)]">
+                  ${delivery.quoted_price?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Detail Grid Row 1 */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">From</div>
-            <div className="text-xs font-medium">{delivery.pickup_address}</div>
+        {/* Instructions */}
+        {delivery.instructions && (
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-3">Special Instructions</h3>
+            <p className="text-[13px] text-[var(--tx)] leading-relaxed">{delivery.instructions}</p>
           </div>
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">To</div>
-            <div className="text-xs font-medium">{delivery.delivery_address}</div>
-          </div>
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Window</div>
-            <div className="text-xs font-medium">{delivery.scheduled_date} • {delivery.delivery_window}</div>
-          </div>
-        </div>
-
-        {/* Detail Grid Row 2 */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Category</div>
-            <div className="text-xs font-medium capitalize">{delivery.category}</div>
-          </div>
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items</div>
-            <div className="text-xs font-medium">{delivery.items?.join(", ") || "None"}</div>
-          </div>
-          <div className="bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-            <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Instructions</div>
-            <div className="text-xs font-medium">{delivery.instructions || "None"}</div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-1.5">
-          <EditDeliveryModal delivery={delivery} />
-          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all">
-            Generate Invoice
-          </button>
-          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all">
-            <NotifyClient delivery={delivery} />
-          </button>
-          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all">
-           <DownloadPDF delivery={delivery} />
-          </button>
-        </div>
+        )}
       </div>
     </>
   );

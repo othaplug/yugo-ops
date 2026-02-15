@@ -17,7 +17,7 @@ export default async function DeliveriesPage() {
   return (
     <>
       <Topbar title="All Deliveries" subtitle="Scheduling & tracking" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         {/* Actions */}
         <div className="flex gap-1.5 mb-3">
           <Link

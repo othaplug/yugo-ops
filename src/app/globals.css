@@ -23,24 +23,38 @@
   --rdim: rgba(209,67,67,.06);
 }
 
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: 'Instrument Serif', sans-serif;
   background: var(--bg);
   color: var(--tx);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100dvh;
+  min-height: 100vh;
 }
 
 .field-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--brd);
   border-radius: 8px;
   background: var(--bg);
-  font-size: 11px;
+  font-size: 16px; /* 16px prevents iOS zoom on focus */
   color: var(--tx);
   font-family: inherit;
   outline: none;
   transition: border 0.15s;
+}
+@media (min-width: 640px) {
+  .field-input {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
 }
 .field-input:focus {
   border-color: var(--gold);
@@ -52,4 +66,9 @@ body {
 }
 .animate-fade-up {
   animation: fadeUp 0.2s ease-out;
+}
+
+/* Safe area for notched devices - applied via utility */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
 }

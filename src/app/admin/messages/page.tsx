@@ -23,7 +23,7 @@ export default async function MessagesPage() {
   return (
     <>
       <Topbar title="Messages" subtitle="Communications" />
-      <div className="max-w-[1200px] px-6 py-5">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-5">
         {/* Metrics */}
         <div className="grid grid-cols-2 gap-2 mb-4 max-w-xs">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">

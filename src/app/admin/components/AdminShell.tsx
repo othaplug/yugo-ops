@@ -44,7 +44,7 @@ export default function AdminShell({ user, children }: { user: any; children: Re
 
             {/* Sidebar */}
             <aside className={`
-              fixed md:sticky top-0 left-0 z-50 h-screen w-[220px]
+              fixed md:sticky top-0 left-0 z-50 h-screen w-[min(220px,85vw)] md:w-[220px]
               bg-[var(--bg2)] border-r border-[var(--brd)]
               flex flex-col transition-transform duration-300 ease-in-out
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
@@ -105,13 +105,14 @@ export default function AdminShell({ user, children }: { user: any; children: Re
             </aside>
 
             {/* Main */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 w-full overflow-hidden">
               {/* Topbar */}
-              <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-[var(--brd)] bg-[var(--bg2)] sticky top-0 z-30">
+              <div className="flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 pt-[max(0.625rem,env(safe-area-inset-top,0px))] sm:pt-[max(0.75rem,env(safe-area-inset-top,0px))] border-b border-[var(--brd)] bg-[var(--bg2)] sticky top-0 z-30">
                 {/* Left: Hamburger (mobile) */}
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="md:hidden p-2 rounded-lg hover:bg-[var(--card)] transition-colors"
+                  className="md:hidden min-w-[44px] min-h-[44px] -m-2 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation"
+                  aria-label="Open menu"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round">
                     <line x1="3" y1="6" x2="21" y2="6" />
@@ -120,21 +121,21 @@ export default function AdminShell({ user, children }: { user: any; children: Re
                   </svg>
                 </button>
 
-                {/* Center: Logo (mobile) */}
-                <div className="flex md:hidden flex-col items-center">
+                {/* Center: Logo (mobile) - hidden on very small screens */}
+                <div className="hidden sm:flex md:hidden flex-col items-center flex-1 justify-center">
                   <div className="text-[14px] font-bold tracking-[2px] text-[var(--tx)]">YUGO</div>
                   <div className="text-[7px] font-bold tracking-[1px] text-[var(--gold)]">OPS+</div>
                 </div>
 
                 {/* Right: Notifications + Profile */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                   <NotificationDropdown />
                   <ProfileDropdown user={user} />
                 </div>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-behavior-contain">
                 {children}
               </div>
             </div>
