@@ -186,7 +186,7 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
           client_phone: move.client_phone ?? "",
           preferred_contact: move.preferred_contact ?? undefined,
         }}
-        onSaved={(updates) => setMove((prev) => ({ ...prev, ...updates }))}
+        onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
 
       {/* Crew + Asset Assignment */}
