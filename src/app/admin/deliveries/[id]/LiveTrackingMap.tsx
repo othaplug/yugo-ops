@@ -135,7 +135,9 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
             token={MAPBOX_TOKEN}
             center={center}
             hasPosition={hasPosition}
-            crew={hasPosition ? crew : null}
+            crew={hasPosition && crew && crew.current_lat != null && crew.current_lng != null
+              ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
+              : null}
             crewName={crewName}
             mapStyle={mapStyle}
           />

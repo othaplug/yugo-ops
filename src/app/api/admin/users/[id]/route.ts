@@ -39,7 +39,7 @@ export async function PATCH(
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
     if (typeof body.name === "string") {
-      await admin.auth.admin.updateUserById(id, { data: { full_name: body.name.trim() } });
+      await admin.auth.admin.updateUserById(id, { user_metadata: { full_name: body.name.trim() } });
     }
 
     return NextResponse.json({ ok: true });

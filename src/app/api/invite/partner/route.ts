@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     const contactNameTrimmed = (contact_name || "").trim();
     const phoneTrimmed = (phone || "").trim();
     const typeVal = type || "retail";
-    const typeLabel = { retail: "Retail", designer: "Designer", hospitality: "Hospitality", gallery: "Gallery", realtor: "Realtor" }[typeVal] || typeVal;
+    const typeLabels: Record<string, string> = { retail: "Retail", designer: "Designer", hospitality: "Hospitality", gallery: "Gallery", realtor: "Realtor" };
+    const typeLabel = typeLabels[String(typeVal)] || typeVal;
 
     const admin = createAdminClient();
 
