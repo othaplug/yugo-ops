@@ -10,7 +10,7 @@ export default async function CrewPage() {
   ]);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
       <CrewMap crews={crews || []} deliveries={deliveries || []} />
     </div>

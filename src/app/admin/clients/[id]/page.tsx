@@ -23,10 +23,11 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const { data: { user } } = await supabase.auth.getUser();
+  const isSuperAdmin = (user?.email || "").toLowerCase() === "othaplug@gmail.com";
   const { data: platformUser } = user
     ? await supabase.from("platform_users").select("role").eq("user_id", user.id).single()
     : { data: null };
-  const isAdmin = platformUser?.role === "admin";
+  const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
 
   const { data: deliveries } = await supabase
     .from("deliveries")

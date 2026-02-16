@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   const roleLabel = platformUser?.role === "admin" ? "Administrator" : "Dispatcher";
 
   return (
-    <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 space-y-6 animate-fade-up">
+    <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 md:py-8 space-y-6 animate-fade-up">
         <div className="mb-4"><BackButton label="Back" /></div>
         {/* Quick actions */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

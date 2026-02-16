@@ -24,9 +24,10 @@ interface Team {
 interface PlatformSettingsClientProps {
   initialTeams?: Team[];
   currentUserId?: string;
+  isSuperAdmin?: boolean;
 }
 
-export default function PlatformSettingsClient({ initialTeams = [], currentUserId }: PlatformSettingsClientProps) {
+export default function PlatformSettingsClient({ initialTeams = [], currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
@@ -350,7 +351,8 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         </div>
       </div>
 
-      {/* User Management */}
+      {/* User Management - Superadmin only */}
+      {isSuperAdmin && (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
@@ -359,12 +361,20 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
           </div>
-          <button
-            onClick={() => setInviteUserOpen(true)}
-            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
-          >
-            + Invite User
-          </button>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/users"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            >
+              View All Users
+            </Link>
+            <button
+              onClick={() => setInviteUserOpen(true)}
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
+            >
+              + Invite User
+            </button>
+          </div>
         </div>
         <div className="px-5 py-5">
           {usersLoading ? (
@@ -401,7 +411,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                       {u.status === "activated" ? "Activated" : "Pending"}
                     </span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
-                      {u.role === "admin" ? "Admin" : "Dispatcher"}
+                      {u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "partner" ? "Partner" : "Dispatcher"}
                     </span>
                   </div>
                 </button>
@@ -410,6 +420,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
           )}
         </div>
       </div>
+      )}
 
       {/* Add Team Modal */}
       {addTeamModalOpen && (
@@ -461,7 +472,10 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
       )}
 
       <InviteUserModal open={inviteUserOpen} onClose={() => { setInviteUserOpen(false); fetchUsers(); }} />
-      {selectedUser && (
+      {selectedUser && selectedUser.role === "partner" && (
+        <UserDetailModal open={!!selectedUser} onClose={() => setSelectedUser(null)} user={selectedUser} currentUserId={currentUserId} isPartner />
+      )}
+      {selectedUser && selectedUser.role !== "partner" && (
         <UserDetailModal
           open={!!selectedUser}
           onClose={() => setSelectedUser(null)}

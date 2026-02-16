@@ -70,7 +70,7 @@ export default async function AdminPage() {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       {/* Metrics - .metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <Link href="/admin/deliveries" className="mc">

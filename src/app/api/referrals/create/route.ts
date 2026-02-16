@@ -5,24 +5,31 @@ import { referralReceivedEmail } from "@/lib/email-templates";
 
 export async function POST(req: NextRequest) {
   try {
-    const { agent_name, brokerage, client_name, property, tier, agent_email } = await req.json();
+    const { agent_id, agent_name, brokerage, client_name, client_email, property, preferred_contact, move_type, tier, agent_email } = await req.json();
 
-    if (!agent_name || typeof agent_name !== "string") {
+    const name = typeof agent_name === "string" ? agent_name.trim() : "";
+    if (!name) {
       return NextResponse.json({ error: "Agent name is required" }, { status: 400 });
     }
 
     const supabase = await createClient();
+    const insert: Record<string, unknown> = {
+      agent_id: agent_id || null,
+      agent_name: name,
+      brokerage: (brokerage || "").trim() || null,
+      client_name: (client_name || "").trim() || null,
+      client_email: (client_email || "").trim() || null,
+      property: (property || "").trim() || null,
+      preferred_contact: (preferred_contact || "").trim() || null,
+      move_type: (move_type || "").trim() || null,
+      tier: tier || "standard",
+      status: "new",
+      commission: 0,
+    };
+
     const { data, error } = await supabase
       .from("referrals")
-      .insert({
-        agent_name: agent_name.trim(),
-        brokerage: (brokerage || "").trim(),
-        client_name: (client_name || "").trim(),
-        property: (property || "").trim(),
-        tier: tier || "standard",
-        status: "new",
-        commission: 0,
-      })
+      .insert(insert)
       .select("id")
       .single();
 
@@ -30,17 +37,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    if (agent_email && typeof agent_email === "string" && agent_email.trim()) {
+    const emailToSend = (agent_email && typeof agent_email === "string" && agent_email.trim()) ? agent_email.trim() : null;
+    if (emailToSend) {
       if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_your_api_key_here") {
         const resend = getResend();
         const html = referralReceivedEmail({
-          agentName: agent_name.trim(),
+          agentName: name,
           clientName: client_name || "",
           property: property || "",
         });
         await resend.emails.send({
           from: "OPS+ <notifications@opsplus.co>",
-          to: agent_email.trim(),
+          to: emailToSend,
           subject: "Referral received — OPS+",
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

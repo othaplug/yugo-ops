@@ -59,10 +59,6 @@ export default function LoginPage() {
       minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
       background: bg, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden"
     }}>
-      {/* Background orbs */}
-      <div style={{ position: "absolute", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,169,98,0.06) 0%, transparent 70%)", top: -200, right: -200, pointerEvents: "none" }} />
-      <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,169,98,0.04) 0%, transparent 70%)", bottom: -100, left: -100, pointerEvents: "none" }} />
-
       <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", position: "relative", zIndex: 1, animation: "loginFadeIn 0.6s ease" }}>
         <style>{`
           @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -73,34 +69,30 @@ export default function LoginPage() {
           .lback:hover { color: #1A1A1A !important; }
         `}</style>
 
-        {/* OPS+ Logo - refined, slightly bigger */}
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <h1
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "14px 36px",
-              borderRadius: 9999,
-              background: isLight ? "rgba(201,169,98,0.1)" : "rgba(201,169,98,0.08)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
-              border: `1px solid ${isLight ? "rgba(201,169,98,0.45)" : "rgba(201,169,98,0.4)"}`,
-              color: "#C9A962",
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: 32,
-              fontWeight: 600,
-              letterSpacing: 6,
-              boxShadow: isLight ? "0 0 40px rgba(201,169,98,0.1), inset 0 1px 0 rgba(255,255,255,0.5)" : "0 0 40px rgba(201,169,98,0.1), inset 0 1px 0 rgba(255,255,255,0.04)",
-              margin: 0,
-            }}
-          >
-            OPS+
-          </h1>
-        </div>
-
         {/* Card - refined, sleeker */}
-        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "44px 40px", boxShadow: isLight ? "0 4px 24px rgba(0,0,0,0.04)" : "0 4px 24px rgba(0,0,0,0.2)" }}>
+        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "36px 40px", boxShadow: isLight ? "0 4px 24px rgba(0,0,0,0.04)" : "0 4px 24px rgba(0,0,0,0.2)" }}>
+          {/* OPS+ Logo - inside card, smaller */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <h1
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "8px 20px",
+                borderRadius: 9999,
+                background: isLight ? "rgba(201,169,98,0.1)" : "rgba(201,169,98,0.08)",
+                border: `1px solid ${isLight ? "rgba(201,169,98,0.45)" : "rgba(201,169,98,0.4)"}`,
+                color: "#C9A962",
+                fontFamily: "'Instrument Serif', Georgia, serif",
+                fontSize: 18,
+                fontWeight: 600,
+                letterSpacing: 3,
+                margin: 0,
+              }}
+            >
+              OPS+
+            </h1>
+          </div>
           {mode === "login" && (
             <>
               <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 26, color: text, marginBottom: 6 }}>{isFirstTime ? "Welcome to OPS+" : "Welcome back"}</div>

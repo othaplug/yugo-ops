@@ -3,7 +3,9 @@
 import { useState } from "react";
 import AddReferralModal from "./AddReferralModal";
 
-export function AddReferralButton() {
+type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
+
+export function AddReferralButton({ realtors = [] }: { realtors?: Realtor[] }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -13,7 +15,7 @@ export function AddReferralButton() {
       >
         + Add referral
       </button>
-      <AddReferralModal open={open} onClose={() => setOpen(false)} />
+      <AddReferralModal open={open} onClose={() => setOpen(false)} realtors={realtors} />
     </>
   );
 }

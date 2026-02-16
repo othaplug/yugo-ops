@@ -1,75 +1,40 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import Badge from "../../components/Badge";
-import { AddReferralButton } from "./RealtorsClient";
+import RealtorsTable from "./RealtorsTable";
+import RealtorsMetrics from "./RealtorsMetrics";
 
 export default async function RealtorsPage() {
   const supabase = await createClient();
-  const { data: referrals } = await supabase
-    .from("referrals")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [refRes, orgRes, realtorsRes, movesRes] = await Promise.all([
+    supabase.from("referrals").select("*").order("created_at", { ascending: false }),
+    supabase.from("organizations").select("id, name"),
+    supabase.from("realtors").select("id, agent_name, email, brokerage").order("agent_name"),
+    supabase.from("moves").select("id, client_name"),
+  ]);
+  const referrals = refRes.data ?? [];
+  const orgs = orgRes.data ?? [];
+  const realtors = realtorsRes.data ?? [];
+  const moves = movesRes.data ?? [];
 
   const all = referrals || [];
+  const clientNameToId: Record<string, string> = {};
+  (orgs || []).forEach((o) => { if (o.name) clientNameToId[o.name] = o.id; });
+  const clientNameToMoveId: Record<string, string> = {};
+  moves.forEach((m: { id: string; client_name?: string }) => { if (m.client_name) clientNameToMoveId[m.client_name] = m.id; });
   const booked = all.filter((r) => r.status === "booked" || r.status === "completed").length;
   const totalCommission = all.reduce((s, r) => s + Number(r.commission || 0), 0);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
-      {/* Metrics - clickable */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-        <Link href="/admin/clients" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Referrals</div>
-          <div className="text-xl font-bold font-heading">{all.length}</div>
-        </Link>
-        <Link href="/admin/clients" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Booked</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">{booked}</div>
-        </Link>
-        <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Commission</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">${totalCommission.toLocaleString()}</div>
-        </Link>
-        <Link href="/admin/clients/new" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all flex items-center justify-center">
-          <span className="text-[10px] font-semibold text-[var(--gold)]">+ Add Realtor</span>
-        </Link>
-      </div>
-
-      {/* Table */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referral Pipeline</h3>
-          <AddReferralButton />
-        </div>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              {["Agent", "Client", "Property", "Tier", "Status", "Comm."].map((h) => (
-                <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {all.map((r) => (
-              <tr key={r.id} className="hover:bg-[var(--gdim)] transition-colors cursor-pointer">
-                <td className="px-4 py-2.5 border-b border-[var(--brd)]">
-                  <div className="text-[10px] font-semibold">{r.agent_name}</div>
-                  <div className="text-[9px] text-[var(--tx3)]">{r.brokerage}</div>
-                </td>
-                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.client_name}</td>
-                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.property}</td>
-                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.tier}</td>
-                <td className="px-4 py-2.5 border-b border-[var(--brd)]"><Badge status={r.status} /></td>
-                <td className="px-4 py-2.5 text-[10px] font-semibold border-b border-[var(--brd)]">
-                  {r.commission > 0 ? `$${Number(r.commission).toLocaleString()}` : "—"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <RealtorsMetrics referralsCount={all.length} booked={booked} totalCommission={totalCommission} />
+      <RealtorsTable
+        referrals={all}
+        clientNameToId={clientNameToId}
+        clientNameToMoveId={clientNameToMoveId}
+        realtors={realtors}
+      />
     </div>
   );
 }

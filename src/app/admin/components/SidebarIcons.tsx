@@ -16,6 +16,14 @@ export const Icons = {
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
   ),
+  projects: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect width="6" height="4" x="9" y="3" rx="1" />
+      <path d="M9 12h6" />
+      <path d="M9 16h6" />
+    </svg>
+  ),
   calendar: () => (
     <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -122,6 +130,12 @@ export const Icons = {
   messageSquare: () => (
     <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  lock: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   ),
 };

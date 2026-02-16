@@ -18,7 +18,7 @@ export default async function ResidentialMovesPage() {
   const pipeline = all.reduce((sum, m) => sum + Number(m.estimate || 0), 0);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
         <div className="mb-4"><BackButton label="Back" /></div>
         {/* Metrics - clickable */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
@@ -40,8 +40,12 @@ export default async function ResidentialMovesPage() {
         </div>
 
         {/* Move List */}
-        <div className="flex flex-col gap-1">
-          {all.map((m) => (
+        <div className="dl">
+          {all.length === 0 ? (
+            <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
+              No residential moves yet
+            </div>
+          ) : all.map((m) => (
             <div
               key={m.id}
               className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all duration-200 group"

@@ -11,12 +11,13 @@ export async function POST(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user.id).single();
-    if (!platformUser || platformUser.role !== "admin") {
-      return NextResponse.json({ error: "Admin only" }, { status: 403 });
-    }
+    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
+    if (!isSuperAdmin) return NextResponse.json({ error: "Superadmin only" }, { status: 403 });
 
     const { id } = await params;
+    if (id.startsWith("inv-") || id.startsWith("partner-")) {
+      return NextResponse.json({ error: "Use Resend Invite for pending; manage partners from Clients" }, { status: 400 });
+    }
     const body = await req.json();
     const password = typeof body.password === "string" ? body.password : "";
 

@@ -9,7 +9,6 @@ import { Icon } from "@/components/AppIcons";
 interface CalendarViewProps {
   deliveries: any[];
   moves: any[];
-  crews: any[];
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -20,7 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   b2c: "#2D9F5A",
 };
 
-export default function CalendarView({ deliveries, moves, crews }: CalendarViewProps) {
+export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
   const router = useRouter();
   const supabase = createClient();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -28,10 +27,13 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [summaryModal, setSummaryModal] = useState<"total" | "b2b" | "b2c" | "unassigned" | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Generate week days
-  const baseDate = new Date("2026-02-09");
+  // Generate week days - use current week as base
+  const now = new Date();
+  const baseDate = new Date(now);
+  baseDate.setDate(now.getDate() - now.getDay());
   const weekStart = new Date(baseDate);
   weekStart.setDate(baseDate.getDate() + weekOffset * 7);
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -52,6 +54,7 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
     });
 
     const mvs = moves.filter((m) => {
+      if (m.scheduled_date === dateStr) return true;
       const match = m.scheduled_date?.match(/Feb\s*(\d+)/);
       return match && parseInt(match[1]) === dayNum;
     });
@@ -93,11 +96,14 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
     setSelectedDate(start.toISOString().split("T")[0]);
   }, [weekOffset]);
 
-  const unassigned = deliveries.filter((d) => d.status === "pending").length;
+  const unassigned = deliveries.filter((d) => !d.crew_id).length;
   const totalWeek = days.reduce((sum, day) => {
     const { dels, mvs } = getEventsForDay(day);
     return sum + dels.length + mvs.length;
   }, 0);
+
+  const deliveriesThisWeek = days.flatMap((day) => getEventsForDay(day).dels);
+  const movesThisWeek = days.flatMap((day) => getEventsForDay(day).mvs);
 
   return (
     <>
@@ -247,46 +253,140 @@ export default function CalendarView({ deliveries, moves, crews }: CalendarViewP
         ))}
       </div>
 
-      {/* Crew + Week Summary - stack on mobile */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <h3 className="text-[13px] font-bold mb-3">Crew Assignments</h3>
-          {crews.map((c) => {
-            const jobCount = deliveries.filter((d) =>
-              d.crew_id === c.id
-            ).length;
-            return (
-              <div key={c.id} className="flex items-center gap-2.5 mb-1">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold text-[var(--gold)] bg-[var(--gdim)]">
-                  {c.name?.replace("Team ", "")}
-                </div>
-                <div className="flex-1">
-                  <div className="text-[11px] font-semibold">{c.name} • {(c.members || []).join(", ")}</div>
-                  <div className="text-[9px] text-[var(--tx3)]">{jobCount} jobs this week</div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-[var(--grn)]" />
-              </div>
-            );
-          })}
+      {/* Scheduled / Unscheduled + Week Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming moves/projects with dates</h3>
+          <ul className="space-y-1.5 max-h-[280px] overflow-y-auto">
+            {deliveriesThisWeek.map((d) => (
+              <li key={d.id}>
+                <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 text-[11px] font-semibold text-[var(--tx)] transition-all cursor-pointer">
+                  {d.delivery_number} — {d.customer_name}
+                </Link>
+              </li>
+            ))}
+            {deliveriesThisWeek.length > 0 && movesThisWeek.length > 0 && (
+              <li className="py-2">
+                <div className="border-t border-[var(--brd)]" aria-hidden />
+              </li>
+            )}
+            {movesThisWeek.map((m) => (
+              <li key={m.id}>
+                <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 text-[11px] font-semibold text-[var(--tx)] transition-all cursor-pointer">
+                  Move — {m.client_name}
+                </Link>
+              </li>
+            ))}
+            {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && (
+              <li className="text-[11px] text-[var(--tx3)] py-2">No upcoming jobs this week</li>
+            )}
+          </ul>
+          <Link href="/admin/deliveries" className="mt-4 inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline">
+            View all →
+          </Link>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <h3 className="text-[13px] font-bold mb-3">Week Summary</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              ["Total Jobs", totalWeek, ""],
-              ["B2B", deliveries.length, ""],
-              ["B2C Moves", moves.length, ""],
-              ["Unassigned", unassigned, "text-[var(--org)]"],
-            ].map(([label, value, color]) => (
-              <div key={label as string} className="bg-[var(--bg)] p-2 rounded-lg border border-[var(--brd)]">
-                <div className="text-[8px] text-[var(--tx3)] uppercase font-bold">{label}</div>
-                <div className={`text-xl font-bold font-heading ${color}`}>{value}</div>
-              </div>
-            ))}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Week Summary</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setSummaryModal("total")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Jobs</div>
+              <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{totalWeek}</div>
+              <div className="text-[9px] text-[var(--tx3)] mt-1">All B2B + B2C</div>
+            </button>
+            <button type="button" onClick={() => setSummaryModal("b2b")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">B2B</div>
+              <div className="text-[22px] font-bold font-heading text-[var(--gold)]">{deliveriesThisWeek.length}</div>
+              <div className="text-[9px] text-[var(--tx3)] mt-1">Deliveries</div>
+            </button>
+            <button type="button" onClick={() => setSummaryModal("b2c")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">B2C Moves</div>
+              <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{movesThisWeek.length}</div>
+              <div className="text-[9px] text-[var(--tx3)] mt-1">Residential / Office</div>
+            </button>
+            <button type="button" onClick={() => setSummaryModal("unassigned")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Unassigned</div>
+              <div className={`text-[22px] font-bold font-heading ${unassigned > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{unassigned}</div>
+              <div className="text-[9px] text-[var(--tx3)] mt-1">Need crew</div>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Week summary modal - upgraded */}
+      {summaryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSummaryModal(null)} aria-hidden="true" />
+          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
+              <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+                {summaryModal === "total" && "All jobs this week"}
+                {summaryModal === "b2b" && "B2B Deliveries"}
+                {summaryModal === "b2c" && "B2C Moves"}
+                {summaryModal === "unassigned" && "Unassigned"}
+              </h3>
+              <button type="button" onClick={() => setSummaryModal(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]">&times;</button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 min-h-0">
+              {summaryModal === "total" && (
+                <ul className="space-y-2">
+                  {deliveriesThisWeek.map((d) => (
+                    <li key={d.id}>
+                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
+                        {d.delivery_number} — {d.customer_name}
+                      </Link>
+                    </li>
+                  ))}
+                  {movesThisWeek.map((m) => (
+                    <li key={m.id}>
+                      <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
+                        Move — {m.client_name}
+                      </Link>
+                    </li>
+                  ))}
+                  {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No jobs this week</p>}
+                </ul>
+              )}
+              {summaryModal === "b2b" && (
+                <ul className="space-y-2">
+                  {deliveriesThisWeek.map((d) => (
+                    <li key={d.id}>
+                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
+                        {d.delivery_number} — {d.customer_name}
+                      </Link>
+                    </li>
+                  ))}
+                  {deliveriesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2B deliveries this week</p>}
+                </ul>
+              )}
+              {summaryModal === "b2c" && (
+                <ul className="space-y-2">
+                  {movesThisWeek.map((m) => (
+                    <li key={m.id}>
+                      <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
+                        {m.client_name}
+                      </Link>
+                    </li>
+                  ))}
+                  {movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2C moves this week</p>}
+                </ul>
+              )}
+              {summaryModal === "unassigned" && (
+                <ul className="space-y-2">
+                  {deliveries.filter((d) => !d.crew_id).map((d) => (
+                    <li key={d.id}>
+                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
+                        {d.delivery_number} — {d.customer_name}
+                      </Link>
+                    </li>
+                  ))}
+                  {deliveries.filter((d) => !d.crew_id).length === 0 && <p className="text-[11px] text-[var(--tx3)]">All jobs assigned</p>}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

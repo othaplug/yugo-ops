@@ -35,23 +35,27 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setLoading(false);
-      if (!user) return;
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setLoading(false);
+        if (!user) return;
 
-      const verified = sessionStorage.getItem(VERIFIED_KEY);
-      if (verified === user.id) return;
+        const verified = sessionStorage.getItem(VERIFIED_KEY);
+        if (verified === user.id) return;
 
-      const { data: platformUser } = await supabase
-        .from("platform_users")
-        .select("two_factor_enabled")
-        .eq("user_id", user.id)
-        .single();
+        const { data: platformUser } = await supabase
+          .from("platform_users")
+          .select("two_factor_enabled")
+          .eq("user_id", user.id)
+          .single();
 
-      if (platformUser?.two_factor_enabled) {
-        setShowModal(true);
-        sendCode();
+        if (platformUser?.two_factor_enabled) {
+          setShowModal(true);
+          sendCode();
+        }
+      } catch {
+        setLoading(false);
       }
     };
     check();

@@ -5,26 +5,45 @@ import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 
+type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
+
+const PREFERRED_CONTACT_OPTIONS = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "text", label: "Text" },
+  { value: "any", label: "Any" },
+];
+
+const MOVE_TYPE_OPTIONS = [
+  { value: "residential", label: "Residential" },
+  { value: "office", label: "Office" },
+  { value: "art", label: "Art" },
+  { value: "other", label: "Other" },
+];
+
 interface AddReferralModalProps {
   open: boolean;
   onClose: () => void;
+  realtors?: Realtor[];
 }
 
-export default function AddReferralModal({ open, onClose }: AddReferralModalProps) {
+export default function AddReferralModal({ open, onClose, realtors = [] }: AddReferralModalProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [agentName, setAgentName] = useState("");
-  const [brokerage, setBrokerage] = useState("");
+  const [agentId, setAgentId] = useState("");
   const [clientName, setClientName] = useState("");
-  const [property, setProperty] = useState("");
-  const [tier, setTier] = useState("standard");
-  const [agentEmail, setAgentEmail] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [preferredContact, setPreferredContact] = useState("email");
+  const [moveType, setMoveType] = useState("residential");
+
+  const selectedRealtor = realtors.find((r) => r.id === agentId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agentName.trim()) {
-      toast("Agent name is required", "x");
+    if (!agentId || !selectedRealtor) {
+      toast("Please select an agent", "x");
       return;
     }
     setLoading(true);
@@ -34,25 +53,28 @@ export default function AddReferralModal({ open, onClose }: AddReferralModalProp
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agent_name: agentName.trim(),
-          brokerage: brokerage.trim(),
+          agent_id: agentId,
+          agent_name: selectedRealtor.agent_name,
+          brokerage: selectedRealtor.brokerage || "",
+          agent_email: selectedRealtor.email || undefined,
           client_name: clientName.trim(),
-          property: property.trim(),
-          tier,
-          agent_email: agentEmail.trim() || undefined,
+          client_email: clientEmail.trim() || undefined,
+          property: address.trim(),
+          preferred_contact: preferredContact,
+          move_type: moveType,
         }),
       });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Failed to create referral");
 
-      toast("Referral created" + (agentEmail.trim() ? " + email sent" : ""), "check");
-      setAgentName("");
-      setBrokerage("");
+      toast("Referral created", "check");
+      setAgentId("");
       setClientName("");
-      setProperty("");
-      setTier("standard");
-      setAgentEmail("");
+      setClientEmail("");
+      setAddress("");
+      setPreferredContact("email");
+      setMoveType("residential");
       onClose();
       router.refresh();
     } catch (err: unknown) {
@@ -67,35 +89,23 @@ export default function AddReferralModal({ open, onClose }: AddReferralModalProp
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
-          <input
-            type="text"
-            value={agentName}
-            onChange={(e) => setAgentName(e.target.value)}
-            placeholder="e.g. Jane Smith"
+          <select
+            value={agentId}
+            onChange={(e) => setAgentId(e.target.value)}
             required
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Email</label>
-          <input
-            type="email"
-            value={agentEmail}
-            onChange={(e) => setAgentEmail(e.target.value)}
-            placeholder="agent@brokerage.com"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-          />
-          <p className="text-[10px] text-[var(--tx3)] mt-1">Optional — confirmation email will be sent</p>
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Brokerage</label>
-          <input
-            type="text"
-            value={brokerage}
-            onChange={(e) => setBrokerage(e.target.value)}
-            placeholder="e.g. Royal LePage"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-          />
+          >
+            <option value="">Select an agent</option>
+            {realtors.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.agent_name}
+                {r.brokerage ? ` (${r.brokerage})` : ""}
+              </option>
+            ))}
+          </select>
+          {realtors.length === 0 && (
+            <p className="text-[10px] text-[var(--tx3)] mt-1">No realtors yet. Add one first from the Add Realtor button.</p>
+          )}
         </div>
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Name</label>
@@ -108,25 +118,47 @@ export default function AddReferralModal({ open, onClose }: AddReferralModalProp
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Property</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Email</label>
+          <input
+            type="email"
+            value={clientEmail}
+            onChange={(e) => setClientEmail(e.target.value)}
+            placeholder="client@example.com"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Address</label>
           <input
             type="text"
-            value={property}
-            onChange={(e) => setProperty(e.target.value)}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             placeholder="e.g. 123 Main St"
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Tier</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Preferred Method of Communication</label>
           <select
-            value={tier}
-            onChange={(e) => setTier(e.target.value)}
+            value={preferredContact}
+            onChange={(e) => setPreferredContact(e.target.value)}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
-            <option value="standard">Standard</option>
-            <option value="premier">Premier</option>
-            <option value="estate">Estate</option>
+            {PREFERRED_CONTACT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type of Move</label>
+          <select
+            value={moveType}
+            onChange={(e) => setMoveType(e.target.value)}
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+          >
+            {MOVE_TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
           </select>
         </div>
         <div className="flex gap-2 pt-2">
@@ -139,7 +171,7 @@ export default function AddReferralModal({ open, onClose }: AddReferralModalProp
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || realtors.length === 0}
             className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {loading ? "Creating…" : "Create Referral"}

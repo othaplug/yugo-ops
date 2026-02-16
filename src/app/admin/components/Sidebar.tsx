@@ -7,7 +7,7 @@ import { Icon } from "@/components/AppIcons";
 const NAV = [
   { label: "Dashboard", items: [
     { name: "Command Center", icon: "target", href: "/admin" },
-    { name: "All Projects", icon: "package", href: "/admin/deliveries" },
+    { name: "All Projects", icon: "projects", href: "/admin/deliveries" },
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
@@ -26,7 +26,7 @@ const NAV = [
     { name: "Invoices", icon: "fileText", href: "/admin/invoices" },
     { name: "Revenue", icon: "dollarSign", href: "/admin/revenue" },
   ]},
-  { label: "System", items: [
+  { label: "CRM", items: [
     { name: "All Clients", icon: "users", href: "/admin/clients" },
     { name: "Messages", icon: "messageSquare", href: "/admin/messages" },
     { name: "Settings", icon: "settings", href: "/admin/settings" },

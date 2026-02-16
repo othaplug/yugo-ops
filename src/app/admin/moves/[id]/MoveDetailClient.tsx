@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import Badge from "../../components/Badge";
 import BackButton from "../../components/BackButton";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
+import MoveContactModal from "./MoveContactModal";
 import ModalOverlay from "../../components/ModalOverlay";
+import { useRelativeTime } from "./useRelativeTime";
 
 interface MoveDetailClientProps {
   move: any;
@@ -13,15 +17,38 @@ interface MoveDetailClientProps {
 }
 
 const TEAM_MEMBERS = ["Michael T.", "Sarah K.", "James L.", "Elena M."];
+const STATUS_OPTIONS = ["pending", "scheduled", "confirmed", "in-transit", "delivered", "cancelled"] as const;
+const STATUS_COLORS: Record<string, string> = {
+  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
+  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
+  "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
+  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
+  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+};
+const STAGE_OPTS = [
+  { value: "quote", label: "Quote" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "in_progress", label: "In progress" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
-export default function MoveDetailClient({ move, isOffice }: MoveDetailClientProps) {
+export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDetailClientProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [move, setMove] = useState(initialMove);
+  useEffect(() => setMove(initialMove), [initialMove]);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<"status" | "stage" | "next_action" | null>(null);
+  const [editNextAction, setEditNextAction] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(new Set(TEAM_MEMBERS));
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
   const daysUntil = move.scheduled_date ? Math.ceil((new Date(move.scheduled_date).getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
+  const lastUpdatedRelative = useRelativeTime(move.updated_at);
 
   const toggleMember = (name: string) => {
     setAssignedMembers((prev) => {
@@ -32,49 +59,143 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
     });
   };
 
+  const EditIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+  );
+
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 space-y-5 animate-fade-up">
       <BackButton label="Back" />
 
-      {/* Header */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{move.client_name}</h1>
-            <Badge status={move.status} />
-            <span className="text-[11px] text-[var(--tx3)]">
-              <Icon name={isOffice ? "building" : "home"} className="w-[14px] h-[14px] inline-block align-middle mr-1" />
-              {isOffice ? "Office" : "Residential"} Move
-            </span>
+      {/* Hero - client name clickable */}
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
+              className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left truncate"
+            >
+              {move.client_name}
+            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/30">
+                <Icon name={isOffice ? "building" : "home"} className="w-[12px] h-[12px]" />
+                {isOffice ? "Office" : "Residential"} Move
+              </span>
+              <MoveNotifyButton move={move} />
+            </div>
           </div>
-          <MoveNotifyButton move={move} />
         </div>
 
-        {/* Status Stage Card - upgraded */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-4 px-4 bg-[var(--bg)] rounded-xl border border-[var(--brd)]">
-          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Status</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)] capitalize mt-0.5">{move.status}</div>
+        {/* Status / Stage / Next action / Last updated - no card containers */}
+        <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-4">
+          <div className="group/card relative">
+            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "status" ? null : "status")} aria-label="Edit status">
+              <EditIcon />
+            </button>
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</div>
+            {editingCard === "status" ? (
+              <select
+                defaultValue={move.status}
+                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                onChange={async (e) => {
+                  const v = e.target.value;
+                  const { data } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (data) setMove(data);
+                  setEditingCard(null);
+                  router.refresh();
+                }}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s.replace("-", " ")}</option>
+                ))}
+              </select>
+            ) : (
+              <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                {move.status?.replace("-", " ")}
+              </span>
+            )}
           </div>
-          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Stage</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">Scheduled</div>
+
+          <div className="group/card relative">
+            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "stage" ? null : "stage")} aria-label="Edit stage">
+              <EditIcon />
+            </button>
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Stage</div>
+            {editingCard === "stage" ? (
+              <select
+                defaultValue={move.stage ?? "scheduled"}
+                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                onChange={async (e) => {
+                  const v = e.target.value || null;
+                  const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (data) setMove(data);
+                  setEditingCard(null);
+                  router.refresh();
+                }}
+              >
+                {STAGE_OPTS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="text-[13px] font-semibold text-[var(--tx)]">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</div>
+            )}
           </div>
-          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Next Action</div>
-            <div className="text-[12px] font-semibold text-[var(--gold)] mt-0.5">Deliver Supplies</div>
+
+          <div className="group/card relative">
+            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => { setEditNextAction(move.next_action ?? ""); setEditingCard(editingCard === "next_action" ? null : "next_action"); }} aria-label="Edit next action">
+              <EditIcon />
+            </button>
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Next Action</div>
+            {editingCard === "next_action" ? (
+              <input
+                value={editNextAction}
+                onChange={(e) => setEditNextAction(e.target.value)}
+                onBlur={async () => {
+                  const { data } = await supabase.from("moves").update({ next_action: editNextAction.trim() || null, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (data) setMove(data);
+                  setEditingCard(null);
+                  router.refresh();
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                autoFocus
+                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[200px]"
+                placeholder="e.g. Confirm elevator slot"
+              />
+            ) : (
+              <div className="text-[13px] font-semibold text-[var(--gold)]">{move.next_action || "—"}</div>
+            )}
           </div>
-          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--brd)]">
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Last Updated</div>
-            <div className="text-[12px] font-semibold text-[var(--tx2)] mt-0.5">2 hours ago</div>
+
+          <div>
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Last Updated</div>
+            <div className="text-[12px] font-semibold text-[var(--tx2)]">{lastUpdatedRelative}</div>
           </div>
         </div>
       </div>
 
+      <MoveContactModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        moveId={move.id}
+        initial={{
+          client_name: move.client_name || "",
+          client_email: move.client_email || move.customer_email || "",
+          client_phone: move.client_phone ?? "",
+          preferred_contact: move.preferred_contact ?? undefined,
+        }}
+        onSaved={(updates) => setMove((prev) => ({ ...prev, ...updates }))}
+      />
+
       {/* Crew + Asset Assignment */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 hover:border-[var(--gold)]/60 transition-all">
+        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
+          <EditIcon />
+        </button>
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Crew & Asset Assignment</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Assigned Crew</div>
             <div className="text-[12px] font-semibold text-[var(--tx)]">Team A</div>
@@ -122,9 +243,9 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
       </ModalOverlay>
 
       {/* Time Intelligence */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Time Intelligence</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Move Date</div>
             <div className="text-[12px] font-semibold text-[var(--tx)]">{move.scheduled_date || "—"}</div>
@@ -175,9 +296,9 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
       </div>
 
       {/* Financial Snapshot */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Financial Snapshot</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Estimate</div>
             <div className="text-[14px] font-bold text-[var(--gold)]">${estimate.toLocaleString()}</div>
@@ -210,9 +331,9 @@ export default function MoveDetailClient({ move, isOffice }: MoveDetailClientPro
       </div>
 
       {/* Distance + Logistics */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Distance & Logistics</h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Distance</div>
             <div className="text-[12px] font-semibold text-[var(--tx)]">11.2 km</div>

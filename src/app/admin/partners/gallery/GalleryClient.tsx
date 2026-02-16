@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Badge from "../../components/Badge";
 
 const ACTIVE_EXHIBITIONS = [
@@ -9,14 +8,17 @@ const ACTIVE_EXHIBITIONS = [
   { id: "2", name: "Group: Northern Light", gallery: "Bau-Xi", location: "Vault", dates: "Mar 1 - Apr 15", works: 12, percent: 10, status: "staging" as const, details: "Group exhibition featuring 6 artists. Mixed media. Staging in progress at Vault space." },
 ];
 
-const SCHEDULED_TRANSPORTS = [
-  { id: "1", title: "Feinstein Oil #4", gallery: "Bau-Xi", route: "Storage → Main Gallery", value: "$45K", date: "Feb 12", status: "scheduled" as const, details: "Single piece. White-glove handling. Insurance certificate on file." },
-  { id: "2", title: "Maxwell Bronze #2", gallery: "Olga Korper", route: "Foundry → Gallery", value: "$28K", date: "Feb 13", status: "confirmed" as const, details: "Bronze sculpture. Crated. Loading dock at both ends." },
+type Transport = { id: string; title: string; gallery: string; route: string; value: string; date: string; status: "scheduled" | "confirmed"; details: string };
+
+const SCHEDULED_TRANSPORTS: Transport[] = [
+  { id: "1", title: "Feinstein Oil #4", gallery: "Bau-Xi", route: "Storage → Main Gallery", value: "$45K", date: "Feb 12", status: "scheduled", details: "Single piece. White-glove handling. Insurance certificate on file." },
+  { id: "2", title: "Maxwell Bronze #2", gallery: "Olga Korper", route: "Foundry → Gallery", value: "$28K", date: "Feb 13", status: "confirmed", details: "Bronze sculpture. Crated. Loading dock at both ends." },
 ];
 
 export default function GalleryClient() {
   const [expandedEx, setExpandedEx] = useState<Set<string>>(new Set());
   const [expandedTrans, setExpandedTrans] = useState<Set<string>>(new Set());
+  const [projectDetail, setProjectDetail] = useState<Transport | null>(null);
 
   const toggleEx = (id: string) => {
     setExpandedEx((prev) => {
@@ -110,9 +112,13 @@ export default function GalleryClient() {
                 {isExpanded && (
                   <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]">
                     <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{t.details}</div>
-                    <Link href="/admin/deliveries" className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                      View delivery →
-                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setProjectDetail(t)}
+                      className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                    >
+                      View project →
+                    </button>
                   </div>
                 )}
               </div>
@@ -120,6 +126,49 @@ export default function GalleryClient() {
           })}
         </div>
       </div>
+
+      {/* Project detail modal */}
+      {projectDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProjectDetail(null)} aria-hidden="true" />
+          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">Project details</h3>
+              <button type="button" onClick={() => setProjectDetail(null)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none">&times;</button>
+            </div>
+            <div className="space-y-3 text-[12px]">
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Title</div>
+                <div className="text-[var(--tx)] font-semibold">{projectDetail.title}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Gallery</div>
+                <div className="text-[var(--tx)]">{projectDetail.gallery}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Route</div>
+                <div className="text-[var(--tx)]">{projectDetail.route}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Value</div>
+                <div className="text-[var(--gold)] font-semibold">{projectDetail.value}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Date</div>
+                <div className="text-[var(--tx)]">{projectDetail.date}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
+                <Badge status={projectDetail.status} />
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Details</div>
+                <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

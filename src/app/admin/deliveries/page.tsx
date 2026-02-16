@@ -14,7 +14,7 @@ export default async function DeliveriesPage() {
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="flex items-center justify-between mb-4">
         <BackButton label="Back" />
         <div className="flex gap-1.5">

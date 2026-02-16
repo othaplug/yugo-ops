@@ -182,7 +182,7 @@ export default function MessagesClient({
   };
 
   return (
-    <div className="h-[calc(100dvh-5.5rem)] min-h-[400px] flex flex-col max-w-[1400px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 animate-fade-up">
+    <div className="h-[calc(100dvh-5.5rem)] min-h-[400px] flex flex-col max-w-[1400px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
       {/* Connect banner - when Slack not connected */}
       {!isConnected && (

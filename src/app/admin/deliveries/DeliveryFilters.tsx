@@ -104,8 +104,8 @@ export default function DeliveryFilters({
           </Link>
         ))}
         {filtered.length === 0 && (
-          <div className="text-center py-8 text-[var(--tx3)] text-[11px]">
-            No deliveries found
+          <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
+            No deliveries {filter === "today" ? "today" : filter === "pending" ? "pending" : "yet"}
           </div>
         )}
       </div>

@@ -173,8 +173,9 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               onChange={(e) => setRole(e.target.value)}
               className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
               <option value="dispatcher">Dispatcher</option>
-              <option value="admin">Administrator</option>
             </select>
           </div>
           <div className="flex gap-2 pt-2">

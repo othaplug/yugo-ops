@@ -12,51 +12,52 @@ import SearchBox from "./SearchBox";
 import ClientDate from "./ClientDate";
 import { Icons } from "./SidebarIcons";
 
-const SIDEBAR_SECTIONS = [
-  {
+const SIDEBAR_SECTIONS_FULL = [
+    {
     label: "Dashboard",
     items: [
-      { href: "/admin", label: "Command Center", Icon: Icons.target },
-      { href: "/admin/deliveries", label: "All Projects", Icon: Icons.package },
-      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar },
-      { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin },
+      { href: "/admin", label: "Command Center", Icon: Icons.target, adminOnly: true },
+      { href: "/admin/deliveries", label: "All Projects", Icon: Icons.projects, adminOnly: false },
+      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, adminOnly: false },
+      { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin, adminOnly: false },
     ],
   },
   {
     label: "B2B Partners",
     items: [
-      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa },
-      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette },
-      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel },
-      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image },
-      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake },
+      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, adminOnly: true },
+      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, adminOnly: true },
+      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, adminOnly: true },
+      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image, adminOnly: true },
+      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake, adminOnly: true },
     ],
   },
   {
     label: "Moves",
     items: [
-      { href: "/admin/moves/residential", label: "Residential", Icon: Icons.home },
-      { href: "/admin/moves/office", label: "Office / Commercial", Icon: Icons.building },
+      { href: "/admin/moves/residential", label: "Residential", Icon: Icons.home, adminOnly: false },
+      { href: "/admin/moves/office", label: "Office / Commercial", Icon: Icons.building, adminOnly: false },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText },
-      { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign },
+      { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText, adminOnly: true },
+      { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign, adminOnly: true },
     ],
   },
   {
-    label: "System",
+    label: "CRM",
     items: [
-      { href: "/admin/clients", label: "All Clients", Icon: Icons.users },
-      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare },
+      { href: "/admin/clients", label: "All Clients", Icon: Icons.users, adminOnly: true },
+      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, adminOnly: true },
     ],
   },
 ];
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDate?: boolean }> = {
   "/admin": { title: "Command Center", subtitle: "", useClientDate: true },
+  "/admin/dispatch": { title: "Dispatch", subtitle: "Today's jobs & crew", useClientDate: true },
   "/admin/deliveries": { title: "All Projects", subtitle: "Scheduling & tracking" },
   "/admin/calendar": { title: "Calendar", subtitle: "Feb 10-14, 2026" },
   "/admin/crew": { title: "Tracking", subtitle: "Live GPS positions" },
@@ -73,6 +74,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDa
   "/admin/messages": { title: "Messages", subtitle: "Communications" },
   "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
   "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
+  "/admin/users": { title: "All Users", subtitle: "User management" },
 };
 
 function getPageTitle(pathname: string): { title: string; subtitle: string; useClientDate?: boolean } {
@@ -87,12 +89,19 @@ function getPageTitle(pathname: string): { title: string; subtitle: string; useC
 
 const SIDEBAR_WIDTH = 220;
 
-export default function AdminShell({ user, children }: { user: any; children: React.ReactNode }) {
+export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
   const { title, subtitle, useClientDate } = getPageTitle(pathname);
+
+  const sidebarSections = SIDEBAR_SECTIONS_FULL.map((section) => ({
+    ...section,
+    items: section.items.filter((item: { adminOnly?: boolean; superAdminOnly?: boolean }) =>
+      (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin)
+    ),
+  })).filter((s) => s.items.length > 0);
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -156,7 +165,7 @@ export default function AdminShell({ user, children }: { user: any; children: Re
 
               {/* Nav sections - scrollable, collapsible */}
               <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
-                {SIDEBAR_SECTIONS.map((section) => {
+                {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
                   const hasActive = section.items.some((item) => isActive(item.href));
                   return (

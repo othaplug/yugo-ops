@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 
@@ -16,14 +17,15 @@ interface UserDetailModalProps {
   onClose: () => void;
   user: User;
   currentUserId?: string;
+  isPartner?: boolean;
   onSaved?: (updates: Partial<User>) => void;
   onDeleted?: (id: string) => void;
 }
 
-export default function UserDetailModal({ open, onClose, user, currentUserId, onSaved, onDeleted }: UserDetailModalProps) {
+export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, onSaved, onDeleted }: UserDetailModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
-  const [role, setRole] = useState(user.role === "admin" ? "admin" : "dispatcher");
+  const [role, setRole] = useState(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : "dispatcher");
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,13 +35,29 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, on
   useEffect(() => {
     if (open) {
       setName(user.name || "");
-      setRole(user.role === "admin" ? "admin" : "dispatcher");
+      setRole(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : "dispatcher");
     }
   }, [open, user]);
 
   const isSelf = currentUserId === user.id;
   const isAdmin = user.role === "admin";
-  const canEditRole = !isSelf && !isAdmin; // Admin role is never changeable
+  const canEditRole = !isSelf && !isAdmin && !isPartner;
+
+  if (isPartner) {
+    const orgId = user.id.replace("partner-", "");
+    return (
+      <ModalOverlay open={open} onClose={onClose} title="Partner User" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <p className="text-[13px] text-[var(--tx2)]">
+            {user.name || user.email} is a partner with portal access. Manage them from the Clients page.
+          </p>
+          <Link href={`/admin/clients/${orgId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+            View client profile →
+          </Link>
+        </div>
+      </ModalOverlay>
+    );
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,10 +151,12 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, on
             ) : (
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => setRole(e.target.value as "admin" | "manager" | "dispatcher")}
                 disabled={!canEditRole}
                 className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
               >
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
                 <option value="dispatcher">Dispatcher</option>
               </select>
             )}
@@ -146,6 +166,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, on
           </button>
         </form>
 
+        {!user.id.startsWith("inv-") && (
         <div className="border-t border-[var(--brd)] pt-5 space-y-4">
           <h3 className="text-[12px] font-bold text-[var(--tx2)]">Reset password</h3>
           <form onSubmit={handleResetPassword} className="flex gap-2">
@@ -162,6 +183,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, on
             </button>
           </form>
         </div>
+        )}
 
         {!isSelf && (
           <div className="border-t border-[var(--brd)] pt-5">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import GalleryClient from "./GalleryClient";
+import CreateProjectButton from "./CreateProjectButton";
 
 const GALLERY_PARTNERS = [
   { id: "1", name: "Bau-Xi Gallery", contact: "Sophie Kim", works: 18, inStorage: 6 },
@@ -10,7 +11,7 @@ const GALLERY_PARTNERS = [
 
 export default function GalleryPage() {
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
@@ -32,11 +33,9 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {/* Add Partner */}
+      {/* Create Project */}
       <div className="flex justify-end mb-4">
-        <Link href="/admin/clients/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
-          + Add Partner
-        </Link>
+        <CreateProjectButton />
       </div>
 
       <GalleryClient />

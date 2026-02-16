@@ -13,5 +13,12 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
   if (error || !delivery) notFound();
 
-  return <DeliveryDetailClient delivery={delivery} />;
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("email")
+    .eq("name", delivery.client_name)
+    .limit(1)
+    .single();
+
+  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} />;
 }

@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
 
     const emailTrimmed = email.trim().toLowerCase();
     const nameTrimmed = (name || "").trim();
-    const roleVal = role === "admin" ? "admin" : "dispatcher";
-    const roleLabel = roleVal === "admin" ? "Administrator" : "Dispatcher";
+    const roleVal = role === "admin" ? "admin" : role === "manager" ? "manager" : "dispatcher";
+    const roleLabel = roleVal === "admin" ? "Admin" : roleVal === "manager" ? "Manager" : "Dispatcher";
 
     const admin = createAdminClient();
 

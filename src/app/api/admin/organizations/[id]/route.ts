@@ -14,13 +14,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
     const { data: platformUser } = await supabase
       .from("platform_users")
       .select("role")
       .eq("user_id", user.id)
       .single();
+    const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
 
-    if (!platformUser || platformUser.role !== "admin") {
+    if (!isAdmin) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
 
