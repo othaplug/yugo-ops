@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET() {
+  const { user, error: authErr } = await requireAuth();
+  if (authErr) return authErr;
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { data: partnerUser } = await supabase
       .from("partner_users")
       .select("org_id")
-      .eq("user_id", user.id)
+      .eq("user_id", user!.id)
       .single();
 
     if (!partnerUser) {
@@ -39,17 +37,14 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const { user, error: authErr } = await requireAuth();
+  if (authErr) return authErr;
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { data: partnerUser } = await supabase
       .from("partner_users")
       .select("org_id")
-      .eq("user_id", user.id)
+      .eq("user_id", user!.id)
       .single();
 
     if (!partnerUser) {

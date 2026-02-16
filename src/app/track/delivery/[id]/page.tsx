@@ -1,10 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyTrackToken } from "@/lib/track-token";
 
-export default async function TrackDeliveryPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TrackDeliveryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
+}) {
   const { id } = await params;
-  const supabase = await createClient();
+  const { token } = await searchParams;
+
+  if (!verifyTrackToken("delivery", id, token || "")) notFound();
+
+  const supabase = createAdminClient();
   const { data: delivery, error } = await supabase
     .from("deliveries")
     .select("*")

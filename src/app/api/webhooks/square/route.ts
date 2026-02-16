@@ -1,9 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { WebhooksHelper } from "square";
+
+const NOTIFICATION_URL =
+  process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/square`
+    : "https://yugo-ops.vercel.app/api/webhooks/square";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const signature = req.headers.get("x-square-hmacsha256-signature");
+    const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+
+    const rawBody = await req.text();
+    if (signatureKey) {
+      if (!signature) {
+        console.warn("[webhooks/square] Missing x-square-hmacsha256-signature header");
+        return NextResponse.json({ error: "Missing signature" }, { status: 403 });
+      }
+      const isValid = WebhooksHelper.verifySignature({
+        requestBody: rawBody,
+        signatureHeader: signature,
+        signatureKey,
+        notificationUrl: NOTIFICATION_URL,
+      });
+      if (!isValid) {
+        console.warn("[webhooks/square] Invalid signature");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+      }
+    } else {
+      console.warn("[webhooks/square] SQUARE_WEBHOOK_SIGNATURE_KEY not set — webhook not verified");
+    }
+
+    const body = JSON.parse(rawBody || "{}") as {
+      type?: string;
+      data?: { object?: { invoice?: { id?: string } }; id?: string };
+    };
     const eventType = body.type;
 
     const supabase = await createClient();
@@ -12,7 +44,6 @@ export async function POST(req: NextRequest) {
       const invoiceId = body.data?.object?.invoice?.id || body.data?.id;
 
       if (invoiceId) {
-        // Find invoice by square_invoice_id
         const { data: invoice } = await supabase
           .from("invoices")
           .select("*")
@@ -20,13 +51,11 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (invoice) {
-          // Mark as paid
           await supabase
             .from("invoices")
             .update({ status: "paid", updated_at: new Date().toISOString() })
             .eq("id", invoice.id);
 
-          // Log event
           await supabase.from("status_events").insert({
             entity_type: "invoice",
             entity_id: invoice.invoice_number,
@@ -39,8 +68,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("Webhook error:", err);
+  } catch (err: unknown) {
+    console.error("[webhooks/square] Error:", err);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

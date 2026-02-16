@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin, isSuperAdminEmail } from "@/lib/api-auth";
 
 export async function GET() {
+  const { error: authError } = await requireAdmin();
+  if (authError) return authError;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: "Superadmin only" }, { status: 403 });
-    }
-
     const admin = createAdminClient();
 
     const { data: platformUsers, error: puError } = await admin.from("platform_users").select("user_id, email, name, role, created_at");
@@ -34,8 +27,8 @@ export async function GET() {
       status: "pending" as const,
     }));
 
-    const { data: { users: authUsers }, error: authError } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    if (authError) console.error("[admin/users] auth listUsers:", authError);
+    const { data: { users: authUsers }, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (listErr) console.error("[admin/users] auth listUsers:", listErr);
     const authMap = new Map<string, { last_sign_in_at: string | null; email: string }>();
     for (const u of authUsers ?? []) {
       authMap.set(u.id, { last_sign_in_at: u.last_sign_in_at ?? null, email: u.email ?? "" });
@@ -69,11 +62,10 @@ export async function GET() {
     const { data: partnerUsers } = await admin.from("partner_users").select("user_id");
     const partnerUserIds = new Set((partnerUsers ?? []).map((p) => p.user_id));
 
-    const superAdminEmail = "othaplug@gmail.com";
     for (const [authId, authData] of authMap) {
       if (platformMap.has(authId)) continue;
       if (pendingList.some((inv) => inv.email?.toLowerCase() === authData.email?.toLowerCase())) continue;
-      const isSuperAdminUser = authData.email?.toLowerCase() === superAdminEmail;
+      const isSuperAdminUser = isSuperAdminEmail(authData.email);
       const isPartner = !isSuperAdminUser && partnerUserIds.has(authId);
       list.push({
         id: authId,
@@ -97,7 +89,7 @@ export async function GET() {
     const { data: partnerOrgs } = await admin.from("organizations").select("id, name, contact_name, email, user_id, created_at").not("user_id", "is", null);
     for (const org of partnerOrgs ?? []) {
       const authData = authMap.get(org.user_id);
-      if (authData?.email?.toLowerCase() === superAdminEmail) continue;
+      if (isSuperAdminEmail(authData?.email)) continue;
       if (list.some((u) => u.user_id === org.user_id || u.email?.toLowerCase() === (org.email || "").toLowerCase())) continue;
       list.push({
         id: `partner-${org.id}`,
@@ -114,7 +106,7 @@ export async function GET() {
     list.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
 
     // Exclude superadmin from the list — they are a fixed system account, not a manageable user
-    const filtered = list.filter((u) => (u.email || "").toLowerCase() !== superAdminEmail);
+    const filtered = list.filter((u) => !isSuperAdminEmail(u.email));
     return NextResponse.json(filtered);
   } catch (err: unknown) {
     return NextResponse.json(

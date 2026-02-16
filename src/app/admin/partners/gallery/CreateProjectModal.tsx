@@ -27,8 +27,13 @@ export default function CreateProjectModal({ open, onClose }: CreateProjectModal
     setLoading(true);
 
     try {
-      // For now, projects are stored locally or in a future projects table.
-      // Placeholder - you can wire to an API when ready.
+      const res = await fetch("/api/gallery/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), gallery: gallery.trim() || null, details: details.trim() || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create project");
       toast("Project created", "check");
       setName("");
       setGallery("");

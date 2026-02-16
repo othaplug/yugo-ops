@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/api-auth";
 
 async function requireSuperAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized", status: 401 as const };
-  const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
-  if (!isSuperAdmin) return { error: "Superadmin only", status: 403 as const };
-  return { user, admin: createAdminClient() };
+  const { user, error } = await requireAdmin();
+  if (error) {
+    const body = await error.json();
+    return { error: body.error || "Forbidden", status: error.status as 401 | 403 };
+  }
+  return { user: user!, admin: createAdminClient() };
 }
 
 export async function PATCH(

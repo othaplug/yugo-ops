@@ -2,31 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getResend } from "@/lib/resend";
 import { welcomeEmail } from "@/lib/email-templates";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
-    const { data: platformUser } = await supabase
-      .from("platform_users")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-    const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
-
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Admin only" }, { status: 403 });
-    }
-
     const { data: org } = await supabase
       .from("organizations")
       .select("id, name, contact_name, email")

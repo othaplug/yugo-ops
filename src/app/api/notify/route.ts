@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { deliveryNotificationEmail, moveNotificationEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
+import { requireAuth } from "@/lib/api-auth";
+import { signTrackToken } from "@/lib/track-token";
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app";
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
   try {
     const body = await req.json();
     const supabase = await createClient();
@@ -41,7 +45,9 @@ export async function POST(req: NextRequest) {
         estimate,
         deposit_paid: depositPaid,
         balance_due: estimate - depositPaid,
-        trackUrl: body.moveId ? `${baseUrl}/track/move/${body.moveId}` : undefined,
+        trackUrl: body.moveId
+          ? `${baseUrl}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}`
+          : undefined,
       });
       subject = `Your Move Detail - Yugo #${moveCode}`;
       await supabase.from("status_events").insert({
@@ -62,7 +68,9 @@ export async function POST(req: NextRequest) {
         delivery_window: body.deliveryWindow || "",
         status: body.status || "",
         items_count: body.itemsCount ?? (Array.isArray(body.items) ? body.items.length : undefined),
-        trackUrl: body.deliveryId ? `${baseUrl}/track/delivery/${body.deliveryId}` : undefined,
+        trackUrl: body.deliveryId
+          ? `${baseUrl}/track/delivery/${body.deliveryId}?token=${signTrackToken("delivery", body.deliveryId)}`
+          : undefined,
       });
       subject = `Project Update: ${body.deliveryNumber} — ${body.customerName}`;
       await supabase.from("status_events").insert({

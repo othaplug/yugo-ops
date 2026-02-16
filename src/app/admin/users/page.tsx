@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import UsersClient from "./UsersClient";
 
-const SUPER_ADMIN_EMAIL = "othaplug@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
 
 export default async function UsersPage() {
   const supabase = await createClient();

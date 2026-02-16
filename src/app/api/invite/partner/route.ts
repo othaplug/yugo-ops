@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const { type, name, contact_name, email, phone, password } = await req.json();
 

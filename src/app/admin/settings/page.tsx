@@ -18,7 +18,8 @@ export default async function SettingsPage() {
   const { data: partnerUser } = user
     ? await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single()
     : { data: null };
-  const isPartner = !!partnerUser && !platformUser;
+  const isSuperAdmin = (user?.email || "").toLowerCase() === (process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com").toLowerCase();
+  const isPartner = !!partnerUser && !platformUser && !isSuperAdmin;
   const roleLabel = platformUser?.role === "admin" ? "Administrator" : "Dispatcher";
 
   return (

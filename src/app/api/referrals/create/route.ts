@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getResend } from "@/lib/resend";
 import { referralReceivedEmail } from "@/lib/email-templates";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
   try {
     const { agent_id, agent_name, brokerage, client_name, client_email, property, preferred_contact, move_type, tier, agent_email } = await req.json();
 

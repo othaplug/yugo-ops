@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
-    if (!isSuperAdmin) return NextResponse.json({ error: "Superadmin only" }, { status: 403 });
-
     const { id } = await params;
     if (id.startsWith("inv-") || id.startsWith("partner-")) {
       return NextResponse.json({ error: "Use Resend Invite for pending; manage partners from Clients" }, { status: 400 });

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { inviteUserEmail, inviteUserEmailText } from "@/lib/email-templates";
+import { requireAdmin } from "@/lib/api-auth";
 
 function generatePassword(length = 12): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
@@ -17,13 +17,9 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const isSuperAdmin = (user.email || "").toLowerCase() === "othaplug@gmail.com";
-    if (!isSuperAdmin) return NextResponse.json({ error: "Superadmin only" }, { status: 403 });
-
     const { id } = await params;
     const admin = createAdminClient();
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app"}/login?welcome=1`;

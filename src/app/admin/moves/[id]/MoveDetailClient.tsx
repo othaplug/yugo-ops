@@ -8,6 +8,7 @@ import BackButton from "../../components/BackButton";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
 import MoveContactModal from "./MoveContactModal";
+import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useRelativeTime } from "./useRelativeTime";
 
@@ -40,6 +41,7 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
   useEffect(() => setMove(initialMove), [initialMove]);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | "stage" | "next_action" | null>(null);
   const [editNextAction, setEditNextAction] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(new Set(TEAM_MEMBERS));
@@ -88,17 +90,17 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
           </div>
         </div>
 
-        {/* Status / Stage / Next action / Last updated - no card containers */}
-        <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-4">
-          <div className="group/card relative">
-            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "status" ? null : "status")} aria-label="Edit status">
+        {/* Status bar - refined 4-column grid */}
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
+            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "status" ? null : "status")} aria-label="Edit status">
               <EditIcon />
             </button>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</div>
+            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</div>
             {editingCard === "status" ? (
               <select
                 defaultValue={move.status}
-                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 onChange={async (e) => {
                   const v = e.target.value;
                   const { data } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
@@ -112,21 +114,21 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
                 ))}
               </select>
             ) : (
-              <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+              <span className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                 {move.status?.replace("-", " ")}
               </span>
             )}
           </div>
 
-          <div className="group/card relative">
-            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "stage" ? null : "stage")} aria-label="Edit stage">
+          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
+            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "stage" ? null : "stage")} aria-label="Edit stage">
               <EditIcon />
             </button>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Stage</div>
+            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Stage</div>
             {editingCard === "stage" ? (
               <select
                 defaultValue={move.stage ?? "scheduled"}
-                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 onChange={async (e) => {
                   const v = e.target.value || null;
                   const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
@@ -140,15 +142,15 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
                 ))}
               </select>
             ) : (
-              <div className="text-[13px] font-semibold text-[var(--tx)]">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</div>
+              <div className="text-[12px] font-semibold text-[var(--tx)]">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</div>
             )}
           </div>
 
-          <div className="group/card relative">
-            <button type="button" className="absolute -top-1 right-0 opacity-0 group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => { setEditNextAction(move.next_action ?? ""); setEditingCard(editingCard === "next_action" ? null : "next_action"); }} aria-label="Edit next action">
+          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
+            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => { setEditNextAction(move.next_action ?? ""); setEditingCard(editingCard === "next_action" ? null : "next_action"); }} aria-label="Edit next action">
               <EditIcon />
             </button>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Next Action</div>
+            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Next action</div>
             {editingCard === "next_action" ? (
               <input
                 value={editNextAction}
@@ -161,16 +163,16 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
                 }}
                 onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                 autoFocus
-                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[200px]"
-                placeholder="e.g. Confirm elevator slot"
+                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                placeholder="Add next action"
               />
             ) : (
-              <div className="text-[13px] font-semibold text-[var(--gold)]">{move.next_action || "—"}</div>
+              <div className="text-[12px] font-semibold text-[var(--gold)] truncate">{move.next_action || "—"}</div>
             )}
           </div>
 
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Last Updated</div>
+          <div className="p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60">
+            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Last updated</div>
             <div className="text-[12px] font-semibold text-[var(--tx2)]">{lastUpdatedRelative}</div>
           </div>
         </div>
@@ -242,8 +244,11 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
         </div>
       </ModalOverlay>
 
-      {/* Time Intelligence */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
+      {/* Time Intelligence - editable */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 hover:border-[var(--gold)]/60 transition-all">
+        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+          <EditIcon />
+        </button>
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Time Intelligence</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
@@ -251,8 +256,12 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
             <div className="text-[12px] font-semibold text-[var(--tx)]">{move.scheduled_date || "—"}</div>
           </div>
           <div>
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Time</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)]">{move.scheduled_time || "—"}</div>
+          </div>
+          <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Arrival Window</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">8:00 to 10:00 AM</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)]">{move.arrival_window || "—"}</div>
           </div>
           <div>
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Est. Duration</div>
@@ -269,30 +278,15 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
         </div>
       </div>
 
-      {/* Property + Access (Residential) or Office-specific (Office) */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      {/* Property + Access - editable */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[var(--gold)]/60 transition-all">
+        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit property access">
+          <EditIcon />
+        </button>
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">
           {isOffice ? "Office & Access Conditions" : "Property & Access Conditions"}
         </h3>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Origin</div>
-            <div className="space-y-1.5 text-[11px]">
-              <div><span className="text-[var(--tx3)]">Type:</span> <span className="font-semibold">{isOffice ? "Office Tower" : "Condo"}</span></div>
-              <div><span className="text-[var(--tx3)]">Elevator Reserved:</span> <span className="font-semibold">9:00 to 11:00</span></div>
-              <div><span className="text-[var(--tx3)]">Loading Dock:</span> <span className="font-semibold">{isOffice ? "Yes" : "Yes"}</span></div>
-              <div><span className="text-[var(--tx3)]">Stairs:</span> <span className="font-semibold">No</span></div>
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Destination</div>
-            <div className="space-y-1.5 text-[11px]">
-              <div><span className="text-[var(--tx3)]">Type:</span> <span className="font-semibold">{isOffice ? "Retail Unit" : "Detached"}</span></div>
-              <div><span className="text-[var(--tx3)]">Parking:</span> <span className="font-semibold">Street</span></div>
-              <div><span className="text-[var(--tx3)]">Access Notes:</span> <span className="font-semibold">{isOffice ? "Freight elevator required" : "Narrow driveway"}</span></div>
-            </div>
-          </div>
-        </div>
+        <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">{move.access_notes || "No access notes. Click edit to add."}</p>
       </div>
 
       {/* Financial Snapshot */}
@@ -357,8 +351,11 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
         </p>
       </div>
 
-      {/* Addresses */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      {/* Addresses - editable */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[var(--gold)]/60 transition-all">
+        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
+          <EditIcon />
+        </button>
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Addresses</h3>
         <div className="grid md:grid-cols-2 gap-5">
           <div>
@@ -370,7 +367,25 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
             <div className="text-[13px] text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
           </div>
         </div>
+        <button type="button" onClick={() => setDetailsModalOpen(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">
+          Edit address, date & access →
+        </button>
       </div>
+
+      <EditMoveDetailsModal
+        open={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        moveId={move.id}
+        initial={{
+          from_address: move.from_address,
+          to_address: move.to_address || move.delivery_address,
+          scheduled_date: move.scheduled_date,
+          scheduled_time: move.scheduled_time,
+          arrival_window: move.arrival_window,
+          access_notes: move.access_notes,
+        }}
+        onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
+      />
     </div>
   );
 }

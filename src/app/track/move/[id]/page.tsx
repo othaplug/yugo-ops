@@ -1,11 +1,22 @@
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMoveCode } from "@/lib/move-code";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyTrackToken } from "@/lib/track-token";
 
-export default async function TrackMovePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TrackMovePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
+}) {
   const { id } = await params;
-  const supabase = await createClient();
+  const { token } = await searchParams;
+
+  if (!verifyTrackToken("move", id, token || "")) notFound();
+
+  const supabase = createAdminClient();
   const { data: move, error } = await supabase
     .from("moves")
     .select("*")

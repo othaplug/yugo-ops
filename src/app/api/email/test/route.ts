@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { requireAdmin } from "@/lib/api-auth";
 
 /**
  * Test endpoint to verify Resend is working.
@@ -7,6 +8,8 @@ import { Resend } from "resend";
  * Returns the full Resend response for debugging.
  */
 export async function POST(req: NextRequest) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
   try {
     const { to } = await req.json();
     const email = typeof to === "string" ? to.trim() : null;

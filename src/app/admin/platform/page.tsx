@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PlatformSettingsClient from "./PlatformSettingsClient";
 
-const SUPER_ADMIN_EMAIL = "othaplug@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
 
 export default async function PlatformPage() {
   const supabase = await createClient();

@@ -4,7 +4,7 @@ import AdminShell from "./components/AdminShell";
 import ChangePasswordGate from "./components/ChangePasswordGate";
 import TwoFAGate from "./components/TwoFAGate";
 
-const SUPER_ADMIN_EMAIL = "othaplug@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();

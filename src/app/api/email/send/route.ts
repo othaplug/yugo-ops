@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resend } from "@/lib/resend";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+  const { error: authErr } = await requireAuth();
+  if (authErr) return authErr;
   try {
     const { to, subject, html } = await req.json();
 
