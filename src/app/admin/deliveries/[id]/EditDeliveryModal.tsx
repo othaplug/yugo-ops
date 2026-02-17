@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
@@ -20,6 +21,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
   const [loading, setLoading] = useState(false);
   const [pickupAddress, setPickupAddress] = useState(delivery?.pickup_address ?? "");
   const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
+  const [quotedPrice, setQuotedPrice] = useState("");
   const router = useRouter();
   const supabase = createClient();
 
@@ -27,6 +29,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
     if (open && delivery) {
       setPickupAddress(delivery.pickup_address ?? "");
       setDeliveryAddress(delivery.delivery_address ?? "");
+      setQuotedPrice(formatNumberInput(delivery.quoted_price) || "");
     }
   }, [open, delivery]);
 
@@ -36,8 +39,10 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
     const form = new FormData(e.currentTarget);
     const itemsRaw = (form.get("items") as string) || "";
     const items = itemsRaw.split("\n").filter((i) => i.trim()).map((line) => {
-      const m = line.match(/^(.+?)\s*\|\s*(\d+)$/);
-      if (m) return { name: m[1].trim(), qty: parseInt(m[2], 10) };
+      const pipeMatch = line.match(/^(.+?)\s*\|\s*(\d+)$/);
+      if (pipeMatch) return { name: pipeMatch[1].trim(), qty: parseInt(pipeMatch[2], 10) };
+      const xMatch = line.match(/^(.+?)\s+x(\d+)$/i);
+      if (xMatch) return { name: xMatch[1].trim(), qty: parseInt(xMatch[2], 10) };
       return { name: line.trim(), qty: 1 };
     });
 
@@ -53,7 +58,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
         delivery_window: form.get("delivery_window"),
         instructions: form.get("instructions"),
         items,
-        quoted_price: form.get("quoted_price") ? parseFloat(form.get("quoted_price") as string) : null,
+        quoted_price: parseNumberInput(quotedPrice) || null,
         status: form.get("status") || delivery.status,
         special_handling: !!form.get("special_handling"),
         updated_at: new Date().toISOString(),
@@ -111,11 +116,30 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
               )}
             </select>
           </Field>
-          <Field label="Items (one per line, use 'Item | Qty' for quantity)">
-            <textarea name="items" rows={3} defaultValue={(delivery.items || []).map((i: any) => typeof i === "object" ? `${i.name || i} | ${i.qty ?? 1}` : i).join("\n")} className="field-input resize-y" />
+          <Field label="Items (one per line, e.g. Couch x2)">
+            <textarea name="items" rows={3} defaultValue={(delivery.items || []).map((i: any) => {
+              if (typeof i === "object" && i != null) {
+                const name = i.name || i;
+                const qty = i.qty ?? 1;
+                return qty > 1 ? `${name} x${qty}` : name;
+              }
+              return i;
+            }).join("\n")} className="field-input resize-y" />
           </Field>
           <Field label="Quoted Price">
-            <input name="quoted_price" type="number" step="0.01" defaultValue={delivery.quoted_price} className="field-input" />
+            <input
+              type="text"
+              name="quoted_price"
+              value={quotedPrice}
+              onChange={(e) => setQuotedPrice(e.target.value)}
+              onBlur={() => {
+                const n = parseNumberInput(quotedPrice);
+                if (n > 0) setQuotedPrice(formatNumberInput(n));
+              }}
+              placeholder="1,234.00"
+              inputMode="decimal"
+              className="field-input"
+            />
           </Field>
           <Field label="Status">
             <select name="status" defaultValue={delivery.status} className="field-input">

@@ -11,6 +11,7 @@ import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
+import ClientMessagesSection from "./ClientMessagesSection";
 import MovePhotosSection from "./MovePhotosSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -23,7 +24,9 @@ interface MoveDetailClientProps {
   isOffice?: boolean;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
 
 export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
   const router = useRouter();
@@ -315,9 +318,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Financial Snapshot</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Estimate</span><div className="text-[11px] font-bold text-[var(--gold)]">${estimate.toLocaleString()}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[11px] font-bold text-[var(--grn)]">${depositPaid.toLocaleString()}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[11px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>${balanceDue.toLocaleString()}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Estimate</span><div className="text-[11px] font-bold text-[var(--gold)]">{formatCurrency(estimate)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[11px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[11px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[11px] font-medium text-[var(--grn)]">Deposit Received</div></div>
         </div>
       </div>
@@ -351,20 +354,24 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </div>
 
-      {/* Internal Notes */}
+      {/* Inventory, Photos, Documents */}
+      <MoveInventorySection moveId={move.id} />
+      <MovePhotosSection moveId={move.id} />
+      <MoveDocumentsSection moveId={move.id} />
+
+      {/* Client Messages - conversation thread */}
+      <ClientMessagesSection moveId={move.id} clientName={move.client_name} />
+
+      {/* Internal Notes - admin-only, at bottom */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
         <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Internal Notes</h3>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
-          {move.internal_notes || "No internal notes. Click edit to add."}
+          {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
       </div>
-
-      <MoveInventorySection moveId={move.id} />
-      <MovePhotosSection moveId={move.id} />
-      <MoveDocumentsSection moveId={move.id} />
 
       <EditMoveDetailsModal
         open={detailsModalOpen}
@@ -386,7 +393,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           to_access: move.to_access,
           access_notes: move.access_notes,
           complexity_indicators: move.complexity_indicators ?? [],
-          internal_notes: move.internal_notes,
+          internal_notes: stripClientMessagesFromNotes(move.internal_notes),
         }}
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />

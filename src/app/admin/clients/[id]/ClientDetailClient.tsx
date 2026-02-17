@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { getMoveDetailPath } from "@/lib/move-code";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Badge from "../../components/Badge";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import EditPartnerModal from "./EditPartnerModal";
 import DeliverySummaryModal from "./DeliverySummaryModal";
+import PortalAccessSection from "./PortalAccessSection";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface MoveRow {
   id: string;
@@ -183,6 +186,9 @@ export default function ClientDetailClient({
         </div>
       </div>
 
+      {/* Portal Access — partners only */}
+      {!isClient && isAdmin && <PortalAccessSection orgId={client.id} orgName={client.name || ""} />}
+
       {/* Overview + since */}
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         {partnerSince && (
@@ -220,12 +226,12 @@ export default function ClientDetailClient({
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Total paid</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">${(paidTotal / 1000).toFixed(1)}K</div>
+          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCurrency(paidTotal)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
           <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
-            {outstandingTotal > 0 ? `$${outstandingTotal.toLocaleString()}` : "$0"}
+            {outstandingTotal > 0 ? formatCurrency(outstandingTotal) : formatCurrency(0)}
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 col-span-2 sm:col-span-1">
@@ -244,7 +250,7 @@ export default function ClientDetailClient({
             moves.map((m) => (
               <Link
                 key={m.id}
-                href={`/admin/moves/${m.id}`}
+                href={getMoveDetailPath(m)}
                 className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
               >
                 <div className="flex-1 min-w-0">
@@ -285,7 +291,7 @@ export default function ClientDetailClient({
         <h3 className="text-[13px] font-bold">Invoices</h3>
         {outstandingTotal > 0 && (
           <div className="text-[11px] font-semibold text-[var(--org)]">
-            Outstanding: ${outstandingTotal.toLocaleString()}
+            Outstanding: {formatCurrency(outstandingTotal)}
           </div>
         )}
       </div>
@@ -301,7 +307,7 @@ export default function ClientDetailClient({
               <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
               <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
             </div>
-            <div className="text-[10px] font-bold">${Number(inv.amount).toLocaleString()}</div>
+            <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}</div>
             <Badge status={inv.status} />
           </button>
         ))}

@@ -6,6 +6,8 @@ import Badge from "../components/Badge";
 import { Icon } from "@/components/AppIcons";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
+import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 
 interface Delivery {
   id: string;
@@ -137,7 +139,7 @@ export default function AllProjectsView({
               filteredDeliveries.map((d) => (
                 <Link
                   key={d.id}
-                  href={`/admin/deliveries/${d.id}`}
+                  href={getDeliveryDetailPath(d)}
                   className="flex items-center gap-2 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--bg)]/30 border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] active:bg-[var(--gdim)] transition-all min-h-[52px] touch-manipulation"
                 >
                   <div
@@ -193,7 +195,7 @@ export default function AllProjectsView({
               filteredMoves.map((m) => (
                 <Link
                   key={m.id}
-                  href={`/admin/moves/${m.id}`}
+                  href={getMoveDetailPath(m)}
                   className="flex items-center gap-2 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--bg)]/30 border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] active:bg-[var(--gdim)] transition-all min-h-[52px] touch-manipulation"
                 >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--gdim)] shrink-0 text-[var(--tx2)]">
@@ -207,7 +209,7 @@ export default function AllProjectsView({
                   </div>
                   <div className="hidden sm:block text-[10px] text-[var(--tx3)] shrink-0 text-right">
                     <div>{formatMoveDate(m.scheduled_date)}</div>
-                    <div className="text-[var(--gold)] font-semibold">${Number(m.estimate || 0).toLocaleString()}</div>
+                    <div className="text-[var(--gold)] font-semibold">{formatCurrency(m.estimate ?? 0)}</div>
                   </div>
                   <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{formatMoveDate(m.scheduled_date)}</div>
                   <Badge status={m.status} />

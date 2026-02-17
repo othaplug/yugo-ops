@@ -27,7 +27,7 @@ interface UserDetailModalProps {
 export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, isMoveClient, moveId, onSaved, onDeleted }: UserDetailModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
-  const [role, setRole] = useState(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : user.role === "client" ? "client" : "dispatcher");
+  const [role, setRole] = useState(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,7 +37,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
   useEffect(() => {
     if (open) {
       setName(user.name || "");
-      setRole(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : user.role === "client" ? "client" : "dispatcher");
+      setRole(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
     }
   }, [open, user]);
 
@@ -177,14 +177,15 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             ) : (
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as "admin" | "manager" | "dispatcher" | "client")}
+                onChange={(e) => setRole(e.target.value)}
                 disabled={!canEditRole}
                 className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="dispatcher">Dispatcher</option>
-                <option value="client">Client</option>
+                <option value="coordinator">Coordinator</option>
+                <option value="viewer">Viewer</option>
               </select>
             )}
           </div>

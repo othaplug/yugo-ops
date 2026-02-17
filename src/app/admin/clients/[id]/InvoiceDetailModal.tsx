@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Badge from "../../components/Badge";
 import ModalOverlay from "../../components/ModalOverlay";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface InvoiceDetailModalProps {
   open: boolean;
@@ -32,7 +33,7 @@ export default function InvoiceDetailModal({ open, onClose, invoice }: InvoiceDe
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Amount</div>
-          <div className="text-[var(--gold)] font-bold text-lg">${Number(invoice.amount || 0).toLocaleString()}</div>
+          <div className="text-[var(--gold)] font-bold text-lg">{formatCurrency(invoice.amount ?? 0)}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Due date</div>

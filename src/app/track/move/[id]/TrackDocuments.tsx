@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/AppIcons";
+import { formatCurrency } from "@/lib/format-currency";
 
 type DocItem = {
   id: string;
@@ -105,7 +106,7 @@ export default function TrackDocuments({
                   <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>
                   <div className="text-[11px] text-[#666] flex items-center gap-2">
                     {dateStr}
-                    {doc.amount != null && ` • $${Number(doc.amount).toLocaleString()}`}
+                    {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
                     {isPaid && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
                         PAID

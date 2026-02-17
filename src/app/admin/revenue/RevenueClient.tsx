@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
+import { formatCurrency } from "@/lib/format-currency";
 
 type Period = "6mo" | "year" | "ytd" | "monthly";
 
@@ -46,14 +47,12 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
       const year = now.getFullYear();
       const month = now.getMonth();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const dayLabels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
-      const monthLabel = now.toLocaleString("en-US", { month: "short" });
       const dailyAvg = Math.round(currentVal / daysInMonth);
       const vals = Array.from({ length: daysInMonth }, (_, i) =>
         i === daysInMonth - 1 ? currentVal - dailyAvg * (daysInMonth - 1) : dailyAvg
       );
       return {
-        months: dayLabels.map((d) => `${monthLabel} ${d}`),
+        months: Array.from({ length: daysInMonth }, (_, i) => String(i + 1)),
         trendData: vals,
       };
     }
@@ -105,27 +104,29 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Feb Revenue</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">${(febRevenue / 1000).toFixed(1)}K</div>
+          <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCurrency(febRevenue)}</div>
           <div className="text-[10px] font-semibold text-[var(--grn)] mt-0.5">↑{pctChange}%</div>
         </Link>
         <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">YTD</div>
-          <div className="text-xl font-bold font-heading">${(ytd / 1000).toFixed(1)}K</div>
+          <div className="text-xl font-bold font-heading">{formatCurrency(ytd)}</div>
         </Link>
         <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">${(outstanding / 1000).toFixed(1)}K</div>
+          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(outstanding)}</div>
         </Link>
         <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg Job</div>
-          <div className="text-xl font-bold font-heading">${avgJob.toLocaleString()}</div>
+          <div className="text-xl font-bold font-heading">{formatCurrency(avgJob)}</div>
         </Link>
       </div>
 
       {/* Trend + Period Selector */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Revenue Trend</h3>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
+            Revenue Trend{period === "monthly" ? ` — ${new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}` : ""}
+          </h3>
           <div className="flex gap-1 p-1 bg-[var(--bg)] rounded-lg">
             {PERIOD_OPTIONS.map((opt) => (
               <button
@@ -146,6 +147,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
             const barHeight = Math.max(16, Math.round((trendData[i] / maxVal) * 100));
             const isHovered = hoveredBar === i;
             const isCurrent = i === months.length - 1;
+            const showValue = period === "monthly" ? (isHovered || isCurrent) : true;
             return (
               <button
                 key={`${m}-${i}`}
@@ -153,9 +155,11 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
                 onMouseEnter={() => setHoveredBar(i)}
                 onMouseLeave={() => setHoveredBar(null)}
                 onClick={() => setHoveredBar(i)}
-                className={`flex flex-col items-center gap-2 cursor-pointer group ${period === "monthly" ? "min-w-[28px] flex-shrink-0" : "flex-1 min-w-0"}`}
+                className={`flex flex-col items-center gap-2 cursor-pointer group ${period === "monthly" ? "min-w-[36px] flex-shrink-0" : "flex-1 min-w-0"}`}
               >
-                <span className="text-[10px] font-semibold text-[var(--tx2)]">${(trendData[i] / 1000).toFixed(0)}K</span>
+                <span className={`text-[10px] font-semibold tabular-nums min-h-[14px] ${showValue ? "text-[var(--tx2)]" : "text-transparent"}`} aria-hidden={!showValue}>
+                  {showValue ? formatCurrency(trendData[i]) : "\u00A0"}
+                </span>
                 <div className="w-full flex-1 flex flex-col justify-end min-h-[60px]">
                   <div
                     className="w-full rounded-t-md transition-all duration-300 ease-out cursor-pointer"
@@ -192,7 +196,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
                 >
                   <div className="flex justify-between mb-1">
                     <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{t.label}</span>
-                    <span className="text-[11px] font-bold text-[var(--tx)]">${(t.amount / 1000).toFixed(1)}K</span>
+                    <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(t.amount)}</span>
                   </div>
                   <div className="h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
                     <div
@@ -224,7 +228,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
                   className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg border border-transparent border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] hover:border-[var(--gold)]/40 hover:shadow-md hover:scale-[1.02] transition-all duration-200"
                 >
                   <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
-                  <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">${(amount / 1000).toFixed(1)}K</span>
+                  <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
                 </Link>
               ))
             ) : (
@@ -270,7 +274,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
                     <li key={inv.id} className="flex items-center justify-between py-2 border-b border-[var(--brd)] last:border-0 text-[11px]">
                       <span className="font-mono font-semibold text-[var(--tx)]">{inv.invoice_number}</span>
                       <span className="text-[var(--tx2)]">{inv.client_name}</span>
-                      <span className="font-bold text-[var(--tx)]">${Number(inv.amount).toLocaleString()}</span>
+                      <span className="font-bold text-[var(--tx)]">{formatCurrency(inv.amount)}</span>
                     </li>
                   ))}
                 </ul>

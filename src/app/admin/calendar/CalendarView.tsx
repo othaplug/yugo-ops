@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
+import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import GlobalModal from "@/components/ui/Modal";
 import UpcomingItem from "./UpcomingItem";
 
@@ -193,7 +194,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
                     onDragStart={() => { setDragId(d.id); setDragType("delivery"); }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/admin/deliveries/${d.id}`);
+                      router.push(getDeliveryDetailPath(d));
                     }}
                     className="px-1.5 py-1 rounded mb-[3px] cursor-pointer transition-all hover:opacity-80"
                     style={{ borderLeft: `3px solid ${color}`, background: `${color}11` }}
@@ -216,7 +217,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
                   onDragStart={() => { setDragId(m.id); setDragType("move"); }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    router.push(`/admin/moves/${m.id}`);
+                    router.push(getMoveDetailPath(m));
                   }}
                   className="px-1.5 py-1 rounded mb-[3px] cursor-pointer transition-all hover:opacity-80"
                   style={{ borderLeft: `3px solid #2D9F5A`, background: `#2D9F5A11` }}
@@ -263,7 +264,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
             {deliveriesThisWeek.map((d) => (
               <li key={d.id}>
                 <UpcomingItem
-                  href={`/admin/deliveries/${d.id}`}
+                  href={getDeliveryDetailPath(d)}
                   name={d.customer_name || d.delivery_number || "—"}
                   date={d.scheduled_date}
                   time={d.time_slot || d.delivery_window}
@@ -274,7 +275,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
             {movesThisWeek.map((m) => (
               <li key={m.id}>
                 <UpcomingItem
-                  href={`/admin/moves/${m.id}`}
+                  href={getMoveDetailPath(m)}
                   name={m.client_name || "—"}
                   date={m.scheduled_date}
                   time={m.scheduled_time || m.time}
@@ -335,12 +336,12 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
               <ul className="space-y-2">
                 {deliveriesThisWeek.map((d) => (
                   <li key={d.id}>
-                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                    <UpcomingItem href={getDeliveryDetailPath(d)} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
                   </li>
                 ))}
                 {movesThisWeek.map((m) => (
                   <li key={m.id}>
-                    <UpcomingItem href={`/admin/moves/${m.id}`} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
+                    <UpcomingItem href={getMoveDetailPath(m)} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
                   </li>
                 ))}
                 {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No jobs this week</p>}
@@ -350,7 +351,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
               <ul className="space-y-2">
                 {deliveriesThisWeek.map((d) => (
                   <li key={d.id}>
-                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                    <UpcomingItem href={getDeliveryDetailPath(d)} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
                   </li>
                 ))}
                 {deliveriesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2B deliveries this week</p>}
@@ -360,7 +361,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
               <ul className="space-y-2">
                 {movesThisWeek.map((m) => (
                   <li key={m.id}>
-                    <UpcomingItem href={`/admin/moves/${m.id}`} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
+                    <UpcomingItem href={getMoveDetailPath(m)} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
                   </li>
                 ))}
                 {movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2C moves this week</p>}
@@ -370,7 +371,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
               <ul className="space-y-2">
                 {deliveries.filter((d) => !d.crew_id).map((d) => (
                   <li key={d.id}>
-                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                    <UpcomingItem href={getDeliveryDetailPath(d)} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
                   </li>
                 ))}
                 {deliveries.filter((d) => !d.crew_id).length === 0 && <p className="text-[11px] text-[var(--tx3)]">All jobs assigned</p>}

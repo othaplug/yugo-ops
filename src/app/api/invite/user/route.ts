@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const roleVal = role === "admin" ? "admin" : role === "manager" ? "manager" : "dispatcher";
-    const roleLabel = roleVal === "admin" ? "Admin" : roleVal === "manager" ? "Manager" : "Dispatcher";
+    const roleVal = ["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(role) ? role : "dispatcher";
+    const roleLabels: Record<string, string> = { admin: "Admin", manager: "Manager", dispatcher: "Dispatcher", coordinator: "Coordinator", viewer: "Viewer" };
+    const roleLabel = roleLabels[roleVal] || "Dispatcher";
 
     // If email is already linked to a user, do not add again — return error
     const { data: existingUsers } = await admin.auth.admin.listUsers();

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Badge from "../../components/Badge";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 import ModalOverlay from "../../components/ModalOverlay";
 
 interface DeliverySummaryModalProps {
@@ -50,7 +51,7 @@ export default function DeliverySummaryModal({ open, onClose, delivery }: Delive
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items</div>
           <div className="text-[var(--tx)]">{itemCount} items</div>
         </div>
-        <Link href={`/admin/deliveries/${delivery.id}`} className="mt-4 inline-block w-full text-center py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
+        <Link href={getDeliveryDetailPath(delivery)} className="mt-4 inline-block w-full text-center py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
           View full project →
         </Link>
       </div>

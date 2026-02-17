@@ -105,6 +105,7 @@ export default function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [isScriptReady, setScriptReady] = useState(false);
+  const isInternalUpdate = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -135,6 +136,14 @@ export default function AddressAutocomplete({
     };
   }, []);
 
+  // Sync input when value changes from parent (e.g. loading edit data, form reset)
+  useEffect(() => {
+    if (inputRef.current && !isInternalUpdate.current && inputRef.current.value !== value) {
+      inputRef.current.value = value ?? "";
+    }
+    isInternalUpdate.current = false;
+  }, [value]);
+
   const initAutocomplete = useCallback(() => {
     if (!inputRef.current || !window.google?.maps?.places || autocompleteRef.current) return;
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
@@ -146,6 +155,8 @@ export default function AddressAutocomplete({
       const place = autocomplete.getPlace();
       const result = parsePlace(place);
       if (result) {
+        if (inputRef.current) inputRef.current.value = result.fullAddress;
+        isInternalUpdate.current = true;
         onChange(result);
         onRawChange?.(result.fullAddress);
       }
@@ -176,7 +187,7 @@ export default function AddressAutocomplete({
       <input
         ref={inputRef}
         type="text"
-        value={value}
+        defaultValue={value}
         onChange={(e) => {
           onRawChange?.(e.target.value);
         }}

@@ -72,16 +72,17 @@ export async function POST(
     // Clients use magic-link tracking — send tracking link instead of password reset
     if (platformUser?.role === "client") {
       const { signTrackToken } = await import("@/lib/track-token");
-      const { getMoveCode } = await import("@/lib/move-code");
-      const { data: move } = await admin.from("moves").select("id").ilike("client_email", email.trim().toLowerCase()).limit(1).maybeSingle();
+      const { getMoveCode, formatJobId, getTrackMoveSlug } = await import("@/lib/move-code");
+      const { data: move } = await admin.from("moves").select("id, move_code").ilike("client_email", email.trim().toLowerCase()).limit(1).maybeSingle();
       if (!move) return NextResponse.json({ error: "No move found for this client. Use Resend tracking link on the move." }, { status: 400 });
-      const trackUrl = `${getEmailBaseUrl()}/track/move/${move.id}?token=${signTrackToken("move", move.id)}`;
+      const trackUrl = `${getEmailBaseUrl()}/track/move/${getTrackMoveSlug(move)}?token=${signTrackToken("move", move.id)}`;
       const moveCode = getMoveCode(move);
+      const jobIdDisplay = formatJobId(moveCode, "move");
       const { error: sendError } = await resend.emails.send({
         from: "OPS+ <notifications@opsplus.co>",
         to: email,
-        subject: `Track your move — ${moveCode}`,
-        html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: moveCode }),
+        subject: `Track your move — ${jobIdDisplay}`,
+        html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: jobIdDisplay }),
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
       });
       if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });

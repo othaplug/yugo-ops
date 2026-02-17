@@ -16,7 +16,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: items, error } = await admin
       .from("move_inventory")
-      .select("id, room, item_name, status, box_number, sort_order")
+      .select("id, room, item_name, box_number, sort_order")
       .eq("move_id", moveId)
       .order("room")
       .order("sort_order")

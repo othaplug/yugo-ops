@@ -32,26 +32,33 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
 
     const deliveryNumber = `DEL-${String(Math.floor(Math.random() * 9000) + 1000)}`;
 
-    const { error } = await supabase.from("deliveries").insert({
-      delivery_number: deliveryNumber,
-      org_id: form.get("org_id"),
-      client_name: org?.name || "",
-      customer_name: form.get("customer_name"),
-      pickup_address: pickupAddress || form.get("pickup_address"),
-      delivery_address: deliveryAddress || form.get("delivery_address"),
-      items: itemsRaw ? itemsRaw.split("\n").filter((i) => i.trim()) : [],
-      scheduled_date: form.get("scheduled_date"),
-      time_slot: form.get("time_slot"),
-      delivery_window: form.get("delivery_window"),
-      status: "scheduled",
-      category: form.get("project_type") || org?.type || "retail",
-      instructions: form.get("instructions"),
-      special_handling: !!form.get("special_handling"),
-    });
+    const { data: created, error } = await supabase
+      .from("deliveries")
+      .insert({
+        delivery_number: deliveryNumber,
+        org_id: form.get("org_id"),
+        client_name: org?.name || "",
+        customer_name: form.get("customer_name"),
+        pickup_address: pickupAddress || form.get("pickup_address"),
+        delivery_address: deliveryAddress || form.get("delivery_address"),
+        items: itemsRaw ? itemsRaw.split("\n").filter((i) => i.trim()) : [],
+        scheduled_date: form.get("scheduled_date"),
+        time_slot: form.get("time_slot"),
+        delivery_window: form.get("delivery_window"),
+        status: "scheduled",
+        category: form.get("project_type") || org?.type || "retail",
+        instructions: form.get("instructions"),
+        special_handling: !!form.get("special_handling"),
+      })
+      .select("id, delivery_number")
+      .single();
 
     setLoading(false);
-    if (!error) {
-      router.push("/admin/deliveries");
+    if (!error && created) {
+      const path = created.delivery_number
+        ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
+        : `/admin/deliveries/${created.id}`;
+      router.push(path);
       router.refresh();
     }
   };
@@ -103,7 +110,7 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
         </select>
       </Field>
       <Field label="Items (one per line)">
-        <textarea name="items" rows={3} placeholder="Mah Jong Sofa&#10;Coffee Table" className="field-input resize-y" />
+        <textarea name="items" rows={3} placeholder="Couch x2&#10;Coffee Table" className="field-input resize-y" />
       </Field>
       <Field label="Instructions">
         <textarea name="instructions" rows={2} placeholder="Special instructions..." className="field-input resize-y" />

@@ -29,7 +29,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
 
     if (typeof body.name === "string") updates.name = body.name.trim();
-    if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "client"].includes(body.role)) updates.role = body.role;
+    if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(body.role)) updates.role = body.role;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

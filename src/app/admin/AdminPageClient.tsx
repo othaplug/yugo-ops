@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import FilterBar from "./components/FilterBar";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
+import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 
 const BADGE_MAP: Record<string, string> = {
@@ -84,7 +86,7 @@ interface AdminPageClientProps {
 
 function getActivityHref(e: ActivityEvent): string {
   if (e.entity_type === "move") return `/admin/moves/${e.entity_id}`;
-  if (e.entity_type === "delivery") return "/admin/deliveries";
+  if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
   return "/admin";
 }
@@ -101,6 +103,16 @@ function formatActivityTime(createdAt: string): string {
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+function formatActivityDescription(desc: string): string {
+  const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
+  if (match) {
+    const [, name, status] = match;
+    const statusLabel = (status || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return `${name} · ${statusLabel}`;
+  }
+  return desc;
+}
+
 const ICON_BG: Record<string, string> = {
   mail: "var(--bldim)",
   check: "var(--grdim)",
@@ -110,6 +122,7 @@ const ICON_BG: Record<string, string> = {
   party: "var(--gdim)",
   clipboard: "var(--bldim)",
   home: "var(--gdim)",
+  bell: "var(--gdim)",
 };
 
 export default function AdminPageClient({
@@ -153,7 +166,7 @@ export default function AdminPageClient({
         </Link>
         <Link href="/admin/invoices" className="mc">
           <div className="mc-l">Overdue</div>
-          <div className="mc-v text-[var(--red)]">${(overdueAmount / 1000).toFixed(1)}K</div>
+          <div className="mc-v text-[var(--red)]">{formatCurrency(overdueAmount)}</div>
         </Link>
         <Link href="/admin/moves/residential" className="mc">
           <div className="mc-l">B2C</div>
@@ -182,7 +195,7 @@ export default function AdminPageClient({
         />
         <div className="dl px-4 pb-4 dc-wrap">
         {filteredDeliveries.slice(0, 5).map((d) => (
-          <Link key={d.id} href={`/admin/deliveries/${d.id}`} className="dc">
+          <Link key={d.id} href={getDeliveryDetailPath(d)} className="dc">
             <div
               className="dc-ic flex items-center justify-center text-[var(--tx2)]"
               style={{ background: categoryBgs[d.category || ""] || "var(--gdim)" }}
@@ -221,7 +234,7 @@ export default function AdminPageClient({
         />
         <div className="dl px-4 pb-4 dc-wrap">
         {filteredMoves.slice(0, 5).map((m) => (
-          <Link key={m.id} href={`/admin/moves/${m.id}`} className="dc">
+          <Link key={m.id} href={getMoveDetailPath(m)} className="dc">
             <div className="dc-ic flex items-center justify-center text-[var(--tx2)]" style={{ background: "var(--gdim)" }}>
               <Icon name={m.move_type === "office" ? "building" : "home"} className="w-[16px] h-[16px]" />
             </div>
@@ -238,12 +251,12 @@ export default function AdminPageClient({
 
       {/* g2 - Monthly Revenue + Activity */}
       <div className="g2 mt-4">
-        <div className="panel">
+        <div className="panel overflow-hidden">
           <div className="sh">
             <div className="sh-t">Monthly Revenue</div>
             <Link href="/admin/revenue" className="sh-l">Details →</Link>
           </div>
-          <div className="flex items-end gap-1.5 h-[120px]">
+          <div className="flex items-end gap-2 h-[130px] pt-1">
             {[
               { m: "Sep", v: 15 },
               { m: "Oct", v: 22 },
@@ -255,29 +268,30 @@ export default function AdminPageClient({
               const pct = Math.round((d.v / 40) * 100);
               const isNow = i === 5;
               return (
-                <div key={d.m} className="flex-1 flex flex-col items-center gap-0.5 h-full">
-                  <span className={`text-[9px] font-semibold ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+                <div key={d.m} className="flex-1 flex flex-col items-center gap-1 h-full min-w-0">
+                  <span className={`text-[10px] font-semibold tabular-nums ${isNow ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}>
                     ${d.v}K
                   </span>
-                  <div className="flex-1 w-full flex items-end">
+                  <div className="flex-1 w-full flex items-end min-h-[48px]">
                     <div
-                      className="w-full rounded-t min-h-[3px]"
+                      className="w-full rounded-t-md min-h-[4px] transition-all duration-300"
                       style={{
-                        height: `${pct}%`,
+                        height: `${Math.max(pct, 8)}%`,
                         background: isNow
-                          ? "linear-gradient(to top, rgba(201,169,98,.2), rgba(201,169,98,.6))"
-                          : "var(--brd)",
+                          ? "linear-gradient(180deg, var(--gold) 0%, var(--gold2) 100%)"
+                          : "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+                        boxShadow: isNow ? "0 -2px 12px rgba(201,169,98,0.25)" : "none",
                       }}
                     />
                   </div>
-                  <span className="text-[8px] text-[var(--tx3)]">{d.m}</span>
+                  <span className={`text-[9px] font-medium ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>{d.m}</span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="panel">
+        <div className="panel overflow-hidden">
           <div className="sh">
             <div className="sh-t">Activity</div>
             {activityEvents.length > 0 && (
@@ -285,34 +299,46 @@ export default function AdminPageClient({
             )}
           </div>
           {activityEvents.length > 0 ? (
-            activityEvents.map((a) => (
-              <Link key={a.id} href={getActivityHref(a)} className="act-item block hover:opacity-90 transition-opacity">
-                <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[a.icon || ""] || "var(--gdim)" }}>
-                  <Icon name={a.icon || "package"} className="w-[14px] h-[14px]" />
+            (() => {
+              const deduped = activityEvents.filter((a, i) => {
+                if (i === 0) return true;
+                return activityEvents[i - 1].description !== a.description;
+              });
+              return (
+                <div className="space-y-1">
+                  {deduped.slice(0, 8).map((a) => (
+                <Link key={a.id} href={getActivityHref(a)} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                  <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[a.icon || ""] || "var(--gdim)" }}>
+                    <Icon name={a.icon || "mail"} className="w-[14px] h-[14px]" />
+                  </div>
+                  <div className="act-body min-w-0">
+                    <div className="act-t">{formatActivityDescription(a.description || a.event_type)}</div>
+                    <div className="act-tm">{formatActivityTime(a.created_at)}</div>
+                  </div>
+                </Link>
+              ))}
                 </div>
-                <div className="act-body">
-                  <div className="act-t">{a.description || a.event_type}</div>
-                  <div className="act-tm">{formatActivityTime(a.created_at)}</div>
-                </div>
-              </Link>
-            ))
+              );
+            })()
           ) : (
-            [
-              { ic: "package", bg: "var(--gdim)", t: "DEL in transit", tm: "9:12 AM", href: "/admin/deliveries" },
-              { ic: "check", bg: "var(--grdim)", t: "INV paid ($1,800)", tm: "8:45 AM", href: "/admin/invoices" },
-              { ic: "home", bg: "var(--gdim)", t: "MV-001 materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
-              { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
-            ].map((a) => (
-              <Link key={a.t} href={a.href} className="act-item block hover:opacity-90 transition-opacity">
-                <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}>
-                  <Icon name={a.ic} className="w-[14px] h-[14px]" />
-                </div>
-                <div className="act-body">
-                  <div className="act-t">{a.t}</div>
-                  <div className="act-tm">{a.tm}</div>
-                </div>
-              </Link>
-            ))
+            <div className="space-y-1">
+              {[
+                { ic: "package", bg: "var(--gdim)", t: "Delivery in transit", tm: "9:12 AM", href: "/admin/deliveries" },
+                { ic: "check", bg: "var(--grdim)", t: "Invoice paid", tm: "8:45 AM", href: "/admin/invoices" },
+                { ic: "home", bg: "var(--gdim)", t: "Move materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
+                { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
+              ].map((a) => (
+                <Link key={a.t} href={a.href} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                  <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}>
+                    <Icon name={a.ic} className="w-[14px] h-[14px]" />
+                  </div>
+                  <div className="act-body">
+                    <div className="act-t">{a.t}</div>
+                    <div className="act-tm">{a.tm}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       </div>

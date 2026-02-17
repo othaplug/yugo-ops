@@ -4,8 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
-const STATUSES = ["not_packed", "packed", "in_transit", "delivered"] as const;
-
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +26,7 @@ export async function GET(
     const db = isSuperAdmin ? createAdminClient() : supabase;
     const { data: items, error } = await db
       .from("move_inventory")
-      .select("id, room, item_name, status, box_number, sort_order")
+      .select("id, room, item_name, box_number, sort_order")
       .eq("move_id", moveId)
       .order("room")
       .order("sort_order")
@@ -67,7 +65,6 @@ export async function POST(
     const body = await req.json();
     const room = (body.room || "").trim() || "Other";
     const itemName = (body.item_name || "").trim();
-    const status = STATUSES.includes(body.status) ? body.status : "not_packed";
     const boxNumber = (body.box_number || "").trim() || null;
     const sortOrder = typeof body.sort_order === "number" ? body.sort_order : 0;
 
@@ -79,11 +76,10 @@ export async function POST(
         move_id: moveId,
         room,
         item_name: itemName,
-        status,
         box_number: boxNumber,
         sort_order: sortOrder,
       })
-      .select("id, room, item_name, status, box_number")
+      .select("id, room, item_name, box_number")
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

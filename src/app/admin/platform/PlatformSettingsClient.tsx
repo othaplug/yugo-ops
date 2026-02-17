@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
-import InvitePartnerModal from "./InvitePartnerModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
@@ -22,6 +21,18 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
+
+function formatLastActive(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return d.toLocaleDateString();
+}
 
 const RATES_KEY = "yugo-platform-rates";
 
@@ -45,8 +56,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const tabParam = searchParams.get("tab") || "pricing";
   const activeTab: TabId = TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : "pricing";
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
-  const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
-  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null }[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string } | null>(null);
   const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
@@ -378,12 +388,12 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Retail, designers, hospitality, galleries</p>
           </div>
-          <button
-            onClick={() => setInvitePartnerOpen(true)}
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+          <Link
+            href="/admin/partners/retail"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all inline-block"
           >
-            Invite Partner
-          </button>
+            Manage Partners →
+          </Link>
         </div>
         <div className="px-5 py-5 space-y-2">
           {[
@@ -410,7 +420,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
             <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
+              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management — Yugo Team
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
           </div>
@@ -425,7 +435,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
               onClick={() => setInviteUserOpen(true)}
               className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
             >
-              + Invite User
+              + Invite Team Member
             </button>
           </div>
         </div>
@@ -460,12 +470,17 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                     <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"}`}>
-                      {u.status === "activated" ? "Activated" : "Pending"}
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : u.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                      {u.status === "activated" ? "Active" : u.status === "pending" ? "Pending" : "Inactive"}
                     </span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
-                      {u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "partner" ? "Partner" : "Dispatcher"}
+                      {u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "coordinator" ? "Coordinator" : u.role === "viewer" ? "Viewer" : "Dispatcher"}
                     </span>
+                    {u.last_sign_in_at && (
+                      <span className="text-[9px] text-[var(--tx3)]">
+                        {formatLastActive(u.last_sign_in_at)}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}
@@ -514,10 +529,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
       </ModalOverlay>
 
       <InviteUserModal open={inviteUserOpen} onClose={() => { setInviteUserOpen(false); fetchUsers(); }} />
-      {selectedUser && selectedUser.role === "partner" && (
-        <UserDetailModal open={!!selectedUser} onClose={() => setSelectedUser(null)} user={selectedUser} currentUserId={currentUserId} isPartner />
-      )}
-      {selectedUser && selectedUser.role !== "partner" && (
+      {selectedUser && (
         <UserDetailModal
           open={!!selectedUser}
           onClose={() => setSelectedUser(null)}
@@ -530,7 +542,6 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
           onDeleted={(id) => { setUsers((prev) => prev.filter((u) => u.id !== id)); setSelectedUser(null); }}
         />
       )}
-      <InvitePartnerModal open={invitePartnerOpen} onClose={() => setInvitePartnerOpen(false)} />
       <AddTeamMemberModal
         open={addTeamMemberOpen}
         onClose={() => setAddTeamMemberOpen(false)}

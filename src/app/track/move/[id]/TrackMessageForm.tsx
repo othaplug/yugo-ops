@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 
-export default function TrackMessageForm({ moveId, token }: { moveId: string; token: string }) {
+export default function TrackMessageForm({
+  moveId,
+  token,
+  onSent,
+}: {
+  moveId: string;
+  token: string;
+  onSent?: (sentContent?: string) => void;
+}) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,8 +32,9 @@ export default function TrackMessageForm({ moveId, token }: { moveId: string; to
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
+      const sent = trimmed;
       setMessage("");
-      setSent(true);
+      onSent?.(sent);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
@@ -43,19 +51,18 @@ export default function TrackMessageForm({ moveId, token }: { moveId: string; to
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
           maxLength={2000}
-          disabled={sending || sent}
+          disabled={sending}
           className="flex-1 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5 text-[13px] text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none disabled:opacity-50 transition-colors"
         />
         <button
           type="submit"
-          disabled={sending || !message.trim() || sent}
+          disabled={sending || !message.trim()}
           className="rounded-lg px-5 py-2.5 text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {sending ? "Sending…" : sent ? "Sent" : "Send"}
+          {sending ? "Sending…" : "Send"}
         </button>
       </div>
       {error && <p className="text-[11px] text-[#D14343]">{error}</p>}
-      {sent && <p className="text-[11px] text-[#22C55E]">Message sent. We&apos;ll get back to you soon.</p>}
     </form>
   );
 }

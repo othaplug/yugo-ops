@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { SquareClient, SquareEnvironment } from "square";
+import { getMoveCode, formatJobId } from "@/lib/move-code";
 
 export async function POST(
   req: NextRequest,
@@ -35,7 +36,7 @@ export async function POST(
     const admin = createAdminClient();
     const { data: move, error: moveError } = await admin
       .from("moves")
-      .select("id, estimate, client_name")
+      .select("id, estimate, client_name, move_code")
       .eq("id", moveId)
       .single();
 
@@ -80,7 +81,7 @@ export async function POST(
         },
         locationId,
       },
-      paymentNote: `Move ID: ${moveId}`,
+      paymentNote: `${formatJobId(getMoveCode(move), "move")}`,
       checkoutOptions: redirectUrl ? { redirectUrl } : undefined,
     });
 

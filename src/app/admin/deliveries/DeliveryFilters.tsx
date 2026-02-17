@@ -5,6 +5,7 @@ import Link from "next/link";
 import Badge from "../components/Badge";
 import { Icon } from "@/components/AppIcons";
 import { formatMoveDate } from "@/lib/date-format";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 
 interface Delivery {
   id: string;
@@ -78,7 +79,7 @@ export default function DeliveryFilters({
         {filtered.map((d) => (
           <Link
             key={d.id}
-            href={`/admin/deliveries/${d.id}`}
+            href={getDeliveryDetailPath(d)}
             className="flex items-center gap-2 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] active:bg-[var(--gdim)] transition-all min-h-[52px] touch-manipulation"
           >
             <div

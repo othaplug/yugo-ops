@@ -58,17 +58,19 @@ export function SortableHeader({
   currentSort,
   currentDir,
   onSort,
+  className = "",
 }: {
   label: string;
   sortKey: string;
   currentSort: string | null;
   currentDir: "asc" | "desc";
   onSort: (key: string) => void;
+  className?: string;
 }) {
   const isActive = currentSort === sortKey;
   return (
     <th
-      className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none"
+      className={`text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">

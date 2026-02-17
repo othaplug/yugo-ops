@@ -2,33 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/AppIcons";
+import { ChevronDown } from "lucide-react";
 
 type InventoryItem = {
   id: string;
   room: string;
   item_name: string;
-  status: string;
   box_number: string | null;
   sort_order: number;
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  not_packed: "Ready",
-  packed: "Packed",
-  in_transit: "In Transit",
-  delivered: "Delivered",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  not_packed: "text-[#1A1A1A]",
-  packed: "text-[#22C55E]",
-  in_transit: "text-[#C9A962]",
-  delivered: "text-[#22C55E]",
 };
 
 export default function TrackInventory({ moveId, token }: { moveId: string; token: string }) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -48,10 +35,9 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
     const rows = items.map((i) => ({
       Room: i.room || "",
       Item: i.item_name,
-      Status: STATUS_LABELS[i.status] ?? i.status,
       Box: i.box_number || "-",
     }));
-    const csv = ["Room,Item,Status,Box", ...rows.map((r) => `"${r.Room}","${r.Item}","${r.Status}","${r.Box}"`)].join("\n");
+    const csv = ["Room,Item,Box", ...rows.map((r) => `"${r.Room}","${r.Item}","${r.Box}"`)].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -68,6 +54,16 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
     return acc;
   }, {});
   const rooms = Object.keys(byRoom).sort();
+
+  const toggleRoom = (room: string) => {
+    setCollapsedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(room)) next.delete(room);
+      else next.add(room);
+      return next;
+    });
+  };
+  const isExpanded = (room: string) => !collapsedRooms.has(room);
 
   if (loading) {
     return (
@@ -108,34 +104,49 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           Export
         </button>
       </div>
-      <div className="p-5 space-y-4">
-        {rooms.map((room) => (
-          <div key={room} className="rounded-lg border border-[#E7E5E4] overflow-hidden">
-            <div className="border-b border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5">
-              <h4 className="text-[12px] font-bold text-[#C9A962]">{room}</h4>
+      <div className="p-5 space-y-2">
+        {rooms.map((room) => {
+          const expanded = isExpanded(room);
+          const itemCount = byRoom[room].length;
+          return (
+            <div key={room} className="rounded-lg border border-[#E7E5E4] overflow-hidden transition-colors hover:border-[#D4D4D4]">
+              <button
+                type="button"
+                onClick={() => toggleRoom(room)}
+                className="w-full flex items-center justify-between gap-2 bg-[#FAFAF8] px-4 py-2.5 text-left hover:bg-[#F5F5F3] transition-colors cursor-pointer group border-b border-[#E7E5E4]"
+              >
+                <h4 className="text-[12px] font-bold text-[#C9A962] group-hover:text-[#B8983E] transition-colors">{room}</h4>
+                <span className="flex items-center gap-2">
+                  <span className="text-[11px] font-medium text-[#999]">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
+                  <ChevronDown className={`w-[14px] h-[14px] text-[#999] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
+                </span>
+              </button>
+              <div
+                className="grid transition-[grid-template-rows] duration-200 ease-out"
+                style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+              >
+                <div className="overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr>
+                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Item</th>
+                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Box</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {byRoom[room].map((item) => (
+                        <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0">
+                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{item.item_name}</td>
+                          <td className="px-4 py-2.5 text-[11px] font-mono text-[#666]">{item.box_number || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Item</th>
-                  <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Status</th>
-                  <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Box</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byRoom[room].map((item) => (
-                  <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0">
-                    <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{item.item_name}</td>
-                    <td className={`px-4 py-2.5 text-[11px] font-semibold ${STATUS_COLORS[item.status] ?? "text-[#666]"}`}>
-                      {STATUS_LABELS[item.status] ?? item.status}
-                    </td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-[#666]">{item.box_number || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

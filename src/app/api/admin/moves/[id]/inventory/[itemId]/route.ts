@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
-const STATUSES = ["not_packed", "packed", "in_transit", "delivered"] as const;
 
 export async function PATCH(
   req: NextRequest,
@@ -30,7 +29,6 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
     if (body.room !== undefined) updates.room = (body.room || "").trim() || "Other";
     if (body.item_name !== undefined) updates.item_name = (body.item_name || "").trim();
-    if (body.status !== undefined) updates.status = STATUSES.includes(body.status) ? body.status : "not_packed";
     if (body.box_number !== undefined) updates.box_number = (body.box_number || "").trim() || null;
     if (typeof body.sort_order === "number") updates.sort_order = body.sort_order;
 
@@ -43,7 +41,7 @@ export async function PATCH(
       .update(updates)
       .eq("id", itemId)
       .eq("move_id", moveId)
-      .select("id, room, item_name, status, box_number")
+      .select("id, room, item_name, box_number")
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

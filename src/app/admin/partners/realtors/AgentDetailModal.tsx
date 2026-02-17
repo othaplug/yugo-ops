@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Badge from "../../components/Badge";
 import ModalOverlay from "../../components/ModalOverlay";
+import { formatCurrency } from "@/lib/format-currency";
 
 type Referral = {
   id: string;
@@ -58,7 +59,7 @@ export default function AgentDetailModal({
         )}
         <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
-            <span className="text-[16px] font-bold text-[var(--gold)]">${totalCommission.toLocaleString()}</span>
+            <span className="text-[16px] font-bold text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Referrals brought in</span>
@@ -99,7 +100,7 @@ export default function AgentDetailModal({
                           {r.client_name || "—"}
                         </span>
                         <span className="text-[10px] font-semibold text-[var(--gold)]">
-                          {r.commission ? `$${Number(r.commission).toLocaleString()}` : "—"}
+                          {r.commission ? formatCurrency(r.commission) : "—"}
                         </span>
                       </div>
                       <div className="text-[10px] text-[var(--tx3)] mt-0.5">

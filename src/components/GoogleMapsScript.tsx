@@ -9,7 +9,7 @@ export default function GoogleMapsScript() {
   return (
     <Script
       src={`https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`}
-      strategy="lazyOnload"
+      strategy="afterInteractive"
     />
   );
 }

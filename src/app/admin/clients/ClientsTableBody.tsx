@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
+import { formatCurrency } from "@/lib/format-currency";
 
 type Client = {
   id: string;
@@ -71,7 +72,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
           }}
           className="hover:bg-[var(--gdim)] transition-colors cursor-pointer group"
         >
-          <td className="px-3 py-2 border-b border-[var(--brd)]">
+          <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
               <span className={`inline-flex px-2 py-[2px] rounded text-[8px] font-bold ${c.type === "b2c" ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
@@ -80,13 +81,13 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
             </div>
           </td>
           <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>
-          <td className="px-3 py-2 border-b border-[var(--brd)]">
+          <td className="hidden sm:table-cell px-3 py-2 border-b border-[var(--brd)]">
             <div className="text-[9px]">{c.contact_name}</div>
             <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
           </td>
-          <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month ?? "—"}</td>
+          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month ?? "—"}</td>
           <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
-            {(c.outstanding_balance ?? 0) > 0 ? `$${Number(c.outstanding_balance).toLocaleString()}` : "—"}
+            {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
           </td>
           <td className="px-3 py-2 border-b border-[var(--brd)] w-10" onClick={(e) => e.stopPropagation()}>
             <div className="relative flex justify-end" ref={menuOpenId === c.id ? menuRef : undefined} data-menu>

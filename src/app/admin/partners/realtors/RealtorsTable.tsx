@@ -5,6 +5,7 @@ import Badge from "../../components/Badge";
 import FilterBar, { SortableHeader } from "../../components/FilterBar";
 import { AddReferralButton } from "./RealtorsClient";
 import AgentDetailModal from "./AgentDetailModal";
+import { formatCurrency } from "@/lib/format-currency";
 
 type Referral = {
   id: string;
@@ -178,7 +179,7 @@ export default function RealtorsTable({
                   <Badge status={r.status} />
                 </td>
                 <td className="px-4 py-2.5 text-[10px] font-semibold border-b border-[var(--brd)]">
-                  {Number(r.commission) > 0 ? `$${Number(r.commission).toLocaleString()}` : "—"}
+                  {Number(r.commission) > 0 ? formatCurrency(r.commission) : "—"}
                 </td>
               </tr>
             ))}

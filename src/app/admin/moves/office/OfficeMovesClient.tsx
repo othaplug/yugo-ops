@@ -7,6 +7,8 @@ import Badge from "../../components/Badge";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
+import { getMoveDetailPath } from "@/lib/move-code";
 
 type Move = {
   id: string;
@@ -96,7 +98,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
         </Link>
         <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Pipeline</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">${pipeline.toLocaleString()}</div>
+          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(pipeline)}</div>
         </Link>
         <Link href="/admin/moves/new" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all flex items-center justify-center">
           <span className="text-[10px] font-semibold text-[var(--gold)]">+ New Move</span>
@@ -203,7 +205,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
             <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">No office moves yet</div>
           ) : filtered.map((m) => (
             <div key={m.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all duration-200 group">
-              <Link href={`/admin/moves/${m.id}`} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:flex-nowrap">
+              <Link href={getMoveDetailPath(m)} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:flex-nowrap">
                 <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--bldim)] shrink-0 text-[var(--tx2)]">
                     <Icon name="building" className="w-[16px] h-[16px]" />
@@ -218,7 +220,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-2.5 sm:flex-nowrap">
                   <span className="text-[10px] text-[var(--tx3)] tabular-nums">{formatMoveDate(m.scheduled_date)}</span>
                   <span className={`tabular-nums font-mono text-[10px] font-bold ${priceColor(m.status)}`}>
-                    ${Number(m.estimate || 0).toLocaleString()}
+                    {formatCurrency(m.estimate ?? 0)}
                   </span>
                   <Badge status={m.status ?? ""} />
                 </div>

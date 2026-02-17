@@ -1,4 +1,5 @@
 import { getEmailBaseUrl } from "./email-base-url";
+import { formatCurrency } from "./format-currency";
 
 function emailFooter(loginUrl?: string) {
   const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
@@ -263,7 +264,7 @@ export function invoiceEmail(invoice: {
       
       <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:8px;padding:20px;text-align:center;margin-bottom:16px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;margin-bottom:8px">Amount Due</div>
-        <div style="font-family:serif;font-size:28px;font-weight:700;color:#C9A962">$${invoice.amount.toLocaleString()}</div>
+        <div style="font-family:serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(invoice.amount)}</div>
         <div style="font-size:10px;color:#666;margin-top:4px">Due: ${invoice.due_date}</div>
       </div>
       

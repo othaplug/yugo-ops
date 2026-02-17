@@ -4,7 +4,7 @@ import { getResend } from "@/lib/resend";
 import { trackingLinkEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { getMoveCode } from "@/lib/move-code";
+import { getMoveCode, formatJobId, getTrackMoveSlug } from "@/lib/move-code";
 import { requireStaff } from "@/lib/api-auth";
 
 export async function POST(
@@ -19,7 +19,7 @@ export async function POST(
     const supabase = await createClient();
     const { data: move } = await supabase
       .from("moves")
-      .select("id, client_name, client_email, estimate")
+      .select("id, client_name, client_email, estimate, move_code")
       .eq("id", id)
       .single();
 
@@ -33,18 +33,19 @@ export async function POST(
       return NextResponse.json({ error: "Email not configured" }, { status: 503 });
     }
 
-    const trackUrl = `${getEmailBaseUrl()}/track/move/${move.id}?token=${signTrackToken("move", move.id)}`;
+    const trackUrl = `${getEmailBaseUrl()}/track/move/${getTrackMoveSlug(move)}?token=${signTrackToken("move", move.id)}`;
     const moveCode = getMoveCode(move);
+    const jobIdDisplay = formatJobId(moveCode, "move");
 
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
       from: "OPS+ <notifications@opsplus.co>",
       to: email,
-      subject: `Track your move — ${moveCode}`,
+      subject: `Track your move — ${jobIdDisplay}`,
       html: trackingLinkEmail({
         clientName: name || "there",
         trackUrl,
-        moveNumber: moveCode,
+        moveNumber: jobIdDisplay,
       }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

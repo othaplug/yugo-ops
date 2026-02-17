@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import AddRealtorModal from "./AddRealtorModal";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface RealtorsMetricsProps {
   referralsCount: number;
@@ -26,7 +27,7 @@ export default function RealtorsMetrics({ referralsCount, booked, totalCommissio
         </Link>
         <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Commission</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">${totalCommission.toLocaleString()}</div>
+          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(totalCommission)}</div>
         </Link>
         <button
           type="button"

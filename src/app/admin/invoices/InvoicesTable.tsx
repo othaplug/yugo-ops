@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Badge from "../components/Badge";
+import { formatCurrency } from "@/lib/format-currency";
 
 type SortKey = "date" | "amount" | "client" | "status";
 
@@ -91,7 +92,7 @@ export default function InvoicesTable({
                 </Link>
               </td>
               <td className="px-4 py-2.5 text-[10px] font-bold border-b border-[var(--brd)]">
-                ${Number(inv.amount).toLocaleString()}
+                {formatCurrency(inv.amount)}
               </td>
               <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">
                 {inv.due_date}

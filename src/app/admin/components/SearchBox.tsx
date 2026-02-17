@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 
 export default function SearchBox() {
   const [query, setQuery] = useState("");
@@ -36,7 +37,7 @@ export default function SearchBox() {
 
       (deliveries || []).forEach((d) => {
         const s = `${d.delivery_number} ${d.customer_name} ${d.client_name}`.toLowerCase();
-        if (s.includes(q)) all.push({ type: "Delivery", name: `${d.delivery_number} — ${d.customer_name}`, href: `/admin/deliveries/${d.id}` });
+        if (s.includes(q)) all.push({ type: "Delivery", name: `${d.delivery_number} — ${d.customer_name}`, href: getDeliveryDetailPath(d) });
       });
       (clients || []).forEach((c) => {
         const s = `${c.name} ${c.contact_name || ""} ${c.email || ""}`.toLowerCase();

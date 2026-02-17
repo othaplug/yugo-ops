@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { formatCurrency } from "./format-currency";
 import autoTable from "jspdf-autotable";
 
 export function generateInvoicePDF(invoice: {
@@ -38,8 +39,8 @@ export function generateInvoicePDF(invoice: {
     body: items.map((item: any) => [
       item.d || item.description || "",
       item.q || item.quantity || 1,
-      `$${item.r || item.rate || 0}`,
-      `$${((item.q || 1) * (item.r || 0)).toLocaleString()}`,
+      formatCurrency(item.r ?? item.rate ?? 0),
+      formatCurrency((item.q || 1) * (item.r || 0)),
     ]),
     theme: "grid",
     headStyles: { fillColor: [201, 169, 98], textColor: [13, 13, 13], fontStyle: "bold" },
@@ -51,7 +52,7 @@ export function generateInvoicePDF(invoice: {
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text(`Total: $${invoice.amount.toLocaleString()}`, 140, finalY + 15);
+  doc.text(`Total: ${formatCurrency(invoice.amount)}`, 140, finalY + 15);
 
   // Footer
   doc.setFontSize(8);

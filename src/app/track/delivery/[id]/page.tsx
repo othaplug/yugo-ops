@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { isUuid } from "@/lib/move-code";
 
 export default async function TrackDeliveryPage({
   params,
@@ -10,19 +11,17 @@ export default async function TrackDeliveryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ token?: string }>;
 }) {
-  const { id } = await params;
+  const slug = decodeURIComponent((await params).id?.trim() || "");
   const { token } = await searchParams;
-
-  if (!verifyTrackToken("delivery", id, token || "")) notFound();
-
   const supabase = createAdminClient();
-  const { data: delivery, error } = await supabase
-    .from("deliveries")
-    .select("*")
-    .eq("id", id)
-    .single();
+
+  const byUuid = isUuid(slug);
+  const { data: delivery, error } = byUuid
+    ? await supabase.from("deliveries").select("*").eq("id", slug).single()
+    : await supabase.from("deliveries").select("*").ilike("delivery_number", slug).single();
 
   if (error || !delivery) notFound();
+  if (!verifyTrackToken("delivery", delivery.id, token || "")) notFound();
 
   const itemsCount = Array.isArray(delivery.items) ? delivery.items.length : 0;
   const statusColors: Record<string, string> = {

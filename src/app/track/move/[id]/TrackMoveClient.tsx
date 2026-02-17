@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getMoveCode } from "@/lib/move-code";
+import { getMoveCode, formatJobId } from "@/lib/move-code";
 import { Icon } from "@/components/AppIcons";
 import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
-import TrackMessageForm from "./TrackMessageForm";
+import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
 import {
   MOVE_STATUS_OPTIONS,
@@ -19,12 +19,13 @@ import {
   getStatusLabel,
 } from "@/lib/move-status";
 import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
 
 const CHANGE_TYPES = [
   "Change move date",
   "Change move time",
   "Add items to inventory",
-  "Remove items to inventory",
+  "Remove items from inventory",
   "Change destination address",
   "Add special instructions",
   "Upgrade service tier",
@@ -67,6 +68,7 @@ export default function TrackMoveClient({
   const [changeDesc, setChangeDesc] = useState("");
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
+  const [changeSubmitted, setChangeSubmitted] = useState(false);
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
 
@@ -127,7 +129,7 @@ export default function TrackMoveClient({
   }, [move.id, token]);
 
   const moveCode = getMoveCode(move);
-  const displayCode = moveCode.startsWith("MV") ? `YG-${moveCode.slice(2)}` : moveCode;
+  const displayCode = formatJobId(moveCode, "move");
   const statusVal = move.status || "confirmed";
   const currentIdx = getStatusIdx(statusVal);
   const isCancelled = statusVal === "cancelled";
@@ -160,6 +162,7 @@ export default function TrackMoveClient({
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to submit");
+      setChangeSubmitted(true);
       setChangeModalOpen(false);
       setChangeDesc("");
     } catch {
@@ -285,23 +288,66 @@ export default function TrackMoveClient({
 
         {/* Countdown card - light theme */}
         <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 mb-5 shadow-sm">
-          <div className="text-center">
-            <div className="font-hero text-[48px] md:text-[56px] leading-none text-[#C9A962]">
-              {daysUntil ?? "—"}
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-xl bg-[#E8D5A3]/40 flex items-center justify-center">
+              <Icon name="calendar" className="w-6 h-6 text-[#C9A962]" />
             </div>
-            <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
-            {scheduledDate && (
-              <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
-                {formatMoveDate(scheduledDate)}{" "}
-                at {move.scheduled_time || move.arrival_window || "TBD"}
-              </div>
-            )}
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              {isCompleted ? (
+                <>
+                  <div className="font-hero text-[24px] md:text-[28px] leading-tight text-[#22C55E]">Move complete</div>
+                  <div className="mt-1 text-[13px] text-[#666]">
+                    {scheduledDate ? formatMoveDate(scheduledDate) : "—"}
+                  </div>
+                  <a
+                    href="https://www.google.com/search?q=yugo+moving+review"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+                  >
+                    Leave a Review
+                  </a>
+                </>
+              ) : daysUntil === 0 ? (
+                <>
+                  <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962]">Today&apos;s the day!</div>
+                  <div className="mt-1 text-[13px] text-[#666]">
+                    {move.arrival_window || move.scheduled_time
+                      ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
+                      : "Your crew is on the way"}
+                  </div>
+                  {crewMembers.length > 0 && (
+                    <div className="mt-2 text-[12px] text-[#1A1A1A]">
+                      Crew: {crewMembers.join(", ")}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="font-hero text-[48px] md:text-[56px] leading-none text-[#C9A962]">
+                    {daysUntil ?? "—"}
+                  </div>
+                  <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
+                  {scheduledDate && (
+                    <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
+                      {formatMoveDate(scheduledDate)}
+                    </div>
+                  )}
+                  {(move.arrival_window || move.scheduled_time) && (
+                    <div className="mt-0.5 text-[12px] text-[#666]">
+                      Your crew arrives between {move.arrival_window || move.scheduled_time}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-0 border-b border-[#E7E5E4] mb-5 overflow-x-auto bg-white rounded-t-lg">
-          {tabs.map((t) => (
+        {/* Tabs - scrollable on mobile with fade hint */}
+        <div className="relative mb-5">
+          <div className="flex gap-0 border-b border-[#E7E5E4] overflow-x-auto overflow-y-hidden scrollbar-hide bg-white rounded-t-lg scroll-smooth">
+            {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
@@ -315,18 +361,30 @@ export default function TrackMoveClient({
               {t.label}
             </button>
           ))}
+          </div>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none rounded-tr-lg" aria-hidden />
         </div>
 
         {/* Tab content */}
         {activeTab === "dash" && (
           <div className="space-y-6">
-            {/* Move Timeline - Confirmed → Scheduled → Final Payment → In Progress → Completed */}
+            {/* Move Timeline - Confirmed → Scheduled → In Progress → Completed (Paid shown in financial section) */}
             <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
               <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
-                {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
-                  const state = isCancelled ? "wait" : i < currentIdx ? "done" : i === currentIdx ? "act" : "wait";
-                  const completedDate = isCompleted && i === 4 ? formatMoveDate(move.updated_at ? new Date(move.updated_at) : scheduledDate) : null;
+                {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled" && s.value !== "paid").map((s, i) => {
+                  const statusOrder = ["confirmed", "scheduled", "in_progress", "completed"];
+                  const stepIdx = statusOrder.indexOf(s.value);
+                  const stepCurrentIdx = statusOrder.indexOf(statusVal);
+                  const state = isCancelled ? "wait" : stepIdx < stepCurrentIdx ? "done" : stepIdx === stepCurrentIdx ? "act" : "wait";
+                  const subLabels: Record<string, { done: string; act: string; wait: string }> = {
+                    confirmed: { done: "Your move is confirmed", act: "Your move is confirmed", wait: "Upcoming" },
+                    scheduled: { done: "Crew and date assigned", act: "Crew and date assigned", wait: "Upcoming" },
+                    in_progress: { done: "Move underway", act: "Crew is on the way", wait: "Upcoming" },
+                    completed: { done: "Move finished!", act: "Move finished!", wait: "Upcoming" },
+                  };
+                  const sub = subLabels[s.value] || { done: "Done", act: "In progress", wait: "Upcoming" };
+                  const completedDate = isCompleted && s.value === "completed" ? formatMoveDate(move.updated_at ? new Date(move.updated_at) : scheduledDate) : null;
                   return (
                     <div key={s.value} className="relative pb-5 last:pb-0">
                       <div
@@ -342,7 +400,7 @@ export default function TrackMoveClient({
                         {s.label}
                       </div>
                       <div className="text-[11px] text-[#666] mt-0.5">
-                        {state === "done" ? (completedDate ? `Completed ${completedDate}` : "Completed") : state === "act" ? `In Progress` : "Upcoming"}
+                        {state === "done" ? (completedDate ? completedDate : sub.done) : state === "act" ? sub.act : sub.wait}
                       </div>
                     </div>
                   );
@@ -355,6 +413,19 @@ export default function TrackMoveClient({
               <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">Move Details</h3>
                 <div className="space-y-3">
+                  {scheduledDate && (
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Date & Time</div>
+                      <div className="text-[13px] text-[#1A1A1A]">
+                        {formatMoveDate(scheduledDate)}
+                        {(move.arrival_window || move.scheduled_time) && (
+                          <span className="block text-[12px] text-[#666] mt-0.5">
+                            Crew arrives between {move.arrival_window || move.scheduled_time}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">From</div>
                     <div className="text-[13px] text-[#1A1A1A]">{move.from_address || "—"}</div>
@@ -365,7 +436,7 @@ export default function TrackMoveClient({
                   </div>
                   <div>
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
-                    <div className="text-[18px] font-bold text-[#C9A962]">${totalBalance.toLocaleString()}</div>
+                    <div className="text-[18px] font-bold text-[#C9A962]">{formatCurrency(totalBalance)}</div>
                   </div>
                   {totalBalance > 0 && !showPaymentSuccess && (
                     <div className="pt-2">
@@ -406,9 +477,12 @@ export default function TrackMoveClient({
                     ))}
                     <div className="mt-4 pt-4 border-t border-[#E7E5E4]">
                       <div className="text-[10px] font-semibold text-[#999]">Coordinator</div>
-                      <div className="text-[13px] text-[#1A1A1A] mt-0.5 flex items-center gap-2">
-                        <Icon name="phone" className="w-[12px] h-[12px] text-[#C9A962]" />
-                        {YUGO_PHONE}
+                      <div className="text-[13px] text-[#1A1A1A] mt-0.5">
+                        <span className="font-medium">Yugo</span>
+                        <a href={`tel:${YUGO_PHONE.replace(/\D/g, "")}`} className="flex items-center gap-2 mt-1 text-[#C9A962] hover:underline">
+                          <Icon name="phone" className="w-[12px] h-[12px]" />
+                          {YUGO_PHONE}
+                        </a>
                       </div>
                     </div>
                   </>
@@ -419,6 +493,45 @@ export default function TrackMoveClient({
                 )}
               </div>
             </div>
+
+            {/* What to Expect */}
+            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+              <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">What to Expect</h3>
+              <div className="space-y-4 text-[13px] text-[#666] leading-relaxed">
+                {!isCompleted && daysUntil !== null && daysUntil > 0 && (
+                  <div>
+                    <div className="font-semibold text-[#1A1A1A] mb-1">Before your move</div>
+                    <ul className="list-disc list-inside space-y-0.5 text-[12px]">
+                      <li>Clear pathways for the crew</li>
+                      <li>Label fragile items</li>
+                      <li>Arrange parking if needed</li>
+                    </ul>
+                  </div>
+                )}
+                {!isCompleted && daysUntil !== null && daysUntil <= 0 && (
+                  <div>
+                    <div className="font-semibold text-[#1A1A1A] mb-1">Day of move</div>
+                    <p className="text-[12px]">When the crew arrives, they&apos;ll introduce themselves and walk through the plan. Feel free to ask questions—we&apos;re here to help.</p>
+                  </div>
+                )}
+                {isCompleted && (
+                  <div>
+                    <div className="font-semibold text-[#1A1A1A] mb-1">Thank you!</div>
+                    <p className="text-[12px]">We hope your move went smoothly. We&apos;d love to hear about your experience—leave a review when you have a moment.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {changeSubmitted && (
+              <div className="rounded-xl border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3 flex items-center gap-3">
+                <Icon name="check" className="w-5 h-5 text-[#22C55E] shrink-0" />
+                <div>
+                  <div className="text-[13px] font-semibold text-[#1A1A1A]">Change request submitted</div>
+                  <div className="text-[12px] text-[#666]">Your coordinator will reach out within 2 hours.</div>
+                </div>
+              </div>
+            )}
 
             {/* Request a Change */}
             <button
@@ -492,14 +605,14 @@ export default function TrackMoveClient({
             <div className="space-y-2 text-[13px] mb-4 text-[#1A1A1A]">
               <p className="flex items-center gap-2">
                 <Icon name="phone" className="w-[12px] h-[12px] text-[#C9A962]" />
-                {YUGO_PHONE}
+                <a href={`tel:${YUGO_PHONE.replace(/\D/g, "")}`} className="text-[#C9A962] hover:underline">{YUGO_PHONE}</a>
               </p>
               <p className="flex items-center gap-2">
                 <Icon name="mail" className="w-[12px] h-[12px] text-[#C9A962]" />
                 <a href={`mailto:${YUGO_EMAIL}`} className="text-[#C9A962] hover:underline">{YUGO_EMAIL}</a>
               </p>
             </div>
-            <TrackMessageForm moveId={move.id} token={token} />
+            <TrackMessageThread moveId={move.id} token={token} />
           </div>
         )}
       </main>

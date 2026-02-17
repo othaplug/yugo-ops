@@ -18,7 +18,7 @@ export async function GET() {
     .single();
   if (platformUser) {
     if (platformUser.role === "client") return NextResponse.json({ role: "client" });
-    if (["admin", "manager", "dispatcher"].includes(platformUser.role || "")) return NextResponse.json({ role: "admin" });
+    if (["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser.role || "")) return NextResponse.json({ role: "admin" });
   }
 
   // No staff role: check if client (move client only)

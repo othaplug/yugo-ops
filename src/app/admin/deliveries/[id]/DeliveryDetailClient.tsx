@@ -309,11 +309,11 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
               {(delivery.items as Array<string | { name: string; qty?: number }>).map((item, idx) => {
                 const name = typeof item === "string" ? item : item?.name || "";
                 const qty = typeof item === "object" && item?.qty != null ? item.qty : 1;
+                const display = qty > 1 ? `${name} x${qty}` : name;
                 return (
                   <li key={idx} className="flex items-center gap-2 text-[13px] text-[var(--tx)]">
                     <span className="text-[var(--gold)]">•</span>
-                    <span className="flex-1">{name}</span>
-                    <span className="text-[10px] font-semibold text-[var(--tx3)] bg-[var(--bg)] px-2 py-0.5 rounded">Qty: {qty}</span>
+                    <span className="flex-1">{display}</span>
                   </li>
                 );
               })}

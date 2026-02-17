@@ -46,12 +46,13 @@ export async function GET() {
       move_id?: string | null;
     }> = [];
 
-    // Clients are no longer in user management — they use magic-link tracking only.
+    // Internal team only: exclude partner users and client role
     const { data: partnerUsers } = await admin.from("partner_users").select("user_id");
     const partnerUserIds = new Set((partnerUsers ?? []).map((p) => p.user_id));
 
     for (const p of platformUsers ?? []) {
       if (p.role === "client") continue; // Clients use magic-link tracking, not user management
+      if (partnerUserIds.has(p.user_id)) continue; // Partner users managed per-partner, not here
       const auth = authMap.get(p.user_id);
       list.push({
         id: p.user_id,
@@ -65,23 +66,7 @@ export async function GET() {
       });
     }
 
-    for (const [authId, authData] of authMap) {
-      if (platformMap.has(authId)) continue;
-      if (pendingList.some((inv) => inv.email?.toLowerCase() === authData.email?.toLowerCase())) continue;
-
-      const isSuperAdminUser = isSuperAdminEmail(authData.email);
-      const isPartner = !isSuperAdminUser && partnerUserIds.has(authId);
-      list.push({
-        id: authId,
-        user_id: authId,
-        email: authData.email,
-        name: null,
-        role: isSuperAdminUser ? "superadmin" : isPartner ? "partner" : "dispatcher",
-        created_at: null,
-        last_sign_in_at: authData.last_sign_in_at,
-        status: authData.last_sign_in_at ? "activated" : "inactive",
-      });
-    }
+    // Auth users not in platform_users (e.g. partners) are excluded — managed per-partner
 
     const existingEmails = new Set(list.map((u) => u.email?.toLowerCase()));
     for (const inv of pendingList) {
@@ -90,22 +75,7 @@ export async function GET() {
       }
     }
 
-    const { data: partnerOrgs } = await admin.from("organizations").select("id, name, contact_name, email, user_id, created_at").not("user_id", "is", null);
-    for (const org of partnerOrgs ?? []) {
-      const authData = authMap.get(org.user_id);
-      if (isSuperAdminEmail(authData?.email)) continue;
-      if (list.some((u) => u.user_id === org.user_id || u.email?.toLowerCase() === (org.email || "").toLowerCase())) continue;
-      list.push({
-        id: `partner-${org.id}`,
-        user_id: org.user_id,
-        email: org.email || "",
-        name: org.contact_name || org.name,
-        role: "partner",
-        created_at: org.created_at,
-        last_sign_in_at: authData?.last_sign_in_at ?? null,
-        status: authData?.last_sign_in_at ? "activated" : "pending",
-      });
-    }
+    // Partner org users are NOT included — they are managed per-partner on partner detail pages
 
     list.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
 

@@ -5,6 +5,7 @@ import { getResend } from "@/lib/resend";
 import { requireAuth } from "@/lib/api-auth";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { formatJobId } from "@/lib/move-code";
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAuth();
@@ -29,10 +30,11 @@ export async function POST(req: NextRequest) {
     if (type === "move") {
       const estimate = Number(body.estimate || 0);
       const depositPaid = Math.round(estimate * 0.25);
-      const moveCode = (body.moveCode || body.deliveryNumber || "").trim().slice(0, 6) || `MOVE-${(body.moveId || "").slice(0, 4)}`;
+      const rawCode = (body.moveCode || body.deliveryNumber || "").trim().replace(/^#/, "").slice(0, 6) || "MV0000";
+      const jobIdDisplay = formatJobId(rawCode, "move");
       html = moveNotificationEmail({
         move_id: body.moveId || "",
-        move_number: moveCode,
+        move_number: jobIdDisplay,
         client_name: body.customerName || "",
         move_type: body.moveType || "residential",
         status: body.status || "",
@@ -45,10 +47,10 @@ export async function POST(req: NextRequest) {
         deposit_paid: depositPaid,
         balance_due: estimate - depositPaid,
         trackUrl: body.moveId
-          ? `${getEmailBaseUrl()}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}&from=notify`
+          ? `${getEmailBaseUrl()}/track/move/${encodeURIComponent((body.moveCode || body.moveId) as string)}?token=${signTrackToken("move", body.moveId)}&from=notify`
           : undefined,
       });
-      subject = `Your Move Was Updated - #${moveCode}`;
+      subject = `Your Move Was Updated — ${jobIdDisplay}`;
       await supabase.from("status_events").insert({
         entity_type: "move",
         entity_id: body.moveId || body.deliveryNumber,

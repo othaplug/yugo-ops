@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { Plus, Trash2, FileText } from "lucide-react";
 
@@ -85,8 +86,11 @@ export default function CreateMoveForm({
   const [preferredContact, setPreferredContact] = useState("email");
   const [crewId, setCrewId] = useState("");
   const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
-  const [newRoom, setNewRoom] = useState(DEFAULT_ROOMS[0]);
+  const [newRoom, setNewRoom] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [newItemQty, setNewItemQty] = useState(1);
+  const [inventoryBulkMode, setInventoryBulkMode] = useState(false);
+  const [inventoryBulkText, setInventoryBulkText] = useState("");
   const [teamMembers, setTeamMembers] = useState<Set<string>>(new Set());
   const selectedCrewMembers = crewId ? (crews.find((c) => c.id === crewId)?.members || []) : [];
   const [docFiles, setDocFiles] = useState<File[]>([]);
@@ -122,13 +126,36 @@ export default function CreateMoveForm({
   }, [crewId, crews]);
 
   const addInventoryItem = () => {
-    if (!newItemName.trim()) return;
-    setInventory((prev) => [...prev, { room: newRoom, item_name: newItemName.trim() }]);
+    if (!newItemName.trim() || !newRoom) return;
+    const name = newItemName.trim();
+    const itemName = newItemQty > 1 ? `${name} x${newItemQty}` : name;
+    setInventory((prev) => [...prev, { room: newRoom, item_name: itemName }]);
     setNewItemName("");
+    setNewItemQty(1);
   };
 
   const removeInventoryItem = (idx: number) => {
     setInventory((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const parseBulkInventoryLines = (text: string): string[] => {
+    return text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const m = line.match(/^(.+?)\s+x(\d+)$/i);
+        return m ? `${m[1].trim()} x${m[2]}` : line;
+      });
+  };
+
+  const addBulkInventoryItems = () => {
+    if (!newRoom || !inventoryBulkText.trim()) return;
+    const itemNames = parseBulkInventoryLines(inventoryBulkText);
+    if (itemNames.length === 0) return;
+    const newItems = itemNames.map((item_name) => ({ room: newRoom, item_name }));
+    setInventory((prev) => [...prev, ...newItems]);
+    setInventoryBulkText("");
   };
 
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +215,7 @@ export default function CreateMoveForm({
         formData.append("to_lat", String(toLat));
         formData.append("to_lng", String(toLng));
       }
-      formData.append("estimate", estimate || "0");
+      formData.append("estimate", String(parseNumberInput(estimate) || 0));
       formData.append("scheduled_date", scheduledDate);
       formData.append("scheduled_time", scheduledTime);
       formData.append("arrival_window", arrivalWindow);
@@ -202,7 +229,7 @@ export default function CreateMoveForm({
       docFiles.forEach((f) => formData.append("documents", f));
 
       const res = await fetch("/api/admin/moves/create", { method: "POST", body: formData });
-      const data = (await res.json().catch(() => ({}))) as { id?: string; error?: string; emailSent?: boolean; emailError?: string };
+      const data = (await res.json().catch(() => ({}))) as { id?: string; move_code?: string; error?: string; emailSent?: boolean; emailError?: string };
       if (!res.ok) throw new Error(data.error || `Failed to create move (${res.status})`);
       if (data.emailSent) {
         toast("Move created. Client notified by email.", "mail");
@@ -211,7 +238,7 @@ export default function CreateMoveForm({
       } else {
         toast("Move created.", "check");
       }
-      router.push(`/admin/moves/${data.id}`);
+      router.push(data.move_code ? `/admin/moves/${data.move_code}` : `/admin/moves/${data.id}`);
       router.refresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create move");
@@ -441,13 +468,16 @@ export default function CreateMoveForm({
             </Field>
             <Field label="Estimate ($)">
               <input
-                type="number"
+                type="text"
                 name="estimate"
                 value={estimate}
                 onChange={(e) => setEstimate(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.01"
+                onBlur={() => {
+                  const n = parseNumberInput(estimate);
+                  if (n > 0) setEstimate(formatNumberInput(n));
+                }}
+                placeholder="1,234.00"
+                inputMode="decimal"
                 className={fieldInput}
               />
             </Field>
@@ -522,40 +552,104 @@ export default function CreateMoveForm({
                 ))}
               </ul>
             )}
-            <div className="flex flex-wrap gap-2 items-end">
-              <div>
-                <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
-                <select
-                  value={newRoom}
-                  onChange={(e) => setNewRoom(e.target.value)}
-                  className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInventoryBulkMode(false)}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-[#0D0D0D]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                 >
-                  {DEFAULT_ROOMS.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                  Single
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInventoryBulkMode(true)}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-[#0D0D0D]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                >
+                  Bulk add
+                </button>
               </div>
-              <div className="flex-1 min-w-[140px]">
-                <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item</label>
-                <input
-                  type="text"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())}
-                  placeholder="e.g. Couch, Box 1"
-                  className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={addInventoryItem}
-                disabled={!newItemName.trim()}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50"
-              >
-                <Plus className="w-[12px] h-[12px]" /> Add
-              </button>
+              {inventoryBulkMode ? (
+                <div className="flex flex-col gap-2">
+                  <div>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
+                    <select
+                      value={newRoom}
+                      onChange={(e) => setNewRoom(e.target.value)}
+                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                    >
+                      <option value="">Select Room</option>
+                      {DEFAULT_ROOMS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Items (one per line, e.g. Couch x2)</label>
+                    <textarea
+                      value={inventoryBulkText}
+                      onChange={(e) => setInventoryBulkText(e.target.value)}
+                      placeholder={"Couch x2\nCoffee Table\nBox 1 x5"}
+                      rows={4}
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] resize-y"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addBulkInventoryItems}
+                    disabled={!inventoryBulkText.trim() || !newRoom}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50 self-start"
+                  >
+                    <Plus className="w-[12px] h-[12px]" /> Add all
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
+                    <select
+                      value={newRoom}
+                      onChange={(e) => setNewRoom(e.target.value)}
+                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                    >
+                      <option value="">Select Room</option>
+                      {DEFAULT_ROOMS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item</label>
+                    <input
+                      type="text"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())}
+                      placeholder="e.g. Couch x2"
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                    />
+                  </div>
+                  <div className="w-14">
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Qty</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={newItemQty}
+                      onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addInventoryItem}
+                    disabled={!newItemName.trim() || !newRoom}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50"
+                  >
+                    <Plus className="w-[12px] h-[12px]" /> Add
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

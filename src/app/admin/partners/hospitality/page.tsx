@@ -3,6 +3,7 @@ import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { Icon } from "@/components/AppIcons";
 import Badge from "../../components/Badge";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 
 export default async function HospitalityPage() {
   const supabase = await createClient();
@@ -68,7 +69,7 @@ export default async function HospitalityPage() {
           ) : delsList.slice(0, 5).map((d) => (
             <Link
               key={d.id}
-              href={`/admin/deliveries/${d.id}`}
+              href={getDeliveryDetailPath(d)}
               className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all"
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--ordim)] text-[var(--tx2)]"><Icon name="hotel" className="w-[16px] h-[16px]" /></div>

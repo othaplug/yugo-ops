@@ -91,7 +91,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Invite User">
+    <ModalOverlay open={open} onClose={onClose} title="Invite Team Member">
       {success ? (
         <div className="p-8 flex flex-col items-center justify-center text-center">
           <div className="w-14 h-14 rounded-full bg-[rgba(45,159,90,0.15)] border border-[var(--grn)] flex items-center justify-center mb-4">
@@ -176,6 +176,8 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
               <option value="dispatcher">Dispatcher</option>
+              <option value="coordinator">Coordinator</option>
+              <option value="viewer">Viewer</option>
             </select>
           </div>
           <div className="flex gap-2 pt-2">

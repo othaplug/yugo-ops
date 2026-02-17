@@ -40,7 +40,7 @@ export async function requireStaff() {
     .select("role")
     .eq("user_id", user!.id)
     .single();
-  const isStaff = isSuperAdmin || ["admin", "manager", "dispatcher"].includes(platformUser?.role || "");
+  const isStaff = isSuperAdmin || ["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser?.role || "");
   if (!isStaff) {
     return { user: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

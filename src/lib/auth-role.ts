@@ -17,7 +17,7 @@ export async function getAuthRole(user: User | null): Promise<AuthRole> {
     .single();
   if (platformUser) {
     if (platformUser.role === "client") return "client";
-    if (["admin", "manager", "dispatcher"].includes(platformUser.role || "")) return "admin";
+    if (["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser.role || "")) return "admin";
   }
 
   // 2. No platform_users or not staff: check if they are a client (move client only)

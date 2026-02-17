@@ -27,7 +27,7 @@ const NAV = [
     { name: "Revenue", icon: "dollarSign", href: "/admin/revenue" },
   ]},
   { label: "CRM", items: [
-    { name: "All Clients", icon: "users", href: "/admin/clients" },
+    { name: "Contacts", icon: "users", href: "/admin/clients" },
     { name: "Messages", icon: "messageSquare", href: "/admin/messages" },
     { name: "Settings", icon: "settings", href: "/admin/settings" },
   ]},

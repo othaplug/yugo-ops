@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
         updated_at: new Date().toISOString(),
       })
-      .select("id")
+      .select("id, move_code")
       .single();
 
     if (insertError) {
@@ -171,7 +171,6 @@ export async function POST(req: NextRequest) {
           move_id: moveId,
           room: String(item.room),
           item_name: String(item.item_name).trim(),
-          status: "not_packed",
         });
       }
     }
@@ -209,14 +208,15 @@ export async function POST(req: NextRequest) {
         const resend = getResend();
         const emailTrimmed = clientEmail.trim().toLowerCase();
         const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-        const { getMoveCode } = await import("@/lib/move-code");
-        const moveCode = getMoveCode({ id: moveId });
+        const { getMoveCode, formatJobId, getTrackMoveSlug } = await import("@/lib/move-code");
+        const moveCode = move.move_code || getMoveCode({ id: moveId });
+        const jobIdDisplay = formatJobId(moveCode, "move");
         const depositPaid = Math.round(estimate * 0.25);
-        const trackUrl = `${getEmailBaseUrl()}/track/move/${moveId}?token=${signTrackToken("move", moveId)}`;
+        const trackUrl = `${getEmailBaseUrl()}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
 
         const html = moveNotificationEmail({
           move_id: moveId,
-          move_number: moveCode,
+          move_number: jobIdDisplay,
           client_name: clientName || emailTrimmed,
           move_type: moveType,
           status: "pending",
@@ -251,7 +251,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, id: moveId, emailSent, emailError: emailError || undefined });
+    return NextResponse.json({
+      ok: true,
+      id: moveId,
+      move_code: move.move_code || undefined,
+      emailSent,
+      emailError: emailError || undefined,
+    });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create move" },

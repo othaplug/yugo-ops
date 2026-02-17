@@ -49,7 +49,7 @@ const SIDEBAR_SECTIONS_FULL = [
   {
     label: "CRM",
     items: [
-      { href: "/admin/clients", label: "All Clients", Icon: Icons.users, adminOnly: true },
+      { href: "/admin/clients", label: "Contacts", Icon: Icons.users, adminOnly: true },
       { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, adminOnly: true },
       { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, adminOnly: true },
     ],
@@ -71,21 +71,27 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDa
   "/admin/moves/office": { title: "Office Moves", subtitle: "Commercial logistics" },
   "/admin/invoices": { title: "Invoices", subtitle: "Billing" },
   "/admin/revenue": { title: "Revenue", subtitle: "Financial overview" },
-  "/admin/clients": { title: "All Clients", subtitle: "Account management" },
+  "/admin/clients": { title: "Contacts", subtitle: "Partners & move clients" },
   "/admin/change-requests": { title: "Change Requests", subtitle: "Client requests to review" },
   "/admin/messages": { title: "Messages", subtitle: "Communications" },
   "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
+  "/admin/settings/personal": { title: "Profile Settings", subtitle: "Account, security & preferences" },
+  "/admin/settings/security": { title: "Profile Settings", subtitle: "Account, security & preferences" },
+  "/admin/settings/appearance": { title: "Profile Settings", subtitle: "Account, security & preferences" },
+  "/admin/settings/notifications": { title: "Profile Settings", subtitle: "Account, security & preferences" },
+  "/admin/settings/integrations": { title: "Profile Settings", subtitle: "Account, security & preferences" },
   "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
   "/admin/users": { title: "All Users", subtitle: "User management" },
 };
 
 function getPageTitle(pathname: string): { title: string; subtitle: string; useClientDate?: boolean } {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/admin/settings/")) return { title: "Profile Settings", subtitle: "Account, security & preferences", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/")) return { title: "Project Details", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project Detail", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Project", subtitle: "", useClientDate: false };
-  if (pathname.match(/^\/admin\/moves\/[a-f0-9-]+$/i)) return { title: "Move Detail", subtitle: "", useClientDate: false };
+  if (pathname.match(/^\/admin\/moves\/(?!residential|office|new$)[^/]+$/)) return { title: "Move Detail", subtitle: "", useClientDate: false };
   return { title: "OPS+", subtitle: "", useClientDate: false };
 }
 

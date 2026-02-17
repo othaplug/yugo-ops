@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
+import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
 
 export default function ChangeRequestsClient({
   pending,
@@ -39,7 +40,8 @@ export default function ChangeRequestsClient({
     const move = r.moves || r.move;
     const moveData = Array.isArray(move) ? move[0] : move;
     const clientName = moveData?.client_name || "—";
-    const moveCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "—";
+    const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
+    const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
 
     return (
       <div
@@ -50,7 +52,7 @@ export default function ChangeRequestsClient({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <Link
-                href={`/admin/moves/${r.move_id}`}
+                href={getMoveDetailPath({ move_code: moveData?.move_code, id: r.move_id })}
                 className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
               >
                 {clientName}

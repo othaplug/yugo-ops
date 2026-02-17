@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
+import { formatCurrency } from "@/lib/format-currency";
 import InvoicesPageClient from "./InvoicesPageClient";
 
 export default async function InvoicesPage() {
@@ -27,11 +28,11 @@ export default async function InvoicesPage() {
         </Link>
         <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Paid</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">${(paidTotal / 1000).toFixed(1)}K</div>
+          <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCurrency(paidTotal)}</div>
         </Link>
         <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">${(outstandingTotal / 1000).toFixed(1)}K</div>
+          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(outstandingTotal)}</div>
         </Link>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 flex items-center justify-center">
           <span className="text-[9px] font-semibold text-[var(--tx3)] text-center">Create invoices</span>

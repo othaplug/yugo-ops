@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 const DOC_TYPES = ["contract", "estimate", "invoice", "other"] as const;
 
@@ -8,7 +8,7 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authError } = await requireAdmin();
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   try {
@@ -47,7 +47,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authError } = await requireAdmin();
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   try {

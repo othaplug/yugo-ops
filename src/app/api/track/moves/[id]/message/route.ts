@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
-import { getMoveCode } from "@/lib/move-code";
+import { getMoveCode, formatJobId } from "@/lib/move-code";
 import { sendPushToUser } from "@/lib/web-push";
 
 async function sendToSlack(moveId: string, clientName: string, message: string, moveCode: string) {
@@ -35,7 +35,7 @@ async function notifyStaffClientMessage(
   const { data: platformUsers } = await admin
     .from("platform_users")
     .select("user_id")
-    .in("role", ["admin", "manager", "dispatcher"]);
+    .in("role", ["admin", "manager", "dispatcher", "coordinator", "viewer"]);
   const userIds = platformUsers?.map((r) => r.user_id) ?? [];
   const title = `Client message (${moveCode})`;
   const body = `${clientName || "Client"}: ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`;
@@ -66,29 +66,17 @@ export async function POST(
     const admin = createAdminClient();
     const { data: move, error: fetchErr } = await admin
       .from("moves")
-      .select("internal_notes, client_name")
+      .select("client_name, move_code")
       .eq("id", moveId)
       .single();
 
     if (fetchErr || !move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-    const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-    const clientNote = `[${timestamp}] (Client message)\n${message}`;
-    const updatedNotes = move.internal_notes
-      ? `${move.internal_notes}\n\n---\n\n${clientNote}`
-      : clientNote;
-
-    const { error: updateErr } = await admin
-      .from("moves")
-      .update({ internal_notes: updatedNotes, updated_at: new Date().toISOString() })
-      .eq("id", moveId);
-
-    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
-
-    const moveCode = getMoveCode({ id: moveId });
+    const moveCode = getMoveCode(move);
+    const jobIdDisplay = formatJobId(moveCode, "move");
     const clientName = move.client_name || "Client";
 
-    await sendToSlack(moveId, clientName, message, moveCode);
+    await sendToSlack(moveId, clientName, message, jobIdDisplay);
 
     // Insert into messages table so it appears in admin Messages page thread
     await admin.from("messages").insert({
@@ -105,7 +93,7 @@ export async function POST(
         entity_type: "move",
         entity_id: moveId,
         event_type: "client_message",
-        description: `Client message (${moveCode}): ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`,
+        description: `Client message (${jobIdDisplay}): ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`,
         icon: "mail",
       });
     } catch {
@@ -113,7 +101,7 @@ export async function POST(
     }
 
     // Push to admin, manager, dispatcher (and superadmin if in platform_users)
-    notifyStaffClientMessage(moveCode, clientName, message).catch(() => {});
+    notifyStaffClientMessage(jobIdDisplay, clientName, message).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

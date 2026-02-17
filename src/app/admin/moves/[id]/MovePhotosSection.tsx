@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Trash2, Plus } from "lucide-react";
+import ModalOverlay from "../../components/ModalOverlay";
+import { useToast } from "../../components/Toast";
 
 type Photo = { id: string; url: string; caption: string | null };
 
@@ -9,6 +11,9 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<Photo | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
   const fetchPhotos = () => {
     fetch(`/api/admin/moves/${moveId}/photos`)
@@ -43,14 +48,25 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
       });
   };
 
-  const handleDelete = (photoId: string) => {
-    if (!confirm("Remove this photo?")) return;
-    fetch(`/api/admin/moves/${moveId}/photos/${photoId}`, { method: "DELETE" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        fetchPhotos();
-      });
+  const handleDelete = (photo: Photo) => {
+    setDeleteConfirm(photo);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    try {
+      const r = await fetch(`/api/admin/moves/${moveId}/photos/${deleteConfirm.id}`, { method: "DELETE" });
+      const data = await r.json();
+      if (!r.ok || data.error) {
+        toast(data.error || "Failed to remove", "x");
+        return;
+      }
+      setDeleteConfirm(null);
+      fetchPhotos();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -84,7 +100,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                   <img src={p.url} alt={p.caption || ""} className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => handleDelete(p)}
                     className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]"
                     aria-label="Delete"
                   >
@@ -100,6 +116,34 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
             </div>
           )}
         </>
+      )}
+
+      {deleteConfirm && (
+        <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove photo?" maxWidth="sm">
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--tx2)]">
+              Are you sure you want to remove this photo? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+              >
+                {deleting ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
       )}
     </div>
   );
