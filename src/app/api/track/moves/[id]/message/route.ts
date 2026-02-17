@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { getMoveCode } from "@/lib/move-code";
+
+async function sendToSlack(moveId: string, clientName: string, message: string, moveCode: string) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  const channel = process.env.SLACK_ADMIN_CHANNEL || process.env.SLACK_CHANNEL_ID;
+  if (!token || !channel) return;
+
+  const text = `*Client message* (${moveCode})\n_${clientName || "Client"}_: ${message}`;
+
+  try {
+    await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ channel, text }),
+    });
+  } catch {
+    // Slack optional
+  }
+}
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +44,7 @@ export async function POST(
     const admin = createAdminClient();
     const { data: move, error: fetchErr } = await admin
       .from("moves")
-      .select("internal_notes")
+      .select("internal_notes, client_name")
       .eq("id", moveId)
       .single();
 
@@ -40,6 +62,9 @@ export async function POST(
       .eq("id", moveId);
 
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
+    const moveCode = getMoveCode({ id: moveId });
+    await sendToSlack(moveId, move.client_name || "", message, moveCode);
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

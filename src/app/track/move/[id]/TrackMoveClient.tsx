@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getMoveCode } from "@/lib/move-code";
 import { Icon } from "@/components/AppIcons";
@@ -8,41 +8,15 @@ import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
 import TrackMessageForm from "./TrackMessageForm";
-
-// Timeline stages matching the prototype (Booking Confirmed → Complete)
-const TIMELINE_STAGES = [
-  { key: "booked", label: "Booking Confirmed" },
-  { key: "survey", label: "Pre-Move Survey" },
-  { key: "materials", label: "Packing Materials" },
-  { key: "packing", label: "Packing Day" },
-  { key: "move", label: "Move Day" },
-  { key: "unpacking", label: "Unpacking" },
-  { key: "complete", label: "Complete" },
-];
-
-const STAGE_MAP: Record<string, number> = {
-  quote: 0,
-  pending: 0,
-  scheduled: 1,
-  confirmed: 2,
-  "in-transit": 4,
-  dispatched: 4,
-  in_progress: 3,
-  delivered: 6,
-  cancelled: -1,
-};
-
-const STAGE_LABEL_MAP: Record<string, string> = {
-  quote: "Quote",
-  pending: "Booked",
-  scheduled: "Preparing",
-  confirmed: "Packing Day",
-  "in-transit": "In Transit",
-  dispatched: "In Transit",
-  in_progress: "Packing Day",
-  delivered: "Complete",
-  cancelled: "Cancelled",
-};
+import TrackLiveMap from "./TrackLiveMap";
+import {
+  MOVE_STATUS_OPTIONS,
+  MOVE_STATUS_INDEX,
+  MOVE_STATUS_COLORS,
+  LIVE_TRACKING_STAGES,
+  LIVE_STAGE_MAP,
+  getStatusLabel,
+} from "@/lib/move-status";
 
 const CHANGE_TYPES = [
   "Change move date",
@@ -55,28 +29,31 @@ const CHANGE_TYPES = [
   "Other",
 ];
 
-const YUGO_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(555) 123-4567";
+const YUGO_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 const YUGO_EMAIL = process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@yugo.com";
 
 type TabKey = "dash" | "track" | "inv" | "photos" | "docs" | "msg";
 
-function getTimelineDetail(move: any, stageKey: string): string | null {
-  const stage = (move.stage || move.status || "quote").toLowerCase();
-  if (stageKey === "booked") return "Deposit received. Contract signed.";
-  if (stageKey === "survey") return "142 items catalogued. Piano, 6 art pieces, wine collection documented.";
-  if (stageKey === "materials") return "28 wardrobe boxes, 40 medium, 12 specialty crates delivered.";
-  if (stageKey === "packing") return "Full packing. Team 9 AM. Piano specialist 11 AM.";
-  return null;
+/** Map legacy status to index for timeline */
+function getStatusIdx(status: string | null): number {
+  if (!status) return 0;
+  if (MOVE_STATUS_INDEX[status] !== undefined) return MOVE_STATUS_INDEX[status];
+  const legacy: Record<string, number> = {
+    pending: 0, quote: 0, delivered: 4, dispatched: 3, "in-transit": 3,
+  };
+  return legacy[status] ?? 0;
 }
 
 export default function TrackMoveClient({
   move,
   crew,
   token,
+  fromNotify = false,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
   token: string;
+  fromNotify?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
   const [changeModalOpen, setChangeModalOpen] = useState(false);
@@ -84,15 +61,45 @@ export default function TrackMoveClient({
   const [changeDesc, setChangeDesc] = useState("");
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
+  const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
+
+  useEffect(() => {
+    setLiveStage(move.stage || null);
+  }, [move.stage]);
+
+  useEffect(() => {
+    if (activeTab !== "track") return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/track/moves/${move.id}/crew-status?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (data.liveStage != null) setLiveStage(data.liveStage);
+      } catch {
+        // ignore
+      }
+    };
+    poll();
+    const id = setInterval(poll, 20000);
+    return () => clearInterval(id);
+  }, [activeTab, move.id, token]);
 
   const moveCode = getMoveCode(move);
   const displayCode = moveCode.startsWith("MV") ? `YG-${moveCode.slice(2)}` : moveCode;
-  const stageVal = move.stage || move.status || "quote";
-  const currentIdx = STAGE_MAP[stageVal] ?? 0;
+  const statusVal = move.status || "confirmed";
+  const currentIdx = getStatusIdx(statusVal);
+  const isCancelled = statusVal === "cancelled";
+  const isCompleted = statusVal === "completed" || statusVal === "delivered";
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const scheduledDate = move.scheduled_date ? new Date(move.scheduled_date) : null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const progressPct = Math.min(100, Math.max(0, ((currentIdx + 1) / TIMELINE_STAGES.length) * 100));
+  // Progress: fills as move day approaches, 100% when completed. Animated.
+  const statusProgress = ((currentIdx + 1) / 5) * 100;
+  const daysProgress = daysUntil != null ? Math.max(5, Math.min(95, 100 - daysUntil * 2.5)) : statusProgress;
+  const progressPct = isCompleted
+    ? 100
+    : isCancelled
+      ? 0
+      : Math.min(100, Math.max(statusProgress, daysProgress));
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
@@ -152,7 +159,7 @@ export default function TrackMoveClient({
           <div className="flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E7E5E4]">
               <div
-                className="h-full rounded-full bg-[#C9A962] transition-all"
+                className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out animate-progress-fill"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -172,6 +179,17 @@ export default function TrackMoveClient({
       </header>
 
       <main className="max-w-[800px] mx-auto px-5 sm:px-6 py-6">
+        {fromNotify && (
+          <div className="mb-5 rounded-xl border border-[#C9A962]/40 bg-[#C9A962]/10 px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#C9A962]/20 flex items-center justify-center shrink-0">
+              <Icon name="check" className="w-4 h-4 text-[#C9A962]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-semibold text-[#1A1A1A]">Your move status was recently updated</div>
+              <div className="text-[11px] text-[#666]">View the details below to see what changed.</div>
+            </div>
+          </div>
+        )}
         {/* Hero - client name, code, status badge */}
         <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
           <div>
@@ -182,8 +200,8 @@ export default function TrackMoveClient({
               {displayCode} · {typeLabel}
             </p>
           </div>
-          <span className="inline-flex items-center rounded-md px-3 py-1.5 text-[11px] font-semibold bg-[#E8D5A3] text-[#1A1A1A]">
-            {currentIdx < 0 ? "Cancelled" : STAGE_LABEL_MAP[stageVal] || "In Progress"}
+          <span className={`inline-flex items-center rounded-md px-3 py-1.5 text-[11px] font-semibold border ${MOVE_STATUS_COLORS[statusVal] || "bg-[#E8D5A3] text-[#1A1A1A] border-[#E8D5A3]"}`}>
+            {getStatusLabel(statusVal)}
           </span>
         </div>
 
@@ -207,7 +225,7 @@ export default function TrackMoveClient({
             <div className="mt-4 flex items-center gap-2">
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E7E5E4]">
                 <div
-                  className="h-full rounded-full bg-[#C9A962] transition-all"
+                  className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out animate-progress-fill"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -237,15 +255,15 @@ export default function TrackMoveClient({
         {/* Tab content */}
         {activeTab === "dash" && (
           <div className="space-y-6">
-            {/* Move Timeline - vertical with detail callouts */}
+            {/* Move Timeline - Confirmed → Scheduled → Final Payment → In Progress → Completed */}
             <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
               <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
-                {TIMELINE_STAGES.map((s, i) => {
-                  const state = currentIdx < 0 ? "wait" : i < currentIdx ? "done" : i === currentIdx ? "act" : "wait";
-                  const detail = getTimelineDetail(move, s.key);
+                {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
+                  const state = isCancelled ? "wait" : i < currentIdx ? "done" : i === currentIdx ? "act" : "wait";
+                  const completedDate = isCompleted && i === 4 ? (move.updated_at ? new Date(move.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : scheduledDate?.toLocaleDateString("en-US", { month: "short", day: "numeric" })) : null;
                   return (
-                    <div key={s.key} className="relative pb-5 last:pb-0">
+                    <div key={s.value} className="relative pb-5 last:pb-0">
                       <div
                         className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 ${
                           state === "done"
@@ -259,13 +277,8 @@ export default function TrackMoveClient({
                         {s.label}
                       </div>
                       <div className="text-[11px] text-[#666] mt-0.5">
-                        {state === "done" ? `Completed ${scheduledDate?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) || ""}` : state === "act" ? `In Progress - ${scheduledDate?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) || ""}` : `Scheduled - ${scheduledDate?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) || ""}`}
+                        {state === "done" ? (completedDate ? `Completed ${completedDate}` : "Completed") : state === "act" ? `In Progress` : "Upcoming"}
                       </div>
-                      {detail && (
-                        <div className="mt-2 ml-0 rounded-lg bg-[#F5F5F4] border border-[#E7E5E4] px-3 py-2 text-[12px] text-[#666]">
-                          {detail}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -342,46 +355,45 @@ export default function TrackMoveClient({
         )}
 
         {activeTab === "track" && (
-          <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-            <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Progress Detail</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-[#999] mb-1">Status</div>
-                <div className="text-[13px] font-semibold text-[#1A1A1A]">{STAGE_LABEL_MAP[stageVal] || "Preparing"}</div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-[#999] mb-1">ETA</div>
-                <div className="text-[13px] font-semibold text-[#1A1A1A]">{daysUntil ?? "—"} days</div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-[#999] mb-1">Loaded</div>
-                <div className="text-[13px] font-semibold text-[#1A1A1A]">0 / —</div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-[#999] mb-1">Crew</div>
-                <div className="text-[13px] font-semibold text-[#1A1A1A]">{crewMembers.length || "—"}</div>
-              </div>
-            </div>
-            <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
-              {TIMELINE_STAGES.map((s, i) => {
-                const state = currentIdx < 0 ? "wait" : i < currentIdx ? "done" : i === currentIdx ? "act" : "wait";
-                return (
-                  <div key={s.key} className="relative pb-4 last:pb-0">
-                    <div
-                      className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 ${
-                        state === "done" ? "bg-[#22C55E]" : state === "act" ? "bg-[#F59E0B]" : "bg-[#E7E5E4]"
-                      }`}
-                    />
-                    <div className={`text-[12px] font-semibold ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
-                      {s.label}
-                    </div>
+          <div className="space-y-5">
+            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+              <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Progress Detail</h3>
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-[#999] mb-1">Status</div>
+                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-semibold border ${MOVE_STATUS_COLORS[statusVal] || "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30"}`}>
+                    {move.status === "in_progress" && liveStage
+                      ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label || getStatusLabel(statusVal)
+                      : getStatusLabel(statusVal)}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-[#999] mb-1">ETA</div>
+                  <div className="text-[13px] font-semibold text-[#1A1A1A]">
+                    {isCompleted ? "Complete" : daysUntil != null ? `${daysUntil} days` : "—"}
                   </div>
-                );
-              })}
+                </div>
+              </div>
+              <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
+                {LIVE_TRACKING_STAGES.map((s, i) => {
+                  const liveIdx = move.status === "in_progress" ? (LIVE_STAGE_MAP[liveStage || ""] ?? -1) : -1;
+                  const state = liveIdx < 0 ? "wait" : i < liveIdx ? "done" : i === liveIdx ? "act" : "wait";
+                  return (
+                    <div key={s.key} className="relative pb-4 last:pb-0">
+                      <div
+                        className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 ${
+                          state === "done" ? "bg-[#22C55E]" : state === "act" ? "bg-[#F59E0B]" : "bg-[#E7E5E4]"
+                        }`}
+                      />
+                      <div className={`text-[12px] font-semibold ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
+                        {s.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <p className="mt-4 text-[12px] text-[#666]">
-              Real-time crew location updates will appear here when your move is in progress.
-            </p>
+            <TrackLiveMap moveId={move.id} token={token} />
           </div>
         )}
 

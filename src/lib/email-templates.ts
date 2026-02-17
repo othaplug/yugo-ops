@@ -15,8 +15,10 @@ function emailFooter(loginUrl?: string) {
 function emailLogo() {
   return `
     <div style="text-align:center;margin-bottom:28px">
-      <div style="display:inline-flex;align-items:center;justify-content:center;padding:6px 16px;border-radius:9999px;background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.35)">
-        <span style="font-family:'Instrument Serif',Georgia,serif;font-size:20px;letter-spacing:3px;color:#C9A962;font-weight:400">OPS+</span>
+      <div style="display:inline-flex;align-items:center;gap:8px">
+        <span style="font-family:'Instrument Serif',Georgia,serif;font-size:22px;letter-spacing:3px;color:#E8E5E0;font-weight:600">YUGO</span>
+        <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9999px;background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.35);font-size:10px;font-weight:700;letter-spacing:1px;color:#C9A962">YOUR MOVE</span>
+        <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9999px;background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.35);font-size:10px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</span>
       </div>
     </div>
   `;
@@ -78,6 +80,22 @@ export function deliveryNotificationEmail(delivery: {
   `;
 }
 
+function formatStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    confirmed: "Confirmed",
+    scheduled: "Scheduled",
+    final_payment_received: "Final Payment Received",
+    in_progress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    delivered: "Completed",
+    pending: "Confirmed",
+    "in-transit": "In Progress",
+    dispatched: "In Progress",
+  };
+  return labels[status] || (status || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function moveNotificationEmail(move: {
   move_id: string;
   move_number: string;
@@ -95,35 +113,36 @@ export function moveNotificationEmail(move: {
   trackUrl?: string;
 }) {
   const trackUrl = move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
-  const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Residential";
+  const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
+  const statusLabel = formatStatusLabel(move.status);
+  const stageLabel = move.stage ? (move.stage || "").replace(/_/g, " ") : "";
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
-      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Update</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${move.move_number} — ${move.client_name}</h1>
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Was Updated</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 12px;color:#F5F5F3">Hi${move.client_name ? `, ${move.client_name.split(" ")[0]}` : ""}</h1>
+      <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+        We&apos;ve made changes to your move. Your status is now <strong style="color:#C9A962">${statusLabel}</strong>${stageLabel ? ` — ${stageLabel}` : ""}.
+      </p>
       
-      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-        <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px">Current Status</div>
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+        <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px">${move.move_number} · ${typeLabel}</div>
         <div style="margin-bottom:16px">${statusBadge(move.status)}</div>
-        ${move.stage ? `<div style="margin-bottom:8px"><span style="color:#666;font-size:11px">Stage:</span> <span style="font-weight:600">${(move.stage || "").replace(/_/g, " ")}</span></div>` : ""}
-        ${move.next_action ? `<div style="margin-bottom:12px"><span style="color:#666;font-size:11px">Next action:</span> <span style="font-weight:600;color:#C9A962">${move.next_action}</span></div>` : ""}
-        <div style="display:grid;grid-template-columns:1fr;gap:12px;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid #2A2A2A">
-          <div><span style="color:#666">From:</span><br/><span style="font-weight:600">${move.from_address || "—"}</span></div>
-          <div><span style="color:#666">To:</span><br/><span style="font-weight:600">${move.to_address || "—"}</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><span style="color:#666">Move date:</span><br/><span style="font-weight:600">${move.scheduled_date || "—"}</span></div>
-            <div><span style="color:#666">Type:</span><br/><span style="font-weight:600">${typeLabel}</span></div>
-          </div>
+        ${move.next_action ? `<div style="margin-bottom:12px"><span style="color:#666;font-size:11px">Next:</span> <span style="font-weight:600;color:#C9A962">${move.next_action}</span></div>` : ""}
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid #2A2A2A">
+          <div><span style="color:#666">From:</span> <span style="font-weight:600">${move.from_address || "—"}</span></div>
+          <div><span style="color:#666">To:</span> <span style="font-weight:600">${move.to_address || "—"}</span></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;padding-top:12px;border-top:1px solid #2A2A2A">
+            <div><span style="color:#666">Date:</span><br/><span style="font-weight:600">${move.scheduled_date || "—"}</span></div>
             <div><span style="color:#666">Estimate:</span><br/><span style="font-weight:600;color:#C9A962">$${(move.estimate || 0).toLocaleString()}</span></div>
-            <div><span style="color:#666">Deposit paid:</span><br/><span style="font-weight:600;color:#2D9F5A">$${(move.deposit_paid || 0).toLocaleString()}</span></div>
-            <div><span style="color:#666">Balance due:</span><br/><span style="font-weight:600">$${(move.balance_due || 0).toLocaleString()}</span></div>
+            <div><span style="color:#666">Balance:</span><br/><span style="font-weight:600">$${(move.balance_due || 0).toLocaleString()}</span></div>
           </div>
         </div>
       </div>
       
+      <p style="font-size:13px;color:#999;margin-bottom:20px">Click below to view your full dashboard and see what changed.</p>
       <a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
-        Track your move →
+        View Your Move Dashboard →
       </a>
       
       ${emailFooter()}

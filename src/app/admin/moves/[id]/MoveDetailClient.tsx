@@ -22,22 +22,7 @@ interface MoveDetailClientProps {
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
 }
-const STATUS_OPTIONS = ["pending", "scheduled", "confirmed", "in-transit", "delivered", "cancelled"] as const;
-const STATUS_COLORS: Record<string, string> = {
-  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.12)]",
-  scheduled: "text-[var(--gold)] bg-[var(--gdim)]",
-  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.12)]",
-};
-const STAGE_OPTS = [
-  { value: "quote", label: "Quote" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In progress" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
+import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 
 export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
   const router = useRouter();
@@ -121,18 +106,18 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
             {editingCard === "status" ? (
               <select
-                defaultValue={move.status}
+                defaultValue={normalizeStatus(move.status) || move.status || "confirmed"}
                 className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
                 onChange={async (e) => {
-                  const v = e.target.value;
+                  const v = e.target.value as string;
                   const { data } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
                   if (data) setMove(data);
                   setEditingCard(null);
                   router.refresh();
                 }}
               >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s.replace("-", " ")}</option>
+                {MOVE_STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
             ) : (
@@ -142,44 +127,46 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn"
                 aria-label="Edit status"
               >
-                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
-                  {move.status?.replace("-", " ")}
+                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                  {getStatusLabel(move.status)}
                 </span>
                 <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
               </button>
             )}
           </div>
 
-          <div className="group/card relative flex items-center gap-2 min-w-0">
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Stage</span>
-            {editingCard === "stage" ? (
-              <select
-                defaultValue={move.stage ?? "scheduled"}
-                className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[90px]"
-                onChange={async (e) => {
-                  const v = e.target.value || null;
-                  const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
-                  if (data) setMove(data);
-                  setEditingCard(null);
-                  router.refresh();
-                }}
-              >
-                {STAGE_OPTS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEditingCard("stage")}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0"
-                aria-label="Edit stage"
-              >
-                <span className="text-[11px] font-medium text-[var(--tx)] truncate">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</span>
-                <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
-              </button>
-            )}
-          </div>
+          {(move.status === "in_progress" || move.status === "in-transit" || move.status === "dispatched") && (
+            <div className="group/card relative flex items-center gap-2 min-w-0">
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Live stage</span>
+              {editingCard === "stage" ? (
+                <select
+                  defaultValue={move.stage ?? "on_route"}
+                  className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  onChange={async (e) => {
+                    const v = e.target.value || null;
+                    const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                    if (data) setMove(data);
+                    setEditingCard(null);
+                    router.refresh();
+                  }}
+                >
+                  {LIVE_TRACKING_STAGES.map((o) => (
+                    <option key={o.key} value={o.key}>{o.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingCard("stage")}
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0"
+                  aria-label="Edit live stage"
+                >
+                  <span className="text-[11px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? move.stage ?? "—"}</span>
+                  <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-1.5 pl-4 ml-2 border-l border-[var(--brd)]/50">
             <span className="text-[9px] font-medium tracking-wide uppercase text-[var(--tx3)]/90">

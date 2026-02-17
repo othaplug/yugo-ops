@@ -45,10 +45,10 @@ export async function POST(req: NextRequest) {
         deposit_paid: depositPaid,
         balance_due: estimate - depositPaid,
         trackUrl: body.moveId
-          ? `${getEmailBaseUrl()}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}`
+          ? `${getEmailBaseUrl()}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}&from=notify`
           : undefined,
       });
-      subject = `Your Move Detail - Yugo #${moveCode}`;
+      subject = `Your move was updated — ${moveCode}`;
       await supabase.from("status_events").insert({
         entity_type: "move",
         entity_id: body.moveId || body.deliveryNumber,
