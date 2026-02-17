@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -31,13 +32,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
     }
 
-    // Verify code matches (compare without timing attack in production you'd use crypto.timingSafeEqual)
+    // Verify code matches (timing-safe to prevent brute force)
     const { data: fullRow } = await admin
       .from("email_verification_codes")
       .select("code")
       .eq("id", row.id)
       .single();
-    if (!fullRow || fullRow.code !== codeStr) {
+    if (!fullRow?.code) {
+      return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+    }
+    const expected = fullRow.code;
+    if (expected.length !== codeStr.length) {
+      return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+    }
+    try {
+      if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(codeStr, "utf8"))) {
+        return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+      }
+    } catch {
       return NextResponse.json({ error: "Invalid code" }, { status: 400 });
     }
 

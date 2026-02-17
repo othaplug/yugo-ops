@@ -26,6 +26,26 @@
   --font-body: 'DM Sans', system-ui, sans-serif;
 }
 
+/* Light theme for client tracking (Yugo prototype style) */
+[data-theme="light"] {
+  --bg: #FAFAF8;
+  --bg2: #FFF;
+  --card: #FFF;
+  --brd: #E8E5E0;
+  --tx: #1A1A1A;
+  --tx2: #666;
+  --tx3: #999;
+  --gold: #C9A962;
+  --gold2: #B89A52;
+  --gdim: rgba(201,169,98,.08);
+  --grn: #2D9F5A;
+  --grdim: rgba(45,159,90,.06);
+  --org: #D48A29;
+  --ordim: rgba(212,138,41,.08);
+  --red: #D14343;
+  --rdim: rgba(209,67,67,.08);
+}
+
 html {
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;

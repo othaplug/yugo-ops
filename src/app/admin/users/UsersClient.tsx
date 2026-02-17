@@ -17,6 +17,7 @@ interface User {
   created_at: string | null;
   last_sign_in_at: string | null;
   status: "activated" | "pending" | "inactive";
+  move_id?: string | null;
 }
 
 interface UsersClientProps {
@@ -28,6 +29,7 @@ function roleLabel(role: string) {
   if (role === "admin") return "Admin";
   if (role === "manager") return "Manager";
   if (role === "partner") return "Partner";
+  if (role === "client") return "Move client";
   return "Dispatcher";
 }
 
@@ -39,16 +41,24 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const fetchUsers = () => {
-    setLoading(true);
-    fetch("/api/admin/users")
+  const fetchUsers = (bustCache = false, returnDataOnly = false): Promise<User[] | void> => {
+    if (!returnDataOnly) setLoading(true);
+    const url = bustCache ? `/api/admin/users?t=${Date.now()}` : "/api/admin/users";
+    return fetch(url, { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setUsers(data);
-        else toast(data.error || "Failed to load users", "x");
+        if (Array.isArray(data)) {
+          if (!returnDataOnly) setUsers(data as User[]);
+          return data as User[];
+        }
+        if (!returnDataOnly) toast(data.error || "Failed to load users", "x");
+        return undefined;
       })
-      .catch(() => toast("Failed to load users", "x"))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!returnDataOnly) toast("Failed to load users", "x");
+        return undefined;
+      })
+      .finally(() => { if (!returnDataOnly) setLoading(false); });
   };
 
   useEffect(() => {
@@ -112,14 +122,20 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
       {selectedUser?.role === "partner" && (
         <UserDetailModal open={!!selectedUser} onClose={() => setSelectedUser(null)} user={selectedUser} currentUserId={currentUserId} isPartner />
       )}
-      {selectedUser && selectedUser.role !== "partner" && (
+      {selectedUser?.role === "client" && !!selectedUser.move_id && (
+        <UserDetailModal open={!!selectedUser} onClose={() => setSelectedUser(null)} user={selectedUser} currentUserId={currentUserId} isMoveClient moveId={selectedUser.move_id} />
+      )}
+      {selectedUser && selectedUser.role !== "partner" && (selectedUser.role !== "client" || !selectedUser.move_id) && (
         <UserDetailModal
           open={!!selectedUser}
           onClose={() => setSelectedUser(null)}
           user={selectedUser}
           currentUserId={currentUserId}
           onSaved={(updates) => {
-            setUsers((prev) => prev.map((x) => (x.id === selectedUser.id ? { ...x, ...updates } : x)));
+            const updatedId = selectedUser.id;
+            // Apply saved name + role immediately so the table shows the new role (e.g. Client).
+            // Don't refetch after save: refetch can return stale role and overwrite "client" back to "dispatcher".
+            setUsers((prev) => prev.map((x) => (x.id === updatedId ? { ...x, ...updates } : x)));
             setSelectedUser((s) => (s ? { ...s, ...updates } : null));
           }}
           onDeleted={(id) => {

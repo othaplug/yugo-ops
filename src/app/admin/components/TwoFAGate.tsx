@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
+import GlobalModal from "@/components/ui/Modal";
 
 const VERIFIED_KEY = "ops-2fa-verified";
 
@@ -87,14 +88,23 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[13px] text-[var(--tx3)]">Loading…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       {children}
       {showModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
+        <GlobalModal open={showModal} onClose={() => {}} title="" noHeader>
+          <div className="p-6">
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.12)] border border-[rgba(201,169,98,0.35)] mb-4">
                 <span className="font-hero text-[18px] tracking-[2px] text-[var(--gold)]">OPS+</span>
@@ -138,7 +148,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
               </div>
             </form>
           </div>
-        </div>
+        </GlobalModal>
       )}
     </>
   );

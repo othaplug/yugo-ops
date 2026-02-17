@@ -50,6 +50,7 @@ const SIDEBAR_SECTIONS_FULL = [
     label: "CRM",
     items: [
       { href: "/admin/clients", label: "All Clients", Icon: Icons.users, adminOnly: true },
+      { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, adminOnly: true },
       { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, adminOnly: true },
     ],
   },
@@ -71,6 +72,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDa
   "/admin/invoices": { title: "Invoices", subtitle: "Billing" },
   "/admin/revenue": { title: "Revenue", subtitle: "Financial overview" },
   "/admin/clients": { title: "All Clients", subtitle: "Account management" },
+  "/admin/change-requests": { title: "Change Requests", subtitle: "Client requests to review" },
   "/admin/messages": { title: "Messages", subtitle: "Communications" },
   "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
   "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
@@ -113,11 +115,13 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       <NotificationProvider>
         <ToastProvider>
           <div className="flex min-h-screen bg-[var(--bg)]">
-            {/* Mobile overlay */}
+            {/* Mobile overlay - covers main content only, NOT the sidebar (so sidebar stays crisp in light mode) */}
             {sidebarOpen && (
               <div
-                className="fixed inset-0 bg-black/70 z-40 md:hidden backdrop-blur-sm"
+                className="fixed top-0 right-0 bottom-0 left-0 z-40 md:hidden bg-black/70 backdrop-blur-sm"
+                style={{ left: "220px" }}
                 onClick={() => setSidebarOpen(false)}
+                aria-hidden="true"
               />
             )}
 
@@ -163,8 +167,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 </div>
               </div>
 
-              {/* Nav sections - scrollable, collapsible */}
-              <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
+              {/* Nav sections - scrollable, collapsible. min-h-0 + flex-1 allows proper scroll; pb-safe for iOS */}
+              <nav className={`flex-1 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
                 {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
                   const hasActive = section.items.some((item) => isActive(item.href));

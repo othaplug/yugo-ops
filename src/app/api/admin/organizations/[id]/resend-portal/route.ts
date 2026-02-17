@@ -28,10 +28,20 @@ export async function POST(
       return NextResponse.json({ error: "Client has no email" }, { status: 400 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app";
-    const portalUrl = `${baseUrl}/login`;
+    let resend;
+    try {
+      resend = getResend();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Resend not configured";
+      return NextResponse.json(
+        { error: msg.includes("RESEND") ? "Email not configured. Add RESEND_API_KEY in environment (e.g. Vercel)." : msg },
+        { status: 503 }
+      );
+    }
 
-    const resend = getResend();
+    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
+    const portalUrl = `${getEmailBaseUrl()}/login`;
+
     const html = welcomeEmail({
       name: (org.contact_name || org.name || "").trim() || "Partner",
       email: toEmail,
@@ -47,7 +57,11 @@ export async function POST(
     });
 
     if (sendError) {
-      return NextResponse.json({ error: sendError.message }, { status: 500 });
+      const message = (sendError as { message?: string }).message ?? String(sendError);
+      return NextResponse.json(
+        { error: message.includes("domain") || message.includes("verified") ? `Email failed: ${message}. Verify the sending domain (opsplus.co) in Resend.` : message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ok: true });

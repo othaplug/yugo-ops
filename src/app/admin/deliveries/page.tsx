@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
-import DeliveryFilters from "./DeliveryFilters";
+import AllProjectsView from "./AllProjectsView";
 
 export default async function DeliveriesPage() {
   const supabase = await createClient();
-  const { data: deliveries } = await supabase
-    .from("deliveries")
-    .select("*")
-    .order("scheduled_date", { ascending: true });
+  const [{ data: deliveries }, { data: moves }] = await Promise.all([
+    supabase.from("deliveries").select("*").order("scheduled_date", { ascending: true }),
+    supabase.from("moves").select("*").order("scheduled_date", { ascending: true }),
+  ]);
 
-  const all = deliveries || [];
+  const allDeliveries = deliveries || [];
+  const allMoves = moves || [];
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -26,7 +27,7 @@ export default async function DeliveriesPage() {
           </Link>
         </div>
       </div>
-      <DeliveryFilters deliveries={all} today={today} />
+      <AllProjectsView deliveries={allDeliveries} moves={allMoves} today={today} />
     </div>
   );
 }

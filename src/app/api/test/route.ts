@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/api-auth";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
   const { error: authErr } = await requireAuth();
   if (authErr) return authErr;
   const supabase = await createClient();

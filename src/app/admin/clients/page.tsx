@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
-import ClientRow from "./ClientRow";
+import ClientsTableBody from "./ClientsTableBody";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -41,31 +41,11 @@ export default async function ClientsPage() {
                 <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Contact</th>
                 <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">AVG DEL</th>
                 <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Owing</th>
+                <th className="w-10 px-3 py-2 border-b border-[var(--brd)]" aria-hidden />
               </tr>
             </thead>
             <tbody>
-              {all.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-                    No clients yet. <Link href="/admin/clients/new" className="text-[var(--gold)] hover:underline">Add one</Link>
-                  </td>
-                </tr>
-              ) : all.map((c) => (
-                <ClientRow key={c.id} href={`/admin/clients/${c.id}`}>
-                  <td className="px-3 py-2 text-[10px] font-semibold border-b border-[var(--brd)] group-hover:text-[var(--gold)] transition-colors">
-                    {c.name}
-                  </td>
-                  <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type}</td>
-                  <td className="px-3 py-2 border-b border-[var(--brd)]">
-                    <div className="text-[9px]">{c.contact_name}</div>
-                    <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
-                  </td>
-                  <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month}</td>
-                  <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
-                    {c.outstanding_balance > 0 ? `$${Number(c.outstanding_balance).toLocaleString()}` : "—"}
-                  </td>
-                </ClientRow>
-              ))}
+              <ClientsTableBody clients={all} />
             </tbody>
           </table>
         </div>

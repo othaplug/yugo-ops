@@ -3,28 +3,33 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import Badge from "../../components/Badge";
 import BackButton from "../../components/BackButton";
+import { Pencil, ChevronDown } from "lucide-react";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
+import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
+import MoveInventorySection from "./MoveInventorySection";
+import MovePhotosSection from "./MovePhotosSection";
+import MoveDocumentsSection from "./MoveDocumentsSection";
 import ModalOverlay from "../../components/ModalOverlay";
+import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 
 interface MoveDetailClientProps {
   move: any;
+  crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
 }
-
-const TEAM_MEMBERS = ["Michael T.", "Sarah K.", "James L.", "Elena M."];
 const STATUS_OPTIONS = ["pending", "scheduled", "confirmed", "in-transit", "delivered", "cancelled"] as const;
 const STATUS_COLORS: Record<string, string> = {
-  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
+  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.12)]",
+  scheduled: "text-[var(--gold)] bg-[var(--gdim)]",
+  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
   "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
+  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.12)]",
 };
 const STAGE_OPTS = [
   { value: "quote", label: "Quote" },
@@ -34,17 +39,35 @@ const STAGE_OPTS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDetailClientProps) {
+export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = createClient();
   const [move, setMove] = useState(initialMove);
   useEffect(() => setMove(initialMove), [initialMove]);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<"status" | "stage" | "next_action" | null>(null);
-  const [editNextAction, setEditNextAction] = useState("");
-  const [assignedMembers, setAssignedMembers] = useState<Set<string>>(new Set(TEAM_MEMBERS));
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [editingCard, setEditingCard] = useState<"status" | "stage" | null>(null);
+  const selectedCrew = crews.find((c) => c.id === move.crew_id);
+  const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
+  const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
+    const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
+    return assigned.length > 0 ? new Set(assigned) : new Set(crewMembers);
+  });
+  useEffect(() => {
+    const members = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
+    const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
+    if (assigned.length > 0) {
+      setAssignedMembers(new Set(assigned));
+    } else if (members.length > 0) {
+      setAssignedMembers(new Set(members));
+    } else {
+      setAssignedMembers(new Set());
+    }
+  }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
@@ -61,46 +84,45 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
     });
   };
 
-  const EditIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-  );
-
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 space-y-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <BackButton label="Back" />
 
-      {/* Hero - client name clickable */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
+      {/* Hero - compact header */}
+      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <button
               type="button"
               onClick={() => setContactModalOpen(true)}
-              className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left truncate"
+              className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left truncate"
             >
               {move.client_name}
             </button>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/30">
-                <Icon name={isOffice ? "building" : "home"} className="w-[12px] h-[12px]" />
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+                <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
                 {isOffice ? "Office" : "Residential"} Move
               </span>
               <MoveNotifyButton move={move} />
+              <ResendTrackingLinkButton move={move} />
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+              >
+                Delete move
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Status bar - refined 4-column grid */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
-            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "status" ? null : "status")} aria-label="Edit status">
-              <EditIcon />
-            </button>
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-[var(--brd)]/40 pt-3">
+          <div className="group/card relative flex items-center gap-2 min-w-0">
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
             {editingCard === "status" ? (
               <select
                 defaultValue={move.status}
-                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
                 onChange={async (e) => {
                   const v = e.target.value;
                   const { data } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
@@ -114,21 +136,26 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
                 ))}
               </select>
             ) : (
-              <span className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
-                {move.status?.replace("-", " ")}
-              </span>
+              <button
+                type="button"
+                onClick={() => setEditingCard("status")}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn"
+                aria-label="Edit status"
+              >
+                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold capitalize ${STATUS_COLORS[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                  {move.status?.replace("-", " ")}
+                </span>
+                <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
+              </button>
             )}
           </div>
 
-          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
-            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditingCard(editingCard === "stage" ? null : "stage")} aria-label="Edit stage">
-              <EditIcon />
-            </button>
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Stage</div>
+          <div className="group/card relative flex items-center gap-2 min-w-0">
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Stage</span>
             {editingCard === "stage" ? (
               <select
                 defaultValue={move.stage ?? "scheduled"}
-                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[90px]"
                 onChange={async (e) => {
                   const v = e.target.value || null;
                   const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
@@ -142,38 +169,22 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
                 ))}
               </select>
             ) : (
-              <div className="text-[12px] font-semibold text-[var(--tx)]">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</div>
+              <button
+                type="button"
+                onClick={() => setEditingCard("stage")}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0"
+                aria-label="Edit stage"
+              >
+                <span className="text-[11px] font-medium text-[var(--tx)] truncate">{STAGE_OPTS.find((o) => o.value === move.stage)?.label ?? move.stage ?? "—"}</span>
+                <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
+              </button>
             )}
           </div>
 
-          <div className="group/card relative p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 transition-all">
-            <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => { setEditNextAction(move.next_action ?? ""); setEditingCard(editingCard === "next_action" ? null : "next_action"); }} aria-label="Edit next action">
-              <EditIcon />
-            </button>
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Next action</div>
-            {editingCard === "next_action" ? (
-              <input
-                value={editNextAction}
-                onChange={(e) => setEditNextAction(e.target.value)}
-                onBlur={async () => {
-                  const { data } = await supabase.from("moves").update({ next_action: editNextAction.trim() || null, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
-                  if (data) setMove(data);
-                  setEditingCard(null);
-                  router.refresh();
-                }}
-                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                autoFocus
-                className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-                placeholder="Add next action"
-              />
-            ) : (
-              <div className="text-[12px] font-semibold text-[var(--gold)] truncate">{move.next_action || "—"}</div>
-            )}
-          </div>
-
-          <div className="p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--brd)]/60">
-            <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-2">Last updated</div>
-            <div className="text-[12px] font-semibold text-[var(--tx2)]">{lastUpdatedRelative}</div>
+          <div className="flex items-center gap-1.5 pl-4 ml-2 border-l border-[var(--brd)]/50">
+            <span className="text-[9px] font-medium tracking-wide uppercase text-[var(--tx3)]/90">
+              Last updated <span className="tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -191,201 +202,233 @@ export default function MoveDetailClient({ move: initialMove, isOffice }: MoveDe
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
 
-      {/* Crew + Asset Assignment */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 hover:border-[var(--gold)]/60 transition-all">
-        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
-          <EditIcon />
-        </button>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Crew & Asset Assignment</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Assigned Crew</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">Team A</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Crew Lead</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">Michael T.</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCrewModalOpen(true)}
-            className="text-left hover:bg-[var(--bg)] rounded-lg p-2 -m-2 transition-colors"
-          >
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Crew Size</div>
-            <div className="text-[12px] font-semibold text-[var(--gold)] hover:underline">{assignedMembers.size}</div>
-          </button>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Truck</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">Sprinter 3</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Dispatch Confirmed</div>
-            <div className="text-[12px] font-semibold text-[var(--grn)]">Yes</div>
-          </div>
-        </div>
-      </div>
 
-      <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Team Members" maxWidth="sm">
+      <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
         <div className="p-5 space-y-4">
-          <p className="text-[11px] text-[var(--tx3)]">Check or uncheck members to assign to this job.</p>
-          <div className="space-y-2">
-            {TEAM_MEMBERS.map((m) => (
-              <label key={m} className="flex items-center gap-3 p-3 rounded-lg border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={assignedMembers.has(m)}
-                  onChange={() => toggleMember(m)}
-                  className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
-                />
-                <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
-              </label>
-            ))}
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
+            <select
+              value={move.crew_id || ""}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                const { data } = await supabase.from("moves").update({ crew_id: v, assigned_members: v ? (crews.find((c) => c.id === v)?.members || []) : [], updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                if (data) {
+                  setMove(data);
+                  setAssignedMembers(new Set(Array.isArray(data.assigned_members) ? data.assigned_members : (crews.find((c) => c.id === v)?.members || [])));
+                }
+                router.refresh();
+              }}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+            >
+              <option value="">No crew assigned</option>
+              {crews.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
+          {selectedCrew && crewMembers.length > 0 && (
+            <>
+              <p className="text-[11px] text-[var(--tx3)]">Check or uncheck members to assign to this move.</p>
+              <div className="space-y-2">
+                {crewMembers.map((m) => (
+                  <label key={m} className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={assignedMembers.has(m)}
+                      onChange={() => toggleMember(m)}
+                      className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                    />
+                    <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const members = Array.from(assignedMembers);
+                  const { data } = await supabase.from("moves").update({ assigned_members: members, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (data) setMove(data);
+                  router.refresh();
+                  setCrewModalOpen(false);
+                }}
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+              >
+                Save Assignments
+              </button>
+            </>
+          )}
+          {selectedCrew && crewMembers.length === 0 && (
+            <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Crews & Teams.</p>
+          )}
+          {!selectedCrew && (
+            <p className="text-[11px] text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
+          )}
         </div>
       </ModalOverlay>
 
       {/* Time Intelligence - editable */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 hover:border-[var(--gold)]/60 transition-all">
-        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
-          <EditIcon />
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+          <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Time Intelligence</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Time & Intelligence</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1">
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_date || "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_time || "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Duration</span><div className="text-[11px] font-medium text-[var(--tx)]">8h</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
+        </div>
+      </div>
+
+      {/* Addresses - same grid pattern as other cards */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
+          <Pencil className="w-[11px] h-[11px]" />
+        </button>
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Addresses</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
           <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Move Date</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">{move.scheduled_date || "—"}</div>
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
+            <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
+            {move.from_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
           </div>
           <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Time</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">{move.scheduled_time || "—"}</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Arrival Window</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">{move.arrival_window || "—"}</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Est. Duration</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">8h</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Projected Completion</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">4:00 PM</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Days Until Move</div>
-            <div className="text-[12px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div>
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
+            <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
+            {move.to_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
           </div>
         </div>
       </div>
 
-      {/* Property + Access - editable */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[var(--gold)]/60 transition-all">
-        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit property access">
-          <EditIcon />
+      {/* Crew - same structure as other cards */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
+          <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">
-          {isOffice ? "Office & Access Conditions" : "Property & Access Conditions"}
-        </h3>
-        <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">{move.access_notes || "No access notes. Click edit to add."}</p>
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Crew</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
+          <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+        </div>
       </div>
 
       {/* Financial Snapshot */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Financial Snapshot</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Estimate</div>
-            <div className="text-[14px] font-bold text-[var(--gold)]">${estimate.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Deposit Paid</div>
-            <div className="text-[14px] font-bold text-[var(--grn)]">${depositPaid.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Balance Due</div>
-            <div className={`text-[14px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>${balanceDue.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Invoice Status</div>
-            <div className="text-[12px] font-semibold text-[var(--grn)]">Deposit Received</div>
-          </div>
+      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Financial Snapshot</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1">
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Estimate</span><div className="text-[11px] font-bold text-[var(--gold)]">${estimate.toLocaleString()}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[11px] font-bold text-[var(--grn)]">${depositPaid.toLocaleString()}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[11px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>${balanceDue.toLocaleString()}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[11px] font-medium text-[var(--grn)]">Deposit Received</div></div>
         </div>
       </div>
 
       {/* Complexity Indicators */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Complexity Indicators</h3>
-        <div className="flex flex-wrap gap-2">
-          {["White Glove", "Piano", "High Value Client", "Repeat Client"].map((tag) => (
-            <span key={tag} className="px-2.5 py-1 rounded-full text-[9px] font-semibold bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/20">
-              {tag}
-            </span>
-          ))}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
+          <Pencil className="w-[11px] h-[11px]" />
+        </button>
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Complexity Indicators</h3>
+        <div className="flex flex-wrap gap-1">
+          {(Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).length > 0 ? (
+            (Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).map((tag: string) => (
+              <span key={tag} className="px-2 py-0.5 rounded text-[9px] font-medium bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/15">
+                {tag}
+              </span>
+            ))
+          ) : (
+            <span className="text-[10px] text-[var(--tx3)]">No indicators. Click edit to add.</span>
+          )}
         </div>
       </div>
 
-      {/* Distance + Logistics */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Distance & Logistics</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Distance</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">11.2 km</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Drive Time</div>
-            <div className="text-[12px] font-semibold text-[var(--tx)]">24 min</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Traffic Risk</div>
-            <div className="text-[12px] font-semibold text-[var(--org)]">Moderate</div>
-          </div>
+      {/* Distance & Logistics */}
+      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Distance & Logistics</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Distance</span><div className="text-[11px] font-medium text-[var(--tx)]">11.2 km</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Drive Time</span><div className="text-[11px] font-medium text-[var(--tx)]">24 min</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Traffic Risk</span><div className="text-[11px] font-medium text-[var(--org)]">Moderate</div></div>
         </div>
       </div>
 
       {/* Internal Notes */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Internal Notes</h3>
-        <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
-          &quot;Client extremely particular about wall protection. Building strict.&quot;
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
+          <Pencil className="w-[11px] h-[11px]" />
+        </button>
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Internal Notes</h3>
+        <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
+          {move.internal_notes || "No internal notes. Click edit to add."}
         </p>
       </div>
 
-      {/* Addresses - editable */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[var(--gold)]/60 transition-all">
-        <button type="button" className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
-          <EditIcon />
-        </button>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Addresses</h3>
-        <div className="grid md:grid-cols-2 gap-5">
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">From</div>
-            <div className="text-[13px] text-[var(--tx)]">{move.from_address || "—"}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">To</div>
-            <div className="text-[13px] text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
-          </div>
-        </div>
-        <button type="button" onClick={() => setDetailsModalOpen(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">
-          Edit address, date & access →
-        </button>
-      </div>
+      <MoveInventorySection moveId={move.id} />
+      <MovePhotosSection moveId={move.id} />
+      <MoveDocumentsSection moveId={move.id} />
 
       <EditMoveDetailsModal
         open={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         moveId={move.id}
+        crews={crews}
         initial={{
           from_address: move.from_address,
           to_address: move.to_address || move.delivery_address,
+          crew_id: move.crew_id,
           scheduled_date: move.scheduled_date,
           scheduled_time: move.scheduled_time,
           arrival_window: move.arrival_window,
+          from_access: move.from_access,
+          to_access: move.to_access,
           access_notes: move.access_notes,
+          complexity_indicators: move.complexity_indicators ?? [],
+          internal_notes: move.internal_notes,
         }}
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
+
+      {deleteConfirmOpen && (
+        <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete move?" maxWidth="sm">
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--tx2)]">
+              This will permanently remove this move and its inventory, documents, and photos. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    const res = await fetch(`/api/admin/moves/${move.id}`, { method: "DELETE" });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed to delete");
+                    toast("Move deleted", "check");
+                    router.push("/admin/moves");
+                  } catch (e) {
+                    toast(e instanceof Error ? e.message : "Failed to delete move", "x");
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
     </div>
   );
 }

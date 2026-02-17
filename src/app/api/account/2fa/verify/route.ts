@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,7 +24,18 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    if (!row || row.code !== codeStr) {
+    if (!row?.code) {
+      return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+    }
+    const expected = row.code;
+    if (expected.length !== codeStr.length) {
+      return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+    }
+    try {
+      if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(codeStr, "utf8"))) {
+        return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+      }
+    } catch {
       return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
     }
 

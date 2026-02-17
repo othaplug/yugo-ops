@@ -15,11 +15,12 @@ const TYPES = [
 interface EditPartnerModalProps {
   open: boolean;
   onClose: () => void;
-  client: { id: string; name: string; type: string; contact_name: string; email: string; phone: string };
+  client: { id: string; name: string; type: string; contact_name?: string; email: string; phone?: string };
   onSaved?: () => void;
 }
 
 export default function EditPartnerModal({ open, onClose, client, onSaved }: EditPartnerModalProps) {
+  const isClient = client.type === "b2c";
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(client.name);
@@ -41,7 +42,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
-      toast("Company name and email are required", "x");
+      toast(isClient ? "Name and email are required" : "Company name and email are required", "x");
       return;
     }
     setLoading(true);
@@ -51,15 +52,15 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          type,
-          contact_name: contactName.trim(),
+          type: isClient ? "b2c" : type,
+          contact_name: isClient ? name.trim() : contactName.trim(),
           email: email.trim(),
           phone: phone.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update");
-      toast("Partner updated", "check");
+      toast(isClient ? "Client updated" : "Partner updated", "check");
       onSaved?.();
       onClose();
     } catch (err: unknown) {
@@ -70,19 +71,20 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Edit Partner">
+    <ModalOverlay open={open} onClose={onClose} title={isClient ? "Edit Client" : "Edit Partner"}>
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Company Name *</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{isClient ? "Name *" : "Company Name *"}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Roche Bobois"
+            placeholder={isClient ? "e.g. John Smith" : "e.g. Roche Bobois"}
             required
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
+        {!isClient && (
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type *</label>
           <select
@@ -95,6 +97,8 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             ))}
           </select>
         </div>
+        )}
+        {!isClient && (
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
           <input
@@ -105,6 +109,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
+        )}
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
           <input

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
-import { inviteUserEmail, inviteUserEmailText } from "@/lib/email-templates";
+import { inviteUserEmail, inviteUserEmailText, trackingLinkEmail } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
 
 function generatePassword(length = 12): string {
@@ -22,7 +22,8 @@ export async function POST(
   try {
     const { id } = await params;
     const admin = createAdminClient();
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app"}/login?welcome=1`;
+    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
+    const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
     if (id.startsWith("inv-")) {
       const invId = id.replace("inv-", "");
@@ -57,13 +58,34 @@ export async function POST(
     if (platformUser) {
       email = platformUser.email;
       name = platformUser.name || "";
-      roleLabel = platformUser.role === "admin" ? "Admin" : platformUser.role === "manager" ? "Manager" : "Dispatcher";
+      roleLabel = platformUser.role === "admin" ? "Admin" : platformUser.role === "manager" ? "Manager" : platformUser.role === "client" ? "Client" : "Dispatcher";
     } else {
       const { data: { user: authUser }, error: authErr } = await admin.auth.admin.getUserById(id);
       if (authErr || !authUser?.email) return NextResponse.json({ error: "User not found" }, { status: 404 });
       email = authUser.email;
       name = (authUser.user_metadata?.full_name as string) || "";
       roleLabel = "User";
+    }
+
+    const resend = getResend();
+
+    // Clients use magic-link tracking — send tracking link instead of password reset
+    if (platformUser?.role === "client") {
+      const { signTrackToken } = await import("@/lib/track-token");
+      const { getMoveCode } = await import("@/lib/move-code");
+      const { data: move } = await admin.from("moves").select("id").ilike("client_email", email.trim().toLowerCase()).limit(1).maybeSingle();
+      if (!move) return NextResponse.json({ error: "No move found for this client. Use Resend tracking link on the move." }, { status: 400 });
+      const trackUrl = `${getEmailBaseUrl()}/track/move/${move.id}?token=${signTrackToken("move", move.id)}`;
+      const moveCode = getMoveCode(move);
+      const { error: sendError } = await resend.emails.send({
+        from: "OPS+ <notifications@opsplus.co>",
+        to: email,
+        subject: `Track your move — ${moveCode}`,
+        html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: moveCode }),
+        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+      });
+      if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
     }
 
     const tempPassword = generatePassword();
@@ -73,13 +95,13 @@ export async function POST(
     });
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
 
-    const resend = getResend();
     const { error: sendError } = await resend.emails.send({
       from: "OPS+ <notifications@opsplus.co>",
       to: email,
       subject: "You're invited to OPS+ — Log in to continue setup",
       html: inviteUserEmail({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
       text: inviteUserEmailText({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
+      headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
     if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
     return NextResponse.json({ ok: true });

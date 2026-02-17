@@ -21,35 +21,28 @@ export async function POST(req: NextRequest) {
 
     const emailTrimmed = email.trim().toLowerCase();
     const nameTrimmed = (name || "").trim();
+    const admin = createAdminClient();
+
+    // Clients use magic-link tracking only — do not create accounts for move client emails
+    const { data: moveClient } = await admin.from("moves").select("id").ilike("client_email", emailTrimmed).limit(1).maybeSingle();
+    if (moveClient) {
+      return NextResponse.json({
+        error: "This email belongs to a move client. Use 'Resend tracking link' on the move to send them access. Clients do not need accounts.",
+      }, { status: 400 });
+    }
+
     const roleVal = role === "admin" ? "admin" : role === "manager" ? "manager" : "dispatcher";
     const roleLabel = roleVal === "admin" ? "Admin" : roleVal === "manager" ? "Manager" : "Dispatcher";
 
-    const admin = createAdminClient();
-
-    // Check if user already exists
+    // If email is already linked to a user, do not add again — return error
     const { data: existingUsers } = await admin.auth.admin.listUsers();
     const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
+    if (existing) {
+      return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
+    }
 
     let userId: string;
-
-    if (existing) {
-      // Update password for existing user
-      const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
-        password,
-        user_metadata: { ...existing.user_metadata, must_change_password: true },
-      });
-      if (updateError) {
-        console.error("[invite/user] updateUserById:", updateError);
-        return NextResponse.json({ error: updateError.message }, { status: 400 });
-      }
-      userId = existing.id;
-
-      // Upsert platform_users
-      await admin.from("platform_users").upsert(
-        { user_id: userId, email: emailTrimmed, name: nameTrimmed || null, role: roleVal, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" }
-      );
-    } else {
+    {
       // Create new user
       const { data: newUser, error: createError } = await admin.auth.admin.createUser({
         email: emailTrimmed,
@@ -96,21 +89,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app"}/login?welcome=1`;
+    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
+    const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
-    const inviteParams = { name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl };
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
       from: "OPS+ <notifications@opsplus.co>",
       to: emailTrimmed,
       replyTo: "OPS+ <notifications@opsplus.co>",
       subject: "You're invited to OPS+ — Log in to continue setup",
-      html: inviteUserEmail(inviteParams),
-      text: inviteUserEmailText(inviteParams),
-      headers: {
-        "Precedence": "auto",
-        "X-Auto-Response-Suppress": "All",
-      },
+      html: inviteUserEmail({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
+      text: inviteUserEmailText({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
+      headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
 
     if (sendError) {

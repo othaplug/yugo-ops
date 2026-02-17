@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Badge from "../../components/Badge";
+import ModalOverlay from "../../components/ModalOverlay";
 
 type Referral = {
   id: string;
@@ -47,25 +48,15 @@ export default function AgentDetailModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div
-        className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-xl md:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6 pb-4 shrink-0 border-b border-[var(--brd)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Agent details</div>
-          <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">{agentName}</h2>
-          {(brokerage || agentEmail) && (
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--tx3)]">
-              {brokerage && <span>{brokerage}</span>}
-              {agentEmail && <a href={`mailto:${agentEmail}`} className="text-[var(--gold)] hover:underline">{agentEmail}</a>}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
-          <div className="flex items-center justify-between">
+    <ModalOverlay open={open} onClose={onClose} title={agentName} maxWidth="lg">
+      <div className="p-4 space-y-4">
+        {(brokerage || agentEmail) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--tx3)]">
+            {brokerage && <span>{brokerage}</span>}
+            {agentEmail && <a href={`mailto:${agentEmail}`} className="text-[var(--gold)] hover:underline">{agentEmail}</a>}
+          </div>
+        )}
+        <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
             <span className="text-[16px] font-bold text-[var(--gold)]">${totalCommission.toLocaleString()}</span>
           </div>
@@ -138,18 +129,15 @@ export default function AgentDetailModal({
               </div>
             )}
           </div>
-        </div>
 
-        <div className="p-4 border-t border-[var(--brd)] shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
-          >
-            Close
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
+        >
+          Close
+        </button>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

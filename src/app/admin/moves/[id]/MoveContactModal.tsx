@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import ModalOverlay from "../../components/ModalOverlay";
+import { useToast } from "../../components/Toast";
 
 const PREFERRED_OPTIONS = [
   { value: "email", label: "Email" },
@@ -25,11 +27,13 @@ interface MoveContactModalProps {
 
 export default function MoveContactModal({ open, onClose, moveId, initial, onSaved }: MoveContactModalProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = createClient();
   const [name, setName] = useState(initial.client_name || "");
   const [email, setEmail] = useState(initial.client_email || "");
   const [phone, setPhone] = useState(initial.client_phone || "");
   const [preferred, setPreferred] = useState(initial.preferred_contact || "email");
+  const [sendTrackingLink, setSendTrackingLink] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (open) {
@@ -40,16 +44,15 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
     }
   }, [open, initial.client_name, initial.client_email, initial.client_phone, initial.preferred_contact]);
 
-  if (!open) return null;
-
   const handleSave = async () => {
     setSaving(true);
     const updated_at = new Date().toISOString();
+    const emailTrimmed = email.trim() || null;
     const { data } = await supabase
       .from("moves")
       .update({
         client_name: name.trim(),
-        client_email: email.trim() || null,
+        client_email: emailTrimmed,
         client_phone: phone.trim() || null,
         preferred_contact: preferred || null,
         updated_at,
@@ -57,39 +60,57 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
       .eq("id", moveId)
       .select()
       .single();
+    if (data) onSaved?.({ client_name: data.client_name || "", client_email: data.client_email ?? null, client_phone: data.client_phone ?? null, preferred_contact: data.preferred_contact ?? null, updated_at });
+
+    if (sendTrackingLink && emailTrimmed) {
+      try {
+        const res = await fetch(`/api/moves/${moveId}/send-tracking-link`, { method: "POST" });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed to send tracking link");
+        toast("Tracking link email sent", "mail");
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Failed to send tracking link", "x");
+      }
+    }
     setSaving(false);
     onClose();
-    if (data) onSaved?.({ client_name: data.client_name || "", client_email: data.client_email ?? null, client_phone: data.client_phone ?? null, preferred_contact: data.preferred_contact ?? null, updated_at });
     router.refresh();
   };
 
+  if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">Client contact details</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
-          </div>
-          <div>
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
-          </div>
-          <div>
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
-          </div>
-          <div>
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>
-            <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]">
-              {PREFERRED_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
+    <ModalOverlay open={open} onClose={onClose} title="Client contact details" maxWidth="md">
+      <div className="p-5 space-y-3">
+        <div>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
         </div>
+        <div>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+        </div>
+        <div>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+        </div>
+        <div>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>
+          <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]">
+            {PREFERRED_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={sendTrackingLink}
+            onChange={(e) => setSendTrackingLink(e.target.checked)}
+            className="accent-[var(--gold)] rounded"
+          />
+          <span className="text-[12px] text-[var(--tx2)]">Send tracking link (magic-link email, no account needed)</span>
+        </label>
         <div className="flex gap-2 mt-4">
           <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
           <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50">
@@ -97,6 +118,6 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

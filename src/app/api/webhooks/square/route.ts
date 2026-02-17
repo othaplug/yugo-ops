@@ -10,7 +10,7 @@ const NOTIFICATION_URL =
 export async function POST(req: NextRequest) {
   try {
     const signature = req.headers.get("x-square-hmacsha256-signature");
-    const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    const signatureKey = (process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || "").trim();
 
     const rawBody = await req.text();
     if (signatureKey) {

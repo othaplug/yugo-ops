@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Badge from "../components/Badge";
-import InvoiceActions from "./InvoiceActions";
 
 type SortKey = "date" | "amount" | "client" | "status";
 
@@ -14,7 +13,13 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "status", label: "Status" },
 ];
 
-export default function InvoicesTable({ invoices }: { invoices: any[] }) {
+export default function InvoicesTable({
+  invoices,
+  onRowClick,
+}: {
+  invoices: any[];
+  onRowClick?: (invoice: any) => void;
+}) {
   const [sortBy, setSortBy] = useState<SortKey>("date");
   const [asc, setAsc] = useState(false);
 
@@ -72,12 +77,16 @@ export default function InvoicesTable({ invoices }: { invoices: any[] }) {
         </thead>
         <tbody>
           {sorted.map((inv) => (
-            <tr key={inv.id} className="hover:bg-[var(--gdim)] transition-colors">
+            <tr
+              key={inv.id}
+              onClick={() => onRowClick?.(inv)}
+              className="hover:bg-[var(--gdim)] transition-colors cursor-pointer"
+            >
               <td className="px-4 py-2.5 text-[10px] font-semibold font-mono border-b border-[var(--brd)]">
                 {inv.invoice_number}
               </td>
               <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">
-                <Link href="/admin/clients" className="hover:text-[var(--gold)] transition-colors">
+                <Link href="/admin/clients" onClick={(e) => e.stopPropagation()} className="hover:text-[var(--gold)] transition-colors">
                   {inv.client_name}
                 </Link>
               </td>
@@ -90,8 +99,8 @@ export default function InvoicesTable({ invoices }: { invoices: any[] }) {
               <td className="px-4 py-2.5 border-b border-[var(--brd)]">
                 <Badge status={inv.status} />
               </td>
-              <td className="px-4 py-2.5 border-b border-[var(--brd)]">
-                <InvoiceActions invoiceId={inv.id} status={inv.status} />
+              <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)] border-b border-[var(--brd)]">
+                Click to edit
               </td>
             </tr>
           ))}

@@ -12,6 +12,7 @@ interface User {
   role: string;
   status: string;
   last_sign_in_at?: string | null;
+  move_id?: string | null;
 }
 
 interface UserRowProps {
@@ -37,15 +38,24 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isClient = user.role === "client";
   const canEdit = user.role !== "partner";
   const canResend = user.role !== "partner" && user.role !== "superadmin";
+  const canResendPortal = isClient && user.move_id;
 
   const handleResendInvite = async () => {
     try {
-      const res = await fetch(`/api/admin/users/${user.id}/resend-invite`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send");
-      toast("Invitation email sent", "mail");
+      if (isClient && user.move_id) {
+        const res = await fetch(`/api/moves/${user.move_id}/send-tracking-link`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to send");
+        toast("Tracking link sent", "mail");
+      } else {
+        const res = await fetch(`/api/admin/users/${user.id}/resend-invite`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to send");
+        toast("Invitation email sent", "mail");
+      }
       setMenuOpen(false);
       onResendInvite?.();
     } catch (err) {
@@ -95,8 +105,8 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
               <div className="absolute right-0 bottom-full mb-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
                 <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">View</button>
                 {canEdit && <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">Edit</button>}
-                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">Resend invite</button>}
-                {canEdit && <button type="button" onClick={() => { setMenuOpen(false); setDeleteConfirm(true); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--red)]/10">Delete</button>}
+                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">{canResendPortal ? "Resend tracking link" : "Resend invite"}</button>}
+                {canEdit && !isClient && <button type="button" onClick={() => { setMenuOpen(false); setDeleteConfirm(true); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--red)]/10">Delete</button>}
               </div>
             )}
           </div>

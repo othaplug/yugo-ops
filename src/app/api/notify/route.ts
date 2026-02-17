@@ -4,8 +4,7 @@ import { deliveryNotificationEmail, moveNotificationEmail } from "@/lib/email-te
 import { getResend } from "@/lib/resend";
 import { requireAuth } from "@/lib/api-auth";
 import { signTrackToken } from "@/lib/track-token";
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAuth();
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
         deposit_paid: depositPaid,
         balance_due: estimate - depositPaid,
         trackUrl: body.moveId
-          ? `${baseUrl}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}`
+          ? `${getEmailBaseUrl()}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}`
           : undefined,
       });
       subject = `Your Move Detail - Yugo #${moveCode}`;
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
         status: body.status || "",
         items_count: body.itemsCount ?? (Array.isArray(body.items) ? body.items.length : undefined),
         trackUrl: body.deliveryId
-          ? `${baseUrl}/track/delivery/${body.deliveryId}?token=${signTrackToken("delivery", body.deliveryId)}`
+          ? `${getEmailBaseUrl()}/track/delivery/${body.deliveryId}?token=${signTrackToken("delivery", body.deliveryId)}`
           : undefined,
       });
       subject = `Project Update: ${body.deliveryNumber} — ${body.customerName}`;

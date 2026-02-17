@@ -27,6 +27,13 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
+    // If email is already linked to a user, do not add again — return error
+    const { data: existingAuthUsers } = await admin.auth.admin.listUsers();
+    const existingUser = existingAuthUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
+    if (existingUser) {
+      return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
+    }
+
     // Check if org with this email already exists (invited partner)
     const { data: existingOrg } = await admin
       .from("organizations")
@@ -39,61 +46,20 @@ export async function POST(req: NextRequest) {
     let userId: string;
 
     if (existingOrg?.user_id) {
-      // Partner already has auth user — update password and resend invite
-      const { data: existingUsers } = await admin.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
-      if (existing) {
-        const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
-          password,
-          user_metadata: { ...existing.user_metadata, must_change_password: true },
-        });
-        if (updateError) {
-          return NextResponse.json({ error: updateError.message }, { status: 400 });
-        }
-        userId = existing.id;
-      } else {
-        return NextResponse.json({ error: "Organization exists but auth user not found" }, { status: 400 });
-      }
-      orgId = existingOrg.id;
-
-      // Update org contact details
-      await admin
-        .from("organizations")
-        .update({
-          name: nameTrimmed,
-          type: typeVal,
-          contact_name: contactNameTrimmed,
-          email: emailTrimmed,
-          phone: phoneTrimmed,
-        })
-        .eq("id", orgId);
+      // Partner org already has a user linked — cannot re-add
+      return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
     } else if (existingOrg) {
-      // Org exists but no user — create auth user and link
-      const { data: existingUsers } = await admin.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
-
-      if (existing) {
-        const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
-          password,
-          user_metadata: { ...existing.user_metadata, must_change_password: true },
-        });
-        if (updateError) {
-          return NextResponse.json({ error: updateError.message }, { status: 400 });
-        }
-        userId = existing.id;
-      } else {
-        const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-          email: emailTrimmed,
-          password,
-          email_confirm: true,
-          user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
-        });
-        if (createError) {
-          return NextResponse.json({ error: createError.message }, { status: 400 });
-        }
-        userId = newUser.user.id;
+      // Org exists but no user — create auth user and link (existingUser already returned above)
+      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+        email: emailTrimmed,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
+      });
+      if (createError) {
+        return NextResponse.json({ error: createError.message }, { status: 400 });
       }
-
+      userId = newUser.user.id;
       orgId = existingOrg.id;
       await admin
         .from("organizations")
@@ -113,31 +79,17 @@ export async function POST(req: NextRequest) {
         { onConflict: "user_id" }
       );
     } else {
-      // New partner — create auth user and org
-      const { data: existingUsers } = await admin.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
-
-      if (existing) {
-        const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
-          password,
-          user_metadata: { ...existing.user_metadata, must_change_password: true },
-        });
-        if (updateError) {
-          return NextResponse.json({ error: updateError.message }, { status: 400 });
-        }
-        userId = existing.id;
-      } else {
-        const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-          email: emailTrimmed,
-          password,
-          email_confirm: true,
-          user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
-        });
-        if (createError) {
-          return NextResponse.json({ error: createError.message }, { status: 400 });
-        }
-        userId = newUser.user.id;
+      // New partner — create auth user and org (existingUser already returned above)
+      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+        email: emailTrimmed,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
+      });
+      if (createError) {
+        return NextResponse.json({ error: createError.message }, { status: 400 });
       }
+      userId = newUser.user.id;
 
       const { data: newOrg, error: orgError } = await admin
         .from("organizations")
@@ -161,7 +113,8 @@ export async function POST(req: NextRequest) {
       await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
     }
 
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app"}/login?welcome=1`;
+    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
+    const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
     const inviteParams = { contactName: contactNameTrimmed, companyName: nameTrimmed, email: emailTrimmed, typeLabel, tempPassword: password, loginUrl };
     const resend = getResend();

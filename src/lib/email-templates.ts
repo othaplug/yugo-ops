@@ -1,13 +1,13 @@
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yugo-ops.vercel.app";
+import { getEmailBaseUrl } from "./email-base-url";
 
 function emailFooter(loginUrl?: string) {
-  const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : baseUrl;
+  const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
   return `
-    <div style="font-size:10px;color:#555;text-align:left;margin-top:32px;padding-top:20px;border-top:1px solid #2A2A2A">
+    <div style="font-size:10px;color:#999;text-align:left;margin-top:32px;padding-top:20px;border-top:1px solid #2A2A2A">
       <span style="font-family:'Instrument Serif',Georgia,serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</span>
-      <span style="color:#444;margin:0 6px">·</span>
+      <span style="color:#888;margin:0 6px">·</span>
       <a href="${url}" style="color:#C9A962;text-decoration:none">Learn more</a>
-      <div style="margin-top:6px;font-size:9px;color:#444">Powered by OPS+</div>
+      <div style="margin-top:6px;font-size:9px;color:#888">Powered by OPS+</div>
     </div>
   `;
 }
@@ -50,7 +50,7 @@ export function deliveryNotificationEmail(delivery: {
   items_count?: number;
   trackUrl?: string;
 }) {
-  const trackUrl = delivery.trackUrl || `${baseUrl}/track/delivery/${delivery.delivery_number}`;
+  const trackUrl = delivery.trackUrl || `${getEmailBaseUrl()}/track/delivery/${delivery.delivery_number}`;
   const items = delivery.items_count ?? 0;
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
@@ -94,7 +94,7 @@ export function moveNotificationEmail(move: {
   balance_due?: number;
   trackUrl?: string;
 }) {
-  const trackUrl = move.trackUrl || `${baseUrl}/track/move/${move.move_id}`;
+  const trackUrl = move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Residential";
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
@@ -123,9 +123,34 @@ export function moveNotificationEmail(move: {
       </div>
       
       <a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
-        Track this move →
+        Track your move →
       </a>
       
+      ${emailFooter()}
+    </div>
+  `;
+}
+
+export function trackingLinkEmail(params: {
+  clientName: string;
+  trackUrl: string;
+  moveNumber: string;
+}) {
+  const { clientName, trackUrl } = params;
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+      ${emailLogo()}
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Track Your Move</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Hi${clientName ? `, ${clientName}` : ""}</h1>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 20px">
+        Use the link below to track your move, view documents, and message your coordinator. No account or login required.
+      </p>
+      <a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+        Track your move →
+      </a>
+      <p style="font-size:11px;color:#999;margin-top:24px;line-height:1.5">
+        This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.
+      </p>
       ${emailFooter()}
     </div>
   `;
@@ -155,6 +180,40 @@ export function invoiceEmail(invoice: {
   `;
 }
 
+export function changeRequestNotificationEmail(params: {
+  client_name: string;
+  status: "approved" | "rejected";
+  type: string;
+  description: string;
+  portalUrl: string;
+}) {
+  const { client_name, status, type, description, portalUrl } = params;
+  const isApproved = status === "approved";
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+      ${emailLogo()}
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Change Request Update</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Your change request has been ${isApproved ? "approved" : "declined"}</h1>
+      
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+        <div style="font-size:11px;color:#999;margin-bottom:8px"><strong>Request type:</strong> ${type}</div>
+        <p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:0">${description}</p>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #2A2A2A">
+          <span style="display:inline-block;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:${isApproved ? "#2D9F5A22" : "#D1434322"};color:${isApproved ? "#2D9F5A" : "#D14343"}">
+            ${isApproved ? "Approved" : "Declined"}
+          </span>
+        </div>
+      </div>
+      
+      <a href="${portalUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+        Track your move →
+      </a>
+      
+      ${emailFooter()}
+    </div>
+  `;
+}
+
 export function inviteUserEmail(params: {
   name: string;
   email: string;
@@ -165,19 +224,19 @@ export function inviteUserEmail(params: {
   const { name, email, roleLabel, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `
-    <div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
-      <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited</div>
-      <h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:#F5F5F3">Welcome to OPS+${name ? `, ${name}` : ""}</h2>
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${name ? `, ${name}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
         You&apos;ve been invited to join OPS+ as a <strong style="color:#C9A962">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
       </p>
-      <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your credentials</div>
         <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px"><strong>Email:</strong> ${email}</div>
         <div style="font-size:12px;color:#E8E5E0"><strong>Temporary password:</strong> <code style="background:#0F0F0F;padding:2px 8px;border-radius:4px;font-family:monospace">${tempPassword}</code></div>
       </div>
-      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s">
+      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
         Log in to continue setup
       </a>
       <p style="font-size:11px;color:#666;margin-top:24px;line-height:1.5">
@@ -219,19 +278,19 @@ export function invitePartnerEmail(params: {
   const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `
-    <div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
-      <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited as a Partner</div>
-      <h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:#F5F5F3">Welcome to OPS+${contactName ? `, ${contactName}` : ""}</h2>
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited as a Partner</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${contactName ? `, ${contactName}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
         <strong style="color:#C9A962">${companyName}</strong> has been invited as a <strong style="color:#C9A962">${typeLabel}</strong> partner on OPS+. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
       </p>
-      <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your credentials</div>
         <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px"><strong>Email:</strong> ${email}</div>
         <div style="font-size:12px;color:#E8E5E0"><strong>Temporary password:</strong> <code style="background:#0F0F0F;padding:2px 8px;border-radius:4px;font-family:monospace">${tempPassword}</code></div>
       </div>
-      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s">
+      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
         Log in to continue setup
       </a>
       <p style="font-size:11px;color:#666;margin-top:24px;line-height:1.5">
@@ -262,13 +321,25 @@ For security, you'll be asked to create a new password when you first sign in. I
 Powered by OPS+ | Learn more: ${baseUrl}`;
 }
 
+function darkEmailWrapper(html: string) {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0F0F0F;min-height:100%">
+      <tr><td style="padding:24px 16px">
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+    ${html}
+    </div>
+      </td></tr>
+    </table>
+  `;
+}
+
 export function welcomeEmail(client: { name: string; email: string; portalUrl: string }) {
   const displayName = client.name || "Partner";
   return `
-    <div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
-      <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Partner Portal Access</div>
-      <h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:#F5F5F3">Welcome to OPS+${displayName !== "Partner" ? `, ${displayName}` : ""}</h2>
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Partner Portal Access</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${displayName !== "Partner" ? `, ${displayName}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 16px">
         Your partner portal is ready. Sign in anytime to:
       </p>
@@ -277,7 +348,7 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
         <li>View and download invoices</li>
         <li>Message our team and get support</li>
       </ul>
-      <a href="${client.portalUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s">
+      <a href="${client.portalUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
         Access Your Portal
       </a>
       <p style="font-size:11px;color:#666;margin-top:20px;line-height:1.5">
@@ -322,7 +393,7 @@ export function verificationCodeEmail(params: { code: string; purpose: "email_ch
       <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:24px;text-align:center;margin-bottom:24px">
         <code style="font-size:28px;font-weight:700;letter-spacing:8px;color:#C9A962;font-family:monospace">${code}</code>
       </div>
-      <p style="font-size:11px;color:#666;line-height:1.5">If you didn&apos;t request this, you can safely ignore this email. Your account remains secure.</p>
+      <p style="font-size:11px;color:#666;line-height:1.5">If you didn't request this, you can safely ignore this email. Your account remains secure.</p>
       ${emailFooter()}
     </div>
   `;

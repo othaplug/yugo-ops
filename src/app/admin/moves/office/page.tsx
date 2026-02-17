@@ -34,7 +34,7 @@ export default async function OfficeMovesPage() {
             <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Pipeline</div>
             <div className="text-xl font-bold font-heading text-[var(--gold)]">${pipeline.toLocaleString()}</div>
           </Link>
-          <Link href="/admin/deliveries/new" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all flex items-center justify-center">
+          <Link href="/admin/moves/new" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all flex items-center justify-center">
             <span className="text-[10px] font-semibold text-[var(--gold)]">+ New Move</span>
           </Link>
         </div>

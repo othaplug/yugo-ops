@@ -1,0 +1,5 @@
+-- Add lat/lng for client portal Live Tracking map
+ALTER TABLE public.moves ADD COLUMN IF NOT EXISTS from_lat DOUBLE PRECISION;
+ALTER TABLE public.moves ADD COLUMN IF NOT EXISTS from_lng DOUBLE PRECISION;
+ALTER TABLE public.moves ADD COLUMN IF NOT EXISTS to_lat DOUBLE PRECISION;
+ALTER TABLE public.moves ADD COLUMN IF NOT EXISTS to_lng DOUBLE PRECISION;

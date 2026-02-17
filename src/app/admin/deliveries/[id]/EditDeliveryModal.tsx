@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import ModalOverlay from "../../components/ModalOverlay";
 
 interface EditDeliveryModalProps {
   delivery: any;
@@ -66,14 +67,8 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
-      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full sm:w-[480px] max-w-[480px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden m-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
-          <h3 className="text-[13px] font-bold">Edit {delivery.delivery_number}</h3>
-          <button onClick={() => setOpen(false)} className="text-[var(--tx3)] text-lg">&times;</button>
-        </div>
-        <form onSubmit={handleSave} className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
+    <ModalOverlay open={open} onClose={() => setOpen(false)} title={`Edit ${delivery.delivery_number}`} maxWidth="md">
+      <form onSubmit={handleSave} className="p-5 space-y-3">
           <Field label="Customer">
             <input name="customer_name" defaultValue={delivery.customer_name} className="field-input" />
           </Field>
@@ -122,9 +117,8 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
           <button type="submit" disabled={loading} className="w-full px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50">
             {loading ? "Saving..." : "Save Changes"}
           </button>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalOverlay>
   );
 }
 

@@ -18,14 +18,16 @@ interface UserDetailModalProps {
   user: User;
   currentUserId?: string;
   isPartner?: boolean;
+  isMoveClient?: boolean;
+  moveId?: string | null;
   onSaved?: (updates: Partial<User>) => void;
   onDeleted?: (id: string) => void;
 }
 
-export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, onSaved, onDeleted }: UserDetailModalProps) {
+export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, isMoveClient, moveId, onSaved, onDeleted }: UserDetailModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
-  const [role, setRole] = useState(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : "dispatcher");
+  const [role, setRole] = useState(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : user.role === "client" ? "client" : "dispatcher");
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -35,13 +37,14 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
   useEffect(() => {
     if (open) {
       setName(user.name || "");
-      setRole(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : "dispatcher");
+      setRole(user.role === "admin" ? "admin" : user.role === "manager" ? "manager" : user.role === "client" ? "client" : "dispatcher");
     }
   }, [open, user]);
 
   const isSelf = currentUserId === user.id;
   const isAdmin = user.role === "admin";
-  const canEditRole = !isSelf && !isAdmin && !isPartner;
+  // Role can only be changed for users created from User management; move clients and partners are locked.
+  const canEditRole = !isSelf && !isAdmin && !isPartner && !isMoveClient;
 
   if (isPartner) {
     const orgId = user.id.replace("partner-", "");
@@ -59,18 +62,41 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     );
   }
 
+  if (isMoveClient && moveId) {
+    return (
+      <ModalOverlay open={open} onClose={onClose} title="Client (move)" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <p className="text-[13px] text-[var(--tx2)]">
+            <strong>{user.name || user.email}</strong> is a move client. They access their move via a magic-link tracking URL sent by email — no account needed.
+          </p>
+          <p className="text-[12px] text-[var(--tx3)]">
+            Use &quot;Resend tracking link&quot; on the move to send them the tracking URL again.
+          </p>
+          <Link href={`/admin/moves/${moveId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+            View move →
+          </Link>
+        </div>
+      </ModalOverlay>
+    );
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload: { name?: string; role?: string } = { name: name.trim() };
+      if (canEditRole) payload.role = role;
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), role: canEditRole ? role : undefined }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update");
-      onSaved?.({ name: name.trim(), role });
+      const updates: Partial<User> = { name: name.trim() };
+      if (payload.role !== undefined) updates.role = payload.role;
+      if (typeof data.role === "string") updates.role = data.role;
+      onSaved?.(updates);
       toast("User updated", "check");
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to update", "x");
@@ -151,13 +177,14 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             ) : (
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as "admin" | "manager" | "dispatcher")}
+                onChange={(e) => setRole(e.target.value as "admin" | "manager" | "dispatcher" | "client")}
                 disabled={!canEditRole}
                 className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="dispatcher">Dispatcher</option>
+                <option value="client">Client</option>
               </select>
             )}
           </div>

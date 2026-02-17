@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
+import GlobalModal from "@/components/ui/Modal";
+import UpcomingItem from "./UpcomingItem";
 
 interface CalendarViewProps {
   deliveries: any[];
@@ -255,26 +257,29 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
 
       {/* Scheduled / Unscheduled + Week Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming moves/projects with dates</h3>
-          <ul className="space-y-1.5 max-h-[280px] overflow-y-auto">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-sm">
+          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming</h3>
+          <ul className="space-y-2 max-h-[280px] overflow-y-auto">
             {deliveriesThisWeek.map((d) => (
               <li key={d.id}>
-                <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 text-[11px] font-semibold text-[var(--tx)] transition-all cursor-pointer">
-                  {d.delivery_number} — {d.customer_name}
-                </Link>
+                <UpcomingItem
+                  href={`/admin/deliveries/${d.id}`}
+                  name={d.customer_name || d.delivery_number || "—"}
+                  date={d.scheduled_date}
+                  time={d.time_slot || d.delivery_window}
+                  badgeType="project"
+                />
               </li>
             ))}
-            {deliveriesThisWeek.length > 0 && movesThisWeek.length > 0 && (
-              <li className="py-2">
-                <div className="border-t border-[var(--brd)]" aria-hidden />
-              </li>
-            )}
             {movesThisWeek.map((m) => (
               <li key={m.id}>
-                <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 text-[11px] font-semibold text-[var(--tx)] transition-all cursor-pointer">
-                  Move — {m.client_name}
-                </Link>
+                <UpcomingItem
+                  href={`/admin/moves/${m.id}`}
+                  name={m.client_name || "—"}
+                  date={m.scheduled_date}
+                  time={m.scheduled_time || m.time}
+                  badgeType={m.move_type === "office" ? "move-office" : "move-residential"}
+                />
               </li>
             ))}
             {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && (
@@ -286,7 +291,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
           </Link>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-sm">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Week Summary</h3>
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setSummaryModal("total")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
@@ -313,79 +318,66 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
         </div>
       </div>
 
-      {/* Week summary modal - upgraded */}
+      {/* Week summary modal - uses GlobalModal (Portal) */}
       {summaryModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSummaryModal(null)} aria-hidden="true" />
-          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
-              <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">
-                {summaryModal === "total" && "All jobs this week"}
-                {summaryModal === "b2b" && "B2B Deliveries"}
-                {summaryModal === "b2c" && "B2C Moves"}
-                {summaryModal === "unassigned" && "Unassigned"}
-              </h3>
-              <button type="button" onClick={() => setSummaryModal(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]">&times;</button>
-            </div>
-            <div className="p-5 overflow-y-auto flex-1 min-h-0">
-              {summaryModal === "total" && (
-                <ul className="space-y-2">
-                  {deliveriesThisWeek.map((d) => (
-                    <li key={d.id}>
-                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
-                        {d.delivery_number} — {d.customer_name}
-                      </Link>
-                    </li>
-                  ))}
-                  {movesThisWeek.map((m) => (
-                    <li key={m.id}>
-                      <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
-                        Move — {m.client_name}
-                      </Link>
-                    </li>
-                  ))}
-                  {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No jobs this week</p>}
-                </ul>
-              )}
-              {summaryModal === "b2b" && (
-                <ul className="space-y-2">
-                  {deliveriesThisWeek.map((d) => (
-                    <li key={d.id}>
-                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
-                        {d.delivery_number} — {d.customer_name}
-                      </Link>
-                    </li>
-                  ))}
-                  {deliveriesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2B deliveries this week</p>}
-                </ul>
-              )}
-              {summaryModal === "b2c" && (
-                <ul className="space-y-2">
-                  {movesThisWeek.map((m) => (
-                    <li key={m.id}>
-                      <Link href={`/admin/moves/${m.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
-                        {m.client_name}
-                      </Link>
-                    </li>
-                  ))}
-                  {movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2C moves this week</p>}
-                </ul>
-              )}
-              {summaryModal === "unassigned" && (
-                <ul className="space-y-2">
-                  {deliveries.filter((d) => !d.crew_id).map((d) => (
-                    <li key={d.id}>
-                      <Link href={`/admin/deliveries/${d.id}`} className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] text-[11px] font-semibold text-[var(--tx)]">
-                        {d.delivery_number} — {d.customer_name}
-                      </Link>
-                    </li>
-                  ))}
-                  {deliveries.filter((d) => !d.crew_id).length === 0 && <p className="text-[11px] text-[var(--tx3)]">All jobs assigned</p>}
-                </ul>
-              )}
-            </div>
+        <GlobalModal
+          open={!!summaryModal}
+          onClose={() => setSummaryModal(null)}
+          title={
+            summaryModal === "total" ? "All jobs this week" :
+            summaryModal === "b2b" ? "B2B Deliveries" :
+            summaryModal === "b2c" ? "B2C Moves" : "Unassigned"
+          }
+          maxWidth="lg"
+        >
+          <div className="p-5">
+            {summaryModal === "total" && (
+              <ul className="space-y-2">
+                {deliveriesThisWeek.map((d) => (
+                  <li key={d.id}>
+                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                  </li>
+                ))}
+                {movesThisWeek.map((m) => (
+                  <li key={m.id}>
+                    <UpcomingItem href={`/admin/moves/${m.id}`} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
+                  </li>
+                ))}
+                {deliveriesThisWeek.length === 0 && movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No jobs this week</p>}
+              </ul>
+            )}
+            {summaryModal === "b2b" && (
+              <ul className="space-y-2">
+                {deliveriesThisWeek.map((d) => (
+                  <li key={d.id}>
+                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                  </li>
+                ))}
+                {deliveriesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2B deliveries this week</p>}
+              </ul>
+            )}
+            {summaryModal === "b2c" && (
+              <ul className="space-y-2">
+                {movesThisWeek.map((m) => (
+                  <li key={m.id}>
+                    <UpcomingItem href={`/admin/moves/${m.id}`} name={m.client_name || "—"} date={m.scheduled_date} time={m.scheduled_time || m.time} badgeType={m.move_type === "office" ? "move-office" : "move-residential"} />
+                  </li>
+                ))}
+                {movesThisWeek.length === 0 && <p className="text-[11px] text-[var(--tx3)]">No B2C moves this week</p>}
+              </ul>
+            )}
+            {summaryModal === "unassigned" && (
+              <ul className="space-y-2">
+                {deliveries.filter((d) => !d.crew_id).map((d) => (
+                  <li key={d.id}>
+                    <UpcomingItem href={`/admin/deliveries/${d.id}`} name={d.customer_name || d.delivery_number || "—"} date={d.scheduled_date} time={d.time_slot || d.delivery_window} badgeType="project" />
+                  </li>
+                ))}
+                {deliveries.filter((d) => !d.crew_id).length === 0 && <p className="text-[11px] text-[var(--tx3)]">All jobs assigned</p>}
+              </ul>
+            )}
           </div>
-        </div>
+        </GlobalModal>
       )}
     </>
   );

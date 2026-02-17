@@ -8,6 +8,7 @@ import InviteUserModal from "./InviteUserModal";
 import InvitePartnerModal from "./InvitePartnerModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
 import UserDetailModal from "./UserDetailModal";
+import ModalOverlay from "../components/ModalOverlay";
 import { useRouter } from "next/navigation";
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
@@ -422,54 +423,43 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
       </div>
       )}
 
-      {/* Add Team Modal */}
-      {addTeamModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAddTeamModalOpen(false)} aria-hidden="true" />
-            <div className="relative w-full max-w-md max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden animate-fade-up" onClick={(e) => e.stopPropagation()}>
-              <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
-                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">Add Team</h2>
-                <button onClick={() => setAddTeamModalOpen(false)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx2)] transition-colors" aria-label="Close">
-                  <Icon name="x" className="w-[16px] h-[16px]" />
-                </button>
-              </div>
-              <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
-                <div>
-                  <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+      {/* Add Team Modal - uses GlobalModal via ModalOverlay */}
+      <ModalOverlay open={addTeamModalOpen} onClose={() => setAddTeamModalOpen(false)} title="Add Team" maxWidth="md">
+        <div className="p-5 space-y-5">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+            <input
+              value={addTeamName}
+              onChange={(e) => setAddTeamName(e.target.value)}
+              placeholder="e.g. Team A"
+              className="w-full px-4 py-2.5 rounded-lg text-[13px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
+            <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
+              {ALL_CREW.map((m) => (
+                <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
                   <input
-                    value={addTeamName}
-                    onChange={(e) => setAddTeamName(e.target.value)}
-                    placeholder="e.g. Team A"
-                    className="w-full px-4 py-2.5 rounded-lg text-[13px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+                    type="checkbox"
+                    checked={addTeamMembers.includes(m)}
+                    onChange={() => setAddTeamMembers((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m])}
+                    className="checkbox-elegant"
                   />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
-                  <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
-                    {ALL_CREW.map((m) => (
-                      <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={addTeamMembers.includes(m)}
-                          onChange={() => setAddTeamMembers((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m])}
-                          className="checkbox-elegant"
-                        />
-                        <span className="text-[12px] text-[var(--tx)] group-hover:text-[var(--tx)]">{m}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  onClick={addTeam}
-                  disabled={!addTeamName.trim()}
-                  className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Create Team
-                </button>
-              </div>
+                  <span className="text-[12px] text-[var(--tx)] group-hover:text-[var(--tx)]">{m}</span>
+                </label>
+              ))}
             </div>
           </div>
-      )}
+          <button
+            onClick={addTeam}
+            disabled={!addTeamName.trim()}
+            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Create Team
+          </button>
+        </div>
+      </ModalOverlay>
 
       <InviteUserModal open={inviteUserOpen} onClose={() => { setInviteUserOpen(false); fetchUsers(); }} />
       {selectedUser && selectedUser.role === "partner" && (

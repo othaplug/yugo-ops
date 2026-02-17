@@ -43,9 +43,15 @@ export async function GET() {
       created_at: string | null;
       last_sign_in_at: string | null;
       status: "activated" | "pending" | "inactive";
+      move_id?: string | null;
     }> = [];
 
+    // Clients are no longer in user management — they use magic-link tracking only.
+    const { data: partnerUsers } = await admin.from("partner_users").select("user_id");
+    const partnerUserIds = new Set((partnerUsers ?? []).map((p) => p.user_id));
+
     for (const p of platformUsers ?? []) {
+      if (p.role === "client") continue; // Clients use magic-link tracking, not user management
       const auth = authMap.get(p.user_id);
       list.push({
         id: p.user_id,
@@ -59,12 +65,10 @@ export async function GET() {
       });
     }
 
-    const { data: partnerUsers } = await admin.from("partner_users").select("user_id");
-    const partnerUserIds = new Set((partnerUsers ?? []).map((p) => p.user_id));
-
     for (const [authId, authData] of authMap) {
       if (platformMap.has(authId)) continue;
       if (pendingList.some((inv) => inv.email?.toLowerCase() === authData.email?.toLowerCase())) continue;
+
       const isSuperAdminUser = isSuperAdminEmail(authData.email);
       const isPartner = !isSuperAdminUser && partnerUserIds.has(authId);
       list.push({

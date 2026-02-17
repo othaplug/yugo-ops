@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
-import InvoicesTable from "./InvoicesTable";
+import InvoicesPageClient from "./InvoicesPageClient";
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
@@ -34,18 +34,10 @@ export default async function InvoicesPage() {
           <div className="text-xl font-bold font-heading text-[var(--gold)]">${(outstandingTotal / 1000).toFixed(1)}K</div>
         </Link>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 flex items-center justify-center">
-          <span className="text-[9px] font-semibold text-[var(--tx3)] text-center">Invoices sync from Square</span>
+          <span className="text-[9px] font-semibold text-[var(--tx3)] text-center">Create invoices</span>
         </div>
       </div>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-4 border-b border-[var(--brd)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Invoices</h3>
-          <p className="text-[11px] text-[var(--tx3)]">Invoices sync from Square. Sort and filter below.</p>
-        </div>
-        <div className="overflow-x-auto">
-          <InvoicesTable invoices={all} />
-        </div>
-      </div>
+      <InvoicesPageClient invoices={all} />
     </div>
   );
 }

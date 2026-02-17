@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ClientDetailClient from "./ClientDetailClient";
@@ -29,12 +30,22 @@ export default async function ClientDetailPage({
     : { data: null };
   const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
 
+  const isB2C = client.type === "b2c";
   const { data: deliveries } = await supabase
     .from("deliveries")
     .select("*")
     .eq("client_name", client.name)
     .order("scheduled_date", { ascending: false })
     .limit(10);
+
+  const { data: moves } = isB2C
+    ? await supabase
+        .from("moves")
+        .select("id, move_number, client_name, status, stage, scheduled_date, created_at")
+        .eq("organization_id", client.id)
+        .order("scheduled_date", { ascending: false })
+        .limit(10)
+    : { data: [] };
 
   const { data: invoices } = await supabase
     .from("invoices")
@@ -60,15 +71,18 @@ export default async function ClientDetailPage({
     : null;
 
   return (
-    <ClientDetailClient
-      client={client}
-      deliveries={deliveries || []}
-      allInvoices={allInvoices}
-      outstandingTotal={outstandingTotal}
-      partnerSince={partnerSince}
-      partnerDuration={partnerDuration}
-      backHref={backHref}
-      isAdmin={!!isAdmin}
-    />
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-4 py-6 animate-pulse text-[var(--tx3)] text-[12px]">Loading…</div>}>
+      <ClientDetailClient
+        client={client}
+        deliveries={deliveries || []}
+        moves={moves || []}
+        allInvoices={allInvoices}
+        outstandingTotal={outstandingTotal}
+        partnerSince={partnerSince}
+        partnerDuration={partnerDuration}
+        backHref={backHref}
+        isAdmin={!!isAdmin}
+      />
+    </Suspense>
   );
 }

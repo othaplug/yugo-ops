@@ -38,7 +38,11 @@ export default function LoginPage() {
     setError("");
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) { setError(authError.message); setLoading(false); return; }
-    router.push("/admin");
+    const res = await fetch("/api/auth/role");
+    const { role } = await res.json();
+    if (role === "client") router.push("/client");
+    else if (role === "partner") router.push("/partner");
+    else router.push("/admin");
     router.refresh();
   };
 
