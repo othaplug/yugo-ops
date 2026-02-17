@@ -148,12 +148,12 @@ export default function TrackMoveClient({
         { method: "POST" }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not create payment link");
-      const url = data.url;
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else throw new Error("No payment link returned");
-    } catch (e) {
-      setPaymentLinkError(e instanceof Error ? e.message : "Something went wrong");
+      if (!res.ok) throw new Error("payment_failed");
+      const url = data.url ?? data.paymentUrl;
+      if (url) window.location.href = url;
+      else throw new Error("payment_failed");
+    } catch {
+      setPaymentLinkError("Unable to process payment right now. Please contact us to arrange payment.");
     } finally {
       setPaymentLinkLoading(false);
     }
@@ -313,7 +313,9 @@ export default function TrackMoveClient({
                         {paymentLinkLoading ? "Preparing…" : "Make Payment"}
                       </button>
                       {paymentLinkError && (
-                        <p className="mt-2 text-[11px] text-red-600">{paymentLinkError}</p>
+                        <p className="mt-2 text-[11px] text-red-600" role="alert">
+                          {paymentLinkError}
+                        </p>
                       )}
                     </div>
                   )}

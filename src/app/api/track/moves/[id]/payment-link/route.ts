@@ -66,6 +66,9 @@ export async function POST(
 
     const amountCents = Math.round(amountDollars * 100);
     const idempotencyKey = `move-${moveId}-${Date.now()}`;
+    const currencyRaw = (process.env.SQUARE_CURRENCY || "CAD").toUpperCase();
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+    const redirectUrl = baseUrl ? `${baseUrl}/track/move/${moveId}?payment=success` : undefined;
 
     const createRes = await squareClient.checkout.paymentLinks.create({
       idempotencyKey,
@@ -74,38 +77,37 @@ export async function POST(
         name: "Move balance",
         priceMoney: {
           amount: BigInt(amountCents),
-          currency: "USD",
+          currency: currencyRaw as "CAD" | "USD",
         },
         locationId,
       },
       paymentNote: `Move ID: ${moveId}`,
+      checkoutOptions: redirectUrl ? { redirectUrl } : undefined,
     });
 
     if (createRes.errors && createRes.errors.length > 0) {
       const first = createRes.errors[0] as { code?: string; message?: string; detail?: string; category?: string };
-      const msg = first?.message || first?.detail || "Square error";
-      const isAuth = first?.code === "UNAUTHORIZED" || first?.category === "AUTHENTICATION_ERROR";
-      const authHint =
-        "Square rejected the token. Use a Sandbox token with SQUARE_ENVIRONMENT=sandbox, or a Production token with SQUARE_ENVIRONMENT=production (or deploy with NODE_ENV=production).";
+      console.error("[payment-link] Square API error:", first?.code, first?.message || first?.detail);
       return NextResponse.json(
-        { error: isAuth ? authHint : msg },
+        { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
         { status: 502 }
       );
     }
 
     const url = createRes.paymentLink?.url || (createRes.paymentLink as { longUrl?: string })?.longUrl || null;
     if (!url) {
+      console.error("[payment-link] No URL in Square response");
       return NextResponse.json(
-        { error: "Could not create payment link" },
+        { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
         { status: 502 }
       );
     }
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, paymentUrl: url });
   } catch (err: unknown) {
     console.error("[payment-link]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to create payment link" },
+      { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
       { status: 500 }
     );
   }
