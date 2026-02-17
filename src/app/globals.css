@@ -315,3 +315,103 @@ body {
     padding: 1.25rem 1.5rem;
   }
 }
+
+/* Track live map – container and Leaflet overrides */
+.track-live-map-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+[data-theme="light"] .track-live-map-container {
+  border-color: #E7E5E4;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Custom markers – no default Leaflet icon styling */
+.track-live-map .custom-marker,
+.track-live-map .crew-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Crew marker pulse animation */
+@keyframes leaflet-crew-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0.5); }
+  70% { box-shadow: 0 0 0 15px rgba(201, 169, 78, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0); }
+}
+
+/* Leaflet zoom controls – dark theme */
+.track-live-map .leaflet-control-zoom a {
+  background-color: #1a1a1a !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.track-live-map .leaflet-control-zoom a:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Leaflet – hide provider logos/attribution (all maps, all views) */
+.leaflet-control-attribution,
+.leaflet-control-attribution.leaflet-control {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Mapbox GL – hide Mapbox logo and attribution (all maps, superadmin + admin + client) */
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib,
+.mapboxgl-ctrl-bottom-left .mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-bottom-left .mapboxgl-ctrl-attrib,
+a.mapboxgl-ctrl-logo,
+div.mapboxgl-ctrl-attrib {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+/* Google Places Autocomplete – dark theme dropdown (OPS+) */
+.pac-container {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  margin-top: 4px !important;
+  overflow: hidden !important;
+  font-family: var(--font-body) !important;
+}
+.pac-item {
+  padding: 10px 14px !important;
+  color: #e0e0e0 !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.pac-item:hover,
+.pac-item-selected {
+  background: rgba(201, 169, 78, 0.15) !important;
+  color: #fff !important;
+}
+.pac-item-query {
+  color: #fff !important;
+  font-weight: 500 !important;
+}
+.pac-icon {
+  display: none !important;
+}
+.pac-item span:last-child {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 12px !important;
+}

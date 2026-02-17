@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { WebhooksHelper } from "square";
 
-const NOTIFICATION_URL =
-  process.env.NEXT_PUBLIC_APP_URL
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/square`
-    : "https://yugo-ops.vercel.app/api/webhooks/square";
+const NOTIFICATION_URL = (() => {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || "").trim();
+  return base
+    ? `${base.replace(/\/$/, "")}/api/webhooks/square`
+    : "https://opsplus.co/api/webhooks/square";
+})();
 
 export async function POST(req: NextRequest) {
   try {

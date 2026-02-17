@@ -4,7 +4,6 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
-import { useTheme } from "../../components/ThemeContext";
 
 const MapboxMap = dynamic(
   () => import("react-map-gl/mapbox").then((mod) => {
@@ -68,8 +67,7 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-  const { theme } = useTheme();
-  const mapStyle = theme === "light" ? "mapbox://styles/mapbox/light-v11" : "mapbox://styles/mapbox/dark-v11";
+  const mapStyle = "mapbox://styles/mapbox/dark-v11";
 
   // Initial fetch + realtime subscription
   useEffect(() => {

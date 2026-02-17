@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ModalOverlay from "../../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
 import { useToast } from "../../components/Toast";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -31,6 +32,10 @@ interface EditMoveDetailsModalProps {
   initial: {
     from_address?: string | null;
     to_address?: string | null;
+    from_lat?: number | null;
+    from_lng?: number | null;
+    to_lat?: number | null;
+    to_lng?: number | null;
     crew_id?: string | null;
     scheduled_date?: string | null;
     scheduled_time?: string | null;
@@ -63,6 +68,10 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   const supabase = createClient();
   const [fromAddress, setFromAddress] = useState(initial.from_address || "");
   const [toAddress, setToAddress] = useState(initial.to_address || "");
+  const [fromLat, setFromLat] = useState<number | null>(initial.from_lat ?? null);
+  const [fromLng, setFromLng] = useState<number | null>(initial.from_lng ?? null);
+  const [toLat, setToLat] = useState<number | null>(initial.to_lat ?? null);
+  const [toLng, setToLng] = useState<number | null>(initial.to_lng ?? null);
   const toDateInput = (d: string | null | undefined) => {
     if (!d) return "";
     const p = new Date(d);
@@ -87,33 +96,33 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   const [arrivalWindow, setArrivalWindow] = useState(initial.arrival_window || "");
   const [fromAccess, setFromAccess] = useState(initial.from_access || parsed.fromAccess);
   const [toAccess, setToAccess] = useState(initial.to_access || parsed.toAccess);
-  const [accessNotes, setAccessNotes] = useState(parsed.notesOnly || (initial.access_notes ?? ""));
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
   const [internalNotes, setInternalNotes] = useState(initial.internal_notes || "");
   const [customComplexity, setCustomComplexity] = useState("");
   const [crewId, setCrewId] = useState(initial.crew_id || "");
   const [saving, setSaving] = useState(false);
-  const [showOptional, setShowOptional] = useState(
-    () => !!(initial.complexity_indicators?.length || initial.internal_notes?.trim())
-  );
+  const [showOptional, setShowOptional] = useState(false);
 
+  // Sync form state when modal opens. Only [open, moveId] so dependency array size never changes.
   useEffect(() => {
-    if (open) {
-      setFromAddress(initial.from_address || "");
-      setToAddress(initial.to_address || "");
-      setScheduledDate(toDateInput(initial.scheduled_date));
-      setScheduledTime(initial.scheduled_time || "");
-      setArrivalWindow(initial.arrival_window || "");
-      const p = parseAccessNotes(initial.access_notes);
-      setFromAccess(initial.from_access || p.fromAccess);
-      setToAccess(initial.to_access || p.toAccess);
-      setAccessNotes(p.notesOnly || initial.access_notes || "");
-      setComplexityIndicators(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
-      setInternalNotes(initial.internal_notes || "");
-      setCrewId(initial.crew_id || "");
-      setShowOptional(!!(initial.complexity_indicators?.length || initial.internal_notes?.trim()));
-    }
-  }, [open, initial.from_address, initial.to_address, initial.crew_id, initial.scheduled_date, initial.scheduled_time, initial.arrival_window, initial.from_access, initial.to_access, initial.access_notes, initial.complexity_indicators, initial.internal_notes]);
+    if (!open) return;
+    setFromAddress(initial.from_address || "");
+    setToAddress(initial.to_address || "");
+    setFromLat(initial.from_lat ?? null);
+    setFromLng(initial.from_lng ?? null);
+    setToLat(initial.to_lat ?? null);
+    setToLng(initial.to_lng ?? null);
+    setScheduledDate(toDateInput(initial.scheduled_date));
+    setScheduledTime(initial.scheduled_time || "");
+    setArrivalWindow(initial.arrival_window || "");
+    const p = parseAccessNotes(initial.access_notes);
+    setFromAccess(initial.from_access || p.fromAccess);
+    setToAccess(initial.to_access || p.toAccess);
+    setComplexityIndicators(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
+    setInternalNotes(initial.internal_notes || "");
+    setCrewId(initial.crew_id || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: sync only when open/moveId changes to keep deps array fixed size
+  }, [open, moveId]);
 
   if (!open) return null;
 
@@ -122,13 +131,17 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
     setSaving(true);
     const updated_at = new Date().toISOString();
     const accessNotesMerged =
-      [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`, accessNotes.trim()].filter(Boolean).join("\n") || null;
+      [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`].filter(Boolean).join("\n") || null;
     const { data, error } = await supabase
       .from("moves")
       .update({
         from_address: fromAddress.trim() || null,
         to_address: toAddress.trim() || null,
         delivery_address: toAddress.trim() || null,
+        from_lat: fromLat,
+        from_lng: fromLng,
+        to_lat: toLat,
+        to_lng: toLng,
         from_access: fromAccess.trim() || null,
         to_access: toAccess.trim() || null,
         scheduled_date: scheduledDate.trim() || null,
@@ -180,14 +193,18 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
             </h3>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <Field label="From address">
-                  <input
-                    value={fromAddress}
-                    onChange={(e) => setFromAddress(e.target.value)}
-                    placeholder="Origin address"
-                    className={inputBase}
-                  />
-                </Field>
+                <AddressAutocomplete
+                  value={fromAddress}
+                  onRawChange={setFromAddress}
+                  onChange={(r) => {
+                    setFromAddress(r.fullAddress);
+                    setFromLat(r.lat);
+                    setFromLng(r.lng);
+                  }}
+                  placeholder="Origin address"
+                  label="From address"
+                  className={inputBase}
+                />
                 <Field label="From access">
                   <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={inputBase}>
                     <option value="">Select…</option>
@@ -198,14 +215,18 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
                 </Field>
               </div>
               <div className="space-y-3">
-                <Field label="To address">
-                  <input
-                    value={toAddress}
-                    onChange={(e) => setToAddress(e.target.value)}
-                    placeholder="Destination address"
-                    className={inputBase}
-                  />
-                </Field>
+                <AddressAutocomplete
+                  value={toAddress}
+                  onRawChange={setToAddress}
+                  onChange={(r) => {
+                    setToAddress(r.fullAddress);
+                    setToLat(r.lat);
+                    setToLng(r.lng);
+                  }}
+                  placeholder="Destination address"
+                  label="To address"
+                  className={inputBase}
+                />
                 <Field label="To access">
                   <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={inputBase}>
                     <option value="">Select…</option>
@@ -271,19 +292,6 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               </Field>
             </section>
           )}
-
-          {/* Access notes */}
-          <section className="pt-4 border-t border-[var(--brd)]/60">
-            <Field label="Access & conditions notes">
-              <textarea
-                value={accessNotes}
-                onChange={(e) => setAccessNotes(e.target.value)}
-                placeholder="Elevator reserved, loading dock, stairs, parking, access notes..."
-                rows={2}
-                className={`${inputBase} resize-none min-h-[72px]`}
-              />
-            </Field>
-          </section>
 
           {/* Optional: Complexity & Internal notes */}
           <section className="pt-4 border-t border-[var(--brd)]/60">

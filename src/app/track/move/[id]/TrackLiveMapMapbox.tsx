@@ -25,7 +25,7 @@ export function TrackLiveMapMapbox({
       mapboxAccessToken={mapboxAccessToken}
       initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle="mapbox://styles/mapbox/light-v11"
+      mapStyle="mapbox://styles/mapbox/dark-v11"
     >
       {hasPosition && crew && (
         <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">

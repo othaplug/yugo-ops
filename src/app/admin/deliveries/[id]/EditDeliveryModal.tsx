@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import ModalOverlay from "../../components/ModalOverlay";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface EditDeliveryModalProps {
   delivery: any;
@@ -17,8 +18,17 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
   const open = controlledOpen ?? internalOpen;
   const setOpen = (v: boolean) => { onOpenChange?.(v); if (controlledOpen === undefined) setInternalOpen(v); };
   const [loading, setLoading] = useState(false);
+  const [pickupAddress, setPickupAddress] = useState(delivery?.pickup_address ?? "");
+  const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (open && delivery) {
+      setPickupAddress(delivery.pickup_address ?? "");
+      setDeliveryAddress(delivery.delivery_address ?? "");
+    }
+  }, [open, delivery]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,8 +47,8 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
         customer_name: form.get("customer_name"),
         customer_email: form.get("customer_email") || null,
         customer_phone: form.get("customer_phone") || null,
-        delivery_address: form.get("delivery_address"),
-        pickup_address: form.get("pickup_address"),
+        delivery_address: deliveryAddress || form.get("delivery_address"),
+        pickup_address: pickupAddress || form.get("pickup_address"),
         scheduled_date: form.get("scheduled_date"),
         delivery_window: form.get("delivery_window"),
         instructions: form.get("instructions"),
@@ -80,10 +90,12 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
             <input name="customer_phone" defaultValue={delivery.customer_phone} className="field-input" />
           </Field>
           <Field label="Pickup Address">
-            <input name="pickup_address" defaultValue={delivery.pickup_address} className="field-input" />
+            <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Pickup address" label="" className="field-input" />
+            <input type="hidden" name="pickup_address" value={pickupAddress} />
           </Field>
           <Field label="Delivery Address">
-            <input name="delivery_address" defaultValue={delivery.delivery_address} className="field-input" />
+            <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Delivery address" label="" className="field-input" />
+            <input type="hidden" name="delivery_address" value={deliveryAddress} />
           </Field>
           <Field label="Date">
             <input name="scheduled_date" type="date" defaultValue={delivery.scheduled_date} className="field-input" />

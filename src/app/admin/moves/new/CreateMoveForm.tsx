@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { Plus, Trash2, FileText } from "lucide-react";
 
 interface Org {
@@ -67,6 +68,10 @@ export default function CreateMoveForm({
   const [clientPhone, setClientPhone] = useState("");
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
+  const [fromLat, setFromLat] = useState<number | null>(null);
+  const [fromLng, setFromLng] = useState<number | null>(null);
+  const [toLat, setToLat] = useState<number | null>(null);
+  const [toLng, setToLng] = useState<number | null>(null);
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
   const [estimate, setEstimate] = useState("");
@@ -175,6 +180,14 @@ export default function CreateMoveForm({
       formData.append("client_phone", clientPhone.trim());
       formData.append("from_address", fromAddress.trim());
       formData.append("to_address", toAddress.trim());
+      if (fromLat != null && fromLng != null) {
+        formData.append("from_lat", String(fromLat));
+        formData.append("from_lng", String(fromLng));
+      }
+      if (toLat != null && toLng != null) {
+        formData.append("to_lat", String(toLat));
+        formData.append("to_lng", String(toLng));
+      }
       formData.append("estimate", estimate || "0");
       formData.append("scheduled_date", scheduledDate);
       formData.append("scheduled_time", scheduledTime);
@@ -316,16 +329,19 @@ export default function CreateMoveForm({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 items-end">
                 <div className="flex-1 min-w-0 w-full">
-                  <Field label="From Address *">
-                    <input
-                      name="from_address"
-                      value={fromAddress}
-                      onChange={(e) => setFromAddress(e.target.value)}
-                      placeholder="Origin address"
-                      required
-                      className={fieldInput}
-                    />
-                  </Field>
+                  <AddressAutocomplete
+                    value={fromAddress}
+                    onRawChange={setFromAddress}
+                    onChange={(r) => {
+                      setFromAddress(r.fullAddress);
+                      setFromLat(r.lat);
+                      setFromLng(r.lng);
+                    }}
+                    placeholder="Origin address"
+                    label="From Address"
+                    required
+                    className={fieldInput}
+                  />
                 </div>
                 <div className="w-full sm:w-[140px]">
                   <Field label="Access">
@@ -349,16 +365,19 @@ export default function CreateMoveForm({
               </div>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 items-end">
                 <div className="flex-1 min-w-0 w-full">
-                  <Field label="To Address *">
-                    <input
-                      name="to_address"
-                      value={toAddress}
-                      onChange={(e) => setToAddress(e.target.value)}
-                      placeholder="Destination address"
-                      required
-                      className={fieldInput}
-                    />
-                  </Field>
+                  <AddressAutocomplete
+                    value={toAddress}
+                    onRawChange={setToAddress}
+                    onChange={(r) => {
+                      setToAddress(r.fullAddress);
+                      setToLat(r.lat);
+                      setToLng(r.lng);
+                    }}
+                    placeholder="Destination address"
+                    label="To Address"
+                    required
+                    className={fieldInput}
+                  />
                 </div>
                 <div className="w-full sm:w-[140px]">
                   <Field label="Access">

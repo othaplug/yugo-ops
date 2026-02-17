@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 
 const DOC_TYPES = ["contract", "estimate", "invoice", "other"] as const;
@@ -52,7 +53,6 @@ export async function POST(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
     const contentType = req.headers.get("content-type") ?? "";
     let title = "";
     let type = "other";
@@ -70,7 +70,8 @@ export async function POST(
         const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         storagePath = `${moveId}/${safeName}`;
         const buf = await file.arrayBuffer();
-        const { error: uploadError } = await supabase.storage
+        const admin = createAdminClient();
+        const { error: uploadError } = await admin.storage
           .from("move-documents")
           .upload(storagePath, buf, { contentType: file.type, upsert: false });
         if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
@@ -87,7 +88,8 @@ export async function POST(
     if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
     if (!storagePath && !externalUrl) return NextResponse.json({ error: "Upload a file or provide a link" }, { status: 400 });
 
-    const { data: doc, error } = await supabase
+    const admin = createAdminClient();
+    const { data: doc, error } = await admin
       .from("move_documents")
       .insert({
         move_id: moveId,

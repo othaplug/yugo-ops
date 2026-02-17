@@ -104,9 +104,9 @@ export default function TrackMoveClient({
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const scheduledDate = move.scheduled_date ? new Date(move.scheduled_date) : null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const estimate = Number(move.estimate || 0);
-  const depositPaid = Math.round(estimate * 0.25);
-  const balanceDue = estimate - depositPaid;
+  const totalBalance = Number(move.estimate || 0);
+  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
 
   const crewMembers = Array.isArray(move.assigned_members) ? move.assigned_members : (crew?.members ?? []);
   const crewRoles = ["Lead", "Specialist", "Specialist", "Driver"];
@@ -135,6 +135,27 @@ export default function TrackMoveClient({
       // Could add toast
     } finally {
       setChangeSubmitting(false);
+    }
+  };
+
+  const handleMakePayment = async () => {
+    if (totalBalance <= 0) return;
+    setPaymentLinkError(null);
+    setPaymentLinkLoading(true);
+    try {
+      const res = await fetch(
+        `/api/track/moves/${move.id}/payment-link?token=${encodeURIComponent(token)}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not create payment link");
+      const url = data.url;
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      else throw new Error("No payment link returned");
+    } catch (e) {
+      setPaymentLinkError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setPaymentLinkLoading(false);
     }
   };
 
@@ -278,13 +299,24 @@ export default function TrackMoveClient({
                     <div className="text-[13px] text-[#1A1A1A]">{move.to_address || move.delivery_address || "—"}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Estimate</div>
-                    <div className="text-[18px] font-bold text-[#C9A962]">${estimate.toLocaleString()}</div>
+                    <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
+                    <div className="text-[18px] font-bold text-[#C9A962]">${totalBalance.toLocaleString()}</div>
                   </div>
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Deposit</div>
-                    <div className="text-[14px] font-semibold text-[#1A1A1A]">${depositPaid.toLocaleString()}</div>
-                  </div>
+                  {totalBalance > 0 && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleMakePayment}
+                        disabled={paymentLinkLoading}
+                        className="w-full rounded-lg bg-[#C9A962] text-[#0D0D0D] font-semibold text-[13px] py-3 px-4 hover:bg-[#B89A52] disabled:opacity-60 transition-colors"
+                      >
+                        {paymentLinkLoading ? "Preparing…" : "Make Payment"}
+                      </button>
+                      {paymentLinkError && (
+                        <p className="mt-2 text-[11px] text-red-600">{paymentLinkError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

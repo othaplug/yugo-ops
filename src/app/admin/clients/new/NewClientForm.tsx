@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 type Persona = "client" | "partner";
 
@@ -12,6 +13,7 @@ export default function NewClientForm() {
   const [loading, setLoading] = useState(false);
   const [persona, setPersona] = useState<Persona>("client");
   const [partnerType, setPartnerType] = useState("retail");
+  const [address, setAddress] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ export default function NewClientForm() {
       name: form.get("name"),
       email: form.get("email"),
       phone: form.get("phone") || "",
-      address: form.get("address") || "",
+      address: address || form.get("address") || "",
     };
 
     if (persona === "partner") {
@@ -114,9 +116,8 @@ export default function NewClientForm() {
           <Field label="Phone">
             <input name="phone" placeholder="416-555-0100" className="field-input" />
           </Field>
-          <Field label="Address">
-            <input name="address" placeholder="123 Yorkville Ave" className="field-input" />
-          </Field>
+          <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Yorkville Ave" label="Address" className="field-input" />
+          <input type="hidden" name="address" value={address} />
           <button
             type="submit"
             disabled={loading}
@@ -136,9 +137,8 @@ export default function NewClientForm() {
           <Field label="Phone">
             <input name="phone" placeholder="416-555-0100" className="field-input" />
           </Field>
-          <Field label="Address">
-            <input name="address" placeholder="123 Main St" className="field-input" />
-          </Field>
+          <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Main St" label="Address" className="field-input" />
+          <input type="hidden" name="address" value={address} />
           <p className="text-[11px] text-[var(--tx3)]">
             Add this client to a move and use &quot;Resend tracking link&quot; on the move page to send them a magic-link to track their move (no account needed).
           </p>

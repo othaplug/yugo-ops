@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import BackButton from "../../components/BackButton";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface Org {
   id: string;
@@ -18,6 +19,8 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
   const dateFromUrl = searchParams.get("date") || "";
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,8 +37,8 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
       org_id: form.get("org_id"),
       client_name: org?.name || "",
       customer_name: form.get("customer_name"),
-      pickup_address: form.get("pickup_address"),
-      delivery_address: form.get("delivery_address"),
+      pickup_address: pickupAddress || form.get("pickup_address"),
+      delivery_address: deliveryAddress || form.get("delivery_address"),
       items: itemsRaw ? itemsRaw.split("\n").filter((i) => i.trim()) : [],
       scheduled_date: form.get("scheduled_date"),
       time_slot: form.get("time_slot"),
@@ -78,10 +81,12 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
         <input name="customer_name" required placeholder="Recipient name" className="field-input" />
       </Field>
       <Field label="Pickup Address">
-        <input name="pickup_address" required placeholder="Pickup address" className="field-input" />
+        <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Pickup address" required />
+        <input type="hidden" name="pickup_address" value={pickupAddress} />
       </Field>
       <Field label="Delivery Address">
-        <input name="delivery_address" required placeholder="Delivery address" className="field-input" />
+        <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Delivery address" required />
+        <input type="hidden" name="delivery_address" value={deliveryAddress} />
       </Field>
       <Field label="Date">
         <input name="scheduled_date" type="date" required className="field-input" defaultValue={dateFromUrl} />

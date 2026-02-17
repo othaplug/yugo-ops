@@ -373,6 +373,10 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         initial={{
           from_address: move.from_address,
           to_address: move.to_address || move.delivery_address,
+          from_lat: move.from_lat,
+          from_lng: move.from_lng,
+          to_lat: move.to_lat,
+          to_lng: move.to_lng,
           crew_id: move.crew_id,
           scheduled_date: move.scheduled_date,
           scheduled_time: move.scheduled_time,

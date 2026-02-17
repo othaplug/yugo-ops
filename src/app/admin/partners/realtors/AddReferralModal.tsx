@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
 
@@ -128,12 +129,12 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Address</label>
-          <input
-            type="text"
+          <AddressAutocomplete
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onRawChange={setAddress}
+            onChange={(r) => setAddress(r.fullAddress)}
             placeholder="e.g. 123 Main St"
+            label="Property address"
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

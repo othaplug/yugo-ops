@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 
 export async function GET(
@@ -46,7 +47,6 @@ export async function POST(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const caption = (formData.get("caption") as string)?.trim() || null;
@@ -58,13 +58,14 @@ export async function POST(
     const storagePath = `${moveId}/${safeName}`;
 
     const buf = await file.arrayBuffer();
-    const { error: uploadError } = await supabase.storage
+    const admin = createAdminClient();
+    const { error: uploadError } = await admin.storage
       .from("move-photos")
       .upload(storagePath, buf, { contentType: file.type, upsert: false });
 
     if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
 
-    const { data: photo, error } = await supabase
+    const { data: photo, error } = await admin
       .from("move_photos")
       .insert({ move_id: moveId, storage_path: storagePath, caption })
       .select("id, storage_path, caption")

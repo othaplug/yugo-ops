@@ -43,10 +43,21 @@ export async function GET(
         ? { lat: move.from_lat, lng: move.from_lng }
         : { lat: 43.665, lng: -79.385 };
 
+    const pickup =
+      move.from_lat != null && move.from_lng != null
+        ? { lat: move.from_lat, lng: move.from_lng }
+        : null;
+    const dropoff =
+      move.to_lat != null && move.to_lng != null
+        ? { lat: move.to_lat, lng: move.to_lng }
+        : null;
+
     return NextResponse.json(
       {
         crew,
         center,
+        pickup,
+        dropoff,
         liveStage: move.stage || null,
       },
       {

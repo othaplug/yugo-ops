@@ -4,7 +4,6 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import ModalOverlay from "../components/ModalOverlay";
-import { useTheme } from "../components/ThemeContext";
 
 const MapboxMap = dynamic(
   () =>
@@ -113,8 +112,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; deliveries?: Delivery[] }) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
-  const { theme } = useTheme();
-  const mapStyle = theme === "light" ? "mapbox://styles/mapbox/light-v11" : "mapbox://styles/mapbox/dark-v11";
+  const mapStyle = "mapbox://styles/mapbox/dark-v11";
 
   const crewsWithPosition = crews.filter((c) => c.current_lat != null && c.current_lng != null);
   const center =

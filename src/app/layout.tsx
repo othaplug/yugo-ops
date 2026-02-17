@@ -1,4 +1,5 @@
 import "./globals.css";
+import GoogleMapsScript from "@/components/GoogleMapsScript";
 
 export const metadata = {
   title: "OPS+",
@@ -23,7 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <GoogleMapsScript />
+        {children}
+      </body>
     </html>
   );
 }

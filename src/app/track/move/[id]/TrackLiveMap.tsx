@@ -43,6 +43,8 @@ export default function TrackLiveMap({
 }) {
   const [crew, setCrew] = useState<{ current_lat: number; current_lng: number; name: string } | null>(null);
   const [center, setCenter] = useState<Center>(DEFAULT_CENTER);
+  const [pickup, setPickup] = useState<Center | null>(null);
+  const [dropoff, setDropoff] = useState<Center | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,6 +59,16 @@ export default function TrackLiveMap({
         if (data.crew) setCrew(data.crew);
         if (data.center?.lat != null && data.center?.lng != null) {
           setCenter({ lat: data.center.lat, lng: data.center.lng });
+        }
+        if (data.pickup?.lat != null && data.pickup?.lng != null) {
+          setPickup({ lat: data.pickup.lat, lng: data.pickup.lng });
+        } else {
+          setPickup(null);
+        }
+        if (data.dropoff?.lat != null && data.dropoff?.lng != null) {
+          setDropoff({ lat: data.dropoff.lat, lng: data.dropoff.lng });
+        } else {
+          setDropoff(null);
         }
       } catch {
         if (!cancelled) setCrew(null);
@@ -75,7 +87,7 @@ export default function TrackLiveMap({
   const mapCenter = { latitude: center.lat, longitude: center.lng };
 
   return (
-    <div className="rounded-lg border border-[#E7E5E4] overflow-hidden h-[320px] bg-[#FAFAF8]">
+    <div className="track-live-map-container rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4] shadow-sm">
       {loading ? (
         <MapLoading />
       ) : HAS_MAPBOX && MAPBOX_TOKEN ? (
@@ -86,7 +98,7 @@ export default function TrackLiveMap({
           crewName={crew?.name}
         />
       ) : (
-        <LeafletMap center={center} crew={crew} />
+        <LeafletMap center={center} crew={crew} pickup={pickup} dropoff={dropoff} />
       )}
     </div>
   );

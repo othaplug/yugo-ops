@@ -60,6 +60,10 @@ export async function POST(req: NextRequest) {
     const clientPhone = (body.client_phone as string)?.trim() || null;
     const fromAddress = (body.from_address as string)?.trim() || "";
     const toAddress = (body.to_address as string)?.trim() || "";
+    const fromLat = body.from_lat != null ? Number(body.from_lat) : null;
+    const fromLng = body.from_lng != null ? Number(body.from_lng) : null;
+    const toLat = body.to_lat != null ? Number(body.to_lat) : null;
+    const toLng = body.to_lng != null ? Number(body.to_lng) : null;
     const estimate = Number(body.estimate) || 0;
     let organizationId = (body.organization_id as string)?.trim() || null;
     const fromAccess = (body.from_access as string)?.trim() || null;
@@ -107,6 +111,10 @@ export async function POST(req: NextRequest) {
         from_address: fromAddress,
         to_address: toAddress,
         delivery_address: toAddress,
+        from_lat: fromLat,
+        from_lng: fromLng,
+        to_lat: toLat,
+        to_lng: toLng,
         estimate,
         status: "confirmed",
         stage: "quote",

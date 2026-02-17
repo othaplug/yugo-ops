@@ -138,7 +138,8 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
   const isCancelled = (status || "").toLowerCase() === "cancelled";
   const isCompleted = (status || "").toLowerCase() === "completed" || (status || "").toLowerCase() === "delivered";
   const statusIdx = STATUS_INDEX[(status || "").toLowerCase()] ?? 0;
-  const stageIdx = stage ? (STAGE_INDEX[stage] ?? -1) : -1;
+  const stageKey = stage ?? "";
+  const stageIdx = stageKey ? (STAGE_INDEX[stageKey] ?? -1) : -1;
 
   let pct = 0;
   let currentLabel = formatStatusLabel(status);
@@ -152,7 +153,6 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
     pct = 100;
     currentLabel = "Completed";
   } else if (statusIdx === 3 && stageIdx >= 0) {
-    const stageKey = stage ?? "";
     const stageLabel = LIVE_STAGE_LABELS[stageKey] || stageKey.replace(/_/g, " ");
     currentLabel = stageLabel;
     pct = 60 + Math.round(((stageIdx + 1) / 6) * 40);
