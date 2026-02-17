@@ -183,6 +183,16 @@ export default function TrackMoveClient({
               {daysUntil ?? "—"}
             </div>
             <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
+            {scheduledDate && (
+              <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
+                {scheduledDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}{" "}
+                at {move.scheduled_time || move.arrival_window || "TBD"}
+              </div>
+            )}
           </div>
         </div>
 
@@ -320,11 +330,11 @@ export default function TrackMoveClient({
                         width: `${isCancelled ? 0 : move.status === "in_progress" && liveStage != null
                           ? 60 + ((LIVE_STAGE_MAP[liveStage || ""] ?? 0) + 1) / 6 * 40
                           : isCompleted ? 100 : ((currentIdx + 1) / 5) * 100}%`,
-                        background: "linear-gradient(90deg, #4CA9DF, #A1FFB3)",
+                        background: "linear-gradient(90deg, #ECDEC4, #C9A962)",
                       }}
                     />
                   </div>
-                  <div className="mt-2 text-[13px] font-semibold" style={{ color: "#4CA9DF" }}>
+                  <div className="mt-2 text-[13px] font-semibold" style={{ color: "#C9A962" }}>
                     {move.status === "in_progress" && liveStage
                       ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label || getStatusLabel(statusVal)
                       : getStatusLabel(statusVal)}
@@ -338,10 +348,10 @@ export default function TrackMoveClient({
                       <div key={s.key} className="relative pb-3 last:pb-0">
                         <div
                           className={`absolute -left-[18px] top-0.5 w-2.5 h-2.5 rounded-full border-2 border-white z-10 ${
-                            state === "done" ? "bg-[#4CA9DF]" : state === "act" ? "bg-[#A1FFB3]" : "bg-[#E7E5E4]"
+                            state === "done" ? "bg-[#C9A962]" : state === "act" ? "bg-[#ECDEC4]" : "bg-[#E7E5E4]"
                           }`}
                         />
-                        <div className={`text-[12px] font-medium ${state === "done" ? "text-[#4CA9DF]" : state === "act" ? "text-[#2D7A4A]" : "text-[#999]"}`}>
+                        <div className={`text-[12px] font-medium ${state === "done" ? "text-[#C9A962]" : state === "act" ? "text-[#B89A52]" : "text-[#999]"}`}>
                           {s.label}
                         </div>
                       </div>

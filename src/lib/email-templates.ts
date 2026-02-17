@@ -12,16 +12,9 @@ function emailFooter(loginUrl?: string) {
   `;
 }
 
+/** OPS+ logo centered at top — used for all emails */
 function emailLogo() {
-  return `
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-family:'Instrument Serif',Georgia,serif;font-size:22px;letter-spacing:3px;color:#E8E5E0;font-weight:600">YUGO</span>
-        <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9999px;background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.35);font-size:10px;font-weight:700;letter-spacing:1px;color:#C9A962">YOUR MOVE</span>
-        <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:9999px;background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.35);font-size:10px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</span>
-      </div>
-    </div>
-  `;
+  return notifyEmailLogo();
 }
 
 /** OPS+ oval badge only (matches notify/track email screenshot) */
@@ -177,7 +170,7 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
     <div style="margin:20px 0 24px">
       <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Current Stage</div>
       <div style="height:10px;background:#1E1E1E;border-radius:999px;overflow:hidden;border:1px solid #2A2A2A">
-        <div class="move-bar-fill" style="height:100%;width:${pct}%;min-width:${pct > 0 ? 4 : 0}px;background:linear-gradient(90deg,#4CA9DF,#A1FFB3);border-radius:999px"></div>
+        <div class="move-bar-fill" style="height:100%;width:${pct}%;min-width:${pct > 0 ? 4 : 0}px;background:linear-gradient(90deg,#ECDEC4,#C9A962);border-radius:999px"></div>
       </div>
       <div style="font-size:12px;font-weight:600;color:${labelColor};margin-top:8px;letter-spacing:0.3px">${currentLabel}</div>
     </div>
@@ -234,8 +227,8 @@ export function trackingLinkEmail(params: {
   const { clientName, trackUrl } = params;
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
-      ${emailLogo()}
-      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Was Updated</div>
+      ${notifyEmailLogo()}
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Track your move</div>
       <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Hi${clientName ? `, ${clientName}` : ""}</h1>
       <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 20px">
         Use the link below to track your move, view documents, and message your coordinator. No account or login required.
