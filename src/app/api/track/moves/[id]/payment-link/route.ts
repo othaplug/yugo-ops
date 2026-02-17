@@ -21,12 +21,14 @@ export async function POST(
     );
   }
 
+  // Token must match environment: Sandbox token → sandbox, Production token → production.
+  // Set SQUARE_ENVIRONMENT=sandbox or production to override (default: production in prod, sandbox in dev).
+  const envOverride = (process.env.SQUARE_ENVIRONMENT || "").toLowerCase();
+  const useProduction =
+    envOverride === "production" || (envOverride !== "sandbox" && process.env.NODE_ENV === "production");
   const squareClient = new SquareClient({
     token: accessToken,
-    environment:
-      process.env.NODE_ENV === "production"
-        ? SquareEnvironment.Production
-        : SquareEnvironment.Sandbox,
+    environment: useProduction ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
   });
 
   try {
@@ -80,12 +82,14 @@ export async function POST(
     });
 
     if (createRes.errors && createRes.errors.length > 0) {
-      const first = createRes.errors[0] as { code?: string; message?: string; detail?: string };
+      const first = createRes.errors[0] as { code?: string; message?: string; detail?: string; category?: string };
       const msg = first?.message || first?.detail || "Square error";
-      const isAuth = first?.code === "UNAUTHORIZED" || (first as { category?: string })?.category === "AUTHENTICATION_ERROR";
+      const isAuth = first?.code === "UNAUTHORIZED" || first?.category === "AUTHENTICATION_ERROR";
+      const authHint =
+        "Square rejected the token. Use a Sandbox token with SQUARE_ENVIRONMENT=sandbox, or a Production token with SQUARE_ENVIRONMENT=production (or deploy with NODE_ENV=production).";
       return NextResponse.json(
-        { error: isAuth ? "Payment provider authentication failed. Please check Square credentials (token and Sandbox vs Production)." : msg },
-        { status: isAuth ? 502 : 502 }
+        { error: isAuth ? authHint : msg },
+        { status: 502 }
       );
     }
 
