@@ -66,7 +66,6 @@ export async function POST(
 
     const amountCents = Math.round(amountDollars * 100);
     const idempotencyKey = `move-${moveId}-${Date.now()}`;
-    const currencyRaw = (process.env.SQUARE_CURRENCY || "CAD").toUpperCase();
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
     const redirectUrl = baseUrl ? `${baseUrl}/track/move/${moveId}?payment=success` : undefined;
 
@@ -77,7 +76,7 @@ export async function POST(
         name: "Move balance",
         priceMoney: {
           amount: BigInt(amountCents),
-          currency: currencyRaw as "CAD" | "USD",
+          currency: "CAD",
         },
         locationId,
       },
