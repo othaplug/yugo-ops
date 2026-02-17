@@ -5,6 +5,7 @@ import Link from "next/link";
 import Badge from "../components/Badge";
 import { Icon } from "@/components/AppIcons";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { formatMoveDate } from "@/lib/date-format";
 
 interface Delivery {
   id: string;
@@ -147,18 +148,18 @@ export default function AllProjectsView({
                     <Icon name={CATEGORY_ICONS[d.category] || "package"} className="w-[16px] h-[16px]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold truncate">
+                    <div className="text-[11px] font-semibold break-words line-clamp-2">
                       {d.customer_name} ({d.client_name})
                     </div>
-                    <div className="text-[9px] text-[var(--tx3)] truncate">
+                    <div className="text-[9px] text-[var(--tx3)] truncate max-w-[180px] sm:max-w-none">
                       {d.items?.length || 0} items • {d.delivery_number}
                     </div>
                   </div>
                   <div className="hidden sm:block text-[10px] text-[var(--tx3)] shrink-0 text-right">
-                    <div>{d.scheduled_date}</div>
+                    <div>{formatMoveDate(d.scheduled_date)}</div>
                     <div>{d.time_slot}</div>
                   </div>
-                  <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{d.scheduled_date}</div>
+                  <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{formatMoveDate(d.scheduled_date)}</div>
                   <Badge status={d.status} />
                 </Link>
               ))
@@ -199,16 +200,16 @@ export default function AllProjectsView({
                     <Icon name={m.move_type === "office" ? "building" : "home"} className="w-[16px] h-[16px]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold truncate">{m.client_name}</div>
-                    <div className="text-[9px] text-[var(--tx3)] truncate">
-                      {m.from_address || "—"} → {m.to_address || m.delivery_address || "—"}
+                    <div className="text-[11px] font-semibold break-words line-clamp-2">{m.client_name}</div>
+                    <div className="text-[9px] text-[var(--tx3)] truncate max-w-[200px] sm:max-w-none">
+                      {[m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" → ") || "—"}
                     </div>
                   </div>
                   <div className="hidden sm:block text-[10px] text-[var(--tx3)] shrink-0 text-right">
-                    <div>{m.scheduled_date || "—"}</div>
+                    <div>{formatMoveDate(m.scheduled_date)}</div>
                     <div className="text-[var(--gold)] font-semibold">${Number(m.estimate || 0).toLocaleString()}</div>
                   </div>
-                  <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{m.scheduled_date || "—"}</div>
+                  <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{formatMoveDate(m.scheduled_date)}</div>
                   <Badge status={m.status} />
                 </Link>
               ))

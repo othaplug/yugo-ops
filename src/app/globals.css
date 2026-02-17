@@ -60,6 +60,7 @@ body {
   overflow-x: hidden;
   min-height: 100dvh;
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Premium scrollbar - app-wide */
@@ -183,6 +184,10 @@ body {
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0px);
 }
+/* Main content offset below fixed topbar; includes safe-area on notched devices */
+.admin-main-offset {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+}
 
 /* Prototype component classes */
 .mc {
@@ -237,6 +242,9 @@ body {
 .dc-t { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-s { font-size: 9px; color: var(--tx3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-tm { font-size: 10px; color: var(--tx3); flex-shrink: 0; text-align: right; }
+/* Allow card title/address to wrap on mobile instead of harsh truncation */
+.dc-wrap .dc-t { white-space: normal; overflow: hidden; text-overflow: unset; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.dc-wrap .dc-s { white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
 
 .bdg { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 9px; font-weight: 700; flex-shrink: 0; }
 .b-gr { background: var(--grdim); color: var(--grn); }

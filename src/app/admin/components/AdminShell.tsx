@@ -219,10 +219,10 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <div className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-0" : "w-[220px]"}`} />
 
             {/* Main - .main */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 pt-14">
-              {/* Topbar - floating, static */}
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 admin-main-offset">
+              {/* Topbar - floating, static; safe area on notched devices */}
               <div
-                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-4 z-30 shrink-0 bg-[var(--bg)]/80 backdrop-blur-md border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] transition-all duration-300 ${sidebarCollapsed ? "left-0 pl-2 pr-4 md:pl-3 md:pr-6" : "left-0 px-4 md:left-[220px] md:px-6"}`}
+                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 bg-[var(--bg)]/80 backdrop-blur-md border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-2 pr-3 sm:pl-3 sm:pr-4 md:pl-3 md:pr-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <button
@@ -253,8 +253,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 </div>
               </div>
 
-              {/* Content - key forces fade-in on route change */}
-              <div key={pathname} className="flex-1 overflow-y-auto overflow-x-auto animate-fade-in min-h-0">
+              {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
+              <div key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto animate-fade-in min-h-0">
                 {children}
               </div>
             </div>

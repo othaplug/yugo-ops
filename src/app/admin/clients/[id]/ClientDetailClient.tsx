@@ -11,6 +11,7 @@ import DeliverySummaryModal from "./DeliverySummaryModal";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
+import { formatMoveDate } from "@/lib/date-format";
 
 interface MoveRow {
   id: string;
@@ -93,7 +94,7 @@ export default function ClientDetailClient({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] truncate">{client.name}</h1>
+              <h1 className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
               <span className={`inline-flex px-2.5 py-[3px] rounded text-[9px] font-bold ${isClient ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                 {personaLabel}
               </span>
@@ -247,11 +248,11 @@ export default function ClientDetailClient({
                 className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-semibold truncate">{m.client_name || m.move_number || "Move"}</div>
+                  <div className="text-[11px] font-semibold break-words line-clamp-2">{m.client_name || m.move_number || "Move"}</div>
                   <div className="text-[9px] text-[var(--tx3)]">{m.move_number ?? m.id}</div>
                 </div>
-                <div className="text-[10px] text-[var(--tx3)]">{m.scheduled_date || (m.created_at ? new Date(m.created_at).toLocaleDateString() : "—")}</div>
-                <Badge status={m.status ?? m.stage ?? "—"} />
+                <div className="text-[10px] text-[var(--tx3)]">{formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}</div>
+                <Badge status={m.status ?? ""} />
               </Link>
             ))
           )
@@ -265,10 +266,10 @@ export default function ClientDetailClient({
                 className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-semibold truncate">{d.customer_name}</div>
+                  <div className="text-[11px] font-semibold break-words line-clamp-2">{d.customer_name}</div>
                   <div className="text-[9px] text-[var(--tx3)]">{d.delivery_number} • {d.items?.length || 0} items</div>
                 </div>
-                <div className="text-[10px] text-[var(--tx3)]">{d.scheduled_date}</div>
+                <div className="text-[10px] text-[var(--tx3)]">{formatMoveDate(d.scheduled_date)}</div>
                 <Badge status={d.status} />
               </button>
             ))}

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import FilterBar from "./components/FilterBar";
+import { formatMoveDate } from "@/lib/date-format";
+import { getStatusLabel } from "@/lib/move-status";
 
 const BADGE_MAP: Record<string, string> = {
   pending: "b-go",
@@ -91,7 +93,7 @@ export default function AdminPageClient({
     : b2cUpcoming;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       {/* Metrics - .metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <Link href="/admin/deliveries" className="mc">
@@ -136,7 +138,7 @@ export default function AdminPageClient({
           hasActiveFilters={!!deliveryStatusFilter}
           onClear={() => setDeliveryStatusFilter("")}
         />
-        <div className="dl px-4 pb-4">
+        <div className="dl px-4 pb-4 dc-wrap">
         {filteredDeliveries.slice(0, 5).map((d) => (
           <Link key={d.id} href={`/admin/deliveries/${d.id}`} className="dc">
             <div
@@ -150,7 +152,7 @@ export default function AdminPageClient({
               <div className="dc-s">{d.items?.length || 0} items</div>
             </div>
             <div className="dc-tm">{d.time_slot}</div>
-            <span className={getBadgeClass(d.status || "")}>{d.status?.replace("-", " ")}</span>
+            <span className={getBadgeClass(d.status || "")}>{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</span>
           </Link>
         ))}
         </div>
@@ -175,7 +177,7 @@ export default function AdminPageClient({
           hasActiveFilters={!!moveStatusFilter}
           onClear={() => setMoveStatusFilter("")}
         />
-        <div className="dl px-4 pb-4">
+        <div className="dl px-4 pb-4 dc-wrap">
         {filteredMoves.slice(0, 5).map((m) => (
           <Link key={m.id} href={`/admin/moves/${m.id}`} className="dc">
             <div className="dc-ic flex items-center justify-center text-[var(--tx2)]" style={{ background: "var(--gdim)" }}>
@@ -185,8 +187,8 @@ export default function AdminPageClient({
               <div className="dc-t">{m.client_name}</div>
               <div className="dc-s">{m.from_address} → {m.to_address}</div>
             </div>
-            <div className="dc-tm">{m.scheduled_date}</div>
-            <span className={getBadgeClass(m.status || "")}>{m.status}</span>
+            <div className="dc-tm">{formatMoveDate(m.scheduled_date)}</div>
+            <span className={getBadgeClass(m.status || "")}>{getStatusLabel(m.status ?? null)}</span>
           </Link>
         ))}
         </div>

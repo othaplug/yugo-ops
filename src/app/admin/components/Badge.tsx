@@ -1,3 +1,5 @@
+import { getStatusLabel, MOVE_STATUS_COLORS_ADMIN } from "@/lib/move-status";
+
 const BADGE_COLORS: Record<string, string> = {
   // Project/vendor status (designer dashboard)
   done: "bg-[rgba(45,159,90,0.15)] text-[var(--grn)] border border-[var(--grn)]/30",
@@ -7,7 +9,7 @@ const BADGE_COLORS: Record<string, string> = {
   // Exhibition status
   installing: "bg-[var(--ordim)] text-[var(--org)]",
   staging: "bg-[var(--bldim)] text-[var(--blue)]",
-  // Standard statuses
+  // Standard statuses (non-move)
   pending: "bg-[var(--gdim)] text-[var(--gold)]",
   scheduled: "bg-[var(--bldim)] text-[var(--blue)]",
   confirmed: "bg-[var(--bldim)] text-[var(--blue)]",
@@ -24,8 +26,11 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 export default function Badge({ status }: { status: string }) {
-  const colors = BADGE_COLORS[status?.toLowerCase()] || BADGE_COLORS.pending;
-  const label = status ? status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ") : "—";
+  const key = status?.toLowerCase() || "";
+  const moveStyle = MOVE_STATUS_COLORS_ADMIN[key];
+  const colors = moveStyle ?? BADGE_COLORS[key] ?? BADGE_COLORS.pending;
+  const moveLabel = getStatusLabel(status || null);
+  const label = moveLabel !== "—" ? moveLabel : (status ? status.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—");
   return (
     <span className={`inline-flex items-center px-2.5 py-[3px] rounded-full text-[9px] font-bold ${colors}`}>
       {label}

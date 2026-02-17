@@ -86,7 +86,8 @@ function formatStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     confirmed: "Confirmed",
     scheduled: "Scheduled",
-    final_payment_received: "Final Payment Received",
+    paid: "Paid",
+    final_payment_received: "Paid",
     in_progress: "In Progress",
     completed: "Completed",
     cancelled: "Cancelled",
@@ -95,7 +96,7 @@ function formatStatusLabel(status: string): string {
     "in-transit": "In Progress",
     dispatched: "In Progress",
   };
-  return labels[status] || (status || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return labels[status] || (status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const LIVE_STAGE_LABELS: Record<string, string> = {
@@ -111,6 +112,7 @@ const LIVE_STAGE_LABELS: Record<string, string> = {
 const STATUS_INDEX: Record<string, number> = {
   confirmed: 0,
   scheduled: 1,
+  paid: 2,
   final_payment_received: 2,
   in_progress: 3,
   completed: 4,

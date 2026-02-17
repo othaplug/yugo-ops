@@ -23,6 +23,7 @@ interface MoveDetailClientProps {
   isOffice?: boolean;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+import { formatMoveDate } from "@/lib/date-format";
 
 export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             <button
               type="button"
               onClick={() => setContactModalOpen(true)}
-              className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left truncate"
+              className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
             >
               {move.client_name}
             </button>
@@ -164,7 +165,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0"
                   aria-label="Edit live stage"
                 >
-                  <span className="text-[11px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? move.stage ?? "—"}</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}</span>
                   <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
                 </button>
               )}
@@ -262,7 +263,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </button>
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Time & Intelligence</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_date || "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_time || "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Duration</span><div className="text-[11px] font-medium text-[var(--tx)]">8h</div></div>
