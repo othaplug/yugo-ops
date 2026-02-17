@@ -29,6 +29,24 @@ export async function requireAdmin() {
   return { user, admin: { isSuperAdmin, role: platformUser?.role }, error: null };
 }
 
+/** Admin, manager, dispatcher, or superadmin — for staff actions like sending tracking links */
+export async function requireStaff() {
+  const { user, error } = await requireAuth();
+  if (error) return { user: null, error };
+  const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  const supabase = await createClient();
+  const { data: platformUser } = await supabase
+    .from("platform_users")
+    .select("role")
+    .eq("user_id", user!.id)
+    .single();
+  const isStaff = isSuperAdmin || ["admin", "manager", "dispatcher"].includes(platformUser?.role || "");
+  if (!isStaff) {
+    return { user: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+  return { user, error: null };
+}
+
 export function isSuperAdminEmail(email: string | null | undefined): boolean {
   return (email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
