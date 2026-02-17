@@ -21,11 +21,11 @@ export async function POST(
     );
   }
 
-  // Token must match environment: Sandbox token → sandbox, Production token → production.
-  // Set SQUARE_ENVIRONMENT=sandbox or production to override (default: production in prod, sandbox in dev).
+  // Production deploy (NODE_ENV=production) → use Square Production unless explicitly sandbox.
+  // Local dev → use Sandbox unless SQUARE_ENVIRONMENT=production.
   const envOverride = (process.env.SQUARE_ENVIRONMENT || "").toLowerCase();
   const useProduction =
-    envOverride === "production" || (envOverride !== "sandbox" && process.env.NODE_ENV === "production");
+    envOverride === "production" || (process.env.NODE_ENV === "production" && envOverride !== "sandbox");
   const squareClient = new SquareClient({
     token: accessToken,
     environment: useProduction ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
