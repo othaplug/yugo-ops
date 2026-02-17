@@ -15,7 +15,15 @@ type DocItem = {
   created_at?: string;
 };
 
-export default function TrackDocuments({ moveId, token }: { moveId: string; token: string }) {
+export default function TrackDocuments({
+  moveId,
+  token,
+  refreshTrigger,
+}: {
+  moveId: string;
+  token: string;
+  refreshTrigger?: boolean;
+}) {
   const [invoices, setInvoices] = useState<DocItem[]>([]);
   const [documents, setDocuments] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +43,15 @@ export default function TrackDocuments({ moveId, token }: { moveId: string; toke
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [moveId, token]);
+  }, [moveId, token, refreshTrigger]);
 
   const allDocs = [
     ...invoices.map((d) => ({ ...d, isInvoice: true })),
-    ...documents.map((d) => ({ ...d, isInvoice: false })),
+    ...documents.map((d) => ({
+      ...d,
+      isInvoice: d.type === "invoice",
+      status: d.title?.startsWith("Payment Receipt") ? "paid" : d.status,
+    })),
   ];
 
   if (loading) {
@@ -78,7 +90,8 @@ export default function TrackDocuments({ moveId, token }: { moveId: string; toke
         {allDocs.map((doc) => {
           const url = doc.view_url ?? doc.external_url;
           const dateStr = doc.created_at ? new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : doc.due_date || "";
-          const isSent = doc.status === "sent" || doc.status === "paid";
+          const isPaid = doc.status === "paid" || doc.title?.startsWith("Payment Receipt");
+          const isSent = doc.status === "sent" || (doc.status === "paid" && !doc.title?.startsWith("Payment Receipt"));
           return (
             <div
               key={doc.id}
@@ -93,7 +106,12 @@ export default function TrackDocuments({ moveId, token }: { moveId: string; toke
                   <div className="text-[11px] text-[#666] flex items-center gap-2">
                     {dateStr}
                     {doc.amount != null && ` • $${Number(doc.amount).toLocaleString()}`}
-                    {isSent && (
+                    {isPaid && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
+                        PAID
+                      </span>
+                    )}
+                    {isSent && !isPaid && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
                         SENT
                       </span>

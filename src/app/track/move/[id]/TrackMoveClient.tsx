@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getMoveCode } from "@/lib/move-code";
 import { Icon } from "@/components/AppIcons";
@@ -50,13 +51,17 @@ export default function TrackMoveClient({
   crew,
   token,
   fromNotify = false,
+  paymentSuccess = false,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
   token: string;
   fromNotify?: boolean;
+  paymentSuccess?: boolean;
 }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(paymentSuccess);
   const [changeModalOpen, setChangeModalOpen] = useState(false);
   const [changeType, setChangeType] = useState(CHANGE_TYPES[0]);
   const [changeDesc, setChangeDesc] = useState("");
@@ -75,6 +80,32 @@ export default function TrackMoveClient({
     const t = setTimeout(() => setShowNotifyBanner(false), 5000);
     return () => clearTimeout(t);
   }, [fromNotify]);
+
+  const [paymentRecorded, setPaymentRecorded] = useState(false);
+
+  // Record payment and add receipt to documents when landing from Square redirect
+  useEffect(() => {
+    if (!paymentSuccess || !showPaymentSuccess) return;
+    fetch(`/api/track/moves/${move.id}/record-payment?token=${encodeURIComponent(token)}`, {
+      method: "POST",
+    })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d?.ok) {
+          setPaymentRecorded(true);
+          router.refresh();
+        }
+      })
+      .catch(() => {});
+  }, [paymentSuccess, showPaymentSuccess, move.id, token, router]);
+
+  const handleBackToDashboard = () => {
+    setShowPaymentSuccess(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("payment");
+    router.replace(url.pathname + url.search);
+  };
 
   // Poll crew-status (including liveStage) so client stays in sync when admin updates stage
   useEffect(() => {
@@ -183,7 +214,41 @@ export default function TrackMoveClient({
       </header>
 
       <main className="max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full">
-        {fromNotify && (
+        {showPaymentSuccess && (
+          <div className="mb-5 rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 shadow-sm animate-fade-up">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+              <div className="flex justify-center sm:justify-start shrink-0">
+                <div className="relative w-[72px] h-[72px] sm:w-20 sm:h-20">
+                  <svg viewBox="0 0 80 80" fill="none" className="w-full h-full drop-shadow-sm">
+                    <defs>
+                      <linearGradient id="success-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#E8D5A3" />
+                        <stop offset="100%" stopColor="#D4BC7A" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="40" cy="40" r="36" fill="url(#success-bg)" stroke="#C9A962" strokeWidth="2" />
+                    <circle cx="40" cy="40" r="32" fill="none" stroke="#C9A962" strokeWidth="1" strokeDasharray="5 3" opacity="0.4" />
+                    <path d="M28 40 L36 48 L52 32" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <h2 className="text-[20px] sm:text-[22px] font-bold text-[#1A1A1A] font-heading">Payment received</h2>
+                <p className="text-[14px] text-[#666] mt-2 leading-relaxed">
+                  Thank you for making your final payment. We are excited to see you on move day!
+                </p>
+                <button
+                  type="button"
+                  onClick={handleBackToDashboard}
+                  className="mt-5 rounded-lg bg-[#C9A962] text-[#0D0D0D] font-semibold text-[14px] py-3 px-5 hover:bg-[#B89A52] transition-colors shadow-sm"
+                >
+                  Back to main dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {fromNotify && !showPaymentSuccess && (
           <div
             className="grid transition-[grid-template-rows] duration-300 ease-out mb-5"
             style={{ gridTemplateRows: showNotifyBanner ? "1fr" : "0fr" }}
@@ -302,7 +367,7 @@ export default function TrackMoveClient({
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
                     <div className="text-[18px] font-bold text-[#C9A962]">${totalBalance.toLocaleString()}</div>
                   </div>
-                  {totalBalance > 0 && (
+                  {totalBalance > 0 && !showPaymentSuccess && (
                     <div className="pt-2">
                       <button
                         type="button"
@@ -417,7 +482,7 @@ export default function TrackMoveClient({
 
         {activeTab === "docs" && (
           <div className="mb-6">
-            <TrackDocuments moveId={move.id} token={token} />
+            <TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} />
           </div>
         )}
 

@@ -75,7 +75,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <BackButton label="Back" />
 
       {/* Hero - compact header */}
-      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
+      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <button
@@ -102,56 +102,57 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-[var(--brd)]/40 pt-3">
-          <div className="group/card relative flex items-center gap-2 min-w-0">
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
-            {editingCard === "status" ? (
-              <select
-                defaultValue={normalizeStatus(move.status) || move.status || "confirmed"}
-                className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
-                onChange={async (e) => {
-                  const v = e.target.value as string;
-                  const { data, error } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
-                  if (error) {
-                    toast(error.message || "Failed to update status", "alertTriangle");
-                    return;
-                  }
-                  if (data) setMove(data);
-                  setEditingCard(null);
-                  router.refresh();
-                }}
-              >
-                {MOVE_STATUS_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEditingCard("status")}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn"
-                aria-label="Edit status"
-              >
-                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
-                  {getStatusLabel(move.status)}
-                </span>
-                <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
-              </button>
-            )}
-          </div>
+        <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
+              {editingCard === "status" ? (
+                <select
+                  defaultValue={normalizeStatus(move.status) || move.status || "confirmed"}
+                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  onChange={async (e) => {
+                    const v = e.target.value as string;
+                    const { data, error } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                    if (error) {
+                      toast(error.message || "Failed to update status", "alertTriangle");
+                      return;
+                    }
+                    if (data) setMove(data);
+                    setEditingCard(null);
+                    router.refresh();
+                  }}
+                >
+                  {MOVE_STATUS_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingCard("status")}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
+                  aria-label="Edit status"
+                >
+                  <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-semibold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                    {getStatusLabel(move.status)}
+                  </span>
+                  <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
+                </button>
+              )}
+            </div>
 
-          <div className="group/card relative flex items-center gap-2 min-w-0">
-            <span className="inline-flex items-center gap-1.5 text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
-              <span className="relative flex h-1.5 w-1.5" aria-hidden>
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
+            <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+                <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
+                </span>
+                Live stage
               </span>
-              Live stage
-            </span>
               {editingCard === "stage" ? (
                 <select
                   defaultValue={move.stage ?? "pending"}
-                  className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[140px]"
                   onChange={async (e) => {
                     const v = e.target.value || null;
                     const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
@@ -168,19 +169,19 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 <button
                   type="button"
                   onClick={() => setEditingCard("stage")}
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0 w-fit sm:w-auto"
                   aria-label="Edit live stage"
                 >
-                  <span className="text-[11px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}</span>
+                  <span className="text-[12px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}</span>
                   <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
                 </button>
               )}
             </div>
 
-          <div className="flex items-center gap-1.5 pl-4 ml-2 border-l border-[var(--brd)]/50">
-            <span className="text-[9px] font-medium tracking-wide uppercase text-[var(--tx3)]/90">
-              Last updated <span className="tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
-            </span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">Last updated</span>
+              <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
+            </div>
           </div>
         </div>
       </div>

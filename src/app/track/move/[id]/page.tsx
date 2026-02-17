@@ -14,10 +14,10 @@ export default async function TrackMovePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string; from?: string }>;
+  searchParams: Promise<{ token?: string; from?: string; payment?: string }>;
 }) {
   const { id } = await params;
-  const { token, from } = await searchParams;
+  const { token, from, payment } = await searchParams;
 
   if (!verifyTrackToken("move", id, token || "")) notFound();
 
@@ -40,5 +40,13 @@ export default async function TrackMovePage({
     crew = c;
   }
 
-  return <TrackMoveClient move={move} crew={crew} token={token || ""} fromNotify={from === "notify"} />;
+  return (
+    <TrackMoveClient
+      move={move}
+      crew={crew}
+      token={token || ""}
+      fromNotify={from === "notify"}
+      paymentSuccess={payment === "success"}
+    />
+  );
 }
