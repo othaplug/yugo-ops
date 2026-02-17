@@ -24,6 +24,15 @@ function emailLogo() {
   `;
 }
 
+/** OPS+ oval badge only (matches notify/track email screenshot) */
+function notifyEmailLogo() {
+  return `
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</div>
+    </div>
+  `;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "#D48A29",
   confirmed: "#2D9F5A",
@@ -96,6 +105,85 @@ function formatStatusLabel(status: string): string {
   return labels[status] || (status || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const LIVE_STAGE_LABELS: Record<string, string> = {
+  on_route: "En Route",
+  arrived_on_site: "Arrived On-Site",
+  loading: "Loading",
+  in_transit: "In Transit",
+  unloading: "Unloading",
+  job_complete: "Job Complete",
+};
+
+/** Timeline: status index 0–4, live stages 0–5 when in_progress */
+const STATUS_INDEX: Record<string, number> = {
+  confirmed: 0,
+  scheduled: 1,
+  final_payment_received: 2,
+  in_progress: 3,
+  completed: 4,
+  cancelled: -1,
+  delivered: 4,
+  pending: 0,
+  "in-transit": 3,
+  dispatched: 3,
+};
+
+const STAGE_INDEX: Record<string, number> = {
+  on_route: 0,
+  arrived_on_site: 1,
+  loading: 2,
+  in_transit: 3,
+  unloading: 4,
+  job_complete: 5,
+};
+
+function moveStatusBarHtml(status: string, stage?: string | null): string {
+  const isCancelled = (status || "").toLowerCase() === "cancelled";
+  const isCompleted = (status || "").toLowerCase() === "completed" || (status || "").toLowerCase() === "delivered";
+  const statusIdx = STATUS_INDEX[(status || "").toLowerCase()] ?? 0;
+  const stageIdx = stage ? (STAGE_INDEX[stage] ?? -1) : -1;
+
+  let pct = 0;
+  let currentLabel = formatStatusLabel(status);
+  let labelColor = "#2D9F5A";
+
+  if (isCancelled) {
+    pct = 0;
+    currentLabel = "Cancelled";
+    labelColor = "#D14343";
+  } else if (isCompleted) {
+    pct = 100;
+    currentLabel = "Completed";
+  } else if (statusIdx === 3 && stageIdx >= 0) {
+    const stageKey = stage ?? "";
+    const stageLabel = LIVE_STAGE_LABELS[stageKey] || stageKey.replace(/_/g, " ");
+    currentLabel = stageLabel;
+    pct = 60 + Math.round(((stageIdx + 1) / 6) * 40);
+  } else {
+    pct = Math.round(((statusIdx + 1) / 5) * 100);
+  }
+
+  return `
+    <style>
+      @keyframes moveBarShimmer {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+      }
+      .move-bar-fill {
+        animation: moveBarShimmer 2.5s ease-in-out infinite;
+        -webkit-animation: moveBarShimmer 2.5s ease-in-out infinite;
+      }
+    </style>
+    <div style="margin:20px 0 24px">
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Current Stage</div>
+      <div style="height:10px;background:#1E1E1E;border-radius:999px;overflow:hidden;border:1px solid #2A2A2A">
+        <div class="move-bar-fill" style="height:100%;width:${pct}%;min-width:${pct > 0 ? 4 : 0}px;background:linear-gradient(90deg,#4CA9DF,#A1FFB3);border-radius:999px"></div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:${labelColor};margin-top:8px;letter-spacing:0.3px">${currentLabel}</div>
+    </div>
+  `;
+}
+
 export function moveNotificationEmail(move: {
   move_id: string;
   move_number: string;
@@ -111,40 +199,28 @@ export function moveNotificationEmail(move: {
   deposit_paid?: number;
   balance_due?: number;
   trackUrl?: string;
+  changes_made?: string;
 }) {
   const trackUrl = move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
-  const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
-  const statusLabel = formatStatusLabel(move.status);
-  const stageLabel = move.stage ? (move.stage || "").replace(/_/g, " ") : "";
+  const statusBarHtml = moveStatusBarHtml(move.status, move.stage);
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
-      ${emailLogo()}
+      ${notifyEmailLogo()}
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Was Updated</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 12px;color:#F5F5F3">Hi${move.client_name ? `, ${move.client_name.split(" ")[0]}` : ""}</h1>
-      <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-        We&apos;ve made changes to your move. Your status is now <strong style="color:#C9A962">${statusLabel}</strong>${stageLabel ? ` — ${stageLabel}` : ""}.
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Your Move Was Updated</h1>
+      <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 4px">
+        We&apos;ve made changes to your move recently.
       </p>
-      
-      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
-        <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px">${move.move_number} · ${typeLabel}</div>
-        <div style="margin-bottom:16px">${statusBadge(move.status)}</div>
-        ${move.next_action ? `<div style="margin-bottom:12px"><span style="color:#666;font-size:11px">Next:</span> <span style="font-weight:600;color:#C9A962">${move.next_action}</span></div>` : ""}
-        <div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid #2A2A2A">
-          <div><span style="color:#666">From:</span> <span style="font-weight:600">${move.from_address || "—"}</span></div>
-          <div><span style="color:#666">To:</span> <span style="font-weight:600">${move.to_address || "—"}</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;padding-top:12px;border-top:1px solid #2A2A2A">
-            <div><span style="color:#666">Date:</span><br/><span style="font-weight:600">${move.scheduled_date || "—"}</span></div>
-            <div><span style="color:#666">Estimate:</span><br/><span style="font-weight:600;color:#C9A962">$${(move.estimate || 0).toLocaleString()}</span></div>
-            <div><span style="color:#666">Balance:</span><br/><span style="font-weight:600">$${(move.balance_due || 0).toLocaleString()}</span></div>
-          </div>
-        </div>
-      </div>
-      
-      <p style="font-size:13px;color:#999;margin-bottom:20px">Click below to view your full dashboard and see what changed.</p>
+      ${statusBarHtml}
+      <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+        Click below to view your full dashboard and see what changed.
+      </p>
       <a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
-        View Your Move Dashboard →
+        Track your move →
       </a>
-      
+      <p style="font-size:11px;color:#999;margin-top:24px;line-height:1.5">
+        This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.
+      </p>
       ${emailFooter()}
     </div>
   `;
@@ -159,7 +235,7 @@ export function trackingLinkEmail(params: {
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
-      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Track Your Move</div>
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Was Updated</div>
       <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Hi${clientName ? `, ${clientName}` : ""}</h1>
       <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 20px">
         Use the link below to track your move, view documents, and message your coordinator. No account or login required.

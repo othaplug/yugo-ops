@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
           ? `${getEmailBaseUrl()}/track/move/${body.moveId}?token=${signTrackToken("move", body.moveId)}&from=notify`
           : undefined,
       });
-      subject = `Your move was updated — ${moveCode}`;
+      subject = `Your Move Was Updated - #${moveCode}`;
       await supabase.from("status_events").insert({
         entity_type: "move",
         entity_id: body.moveId || body.deliveryNumber,

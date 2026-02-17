@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { Plus, Trash2, FileText } from "lucide-react";
 
 interface Org {
@@ -407,14 +408,17 @@ export default function CreateMoveForm({
               </select>
             </Field>
             <Field label="Arrival Window">
-              <input
-                type="text"
+              <select
                 name="arrival_window"
                 value={arrivalWindow}
                 onChange={(e) => setArrivalWindow(e.target.value)}
-                placeholder="e.g. 9 AM - 12 PM"
                 className={fieldInput}
-              />
+              >
+                <option value="">Select window…</option>
+                {TIME_WINDOW_OPTIONS.map((w) => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Estimate ($)">
               <input

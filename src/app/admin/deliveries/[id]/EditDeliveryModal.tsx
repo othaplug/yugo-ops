@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import ModalOverlay from "../../components/ModalOverlay";
 
 interface EditDeliveryModalProps {
@@ -88,7 +89,15 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
             <input name="scheduled_date" type="date" defaultValue={delivery.scheduled_date} className="field-input" />
           </Field>
           <Field label="Window">
-            <input name="delivery_window" defaultValue={delivery.delivery_window} className="field-input" />
+            <select name="delivery_window" defaultValue={delivery.delivery_window} className="field-input">
+              <option value="">Select window…</option>
+              {TIME_WINDOW_OPTIONS.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+              {delivery.delivery_window && !TIME_WINDOW_OPTIONS.includes(delivery.delivery_window) && (
+                <option value={delivery.delivery_window}>{delivery.delivery_window}</option>
+              )}
+            </select>
           </Field>
           <Field label="Items (one per line, use 'Item | Qty' for quantity)">
             <textarea name="items" rows={3} defaultValue={(delivery.items || []).map((i: any) => typeof i === "object" ? `${i.name || i} | ${i.qty ?? 1}` : i).join("\n")} className="field-input resize-y" />

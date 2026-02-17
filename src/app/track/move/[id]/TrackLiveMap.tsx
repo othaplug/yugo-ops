@@ -90,11 +90,17 @@ export default function TrackLiveMap({
     };
   }, [moveId, token]);
 
-  if (!MAPBOX_TOKEN) {
+  if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith("pk.your-") || MAPBOX_TOKEN === "pk.your-mapbox-token") {
     return (
-      <div className="rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] h-[320px] flex items-center justify-center">
-        <p className="text-[12px] text-[#666]">
-          Map unavailable. Add <code className="bg-white px-1 rounded">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> to enable.
+      <div className="rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] h-[320px] flex flex-col items-center justify-center gap-2 px-4">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#E7E5E4]">
+          <svg className="w-6 h-6 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        </div>
+        <p className="text-[13px] font-medium text-[#1A1A1A]">Live tracking map</p>
+        <p className="text-[11px] text-[#666] text-center max-w-[240px]">
+          Add <code className="bg-white px-1.5 py-0.5 rounded text-[10px]">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> to .env.local to enable.
         </p>
       </div>
     );

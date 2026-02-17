@@ -92,14 +92,6 @@ export default function TrackMoveClient({
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const scheduledDate = move.scheduled_date ? new Date(move.scheduled_date) : null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  // Progress: fills as move day approaches, 100% when completed. Animated.
-  const statusProgress = ((currentIdx + 1) / 5) * 100;
-  const daysProgress = daysUntil != null ? Math.max(5, Math.min(95, 100 - daysUntil * 2.5)) : statusProgress;
-  const progressPct = isCompleted
-    ? 100
-    : isCancelled
-      ? 0
-      : Math.min(100, Math.max(statusProgress, daysProgress));
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
@@ -145,7 +137,7 @@ export default function TrackMoveClient({
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans" data-theme="light">
-      {/* Header - YUGO + YOUR MOVE, progress bar */}
+      {/* Header - YUGO + YOUR MOVE */}
       <header className="sticky top-0 z-50 bg-white border-b border-[#E7E5E4]">
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
           <div className="flex items-center gap-2">
@@ -154,27 +146,6 @@ export default function TrackMoveClient({
               YOUR MOVE
             </span>
           </div>
-        </div>
-        <div className="px-4 sm:px-6 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E7E5E4]">
-              <div
-                className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out animate-progress-fill"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <span className="text-[11px] font-bold text-[#666]">{Math.round(progressPct)}%</span>
-          </div>
-          {scheduledDate && (
-            <p className="text-[11px] text-[#666] mt-1">
-              {scheduledDate.toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}{" "}
-              at {move.scheduled_time || move.arrival_window || "TBD"}
-            </p>
-          )}
         </div>
       </header>
 
@@ -212,25 +183,6 @@ export default function TrackMoveClient({
               {daysUntil ?? "—"}
             </div>
             <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
-            {scheduledDate && (
-              <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
-                {scheduledDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}{" "}
-                at {move.scheduled_time || move.arrival_window || "TBD"}
-              </div>
-            )}
-            <div className="mt-4 flex items-center gap-2">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E7E5E4]">
-                <div
-                  className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out animate-progress-fill"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <span className="text-[12px] font-bold text-[#C9A962]">{Math.round(progressPct)}%</span>
-            </div>
           </div>
         </div>
 
@@ -356,41 +308,46 @@ export default function TrackMoveClient({
 
         {activeTab === "track" && (
           <div className="space-y-5">
-            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-              <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Progress Detail</h3>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div>
-                  <div className="text-[10px] font-bold uppercase text-[#999] mb-1">Status</div>
-                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-semibold border ${MOVE_STATUS_COLORS[statusVal] || "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30"}`}>
+            <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
+              <div className="px-5 pt-5 pb-4">
+                <h3 className="text-[14px] font-bold mb-1 text-[#1A1A1A]">Progress Detail</h3>
+                <p className="text-[11px] text-[#666] mb-4">Current stage of your move</p>
+                <div className="mb-5">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#E7E5E4]">
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{
+                        width: `${isCancelled ? 0 : move.status === "in_progress" && liveStage != null
+                          ? 60 + ((LIVE_STAGE_MAP[liveStage || ""] ?? 0) + 1) / 6 * 40
+                          : isCompleted ? 100 : ((currentIdx + 1) / 5) * 100}%`,
+                        background: "linear-gradient(90deg, #4CA9DF, #A1FFB3)",
+                      }}
+                    />
+                  </div>
+                  <div className="mt-2 text-[13px] font-semibold" style={{ color: "#4CA9DF" }}>
                     {move.status === "in_progress" && liveStage
                       ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label || getStatusLabel(statusVal)
                       : getStatusLabel(statusVal)}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase text-[#999] mb-1">ETA</div>
-                  <div className="text-[13px] font-semibold text-[#1A1A1A]">
-                    {isCompleted ? "Complete" : daysUntil != null ? `${daysUntil} days` : "—"}
                   </div>
                 </div>
-              </div>
-              <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
-                {LIVE_TRACKING_STAGES.map((s, i) => {
-                  const liveIdx = move.status === "in_progress" ? (LIVE_STAGE_MAP[liveStage || ""] ?? -1) : -1;
-                  const state = liveIdx < 0 ? "wait" : i < liveIdx ? "done" : i === liveIdx ? "act" : "wait";
-                  return (
-                    <div key={s.key} className="relative pb-4 last:pb-0">
-                      <div
-                        className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 ${
-                          state === "done" ? "bg-[#22C55E]" : state === "act" ? "bg-[#F59E0B]" : "bg-[#E7E5E4]"
-                        }`}
-                      />
-                      <div className={`text-[12px] font-semibold ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
-                        {s.label}
+                <div className="relative pl-6 before:content-[''] before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-[#E7E5E4]">
+                  {LIVE_TRACKING_STAGES.map((s, i) => {
+                    const liveIdx = move.status === "in_progress" ? (LIVE_STAGE_MAP[liveStage || ""] ?? -1) : -1;
+                    const state = liveIdx < 0 ? "wait" : i < liveIdx ? "done" : i === liveIdx ? "act" : "wait";
+                    return (
+                      <div key={s.key} className="relative pb-3 last:pb-0">
+                        <div
+                          className={`absolute -left-[18px] top-0.5 w-2.5 h-2.5 rounded-full border-2 border-white z-10 ${
+                            state === "done" ? "bg-[#4CA9DF]" : state === "act" ? "bg-[#A1FFB3]" : "bg-[#E7E5E4]"
+                          }`}
+                        />
+                        <div className={`text-[12px] font-medium ${state === "done" ? "text-[#4CA9DF]" : state === "act" ? "text-[#2D7A4A]" : "text-[#999]"}`}>
+                          {s.label}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <TrackLiveMap moveId={move.id} token={token} />

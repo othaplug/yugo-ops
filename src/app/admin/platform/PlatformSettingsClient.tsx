@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
@@ -10,6 +11,15 @@ import AddTeamMemberModal from "./AddTeamMemberModal";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import { useRouter } from "next/navigation";
+
+const TABS = [
+  { id: "pricing", label: "Pricing" },
+  { id: "crews", label: "Crews & Teams" },
+  { id: "app", label: "App Settings" },
+  { id: "partners", label: "Partners" },
+  { id: "users", label: "Users" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
 
@@ -30,7 +40,10 @@ interface PlatformSettingsClientProps {
 
 export default function PlatformSettingsClient({ initialTeams = [], currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  const tabParam = searchParams.get("tab") || "pricing";
+  const activeTab: TabId = TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : "pricing";
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [invitePartnerOpen, setInvitePartnerOpen] = useState(false);
   const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string }[]>([]);
@@ -141,20 +154,29 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
     router.refresh();
   };
 
+  const visibleTabs = TABS.filter((t) => t.id !== "users" || isSuperAdmin);
+
   return (
     <div className="space-y-6">
-      {/* Quick shortcuts - same look as profile settings */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <a href="#pricing" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Pricing</a>
-        <span className="text-[11px] text-[var(--tx3)]">/</span>
-        <a href="#crews" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Crews & Teams</a>
-        <span className="text-[11px] text-[var(--tx3)]">/</span>
-        <a href="#app" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">App</a>
-        <span className="text-[11px] text-[var(--tx3)]">/</span>
-        <a href="#partners" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Partners</a>
+      {/* Tabbed navigation - clickable breadcrumb-style links */}
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-[var(--brd)] pb-3">
+        {visibleTabs.map((t) => (
+          <Link
+            key={t.id}
+            href={`/admin/platform?tab=${t.id}`}
+            className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
+              activeTab === t.id
+                ? "bg-[var(--gold)] text-[#0D0D0D]"
+                : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
       </div>
 
       {/* Pricing & Rates - editable */}
+      {activeTab === "pricing" && (
       <div id="pricing" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4 min-w-0">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
@@ -214,8 +236,10 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
           </button>
         </div>
       </div>
+      )}
 
       {/* Crews & Teams - view & edit members */}
+      {activeTab === "crews" && (
       <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
@@ -281,8 +305,11 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
           ))}
         </div>
       </div>
+      )}
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
+      {activeTab === "app" && (
+      <>
       <div id="app" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
@@ -318,7 +345,31 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         </div>
       </div>
 
+      {/* Danger Zone - in App Settings */}
+      <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--red)]/10 bg-[rgba(209,67,67,0.04)]">
+          <h2 className="font-heading text-[16px] font-bold text-[var(--red)] flex items-center gap-2">
+            <Icon name="alertTriangle" className="w-[16px] h-[16px] text-[var(--red)]" /> Danger Zone
+          </h2>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Irreversible platform actions</p>
+        </div>
+        <div className="px-5 py-5 space-y-3">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
+            </div>
+            <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+      </>
+      )}
+
       {/* Partners Management */}
+      {activeTab === "partners" && (
       <div id="partners" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
@@ -351,9 +402,10 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
           ))}
         </div>
       </div>
+      )}
 
       {/* User Management - Superadmin only */}
-      {isSuperAdmin && (
+      {activeTab === "users" && isSuperAdmin && (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
@@ -485,27 +537,6 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         teams={teams}
         onTeamsChange={setTeams}
       />
-
-      {/* Danger Zone */}
-      <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--red)]/10 bg-[rgba(209,67,67,0.04)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--red)] flex items-center gap-2">
-            <Icon name="alertTriangle" className="w-[16px] h-[16px] text-[var(--red)]" /> Danger Zone
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Irreversible platform actions</p>
-        </div>
-        <div className="px-5 py-5 space-y-3">
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
-            </div>
-            <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
-              Reset
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

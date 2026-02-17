@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import BackButton from "../../components/BackButton";
 
 interface Org {
@@ -89,7 +90,12 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
         <input name="time_slot" placeholder="e.g. 9:00 AM" className="field-input" />
       </Field>
       <Field label="Delivery Window">
-        <input name="delivery_window" placeholder="e.g. 9 AM - 12 PM" className="field-input" />
+        <select name="delivery_window" className="field-input">
+          <option value="">Select window…</option>
+          {TIME_WINDOW_OPTIONS.map((w) => (
+            <option key={w} value={w}>{w}</option>
+          ))}
+        </select>
       </Field>
       <Field label="Items (one per line)">
         <textarea name="items" rows={3} placeholder="Mah Jong Sofa&#10;Coffee Table" className="field-input resize-y" />

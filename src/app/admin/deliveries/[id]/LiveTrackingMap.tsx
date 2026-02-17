@@ -108,7 +108,7 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
     ? { longitude: crew!.current_lng!, latitude: crew!.current_lat! }
     : DEFAULT_CENTER;
 
-  if (!MAPBOX_TOKEN) {
+  if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith("pk.your-") || MAPBOX_TOKEN === "pk.your-mapbox-token") {
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>

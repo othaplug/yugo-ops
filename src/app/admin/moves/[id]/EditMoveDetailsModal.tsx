@@ -4,8 +4,13 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import ModalOverlay from "../../components/ModalOverlay";
+import { Icon } from "@/components/AppIcons";
+import { useToast } from "../../components/Toast";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
+const ACCESS_OPTIONS = ["Elevator", "Stairs", "Loading dock", "Parking", "Gate / Buzz code", "Ground floor", "Building access required"];
 const TIME_OPTIONS = (() => {
   const times: string[] = [];
   for (let h = 6; h <= 20; h++) {
@@ -40,8 +45,21 @@ interface EditMoveDetailsModalProps {
   onSaved?: (updates: Record<string, unknown>) => void;
 }
 
+function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={className}>
+      <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputBase =
+  "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all";
+
 export default function EditMoveDetailsModal({ open, onClose, moveId, initial, crews = [], onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = createClient();
   const [fromAddress, setFromAddress] = useState(initial.from_address || "");
   const [toAddress, setToAddress] = useState(initial.to_address || "");
@@ -75,6 +93,9 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   const [customComplexity, setCustomComplexity] = useState("");
   const [crewId, setCrewId] = useState(initial.crew_id || "");
   const [saving, setSaving] = useState(false);
+  const [showOptional, setShowOptional] = useState(
+    () => !!(initial.complexity_indicators?.length || initial.internal_notes?.trim())
+  );
 
   useEffect(() => {
     if (open) {
@@ -90,26 +111,31 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
       setComplexityIndicators(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
       setInternalNotes(initial.internal_notes || "");
       setCrewId(initial.crew_id || "");
+      setShowOptional(!!(initial.complexity_indicators?.length || initial.internal_notes?.trim()));
     }
   }, [open, initial.from_address, initial.to_address, initial.crew_id, initial.scheduled_date, initial.scheduled_time, initial.arrival_window, initial.from_access, initial.to_access, initial.access_notes, initial.complexity_indicators, initial.internal_notes]);
 
   if (!open) return null;
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setSaving(true);
     const updated_at = new Date().toISOString();
     const accessNotesMerged =
       [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`, accessNotes.trim()].filter(Boolean).join("\n") || null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("moves")
       .update({
         from_address: fromAddress.trim() || null,
         to_address: toAddress.trim() || null,
         delivery_address: toAddress.trim() || null,
+        from_access: fromAccess.trim() || null,
+        to_access: toAccess.trim() || null,
         scheduled_date: scheduledDate.trim() || null,
         scheduled_time: scheduledTime.trim() || null,
         arrival_window: arrivalWindow.trim() || null,
         access_notes: accessNotesMerged,
+        crew_id: crewId.trim() || null,
         complexity_indicators: complexityIndicators.length ? complexityIndicators : null,
         internal_notes: internalNotes.trim() || null,
         updated_at,
@@ -118,202 +144,230 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
       .select()
       .single();
     setSaving(false);
-    onClose();
-    if (data) onSaved?.(data);
-    router.refresh();
+    if (error) {
+      toast(error.message || "Failed to save", "alertTriangle");
+      return;
+    }
+    if (data) {
+      onSaved?.(data);
+      onClose();
+      router.refresh();
+      toast("Move details updated", "check");
+    }
+  };
+
+  const toggleComplexity = (preset: string) => {
+    setComplexityIndicators((prev) => (prev.includes(preset) ? prev.filter((p) => p !== preset) : [...prev, preset]));
+  };
+
+  const addCustomComplexity = () => {
+    const v = customComplexity.trim();
+    if (v && !complexityIndicators.includes(v)) {
+      setComplexityIndicators((prev) => [...prev, v]);
+      setCustomComplexity("");
+    }
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Edit move details" maxWidth="md">
-      <div className="p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 items-end">
-          <div className="flex-1 min-w-0 w-full">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">From address</label>
-            <input
-              value={fromAddress}
-              onChange={(e) => setFromAddress(e.target.value)}
-              placeholder="Origin address"
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            />
-          </div>
-          <div className="w-full sm:w-[140px]">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Access</label>
-            <select
-              value={fromAccess}
-              onChange={(e) => setFromAccess(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            >
-              <option value="">Select…</option>
-              <option value="Elevator">Elevator</option>
-              <option value="Stairs">Stairs</option>
-              <option value="Loading dock">Loading dock</option>
-              <option value="Parking">Parking</option>
-              <option value="Gate / Buzz code">Gate / Buzz code</option>
-              <option value="Ground floor">Ground floor</option>
-              <option value="Building access required">Building access required</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 items-end">
-          <div className="flex-1 min-w-0 w-full">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">To address</label>
-            <input
-              value={toAddress}
-              onChange={(e) => setToAddress(e.target.value)}
-              placeholder="Destination address"
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            />
-          </div>
-          <div className="w-full sm:w-[140px]">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Access</label>
-            <select
-              value={toAccess}
-              onChange={(e) => setToAccess(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            >
-              <option value="">Select…</option>
-              <option value="Elevator">Elevator</option>
-              <option value="Stairs">Stairs</option>
-              <option value="Loading dock">Loading dock</option>
-              <option value="Parking">Parking</option>
-              <option value="Gate / Buzz code">Gate / Buzz code</option>
-              <option value="Ground floor">Ground floor</option>
-              <option value="Building access required">Building access required</option>
-            </select>
-          </div>
-        </div>
-        {crews.length > 0 && (
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Crew (for live tracking)</label>
-            <select
-              value={crewId}
-              onChange={(e) => setCrewId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            >
-              <option value="">No crew assigned</option>
-              {crews.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Date</label>
-            <input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Time</label>
-            <select
-              value={scheduledTime}
-              onChange={(e) => setScheduledTime(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            >
-              <option value="">Select time…</option>
-              {TIME_OPTIONS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-              {scheduledTime && !TIME_OPTIONS.includes(scheduledTime) && (
-                <option value={scheduledTime}>{scheduledTime}</option>
-              )}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Arrival window</label>
-          <input
-            value={arrivalWindow}
-            onChange={(e) => setArrivalWindow(e.target.value)}
-            placeholder="e.g. 8:00 to 10:00 AM"
-            className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Property access & conditions (notes)</label>
-          <textarea
-            value={accessNotes}
-            onChange={(e) => setAccessNotes(e.target.value)}
-            placeholder="Elevator reserved, loading dock, stairs, parking, access notes..."
-            rows={4}
-            className="w-full min-h-[88px] px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none resize-none"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Complexity indicators</label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {COMPLEXITY_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setComplexityIndicators((prev) => (prev.includes(preset) ? prev.filter((p) => p !== preset) : [...prev, preset]))}
-                className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${complexityIndicators.includes(preset) ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
-              >
-                {preset}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={customComplexity}
-              onChange={(e) => setCustomComplexity(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && customComplexity.trim()) {
-                  e.preventDefault();
-                  setComplexityIndicators((prev) => (prev.includes(customComplexity.trim()) ? prev : [...prev, customComplexity.trim()]));
-                  setCustomComplexity("");
-                }
-              }}
-              placeholder="Add custom (press Enter)"
-              className="flex-1 px-4 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
-            />
+    <ModalOverlay open={open} onClose={onClose} title="Edit move details" maxWidth="lg">
+      <form onSubmit={handleSave} className="flex flex-col min-h-0">
+        <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
+          {/* Location */}
+          <section className="space-y-4">
+            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+              <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
+              Location
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <Field label="From address">
+                  <input
+                    value={fromAddress}
+                    onChange={(e) => setFromAddress(e.target.value)}
+                    placeholder="Origin address"
+                    className={inputBase}
+                  />
+                </Field>
+                <Field label="From access">
+                  <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={inputBase}>
+                    <option value="">Select…</option>
+                    {ACCESS_OPTIONS.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <div className="space-y-3">
+                <Field label="To address">
+                  <input
+                    value={toAddress}
+                    onChange={(e) => setToAddress(e.target.value)}
+                    placeholder="Destination address"
+                    className={inputBase}
+                  />
+                </Field>
+                <Field label="To access">
+                  <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={inputBase}>
+                    <option value="">Select…</option>
+                    {ACCESS_OPTIONS.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          </section>
+
+          {/* Schedule */}
+          <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
+            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+              <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
+              Schedule
+            </h3>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="Date">
+                <input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className={inputBase}
+                />
+              </Field>
+              <Field label="Time">
+                <select value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className={inputBase}>
+                  <option value="">Select…</option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                  {scheduledTime && !TIME_OPTIONS.includes(scheduledTime) && (
+                    <option value={scheduledTime}>{scheduledTime}</option>
+                  )}
+                </select>
+              </Field>
+              <Field label="Arrival window">
+                <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={inputBase}>
+                  <option value="">Select window…</option>
+                  {TIME_WINDOW_OPTIONS.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                  {arrivalWindow && !TIME_WINDOW_OPTIONS.includes(arrivalWindow) && (
+                    <option value={arrivalWindow}>{arrivalWindow}</option>
+                  )}
+                </select>
+              </Field>
+            </div>
+          </section>
+
+          {/* Crew */}
+          {crews.length > 0 && (
+            <section className="pt-4 border-t border-[var(--brd)]/60">
+              <Field label="Crew (for live tracking)">
+                <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputBase}>
+                  <option value="">No crew assigned</option>
+                  {crews.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </Field>
+            </section>
+          )}
+
+          {/* Access notes */}
+          <section className="pt-4 border-t border-[var(--brd)]/60">
+            <Field label="Access & conditions notes">
+              <textarea
+                value={accessNotes}
+                onChange={(e) => setAccessNotes(e.target.value)}
+                placeholder="Elevator reserved, loading dock, stairs, parking, access notes..."
+                rows={2}
+                className={`${inputBase} resize-none min-h-[72px]`}
+              />
+            </Field>
+          </section>
+
+          {/* Optional: Complexity & Internal notes */}
+          <section className="pt-4 border-t border-[var(--brd)]/60">
             <button
               type="button"
-              onClick={() => {
-                if (customComplexity.trim() && !complexityIndicators.includes(customComplexity.trim())) {
-                  setComplexityIndicators((prev) => [...prev, customComplexity.trim()]);
-                  setCustomComplexity("");
-                }
-              }}
-              className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
+              onClick={() => setShowOptional(!showOptional)}
+              className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
             >
-              Add
+              {showOptional ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {showOptional ? "Hide" : "Show"} optional details
             </button>
-          </div>
-          {complexityIndicators.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {complexityIndicators.map((ind) => (
-                <span key={ind} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
-                  {ind}
-                  <button type="button" onClick={() => setComplexityIndicators((prev) => prev.filter((p) => p !== ind))} className="hover:text-[var(--red)]" aria-label={`Remove ${ind}`}>×</button>
-                </span>
-              ))}
-            </div>
-          )}
+            {showOptional && (
+              <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
+                <Field label="Complexity indicators">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {COMPLEXITY_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => toggleComplexity(preset)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                          complexityIndicators.includes(preset)
+                            ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40"
+                            : "bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={customComplexity}
+                      onChange={(e) => setCustomComplexity(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addCustomComplexity();
+                        }
+                      }}
+                      placeholder="Add custom (Enter to add)"
+                      className={`${inputBase} flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomComplexity}
+                      className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Internal notes">
+                  <textarea
+                    value={internalNotes}
+                    onChange={(e) => setInternalNotes(e.target.value)}
+                    placeholder="Client preferences, special instructions, internal-only..."
+                    rows={3}
+                    className={`${inputBase} resize-none min-h-[72px]`}
+                  />
+                </Field>
+              </div>
+            )}
+          </section>
         </div>
-        <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Internal notes</label>
-          <textarea
-            value={internalNotes}
-            onChange={(e) => setInternalNotes(e.target.value)}
-            placeholder="Client preferences, special instructions, internal-only notes..."
-            rows={4}
-            className="w-full min-h-[88px] px-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none resize-none"
-          />
-        </div>
-        <div className="flex gap-2 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
+
+        {/* Sticky footer */}
+        <div className="shrink-0 px-5 sm:px-6 py-4 border-t border-[var(--brd)] bg-[var(--card)] flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-lg text-[12px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+          >
             Cancel
           </button>
-          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">
-            {saving ? "Saving…" : "Save"}
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
-      </div>
+      </form>
     </ModalOverlay>
   );
 }

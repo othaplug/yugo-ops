@@ -12,7 +12,7 @@ export type MoveStatus = (typeof MOVE_STATUS_OPTIONS)[number]["value"];
 
 /** Live tracking progress (day-of-move) */
 export const LIVE_TRACKING_STAGES = [
-  { key: "on_route", label: "On route to you" },
+  { key: "on_route", label: "En Route" },
   { key: "arrived_on_site", label: "Arrived On-Site" },
   { key: "loading", label: "Loading" },
   { key: "in_transit", label: "In Transit" },

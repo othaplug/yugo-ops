@@ -110,7 +110,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
                 onChange={async (e) => {
                   const v = e.target.value as string;
-                  const { data } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  const { data, error } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (error) {
+                    toast(error.message || "Failed to update status", "alertTriangle");
+                    return;
+                  }
                   if (data) setMove(data);
                   setEditingCard(null);
                   router.refresh();
@@ -135,9 +139,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             )}
           </div>
 
-          {(move.status === "in_progress" || move.status === "in-transit" || move.status === "dispatched") && (
-            <div className="group/card relative flex items-center gap-2 min-w-0">
-              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Live stage</span>
+          <div className="group/card relative flex items-center gap-2 min-w-0">
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Live stage</span>
               {editingCard === "stage" ? (
                 <select
                   defaultValue={move.stage ?? "on_route"}
@@ -166,7 +169,6 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 </button>
               )}
             </div>
-          )}
 
           <div className="flex items-center gap-1.5 pl-4 ml-2 border-l border-[var(--brd)]/50">
             <span className="text-[9px] font-medium tracking-wide uppercase text-[var(--tx3)]/90">

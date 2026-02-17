@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         to_address: toAddress,
         delivery_address: toAddress,
         estimate,
-        status: "pending",
+        status: "confirmed",
         stage: "quote",
         scheduled_date: (body.scheduled_date as string)?.trim() || null,
         scheduled_time: (body.scheduled_time as string)?.trim() || null,
