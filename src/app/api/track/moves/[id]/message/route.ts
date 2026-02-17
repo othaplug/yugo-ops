@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { getMoveCode } from "@/lib/move-code";
+import { sendPushToUser } from "@/lib/web-push";
 
 async function sendToSlack(moveId: string, clientName: string, message: string, moveCode: string) {
   const token = process.env.SLACK_BOT_TOKEN;
@@ -22,6 +23,27 @@ async function sendToSlack(moveId: string, clientName: string, message: string, 
   } catch {
     // Slack optional
   }
+}
+
+/** Send push notification to all staff (admin, manager, dispatcher; superadmin if in platform_users). */
+async function notifyStaffClientMessage(
+  moveCode: string,
+  clientName: string,
+  message: string
+) {
+  const admin = createAdminClient();
+  const { data: platformUsers } = await admin
+    .from("platform_users")
+    .select("user_id")
+    .in("role", ["admin", "manager", "dispatcher"]);
+  const userIds = platformUsers?.map((r) => r.user_id) ?? [];
+  const title = `Client message (${moveCode})`;
+  const body = `${clientName || "Client"}: ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`;
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const url = baseUrl ? `${baseUrl}/admin/messages` : "/admin/messages";
+  await Promise.allSettled(
+    userIds.map((userId) => sendPushToUser(userId, { title, body, url }))
+  );
 }
 
 export async function POST(
@@ -64,7 +86,34 @@ export async function POST(
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
     const moveCode = getMoveCode({ id: moveId });
-    await sendToSlack(moveId, move.client_name || "", message, moveCode);
+    const clientName = move.client_name || "Client";
+
+    await sendToSlack(moveId, clientName, message, moveCode);
+
+    // Insert into messages table so it appears in admin Messages page thread
+    await admin.from("messages").insert({
+      thread_id: moveId,
+      sender_name: clientName,
+      sender_type: "client",
+      content: message,
+      is_read: false,
+    });
+
+    // Activity feed (command center) – use admin so unauthenticated track request can write
+    try {
+      await admin.from("status_events").insert({
+        entity_type: "move",
+        entity_id: moveId,
+        event_type: "client_message",
+        description: `Client message (${moveCode}): ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`,
+        icon: "mail",
+      });
+    } catch {
+      // status_events table may not exist in some envs
+    }
+
+    // Push to admin, manager, dispatcher (and superadmin if in platform_users)
+    notifyStaffClientMessage(moveCode, clientName, message).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

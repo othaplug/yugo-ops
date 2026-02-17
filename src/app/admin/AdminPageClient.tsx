@@ -62,6 +62,16 @@ type Move = {
   move_type?: string;
 };
 
+type ActivityEvent = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  event_type: string;
+  description: string | null;
+  icon: string | null;
+  created_at: string;
+};
+
 interface AdminPageClientProps {
   todayDeliveries: Delivery[];
   allDeliveries: Delivery[];
@@ -69,7 +79,38 @@ interface AdminPageClientProps {
   overdueAmount: number;
   categoryBgs: Record<string, string>;
   categoryIcons: Record<string, string>;
+  activityEvents?: ActivityEvent[];
 }
+
+function getActivityHref(e: ActivityEvent): string {
+  if (e.entity_type === "move") return `/admin/moves/${e.entity_id}`;
+  if (e.entity_type === "delivery") return "/admin/deliveries";
+  if (e.entity_type === "invoice") return "/admin/invoices";
+  return "/admin";
+}
+
+function formatActivityTime(createdAt: string): string {
+  const d = new Date(createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+const ICON_BG: Record<string, string> = {
+  mail: "var(--bldim)",
+  check: "var(--grdim)",
+  dollar: "var(--grdim)",
+  truck: "var(--gdim)",
+  package: "var(--gdim)",
+  party: "var(--gdim)",
+  clipboard: "var(--bldim)",
+  home: "var(--gdim)",
+};
 
 export default function AdminPageClient({
   todayDeliveries,
@@ -78,6 +119,7 @@ export default function AdminPageClient({
   overdueAmount,
   categoryBgs,
   categoryIcons,
+  activityEvents = [],
 }: AdminPageClientProps) {
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("");
   const [moveStatusFilter, setMoveStatusFilter] = useState("");
@@ -238,23 +280,40 @@ export default function AdminPageClient({
         <div className="panel">
           <div className="sh">
             <div className="sh-t">Activity</div>
+            {activityEvents.length > 0 && (
+              <Link href="/admin/messages" className="sh-l">Messages →</Link>
+            )}
           </div>
-          {[
-            { ic: "package", bg: "var(--gdim)", t: "DEL in transit", tm: "9:12 AM", href: "/admin/deliveries" },
-            { ic: "check", bg: "var(--grdim)", t: "INV paid ($1,800)", tm: "8:45 AM", href: "/admin/invoices" },
-            { ic: "home", bg: "var(--gdim)", t: "MV-001 materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
-            { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
-          ].map((a) => (
-            <Link key={a.t} href={a.href} className="act-item block hover:opacity-90 transition-opacity">
-              <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}>
-                <Icon name={a.ic} className="w-[14px] h-[14px]" />
-              </div>
-              <div className="act-body">
-                <div className="act-t">{a.t}</div>
-                <div className="act-tm">{a.tm}</div>
-              </div>
-            </Link>
-          ))}
+          {activityEvents.length > 0 ? (
+            activityEvents.map((a) => (
+              <Link key={a.id} href={getActivityHref(a)} className="act-item block hover:opacity-90 transition-opacity">
+                <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[a.icon || ""] || "var(--gdim)" }}>
+                  <Icon name={a.icon || "package"} className="w-[14px] h-[14px]" />
+                </div>
+                <div className="act-body">
+                  <div className="act-t">{a.description || a.event_type}</div>
+                  <div className="act-tm">{formatActivityTime(a.created_at)}</div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            [
+              { ic: "package", bg: "var(--gdim)", t: "DEL in transit", tm: "9:12 AM", href: "/admin/deliveries" },
+              { ic: "check", bg: "var(--grdim)", t: "INV paid ($1,800)", tm: "8:45 AM", href: "/admin/invoices" },
+              { ic: "home", bg: "var(--gdim)", t: "MV-001 materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
+              { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
+            ].map((a) => (
+              <Link key={a.t} href={a.href} className="act-item block hover:opacity-90 transition-opacity">
+                <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}>
+                  <Icon name={a.ic} className="w-[14px] h-[14px]" />
+                </div>
+                <div className="act-body">
+                  <div className="act-t">{a.t}</div>
+                  <div className="act-tm">{a.tm}</div>
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </div>

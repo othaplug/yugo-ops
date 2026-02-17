@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 
@@ -14,8 +13,8 @@ export async function GET(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
-    const { data: docs, error } = await supabase
+    const admin = createAdminClient();
+    const { data: docs, error } = await admin
       .from("move_documents")
       .select("id, type, title, storage_path, external_url, created_at")
       .eq("move_id", moveId)
@@ -28,7 +27,7 @@ export async function GET(
       (docs ?? []).map(async (d) => {
         let viewUrl = d.external_url ?? null;
         if (!viewUrl && d.storage_path) {
-          const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(d.storage_path, 3600);
+          const { data: signed } = await admin.storage.from(bucket).createSignedUrl(d.storage_path, 3600);
           viewUrl = signed?.signedUrl ?? null;
         }
         return { ...d, view_url: viewUrl };

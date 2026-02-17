@@ -9,15 +9,29 @@ export default async function AdminPage() {
     { data: deliveries },
     { data: moves },
     { data: invoices },
+    activityResult,
   ] = await Promise.all([
     supabase.from("deliveries").select("*").order("scheduled_date", { ascending: true }),
     supabase.from("moves").select("*"),
     supabase.from("invoices").select("*"),
+    (async () => {
+      try {
+        const r = await supabase
+          .from("status_events")
+          .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+          .order("created_at", { ascending: false })
+          .limit(15);
+        return r;
+      } catch {
+        return { data: [] };
+      }
+    })(),
   ]);
 
   const allDeliveries = deliveries || [];
   const allMoves = moves || [];
   const allInvoices = invoices || [];
+  const activity = activityResult?.data ?? [];
 
   const todayDeliveries = allDeliveries.filter((d) => d.scheduled_date === today);
   const overdueAmount = allInvoices
@@ -46,6 +60,7 @@ export default async function AdminPage() {
       overdueAmount={overdueAmount}
       categoryBgs={categoryBgs}
       categoryIcons={categoryIcons}
+      activityEvents={activity}
     />
   );
 }

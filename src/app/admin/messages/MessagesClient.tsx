@@ -293,6 +293,14 @@ export default function MessagesClient({
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-semibold text-[var(--tx)]">Conversation</div>
                 </div>
+                {openThread && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(openThread) && (
+                  <a
+                    href={`/admin/moves/${openThread}`}
+                    className="text-[11px] font-semibold text-[var(--gold)] hover:underline shrink-0"
+                  >
+                    View move →
+                  </a>
+                )}
               </div>
 
               <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">

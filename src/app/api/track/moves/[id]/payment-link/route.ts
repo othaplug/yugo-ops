@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
-import { squareClient } from "@/lib/square";
+import { SquareClient, SquareEnvironment } from "square";
 
 export async function POST(
   req: NextRequest,
@@ -20,6 +20,14 @@ export async function POST(
       { status: 503 }
     );
   }
+
+  const squareClient = new SquareClient({
+    token: accessToken,
+    environment:
+      process.env.NODE_ENV === "production"
+        ? SquareEnvironment.Production
+        : SquareEnvironment.Sandbox,
+  });
 
   try {
     const admin = createAdminClient();
@@ -72,8 +80,13 @@ export async function POST(
     });
 
     if (createRes.errors && createRes.errors.length > 0) {
-      const msg = (createRes.errors[0] as { message?: string })?.message || "Square error";
-      return NextResponse.json({ error: msg }, { status: 502 });
+      const first = createRes.errors[0] as { code?: string; message?: string; detail?: string };
+      const msg = first?.message || first?.detail || "Square error";
+      const isAuth = first?.code === "UNAUTHORIZED" || (first as { category?: string })?.category === "AUTHENTICATION_ERROR";
+      return NextResponse.json(
+        { error: isAuth ? "Payment provider authentication failed. Please check Square credentials (token and Sandbox vs Production)." : msg },
+        { status: isAuth ? 502 : 502 }
+      );
     }
 
     const url = createRes.paymentLink?.url || (createRes.paymentLink as { longUrl?: string })?.longUrl || null;

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 
@@ -12,8 +11,8 @@ export async function GET(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
-    const { data: photos, error } = await supabase
+    const admin = createAdminClient();
+    const { data: photos, error } = await admin
       .from("move_photos")
       .select("id, storage_path, caption, sort_order")
       .eq("move_id", moveId)
@@ -25,7 +24,7 @@ export async function GET(
     const bucket = "move-photos";
     const urls: { id: string; url: string; caption: string | null }[] = [];
     for (const p of photos ?? []) {
-      const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(p.storage_path, 3600);
+      const { data: signed } = await admin.storage.from(bucket).createSignedUrl(p.storage_path, 3600);
       urls.push({ id: p.id, url: signed?.signedUrl ?? "", caption: p.caption });
     }
 
