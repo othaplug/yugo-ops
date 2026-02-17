@@ -141,10 +141,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           </div>
 
           <div className="group/card relative flex items-center gap-2 min-w-0">
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Live stage</span>
+            <span className="inline-flex items-center gap-1.5 text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+              <span className="relative flex h-1.5 w-1.5" aria-hidden>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
+              </span>
+              Live stage
+            </span>
               {editingCard === "stage" ? (
                 <select
-                  defaultValue={move.stage ?? "on_route"}
+                  defaultValue={move.stage ?? "pending"}
                   className="text-[11px] bg-transparent border-b border-[var(--brd)] px-0 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
                   onChange={async (e) => {
                     const v = e.target.value || null;

@@ -43,11 +43,18 @@ export async function GET(
         ? { lat: move.from_lat, lng: move.from_lng }
         : { lat: 43.665, lng: -79.385 };
 
-    return NextResponse.json({
-      crew,
-      center,
-      liveStage: move.stage || null,
-    });
+    return NextResponse.json(
+      {
+        crew,
+        center,
+        liveStage: move.stage || null,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

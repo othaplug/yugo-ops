@@ -100,6 +100,7 @@ function formatStatusLabel(status: string): string {
 }
 
 const LIVE_STAGE_LABELS: Record<string, string> = {
+  pending: "Pending",
   on_route: "En Route",
   arrived_on_site: "Arrived On-Site",
   loading: "Loading",
@@ -124,6 +125,7 @@ const STATUS_INDEX: Record<string, number> = {
 };
 
 const STAGE_INDEX: Record<string, number> = {
+  pending: -1,
   on_route: 0,
   arrived_on_site: 1,
   loading: 2,

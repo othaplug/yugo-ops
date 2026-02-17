@@ -10,8 +10,9 @@ export const MOVE_STATUS_OPTIONS = [
 
 export type MoveStatus = (typeof MOVE_STATUS_OPTIONS)[number]["value"];
 
-/** Live tracking progress (day-of-move) */
+/** Live tracking progress (day-of-move). Pending = not in progress yet. */
 export const LIVE_TRACKING_STAGES = [
+  { key: "pending", label: "Pending" },
   { key: "on_route", label: "En Route" },
   { key: "arrived_on_site", label: "Arrived On-Site" },
   { key: "loading", label: "Loading" },
@@ -22,7 +23,9 @@ export const LIVE_TRACKING_STAGES = [
 
 export type LiveTrackingStage = (typeof LIVE_TRACKING_STAGES)[number]["key"];
 
+/** Index for progress bar: pending = -1 (0%), then 0–5 for the six active stages. */
 export const LIVE_STAGE_MAP: Record<string, number> = {
+  pending: -1,
   on_route: 0,
   arrived_on_site: 1,
   loading: 2,

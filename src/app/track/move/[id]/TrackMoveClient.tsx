@@ -63,18 +63,29 @@ export default function TrackMoveClient({
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
+  const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
 
   useEffect(() => {
     setLiveStage(move.stage || null);
   }, [move.stage]);
 
+  // Auto-hide "your move status was recently updated" card after 5s when arriving from notify email
   useEffect(() => {
-    if (activeTab !== "track") return;
+    if (!fromNotify) return;
+    const t = setTimeout(() => setShowNotifyBanner(false), 5000);
+    return () => clearTimeout(t);
+  }, [fromNotify]);
+
+  // Poll crew-status (including liveStage) so client stays in sync when admin updates stage
+  useEffect(() => {
     const poll = async () => {
       try {
-        const res = await fetch(`/api/track/moves/${move.id}/crew-status?token=${encodeURIComponent(token)}`);
+        const res = await fetch(
+          `/api/track/moves/${move.id}/crew-status?token=${encodeURIComponent(token)}`,
+          { cache: "no-store" }
+        );
         const data = await res.json();
-        if (data.liveStage != null) setLiveStage(data.liveStage);
+        if (res.ok && data && "liveStage" in data) setLiveStage(data.liveStage ?? null);
       } catch {
         // ignore
       }
@@ -82,7 +93,7 @@ export default function TrackMoveClient({
     poll();
     const id = setInterval(poll, 10000);
     return () => clearInterval(id);
-  }, [activeTab, move.id, token]);
+  }, [move.id, token]);
 
   const moveCode = getMoveCode(move);
   const displayCode = moveCode.startsWith("MV") ? `YG-${moveCode.slice(2)}` : moveCode;
@@ -152,13 +163,22 @@ export default function TrackMoveClient({
 
       <main className="max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full">
         {fromNotify && (
-          <div className="mb-5 rounded-xl border border-[#C9A962]/40 bg-[#C9A962]/10 px-4 py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#C9A962]/20 flex items-center justify-center shrink-0">
-              <Icon name="check" className="w-4 h-4 text-[#C9A962]" />
-            </div>
-            <div>
-              <div className="text-[13px] font-semibold text-[#1A1A1A]">Your move status was recently updated</div>
-              <div className="text-[11px] text-[#666]">View the details below to see what changed.</div>
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-out mb-5"
+            style={{ gridTemplateRows: showNotifyBanner ? "1fr" : "0fr" }}
+          >
+            <div className="overflow-hidden">
+              <div
+                className={`rounded-xl border border-[#C9A962]/40 bg-[#C9A962]/10 px-4 py-3 flex items-center gap-3 transition-opacity duration-300 ease-out ${showNotifyBanner ? "opacity-100" : "opacity-0"}`}
+              >
+                <div className="w-8 h-8 rounded-full bg-[#C9A962]/20 flex items-center justify-center shrink-0">
+                  <Icon name="check" className="w-4 h-4 text-[#C9A962]" />
+                </div>
+                <div>
+                  <div className="text-[13px] font-semibold text-[#1A1A1A]">Your move status was recently updated</div>
+                  <div className="text-[11px] text-[#666]">View the details below to see what changed.</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -331,7 +351,7 @@ export default function TrackMoveClient({
                       className="h-full rounded-full transition-all duration-700 ease-out"
                       style={{
                         width: `${move.status === "in_progress" && liveStage != null
-                          ? 100 * ((LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1) / 6
+                          ? 100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1) / 6
                           : 0}%`,
                         background: "linear-gradient(90deg, #ECDEC4, #C9A962)",
                       }}
@@ -342,20 +362,6 @@ export default function TrackMoveClient({
                       ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
                       : "Not started — live stages begin when move is in progress"}
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {LIVE_TRACKING_STAGES.map((s, i) => {
-                    const liveIdx = move.status === "in_progress" ? (LIVE_STAGE_MAP[liveStage || ""] ?? -1) : -1;
-                    const state = liveIdx < 0 ? "wait" : i < liveIdx ? "done" : i === liveIdx ? "act" : "wait";
-                    return (
-                      <span
-                        key={s.key}
-                        className={`text-[12px] font-medium ${state === "done" ? "text-[#C9A962]" : state === "act" ? "text-[#B89A52]" : "text-[#999]"}`}
-                      >
-                        {s.label}
-                      </span>
-                    );
-                  })}
                 </div>
               </div>
             </div>
