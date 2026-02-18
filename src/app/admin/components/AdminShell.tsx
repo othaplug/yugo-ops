@@ -121,22 +121,22 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       <NotificationProvider>
         <ToastProvider>
           <div className="flex min-h-screen bg-[var(--bg)]">
-            {/* Mobile overlay - covers main content only, NOT the sidebar (so sidebar stays crisp in light mode) */}
+            {/* Mobile overlay - subtle dim, no heavy blur */}
             {sidebarOpen && (
               <div
-                className="fixed top-0 right-0 bottom-0 left-0 z-40 md:hidden bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-40 md:hidden bg-black/35"
                 style={{ left: "220px" }}
                 onClick={() => setSidebarOpen(false)}
                 aria-hidden="true"
               />
             )}
 
-            {/* Sidebar - glass, collapsible */}
+            {/* Sidebar - no overflow, seamless on mobile */}
             <aside
               className={`
-                fixed top-0 left-0 z-50 h-screen flex flex-col
-                bg-[var(--bg2)]/70 backdrop-blur-xl border-r border-[var(--brd)]/50
-                transition-all duration-300 ease-out sidebar-scroll
+                fixed top-0 left-0 z-50 h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
+                bg-[var(--bg2)] border-r border-[var(--brd)]
+                transition-all duration-300 ease-out
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
                 ${sidebarCollapsed ? "md:w-0 md:overflow-hidden md:border-0" : "w-[220px]"}
               `}
@@ -173,8 +173,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 </div>
               </div>
 
-              {/* Nav sections - scrollable, collapsible. min-h-0 + flex-1 allows proper scroll; pb-safe for iOS */}
-              <nav className={`flex-1 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
+              {/* Nav sections - scrollable inside sidebar, no overflow past viewport */}
+              <nav className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
                 {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
                   const hasActive = section.items.some((item) => isActive(item.href));

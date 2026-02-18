@@ -121,19 +121,19 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
         </Link>
       </div>
 
-      {/* Trend + Period Selector */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
-            Revenue Trend{period === "monthly" ? ` — ${new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}` : ""}
-          </h3>
-          <div className="flex gap-1 p-1 bg-[var(--bg)] rounded-lg">
+      {/* Revenue Trend - clean chart, axis labels, value on hover/selected only */}
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+        <h3 className="font-heading text-[15px] font-bold text-[var(--tx)] mb-1">
+          Revenue Trend{period === "monthly" ? ` — ${new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}` : ""}
+        </h3>
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="flex gap-0.5 p-1 bg-[var(--bg)]/80 rounded-full">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
                 onClick={() => setPeriod(opt.key)}
-                className={`px-2.5 py-1 rounded text-[10px] font-semibold transition-all ${
-                  period === opt.key ? "bg-[var(--gold)] text-[#0D0D0D]" : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 ${
+                  period === opt.key ? "bg-[var(--gold)] text-[#0D0D0D] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
                 }`}
               >
                 {opt.label}
@@ -141,43 +141,59 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
             ))}
           </div>
         </div>
-        <div className={`flex items-end gap-2 h-[140px] overflow-x-auto pb-2 ${period === "monthly" ? "min-w-0" : "justify-between"}`} style={period === "monthly" ? { scrollbarWidth: "thin" } : undefined}>
-          {months.map((m, i) => {
-            const maxVal = Math.max(40000, ...trendData);
-            const barHeight = Math.max(16, Math.round((trendData[i] / maxVal) * 100));
-            const isHovered = hoveredBar === i;
-            const isCurrent = i === months.length - 1;
-            const showValue = period === "monthly" ? (isHovered || isCurrent) : true;
-            return (
-              <button
-                key={`${m}-${i}`}
-                type="button"
-                onMouseEnter={() => setHoveredBar(i)}
-                onMouseLeave={() => setHoveredBar(null)}
-                onClick={() => setHoveredBar(i)}
-                className={`flex flex-col items-center gap-2 cursor-pointer group ${period === "monthly" ? "min-w-[36px] flex-shrink-0" : "flex-1 min-w-0"}`}
-              >
-                <span className={`text-[10px] font-semibold tabular-nums min-h-[14px] ${showValue ? "text-[var(--tx2)]" : "text-transparent"}`} aria-hidden={!showValue}>
-                  {showValue ? formatCurrency(trendData[i]) : "\u00A0"}
-                </span>
-                <div className="w-full flex-1 flex flex-col justify-end min-h-[60px]">
-                  <div
-                    className="w-full rounded-t-md transition-all duration-300 ease-out cursor-pointer"
-                    style={{
-                      height: `${barHeight}px`,
-                      background: isHovered || isCurrent
-                        ? "linear-gradient(180deg, var(--gold2) 0%, var(--gold) 100%)"
-                        : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, var(--brd) 100%)",
-                      boxShadow: isHovered || isCurrent ? "0 -2px 8px rgba(212,175,55,0.3)" : "none",
-                      transform: isHovered ? "scaleY(1.02)" : "scaleY(1)",
-                      transformOrigin: "bottom",
-                    }}
-                  />
-                </div>
-                <span className="text-[9px] font-medium text-[var(--tx3)]">{m}</span>
-              </button>
-            );
-          })}
+        <div className="flex gap-4 min-h-[180px]">
+          {/* Left axis - 0, 10K, 20K, ... */}
+          <div className="flex flex-col justify-between py-1 text-[9px] font-medium text-[var(--tx3)] shrink-0 w-10">
+            {(() => {
+              const maxVal = Math.max(40000, ...trendData);
+              const step = maxVal <= 20000 ? 5000 : maxVal <= 40000 ? 10000 : 20000;
+              const ticks = [];
+              for (let v = 0; v <= maxVal; v += step) ticks.push(v);
+              if (ticks[ticks.length - 1] < maxVal) ticks.push(maxVal);
+              return ticks.reverse().map((v) => (
+                <span key={v} className="tabular-nums">{v >= 1000 ? `$${v / 1000}K` : `$${v}`}</span>
+              ));
+            })()}
+          </div>
+          {/* Chart area - scroll on mobile when many bars */}
+          <div className={`flex-1 min-w-0 flex items-end gap-1 md:gap-2 overflow-x-auto overflow-y-hidden pb-1 scrollbar-hide ${period === "monthly" ? "snap-x snap-mandatory" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
+            {months.map((m, i) => {
+              const maxVal = Math.max(40000, ...trendData);
+              const barHeight = Math.max(6, Math.round((trendData[i] / maxVal) * 100));
+              const isHovered = hoveredBar === i;
+              const isCurrent = i === months.length - 1;
+              const showValue = isHovered || isCurrent;
+              return (
+                <button
+                  key={`${m}-${i}`}
+                  type="button"
+                  onMouseEnter={() => setHoveredBar(i)}
+                  onMouseLeave={() => setHoveredBar(null)}
+                  onClick={() => setHoveredBar(i)}
+                  className={`flex flex-col items-center gap-1.5 cursor-pointer group shrink-0 snap-start ${period === "monthly" ? "min-w-[28px]" : "flex-1 min-w-0"}`}
+                >
+                  <span className={`text-[10px] font-semibold tabular-nums min-h-[18px] flex items-end justify-center ${showValue ? "text-[var(--tx)]" : "text-transparent"}`} aria-hidden={!showValue}>
+                    {showValue ? formatCurrency(trendData[i]) : "\u00A0"}
+                  </span>
+                  <div className="w-full flex-1 flex flex-col justify-end min-h-[72px]">
+                    <div
+                      className="w-full rounded-t-lg transition-all duration-300 ease-out min-h-[4px]"
+                      style={{
+                        height: `${barHeight}%`,
+                        background: isHovered || isCurrent
+                          ? "linear-gradient(180deg, var(--gold2) 0%, var(--gold) 100%)"
+                          : "rgba(255,255,255,0.06)",
+                        boxShadow: isHovered || isCurrent ? "0 -2px 12px rgba(201,169,98,0.25)" : "none",
+                        transform: isHovered || isCurrent ? "scale(1.02)" : "scale(1)",
+                        transformOrigin: "bottom",
+                      }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-medium text-[var(--tx3)]">{m}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

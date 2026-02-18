@@ -287,14 +287,16 @@ export default function AdminPageClient({
         </div>
       </div>
 
-      {/* g2 - Monthly Revenue + Activity */}
-      <div className="g2 mt-4">
-        <div className="panel overflow-hidden flex flex-col min-h-0">
-          <div className="sh shrink-0">
-            <div className="sh-t">Monthly Revenue</div>
-            <Link href="/admin/revenue" className="sh-l">Details →</Link>
-          </div>
-          <div className="flex items-end gap-2 h-[130px] pt-1 shrink-0">
+      {/* g2 - Monthly Revenue + Activity: horizontal scroll on mobile, grid on desktop */}
+      <div className="relative mt-4">
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 -mx-4 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
+          {/* Monthly Revenue card */}
+          <div className="min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
+            <div className="sh shrink-0">
+              <div className="sh-t">Monthly Revenue</div>
+              <Link href="/admin/revenue" className="sh-l">Details →</Link>
+            </div>
+            <div className="flex items-end gap-2 h-[130px] pt-1 shrink-0">
             {[
               { m: "Sep", v: 15 },
               { m: "Oct", v: 22 },
@@ -326,12 +328,13 @@ export default function AdminPageClient({
                 </div>
               );
             })}
+            </div>
           </div>
-        </div>
 
-        <div className="panel overflow-hidden flex flex-col min-h-0" style={{ minHeight: 200 }}>
-          <div className="sh shrink-0">
-            <div className="sh-t">Activity</div>
+          {/* Activity card */}
+          <div className="min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
+            <div className="sh shrink-0">
+              <div className="sh-t">Activity</div>
             <button
               type="button"
               onClick={() => setActivityModalOpen(true)}
@@ -399,7 +402,10 @@ export default function AdminPageClient({
               ))}
             </div>
           )}
+          </div>
         </div>
+        {/* Right edge fade - mobile only */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-[var(--bg)] to-transparent md:hidden" aria-hidden="true" />
       </div>
 
       {/* View all activity modal */}

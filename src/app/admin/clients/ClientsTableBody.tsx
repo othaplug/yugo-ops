@@ -75,9 +75,13 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
-              <span className={`inline-flex px-2 py-[2px] rounded text-[8px] font-bold ${c.type === "b2c" ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
-                {c.type === "b2c" ? "Client" : "Partner"}
-              </span>
+              {(() => {
+                const hasBalance = (c.outstanding_balance ?? 0) > 0;
+                const isActive = Number(c.deliveries_per_month ?? 0) > 0;
+                if (hasBalance) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>;
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--bg)] text-[var(--tx3)]">Inactive</span>;
+              })()}
             </div>
           </td>
           <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>

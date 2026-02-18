@@ -79,7 +79,15 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
-              <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--bldim)] text-[var(--blue)]">Client</span>
+              {(() => {
+                const s = (c.move_status || "").toLowerCase();
+                const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
+                const isCompleted = s === "completed";
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                if (isCompleted) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Completed</span>;
+                if (s === "cancelled") return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--rdim)] text-[var(--red)]">Cancelled</span>;
+                return null;
+              })()}
             </div>
           </td>
           <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.move_type === "office" ? "Commercial" : "Residential"}</td>
