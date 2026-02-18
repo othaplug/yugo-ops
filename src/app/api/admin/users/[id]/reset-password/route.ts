@@ -6,12 +6,18 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { user: adminUser, error: authErr } = await requireAdmin();
   if (authErr) return authErr;
   try {
     const { id } = await params;
     if (id.startsWith("inv-") || id.startsWith("partner-")) {
       return NextResponse.json({ error: "Use Resend Invite for pending; manage partners from Clients" }, { status: 400 });
+    }
+    if (adminUser?.id && id === adminUser.id) {
+      return NextResponse.json(
+        { error: "Use Settings to change your own password." },
+        { status: 403 }
+      );
     }
     const body = await req.json();
     const password = typeof body.password === "string" ? body.password : "";
@@ -21,6 +27,15 @@ export async function POST(
     }
 
     const admin = createAdminClient();
+    const { data: targetUser } = await admin.auth.admin.getUserById(id);
+    const targetEmail = (targetUser?.user?.email ?? "").trim().toLowerCase();
+    const adminEmail = (adminUser?.email ?? "").trim().toLowerCase();
+    if (adminEmail && targetEmail && targetEmail === adminEmail) {
+      return NextResponse.json(
+        { error: "For security, you cannot reset password for an account with your own email." },
+        { status: 403 }
+      );
+    }
     const { error } = await admin.auth.admin.updateUserById(id, {
       password,
       user_metadata: { must_change_password: true },

@@ -18,6 +18,9 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [resetUser, setResetUser] = useState<PortalUser | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -96,6 +99,41 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
     setPassword(pwd);
   };
 
+  const generateResetPassword = () => {
+    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
+    let pwd = "";
+    const arr = new Uint8Array(12);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < 12; i++) pwd += chars[arr[i]! % chars.length];
+    setResetPassword(pwd);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetUser) return;
+    if (!resetPassword.trim() || resetPassword.length < 8) {
+      toast("Password must be at least 8 characters", "x");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}/reset-partner-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: resetUser.user_id, new_password: resetPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      toast("New password set and email sent to partner", "mail");
+      setResetUser(null);
+      setResetPassword("");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to reset password", "x");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
@@ -141,6 +179,13 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                     {u.status === "activated" ? "Activated" : "Pending"}
                   </span>
                   <button
+                    type="button"
+                    onClick={() => setResetUser(u)}
+                    className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                  >
+                    Reset password
+                  </button>
+                  <button
                     onClick={() => handleRevoke(u.user_id)}
                     disabled={revoking === u.user_id}
                     className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all disabled:opacity-50"
@@ -153,6 +198,46 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
           </div>
         )}
       </div>
+
+      <ModalOverlay
+        open={!!resetUser}
+        onClose={() => { setResetUser(null); setResetPassword(""); }}
+        title="Reset partner password"
+        maxWidth="md"
+      >
+        {resetUser && (
+          <form onSubmit={handleResetPassword} className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--tx3)]">
+              Set a new temporary password for <strong>{resetUser.name || resetUser.email}</strong>. They will receive an email with the new password and login link.
+            </p>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New temporary password *</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  required
+                  minLength={8}
+                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                />
+                <button type="button" onClick={generateResetPassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+                  Generate
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
+                Cancel
+              </button>
+              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50">
+                {resetLoading ? "Sending…" : "Set password & send email"}
+              </button>
+            </div>
+          </form>
+        )}
+      </ModalOverlay>
 
       <ModalOverlay open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite Portal User" maxWidth="md">
         <form onSubmit={handleInvite} className="p-5 space-y-4">

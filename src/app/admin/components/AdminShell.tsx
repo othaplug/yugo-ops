@@ -63,7 +63,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDa
   "/admin/calendar": { title: "Calendar", subtitle: "Feb 10-14, 2026" },
   "/admin/crew": { title: "Tracking", subtitle: "Live GPS positions" },
   "/admin/partners/retail": { title: "Retail Partners", subtitle: "White-glove delivery" },
-  "/admin/partners/designers": { title: "Designer Dashboard", subtitle: "Projects & vendors" },
+  "/admin/partners/designers": { title: "Designers", subtitle: "" },
   "/admin/partners/hospitality": { title: "Hospitality", subtitle: "FF&E & seasonal" },
   "/admin/partners/gallery": { title: "Art Gallery", subtitle: "Transport & exhibitions" },
   "/admin/partners/realtors": { title: "Realtor Partners", subtitle: "Referrals" },
@@ -88,7 +88,8 @@ function getPageTitle(pathname: string): { title: string; subtitle: string; useC
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   if (pathname.startsWith("/admin/settings/")) return { title: "Profile Settings", subtitle: "Account, security & preferences", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/")) return { title: "Project Details", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project Detail", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/partners/designers/projects")) return { title: "All Projects", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Project", subtitle: "", useClientDate: false };
   if (pathname.match(/^\/admin\/moves\/(?!residential|office|new$)[^/]+$/)) return { title: "Move Detail", subtitle: "", useClientDate: false };

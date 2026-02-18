@@ -4,8 +4,9 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import Badge from "../../components/Badge";
-import { Icon } from "@/components/AppIcons";
+import { StatPctChange } from "../../components/StatPctChange";
 import MoveNotifyButton from "../MoveNotifyButton";
+import MoveDateFilter, { getDateRangeFromPreset } from "../../components/MoveDateFilter";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
@@ -52,35 +53,72 @@ function priceColor(status?: string): string {
   return "text-[var(--gold)]";
 }
 
+const today = new Date().toISOString().slice(0, 10);
+
 export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [moveDatePreset, setMoveDatePreset] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const dateRange = getDateRangeFromPreset(moveDatePreset);
+  const dateFrom = dateRange?.from ?? "";
+  const dateTo = dateRange?.to ?? "";
 
   const filtered = useMemo(() => {
     let list = [...moves];
     if (statusFilter) {
       list = list.filter((m) => (m.status || "").toLowerCase() === statusFilter.toLowerCase());
     }
-    if (dateFrom) {
-      list = list.filter((m) => (m.scheduled_date || "") >= dateFrom);
-    }
-    if (dateTo) {
-      list = list.filter((m) => (m.scheduled_date || "") <= dateTo);
-    }
+    if (dateFrom) list = list.filter((m) => (m.scheduled_date || "") >= dateFrom);
+    if (dateTo) list = list.filter((m) => (m.scheduled_date || "") <= dateTo);
     return list;
   }, [moves, statusFilter, dateFrom, dateTo]);
 
-  const confirmed = filtered.filter((m) => m.status === "confirmed").length;
-  const pipeline = filtered.reduce((sum, m) => sum + Number(m.estimate || 0), 0);
+  const now = new Date();
+  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastMonthStart = now.getMonth() === 0
+    ? `${now.getFullYear() - 1}-12-01`
+    : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, "0")}-01`;
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
 
-  const hasActiveFilters = !!(statusFilter || dateFrom || dateTo);
-  const activeFilterCount = [statusFilter, dateFrom, dateTo].filter(Boolean).length;
+  const totalMoves = moves.length;
+  const totalMovesPrev = moves.filter((m) => {
+    const d = m.scheduled_date || "";
+    return d >= lastMonthStart && d <= lastMonthEnd;
+  }).length;
+  const totalMovesThisMonth = moves.filter((m) => (m.scheduled_date || "") >= thisMonthStart).length;
+
+  const upcomingMoves = moves.filter((m) => (m.scheduled_date || "") >= today).length;
+  const upcomingPrev = (() => {
+    const prevToday = new Date(now);
+    prevToday.setDate(prevToday.getDate() - 30);
+    const pt = prevToday.toISOString().slice(0, 10);
+    return moves.filter((m) => (m.scheduled_date || "") >= pt && (m.scheduled_date || "") < today).length;
+  })();
+
+  const totalRevenue = moves.reduce((sum, m) => sum + Number(m.estimate || 0), 0);
+  const totalRevenuePrev = moves
+    .filter((m) => {
+      const d = m.scheduled_date || "";
+      return d >= lastMonthStart && d <= lastMonthEnd;
+    })
+    .reduce((sum, m) => sum + Number(m.estimate || 0), 0);
+
+  const avgPerMove = moves.length > 0 ? totalRevenue / moves.length : 0;
+  const avgPerMovePrev = totalMovesPrev > 0
+    ? moves
+        .filter((m) => {
+          const d = m.scheduled_date || "";
+          return d >= lastMonthStart && d <= lastMonthEnd;
+        })
+        .reduce((sum, m) => sum + Number(m.estimate || 0), 0) / totalMovesPrev
+    : 0;
+
+  const hasActiveFilters = !!(statusFilter || moveDatePreset);
+  const activeFilterCount = [statusFilter, moveDatePreset].filter(Boolean).length;
   const clearFilters = () => {
     setStatusFilter("");
-    setDateFrom("");
-    setDateTo("");
+    setMoveDatePreset("");
   };
 
   return (
@@ -89,26 +127,38 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 sm:mb-6">
         <Link href="/admin/moves/residential" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Residential Moves</div>
-          <div className="text-xl font-bold font-heading">{filtered.length}</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Moves</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold font-heading text-[var(--tx)]">{totalMoves}</span>
+            <StatPctChange current={totalMovesThisMonth} previous={totalMovesPrev} />
+          </div>
         </Link>
         <Link href="/admin/moves/residential" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Confirmed</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">{confirmed}</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Upcoming Moves</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold font-heading text-[var(--grn)]">{upcomingMoves}</span>
+            <StatPctChange current={upcomingMoves} previous={upcomingPrev} />
+          </div>
         </Link>
         <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Pipeline</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(pipeline)}</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Revenue</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(totalRevenue)}</span>
+            <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
+          </div>
         </Link>
-        <Link href="/admin/moves/new" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all flex items-center justify-center">
-          <span className="text-[10px] font-semibold text-[var(--gold)]">+ New Move</span>
+        <Link href="/admin/moves/residential" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg $/Move</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold font-heading text-[var(--tx)]">{formatCurrency(avgPerMove)}</span>
+            <StatPctChange current={avgPerMove} previous={avgPerMovePrev} />
+          </div>
         </Link>
       </div>
 
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        {/* Desktop: full filter row. Mobile: single Filter button */}
         <div className="flex items-center justify-between gap-2 py-3 px-3 sm:pl-2 sm:pr-3 bg-[var(--bg)]/50 border-b border-[var(--brd)]">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <button
               type="button"
               onClick={() => setFilterOpen(!filterOpen)}
@@ -119,14 +169,14 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               </svg>
               Filter
               {activeFilterCount > 0 && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--bg)] text-[10px] font-bold flex items-center justify-center">
+                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[#0D0D0D] text-[10px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
             </button>
-            <div className="hidden md:flex flex-wrap items-center justify-between gap-x-4 gap-y-2 flex-1">
+            <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-2 flex-1">
               <div className="flex items-center gap-1.5">
-                <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">Status</label>
+                <label className="text-[10px] font-medium text-[var(--tx3)] shrink-0">Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -137,27 +187,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">Start date</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  title="Start date"
-                  aria-label="Start date"
-                  className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[36px] w-[130px]"
-                />
-                <span className="text-[10px] text-[var(--tx3)]">to</span>
-                <label className="sr-only">End date</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  title="End date"
-                  aria-label="End date"
-                  className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[36px] w-[130px]"
-                />
-              </div>
+              <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} />
               {hasActiveFilters && (
                 <button type="button" onClick={clearFilters} className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
                   Clear filters
@@ -165,10 +195,12 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               )}
             </div>
           </div>
+          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
+            + New Move
+          </Link>
         </div>
 
-        {/* Mobile filter bottom sheet */}
-        {(filterOpen) && (
+        {filterOpen && (
           <div className="md:hidden border-b border-[var(--brd)] bg-[var(--bg)]/80 px-3 py-4 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase text-[var(--tx3)]">Filters</span>
@@ -176,7 +208,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
             </div>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</label>
+                <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -188,22 +220,39 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                 </select>
               </div>
               <div>
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Start date</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Move date</label>
+                <select
+                  value={moveDatePreset}
+                  onChange={(e) => setMoveDatePreset(e.target.value)}
                   className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">End date</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
-                />
+                >
+                  <option value="">All dates</option>
+                  <optgroup label="Days">
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="tomorrow">Tomorrow</option>
+                  </optgroup>
+                  <optgroup label="Weeks">
+                    <option value="this_week">This week</option>
+                    <option value="last_week">Last week</option>
+                    <option value="next_week">Next week</option>
+                  </optgroup>
+                  <optgroup label="Months">
+                    <option value="this_month">This month</option>
+                    <option value="last_month">Last month</option>
+                    <option value="next_month">Next month</option>
+                  </optgroup>
+                  <optgroup label="Quarter">
+                    <option value="this_quarter">This quarter</option>
+                    <option value="last_quarter">Last quarter</option>
+                    <option value="next_quarter">Next quarter</option>
+                  </optgroup>
+                  <optgroup label="Years">
+                    <option value="this_year">This year</option>
+                    <option value="last_year">Last year</option>
+                    <option value="next_year">Next year</option>
+                  </optgroup>
+                </select>
               </div>
               {hasActiveFilters && (
                 <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)]">
@@ -226,9 +275,6 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
             >
               <Link href={getMoveDetailPath(m)} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:flex-nowrap">
                 <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--gdim)] shrink-0 text-[var(--tx2)]">
-                    <Icon name="home" className="w-[16px] h-[16px]" />
-                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] sm:text-[11px] font-semibold text-[var(--tx)] break-words line-clamp-2">
                       {m.client_name || "—"}

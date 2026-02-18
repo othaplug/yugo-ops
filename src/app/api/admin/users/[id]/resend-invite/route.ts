@@ -17,11 +17,12 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { user: adminUser, error: authErr } = await requireAdmin();
   if (authErr) return authErr;
   try {
     const { id } = await params;
     const admin = createAdminClient();
+    const adminEmail = (adminUser?.email ?? "").trim().toLowerCase();
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
@@ -29,6 +30,13 @@ export async function POST(
       const invId = id.replace("inv-", "");
       const { data: inv, error: invErr } = await admin.from("invitations").select("email, name, role, temp_password").eq("id", invId).single();
       if (invErr || !inv) return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+      const recipientEmail = (inv.email ?? "").trim().toLowerCase();
+      if (adminEmail && recipientEmail === adminEmail) {
+        return NextResponse.json(
+          { error: "For security, invitation cannot be sent to your own email address." },
+          { status: 403 }
+        );
+      }
       const tempPassword = inv.temp_password || generatePassword();
       if (!inv.temp_password) {
         await admin.from("invitations").update({ temp_password: tempPassword }).eq("id", invId);
@@ -65,6 +73,13 @@ export async function POST(
       email = authUser.email;
       name = (authUser.user_metadata?.full_name as string) || "";
       roleLabel = "User";
+    }
+    const recipientEmail = (email ?? "").trim().toLowerCase();
+    if (adminEmail && recipientEmail === adminEmail) {
+      return NextResponse.json(
+        { error: "For security, invitation cannot be sent to your own email address." },
+        { status: 403 }
+      );
     }
 
     const resend = getResend();

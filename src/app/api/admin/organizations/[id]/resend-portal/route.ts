@@ -8,7 +8,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { user: adminUser, error: authErr } = await requireAdmin();
   if (authErr) return authErr;
   try {
     const { id } = await params;
@@ -26,6 +26,13 @@ export async function POST(
     const toEmail = (org.email || "").trim();
     if (!toEmail) {
       return NextResponse.json({ error: "Client has no email" }, { status: 400 });
+    }
+    const adminEmail = (adminUser?.email ?? "").trim().toLowerCase();
+    if (adminEmail && toEmail.toLowerCase() === adminEmail) {
+      return NextResponse.json(
+        { error: "For security, portal email cannot be sent to your own email address." },
+        { status: 403 }
+      );
     }
 
     let resend;

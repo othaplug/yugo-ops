@@ -8,7 +8,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authError } = await requireAdmin();
+  const { user: adminUser, error: authError } = await requireAdmin();
   if (authError) return authError;
   try {
     const { id: orgId } = await params;
@@ -22,6 +22,13 @@ export async function POST(
     }
 
     const emailTrimmed = email.trim().toLowerCase();
+    const adminEmail = (adminUser?.email ?? "").trim().toLowerCase();
+    if (adminEmail && emailTrimmed === adminEmail) {
+      return NextResponse.json(
+        { error: "For security, you cannot invite your own email as a partner." },
+        { status: 403 }
+      );
+    }
     const nameTrimmed = (name || "").trim();
     const admin = createAdminClient();
 

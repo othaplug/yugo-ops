@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import FilterBar from "./components/FilterBar";
@@ -175,6 +176,15 @@ export default function AdminPageClient({
   const [moveStatusFilter, setMoveStatusFilter] = useState("");
   const [activityModalOpen, setActivityModalOpen] = useState(false);
 
+  useEffect(() => {
+    if (!activityModalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [activityModalOpen]);
+
   const filteredDeliveries = deliveryStatusFilter
     ? (todayDeliveries.length > 0 ? todayDeliveries : allDeliveries.slice(0, 5)).filter(
         (d) => (d.status || "").toLowerCase() === deliveryStatusFilter.toLowerCase()
@@ -289,7 +299,7 @@ export default function AdminPageClient({
 
       {/* g2 - Monthly Revenue + Activity: horizontal scroll on mobile, grid on desktop */}
       <div className="relative mt-4">
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 -mx-4 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
           {/* Monthly Revenue card */}
           <div className="min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
             <div className="sh shrink-0">
@@ -331,8 +341,8 @@ export default function AdminPageClient({
             </div>
           </div>
 
-          {/* Activity card */}
-          <div className="min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
+          {/* Activity card - relative for right-edge fade */}
+          <div className="relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
             <div className="sh shrink-0">
               <div className="sh-t">Activity</div>
             <button
@@ -402,72 +412,70 @@ export default function AdminPageClient({
               ))}
             </div>
           )}
+            {/* Subtle right-edge fade on Activity card (mobile) - indicates more content */}
+            <div className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none bg-gradient-to-l from-[var(--card)]/90 to-transparent md:hidden rounded-r-[20px]" aria-hidden="true" />
           </div>
         </div>
-        {/* Right edge fade - mobile only */}
+        {/* Right edge fade on scroll container - mobile only */}
         <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-[var(--bg)] to-transparent md:hidden" aria-hidden="true" />
       </div>
 
-      {/* View all activity modal */}
-      {activityModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setActivityModalOpen(false)} aria-hidden="true" />
-          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)] shrink-0">
-              <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Activity</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActivityModalOpen(false)}
-                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                >
-                  Mark all read
-                </button>
-                <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none">&times;</button>
+      {activityModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] flex min-h-dvh min-h-screen items-center justify-center p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="activity-modal-title">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setActivityModalOpen(false)} aria-hidden="true" />
+            <div className="relative w-full max-w-md max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden my-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)] shrink-0">
+                <h3 id="activity-modal-title" className="font-heading text-[15px] font-bold text-[var(--tx)]">All Activity</h3>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Mark all read</button>
+                  <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none" aria-label="Close">&times;</button>
+                </div>
+              </div>
+              <div className="overflow-y-auto flex-1 min-h-0 p-2">
+                {activityEvents.length > 0 ? (
+                  groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item) =>
+                    item.count > 1 ? (
+                      <Link
+                        key={item.id}
+                        href={getActivityHref(item.events[0])}
+                        onClick={() => setActivityModalOpen(false)}
+                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
+                      >
+                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                        </div>
+                        <div className="act-body min-w-0">
+                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
+                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <Link
+                        key={item.id}
+                        href={getActivityHref(item.events[0])}
+                        onClick={() => setActivityModalOpen(false)}
+                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
+                      >
+                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                        </div>
+                        <div className="act-body min-w-0">
+                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
+                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                        </div>
+                      </Link>
+                    )
+                  )
+                ) : (
+                  <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No activity yet</div>
+                )}
               </div>
             </div>
-            <div className="overflow-y-auto flex-1 min-h-0 p-2">
-              {activityEvents.length > 0 ? (
-                groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item) => (
-                  item.count > 1 ? (
-                    <Link
-                      key={item.id}
-                      href={getActivityHref(item.events[0])}
-                      onClick={() => setActivityModalOpen(false)}
-                      className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
-                    >
-                      <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                        <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                      </div>
-                      <div className="act-body min-w-0">
-                        <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
-                        <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <Link
-                      key={item.id}
-                      href={getActivityHref(item.events[0])}
-                      onClick={() => setActivityModalOpen(false)}
-                      className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
-                    >
-                      <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                        <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                      </div>
-                      <div className="act-body min-w-0">
-                        <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
-                        <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                      </div>
-                    </Link>
-                  )
-                ))
-              ) : (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No activity yet</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

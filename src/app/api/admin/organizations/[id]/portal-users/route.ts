@@ -12,16 +12,13 @@ export async function GET(
     const { id: orgId } = await params;
     const admin = createAdminClient();
 
-    const { data: org } = await admin.from("organizations").select("user_id").eq("id", orgId).single();
     const { data: partnerUsers } = await admin
       .from("partner_users")
       .select("user_id")
       .eq("org_id", orgId);
 
-    const userIds = new Set<string>();
-    if (org?.user_id) userIds.add(org.user_id);
-    (partnerUsers ?? []).forEach((p) => userIds.add(p.user_id));
-    if (userIds.size === 0) return NextResponse.json([]);
+    const userIds = (partnerUsers ?? []).map((p) => p.user_id).filter(Boolean);
+    if (userIds.length === 0) return NextResponse.json([]);
 
     const { data: { users: authUsers } } = await admin.auth.admin.listUsers();
     const authMap = new Map(

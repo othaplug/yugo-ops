@@ -1,26 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Badge from "../../components/Badge";
+import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
 
-type ExhibitionStatus = "installing" | "staging";
-
-const ACTIVE_EXHIBITIONS: {
+interface GalleryPartner {
   id: string;
-  name: string;
-  gallery: string;
-  location: string;
-  dates: string;
-  startDate: string;
-  endDate: string;
-  works: number;
-  percent: number;
-  status: ExhibitionStatus;
-  details: string;
-}[] = [
-  { id: "1", name: "Feinstein: Convergence", gallery: "Bau-Xi", location: "Main Gallery", dates: "Feb 14 - Mar 28", startDate: "2026-02-14", endDate: "2026-03-28", works: 8, percent: 60, status: "installing", details: "Contemporary oil paintings. 12 pieces from the Convergence series. Climate-controlled transport required." },
-  { id: "2", name: "Group: Northern Light", gallery: "Bau-Xi", location: "Vault", dates: "Mar 1 - Apr 15", startDate: "2026-03-01", endDate: "2026-04-15", works: 12, percent: 25, status: "staging", details: "Group exhibition featuring 6 artists. Mixed media. Staging in progress at Vault space." },
-];
+  name: string | null;
+  contact_name?: string | null;
+  email?: string | null;
+}
 
 function getProgressBarColor(onTrack: boolean, atRisk: boolean, behind: boolean): string {
   if (onTrack) return "bg-[var(--grn)]";
@@ -28,31 +17,41 @@ function getProgressBarColor(onTrack: boolean, atRisk: boolean, behind: boolean)
   return "bg-[var(--red)]";
 }
 
-function getExhibitionProgress(ex: (typeof ACTIVE_EXHIBITIONS)[0]) {
-  const now = new Date();
-  const start = new Date(ex.startDate);
-  const end = new Date(ex.endDate);
-  const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
-  const elapsed = Math.max(0, Math.ceil((now.getTime() - start.getTime()) / 86400000));
-  const daysRemaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
-  const expectedPercent = Math.min(100, Math.round((elapsed / totalDays) * 100));
-  const onTrack = ex.percent >= expectedPercent - 10;
-  const atRisk = ex.percent >= expectedPercent - 25 && ex.percent < expectedPercent - 10;
-  const behind = ex.percent < expectedPercent - 25;
-  return { totalDays, elapsed, daysRemaining, onTrack, atRisk, behind };
+function formatDate(d: string | null): string {
+  if (!d) return "—";
+  const date = new Date(d);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-type Transport = { id: string; title: string; gallery: string; route: string; value: string; date: string; status: "scheduled" | "confirmed"; details: string };
+function formatDateShort(d: string | null): string {
+  if (!d) return "—";
+  const date = new Date(d);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
-const SCHEDULED_TRANSPORTS: Transport[] = [
-  { id: "1", title: "Feinstein Oil #4", gallery: "Bau-Xi", route: "Storage → Main Gallery", value: "$45K", date: "Feb 12", status: "scheduled", details: "Single piece. White-glove handling. Insurance certificate on file." },
-  { id: "2", title: "Maxwell Bronze #2", gallery: "Olga Korper", route: "Foundry → Gallery", value: "$28K", date: "Feb 13", status: "confirmed", details: "Bronze sculpture. Crated. Loading dock at both ends." },
-];
-
-export default function GalleryClient() {
+export default function GalleryClient({ galleryPartners = [] }: { galleryPartners?: GalleryPartner[] }) {
+  const [projects, setProjects] = useState<GalleryProject[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedEx, setExpandedEx] = useState<Set<string>>(new Set());
   const [expandedTrans, setExpandedTrans] = useState<Set<string>>(new Set());
-  const [projectDetail, setProjectDetail] = useState<Transport | null>(null);
+  const [projectDetail, setProjectDetail] = useState<GalleryProject | null>(null);
+  const [editingProject, setEditingProject] = useState<GalleryProject | null>(null);
+
+  const fetchProjects = () => {
+    setLoading(true);
+    fetch("/api/gallery/projects")
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? setProjects(data) : setProjects([])))
+      .catch(() => setProjects([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const exhibitions = projects.filter((p) => p.project_type === "exhibition" || (!p.project_type && p.status !== "delivered"));
+  const transports = projects.filter((p) => ["delivery", "install", "storage_retrieval", "art_fair", "other"].includes(p.project_type || ""));
 
   const toggleEx = (id: string) => {
     setExpandedEx((prev) => {
@@ -72,80 +71,60 @@ export default function GalleryClient() {
     });
   };
 
+  const openDetail = (p: GalleryProject) => {
+    setProjectDetail(p);
+  };
+
+  const openEdit = (p: GalleryProject) => {
+    setEditingProject(p);
+    setProjectDetail(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="mb-6 py-8 text-center text-[12px] text-[var(--tx3)]">Loading projects…</div>
+    );
+  }
+
+  const allProjects = [...exhibitions, ...transports];
+
   return (
     <>
-      {/* Active Exhibitions - collapsible */}
-      <div className="mb-6">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Active Exhibitions</h3>
-        <div className="space-y-2">
-          {ACTIVE_EXHIBITIONS.map((ex) => {
-            const isExpanded = expandedEx.has(ex.id);
-            const progress = getExhibitionProgress(ex);
-            const barColor = getProgressBarColor(progress.onTrack, progress.atRisk, progress.behind);
+      {/* Projects - consolidated exhibitions & transports */}
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
+        <div className="p-4 space-y-2">
+          {allProjects.length === 0 ? (
+            <div className="py-8 text-center text-[12px] text-[var(--tx3)]">
+              No projects yet
+            </div>
+          ) : allProjects.map((ex) => {
+            const isExhibition = exhibitions.some((e) => e.id === ex.id);
+            const isExpanded = isExhibition ? expandedEx.has(ex.id) : expandedTrans.has(ex.id);
+            const toggle = isExhibition ? () => toggleEx(ex.id) : () => toggleTrans(ex.id);
+            const start = ex.start_date ? new Date(ex.start_date) : null;
+            const end = ex.end_date ? new Date(ex.end_date) : null;
+            const dates = start && end ? `${formatDateShort(ex.start_date)} – ${formatDateShort(ex.end_date)}` : "—";
+            const subtitle = isExhibition
+              ? `${ex.gallery || "—"} • ${ex.location || "—"} • ${dates}`
+              : `${ex.gallery || "—"} • ${ex.address || ex.location || "—"} • ${ex.insurance_value || "—"}`;
             return (
               <div key={ex.id} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden hover:border-[var(--gold)] transition-all">
-                <button
-                  type="button"
-                  onClick={() => toggleEx(ex.id)}
-                  className="w-full p-4 flex items-start justify-between gap-3 text-left"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-bold text-[var(--tx)]">{ex.name}</div>
-                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                      {ex.gallery} • {ex.location} • {ex.dates} • {ex.works} works
+                <button type="button" onClick={toggle} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                  {!isExhibition && (
+                    <div className="w-10 h-10 rounded-lg bg-[var(--gdim)] flex items-center justify-center text-[var(--gold)] shrink-0">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M9 21V9" />
+                      </svg>
                     </div>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between gap-2 text-[10px] text-[var(--tx3)]">
-                        <span>{ex.percent}% — {progress.elapsed} of {progress.totalDays} days</span>
-                        <span className="font-semibold text-[var(--tx2)]">{progress.daysRemaining} days left</span>
-                      </div>
-                      <div className="h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
-                        <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${ex.percent}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                  <Badge status={ex.status} />
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}>
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                {isExpanded && (
-                  <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]">
-                    <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{ex.details}</div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Scheduled Transports - collapsible */}
-      <div className="mb-6">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Scheduled Transports</h3>
-        <div className="space-y-2">
-          {SCHEDULED_TRANSPORTS.map((t) => {
-            const isExpanded = expandedTrans.has(t.id);
-            return (
-              <div key={t.id} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden hover:border-[var(--gold)] transition-all">
-                <button
-                  type="button"
-                  onClick={() => toggleTrans(t.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-[var(--gdim)] flex items-center justify-center text-[var(--gold)] shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <path d="M3 9h18M9 21V9" />
-                    </svg>
-                  </div>
+                  )}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-bold text-[var(--tx)]">{t.title}</div>
-                    <div className="text-[10px] text-[var(--tx3)]">{t.gallery} • {t.route} • {t.value}</div>
+                    <div className="text-[12px] font-bold text-[var(--tx)]">{ex.name}</div>
+                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-[10px] text-[var(--tx3)]">{t.date}</div>
-                    <span className="text-[10px] font-semibold text-[var(--blue)]">{t.status}</span>
+                    {!isExhibition && ex.start_date && <div className="text-[10px] text-[var(--tx3)]">{formatDateShort(ex.start_date)}</div>}
+                    <Badge status={ex.status} />
                   </div>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}>
                     <path d="M6 9l6 6 6-6" />
@@ -153,14 +132,9 @@ export default function GalleryClient() {
                 </button>
                 {isExpanded && (
                   <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]">
-                    <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{t.details}</div>
-                    <button
-                      type="button"
-                      onClick={() => setProjectDetail(t)}
-                      className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                    >
-                      View project →
-                    </button>
+                    <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{ex.details || "—"}</div>
+                    <button type="button" onClick={() => openDetail(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline mr-3">View details →</button>
+                    <button type="button" onClick={() => openEdit(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--tx2)] hover:underline">Edit project</button>
                   </div>
                 )}
               </div>
@@ -180,37 +154,64 @@ export default function GalleryClient() {
             </div>
             <div className="space-y-3 text-[12px]">
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Title</div>
-                <div className="text-[var(--tx)] font-semibold">{projectDetail.title}</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Name</div>
+                <div className="text-[var(--tx)] font-semibold">{projectDetail.name}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Gallery</div>
-                <div className="text-[var(--tx)]">{projectDetail.gallery}</div>
+                <div className="text-[var(--tx)]">{projectDetail.gallery || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Route</div>
-                <div className="text-[var(--tx)]">{projectDetail.route}</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Type</div>
+                <div className="text-[var(--tx)]">{(projectDetail.project_type || "—").replace(/_/g, " ")}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Value</div>
-                <div className="text-[var(--gold)] font-semibold">{projectDetail.value}</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Address</div>
+                <div className="text-[var(--tx)]">{projectDetail.address || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Date</div>
-                <div className="text-[var(--tx)]">{projectDetail.date}</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Location</div>
+                <div className="text-[var(--tx)]">{projectDetail.location || "—"}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Dates</div>
+                <div className="text-[var(--tx)]">{projectDetail.start_date ? formatDate(projectDetail.start_date) : "—"} – {projectDetail.end_date ? formatDate(projectDetail.end_date) : "—"}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>
+                <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "—"}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
                 <Badge status={projectDetail.status} />
               </div>
+              {(projectDetail.white_glove || projectDetail.crating_required || projectDetail.climate_controlled) && (
+                <div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Handling</div>
+                  <div className="text-[var(--tx2)]">
+                    {[projectDetail.white_glove && "White-glove", projectDetail.crating_required && "Crating", projectDetail.climate_controlled && "Climate-controlled"].filter(Boolean).join(" • ") || "—"}
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Details</div>
-                <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details}</p>
+                <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
               </div>
             </div>
+            <button type="button" onClick={() => openEdit(projectDetail)} className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)]">
+              Edit project
+            </button>
           </div>
         </div>
       )}
+
+      <EditProjectModal
+        open={!!editingProject}
+        onClose={() => setEditingProject(null)}
+        project={editingProject}
+        galleryPartners={galleryPartners}
+        onSaved={fetchProjects}
+      />
     </>
   );
 }

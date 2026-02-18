@@ -166,8 +166,12 @@ export default function AddressAutocomplete({
 
   useEffect(() => {
     if (!isScriptReady) return;
-    initAutocomplete();
+    // Delay init so input is visible (fixes modals where input mounts when popup opens)
+    const t = setTimeout(() => {
+      initAutocomplete();
+    }, 50);
     return () => {
+      clearTimeout(t);
       autocompleteRef.current = null;
     };
   }, [isScriptReady, initAutocomplete]);

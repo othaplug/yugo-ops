@@ -50,3 +50,16 @@ export async function requireStaff() {
 export function isSuperAdminEmail(email: string | null | undefined): boolean {
   return (email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
+
+/**
+ * Use before sending any sensitive email (invite, password reset, portal welcome).
+ * Prevents an admin from sending credentials or links to their own email (account hijack protection).
+ */
+export function isRecipientSameAsAdmin(
+  adminUser: { email?: string | null } | null,
+  recipientEmail: string | null | undefined
+): boolean {
+  const a = (adminUser?.email ?? "").trim().toLowerCase();
+  const r = (recipientEmail ?? "").trim().toLowerCase();
+  return a.length > 0 && r.length > 0 && a === r;
+}

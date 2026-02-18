@@ -17,6 +17,7 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateFromUrl = searchParams.get("date") || "";
+  const typeFromUrl = searchParams.get("type") || "";
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [pickupAddress, setPickupAddress] = useState("");
@@ -68,12 +69,11 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
       <div className="mb-4"><BackButton label="Back" /></div>
       <form onSubmit={handleSubmit} className="space-y-3">
       <Field label="Project Type">
-        <select name="project_type" required className="field-input">
+        <select name="project_type" required className="field-input" defaultValue={["retail", "designer", "hospitality", "gallery"].includes(typeFromUrl) ? typeFromUrl : "retail"}>
           <option value="retail">Retail</option>
           <option value="designer">Designer</option>
           <option value="hospitality">Hospitality</option>
           <option value="gallery">Art Gallery</option>
-          <option value="b2c">B2C / Residential</option>
         </select>
       </Field>
       <Field label="Client">

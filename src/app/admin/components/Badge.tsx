@@ -9,6 +9,9 @@ const BADGE_COLORS: Record<string, string> = {
   // Exhibition status
   installing: "bg-[var(--ordim)] text-[var(--org)]",
   staging: "bg-[var(--bldim)] text-[var(--blue)]",
+  // Gallery project statuses
+  new: "bg-[var(--gdim)] text-[var(--gold)]",
+  in_transit: "bg-[var(--ordim)] text-[var(--org)]",
   // Standard statuses (non-move)
   pending: "bg-[var(--gdim)] text-[var(--gold)]",
   scheduled: "bg-[var(--bldim)] text-[var(--blue)]",

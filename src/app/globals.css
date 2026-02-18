@@ -6,8 +6,8 @@
   --card: #1E1E1E;
   --brd: #2A2A2A;
   --tx: #E8E5E0;
-  --tx2: #999;
-  --tx3: #666;
+  --tx2: #B0ADA8;
+  --tx3: #8A8782;
   --gold: #C9A962;
   --gold2: #B89A52;
   --gdim: rgba(201,169,98,.08);
@@ -33,17 +33,17 @@
   --card: #FFF;
   --brd: #E8E5E0;
   --tx: #1A1A1A;
-  --tx2: #666;
-  --tx3: #999;
-  --gold: #C9A962;
-  --gold2: #B89A52;
-  --gdim: rgba(201,169,98,.08);
+  --tx2: #444;
+  --tx3: #555;
+  --gold: #A6853E;
+  --gold2: #8B7332;
+  --gdim: rgba(166,133,62,.12);
   --grn: #2D9F5A;
-  --grdim: rgba(45,159,90,.06);
+  --grdim: rgba(45,159,90,.08);
   --org: #D48A29;
-  --ordim: rgba(212,138,41,.08);
+  --ordim: rgba(212,138,41,.12);
   --red: #D14343;
-  --rdim: rgba(209,67,67,.08);
+  --rdim: rgba(209,67,67,.12);
 }
 
 html {
@@ -54,14 +54,18 @@ html {
 
 body {
   font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
   background: var(--bg);
   color: var(--tx);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   min-height: 100dvh;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
 }
+
 
 /* Premium scrollbar - app-wide */
 * {
@@ -398,7 +402,9 @@ div.mapboxgl-ctrl-attrib {
 
 
 /* Google Places Autocomplete – dark theme dropdown (OPS+) */
+/* z-index must be higher than modal (z-[99999]) so dropdown appears above popups */
 .pac-container {
+  z-index: 100001 !important;
   background: #1a1a1a !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
