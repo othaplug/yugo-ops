@@ -127,6 +127,13 @@ body {
   border-color: var(--gold);
 }
 
+/* Date/time picker - dark spinner styling (selected: light on dark gray rounded bg, unselected: dim gray) */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
 /* Elegant checkbox - refined, gold accent */
 .checkbox-elegant {
   appearance: none;

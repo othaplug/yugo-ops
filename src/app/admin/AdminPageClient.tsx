@@ -103,14 +103,48 @@ function formatActivityTime(createdAt: string): string {
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-function formatActivityDescription(desc: string): string {
+function formatActivityDescription(desc: string, eventType?: string): string {
   const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
   if (match) {
     const [, name, status] = match;
-    const statusLabel = (status || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const statusLabel = getStatusLabel(status || null);
     return `${name} · ${statusLabel}`;
   }
+  if (desc.toLowerCase().includes("final payment") || desc.toLowerCase().includes("payment received")) {
+    const nameMatch = desc.match(/(.+?)\s*·|(.+?)\s*—/);
+    const name = nameMatch ? (nameMatch[1] || nameMatch[2] || "").trim() : desc.split(/[·—]/)[0]?.trim() || desc;
+    return `${name} · Paid`;
+  }
   return desc;
+}
+
+function getActivityIcon(eventType: string, description: string | null): string {
+  const et = (eventType || "").toLowerCase();
+  const desc = (description || "").toLowerCase();
+  if (et === "payment" || desc.includes("payment") || desc.includes("paid")) return "dollar";
+  if (et === "client_message" || desc.includes("message")) return "messageSquare";
+  if (et === "created" || desc.includes("new booking") || desc.includes("new referral")) return "calendar";
+  if (et === "status_change" || et === "notification") return "target";
+  return "bell";
+}
+
+const GROUP_WINDOW_MS = 30 * 60 * 1000; // 30 min
+
+function groupActivityEvents(events: ActivityEvent[]): { id: string; events: ActivityEvent[]; count: number }[] {
+  const groups: { id: string; events: ActivityEvent[]; count: number }[] = [];
+  for (const e of events) {
+    const key = `${e.entity_type}:${e.entity_id}`;
+    const last = groups[groups.length - 1];
+    const lastTime = last ? new Date(last.events[0].created_at).getTime() : 0;
+    const thisTime = new Date(e.created_at).getTime();
+    if (last && last.id === key && thisTime - lastTime < GROUP_WINDOW_MS) {
+      last.events.unshift(e);
+      last.count = last.events.length;
+    } else {
+      groups.push({ id: key, events: [e], count: 1 });
+    }
+  }
+  return groups;
 }
 
 const ICON_BG: Record<string, string> = {
@@ -123,6 +157,9 @@ const ICON_BG: Record<string, string> = {
   clipboard: "var(--bldim)",
   home: "var(--gdim)",
   bell: "var(--gdim)",
+  target: "var(--bldim)",
+  messageSquare: "var(--bldim)",
+  calendar: "var(--grdim)",
 };
 
 export default function AdminPageClient({
@@ -136,6 +173,7 @@ export default function AdminPageClient({
 }: AdminPageClientProps) {
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("");
   const [moveStatusFilter, setMoveStatusFilter] = useState("");
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
 
   const filteredDeliveries = deliveryStatusFilter
     ? (todayDeliveries.length > 0 ? todayDeliveries : allDeliveries.slice(0, 5)).filter(
@@ -251,12 +289,12 @@ export default function AdminPageClient({
 
       {/* g2 - Monthly Revenue + Activity */}
       <div className="g2 mt-4">
-        <div className="panel overflow-hidden">
-          <div className="sh">
+        <div className="panel overflow-hidden flex flex-col min-h-0">
+          <div className="sh shrink-0">
             <div className="sh-t">Monthly Revenue</div>
             <Link href="/admin/revenue" className="sh-l">Details →</Link>
           </div>
-          <div className="flex items-end gap-2 h-[130px] pt-1">
+          <div className="flex items-end gap-2 h-[130px] pt-1 shrink-0">
             {[
               { m: "Sep", v: 15 },
               { m: "Oct", v: 22 },
@@ -291,12 +329,16 @@ export default function AdminPageClient({
           </div>
         </div>
 
-        <div className="panel overflow-hidden">
-          <div className="sh">
+        <div className="panel overflow-hidden flex flex-col min-h-0" style={{ minHeight: 200 }}>
+          <div className="sh shrink-0">
             <div className="sh-t">Activity</div>
-            {activityEvents.length > 0 && (
-              <Link href="/admin/messages" className="sh-l">Messages →</Link>
-            )}
+            <button
+              type="button"
+              onClick={() => setActivityModalOpen(true)}
+              className="sh-l bg-transparent border-none cursor-pointer p-0 font-inherit text-inherit"
+            >
+              View all activity →
+            </button>
           </div>
           {activityEvents.length > 0 ? (
             (() => {
@@ -304,24 +346,41 @@ export default function AdminPageClient({
                 if (i === 0) return true;
                 return activityEvents[i - 1].description !== a.description;
               });
+              const grouped = groupActivityEvents(deduped);
               return (
-                <div className="space-y-1">
-                  {deduped.slice(0, 8).map((a) => (
-                <Link key={a.id} href={getActivityHref(a)} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
-                  <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[a.icon || ""] || "var(--gdim)" }}>
-                    <Icon name={a.icon || "mail"} className="w-[14px] h-[14px]" />
-                  </div>
-                  <div className="act-body min-w-0">
-                    <div className="act-t">{formatActivityDescription(a.description || a.event_type)}</div>
-                    <div className="act-tm">{formatActivityTime(a.created_at)}</div>
-                  </div>
-                </Link>
-              ))}
+                <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 220 }}>
+                  {grouped.slice(0, 8).map((item) => (
+                    item.count > 1 ? (
+                      <Link
+                        key={item.id}
+                        href={getActivityHref(item.events[0])}
+                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
+                      >
+                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                        </div>
+                        <div className="act-body min-w-0">
+                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
+                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <Link key={item.id} href={getActivityHref(item.events[0])} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                        </div>
+                        <div className="act-body min-w-0">
+                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
+                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                        </div>
+                      </Link>
+                    )
+                  ))}
                 </div>
               );
             })()
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 220 }}>
               {[
                 { ic: "package", bg: "var(--gdim)", t: "Delivery in transit", tm: "9:12 AM", href: "/admin/deliveries" },
                 { ic: "check", bg: "var(--grdim)", t: "Invoice paid", tm: "8:45 AM", href: "/admin/invoices" },
@@ -342,6 +401,67 @@ export default function AdminPageClient({
           )}
         </div>
       </div>
+
+      {/* View all activity modal */}
+      {activityModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setActivityModalOpen(false)} aria-hidden="true" />
+          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)] shrink-0">
+              <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Activity</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActivityModalOpen(false)}
+                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                >
+                  Mark all read
+                </button>
+                <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none">&times;</button>
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1 min-h-0 p-2">
+              {activityEvents.length > 0 ? (
+                groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item) => (
+                  item.count > 1 ? (
+                    <Link
+                      key={item.id}
+                      href={getActivityHref(item.events[0])}
+                      onClick={() => setActivityModalOpen(false)}
+                      className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
+                    >
+                      <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                        <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                      </div>
+                      <div className="act-body min-w-0">
+                        <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
+                        <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <Link
+                      key={item.id}
+                      href={getActivityHref(item.events[0])}
+                      onClick={() => setActivityModalOpen(false)}
+                      className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
+                    >
+                      <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
+                        <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
+                      </div>
+                      <div className="act-body min-w-0">
+                        <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
+                        <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
+                      </div>
+                    </Link>
+                  )
+                ))
+              ) : (
+                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No activity yet</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

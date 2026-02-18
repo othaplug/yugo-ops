@@ -8,7 +8,10 @@ type Crew = { current_lat: number; current_lng: number; name?: string } | null;
 
 const DEFAULT_CENTER: Center = { lat: 43.665, lng: -79.385 };
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
 const HAS_MAPBOX =
   MAPBOX_TOKEN &&
   !MAPBOX_TOKEN.startsWith("pk.your-") &&

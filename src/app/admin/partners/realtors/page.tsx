@@ -27,7 +27,7 @@ export default async function RealtorsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
+      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
       <RealtorsMetrics referralsCount={all.length} booked={booked} totalCommission={totalCommission} />
       <RealtorsTable
         referrals={all}

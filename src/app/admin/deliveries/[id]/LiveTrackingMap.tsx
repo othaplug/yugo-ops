@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 
+const LiveTrackingMapLeaflet = dynamic(
+  () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
+  { ssr: false }
+);
+
 const MapboxMap = dynamic(
   () => import("react-map-gl/mapbox").then((mod) => {
     const M = mod.default;
@@ -54,7 +59,14 @@ const MapboxMap = dynamic(
 );
 
 const DEFAULT_CENTER = { longitude: -79.385, latitude: 43.665 };
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+const HAS_MAPBOX =
+  MAPBOX_TOKEN &&
+  !MAPBOX_TOKEN.startsWith("pk.your-") &&
+  MAPBOX_TOKEN !== "pk.your-mapbox-token";
 
 interface Crew {
   id: string;
@@ -106,13 +118,28 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
     ? { longitude: crew!.current_lng!, latitude: crew!.current_lat! }
     : DEFAULT_CENTER;
 
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith("pk.your-") || MAPBOX_TOKEN === "pk.your-mapbox-token") {
+  if (!HAS_MAPBOX) {
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
-        <p className="text-[12px] text-[var(--tx3)]">
-          Add <code className="bg-[var(--bg)] px-1 rounded">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> to your environment to enable the map.
+        <p className="text-[11px] text-[var(--tx3)] mb-3">
+          {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
         </p>
+        <div className="rounded-lg border border-[var(--brd)] overflow-hidden" style={{ height: 320 }}>
+          {loading ? (
+            <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
+              Loading map...
+            </div>
+          ) : (
+            <LiveTrackingMapLeaflet
+              center={center}
+              crew={hasPosition && crew && crew.current_lat != null && crew.current_lng != null
+                ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
+                : null}
+              crewName={crewName}
+            />
+          )}
+        </div>
       </div>
     );
   }

@@ -7,12 +7,18 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 type Persona = "client" | "partner";
 
-export default function NewClientForm() {
+export default function NewClientForm({
+  defaultPersona = "client",
+  defaultPartnerType = "retail",
+}: {
+  defaultPersona?: Persona;
+  defaultPartnerType?: string;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [persona, setPersona] = useState<Persona>("client");
-  const [partnerType, setPartnerType] = useState("retail");
+  const [persona, setPersona] = useState<Persona>(defaultPersona);
+  const [partnerType, setPartnerType] = useState(defaultPartnerType);
   const [address, setAddress] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

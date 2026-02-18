@@ -1,9 +1,14 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import ModalOverlay from "../components/ModalOverlay";
+
+const CrewMapLeaflet = dynamic(
+  () => import("./CrewMapLeaflet").then((mod) => mod.CrewMapLeaflet),
+  { ssr: false }
+);
 
 const MapboxMap = dynamic(
   () =>
@@ -108,7 +113,14 @@ function formatDate(dateStr: string | undefined) {
 }
 
 const DEFAULT_CENTER = { longitude: -79.385, latitude: 43.665 };
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+const HAS_MAPBOX =
+  MAPBOX_TOKEN &&
+  !MAPBOX_TOKEN.startsWith("pk.your-") &&
+  MAPBOX_TOKEN !== "pk.your-mapbox-token";
 
 export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; deliveries?: Delivery[] }) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
@@ -124,20 +136,21 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
       : DEFAULT_CENTER;
   const zoom = crewsWithPosition.length > 1 ? 12 : 14;
 
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith("pk.your-") || MAPBOX_TOKEN === "pk.your-mapbox-token") {
+  if (!HAS_MAPBOX) {
     return (
       <>
         <div className="mb-4">
           <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to .env.local to enable the map.</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)</p>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-8 mb-4 flex flex-col items-center justify-center gap-2" style={{ height: 380 }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--gdim)]">
-            <svg className="w-6 h-6 text-[var(--tx3)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
+          <div className="w-full rounded-lg border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
+            <CrewMapLeaflet
+              crews={crewsWithPosition}
+              center={center}
+              zoom={zoom}
+            />
           </div>
-          <p className="text-[13px] font-medium text-[var(--tx)]">Live tracking map</p>
         </div>
         <CrewListAndModal crews={crews} deliveries={deliveries} selectedCrew={selectedCrew} setSelectedCrew={setSelectedCrew} />
       </>

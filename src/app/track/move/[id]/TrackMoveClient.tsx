@@ -206,7 +206,7 @@ export default function TrackMoveClient({
     <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans" data-theme="light">
       {/* Header - YUGO + YOUR MOVE */}
       <header className="sticky top-0 z-50 bg-white border-b border-[#E7E5E4]">
-        <div className="flex items-center justify-between px-3 sm:px-6 py-3.5">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
           <div className="flex items-center gap-2">
             <span className="font-hero text-lg tracking-[2px] text-[#1A1A1A] font-semibold">YUGO</span>
             <span className="text-[10px] font-bold text-[#1A1A1A] bg-[#E8D5A3] px-2.5 py-1 rounded-full tracking-wider">
@@ -216,7 +216,7 @@ export default function TrackMoveClient({
         </div>
       </header>
 
-      <main className="max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full">
+      <main className="max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8">
         {showPaymentSuccess && (
           <div className="mb-5 rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 shadow-sm animate-fade-up">
             <div className="flex flex-col sm:flex-row sm:items-start gap-6">
@@ -278,7 +278,7 @@ export default function TrackMoveClient({
               {move.client_name || "Your Move"}
             </h1>
             <p className="text-[12px] text-[#666] mt-1">
-              {displayCode} · {typeLabel}
+              <span className="font-bold text-[#1A1A1A]">{displayCode}</span> · {typeLabel}
             </p>
           </div>
           <span className={`inline-flex items-center rounded-md px-3 py-1.5 text-[11px] font-semibold border ${MOVE_STATUS_COLORS[statusVal] || "bg-[#E8D5A3] text-[#1A1A1A] border-[#E8D5A3]"}`}>
@@ -288,81 +288,92 @@ export default function TrackMoveClient({
 
         {/* Countdown card - light theme */}
         <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 mb-5 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-12 h-12 rounded-xl bg-[#E8D5A3]/40 flex items-center justify-center">
-              <Icon name="calendar" className="w-6 h-6 text-[#C9A962]" />
-            </div>
-            <div className="flex-1 min-w-0 text-center sm:text-left">
-              {isCompleted ? (
-                <>
-                  <div className="font-hero text-[24px] md:text-[28px] leading-tight text-[#22C55E]">Move complete</div>
-                  <div className="mt-1 text-[13px] text-[#666]">
-                    {scheduledDate ? formatMoveDate(scheduledDate) : "—"}
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            {isCompleted ? (
+              <>
+                <div className="flex justify-center sm:justify-start">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+                    <svg viewBox="0 0 80 80" fill="none" className="w-full h-full drop-shadow-sm animate-fade-up">
+                      <defs>
+                        <linearGradient id="track-success-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#22C55E" />
+                          <stop offset="100%" stopColor="#16A34A" />
+                        </linearGradient>
+                      </defs>
+                      <circle cx="40" cy="40" r="36" fill="url(#track-success-bg)" stroke="#22C55E" strokeWidth="2" />
+                      <path d="M28 40 L36 48 L52 32" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    </svg>
                   </div>
-                  <a
-                    href="https://www.google.com/search?q=yugo+moving+review"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
-                  >
-                    Leave a Review
-                  </a>
-                </>
-              ) : daysUntil === 0 ? (
-                <>
-                  <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962]">Today&apos;s the day!</div>
-                  <div className="mt-1 text-[13px] text-[#666]">
-                    {move.arrival_window || move.scheduled_time
-                      ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
-                      : "Your crew is on the way"}
+                </div>
+                <div className="mt-3 font-hero text-[20px] sm:text-[24px] leading-tight text-[#22C55E] font-semibold">Move complete</div>
+                <a
+                  href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+                >
+                  Leave a Review
+                </a>
+              </>
+            ) : daysUntil === 0 ? (
+              <>
+                <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962]">Today&apos;s the day!</div>
+                <div className="mt-1 text-[13px] text-[#666]">
+                  {move.arrival_window || move.scheduled_time
+                    ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
+                    : "Your crew is on the way"}
+                </div>
+                {crewMembers.length > 0 && (
+                  <div className="mt-2 text-[12px] text-[#1A1A1A]">
+                    Crew: {crewMembers.join(", ")}
                   </div>
-                  {crewMembers.length > 0 && (
-                    <div className="mt-2 text-[12px] text-[#1A1A1A]">
-                      Crew: {crewMembers.join(", ")}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="font-hero text-[48px] md:text-[56px] leading-none text-[#C9A962]">
-                    {daysUntil ?? "—"}
+                )}
+              </>
+            ) : (
+              <>
+                <div className="font-hero text-[48px] md:text-[56px] leading-none text-[#C9A962]">
+                  {daysUntil ?? "—"}
+                </div>
+                <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
+                {scheduledDate && (
+                  <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
+                    {formatMoveDate(scheduledDate)}
                   </div>
-                  <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
-                  {scheduledDate && (
-                    <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
-                      {formatMoveDate(scheduledDate)}
-                    </div>
-                  )}
-                  {(move.arrival_window || move.scheduled_time) && (
-                    <div className="mt-0.5 text-[12px] text-[#666]">
-                      Your crew arrives between {move.arrival_window || move.scheduled_time}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        {/* Tabs - scrollable on mobile with fade hint */}
-        <div className="relative mb-5">
-          <div className="flex gap-0 border-b border-[#E7E5E4] overflow-x-auto overflow-y-hidden scrollbar-hide bg-white rounded-t-lg scroll-smooth">
+        {/* Tabs - horizontally scrollable on mobile with fade hint */}
+        <div className="relative mb-5 overflow-hidden">
+          <div
+            className="flex gap-0 border-b border-[#E7E5E4] overflow-x-auto overflow-y-hidden scrollbar-hide bg-white rounded-t-lg scroll-smooth"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {tabs.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === t.key
-                  ? "text-[#C9A962] border-[#C9A962]"
-                  : "text-[#999] border-transparent hover:text-[#666]"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === t.key
+                    ? "text-[#C9A962] border-[#C9A962]"
+                    : "text-[#999] border-transparent hover:text-[#666]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none rounded-tr-lg" aria-hidden />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-10 pointer-events-none rounded-tr-lg"
+            style={{
+              background: "linear-gradient(to left, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.6) 40%, transparent 100%)",
+              boxShadow: "inset -12px 0 12px -12px rgba(0,0,0,0.06)",
+            }}
+            aria-hidden
+          />
         </div>
 
         {/* Tab content */}
@@ -372,14 +383,16 @@ export default function TrackMoveClient({
             <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
               <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
-                {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled" && s.value !== "paid").map((s, i) => {
-                  const statusOrder = ["confirmed", "scheduled", "in_progress", "completed"];
+                {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
+                  const statusOrder = ["confirmed", "scheduled", "paid", "in_progress", "completed"];
                   const stepIdx = statusOrder.indexOf(s.value);
-                  const stepCurrentIdx = statusOrder.indexOf(statusVal);
+                  const effectiveStatus = statusVal === "delivered" ? "completed" : statusVal;
+                  const stepCurrentIdx = statusOrder.indexOf(effectiveStatus);
                   const state = isCancelled ? "wait" : stepIdx < stepCurrentIdx ? "done" : stepIdx === stepCurrentIdx ? "act" : "wait";
                   const subLabels: Record<string, { done: string; act: string; wait: string }> = {
                     confirmed: { done: "Your move is confirmed", act: "Your move is confirmed", wait: "Upcoming" },
                     scheduled: { done: "Crew and date assigned", act: "Crew and date assigned", wait: "Upcoming" },
+                    paid: { done: "Payment received", act: "Payment received", wait: "Upcoming" },
                     in_progress: { done: "Move underway", act: "Crew is on the way", wait: "Upcoming" },
                     completed: { done: "Move finished!", act: "Move finished!", wait: "Upcoming" },
                   };
@@ -459,11 +472,18 @@ export default function TrackMoveClient({
               </div>
 
               <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">
-                  Your Crew {crewMembers.length > 0 && `(${crewMembers.length})`}
-                </h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">Your Crew</h3>
                 {crewMembers.length > 0 ? (
                   <>
+                    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#E7E5E4]">
+                      <div className="w-12 h-12 rounded-xl bg-[#E8D5A3]/60 flex items-center justify-center shrink-0">
+                        <span className="font-hero text-[14px] font-bold text-[#C9A962] tracking-wider">Y</span>
+                      </div>
+                      <div>
+                        <div className="text-[12px] font-bold text-[#1A1A1A]">Yugo Team</div>
+                        <div className="text-[11px] text-[#666]">Your moving crew</div>
+                      </div>
+                    </div>
                     {crewMembers.map((name: string, i: number) => (
                       <div key={i} className="flex items-center gap-3 mb-3">
                         <div className="w-9 h-9 rounded-full bg-[#E8D5A3] flex items-center justify-center text-[11px] font-bold text-[#1A1A1A] shrink-0">
@@ -476,7 +496,7 @@ export default function TrackMoveClient({
                       </div>
                     ))}
                     <div className="mt-4 pt-4 border-t border-[#E7E5E4]">
-                      <div className="text-[10px] font-semibold text-[#999]">Coordinator</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#999]">Coordinator</div>
                       <div className="text-[13px] text-[#1A1A1A] mt-0.5">
                         <span className="font-medium">Yugo</span>
                         <a href={`tel:${YUGO_PHONE.replace(/\D/g, "")}`} className="flex items-center gap-2 mt-1 text-[#C9A962] hover:underline">
@@ -494,36 +514,7 @@ export default function TrackMoveClient({
               </div>
             </div>
 
-            {/* What to Expect */}
-            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-              <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">What to Expect</h3>
-              <div className="space-y-4 text-[13px] text-[#666] leading-relaxed">
-                {!isCompleted && daysUntil !== null && daysUntil > 0 && (
-                  <div>
-                    <div className="font-semibold text-[#1A1A1A] mb-1">Before your move</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-[12px]">
-                      <li>Clear pathways for the crew</li>
-                      <li>Label fragile items</li>
-                      <li>Arrange parking if needed</li>
-                    </ul>
-                  </div>
-                )}
-                {!isCompleted && daysUntil !== null && daysUntil <= 0 && (
-                  <div>
-                    <div className="font-semibold text-[#1A1A1A] mb-1">Day of move</div>
-                    <p className="text-[12px]">When the crew arrives, they&apos;ll introduce themselves and walk through the plan. Feel free to ask questions—we&apos;re here to help.</p>
-                  </div>
-                )}
-                {isCompleted && (
-                  <div>
-                    <div className="font-semibold text-[#1A1A1A] mb-1">Thank you!</div>
-                    <p className="text-[12px]">We hope your move went smoothly. We&apos;d love to hear about your experience—leave a review when you have a moment.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {changeSubmitted && (
+{changeSubmitted && (
               <div className="rounded-xl border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3 flex items-center gap-3">
                 <Icon name="check" className="w-5 h-5 text-[#22C55E] shrink-0" />
                 <div>
@@ -618,9 +609,12 @@ export default function TrackMoveClient({
       </main>
 
       {/* Footer */}
-      <footer className="py-8 text-center bg-white border-t border-[#E7E5E4]">
+      <footer className="py-8 px-4 text-center bg-white border-t border-[#E7E5E4]">
+        <p className="text-[12px] text-[#666] mb-2">© Yugo — Art of moving</p>
         <p className="text-[11px] text-[#999]">
-          <Link href="/" className="font-hero text-[#C9A962] hover:underline">Yugo</Link> — The art of moving.
+          <Link href="/privacy" className="text-[#C9A962] hover:underline">Privacy Policy</Link>
+          <span className="mx-2">|</span>
+          <Link href="/terms" className="text-[#C9A962] hover:underline">Terms of Use</Link>
         </p>
       </footer>
 

@@ -8,8 +8,14 @@ import { PROJECTS } from "./projectsData";
 const STATUS_COLORS: Record<string, string> = {
   done: "text-[var(--grn)]",
   transit: "text-[var(--org)]",
-  wait: "text-[var(--gold)]",
+  wait: "text-[var(--tx3)]",
   late: "text-[var(--red)]",
+};
+const VENDOR_STATUS_LABELS: Record<string, string> = {
+  done: "Delivered",
+  transit: "In Transit",
+  wait: "Awaiting Shipment",
+  late: "Delayed",
 };
 
 function AnimatedProgressBar({ percent }: { percent: number }) {
@@ -56,7 +62,7 @@ export default function DesignerDashboard({
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
+      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
       {/* Stats cards - clickable */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
         <Link href="/admin/partners/designers" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
@@ -82,7 +88,7 @@ export default function DesignerDashboard({
         <Link href="/admin/clients" className="text-[10px] font-semibold text-[var(--gold)] hover:underline whitespace-nowrap">
           View all clients →
         </Link>
-        <Link href="/admin/clients/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
+        <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
           + Add Partner
         </Link>
       </div>
@@ -149,8 +155,8 @@ export default function DesignerDashboard({
                             <td className="px-4 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{v.vendor}</td>
                             <td className="px-4 py-2.5 text-[11px] text-[var(--tx2)]">{v.items}</td>
                             <td className="px-4 py-2.5">
-                              <span className={`text-[10px] font-semibold capitalize ${STATUS_COLORS[v.status]}`}>
-                                {v.status}
+                              <span className={`text-[10px] font-semibold ${STATUS_COLORS[v.status]}`}>
+                                {VENDOR_STATUS_LABELS[v.status] ?? v.status}
                               </span>
                             </td>
                             <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)]">{v.eta}</td>

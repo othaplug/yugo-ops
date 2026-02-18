@@ -3,10 +3,44 @@
 import { useState } from "react";
 import Badge from "../../components/Badge";
 
-const ACTIVE_EXHIBITIONS = [
-  { id: "1", name: "Feinstein: Convergence", gallery: "Bau-Xi", location: "Main Gallery", dates: "Feb 14 - Mar 28", works: 8, percent: 40, status: "installing" as const, details: "Contemporary oil paintings. 12 pieces from the Convergence series. Climate-controlled transport required." },
-  { id: "2", name: "Group: Northern Light", gallery: "Bau-Xi", location: "Vault", dates: "Mar 1 - Apr 15", works: 12, percent: 10, status: "staging" as const, details: "Group exhibition featuring 6 artists. Mixed media. Staging in progress at Vault space." },
+type ExhibitionStatus = "installing" | "staging";
+
+const ACTIVE_EXHIBITIONS: {
+  id: string;
+  name: string;
+  gallery: string;
+  location: string;
+  dates: string;
+  startDate: string;
+  endDate: string;
+  works: number;
+  percent: number;
+  status: ExhibitionStatus;
+  details: string;
+}[] = [
+  { id: "1", name: "Feinstein: Convergence", gallery: "Bau-Xi", location: "Main Gallery", dates: "Feb 14 - Mar 28", startDate: "2026-02-14", endDate: "2026-03-28", works: 8, percent: 60, status: "installing", details: "Contemporary oil paintings. 12 pieces from the Convergence series. Climate-controlled transport required." },
+  { id: "2", name: "Group: Northern Light", gallery: "Bau-Xi", location: "Vault", dates: "Mar 1 - Apr 15", startDate: "2026-03-01", endDate: "2026-04-15", works: 12, percent: 25, status: "staging", details: "Group exhibition featuring 6 artists. Mixed media. Staging in progress at Vault space." },
 ];
+
+function getProgressBarColor(onTrack: boolean, atRisk: boolean, behind: boolean): string {
+  if (onTrack) return "bg-[var(--grn)]";
+  if (atRisk) return "bg-[var(--org)]";
+  return "bg-[var(--red)]";
+}
+
+function getExhibitionProgress(ex: (typeof ACTIVE_EXHIBITIONS)[0]) {
+  const now = new Date();
+  const start = new Date(ex.startDate);
+  const end = new Date(ex.endDate);
+  const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+  const elapsed = Math.max(0, Math.ceil((now.getTime() - start.getTime()) / 86400000));
+  const daysRemaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+  const expectedPercent = Math.min(100, Math.round((elapsed / totalDays) * 100));
+  const onTrack = ex.percent >= expectedPercent - 10;
+  const atRisk = ex.percent >= expectedPercent - 25 && ex.percent < expectedPercent - 10;
+  const behind = ex.percent < expectedPercent - 25;
+  return { totalDays, elapsed, daysRemaining, onTrack, atRisk, behind };
+}
 
 type Transport = { id: string; title: string; gallery: string; route: string; value: string; date: string; status: "scheduled" | "confirmed"; details: string };
 
@@ -46,6 +80,8 @@ export default function GalleryClient() {
         <div className="space-y-2">
           {ACTIVE_EXHIBITIONS.map((ex) => {
             const isExpanded = expandedEx.has(ex.id);
+            const progress = getExhibitionProgress(ex);
+            const barColor = getProgressBarColor(progress.onTrack, progress.atRisk, progress.behind);
             return (
               <div key={ex.id} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden hover:border-[var(--gold)] transition-all">
                 <button
@@ -58,8 +94,14 @@ export default function GalleryClient() {
                     <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                       {ex.gallery} • {ex.location} • {ex.dates} • {ex.works} works
                     </div>
-                    <div className="mt-2 h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
-                      <div className="h-full bg-[var(--gold)] rounded-full transition-all duration-500" style={{ width: `${ex.percent}%` }} />
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-[10px] text-[var(--tx3)]">
+                        <span>{ex.percent}% — {progress.elapsed} of {progress.totalDays} days</span>
+                        <span className="font-semibold text-[var(--tx2)]">{progress.daysRemaining} days left</span>
+                      </div>
+                      <div className="h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
+                        <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${ex.percent}%` }} />
+                      </div>
                     </div>
                   </div>
                   <Badge status={ex.status} />

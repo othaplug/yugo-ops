@@ -32,12 +32,13 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
   }, [moveId, token]);
 
   const handleExport = () => {
-    const rows = items.map((i) => ({
-      Room: i.room || "",
-      Item: i.item_name,
-      Box: i.box_number || "-",
-    }));
-    const csv = ["Room,Item,Box", ...rows.map((r) => `"${r.Room}","${r.Item}","${r.Box}"`)].join("\n");
+    const rows = items.map((i) => {
+      const qtyMatch = i.item_name.match(/\s+x(\d+)$/i);
+      const baseName = qtyMatch ? i.item_name.replace(/\s+x\d+$/i, "").trim() : i.item_name;
+      const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+      return { Room: i.room || "", Item: baseName, Qty: qty };
+    });
+    const csv = ["Room,Item,Qty", ...rows.map((r) => `"${r.Room}","${r.Item}","${r.Qty}"`)].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -94,7 +95,7 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
         <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2">
           <Icon name="package" className="w-[12px] h-[12px]" />
-          Inventory ({items.length} items)
+          Inventory
         </h3>
         <button
           type="button"
@@ -107,7 +108,6 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
       <div className="p-5 space-y-2">
         {rooms.map((room) => {
           const expanded = isExpanded(room);
-          const itemCount = byRoom[room].length;
           return (
             <div key={room} className="rounded-lg border border-[#E7E5E4] overflow-hidden transition-colors hover:border-[#D4D4D4]">
               <button
@@ -116,10 +116,7 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
                 className="w-full flex items-center justify-between gap-2 bg-[#FAFAF8] px-4 py-2.5 text-left hover:bg-[#F5F5F3] transition-colors cursor-pointer group border-b border-[#E7E5E4]"
               >
                 <h4 className="text-[12px] font-bold text-[#C9A962] group-hover:text-[#B8983E] transition-colors">{room}</h4>
-                <span className="flex items-center gap-2">
-                  <span className="text-[11px] font-medium text-[#999]">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
-                  <ChevronDown className={`w-[14px] h-[14px] text-[#999] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
-                </span>
+                <ChevronDown className={`w-[14px] h-[14px] text-[#999] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
               </button>
               <div
                 className="grid transition-[grid-template-rows] duration-200 ease-out"
@@ -130,16 +127,20 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
                     <thead>
                       <tr>
                         <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Item</th>
-                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Box</th>
+                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {byRoom[room].map((item) => (
+                      {byRoom[room].map((item) => {
+                        const qtyMatch = item.item_name.match(/\s+x(\d+)$/i);
+                        const baseName = qtyMatch ? item.item_name.replace(/\s+x\d+$/i, "").trim() : item.item_name;
+                        const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+                        return (
                         <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0">
-                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{item.item_name}</td>
-                          <td className="px-4 py-2.5 text-[11px] font-mono text-[#666]">{item.box_number || "—"}</td>
+                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{baseName}</td>
+                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{qty}</td>
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
                 </div>

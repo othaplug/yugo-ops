@@ -9,8 +9,14 @@ import ViewDesignerModal from "./ViewDesignerModal";
 const STATUS_COLORS: Record<string, string> = {
   done: "text-[var(--grn)]",
   transit: "text-[var(--org)]",
-  wait: "text-[var(--gold)]",
+  wait: "text-[var(--tx3)]",
   late: "text-[var(--red)]",
+};
+const VENDOR_STATUS_LABELS: Record<string, string> = {
+  done: "Delivered",
+  transit: "In Transit",
+  wait: "Awaiting Shipment",
+  late: "Delayed",
 };
 
 function AnimatedProgressBar({ percent }: { percent: number }) {
@@ -36,7 +42,7 @@ export default function ProjectDetailClient({ project }: { project: Project }) {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 space-y-5 animate-fade-up">
-      <div className="mb-2"><BackButton label="Back" /></div>
+      <div className="mb-2"><BackButton label="Designers" href="/admin/partners/designers" /></div>
 
       {/* Header */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
@@ -89,7 +95,7 @@ export default function ProjectDetailClient({ project }: { project: Project }) {
           href="/admin/partners/designers"
           className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block"
         >
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Late</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Delayed</div>
           <div className="text-xl font-bold font-heading text-[var(--red)]">{lateCount}</div>
         </Link>
       </div>
@@ -134,8 +140,8 @@ export default function ProjectDetailClient({ project }: { project: Project }) {
                   <td className="px-4 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{v.vendor}</td>
                   <td className="px-4 py-2.5 text-[11px] text-[var(--tx2)]">{v.items}</td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-[10px] font-semibold capitalize ${STATUS_COLORS[v.status]}`}>
-                      {v.status}
+                    <span className={`text-[10px] font-semibold ${STATUS_COLORS[v.status]}`}>
+                      {VENDOR_STATUS_LABELS[v.status] ?? v.status}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)]">{v.eta}</td>

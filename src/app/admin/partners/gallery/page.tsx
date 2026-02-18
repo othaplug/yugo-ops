@@ -12,7 +12,7 @@ const GALLERY_PARTNERS = [
 export default function GalleryPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
+      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <Link href="/admin/clients" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">

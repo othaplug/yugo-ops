@@ -51,10 +51,10 @@ function getInitials(name: string) {
 }
 
 function getThreadPreview(msgs: Message[]): string {
-  const first = msgs[0];
-  if (!first) return "New thread";
-  const preview = first.content.slice(0, 50);
-  return preview.length < first.content.length ? `${preview}…` : preview;
+  const last = msgs[msgs.length - 1];
+  if (!last) return "New thread";
+  const preview = last.content.slice(0, 100);
+  return preview.length < last.content.length ? `${preview}…` : preview;
 }
 
 export default function MessagesClient({
@@ -183,7 +183,7 @@ export default function MessagesClient({
 
   return (
     <div className="h-[calc(100dvh-5.5rem)] min-h-[400px] flex flex-col max-w-[1400px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
+      <div className="mb-4"><BackButton label="Dashboard" href="/admin" /></div>
       {/* Connect banner - when Slack not connected */}
       {!isConnected && (
         <div className="mb-4 flex items-center justify-between gap-4 p-4 bg-gradient-to-r from-[var(--gdim)] to-[var(--gdim)]/50 border border-[var(--gold)]/30 rounded-xl">
@@ -250,10 +250,10 @@ export default function MessagesClient({
                 >
                   {hasUnread && <div className="w-1.5 h-1.5 rounded-full bg-[var(--grn)] mt-2 shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">
+                    <div className={`text-[12px] truncate ${hasUnread ? "font-bold" : "font-semibold"} text-[var(--tx)]`}>
                       {label} <span className="text-[9px] font-normal text-[var(--tx3)]">{type}</span>
                     </div>
-                    <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5">{getThreadPreview(msgs)}</div>
+                    <div className="text-[11px] text-[var(--tx3)] mt-0.5 line-clamp-2 break-words">{getThreadPreview(msgs)}</div>
                     <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTimeAgo(latest?.created_at || "")}</div>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export default function MessagesClient({
               </div>
             )}
           </div>
-          <div className="px-4 py-3 border-t border-[var(--brd)] flex items-center justify-between">
+          <div className="sticky bottom-0 px-4 py-3 border-t border-[var(--brd)] flex items-center justify-between bg-[var(--card)] shrink-0">
             <div>
               <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Threads</div>
               <div className="text-[14px] font-bold font-heading">{threadEntries.length}</div>
@@ -304,22 +304,38 @@ export default function MessagesClient({
               </div>
 
               <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-                {selectedMsgs.map((msg) => {
-                  const isAdmin = msg.sender_type === "admin";
-                  return (
-                    <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[78%] py-2 px-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
-                          isAdmin
-                            ? "bg-[rgba(201,169,98,0.14)] text-[var(--tx)] rounded-br-md"
-                            : "bg-[var(--card)]/80 text-[var(--tx2)] border border-[var(--brd)]/60 rounded-bl-md"
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
+                {selectedMsgs.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center min-h-[120px] text-center">
+                    <div>
+                      <p className="text-[12px] text-[var(--tx3)]">Start a conversation</p>
+                      <p className="text-[10px] text-[var(--tx3)] mt-1">Type a message below to begin</p>
                     </div>
-                  );
-                })}
+                  </div>
+                ) : (
+                  selectedMsgs.map((msg) => {
+                    const isAdmin = msg.sender_type === "admin";
+                    const displayName = isAdmin ? "Yugo" : msg.sender_name;
+                    return (
+                      <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                        <div className={`flex flex-col max-w-[78%] ${isAdmin ? "items-end" : "items-start"}`}>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[10px] font-semibold text-[var(--tx2)]">{displayName}</span>
+                            <span className="text-[9px] text-[var(--tx3)]">{formatTime(msg.created_at)}</span>
+                          </div>
+                          <div
+                            className={`py-2 px-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
+                              isAdmin
+                                ? "bg-[rgba(201,169,98,0.14)] text-[var(--tx)] rounded-br-md"
+                                : "bg-[var(--card)]/80 text-[var(--tx2)] border border-[var(--brd)]/60 rounded-bl-md"
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
