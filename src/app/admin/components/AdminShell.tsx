@@ -122,6 +122,13 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       <NotificationProvider>
         <ToastProvider>
           <div className="flex min-h-screen bg-[var(--bg)]">
+            {/* Skip to main content for keyboard users */}
+            <a
+              href="#admin-main"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-[#0D0D0D] focus:font-semibold focus:outline-none"
+            >
+              Skip to main content
+            </a>
             {/* Mobile overlay - subtle dim, no heavy blur */}
             {sidebarOpen && (
               <div
@@ -261,9 +268,9 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               </div>
 
               {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
-              <div key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto animate-fade-in min-h-0">
+              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto animate-fade-in min-h-0">
                 {children}
-              </div>
+              </main>
             </div>
           </div>
         </ToastProvider>

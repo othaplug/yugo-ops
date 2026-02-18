@@ -156,7 +156,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
         </Link>
       </div>
 
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--card)] border border-[var(--brd)] border-t-0 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between gap-2 py-3 px-3 sm:pl-2 sm:pr-3 bg-[var(--bg)]/50 border-b border-[var(--brd)]">
           <div className="flex items-center gap-2 flex-1">
             <button

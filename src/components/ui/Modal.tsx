@@ -40,6 +40,26 @@ export default function GlobalModal({
     };
   }, [open, handleEscape]);
 
+  // Hide any stuck Google Places dropdown when modal opens/closes or when user scrolls (pac-container is appended to body)
+  useEffect(() => {
+    const hidePac = () => {
+      document.querySelectorAll(".pac-container").forEach((el) => {
+        (el as HTMLElement).style.display = "none";
+      });
+    };
+    if (!open) {
+      hidePac();
+      return;
+    }
+    hidePac(); // Clear any stuck dropdown when opening
+    const scrollEl = document.querySelector("[role=dialog] .overflow-y-auto");
+    scrollEl?.addEventListener("scroll", hidePac, { passive: true });
+    return () => {
+      hidePac();
+      scrollEl?.removeEventListener("scroll", hidePac);
+    };
+  }, [open]);
+
   if (!open || typeof document === "undefined") return null;
 
   const maxW = maxWidth === "sm" ? "max-w-sm" : maxWidth === "lg" ? "max-w-lg" : "max-w-md";
