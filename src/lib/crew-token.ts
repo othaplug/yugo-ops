@@ -7,7 +7,9 @@ export function getCrewSessionSecret(): string {
   const secret = process.env[CREW_SECRET_ENV];
   if (process.env.NODE_ENV === "production") {
     if (!secret || secret.trim() === "" || secret === DEV_SECRET) {
-      throw new Error(`${CREW_SECRET_ENV} must be set in production (min 32 chars)`);
+      throw new Error(
+        `${CREW_SECRET_ENV} must be set in production (min 32 chars). Add it to .env.local and restart. Run: npm run generate-crew-secret`
+      );
     }
     return secret.trim();
   }

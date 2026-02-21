@@ -356,10 +356,10 @@ export default function AdminPageClient({
               const grouped = groupActivityEvents(deduped);
               return (
                 <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 220 }}>
-                  {grouped.slice(0, 8).map((item) => (
+                  {grouped.slice(0, 8).map((item, idx) => (
                     item.count > 1 ? (
                       <Link
-                        key={item.id}
+                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
                         href={getActivityHref(item.events[0])}
                         className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
                       >
@@ -372,7 +372,7 @@ export default function AdminPageClient({
                         </div>
                       </Link>
                     ) : (
-                      <Link key={item.id} href={getActivityHref(item.events[0])} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                      <Link key={`${item.id}-${item.events[0].created_at}-${idx}`} href={getActivityHref(item.events[0])} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
                         <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
                           <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
                         </div>
@@ -429,10 +429,10 @@ export default function AdminPageClient({
               </div>
               <div className="overflow-y-auto flex-1 min-h-0 p-2">
                 {activityEvents.length > 0 ? (
-                  groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item) =>
+                  groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item, idx) =>
                     item.count > 1 ? (
                       <Link
-                        key={item.id}
+                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
                         href={getActivityHref(item.events[0])}
                         onClick={() => setActivityModalOpen(false)}
                         className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
@@ -447,7 +447,7 @@ export default function AdminPageClient({
                       </Link>
                     ) : (
                       <Link
-                        key={item.id}
+                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
                         href={getActivityHref(item.events[0])}
                         onClick={() => setActivityModalOpen(false)}
                         className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"

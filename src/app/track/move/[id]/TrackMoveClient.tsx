@@ -54,12 +54,14 @@ export default function TrackMoveClient({
   token,
   fromNotify = false,
   paymentSuccess = false,
+  linkExpired = false,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
   token: string;
   fromNotify?: boolean;
   paymentSuccess?: boolean;
+  linkExpired?: boolean;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
@@ -203,6 +205,25 @@ export default function TrackMoveClient({
     { key: "msg", label: "Messages" },
   ];
 
+  if (linkExpired) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans flex items-center justify-center px-4" data-theme="light">
+        <div className="max-w-md w-full text-center">
+          <h1 className="font-hero text-[24px] sm:text-[28px] font-semibold text-[#1A1A1A] mb-2">Your move is complete</h1>
+          <p className="text-[13px] text-[#666] mb-6">
+            This tracking link has expired. If you need documents or support, please contact us.
+          </p>
+          <a
+            href={`tel:${normalizePhone(YUGO_PHONE)}`}
+            className="inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+          >
+            Contact us
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans" data-theme="light">
       {/* Header - YUGO + YOUR MOVE */}
@@ -292,46 +313,81 @@ export default function TrackMoveClient({
         <div className="rounded-[16px] bg-[#FAF8F5] border border-[#EDE9E3] p-6 sm:p-8 mb-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
           {isCompleted ? (
             <div className="text-center">
-              <div className="flex justify-center">
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20">
-                  <svg viewBox="0 0 80 80" fill="none" className="w-full h-full drop-shadow-sm animate-fade-up">
-                    <defs>
-                      <linearGradient id="track-success-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#22C55E" />
-                        <stop offset="100%" stopColor="#16A34A" />
-                      </linearGradient>
-                    </defs>
-                    <circle cx="40" cy="40" r="36" fill="url(#track-success-bg)" stroke="#22C55E" strokeWidth="2" />
-                    <path d="M28 40 L36 48 L52 32" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                </div>
+              <div className="font-hero text-[24px] sm:text-[28px] leading-tight text-[#1A1A1A] font-semibold">
+                Your Move is Complete
               </div>
-              <div className="mt-3 font-serif text-[20px] sm:text-[24px] leading-tight text-[#22C55E] font-semibold">Move complete</div>
+              <p className="mt-2 text-[13px] text-[#666] font-sans">
+                Please tell us about your move.
+              </p>
               <a
                 href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+                className="mt-4 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
               >
                 Leave a Review
               </a>
             </div>
           ) : daysUntil === 0 ? (
-            <div className="text-center">
-              <div className="font-serif text-[28px] md:text-[32px] leading-tight text-[#C9A962] font-semibold">Today&apos;s the day!</div>
-              <div className="mt-1 text-[13px] text-[#666] font-sans">
-                {move.arrival_window || move.scheduled_time
-                  ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
-                  : "Your crew is on the way"}
+            <>
+              <div className="text-center">
+                <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962] font-semibold">Today&apos;s the day!</div>
+                <div className="mt-1 text-[13px] text-[#666] font-sans">
+                  {move.status === "in_progress" && liveStage != null
+                    ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
+                    : move.arrival_window || move.scheduled_time
+                      ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
+                      : "Your crew is on the way"}
+                </div>
+                {crewMembers.length > 0 && (
+                  <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
+                )}
               </div>
-              {crewMembers.length > 0 && (
-                <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
+              {/* Progress bar on move day: shows live stage once crew starts sharing GPS */}
+              {scheduledDate && (
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#E8E4DF]">
+                    <div
+                      className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
+                      style={{
+                        width: `${
+                          move.status === "in_progress" && liveStage != null
+                            ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
+                            : isCompleted
+                              ? 100
+                              : currentIdx >= 0
+                                ? Math.round(((currentIdx + 1) * 100) / 5)
+                                : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
+                    {move.status === "in_progress" && liveStage != null
+                      ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
+                      : isCompleted
+                        ? "100%"
+                        : currentIdx >= 0
+                          ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
+                          : "0%"}
+                  </span>
+                </div>
               )}
+            </>
+          ) : daysUntil != null && daysUntil < 0 ? (
+            /* Past move date but not yet marked complete */
+            <div className="text-center">
+              <div className="font-hero text-[20px] sm:text-[24px] leading-tight text-[#2D2D2D] font-semibold">
+                Move day has passed
+              </div>
+              <p className="mt-1 text-[13px] text-[#666] font-sans">
+                Your move will be marked complete soon. Contact us if you have questions.
+              </p>
             </div>
           ) : (
             <>
               <div className="text-center">
-                <div className="font-serif text-[56px] sm:text-[64px] md:text-[72px] leading-none text-[#C9A962] font-semibold tracking-tight">
+                <div className="font-hero text-[56px] sm:text-[64px] md:text-[72px] leading-none text-[#C9A962] font-semibold tracking-tight">
                   {daysUntil ?? "—"}
                 </div>
                 <div className="mt-1 text-[13px] text-[#2D2D2D] font-sans">days until move day</div>
@@ -485,7 +541,7 @@ export default function TrackMoveClient({
                   </div>
                   <div>
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
-                    <div className="text-[18px] font-bold text-[#C9A962]">{formatCurrency(totalBalance)}</div>
+                    <div className="font-hero text-[18px] font-bold text-[#C9A962]">{formatCurrency(totalBalance)}</div>
                   </div>
                   {totalBalance > 0 && !showPaymentSuccess && (
                     <div className="pt-2">
@@ -508,38 +564,29 @@ export default function TrackMoveClient({
               </div>
 
               <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">Your Crew</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">
+                  Your Crew ({crewMembers.length})
+                </h3>
                 {crewMembers.length > 0 ? (
                   <>
-                    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#E7E5E4]">
-                      <div className="w-12 h-12 rounded-xl bg-[#E8D5A3]/60 flex items-center justify-center shrink-0">
-                        <span className="font-hero text-[14px] font-bold text-[#C9A962] tracking-wider">Y</span>
-                      </div>
-                      <div>
-                        <div className="text-[12px] font-bold text-[#1A1A1A]">Yugo Team</div>
-                        <div className="text-[11px] text-[#666]">Your moving crew</div>
-                      </div>
+                    <div className="space-y-4">
+                      {crewMembers.map((name: string, i: number) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#C19A6B] flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+                            {(name || "?").slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-[13px] font-bold text-[#1A1A1A]">{name}</div>
+                            <div className="text-[11px] text-[#666]">{crewRoles[i] || "Team member"}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    {crewMembers.map((name: string, i: number) => (
-                      <div key={i} className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-full bg-[#E8D5A3] flex items-center justify-center text-[11px] font-bold text-[#1A1A1A] shrink-0">
-                          {(name || "?").slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="text-[13px] font-semibold text-[#1A1A1A]">{name}</div>
-                          <div className="text-[11px] text-[#666]">{crewRoles[i] || "Team member"}</div>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="mt-4 pt-4 border-t border-[#E7E5E4]">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#999]">Coordinator</div>
-                      <div className="text-[13px] text-[#1A1A1A] mt-0.5">
-                        <span className="font-medium">Yugo</span>
-                        <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="flex items-center gap-2 mt-1 text-[#C9A962] hover:underline">
-                          <Icon name="phone" className="w-[12px] h-[12px]" />
-                          {formatPhone(YUGO_PHONE)}
-                        </a>
-                      </div>
+                    <div className="mt-4 pt-4 border-t border-[#E0E0E0]">
+                      <div className="text-[13px] font-bold text-[#1A1A1A]">Coordinator</div>
+                      <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="text-[13px] text-[#1A1A1A] mt-0.5 block hover:text-[#C9A962] transition-colors">
+                        Yugo • {formatPhone(YUGO_PHONE)}
+                      </a>
                     </div>
                   </>
                 ) : (

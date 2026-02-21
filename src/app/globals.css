@@ -22,7 +22,8 @@
   --red: #D14343;
   --rdim: rgba(209,67,67,.06);
   --font-heading: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
-  --font-hero: 'Instrument Serif', Georgia, serif;
+  /* Instrument Serif only; serif = generic fallback if font file doesn't load */
+  --font-hero: 'Instrument Serif', serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
 }
 

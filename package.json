@@ -8,7 +8,8 @@
     "start": "next start",
     "seed:messages": "npx tsx scripts/seed-messages.ts",
     "seed:crew": "npx tsx scripts/seed-crew-member.ts",
-    "generate-vapid": "node -e \"const w=require('web-push');const k=w.generateVAPIDKeys();console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY='+k.publicKey);console.log('VAPID_PRIVATE_KEY='+k.privateKey);\""
+    "generate-vapid": "node -e \"const w=require('web-push');const k=w.generateVAPIDKeys();console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY='+k.publicKey);console.log('VAPID_PRIVATE_KEY='+k.privateKey);\"",
+    "generate-crew-secret": "node -e \"const c=require('crypto');const s=c.randomBytes(32).toString('base64url');console.log('CREW_SESSION_SECRET='+s);console.error('Add the line above to .env.local');\""
   },
   "dependencies": {
     "@hubspot/api-client": "^13.4.0",

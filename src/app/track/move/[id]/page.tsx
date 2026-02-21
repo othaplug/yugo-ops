@@ -28,6 +28,15 @@ export default async function TrackMovePage({
   if (error || !move) notFound();
   if (!verifyTrackToken("move", move.id, token || "")) notFound();
 
+  /** Client portal expires this many days after move is completed. */
+  const TRACK_PORTAL_EXPIRE_DAYS = 60;
+  const isComplete = move.status === "completed" || move.status === "delivered";
+  const completedAt = move.updated_at ? new Date(move.updated_at).getTime() : null;
+  const linkExpired =
+    isComplete &&
+    completedAt != null &&
+    Date.now() - completedAt > TRACK_PORTAL_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
+
   let crew: { id: string; name: string; members?: string[] } | null = null;
   if (move.crew_id) {
     const { data: c } = await supabase
@@ -45,6 +54,7 @@ export default async function TrackMovePage({
       token={token || ""}
       fromNotify={from === "notify"}
       paymentSuccess={payment === "success"}
+      linkExpired={linkExpired}
     />
   );
 }
