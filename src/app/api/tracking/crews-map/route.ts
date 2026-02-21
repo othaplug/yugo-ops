@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
+import { getPlatformToggles } from "@/lib/platform-settings";
 
-/** GET all crews with live positions for unified tracking map. Merges crews table + tracking_sessions. */
+/** GET all crews with live positions for unified tracking map. Staff only; requires crew tracking enabled. */
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
+
+  const toggles = await getPlatformToggles();
+  if (!toggles.crew_tracking) {
+    return NextResponse.json({ crews: [], activeSessions: [] }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  }
 
   const admin = createAdminClient();
 

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-/** GET: Returns crew lead + team members for device-based login. Query: ?deviceId=xxx */
+/** GET: Returns crew lead + team members for device-based login. Query: ?deviceId=xxx. Rate limited per deviceId. */
 export async function GET(req: NextRequest) {
   try {
-    const deviceId = req.nextUrl.searchParams.get("deviceId");
+    const deviceId = (req.nextUrl.searchParams.get("deviceId") || "").trim().slice(0, 128);
     if (!deviceId) {
       return NextResponse.json({ hasDevice: false });
+    }
+
+    const key = `login-context:${deviceId}`;
+    if (!checkRateLimit(key, 60_000, 30)) {
+      return NextResponse.json({ hasDevice: false }, { status: 429 });
     }
 
     const admin = createAdminClient();

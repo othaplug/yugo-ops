@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const signatureKey = (process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || "").trim();
 
     const rawBody = await req.text();
+    const isProduction = process.env.NODE_ENV === "production";
     if (signatureKey) {
       if (!signature) {
         console.warn("[webhooks/square] Missing x-square-hmacsha256-signature header");
@@ -30,6 +31,8 @@ export async function POST(req: NextRequest) {
         console.warn("[webhooks/square] Invalid signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
+    } else if (isProduction) {
+      return NextResponse.json({ error: "Webhook signing not configured" }, { status: 503 });
     } else {
       console.warn("[webhooks/square] SQUARE_WEBHOOK_SIGNATURE_KEY not set — webhook not verified");
     }

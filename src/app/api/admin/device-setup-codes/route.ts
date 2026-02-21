@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { requireAdmin } from "@/lib/api-auth";
 
 function generateCode(): string {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // exclude I, O for clarity
@@ -16,13 +14,8 @@ function generateCode(): string {
 
 /** GET: List trucks, teams, recent setup codes (admin only) */
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user.id).maybeSingle();
-  const isAdmin = (user.email || "").toLowerCase() === getSuperAdminEmail() || platformUser?.role === "admin" || platformUser?.role === "manager";
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
 
   const admin = createAdminClient();
 
@@ -41,15 +34,10 @@ export async function GET() {
 
 /** POST: Create a new setup code (admin only) */
 export async function POST(req: NextRequest) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
+
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user.id).maybeSingle();
-    const isAdmin = (user.email || "").toLowerCase() === getSuperAdminEmail() || platformUser?.role === "admin" || platformUser?.role === "manager";
-    if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
     const body = await req.json();
     const truckId = (body.truckId || "").toString().trim() || null;
     const teamId = (body.teamId || "").toString().trim() || null;

@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { getPlatformToggles } from "@/lib/platform-settings";
 
 const RATE_LIMIT_MS = 2000; // 2 sec min between location updates per session
 const rateLimit = new Map<string, number>();
 
 export async function POST(req: NextRequest) {
+  const toggles = await getPlatformToggles();
+  if (!toggles.crew_tracking) {
+    return NextResponse.json({ error: "Crew GPS tracking is disabled" }, { status: 403 });
+  }
   const cookieStore = await cookies();
   const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
   const payload = token ? verifyCrewToken(token) : null;

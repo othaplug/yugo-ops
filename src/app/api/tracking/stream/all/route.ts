@@ -1,11 +1,21 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
+import { getPlatformToggles } from "@/lib/platform-settings";
 
 const POLL_MS = 5000;
 
-/** GET SSE stream for all active sessions. Admin only. */
+/** GET SSE stream for all active sessions. Staff only; requires crew tracking enabled. */
 export async function GET(req: NextRequest) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
+
+  const toggles = await getPlatformToggles();
+  if (!toggles.crew_tracking) {
+    return new Response("Crew tracking is disabled", { status: 403 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });

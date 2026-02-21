@@ -272,106 +272,111 @@ export default function TrackMoveClient({
             </div>
           </div>
         )}
-        {/* Main card - prototype style: client name, countdown, date, progress bar */}
-        <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 mb-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-            <div>
-              <h1 className="font-serif text-[22px] sm:text-[26px] text-[#1A1A1A] leading-tight font-semibold">
-                {move.client_name || "Your Move"}
-              </h1>
-              <p className="text-[11px] text-[#666] mt-1">
-                <span className="font-bold text-[#1A1A1A]">{displayCode}</span> · {typeLabel}
-              </p>
-            </div>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${statusVal === "in_progress" ? "bg-[#F59E0B]/20 text-[#D97706]" : MOVE_STATUS_COLORS[statusVal] || "bg-[#E8D5A3] text-[#1A1A1A]"}`}>
-              {getStatusLabel(statusVal)}
-            </span>
+        {/* Client + status header (exact design: name left, tag right) */}
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h1 className="font-serif text-[22px] sm:text-[26px] text-[#2D2D2D] leading-tight font-semibold tracking-tight">
+              {move.client_name || "Your Move"}
+            </h1>
+            <p className="text-[13px] text-[#666] mt-0.5 font-sans">
+              {displayCode} • {typeLabel}
+            </p>
           </div>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              {isCompleted ? (
-                <>
-                  <div className="flex justify-center sm:justify-start">
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20">
-                      <svg viewBox="0 0 80 80" fill="none" className="w-full h-full drop-shadow-sm animate-fade-up">
-                        <defs>
-                          <linearGradient id="track-success-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#22C55E" />
-                            <stop offset="100%" stopColor="#16A34A" />
-                          </linearGradient>
-                        </defs>
-                        <circle cx="40" cy="40" r="36" fill="url(#track-success-bg)" stroke="#22C55E" strokeWidth="2" />
-                        <path d="M28 40 L36 48 L52 32" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="mt-3 font-hero text-[20px] sm:text-[24px] leading-tight text-[#22C55E] font-semibold">Move complete</div>
-                  <a
-                    href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
-                  >
-                    Leave a Review
-                  </a>
-                </>
-              ) : daysUntil === 0 ? (
-                <>
-                  <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962]">Today&apos;s the day!</div>
-                  <div className="mt-1 text-[13px] text-[#666]">
-                    {move.arrival_window || move.scheduled_time
-                      ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
-                      : "Your crew is on the way"}
-                  </div>
-                  {crewMembers.length > 0 && (
-                    <div className="mt-2 text-[12px] text-[#1A1A1A]">
-                      Crew: {crewMembers.join(", ")}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="font-hero text-[48px] md:text-[56px] leading-none text-[#C9A962]">
-                    {daysUntil ?? "—"}
-                  </div>
-                  <div className="mt-1 text-[13px] text-[#666]">days until move day</div>
-                  {scheduledDate && (
-                    <div className="mt-2 text-[13px] font-semibold text-[#1A1A1A]">
-                      {formatMoveDate(scheduledDate)}
-                    </div>
-                  )}
-                </>
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold shrink-0 bg-[#F5E6C8] text-[#B8860B]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A962]" aria-hidden />
+            {getStatusLabel(statusVal)}
+          </span>
+        </div>
+
+        {/* Main countdown card - light cream, rounded, centered content */}
+        <div className="rounded-[16px] bg-[#FAF8F5] border border-[#EDE9E3] p-6 sm:p-8 mb-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+          {isCompleted ? (
+            <div className="text-center">
+              <div className="flex justify-center">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+                  <svg viewBox="0 0 80 80" fill="none" className="w-full h-full drop-shadow-sm animate-fade-up">
+                    <defs>
+                      <linearGradient id="track-success-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#22C55E" />
+                        <stop offset="100%" stopColor="#16A34A" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="40" cy="40" r="36" fill="url(#track-success-bg)" stroke="#22C55E" strokeWidth="2" />
+                    <path d="M28 40 L36 48 L52 32" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-3 font-serif text-[20px] sm:text-[24px] leading-tight text-[#22C55E] font-semibold">Move complete</div>
+              <a
+                href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+              >
+                Leave a Review
+              </a>
+            </div>
+          ) : daysUntil === 0 ? (
+            <div className="text-center">
+              <div className="font-serif text-[28px] md:text-[32px] leading-tight text-[#C9A962] font-semibold">Today&apos;s the day!</div>
+              <div className="mt-1 text-[13px] text-[#666] font-sans">
+                {move.arrival_window || move.scheduled_time
+                  ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
+                  : "Your crew is on the way"}
+              </div>
+              {crewMembers.length > 0 && (
+                <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
               )}
             </div>
-          </div>
-          {/* Progress bar + date - prototype style */}
-          {scheduledDate && (
-            <div className="mt-4 pt-4 border-t border-[#E7E5E4]">
-              <div className="text-[13px] font-semibold text-[#1A1A1A] mb-2">
-                {scheduledDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                {(move.arrival_window || move.scheduled_time) && (
-                  <span className="text-[#666] font-normal"> at {move.scheduled_time || move.arrival_window}</span>
+          ) : (
+            <>
+              <div className="text-center">
+                <div className="font-serif text-[56px] sm:text-[64px] md:text-[72px] leading-none text-[#C9A962] font-semibold tracking-tight">
+                  {daysUntil ?? "—"}
+                </div>
+                <div className="mt-1 text-[13px] text-[#2D2D2D] font-sans">days until move day</div>
+                {scheduledDate && (
+                  <div className="mt-3 text-[14px] font-sans">
+                    <span className="font-semibold text-[#2D2D2D]">
+                      {scheduledDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </span>
+                    {(move.arrival_window || move.scheduled_time) && (
+                      <span className="text-[#2D2D2D] font-normal"> at {move.scheduled_time || move.arrival_window}</span>
+                    )}
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 overflow-hidden rounded-full bg-[#E7E5E4]">
-                  <div
-                    className="h-full rounded-full transition-all duration-700 ease-out"
-                    style={{
-                      width: `${move.status === "in_progress" && liveStage != null
-                        ? Math.round(100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1) / 6)
-                        : isCompleted ? 100 : currentIdx >= 0 ? Math.round((currentIdx + 1) * 100 / 5) : 0}%`,
-                      background: "linear-gradient(90deg, #ECDEC4, #C9A962)",
-                    }}
-                  />
+              {/* Progress bar - full width, rounded ends, percentage to the right */}
+              {scheduledDate && (
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#E8E4DF]">
+                    <div
+                      className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
+                      style={{
+                        width: `${
+                          move.status === "in_progress" && liveStage != null
+                            ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
+                            : isCompleted
+                              ? 100
+                              : currentIdx >= 0
+                                ? Math.round(((currentIdx + 1) * 100) / 5)
+                                : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
+                    {move.status === "in_progress" && liveStage != null
+                      ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
+                      : isCompleted
+                        ? "100%"
+                        : currentIdx >= 0
+                          ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
+                          : "0%"}
+                  </span>
                 </div>
-                <span className="text-[13px] font-semibold text-[#C9A962] shrink-0">
-                  {move.status === "in_progress" && liveStage != null
-                    ? `${Math.round(100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1) / 6)}%`
-                    : isCompleted ? "100%" : currentIdx >= 0 ? `${Math.round((currentIdx + 1) * 100 / 5)}%` : "0%"}
-                </span>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
 

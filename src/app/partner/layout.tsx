@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getPlatformToggles } from "@/lib/platform-settings";
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
+  const toggles = await getPlatformToggles();
+  if (!toggles.partner_portal) redirect("/portal-disabled");
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

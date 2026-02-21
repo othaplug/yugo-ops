@@ -7,6 +7,7 @@ import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
+import AddPortalAccessModal from "./AddPortalAccessModal";
 import DeviceSetupCodes from "./DeviceSetupCodes";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
@@ -37,7 +38,6 @@ function formatLastActive(iso: string): string {
 }
 
 const RATES_KEY = "yugo-platform-rates";
-const APP_TOGGLES_KEY = "yugo-platform-app-toggles";
 
 interface Team {
   id: string;
@@ -46,13 +46,31 @@ interface Team {
   active: boolean;
 }
 
+interface CrewPortalMember {
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  team_id: string;
+  is_active: boolean;
+}
+
+interface AppToggles {
+  crewTracking: boolean;
+  partnerPortal: boolean;
+  autoInvoicing: boolean;
+}
+
 interface PlatformSettingsClientProps {
   initialTeams?: Team[];
+  initialToggles?: AppToggles;
   currentUserId?: string;
   isSuperAdmin?: boolean;
 }
 
-export default function PlatformSettingsClient({ initialTeams = [], currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
+const DEFAULT_TOGGLES: AppToggles = { crewTracking: true, partnerPortal: false, autoInvoicing: true };
+
+export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -62,9 +80,10 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null }[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string } | null>(null);
-  const [crewTracking, setCrewTracking] = useState(true);
-  const [partnerPortal, setPartnerPortal] = useState(false);
-  const [autoInvoicing, setAutoInvoicing] = useState(true);
+  const [crewTracking, setCrewTracking] = useState(initialToggles.crewTracking);
+  const [partnerPortal, setPartnerPortal] = useState(initialToggles.partnerPortal);
+  const [autoInvoicing, setAutoInvoicing] = useState(initialToggles.autoInvoicing);
+  const [togglesSaving, setTogglesSaving] = useState(false);
   const [rates, setRates] = useState([
     { tier: "Essentials", rate: "150" },
     { tier: "Premier", rate: "220" },
@@ -79,40 +98,58 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const [addTeamName, setAddTeamName] = useState("");
   const [addTeamMembers, setAddTeamMembers] = useState<string[]>([]);
   const [ratesSaving, setRatesSaving] = useState(false);
-  const appTogglesLoadedRef = useRef(false);
-  const appTogglesUserChangedRef = useRef(false);
+  const [crewPortalMembers, setCrewPortalMembers] = useState<CrewPortalMember[]>([]);
+  const [crewPortalLoading, setCrewPortalLoading] = useState(false);
+  const [resetPinMember, setResetPinMember] = useState<CrewPortalMember | null>(null);
+  const [resetPinValue, setResetPinValue] = useState("");
+  const [resetPinSaving, setResetPinSaving] = useState(false);
+  const [addPortalOpen, setAddPortalOpen] = useState(false);
+  const [deletingTeamId, setDeletingTeamId] = useState<string | null>(null);
+  const [confirmPartnerPortalOff, setConfirmPartnerPortalOff] = useState(false);
+  const [confirmCrewTrackingOff, setConfirmCrewTrackingOff] = useState(false);
 
   useEffect(() => {
     setTeams(initialTeams);
   }, [initialTeams]);
 
-  // Load app toggles from localStorage so they persist across navigation
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(APP_TOGGLES_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (typeof parsed.crewTracking === "boolean") setCrewTracking(parsed.crewTracking);
-        if (typeof parsed.partnerPortal === "boolean") setPartnerPortal(parsed.partnerPortal);
-        if (typeof parsed.autoInvoicing === "boolean") setAutoInvoicing(parsed.autoInvoicing);
-      }
-      appTogglesLoadedRef.current = true;
-    } catch (_) {
-      appTogglesLoadedRef.current = true;
-    }
-  }, []);
+    if (activeTab !== "crews") return;
+    let cancelled = false;
+    setCrewPortalLoading(true);
+    fetch("/api/admin/crew-members")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setCrewPortalMembers(data);
+      })
+      .catch(() => { if (!cancelled) setCrewPortalMembers([]); })
+      .finally(() => { if (!cancelled) setCrewPortalLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
-  // Persist app toggles only when user has changed one (avoids overwriting saved values on load)
-  useEffect(() => {
-    if (typeof window === "undefined" || !appTogglesLoadedRef.current || !appTogglesUserChangedRef.current) return;
+  const persistToggles = async (next: AppToggles) => {
+    setTogglesSaving(true);
     try {
-      localStorage.setItem(
-        APP_TOGGLES_KEY,
-        JSON.stringify({ crewTracking, partnerPortal, autoInvoicing })
-      );
-    } catch (_) {}
-  }, [crewTracking, partnerPortal, autoInvoicing]);
+      const res = await fetch("/api/admin/platform-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Failed to save", "x");
+        return false;
+      }
+      setCrewTracking(data.crewTracking ?? next.crewTracking);
+      setPartnerPortal(data.partnerPortal ?? next.partnerPortal);
+      setAutoInvoicing(data.autoInvoicing ?? next.autoInvoicing);
+      return true;
+    } catch {
+      toast("Failed to save settings", "x");
+      return false;
+    } finally {
+      setTogglesSaving(false);
+    }
+  };
 
   const fetchUsers = () => {
     setUsersLoading(true);
@@ -150,9 +187,14 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const toggleMember = async (teamIdx: number, member: string) => {
     const team = teams[teamIdx];
     const normalized = (s: string) => String(s).trim().toLowerCase();
-    const isCurrentlyIn = team.memberIds.some((id) => normalized(id) === normalized(member));
+    const memberMatches = (id: string) => {
+      const nId = normalized(id);
+      const nM = normalized(member);
+      return nId === nM || nId.startsWith(nM + " ") || nM.startsWith(nId + " ");
+    };
+    const isCurrentlyIn = team.memberIds.some(memberMatches);
     const ids = isCurrentlyIn
-      ? team.memberIds.filter((m) => normalized(m) !== normalized(member))
+      ? team.memberIds.filter((id) => !memberMatches(id))
       : [...team.memberIds, member];
     const prevMemberIds = team.memberIds;
     setTeams((prev) => {
@@ -295,27 +337,27 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
       {/* Teams - view & edit members */}
       {activeTab === "crews" && (
       <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-          <div>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
               <Icon name="users" className="w-[16px] h-[16px]" /> Teams
             </h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team to view and edit members</p>
+            <div className="flex flex-nowrap items-center gap-2">
+              <button
+                onClick={() => setAddTeamModalOpen(true)}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+              >
+                + Add Team
+              </button>
+              <button
+                onClick={() => setAddTeamMemberOpen(true)}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              >
+                + Add to roster
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setAddTeamModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
-            >
-              + Add Team
-            </button>
-            <button
-              onClick={() => setAddTeamMemberOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
-            >
-              + Add Member
-            </button>
-          </div>
+          <p className="text-[11px] text-[var(--tx3)] mt-2">Click a team to edit roster, set lead, or delete. Add names to the team roster; add portal access so they can log in on the tablet.</p>
         </div>
         <div className="px-5 py-5 space-y-3">
           {teams.map((team, i) => (
@@ -328,8 +370,8 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                   <div className="text-[13px] font-semibold text-[var(--tx)]">{team.label}</div>
                   <div className="text-[11px] text-[var(--tx3)] mt-0.5">{team.memberIds.join(", ") || "No members"}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                <div className="flex flex-nowrap items-center gap-2 shrink-0">
+                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded shrink-0 ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
                     {team.active ? "Active" : "Inactive"}
                   </span>
                   <button
@@ -372,30 +414,184 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                 </div>
               </div>
               {editingTeam === team.id && (
-                <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)]">
-                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select team members</div>
-                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-1">
-                    {ALL_CREW.map((m) => {
-                      const currentTeam = teams[i];
-                      const norm = (s: string) => String(s).trim().toLowerCase();
-                      const isChecked = currentTeam?.memberIds?.some((id) => norm(id) === norm(m)) ?? false;
-                      return (
-                        <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleMember(i, m)}
-                            className="checkbox-elegant"
-                          />
-                          <span className="text-[12px] text-[var(--tx)]">{m}</span>
-                        </label>
-                      );
-                    })}
+                <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-4">
+                  <div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team roster (who’s on this team)</div>
+                    <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-1">
+                      {ALL_CREW.map((m) => {
+                        const norm = (s: string) => String(s).trim().toLowerCase();
+                        const nM = norm(m);
+                        const isChecked = (team.memberIds ?? []).some((id) => {
+                          const nId = norm(id);
+                          return nId === nM || nId.startsWith(nM + " ") || nM.startsWith(nId + " ");
+                        });
+                        return (
+                          <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleMember(i, m)}
+                              className="checkbox-elegant"
+                            />
+                            <span className="text-[12px] text-[var(--tx)]">{m}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal access (who can log in on tablet)</div>
+                    {crewPortalMembers.filter((m) => m.team_id === team.id && m.is_active).length === 0 ? (
+                      <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add portal access” above.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {crewPortalMembers
+                          .filter((m) => m.team_id === team.id && m.is_active)
+                          .map((m) => (
+                            <li key={m.id} className="flex flex-nowrap items-center justify-between gap-2 py-1.5 px-2 rounded bg-[var(--card)] border border-[var(--brd)]">
+                              <span className="text-[12px] text-[var(--tx)] min-w-0 truncate">{m.name}</span>
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] shrink-0">{m.role === "lead" ? "Lead" : m.role}</span>
+                              {m.role !== "lead" && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const r = await fetch(`/api/admin/crew-members/${m.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "lead" }) });
+                                    if (r.ok) {
+                                      toast(`${m.name} set as team lead`, "check");
+                                      const list = await fetch("/api/admin/crew-members").then((res) => res.json());
+                                      if (Array.isArray(list)) setCrewPortalMembers(list);
+                                    } else {
+                                      const d = await r.json().catch(() => ({}));
+                                      toast(d.error || "Failed", "x");
+                                    }
+                                  }}
+                                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                                >
+                                  Set as lead
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-[var(--brd)]">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!window.confirm(`Delete “${team.label}”? Crew members with portal access on this team will lose access. This cannot be undone.`)) return;
+                        setDeletingTeamId(team.id);
+                        try {
+                          const r = await fetch("/api/crews/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ crewId: team.id }) });
+                          const data = await r.json().catch(() => ({}));
+                          if (!r.ok) {
+                            toast(data.error || "Failed to delete", "x");
+                            return;
+                          }
+                          setTeams((prev) => prev.filter((t) => t.id !== team.id));
+                          setEditingTeam(null);
+                          toast("Team deleted", "check");
+                          router.refresh();
+                        } finally {
+                          setDeletingTeamId(null);
+                        }
+                      }}
+                      disabled={!!deletingTeamId}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10 transition-all disabled:opacity-50"
+                    >
+                      {deletingTeamId === team.id ? "Deleting…" : "Delete team"}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+
+        {/* Crew Portal members — login, Reset PIN, Revoke, Set lead */}
+        <div className="mt-6 bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-heading text-[14px] font-bold text-[var(--tx)]">Crew Portal access</h3>
+              <p className="text-[11px] text-[var(--tx3)] mt-0.5">People who can log in on the tablet (each has their own PIN). You can have more than one per team (e.g. lead + backup). If you see two entries with the same name, revoke the one that shouldn’t have access.</p>
+            </div>
+            <button
+              onClick={() => setAddPortalOpen(true)}
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+            >
+              + Add portal access
+            </button>
+          </div>
+          <div className="px-5 py-4">
+            {crewPortalLoading ? (
+              <p className="text-[12px] text-[var(--tx3)]">Loading…</p>
+            ) : crewPortalMembers.length === 0 ? (
+              <p className="text-[12px] text-[var(--tx3)]">No portal access yet. Click “+ Add portal access” above to add someone (name, phone, 6-digit PIN, team).</p>
+            ) : (
+              <ul className="space-y-2">
+                {crewPortalMembers
+                  .filter((m) => m.is_active)
+                  .map((m) => {
+                    const teamLabel = teams.find((t) => t.id === m.team_id)?.label ?? "—";
+                    return (
+                      <li key={m.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] flex-wrap">
+                        <div>
+                          <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
+                          <span className="text-[10px] text-[var(--tx3)] ml-2">({teamLabel})</span>
+                          <span className="text-[9px] font-semibold ml-1.5 px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)]">{m.role === "lead" ? "Lead" : m.role}</span>
+                          <div className="text-[11px] text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "—"}</div>
+                        </div>
+                        <div className="flex flex-nowrap items-center gap-2 shrink-0">
+                          {m.role !== "lead" && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const r = await fetch(`/api/admin/crew-members/${m.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "lead" }) });
+                                if (r.ok) {
+                                  toast(`${m.name} set as team lead`, "check");
+                                  const list = await fetch("/api/admin/crew-members").then((res) => res.json());
+                                  if (Array.isArray(list)) setCrewPortalMembers(list);
+                                } else {
+                                  const d = await r.json().catch(() => ({}));
+                                  toast(d.error || "Failed", "x");
+                                }
+                              }}
+                              className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                            >
+                              Set as lead
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => { setResetPinMember(m); setResetPinValue(""); }}
+                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                          >
+                            Reset PIN
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!window.confirm(`Revoke portal access for ${m.name}? They will no longer be able to log in.`)) return;
+                              const r = await fetch(`/api/admin/crew-members/${m.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: false }) });
+                              if (r.ok) {
+                                setCrewPortalMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, is_active: false } : x)));
+                                toast("Access revoked", "check");
+                              } else {
+                                const d = await r.json().catch(() => ({}));
+                                toast(d.error || "Failed", "x");
+                              }
+                            }}
+                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10"
+                          >
+                            Revoke access
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
       )}
@@ -420,35 +616,36 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
             { label: "Auto-Invoicing", desc: "Generate invoices automatically on delivery", state: autoInvoicing, set: setAutoInvoicing },
           ].map((item) => {
             const isPartnerPortal = item.label === "Partner Portal Access";
-            const handleToggle = () => {
+            const isCrewTracking = item.label === "Crew GPS Tracking";
+            const handleToggle = async () => {
               if (isPartnerPortal) {
-                setPartnerPortal((prev) => {
-                  const next = !prev;
-                  if (next === false) {
-                    const confirmed = window.confirm("Warning: Disabling Partner Portal Access will prevent all partners from viewing their deliveries. Are you sure you want to continue?");
-                    if (!confirmed) return prev;
-                  }
-                  appTogglesUserChangedRef.current = true;
-                  try {
-                    localStorage.setItem(APP_TOGGLES_KEY, JSON.stringify({ crewTracking, partnerPortal: next, autoInvoicing }));
-                  } catch (_) {}
-                  return next;
-                });
+                if (partnerPortal) {
+                  setConfirmPartnerPortalOff(true);
+                  return;
+                }
+                const ok = await persistToggles({ crewTracking, partnerPortal: true, autoInvoicing });
+                if (ok) setPartnerPortal(true);
+              } else if (isCrewTracking) {
+                if (crewTracking) {
+                  setConfirmCrewTrackingOff(true);
+                  return;
+                }
+                const ok = await persistToggles({ crewTracking: true, partnerPortal, autoInvoicing });
+                if (ok) setCrewTracking(true);
               } else {
                 const next = !item.state;
-                appTogglesUserChangedRef.current = true;
-                item.set(next);
-                try {
-                  const nextToggles = {
-                    crewTracking: item.label === "Crew GPS Tracking" ? next : crewTracking,
-                    partnerPortal,
-                    autoInvoicing: item.label === "Auto-Invoicing" ? next : autoInvoicing,
-                  };
-                  localStorage.setItem(APP_TOGGLES_KEY, JSON.stringify(nextToggles));
-                } catch (_) {}
+                const nextToggles = {
+                  crewTracking: item.label === "Crew GPS Tracking" ? next : crewTracking,
+                  partnerPortal,
+                  autoInvoicing: item.label === "Auto-Invoicing" ? next : autoInvoicing,
+                };
+                const ok = await persistToggles(nextToggles);
+                if (ok) {
+                  item.set(next);
+                }
               }
             };
-            const isOn = isPartnerPortal ? partnerPortal : item.state;
+            const isOn = isPartnerPortal ? partnerPortal : isCrewTracking ? crewTracking : item.state;
             return (
               <div key={item.label} className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
                 <div>
@@ -668,6 +865,158 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         teams={teams}
         onTeamsChange={setTeams}
       />
+      <AddPortalAccessModal
+        open={addPortalOpen}
+        onClose={() => setAddPortalOpen(false)}
+        teams={teams}
+        onAdded={() => {
+          fetch("/api/admin/crew-members").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setCrewPortalMembers(data); });
+        }}
+      />
+
+      <ModalOverlay
+        open={confirmPartnerPortalOff}
+        onClose={() => setConfirmPartnerPortalOff(false)}
+        title="Disable Partner Portal?"
+        maxWidth="sm"
+      >
+        <div className="p-5 space-y-4">
+          <p className="text-[13px] text-[var(--tx2)]">
+            Disabling Partner Portal Access will prevent all partners from viewing their deliveries. Are you sure you want to continue?
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmPartnerPortalOff(false)}
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={togglesSaving}
+              onClick={async () => {
+                const ok = await persistToggles({ crewTracking, partnerPortal: false, autoInvoicing });
+                if (ok) {
+                  setPartnerPortal(false);
+                  setConfirmPartnerPortalOff(false);
+                }
+              }}
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              Disable access
+            </button>
+          </div>
+        </div>
+      </ModalOverlay>
+
+      <ModalOverlay
+        open={confirmCrewTrackingOff}
+        onClose={() => setConfirmCrewTrackingOff(false)}
+        title="Disable Crew GPS Tracking?"
+        maxWidth="sm"
+      >
+        <div className="p-5 space-y-4">
+          <p className="text-[13px] text-[var(--tx2)]">
+            Disabling Crew GPS Tracking will stop real-time crew location updates. Are you sure you want to continue?
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmCrewTrackingOff(false)}
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={togglesSaving}
+              onClick={async () => {
+                const ok = await persistToggles({ crewTracking: false, partnerPortal, autoInvoicing });
+                if (ok) {
+                  setCrewTracking(false);
+                  setConfirmCrewTrackingOff(false);
+                }
+              }}
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              Disable tracking
+            </button>
+          </div>
+        </div>
+      </ModalOverlay>
+
+      <ModalOverlay
+        open={!!resetPinMember}
+        onClose={() => { setResetPinMember(null); setResetPinValue(""); }}
+        title="Reset crew portal PIN"
+        maxWidth="sm"
+      >
+        {resetPinMember && (
+          <form
+            className="p-5 space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const pin = resetPinValue.trim();
+              if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                toast("PIN must be 6 digits", "x");
+                return;
+              }
+              setResetPinSaving(true);
+              try {
+                const r = await fetch(`/api/admin/crew-members/${resetPinMember.id}/reset-pin`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ pin }),
+                });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                  toast(data.error || "Failed to reset PIN", "x");
+                  return;
+                }
+                toast("PIN updated. They can log in with the new PIN.", "check");
+                setResetPinMember(null);
+                setResetPinValue("");
+              } finally {
+                setResetPinSaving(false);
+              }
+            }}
+          >
+            <p className="text-[12px] text-[var(--tx2)]">
+              Set a new 6-digit PIN for <strong>{resetPinMember.name}</strong>. They will use it to log in to the Crew Portal.
+            </p>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={resetPinValue}
+                onChange={(e) => setResetPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => { setResetPinMember(null); setResetPinValue(""); }}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={resetPinValue.length !== 6 || resetPinSaving}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              >
+                {resetPinSaving ? "Saving…" : "Set new PIN"}
+              </button>
+            </div>
+          </form>
+        )}
+      </ModalOverlay>
     </div>
   );
 }

@@ -262,81 +262,82 @@ export default function UnifiedTrackingView({
         </div>
       </div>
 
-      {/* Two columns: Active jobs + All teams */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-[var(--brd)]">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
-                Active Jobs ({activeSessions.length})
+      {/* Activity: Active jobs + Teams in two equal cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <h3 className="text-[13px] font-bold text-[var(--tx)]">Active jobs</h3>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+              {activeSessions.length === 0
+                ? "No crews are tracking a job right now"
+                : `${activeSessions.length} job${activeSessions.length === 1 ? "" : "s"} in progress`}
+            </p>
+          </div>
+          <div className="max-h-[300px] overflow-y-auto">
+            {activeSessions.length === 0 ? (
+              <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+                Tap a team below to see their assignments
               </div>
-            </div>
-            <div className="max-h-[320px] overflow-y-auto">
-              {activeSessions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
-                  No active tracking sessions
-                </div>
-              ) : (
-                activeSessions.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={s.detailHref}
-                    className="block px-4 py-3 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--bg)] transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
-                      <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{s.teamName}</span>
-                    </div>
-                    <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">
-                      {s.jobId}
-                    </div>
-                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                      {CREW_STATUS_TO_LABEL[s.status] || s.status}
-                    </div>
-                    <div className="text-[9px] text-[var(--tx3)] mt-0.5">
-                      Last update: {formatRelative(s.updatedAt)}
-                    </div>
-                    <div className="text-[10px] text-[var(--gold)] mt-1">View Job Detail →</div>
-                  </Link>
-                ))
-              )}
-            </div>
+            ) : (
+              activeSessions.map((s) => (
+                <Link
+                  key={s.id}
+                  href={s.detailHref}
+                  className="block px-4 py-3 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--bg)] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
+                    <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{s.teamName}</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{s.jobId}</div>
+                  <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    {CREW_STATUS_TO_LABEL[s.status] || s.status} · {formatRelative(s.updatedAt)}
+                  </div>
+                  <div className="text-[10px] text-[var(--gold)] mt-1">View job →</div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="lg:col-span-2">
-          <div className="mb-2">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
-              All Teams ({crews.length})
-            </div>
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <h3 className="text-[13px] font-bold text-[var(--tx)]">Teams</h3>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+              Click a team for details and current job
+            </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-3">
-            {crews.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelectedCrew(c)}
-                className="flex items-center gap-3 px-4 py-3.5 bg-[var(--card)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)] transition-all text-left group"
-              >
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
-                  {c.name?.replace("Team ", "")}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-bold text-[var(--tx)]">{c.name}</div>
-                  <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
-                    {(c.members || []).join(", ") || "—"}
-                  </div>
-                  <div className="text-[9px] text-[var(--tx2)] mt-0.5">
-                    {c.status === "en-route" ? `En route • ${c.current_job || "—"}` : c.current_job || "Standby"}
-                  </div>
-                </div>
-                <div
-                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                    c.status === "en-route" ? "bg-[var(--org)] animate-pulse" : "bg-[var(--grn)]"
-                  }`}
-                />
-              </button>
-            ))}
+          <div className="p-4">
+            {crews.length === 0 ? (
+              <div className="py-8 text-center text-[12px] text-[var(--tx3)]">No teams yet</div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {crews.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCrew(c)}
+                    className="flex items-center gap-3 px-4 py-3 bg-[var(--bg)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)] transition-all text-left group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors shrink-0">
+                      {(c.name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-bold text-[var(--tx)] truncate">{c.name}</div>
+                      <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                        {c.status === "en-route" ? `En route · ${c.current_job || "—"}` : c.current_job || "Standby"}
+                      </div>
+                    </div>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        c.status === "en-route" ? "bg-[var(--org)] animate-pulse" : "bg-[var(--grn)]"
+                      }`}
+                      title={c.status === "en-route" ? "En route" : "Standby"}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

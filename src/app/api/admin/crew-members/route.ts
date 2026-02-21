@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/api-auth";
 import { normalizePhone } from "@/lib/phone";
 import { hashCrewPin } from "@/lib/crew-token";
 import { getResend } from "@/lib/resend";
@@ -11,9 +11,8 @@ const CREW_MEMBERS_SELECT_NO_EMAIL = "id, name, phone, role, team_id, is_active,
 
 /** GET: List crew members (admin only) */
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
 
   const admin = createAdminClient();
   let result = await admin.from("crew_members").select(CREW_MEMBERS_SELECT).order("name");
@@ -27,11 +26,10 @@ export async function GET() {
 
 /** POST: Create crew member (admin only). Optionally send portal invite email when email is provided. */
 export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
 
+  try {
     const body = await req.json();
     const { name, phone, pin, role, team_id, email } = body;
     if (!name || !phone || !pin || !role || !team_id) {

@@ -3,8 +3,14 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
+import { getPlatformToggles } from "@/lib/platform-settings";
 
 export async function POST(req: NextRequest) {
+  const toggles = await getPlatformToggles();
+  if (!toggles.crew_tracking) {
+    return NextResponse.json({ error: "Crew GPS tracking is disabled" }, { status: 403 });
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
   const payload = token ? verifyCrewToken(token) : null;
