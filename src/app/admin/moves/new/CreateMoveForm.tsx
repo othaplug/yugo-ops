@@ -6,6 +6,7 @@ import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { Plus, Trash2, FileText } from "lucide-react";
 
@@ -102,7 +103,7 @@ export default function CreateMoveForm({
       if (org) {
         setClientName(org.contact_name || org.name || "");
         setClientEmail(org.email || "");
-        setClientPhone(org.phone || "");
+        setClientPhone(org.phone ? formatPhone(org.phone) : "");
       }
     }
   }, [organizationId, organizations]);
@@ -185,7 +186,7 @@ export default function CreateMoveForm({
         body: JSON.stringify({
           client_name: clientName.trim(),
           client_email: clientEmail.trim(),
-          client_phone: clientPhone.trim(),
+          client_phone: normalizePhone(clientPhone),
         }),
       });
       const checkData = await checkRes.json();
@@ -204,7 +205,7 @@ export default function CreateMoveForm({
       formData.append("to_access", toAccess);
       formData.append("client_name", clientName.trim());
       formData.append("client_email", clientEmail.trim());
-      formData.append("client_phone", clientPhone.trim());
+      formData.append("client_phone", normalizePhone(clientPhone));
       formData.append("from_address", fromAddress.trim());
       formData.append("to_address", toAddress.trim());
       if (fromLat != null && fromLng != null) {
@@ -332,7 +333,8 @@ export default function CreateMoveForm({
                   name="client_phone"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
+                  onBlur={() => setClientPhone(formatPhone(clientPhone))}
+                  placeholder="(123) 456-7890"
                   className={fieldInput}
                 />
               </Field>

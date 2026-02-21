@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import ModalOverlay from "./ModalOverlay";
 import { Icon } from "@/components/AppIcons";
 
@@ -41,8 +42,8 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
         {contact.phone && (
           <div className="flex items-center gap-2">
             <Icon name="phone" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-            <a href={`tel:${contact.phone}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
-              {contact.phone}
+            <a href={`tel:${normalizePhone(contact.phone)}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
+              {formatPhone(contact.phone)}
             </a>
           </div>
         )}

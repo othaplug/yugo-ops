@@ -6,7 +6,7 @@ import { moveNotificationEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await requireAuth();
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     // Super admins may not be in platform_users; use admin client to bypass RLS for DB operations

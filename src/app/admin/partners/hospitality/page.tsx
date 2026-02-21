@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import { Icon } from "@/components/AppIcons";
 import Badge from "../../components/Badge";
 import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";
@@ -150,7 +149,6 @@ export default async function HospitalityPage() {
               href={getDeliveryDetailPath(d)}
               className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all"
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--ordim)] text-[var(--tx2)]"><Icon name="hotel" className="w-[16px] h-[16px]" /></div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-semibold truncate">{d.customer_name} ({d.client_name})</div>
                 <div className="text-[9px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</div>

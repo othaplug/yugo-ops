@@ -1,4 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yugo OPS
+
+Operations platform for moves, deliveries, crew tracking, and partner management.
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and configure. **Required for production:**
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `NEXT_PUBLIC_APP_URL` | App base URL (e.g. https://app.opsplus.co) |
+| `SUPER_ADMIN_EMAIL` | Superadmin email (must be set in production) |
+| `TRACK_SIGNING_SECRET` | Min 32 chars for track link HMAC |
+| `CREW_SESSION_SECRET` | Min 32 chars for crew PIN hashing and JWT |
+
+**Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN`, VAPID keys for web push.
 
 ## Getting Started
 

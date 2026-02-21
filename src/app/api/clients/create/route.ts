@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
     if (persona === "partner") {
-      // Partner: always create org + auth user + partner_users + send invite
-      const { name, type, contact_name, email, phone, address } = body;
+      // Partner: create org + auth user + partner_users; optionally send invite
+      const { name, type, contact_name, email, phone, address, send_portal_access } = body;
       if (!name || typeof name !== "string" || !email || typeof email !== "string") {
         return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
       }
@@ -150,23 +150,25 @@ export async function POST(req: NextRequest) {
         await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
       }
 
-      const resend = getResend();
-      const inviteParams = {
-        contactName: contactNameTrimmed,
-        companyName: nameTrimmed,
-        email: emailTrimmed,
-        typeLabel,
-        tempPassword,
-        loginUrl,
-      };
-      await resend.emails.send({
-        from: "OPS+ <notifications@opsplus.co>",
-        to: emailTrimmed,
-        subject: `You're invited to OPS+ — ${nameTrimmed}`,
-        html: invitePartnerEmail(inviteParams),
-        text: invitePartnerEmailText(inviteParams),
-        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
-      });
+      if (send_portal_access !== false) {
+        const resend = getResend();
+        const inviteParams = {
+          contactName: contactNameTrimmed,
+          companyName: nameTrimmed,
+          email: emailTrimmed,
+          typeLabel,
+          tempPassword,
+          loginUrl,
+        };
+        await resend.emails.send({
+          from: "OPS+ <notifications@opsplus.co>",
+          to: emailTrimmed,
+          subject: `You're invited to OPS+ — ${nameTrimmed}`,
+          html: invitePartnerEmail(inviteParams),
+          text: invitePartnerEmailText(inviteParams),
+          headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+        });
+      }
 
       return NextResponse.json({ ok: true, id: orgId });
     }

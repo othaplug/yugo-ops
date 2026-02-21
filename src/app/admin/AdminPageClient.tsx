@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import FilterBar from "./components/FilterBar";
+import LiveOperationsCard from "./components/LiveOperationsCard";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
@@ -222,8 +223,10 @@ export default function AdminPageClient({
         </Link>
       </div>
 
+      <LiveOperationsCard />
+
       {/* Today's B2B Deliveries */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mt-6 sm:mt-8">
         <div className="sh px-4 pt-4">
           <div className="sh-t">Today&apos;s B2B Deliveries</div>
           <Link href="/admin/deliveries" className="sh-l">All →</Link>
@@ -244,12 +247,6 @@ export default function AdminPageClient({
         <div className="dl px-4 pb-4 dc-wrap">
         {filteredDeliveries.slice(0, 5).map((d) => (
           <Link key={d.id} href={getDeliveryDetailPath(d)} className="dc">
-            <div
-              className="dc-ic flex items-center justify-center text-[var(--tx2)]"
-              style={{ background: categoryBgs[d.category || ""] || "var(--gdim)" }}
-            >
-              <Icon name={categoryIcons[d.category || ""] || "package"} className="w-[16px] h-[16px]" />
-            </div>
             <div className="dc-i">
               <div className="dc-t">{d.customer_name} ({d.client_name})</div>
               <div className="dc-s">{d.items?.length || 0} items</div>
@@ -283,9 +280,6 @@ export default function AdminPageClient({
         <div className="dl px-4 pb-4 dc-wrap">
         {filteredMoves.slice(0, 5).map((m) => (
           <Link key={m.id} href={getMoveDetailPath(m)} className="dc">
-            <div className="dc-ic flex items-center justify-center text-[var(--tx2)]" style={{ background: "var(--gdim)" }}>
-              <Icon name={m.move_type === "office" ? "building" : "home"} className="w-[16px] h-[16px]" />
-            </div>
             <div className="dc-i">
               <div className="dc-t">{m.client_name}</div>
               <div className="dc-s">{m.from_address} → {m.to_address}</div>

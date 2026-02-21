@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ jobId: string }> }
+) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
+  const payload = token ? verifyCrewToken(token) : null;
+  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { jobId } = await params;
+  const body = await req.json();
+  const description = (body.description || "").toString().trim();
+  const room = (body.room || "").toString().trim() || null;
+  const quantity = Math.max(1, parseInt(String(body.quantity), 10) || 1);
+
+  if (!description) return NextResponse.json({ error: "Description required" }, { status: 400 });
+
+  const admin = createAdminClient();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+
+  let entityId: string;
+  if (isUuid) {
+    const [moveRes, delRes] = await Promise.all([
+      admin.from("moves").select("id, crew_id").eq("id", jobId).maybeSingle(),
+      admin.from("deliveries").select("id, crew_id").eq("id", jobId).maybeSingle(),
+    ]);
+    const move = moveRes.data;
+    const delivery = delRes.data;
+    if (!move && !delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    const crewId = move?.crew_id || delivery?.crew_id;
+    if (crewId !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
+    entityId = move?.id || delivery?.id || jobId;
+  } else {
+    const [moveRes, delRes] = await Promise.all([
+      admin.from("moves").select("id, crew_id").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).maybeSingle(),
+      admin.from("deliveries").select("id, crew_id").ilike("delivery_number", jobId).maybeSingle(),
+    ]);
+    const move = moveRes.data;
+    const delivery = delRes.data;
+    if (!move && !delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    const crewId = move?.crew_id || delivery?.crew_id;
+    if (crewId !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
+    entityId = move?.id || delivery?.id || jobId;
+  }
+  const { data: item, error } = await admin
+    .from("extra_items")
+    .insert({
+      job_id: entityId,
+      added_by: payload.crewMemberId,
+      description,
+      room,
+      quantity,
+    })
+    .select("id, description, room, quantity, added_at")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(item);
+}

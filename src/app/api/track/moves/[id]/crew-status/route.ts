@@ -23,7 +23,30 @@ export async function GET(
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
     let crew: { current_lat: number; current_lng: number; name: string } | null = null;
-    if (move.crew_id) {
+    let liveStage: string | null = move.stage || null;
+    let lastLocationAt: string | null = null;
+
+    // Prefer tracking_sessions (crew portal) over crews table
+    const { data: ts } = await admin
+      .from("tracking_sessions")
+      .select("status, last_location, is_active")
+      .eq("job_id", moveId)
+      .eq("job_type", "move")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (ts?.last_location && typeof ts.last_location === "object" && "lat" in ts.last_location && "lng" in ts.last_location) {
+      const loc = ts.last_location as { lat: number; lng: number; timestamp?: string };
+      crew = {
+        current_lat: loc.lat,
+        current_lng: loc.lng,
+        name: "Crew",
+      };
+      liveStage = ts.status || liveStage;
+      lastLocationAt = loc.timestamp || null;
+    } else if (move.crew_id) {
       const { data: c } = await admin
         .from("crews")
         .select("current_lat, current_lng, name")
@@ -58,7 +81,9 @@ export async function GET(
         center,
         pickup,
         dropoff,
-        liveStage: move.stage || null,
+        liveStage,
+        lastLocationAt,
+        hasActiveTracking: !!ts?.is_active,
       },
       {
         headers: {

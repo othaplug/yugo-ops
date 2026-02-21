@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import { Icon } from "@/components/AppIcons";
 import ModalOverlay from "@/app/admin/components/ModalOverlay";
 
@@ -41,8 +42,8 @@ export default function ViewDesignerModal({ open, onClose, designer }: ViewDesig
           {designer.phone && (
             <div className="flex items-center gap-2">
               <Icon name="phone" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-              <a href={`tel:${designer.phone}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
-                {designer.phone}
+              <a href={`tel:${normalizePhone(designer.phone)}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
+                {formatPhone(designer.phone)}
               </a>
             </div>
           )}

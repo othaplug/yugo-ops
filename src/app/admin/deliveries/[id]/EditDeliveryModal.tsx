@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
@@ -51,7 +52,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
       .update({
         customer_name: form.get("customer_name"),
         customer_email: form.get("customer_email") || null,
-        customer_phone: form.get("customer_phone") || null,
+        customer_phone: normalizePhone(String(form.get("customer_phone") || "")) || null,
         delivery_address: deliveryAddress || form.get("delivery_address"),
         pickup_address: pickupAddress || form.get("pickup_address"),
         scheduled_date: form.get("scheduled_date"),
@@ -92,7 +93,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
             <input name="customer_email" type="email" defaultValue={delivery.customer_email} className="field-input" />
           </Field>
           <Field label="Phone">
-            <input name="customer_phone" defaultValue={delivery.customer_phone} className="field-input" />
+            <input name="customer_phone" type="tel" defaultValue={delivery.customer_phone ? formatPhone(delivery.customer_phone) : ""} placeholder="(123) 456-7890" className="field-input" />
           </Field>
           <Field label="Pickup Address">
             <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Pickup address" label="" className="field-input" />

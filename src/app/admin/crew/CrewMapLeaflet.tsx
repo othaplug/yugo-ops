@@ -75,7 +75,7 @@ export function CrewMapLeaflet({
     >
       <MapController center={centerArr} crews={crews} zoom={zoom} />
       <TileLayer
-        attribution=""
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {crews.map((c) => (

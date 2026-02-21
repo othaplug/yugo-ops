@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 
@@ -38,7 +39,7 @@ export default function PartnerProfileSettings() {
           setProfile(data);
           setContactName(data.contact_name || "");
           setEmail(data.email || "");
-          setPhone(data.phone || "");
+          setPhone(data.phone ? formatPhone(data.phone) : "");
         }
       })
       .catch(() => toast("Failed to load profile", "x"))
@@ -56,12 +57,12 @@ export default function PartnerProfileSettings() {
         body: JSON.stringify({
           contact_name: contactName.trim(),
           email: email.trim(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone).trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update");
-      setProfile((p) => (p ? { ...p, contact_name: contactName.trim(), email: email.trim(), phone: phone.trim() } : null));
+      setProfile((p) => (p ? { ...p, contact_name: contactName.trim(), email: email.trim(), phone: normalizePhone(phone).trim() } : null));
       toast("Profile updated", "check");
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to update", "x");
@@ -122,7 +123,8 @@ export default function PartnerProfileSettings() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="416-555-0100"
+            onBlur={() => setPhone(formatPhone(phone))}
+            placeholder="(123) 456-7890"
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

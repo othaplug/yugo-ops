@@ -32,6 +32,23 @@ export const LIVE_STAGE_MAP: Record<string, number> = {
   in_transit: 3,
   unloading: 4,
   job_complete: 5,
+  // Crew portal tracking status mapping
+  en_route_to_pickup: 0,
+  arrived_at_pickup: 1,
+  en_route_to_destination: 3,
+  arrived_at_destination: 4,
+  completed: 5,
+};
+
+/** Map crew tracking status to client display label */
+export const CREW_STATUS_TO_LABEL: Record<string, string> = {
+  en_route_to_pickup: "En Route to Pickup",
+  arrived_at_pickup: "Arrived at Pickup",
+  loading: "Loading",
+  en_route_to_destination: "En Route to Destination",
+  arrived_at_destination: "Arrived at Destination",
+  unloading: "Unloading",
+  completed: "Completed",
 };
 
 /** Status index for progress calculation (0-5) */

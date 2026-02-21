@@ -73,13 +73,13 @@ export default function GlobalModal({
     >
       {/* Dimmed backdrop - covers viewport */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Content panel - centered */}
+      {/* Content panel - centered, above backdrop so form/inputs receive pointer events */}
       <div
-        className={`relative w-full ${maxW} max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden animate-fade-up my-auto`}
+        className={`relative z-10 w-full ${maxW} max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden animate-fade-up my-auto pointer-events-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {!noHeader && (
@@ -96,7 +96,7 @@ export default function GlobalModal({
             </button>
           </div>
         )}
-        <div className="overflow-y-auto flex-1 min-h-0">{children}</div>
+        <div className="overflow-y-auto flex-1 min-h-0 p-5">{children}</div>
       </div>
     </div>
   );

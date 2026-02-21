@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Project } from "../projectsData";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import ModalOverlay from "../../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
@@ -21,7 +22,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
   const [designer, setDesigner] = useState(project.designer);
   const [designerCompany, setDesignerCompany] = useState(project.designerCompany || "");
   const [designerEmail, setDesignerEmail] = useState(project.designerEmail || "");
-  const [designerPhone, setDesignerPhone] = useState(project.designerPhone || "");
+  const [designerPhone, setDesignerPhone] = useState(project.designerPhone ? formatPhone(project.designerPhone) : "");
 
   useEffect(() => {
     if (open) {
@@ -33,7 +34,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
       setDesigner(project.designer);
       setDesignerCompany(project.designerCompany || "");
       setDesignerEmail(project.designerEmail || "");
-      setDesignerPhone(project.designerPhone || "");
+      setDesignerPhone(project.designerPhone ? formatPhone(project.designerPhone) : "");
     }
   }, [open, project]);
 
@@ -48,7 +49,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
       designer: designer.trim(),
       designerCompany: designerCompany.trim() || undefined,
       designerEmail: designerEmail.trim() || undefined,
-      designerPhone: designerPhone.trim() || undefined,
+      designerPhone: normalizePhone(designerPhone).trim() || undefined,
     };
     onSaved?.(updated);
     onClose();
@@ -133,6 +134,8 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
               type="tel"
               value={designerPhone}
               onChange={(e) => setDesignerPhone(e.target.value)}
+              onBlur={() => setDesignerPhone(formatPhone(designerPhone))}
+              placeholder="(123) 456-7890"
               className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>

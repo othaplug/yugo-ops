@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ClientDetailClient from "./ClientDetailClient";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function ClientDetailPage({
   params,
@@ -24,7 +25,7 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isSuperAdmin = (user?.email || "").toLowerCase() === (process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com").toLowerCase();
+  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
   const { data: platformUser } = user
     ? await supabase.from("platform_users").select("role").eq("user_id", user.id).single()
     : { data: null };

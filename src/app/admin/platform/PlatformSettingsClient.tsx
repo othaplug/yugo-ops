@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InviteUserModal from "./InviteUserModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
+import DeviceSetupCodes from "./DeviceSetupCodes";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import { useRouter } from "next/navigation";
 
 const TABS = [
   { id: "pricing", label: "Pricing" },
-  { id: "crews", label: "Crews & Teams" },
+  { id: "crews", label: "Teams" },
+  { id: "devices", label: "Devices" },
   { id: "app", label: "App Settings" },
   { id: "partners", label: "Partners" },
   { id: "users", label: "Users" },
@@ -35,6 +37,7 @@ function formatLastActive(iso: string): string {
 }
 
 const RATES_KEY = "yugo-platform-rates";
+const APP_TOGGLES_KEY = "yugo-platform-app-toggles";
 
 interface Team {
   id: string;
@@ -59,7 +62,6 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null }[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string } | null>(null);
-  const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const [crewTracking, setCrewTracking] = useState(true);
   const [partnerPortal, setPartnerPortal] = useState(false);
   const [autoInvoicing, setAutoInvoicing] = useState(true);
@@ -73,13 +75,44 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
   const [addTeamModalOpen, setAddTeamModalOpen] = useState(false);
+  const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const [addTeamName, setAddTeamName] = useState("");
   const [addTeamMembers, setAddTeamMembers] = useState<string[]>([]);
   const [ratesSaving, setRatesSaving] = useState(false);
+  const appTogglesLoadedRef = useRef(false);
+  const appTogglesUserChangedRef = useRef(false);
 
   useEffect(() => {
     setTeams(initialTeams);
   }, [initialTeams]);
+
+  // Load app toggles from localStorage so they persist across navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(APP_TOGGLES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.crewTracking === "boolean") setCrewTracking(parsed.crewTracking);
+        if (typeof parsed.partnerPortal === "boolean") setPartnerPortal(parsed.partnerPortal);
+        if (typeof parsed.autoInvoicing === "boolean") setAutoInvoicing(parsed.autoInvoicing);
+      }
+      appTogglesLoadedRef.current = true;
+    } catch (_) {
+      appTogglesLoadedRef.current = true;
+    }
+  }, []);
+
+  // Persist app toggles only when user has changed one (avoids overwriting saved values on load)
+  useEffect(() => {
+    if (typeof window === "undefined" || !appTogglesLoadedRef.current || !appTogglesUserChangedRef.current) return;
+    try {
+      localStorage.setItem(
+        APP_TOGGLES_KEY,
+        JSON.stringify({ crewTracking, partnerPortal, autoInvoicing })
+      );
+    } catch (_) {}
+  }, [crewTracking, partnerPortal, autoInvoicing]);
 
   const fetchUsers = () => {
     setUsersLoading(true);
@@ -116,12 +149,17 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
 
   const toggleMember = async (teamIdx: number, member: string) => {
     const team = teams[teamIdx];
-    const ids = team.memberIds.includes(member)
-      ? team.memberIds.filter((m) => m !== member)
+    const normalized = (s: string) => String(s).trim().toLowerCase();
+    const isCurrentlyIn = team.memberIds.some((id) => normalized(id) === normalized(member));
+    const ids = isCurrentlyIn
+      ? team.memberIds.filter((m) => normalized(m) !== normalized(member))
       : [...team.memberIds, member];
-    const next = [...teams];
-    next[teamIdx] = { ...next[teamIdx], memberIds: ids };
-    setTeams(next);
+    const prevMemberIds = team.memberIds;
+    setTeams((prev) => {
+      const next = [...prev];
+      next[teamIdx] = { ...next[teamIdx], memberIds: ids };
+      return next;
+    });
 
     const res = await fetch("/api/crews/update-members", {
       method: "POST",
@@ -131,7 +169,13 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
     if (!res.ok) {
       const data = await res.json();
       toast(data.error || "Failed to update", "x");
-      setTeams(teams);
+      setTeams((prev) => {
+        const reverted = [...prev];
+        reverted[teamIdx] = { ...reverted[teamIdx], memberIds: prevMemberIds };
+        return reverted;
+      });
+    } else {
+      router.refresh();
     }
   };
 
@@ -248,13 +292,13 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
       </div>
       )}
 
-      {/* Crews & Teams - view & edit members */}
+      {/* Teams - view & edit members */}
       {activeTab === "crews" && (
       <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="users" className="w-[16px] h-[16px]" /> Crews & Teams
+              <Icon name="users" className="w-[16px] h-[16px]" /> Teams
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team to view and edit members</p>
           </div>
@@ -265,8 +309,11 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
             >
               + Add Team
             </button>
-            <button onClick={() => setAddTeamMemberOpen(true)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all">
-              + Add Team Member
+            <button
+              onClick={() => setAddTeamMemberOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+            >
+              + Add Member
             </button>
           </div>
         </div>
@@ -286,7 +333,38 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                     {team.active ? "Active" : "Inactive"}
                   </span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); const next = [...teams]; next[i] = { ...next[i], active: !next[i].active }; setTeams(next); }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const next = !team.active;
+                      setTeams((prev) => {
+                        const updated = [...prev];
+                        updated[i] = { ...updated[i], active: next };
+                        return updated;
+                      });
+                      try {
+                        const r = await fetch("/api/crews/update-active", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ crewId: team.id, active: next }),
+                        });
+                        if (!r.ok) {
+                          const data = await r.json().catch(() => ({}));
+                          toast(data.error || "Failed to update", "x");
+                          setTeams((prev) => {
+                            const reverted = [...prev];
+                            reverted[i] = { ...reverted[i], active: !next };
+                            return reverted;
+                          });
+                        }
+                      } catch {
+                        toast("Failed to update", "x");
+                        setTeams((prev) => {
+                          const reverted = [...prev];
+                          reverted[i] = { ...reverted[i], active: !next };
+                          return reverted;
+                        });
+                      }
+                    }}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${team.active ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                   >
                     <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${team.active ? "translate-x-5" : "translate-x-0.5"}`} />
@@ -297,17 +375,22 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)]">
                   <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select team members</div>
                   <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-1">
-                    {ALL_CREW.map((m) => (
-                      <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={team.memberIds.includes(m)}
-                          onChange={() => toggleMember(i, m)}
-                          className="checkbox-elegant"
-                        />
-                        <span className="text-[12px] text-[var(--tx)]">{m}</span>
-                      </label>
-                    ))}
+                    {ALL_CREW.map((m) => {
+                      const currentTeam = teams[i];
+                      const norm = (s: string) => String(s).trim().toLowerCase();
+                      const isChecked = currentTeam?.memberIds?.some((id) => norm(id) === norm(m)) ?? false;
+                      return (
+                        <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleMember(i, m)}
+                            className="checkbox-elegant"
+                          />
+                          <span className="text-[12px] text-[var(--tx)]">{m}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -316,6 +399,9 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         </div>
       </div>
       )}
+
+      {/* iPad Setup Codes */}
+      {activeTab === "devices" && <DeviceSetupCodes />}
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
       {activeTab === "app" && (
@@ -332,26 +418,60 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
             { label: "Crew GPS Tracking", desc: "Enable real-time crew location tracking", state: crewTracking, set: setCrewTracking },
             { label: "Partner Portal Access", desc: "Allow partners to view their deliveries", state: partnerPortal, set: setPartnerPortal },
             { label: "Auto-Invoicing", desc: "Generate invoices automatically on delivery", state: autoInvoicing, set: setAutoInvoicing },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
-              <div>
-                <div className="text-[13px] font-semibold text-[var(--tx)]">{item.label}</div>
-                <div className="text-[11px] text-[var(--tx3)] mt-0.5">{item.desc}</div>
-              </div>
-              <button
-                onClick={() => item.set(!item.state)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  item.state ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    item.state ? "translate-x-6" : "translate-x-1"
+          ].map((item) => {
+            const isPartnerPortal = item.label === "Partner Portal Access";
+            const handleToggle = () => {
+              if (isPartnerPortal) {
+                setPartnerPortal((prev) => {
+                  const next = !prev;
+                  if (next === false) {
+                    const confirmed = window.confirm("Warning: Disabling Partner Portal Access will prevent all partners from viewing their deliveries. Are you sure you want to continue?");
+                    if (!confirmed) return prev;
+                  }
+                  appTogglesUserChangedRef.current = true;
+                  try {
+                    localStorage.setItem(APP_TOGGLES_KEY, JSON.stringify({ crewTracking, partnerPortal: next, autoInvoicing }));
+                  } catch (_) {}
+                  return next;
+                });
+              } else {
+                const next = !item.state;
+                appTogglesUserChangedRef.current = true;
+                item.set(next);
+                try {
+                  const nextToggles = {
+                    crewTracking: item.label === "Crew GPS Tracking" ? next : crewTracking,
+                    partnerPortal,
+                    autoInvoicing: item.label === "Auto-Invoicing" ? next : autoInvoicing,
+                  };
+                  localStorage.setItem(APP_TOGGLES_KEY, JSON.stringify(nextToggles));
+                } catch (_) {}
+              }
+            };
+            const isOn = isPartnerPortal ? partnerPortal : item.state;
+            return (
+              <div key={item.label} className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
+                <div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{item.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{item.desc}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggle}
+                  aria-label={isOn ? `Turn off ${item.label}` : `Turn on ${item.label}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isOn ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
                   }`}
-                />
-              </button>
-            </div>
-          ))}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isOn ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -420,7 +540,7 @@ export default function PlatformSettingsClient({ initialTeams = [], currentUserI
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
           <div>
             <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management — Yugo Team
+              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
           </div>

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export async function PATCH(
   req: NextRequest,
@@ -21,7 +21,7 @@ export async function PATCH(
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const db = isSuperAdmin ? createAdminClient() : supabase;
@@ -70,7 +70,7 @@ export async function DELETE(
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const db = isSuperAdmin ? createAdminClient() : supabase;

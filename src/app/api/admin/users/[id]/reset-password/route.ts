@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
@@ -8,6 +9,11 @@ export async function POST(
 ) {
   const { user: adminUser, error: authErr } = await requireAdmin();
   if (authErr) return authErr;
+
+  const rateLimitKey = `reset-pw:${adminUser?.id ?? req.headers.get("x-forwarded-for") ?? "anon"}`;
+  if (!checkRateLimit(rateLimitKey, 60_000, 10)) {
+    return NextResponse.json({ error: "Too many attempts. Try again in a minute." }, { status: 429 });
+  }
   try {
     const { id } = await params;
     if (id.startsWith("inv-") || id.startsWith("partner-")) {

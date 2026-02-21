@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 
@@ -66,7 +67,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
           name: name.trim(),
           contact_name: contactName.trim(),
           email: email.trim(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone).trim() || undefined,
           password,
         }),
       });
@@ -190,7 +191,8 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="416-555-0100"
+              onBlur={() => setPhone(formatPhone(phone))}
+              placeholder="(123) 456-7890"
               className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>

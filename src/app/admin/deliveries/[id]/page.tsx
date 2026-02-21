@@ -14,7 +14,7 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
   if (error || !delivery) notFound();
 
-  // Redirect UUID URLs to canonical short URL: /admin/deliveries/DEL-1234
+  // Redirect UUID URLs to canonical short URL: /admin/deliveries/PJ1234
   if (byUuid && delivery.delivery_number?.trim()) {
     redirect(getDeliveryDetailPath(delivery));
   }

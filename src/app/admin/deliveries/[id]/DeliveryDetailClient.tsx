@@ -7,8 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import EditDeliveryModal from "./EditDeliveryModal";
 import NotifyClientButton from "./NotifyClientButton";
 import DownloadPDFButton from "./DownloadPDFButton";
+import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
+import IncidentsSection from "../../components/IncidentsSection";
 
 const PROGRESS_STEPS = ["pending", "confirmed", "in-transit", "delivered"] as const;
 const PROGRESS_LABELS: Record<string, string> = {
@@ -270,7 +272,7 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
             </div>
             <div>
               <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</div>
-              <div className="text-[13px] text-[var(--tx)]">{delivery.customer_phone || "Not provided"}</div>
+              <div className="text-[13px] text-[var(--tx)]">{delivery.customer_phone ? formatPhone(delivery.customer_phone) : "Not provided"}</div>
             </div>
             <div className="text-[10px] text-[var(--gold)] pt-1">Click to view contact details</div>
           </button>
@@ -339,6 +341,9 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
           </div>
         </div>
       </div>
+
+      {/* Reported Issues from crew */}
+      <IncidentsSection jobId={delivery.id} jobType="delivery" />
 
       {/* Instructions */}
       {delivery.instructions && (

@@ -1,5 +1,6 @@
 import { getEmailBaseUrl } from "./email-base-url";
 import { formatCurrency } from "./format-currency";
+import { formatPhone } from "./phone";
 
 function emailFooter(loginUrl?: string) {
   const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
@@ -16,6 +17,17 @@ function emailFooter(loginUrl?: string) {
 /** OPS+ logo centered at top — used for all emails */
 function emailLogo() {
   return notifyEmailLogo();
+}
+
+/** Global email wrapper: same container + logo + footer used across all OPS+ transactional emails */
+function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+      ${emailLogo()}
+      ${innerHtml}
+      ${emailFooter(footerLoginUrl)}
+    </div>
+  `;
 }
 
 /** OPS+ oval badge only (matches notify/track email screenshot) */
@@ -519,6 +531,50 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
       ${emailFooter()}
     </div>
   `;
+}
+
+export function crewPortalInviteEmail(params: { name: string; email: string; loginUrl: string; phone: string; pin: string }) {
+  const { name, loginUrl, phone, pin } = params;
+  const phoneDisplay = formatPhone(phone);
+  const inner = `
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Crew Portal Access</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to the Crew Portal${name ? `, ${name}` : ""}</h1>
+      <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
+        You&apos;ve been invited to log in to the OPS+ Crew Portal to start jobs, update status, and share your location with dispatch.
+      </p>
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+        <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your login</div>
+        <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px"><strong>Phone:</strong> ${phoneDisplay}</div>
+        <div style="font-size:12px;color:#E8E5E0"><strong>PIN:</strong> <code style="background:#0F0F0F;padding:2px 8px;border-radius:4px;font-family:monospace">${pin}</code></div>
+      </div>
+      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+        Log in to Crew Portal
+      </a>
+      <p style="font-size:11px;color:#666;margin-top:24px;line-height:1.5">
+        Sessions expire after one shift (12h). Keep your PIN secure. If you didn&apos;t expect this invite, you can safely ignore this email.
+      </p>
+  `;
+  return emailLayout(inner, loginUrl);
+}
+
+export function crewPortalInviteEmailText(params: { name: string; email: string; loginUrl: string; phone: string; pin: string }) {
+  const { name, loginUrl, phone, pin } = params;
+  const phoneDisplay = formatPhone(phone);
+  return `Crew Portal Access
+
+Welcome to the Crew Portal${name ? `, ${name}` : ""}
+
+You've been invited to log in to the OPS+ Crew Portal to start jobs, update status, and share your location with dispatch.
+
+Your login:
+Phone: ${phoneDisplay}
+PIN: ${pin}
+
+Log in: ${loginUrl}
+
+Sessions expire after one shift (12h). Keep your PIN secure. If you didn't expect this invite, you can safely ignore this email.
+
+Powered by OPS+`;
 }
 
 export function verificationCodeEmail(params: { code: string; purpose: "email_change" | "2fa" }) {

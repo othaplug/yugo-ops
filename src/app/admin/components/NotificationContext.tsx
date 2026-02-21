@@ -21,10 +21,10 @@ type NotificationContextType = {
 
 const STORAGE_KEY = "yugo-notifications";
 const DEFAULT: Notification[] = [
-  { id: "1", icon: "party", title: "New delivery created: DEL-1047", time: "2 min ago", read: false, link: "/admin/deliveries" },
+  { id: "1", icon: "party", title: "New delivery created: PJ1047", time: "2 min ago", read: false, link: "/admin/deliveries" },
   { id: "2", icon: "dollar", title: "Invoice INV-2891 paid", time: "1 hour ago", read: false, link: "/admin/invoices" },
   { id: "3", icon: "mail", title: "Message from Restoration Hardware", time: "3 hours ago", read: true, link: "/admin/messages" },
-  { id: "4", icon: "truck", title: "Delivery DEL-1046 completed", time: "5 hours ago", read: true, link: "/admin/deliveries" },
+  { id: "4", icon: "truck", title: "Delivery PJ1046 completed", time: "5 hours ago", read: true, link: "/admin/deliveries" },
 ];
 
 function getLinkForNotification(notif: { icon?: string; title?: string }): string {

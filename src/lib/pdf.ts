@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { formatCurrency } from "./format-currency";
+import { formatPhone } from "./phone";
 import autoTable from "jspdf-autotable";
 
 export function generateInvoicePDF(invoice: {
@@ -126,7 +127,7 @@ export function generateDeliveryPDF(delivery: {
     y += 5;
   }
   if (delivery.customer_phone) {
-    doc.text(`Phone: ${delivery.customer_phone}`, 20, y);
+    doc.text(`Phone: ${formatPhone(delivery.customer_phone)}`, 20, y);
     y += 5;
   }
   doc.text(`Client: ${delivery.client_name}`, 20, y);

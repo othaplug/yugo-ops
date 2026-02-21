@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import BackButton from "../components/BackButton";
 import SettingsTabs from "./SettingsTabs";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function SettingsLayout({
   children,
@@ -15,7 +16,7 @@ export default async function SettingsLayout({
   const { data: partnerUser } = user
     ? await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single()
     : { data: null };
-  const isSuperAdmin = (user?.email || "").toLowerCase() === (process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com").toLowerCase();
+  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
   const isPartner = !!partnerUser && !platformUser && !isSuperAdmin;
 
   return (

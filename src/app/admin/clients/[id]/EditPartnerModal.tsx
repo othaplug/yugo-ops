@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 
@@ -27,7 +28,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   const [type, setType] = useState(client.type);
   const [contactName, setContactName] = useState(client.contact_name || "");
   const [email, setEmail] = useState(client.email || "");
-  const [phone, setPhone] = useState(client.phone || "");
+  const [phone, setPhone] = useState(client.phone ? formatPhone(client.phone) : "");
 
   useEffect(() => {
     if (open) {
@@ -35,7 +36,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
       setType(client.type);
       setContactName(client.contact_name || "");
       setEmail(client.email || "");
-      setPhone(client.phone || "");
+      setPhone(client.phone ? formatPhone(client.phone) : "");
     }
   }, [open, client]);
 
@@ -55,7 +56,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
           type: isClient ? "b2c" : type,
           contact_name: isClient ? name.trim() : contactName.trim(),
           email: email.trim(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone).trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -127,7 +128,8 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="416-555-0100"
+            onBlur={() => setPhone(formatPhone(phone))}
+            placeholder="(123) 456-7890"
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

@@ -11,10 +11,10 @@ export function getMoveCode(move: { move_code?: string | null; move_number?: str
 }
 
 /** Display format: #[PJ|MV](4 digits), e.g. #MV3456, #PJ5435 */
-export function formatJobId(rawCode: string, type: "move" | "partner" = "move"): string {
+export function formatJobId(rawCode: string, type: "move" | "delivery" | "partner" = "move"): string {
   const code = String(rawCode || "").trim().replace(/^#/, "");
   if (!code) return type === "move" ? "#MV0000" : "#PJ0000";
-  const prefix = type === "partner" ? "PJ" : "MV";
+  const prefix = type === "partner" || type === "delivery" ? "PJ" : "MV";
   const normalized = code.toUpperCase().startsWith("PJ") ? code.slice(0, 6) : code.toUpperCase().startsWith("MV") ? code.slice(0, 6) : `${prefix}${code.slice(-4).padStart(4, "0")}`;
   return normalized.startsWith("#") ? normalized : `#${normalized}`;
 }
@@ -39,7 +39,7 @@ export function isUuid(s: string): boolean {
   return UUID_REGEX.test(String(s || "").trim());
 }
 
-/** Canonical admin delivery/project detail URL: /admin/deliveries/DEL-1234 (prefers delivery_number). */
+/** Canonical admin delivery/project detail URL: /admin/deliveries/PJ1234 (prefers delivery_number). */
 export function getDeliveryDetailPath(delivery: { delivery_number?: string | null; id?: string } | null | undefined): string {
   if (!delivery) return "/admin/deliveries";
   const code = delivery.delivery_number?.trim();

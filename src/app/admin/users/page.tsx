@@ -2,12 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import UsersClient from "./UsersClient";
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function UsersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const isSuperAdmin = (user?.email || "").toLowerCase() === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
   if (!isSuperAdmin) redirect("/admin");
 
   return <UsersClient currentUserId={user?.id} />;

@@ -14,6 +14,7 @@ import MoveInventorySection from "./MoveInventorySection";
 import ClientMessagesSection from "./ClientMessagesSection";
 import MovePhotosSection from "./MovePhotosSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
+import IncidentsSection from "../../components/IncidentsSection";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
@@ -258,7 +259,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </>
           )}
           {selectedCrew && crewMembers.length === 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Crews & Teams.</p>
+            <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Teams.</p>
           )}
           {!selectedCrew && (
             <p className="text-[11px] text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
@@ -361,6 +362,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Client Messages - conversation thread */}
       <ClientMessagesSection moveId={move.id} clientName={move.client_name} />
+
+      {/* Reported Issues from crew */}
+      <IncidentsSection jobId={move.id} jobType="move" />
 
       {/* Internal Notes - admin-only, at bottom */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">

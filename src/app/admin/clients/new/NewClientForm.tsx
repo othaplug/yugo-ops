@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
+import { normalizePhone } from "@/lib/phone";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 type Persona = "client" | "partner";
@@ -20,6 +21,7 @@ export default function NewClientForm({
   const [persona, setPersona] = useState<Persona>(defaultPersona);
   const [partnerType, setPartnerType] = useState(defaultPartnerType);
   const [address, setAddress] = useState("");
+  const [sendPortalAccess, setSendPortalAccess] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,13 +33,14 @@ export default function NewClientForm({
       persona,
       name: form.get("name"),
       email: form.get("email"),
-      phone: form.get("phone") || "",
+      phone: normalizePhone(String(form.get("phone") || "")) || "",
       address: address || form.get("address") || "",
     };
 
     if (persona === "partner") {
       payload.type = form.get("type") || partnerType;
       payload.contact_name = form.get("contact_name");
+      payload.send_portal_access = sendPortalAccess;
     }
 
     try {
@@ -52,7 +55,9 @@ export default function NewClientForm({
 
       const msg =
         persona === "partner"
-          ? "Partner created + portal access sent"
+          ? sendPortalAccess
+            ? "Partner created + portal access sent"
+            : "Partner created"
           : "Client created";
       toast(msg, "party");
       router.push("/admin/clients");
@@ -64,7 +69,7 @@ export default function NewClientForm({
     }
   };
 
-  const partnerButtonLabel = loading ? "Creating..." : "Create + Send Portal Access";
+  const partnerButtonLabel = loading ? "Creating..." : sendPortalAccess ? "Create + Send Portal Access" : "Create Partner";
   const clientButtonLabel = loading ? "Creating..." : "Create";
 
   return (
@@ -124,6 +129,17 @@ export default function NewClientForm({
           </Field>
           <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Yorkville Ave" label="Address" className="field-input" />
           <input type="hidden" name="address" value={address} />
+          <Field label="">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendPortalAccess}
+                onChange={(e) => setSendPortalAccess(e.target.checked)}
+                className="accent-[var(--gold)]"
+              />
+              <span className="text-sm">Send portal access (invite email with login details)</span>
+            </label>
+          </Field>
           <button
             type="submit"
             disabled={loading}
@@ -141,7 +157,7 @@ export default function NewClientForm({
             <input name="email" type="email" required placeholder="email@example.com" className="field-input" />
           </Field>
           <Field label="Phone">
-            <input name="phone" placeholder="416-555-0100" className="field-input" />
+            <input name="phone" type="tel" placeholder="(123) 456-7890" className="field-input" />
           </Field>
           <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Main St" label="Address" className="field-input" />
           <input type="hidden" name="address" value={address} />

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export async function requireAuth() {
   const supabase = await createClient();
@@ -15,7 +14,7 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const { user, error } = await requireAuth();
   if (error) return { user: null, admin: null, error };
-  const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
   const supabase = await createClient();
   const { data: platformUser } = await supabase
     .from("platform_users")
@@ -33,7 +32,7 @@ export async function requireAdmin() {
 export async function requireStaff() {
   const { user, error } = await requireAuth();
   if (error) return { user: null, error };
-  const isSuperAdmin = (user!.email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
   const supabase = await createClient();
   const { data: platformUser } = await supabase
     .from("platform_users")
@@ -47,9 +46,7 @@ export async function requireStaff() {
   return { user, error: null };
 }
 
-export function isSuperAdminEmail(email: string | null | undefined): boolean {
-  return (email || "").toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-}
+export { isSuperAdminEmail } from "@/lib/super-admin";
 
 /**
  * Use before sending any sensitive email (invite, password reset, portal welcome).

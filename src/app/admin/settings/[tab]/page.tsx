@@ -8,6 +8,7 @@ import IntegrationButtons from "../IntegrationButtons";
 import PartnerProfileSettings from "../PartnerProfileSettings";
 import EditableEmailSection from "../EditableEmailSection";
 import { Icon } from "@/components/AppIcons";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 const VALID_TABS = ["personal", "security", "appearance", "notifications", "integrations"] as const;
 
@@ -27,7 +28,7 @@ export default async function SettingsTabPage({
   const { data: partnerUser } = user
     ? await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single()
     : { data: null };
-  const isSuperAdmin = (user?.email || "").toLowerCase() === (process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com").toLowerCase();
+  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
   const isPartner = !!partnerUser && !platformUser && !isSuperAdmin;
   const roleLabel = platformUser?.role === "admin" ? "Administrator" : "Dispatcher";
 

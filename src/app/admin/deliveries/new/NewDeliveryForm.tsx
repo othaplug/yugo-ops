@@ -31,7 +31,7 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
     const org = organizations.find((o) => o.id === form.get("org_id"));
     const itemsRaw = form.get("items") as string;
 
-    const deliveryNumber = `DEL-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const deliveryNumber = `PJ${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
 
     const { data: created, error } = await supabase
       .from("deliveries")

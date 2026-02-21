@@ -4,7 +4,7 @@ import AdminShell from "./components/AdminShell";
 import ChangePasswordGate from "./components/ChangePasswordGate";
 import TwoFAGate from "./components/TwoFAGate";
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "othaplug@gmail.com";
+import { getSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .single();
   if (platformUser?.role) role = platformUser.role;
 
-  const isSuperAdmin = (user.email || "").toLowerCase() === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = (user.email || "").toLowerCase() === getSuperAdminEmail();
   const isAdmin = isSuperAdmin || role === "admin" || role === "manager";
 
   return (
