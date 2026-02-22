@@ -5,16 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider } from "@/app/admin/components/ThemeContext";
 import { ToastProvider } from "@/app/admin/components/Toast";
-import ClientDate from "@/app/admin/components/ClientDate";
 import { Icons } from "@/app/admin/components/SidebarIcons";
 
-const CREW_PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDate?: boolean }> = {
-  "/crew/dashboard": { title: "Today's Jobs", subtitle: "Your assigned jobs", useClientDate: true },
+const CREW_PAGE_TITLES: Record<string, { title: string; subtitle: string; hideHeaderTitle?: boolean }> = {
+  "/crew/dashboard": { title: "Dashboard", subtitle: "", hideHeaderTitle: true },
+  "/crew/expense": { title: "Expenses", subtitle: "", hideHeaderTitle: true },
+  "/crew/end-of-day": { title: "End of Day", subtitle: "", hideHeaderTitle: true },
 };
-function getCrewPageTitle(pathname: string): { title: string; subtitle: string; useClientDate?: boolean } {
+function getCrewPageTitle(pathname: string): { title: string; subtitle: string; hideHeaderTitle?: boolean } {
   if (CREW_PAGE_TITLES[pathname]) return CREW_PAGE_TITLES[pathname];
-  if (pathname.startsWith("/crew/dashboard/job/")) return { title: "Job", subtitle: "" };
-  return { title: "Crew Portal", subtitle: "" };
+  if (pathname.startsWith("/crew/dashboard/job/")) return { title: "Job", subtitle: "", hideHeaderTitle: true };
+  return { title: "Crew Portal", subtitle: "", hideHeaderTitle: true };
 }
 
 const SIDEBAR_WIDTH = 220;
@@ -25,7 +26,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [crewMember, setCrewMember] = useState<{ name: string } | null>(null);
 
-  const { title, subtitle, useClientDate } = getCrewPageTitle(pathname);
+  const { title, subtitle, hideHeaderTitle } = getCrewPageTitle(pathname);
   const isActive = (href: string) => href === "/crew/dashboard" ? pathname === "/crew/dashboard" : pathname.startsWith(href);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen bg-[var(--bg)]">
           <a
             href="#crew-main"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-[#0D0D0D] focus:font-semibold focus:outline-none"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-white focus:font-semibold focus:outline-none"
           >
             Skip to main content
           </a>
@@ -174,14 +175,14 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                     <line x1="3" y1="18" x2="21" y2="18" />
                   </svg>
                 </button>
-                <div className="min-w-0 flex-1 py-0.5">
-                  <h2 className="font-hero text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
-                  {(subtitle || useClientDate) && (
-                    <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">
-                      {useClientDate ? <ClientDate /> : subtitle}
-                    </div>
-                  )}
-                </div>
+                {!hideHeaderTitle && (
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <h2 className="font-hero text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
+                    {subtitle && (
+                      <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">{subtitle}</div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex-shrink-0">
                 <form action="/api/crew/logout" method="POST">

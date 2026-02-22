@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import Badge from "../../components/Badge";
 import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
+import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
 
 export default async function HospitalityPage() {
   const supabase = await createClient();
@@ -93,13 +93,39 @@ export default async function HospitalityPage() {
           </div>
         </div>
 
+        {/* Recent Deliveries */}
+        <div className="glass rounded-xl overflow-hidden mb-6">
+          <div className="sh px-4 pt-4">
+            <div className="sh-t">Recent Deliveries</div>
+            <Link href="/admin/deliveries" className="sh-l">All →</Link>
+          </div>
+          <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+            {delsList.length === 0 ? (
+              <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+                No deliveries yet
+              </div>
+            ) : delsList.slice(0, 5).map((d) => (
+              <ScheduleDeliveryItem
+                key={d.id}
+                href={getDeliveryDetailPath(d)}
+                timeSlot={d.time_slot || "—"}
+                pill={`${Array.isArray(d.items) ? d.items.length : 0} items`}
+                status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                title={`${d.customer_name} (${d.client_name})`}
+                subtitle={`Hospitality • ${d.client_name}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Partners */}
         <div className="flex items-center justify-between gap-2 mb-4">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">{orgsList.length} Partners</h3>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Partners</h3>
           <div className="flex gap-2">
             <Link href="/admin/deliveries/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap">
               Create Project
             </Link>
-            <Link href="/admin/clients/new?type=partner&partnerType=hospitality" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
+            <Link href="/admin/clients/new?type=partner&partnerType=hospitality" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
               Add Partner
             </Link>
           </div>
@@ -132,30 +158,6 @@ export default async function HospitalityPage() {
             </div>
           </Link>
         ))}
-        </div>
-
-        <div className="sh mt-6">
-          <div className="sh-t">Recent Deliveries</div>
-          <Link href="/admin/deliveries" className="sh-l">All →</Link>
-        </div>
-        <div className="dl mt-2">
-          {delsList.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
-              No deliveries yet
-            </div>
-          ) : delsList.slice(0, 5).map((d) => (
-            <Link
-              key={d.id}
-              href={getDeliveryDetailPath(d)}
-              className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-semibold truncate">{d.customer_name} ({d.client_name})</div>
-                <div className="text-[9px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</div>
-              </div>
-              <Badge status={d.status} />
-            </Link>
-          ))}
         </div>
     </div>
   );

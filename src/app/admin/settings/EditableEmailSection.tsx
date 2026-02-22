@@ -95,7 +95,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
         <button
           type="button"
           onClick={handleChangeClick}
-          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
+          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all shrink-0"
         >
           Change
         </button>
@@ -111,7 +111,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
                 <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50">
                   {loading ? "Sending…" : "Send code"}
                 </button>
               </div>
@@ -134,7 +134,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
                 <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Back
                 </button>
-                <button type="submit" disabled={loading || code.length !== 6} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50">
+                <button type="submit" disabled={loading || code.length !== 6} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50">
                   {loading ? "Updating…" : "Confirm"}
                 </button>
               </div>

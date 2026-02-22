@@ -30,7 +30,7 @@ export default function ViewAllProjectsClient({ projects }: { projects: Project[
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-              tab === t.key ? "bg-[var(--gold)] text-[#0D0D0D]" : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+              tab === t.key ? "bg-[var(--gold)] text-white" : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
             }`}
           >
             {t.label} ({t.count})

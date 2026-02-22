@@ -260,7 +260,7 @@ function CrewListAndModal({
                             <div className="flex flex-col items-center flex-1 min-w-0">
                               <div
                                 className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-colors ${
-                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-[#0D0D0D]" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
+                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-white" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
                                 }`}
                               >
                                 {isPast ? "✓" : i + 1}

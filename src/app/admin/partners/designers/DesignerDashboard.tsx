@@ -3,6 +3,8 @@
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
+import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 import { PROJECTS } from "./projectsData";
 import { mergeProjectsWithSavedState } from "./designerProjectsStorage";
 
@@ -60,7 +62,7 @@ export default function DesignerDashboard({
         <Link href="/admin/deliveries/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap">
           Create Project
         </Link>
-        <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
+        <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
           Add Partner
         </Link>
       </div>
@@ -107,9 +109,34 @@ export default function DesignerDashboard({
         </div>
       </div>
 
-      {/* Designers - partner list */}
+      {/* Recent Deliveries */}
+      <div className="glass rounded-xl overflow-hidden mb-6">
+        <div className="sh px-4 pt-4">
+          <div className="sh-t">Recent Deliveries</div>
+          <Link href="/admin/deliveries" className="sh-l">All →</Link>
+        </div>
+        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+          {deliveries.length === 0 ? (
+            <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+              No deliveries yet
+            </div>
+          ) : deliveries.slice(0, 5).map((d: { id: string; time_slot?: string | null; status?: string | null; customer_name?: string | null; client_name?: string | null; items?: unknown[] }) => (
+            <ScheduleDeliveryItem
+              key={d.id}
+              href={getDeliveryDetailPath(d)}
+              timeSlot={d.time_slot || "—"}
+              pill={`${Array.isArray(d.items) ? d.items.length : 0} items`}
+              status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              title={`${d.customer_name ?? "—"} (${d.client_name ?? "—"})`}
+              subtitle={`Designer • ${d.client_name ?? "—"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Partners */}
       <div>
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Designers</h3>
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Partners</h3>
         <div className="space-y-2">
           {orgs.length === 0 ? (
             <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">

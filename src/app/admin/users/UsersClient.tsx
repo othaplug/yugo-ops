@@ -71,7 +71,7 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
         <BackButton label="Back" />
         <button
           onClick={() => setInviteOpen(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
         >
           + Invite User
         </button>

@@ -189,18 +189,18 @@ input[type="time"] {
   to { opacity: 1; transform: translateX(0); }
 }
 @keyframes progressFill {
-  from { opacity: 0.7; }
+  from { opacity: 0.9; }
   to { opacity: 1; }
 }
 .animate-progress-fill {
-  animation: progressFill 0.7s ease-out;
+  animation: progressFill 0.2s ease-out;
 }
 @keyframes progressShimmer {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,169,98,0.4); }
-  50% { opacity: 0.9; box-shadow: 0 0 8px 2px rgba(201,169,98,0.25); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
 }
 .animate-progress-shimmer {
-  animation: progressShimmer 1.5s ease-in-out infinite;
+  animation: progressShimmer 3s ease-in-out infinite;
 }
 .animate-fade-up {
   animation: fadeUp 0.3s ease-out forwards;
@@ -210,6 +210,37 @@ input[type="time"] {
 }
 .animate-slide-in {
   animation: slideIn 0.2s ease-out forwards;
+}
+
+/* Timeline animations - subtle */
+@keyframes timelinePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+@keyframes timelineLineFill {
+  from { transform: scaleY(0); transform-origin: top; }
+  to { transform: scaleY(1); transform-origin: top; }
+}
+@keyframes timelineStepIn {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+@keyframes timelineComplete {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+.animate-timeline-pulse {
+  animation: timelinePulse 3s ease-in-out infinite;
+}
+.animate-timeline-step {
+  animation: timelineStepIn 0.15s ease-out forwards;
+}
+.animate-timeline-complete {
+  animation: timelineComplete 0.2s ease-out forwards;
+}
+.animate-timeline-line {
+  animation: timelineLineFill 0.2s ease-out forwards;
+  transform-origin: top;
 }
 
 /* Safe area for notched devices - applied via utility */

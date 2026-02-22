@@ -210,7 +210,7 @@ export default function ClientSignOffPage({
             <button
               onClick={() => setPhase(2)}
               disabled={(!allItemsReceived || !conditionAccepted) && !exceptions.trim()}
-              className="w-full py-4 rounded-xl font-semibold text-[#0D0D0D] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
+              className="w-full py-4 rounded-xl font-semibold text-white bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               Continue to Rating
             </button>
@@ -231,7 +231,7 @@ export default function ClientSignOffPage({
                   type="button"
                   onClick={() => setRating(n)}
                   className={`w-12 h-12 rounded-full text-xl transition-transform ${
-                    rating === n ? "bg-[#C9A962] text-[#0D0D0D] scale-110" : "bg-[#E0DDD8] text-[muted] hover:bg-[#C9A962]/30"
+                    rating === n ? "bg-[#C9A962] text-white scale-110" : "bg-[#E0DDD8] text-[muted] hover:bg-[#C9A962]/30"
                   }`}
                 >
                   ★
@@ -272,7 +272,7 @@ export default function ClientSignOffPage({
             <button
               onClick={() => setPhase(3)}
               disabled={!rating}
-              className="w-full py-4 rounded-xl font-semibold text-[#0D0D0D] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
+              className="w-full py-4 rounded-xl font-semibold text-white bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               Continue to Sign
             </button>
@@ -323,7 +323,7 @@ export default function ClientSignOffPage({
             <button
               onClick={handleSubmit}
               disabled={submitting || !clientName.trim()}
-              className="w-full py-4 rounded-xl font-semibold text-[#0D0D0D] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
+              className="w-full py-4 rounded-xl font-semibold text-white bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               {submitting ? "Submitting…" : "Confirm & Sign Off"}
             </button>
@@ -343,7 +343,7 @@ export default function ClientSignOffPage({
             <p className="text-xs text-[muted] mt-1">The art of moving.</p>
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-block mt-8 px-6 py-3 rounded-xl font-semibold text-[#0D0D0D] bg-[#C9A962] hover:bg-[#D4B56C]"
+              className="inline-block mt-8 px-6 py-3 rounded-xl font-semibold text-white bg-[#C9A962] hover:bg-[#D4B56C]"
             >
               Back to Job
             </Link>

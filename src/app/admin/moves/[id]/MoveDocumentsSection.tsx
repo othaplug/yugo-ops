@@ -209,7 +209,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleLinkInvoice}
                   disabled={!linkInvoiceId}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
                   Link
                 </button>
@@ -268,7 +268,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] cursor-pointer transition-colors disabled:opacity-50">
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] cursor-pointer transition-colors disabled:opacity-50">
                 <Plus className="w-[11px] h-[11px]" />
                 {uploading ? "Uploading…" : "Add document (upload PDF)"}
                 <input type="file" accept=".pdf,image/*" onChange={handleUpload} disabled={uploading} className="hidden" />
@@ -302,7 +302,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     type="button"
                     onClick={handleAddLink}
                     disabled={!linkTitle.trim() || !linkUrl.trim()}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                   >
                     Add link
                   </button>

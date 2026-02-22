@@ -167,7 +167,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             {/* Skip to main content for keyboard users */}
             <a
               href="#admin-main"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-[#0D0D0D] focus:font-semibold focus:outline-none"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-white focus:font-semibold focus:outline-none"
             >
               Skip to main content
             </a>

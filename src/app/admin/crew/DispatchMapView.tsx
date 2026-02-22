@@ -151,13 +151,13 @@ export default function DispatchMapView() {
         <div className="flex gap-2">
           <button
             onClick={() => setView("map")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-[#0D0D0D]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             Map
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-[#0D0D0D]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             List
           </button>

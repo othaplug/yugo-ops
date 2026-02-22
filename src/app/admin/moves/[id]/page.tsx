@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import { isMoveIdUuid, getMoveDetailPath } from "@/lib/move-code";
 import MoveDetailClient from "./MoveDetailClient";
 

@@ -207,7 +207,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
             >
               {loading ? "Sending…" : "Send Invitation"}
             </button>

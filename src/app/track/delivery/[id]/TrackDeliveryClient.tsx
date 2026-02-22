@@ -73,7 +73,7 @@ export default function TrackDeliveryClient({
             <div className="flex items-center gap-3">
               <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#2A2A2A]">
                 <div
-                  className="h-full rounded-full bg-[#C9A962] transition-all duration-500"
+                  className="h-full rounded-full bg-[#C9A962] transition-all duration-500 ease-out"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>

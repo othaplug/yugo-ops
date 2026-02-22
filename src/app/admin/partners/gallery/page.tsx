@@ -96,7 +96,7 @@ export default async function GalleryPage() {
           <Link href="/admin/deliveries/new?type=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap">
             Create Project
           </Link>
-          <Link href="/admin/clients/new?type=partner&partnerType=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
+          <Link href="/admin/clients/new?type=partner&partnerType=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
             Add Partner
           </Link>
         </div>
@@ -104,9 +104,9 @@ export default async function GalleryPage() {
 
       <GalleryClient galleryPartners={galleryPartners} />
 
-      {/* Gallery Partners */}
+      {/* Partners */}
       <div className="mt-6">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Gallery Partners</h3>
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Partners</h3>
         <div className="space-y-2">
           {galleryPartners.length === 0 ? (
             <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">

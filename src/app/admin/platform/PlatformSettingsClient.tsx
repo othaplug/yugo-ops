@@ -262,7 +262,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             href={`/admin/platform?tab=${t.id}`}
             className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
               activeTab === t.id
-                ? "bg-[var(--gold)] text-[#0D0D0D]"
+                ? "bg-[var(--gold)] text-white"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
             }`}
           >
@@ -326,7 +326,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               }
             }}
             disabled={ratesSaving}
-            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {ratesSaving ? "Saving…" : "Save Rates"}
           </button>
@@ -338,14 +338,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {activeTab === "crews" && (
       <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
               <Icon name="users" className="w-[16px] h-[16px]" /> Teams
             </h2>
             <div className="flex flex-nowrap items-center gap-2">
               <button
                 onClick={() => setAddTeamModalOpen(true)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
               >
                 + Add Team
               </button>
@@ -517,7 +517,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
             <button
               onClick={() => setAddPortalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
             >
               + Add portal access
             </button>
@@ -698,8 +698,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Partners Management */}
       {activeTab === "partners" && (
       <div id="partners" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-          <div>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
               <Icon name="handshake" className="w-[16px] h-[16px]" /> Partners Management
             </h2>
@@ -707,7 +707,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           </div>
           <Link
             href="/admin/partners/retail"
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all inline-block"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all inline-block"
           >
             Manage Partners →
           </Link>
@@ -734,14 +734,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* User Management - Superadmin only */}
       {activeTab === "users" && isSuperAdmin && (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-          <div>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
               <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             <Link
               href="/admin/users"
               className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
@@ -750,7 +750,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </Link>
             <button
               onClick={() => setInviteUserOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all shrink-0"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all shrink-0"
             >
               + Invite Team Member
             </button>
@@ -768,7 +768,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
               >
                 Invite your first user
               </button>
@@ -838,7 +838,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <button
             onClick={addTeam}
             disabled={!addTeamName.trim()}
-            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Team
           </button>
@@ -1010,7 +1010,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <button
                 type="submit"
                 disabled={resetPinValue.length !== 6 || resetPinSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {resetPinSaving ? "Saving…" : "Set new PIN"}
               </button>

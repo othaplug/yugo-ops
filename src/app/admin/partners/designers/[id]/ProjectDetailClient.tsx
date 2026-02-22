@@ -36,7 +36,7 @@ function AnimatedProgressBar({ percent }: { percent: number }) {
   return (
     <div className="flex-1 min-w-0 h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
       <div
-        className="h-full bg-[var(--gold)] rounded-full transition-all duration-1000 ease-out"
+        className="h-full bg-[var(--gold)] rounded-full transition-all duration-300 ease-out"
         style={{ width: `${animated}%` }}
       />
     </div>
@@ -137,7 +137,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             </button>
             <Link
               href="/admin/deliveries/new"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
             >
               + New delivery
             </Link>

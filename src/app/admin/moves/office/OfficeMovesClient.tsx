@@ -171,7 +171,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
               </svg>
               Filter
               {activeFilterCount > 0 && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[#0D0D0D] text-[10px] font-bold flex items-center justify-center">
+                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -197,7 +197,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
               )}
             </div>
           </div>
-          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
+          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
             + New Move
           </Link>
         </div>

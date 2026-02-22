@@ -12,18 +12,6 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
 const ACCESS_OPTIONS = ["Elevator", "Stairs", "Loading dock", "Parking", "Gate / Buzz code", "Ground floor", "Building access required"];
-const TIME_OPTIONS = (() => {
-  const times: string[] = [];
-  for (let h = 6; h <= 20; h++) {
-    for (const m of [0, 30]) {
-      if (h === 20 && m === 30) break;
-      const h12 = h > 12 ? h - 12 : h;
-      const ampm = h < 12 ? "AM" : "PM";
-      times.push(`${h12}:${m.toString().padStart(2, "0")} ${ampm}`);
-    }
-  }
-  return times;
-})();
 
 interface EditMoveDetailsModalProps {
   open: boolean;
@@ -38,7 +26,6 @@ interface EditMoveDetailsModalProps {
     to_lng?: number | null;
     crew_id?: string | null;
     scheduled_date?: string | null;
-    scheduled_time?: string | null;
     arrival_window?: string | null;
     from_access?: string | null;
     to_access?: string | null;
@@ -92,7 +79,6 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   };
   const parsed = parseAccessNotes(initial.access_notes);
   const [scheduledDate, setScheduledDate] = useState(() => toDateInput(initial.scheduled_date));
-  const [scheduledTime, setScheduledTime] = useState(initial.scheduled_time || "");
   const [arrivalWindow, setArrivalWindow] = useState(initial.arrival_window || "");
   const [fromAccess, setFromAccess] = useState(initial.from_access || parsed.fromAccess);
   const [toAccess, setToAccess] = useState(initial.to_access || parsed.toAccess);
@@ -113,7 +99,6 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
     setToLat(initial.to_lat ?? null);
     setToLng(initial.to_lng ?? null);
     setScheduledDate(toDateInput(initial.scheduled_date));
-    setScheduledTime(initial.scheduled_time || "");
     setArrivalWindow(initial.arrival_window || "");
     const p = parseAccessNotes(initial.access_notes);
     setFromAccess(initial.from_access || p.fromAccess);
@@ -145,7 +130,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
         from_access: fromAccess.trim() || null,
         to_access: toAccess.trim() || null,
         scheduled_date: scheduledDate.trim() || null,
-        scheduled_time: scheduledTime.trim() || null,
+        scheduled_time: null,
         arrival_window: arrivalWindow.trim() || null,
         access_notes: accessNotesMerged,
         crew_id: crewId.trim() || null,
@@ -245,7 +230,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Schedule
             </h3>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Date">
                 <input
                   type="date"
@@ -254,18 +239,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
                   className={inputBase}
                 />
               </Field>
-              <Field label="Time">
-                <select value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className={inputBase}>
-                  <option value="">Select…</option>
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                  {scheduledTime && !TIME_OPTIONS.includes(scheduledTime) && (
-                    <option value={scheduledTime}>{scheduledTime}</option>
-                  )}
-                </select>
-              </Field>
-              <Field label="Arrival window">
+              <Field label="Time window">
                 <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={inputBase}>
                   <option value="">Select window…</option>
                   {TIME_WINDOW_OPTIONS.map((w) => (
@@ -370,7 +344,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

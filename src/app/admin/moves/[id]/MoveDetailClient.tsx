@@ -17,6 +17,7 @@ import MoveCrewPhotosSection from "./MoveCrewPhotosSection";
 import MoveSignOffSection from "./MoveSignOffSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
 import IncidentsSection from "../../components/IncidentsSection";
+import DistanceLogistics from "./DistanceLogistics";
 import ModalOverlay from "../../components/ModalOverlay";
 import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
@@ -34,7 +35,7 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
   return s === "completed" || s === "delivered" || s === "done";
 }
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
-import { formatMoveDate } from "@/lib/date-format";
+import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 
 export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
@@ -69,7 +70,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const estimate = Number(move.estimate || 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
-  const daysUntil = move.scheduled_date ? Math.ceil((new Date(move.scheduled_date).getTime() - Date.now()) / 86400000) : null;
+  const scheduledDateLocal = parseDateOnly(move.scheduled_date);
+  const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
@@ -160,13 +162,37 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   onChange={async (e) => {
                     const v = e.target.value as string;
                     const isCurrentlyCompleted = isMoveStatusCompleted(move.status);
-                    const isRestarting = isCurrentlyCompleted && v.toLowerCase() !== "completed";
-                    if (isRestarting && !window.confirm("Are you sure you want to restart this job? The crew will be able to start it again and status will update across all views.")) {
-                      setEditingCard(null);
+                    const isRestarting = isCurrentlyCompleted && !["completed", "delivered", "cancelled"].includes(v.toLowerCase());
+                    if (isRestarting) {
+                      const ok = window.confirm(
+                        "This move is completed. Changing status back will RESTART the move globally:\n\n" +
+                        "• Live stage will be cleared\n" +
+                        "• Any tracking session will be ended\n" +
+                        "• Crew will be able to start the job again from scratch\n\n" +
+                        "Continue?"
+                      );
+                      if (!ok) {
+                        setEditingCard(null);
+                        return;
+                      }
+                      try {
+                        const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ newStatus: v }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to restart");
+                        if (data.move) setMove(data.move);
+                        setEditingCard(null);
+                        router.refresh();
+                        toast("Move restarted", "check");
+                      } catch (err) {
+                        toast(err instanceof Error ? err.message : "Failed to restart", "alertTriangle");
+                      }
                       return;
                     }
                     const updates: Record<string, unknown> = { status: v, updated_at: new Date().toISOString() };
-                    if (isRestarting) updates.stage = null;
                     const { data, error } = await supabase.from("moves").update(updates).eq("id", move.id).select().single();
                     if (error) {
                       toast(error.message || "Failed to update status", "alertTriangle");
@@ -288,7 +314,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   router.refresh();
                   setCrewModalOpen(false);
                 }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
               >
                 Save Assignments
               </button>
@@ -309,10 +335,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           <Pencil className="w-[11px] h-[11px]" />
         </button>
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Time & Intelligence</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_time || "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
@@ -355,9 +380,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Financial Snapshot</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-          <div className="rounded-lg bg-[var(--gdim)]/50 border border-[var(--gold)]/30 px-3 py-2.5">
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80">Estimate</span>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--gold)] mt-0.5">{formatCurrency(estimate)}</div>
+          <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/15 to-[var(--gold)]/5 border-2 border-[var(--gold)]/40 px-4 py-3 shadow-sm">
+            <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
+            <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
           </div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</div></div>
@@ -385,14 +410,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       </div>
 
       {/* Distance & Logistics */}
-      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Distance & Logistics</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Distance</span><div className="text-[11px] font-medium text-[var(--tx)]">11.2 km</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Drive Time</span><div className="text-[11px] font-medium text-[var(--tx)]">24 min</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Traffic Risk</span><div className="text-[11px] font-medium text-[var(--org)]">Moderate</div></div>
-        </div>
-      </div>
+      <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
 
       {/* Inventory, Photos, Documents */}
       <MoveInventorySection moveId={move.id} />
@@ -432,7 +450,6 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           to_lng: move.to_lng,
           crew_id: move.crew_id,
           scheduled_date: move.scheduled_date,
-          scheduled_time: move.scheduled_time,
           arrival_window: move.arrival_window,
           from_access: move.from_access,
           to_access: move.to_access,

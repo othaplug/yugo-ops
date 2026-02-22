@@ -131,7 +131,7 @@ export default function PartnerProfileSettings() {
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>

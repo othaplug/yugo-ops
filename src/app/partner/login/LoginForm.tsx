@@ -82,7 +82,7 @@ export default function LoginForm({ title, subtitle, redirectTo }: LoginFormProp
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>

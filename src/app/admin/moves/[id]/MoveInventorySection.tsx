@@ -269,14 +269,14 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
               <button
                 type="button"
                 onClick={() => setBulkMode(false)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[#0D0D0D] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-white shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Single
               </button>
               <button
                 type="button"
                 onClick={() => setBulkMode(true)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-[#0D0D0D] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-white shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Bulk add
               </button>
@@ -310,7 +310,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleBulkAdd}
                   disabled={adding || !bulkText.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add all
                 </button>
@@ -356,7 +356,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleAdd}
                   disabled={adding || !newItemName.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add
                 </button>

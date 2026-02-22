@@ -29,7 +29,7 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
             href={href}
             className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
               isActive
-                ? "bg-[var(--gold)] text-[#0D0D0D]"
+                ? "bg-[var(--gold)] text-white"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
             }`}
           >

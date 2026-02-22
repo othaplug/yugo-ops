@@ -37,9 +37,9 @@ export default function ChangeRequestsClient({
   };
 
   const renderRow = (r: any) => {
-    const move = r.moves || r.move;
+    const move = r.moves ?? r.move;
     const moveData = Array.isArray(move) ? move[0] : move;
-    const clientName = moveData?.client_name || "—";
+    const clientName = moveData?.client_name ?? "—";
     const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
     const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
 
@@ -52,7 +52,7 @@ export default function ChangeRequestsClient({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <Link
-                href={getMoveDetailPath({ move_code: moveData?.move_code, id: r.move_id })}
+                href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
                 className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
               >
                 {clientName}
@@ -87,7 +87,7 @@ export default function ChangeRequestsClient({
                 type="button"
                 onClick={() => handleReview(r.id, "approved")}
                 disabled={loadingId === r.id}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grdim)] text-[var(--grn)] hover:bg-[var(--grn)]/20 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
                 {loadingId === r.id ? "…" : "Approve"}
               </button>
@@ -95,7 +95,7 @@ export default function ChangeRequestsClient({
                 type="button"
                 onClick={() => handleReview(r.id, "rejected")}
                 disabled={loadingId === r.id}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--rdim)] text-[var(--red)] hover:bg-[var(--red)]/20 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--red)] text-white hover:bg-[var(--red)]/90 disabled:opacity-50"
               >
                 {loadingId === r.id ? "…" : "Reject"}
               </button>

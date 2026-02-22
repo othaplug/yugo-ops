@@ -419,11 +419,18 @@ export default function CrewJobPage({
                 const isLast = i === statusFlow.length - 1;
                 const lineBelowGreen = isPast;
                 return (
-                  <div key={s} className="relative flex items-start gap-3 text-[12px]">
+                  <div
+                    key={s}
+                    className="relative flex items-start gap-3 text-[12px] group cursor-default"
+                  >
                     <div className="flex flex-col items-center shrink-0">
                       <span
-                        className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
-                          isPast ? "bg-[var(--grn)] text-white" : isCurrent ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40" : "bg-[var(--brd)]/80 text-[var(--tx3)]"
+                        className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ease-out ${
+                          isPast
+                            ? "bg-[var(--grn)] text-white group-hover:scale-110"
+                              : isCurrent
+                              ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40 group-hover:ring-[var(--gold)]/60"
+                              : "bg-[var(--brd)]/80 text-[var(--tx3)] group-hover:bg-[var(--brd)]"
                         }`}
                       >
                         {isPast || (isCurrent && isCompleted) ? (
@@ -433,15 +440,19 @@ export default function CrewJobPage({
                         )}
                       </span>
                       {!isLast && (
-                        <div className={`w-0.5 flex-1 min-h-[12px] ${lineBelowGreen ? "bg-[var(--grn)]" : "bg-[var(--brd)]"}`} />
+                        <div
+                          className={`w-0.5 flex-1 min-h-[12px] transition-all duration-200 ease-out ${
+                            lineBelowGreen ? "bg-[var(--grn)]" : "bg-[var(--brd)]"
+                          }`}
+                        />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 pb-4">
-                      <span className={isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}>
+                    <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 pb-4 transition-colors duration-300">
+                      <span className={`font-medium ${isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}>
                         {getStatusLabel(s)}
                       </span>
                       {cp?.timestamp && (
-                        <span className="text-[10px] text-[var(--tx3)] shrink-0">
+                        <span className="text-[10px] text-[var(--tx3)] shrink-0 tabular-nums">
                           {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                         </span>
                       )}

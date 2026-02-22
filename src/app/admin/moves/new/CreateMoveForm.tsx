@@ -559,14 +559,14 @@ export default function CreateMoveForm({
                 <button
                   type="button"
                   onClick={() => setInventoryBulkMode(false)}
-                  className={`text-[10px] font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-[#0D0D0D]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-white" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                 >
                   Single
                 </button>
                 <button
                   type="button"
                   onClick={() => setInventoryBulkMode(true)}
-                  className={`text-[10px] font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-[#0D0D0D]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-white" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                 >
                   Bulk add
                 </button>
@@ -600,7 +600,7 @@ export default function CreateMoveForm({
                     type="button"
                     onClick={addBulkInventoryItems}
                     disabled={!inventoryBulkText.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50 self-start"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50 self-start"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add all
                   </button>
@@ -646,7 +646,7 @@ export default function CreateMoveForm({
                     type="button"
                     onClick={addInventoryItem}
                     disabled={!newItemName.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add
                   </button>
@@ -694,7 +694,7 @@ export default function CreateMoveForm({
               />
               <label
                 htmlFor="move-doc-upload"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[#0D0D0D] cursor-pointer hover:bg-[var(--gold2)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white cursor-pointer hover:bg-[var(--gold2)]"
               >
                 <Plus className="w-[12px] h-[12px]" />
                 Upload PDF
@@ -792,7 +792,7 @@ export default function CreateMoveForm({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50"
             >
               {loading ? "Creating…" : "Create Move"}
             </button>

@@ -240,7 +240,7 @@ export default function TrackLiveMap({
                 return (
                   <span
                     key={s}
-                    className={isPast ? "text-[#22C55E]" : isCurrent ? "text-[#C9A962] font-semibold" : "text-[#999]"}
+                    className={`transition-all duration-300 ${isPast ? "text-[#22C55E]" : isCurrent ? "text-[#C9A962] font-semibold" : "text-[#999]"}`}
                   >
                     {isPast ? "✓" : isCurrent ? "●" : "○"} {CREW_STATUS_TO_LABEL[s] || s}
                   </span>

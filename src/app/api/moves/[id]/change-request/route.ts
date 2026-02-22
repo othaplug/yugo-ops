@@ -52,6 +52,7 @@ export async function POST(
         type: CHANGE_TYPES.includes(type) ? type : "Other",
         description,
         urgency,
+        submitted_by: "client",
       })
       .select("id")
       .single();

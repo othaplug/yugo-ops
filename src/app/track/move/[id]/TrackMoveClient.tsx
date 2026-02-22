@@ -18,7 +18,7 @@ import {
   LIVE_STAGE_MAP,
   getStatusLabel,
 } from "@/lib/move-status";
-import { formatMoveDate } from "@/lib/date-format";
+import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 
@@ -112,7 +112,7 @@ export default function TrackMoveClient({
     router.replace(url.pathname + url.search);
   };
 
-  // Poll crew-status (including liveStage) so client stays in sync when admin updates stage
+  // Poll crew-status (including liveStage, scheduled_date, status) so client stays in sync when admin updates
   useEffect(() => {
     const poll = async () => {
       try {
@@ -121,7 +121,11 @@ export default function TrackMoveClient({
           { cache: "no-store" }
         );
         const data = await res.json();
-        if (res.ok && data && "liveStage" in data) setLiveStage(data.liveStage ?? null);
+        if (res.ok && data) {
+          if ("liveStage" in data) setLiveStage(data.liveStage ?? null);
+          if ("scheduled_date" in data) setLiveScheduledDate(data.scheduled_date ?? null);
+          if ("arrival_window" in data) setLiveArrivalWindow(data.arrival_window ?? null);
+        }
       } catch {
         // ignore
       }
@@ -146,7 +150,10 @@ export default function TrackMoveClient({
   const isCompleted = statusVal === "completed" || statusVal === "delivered";
   const isInProgress = statusVal === "in_progress";
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
-  const scheduledDate = move.scheduled_date ? new Date(move.scheduled_date) : null;
+  const [liveScheduledDate, setLiveScheduledDate] = useState<string | null>(move.scheduled_date || null);
+  const [liveArrivalWindow, setLiveArrivalWindow] = useState<string | null>(move.arrival_window || null);
+  const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
+  const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
   const totalBalance = Number(move.estimate || 0);
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
@@ -273,7 +280,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={handleBackToDashboard}
-                  className="mt-5 rounded-lg bg-[#C9A962] text-[#0D0D0D] font-semibold text-[14px] py-3 px-5 hover:bg-[#B89A52] transition-colors shadow-sm"
+                  className="mt-5 rounded-lg bg-[#C9A962] text-white font-semibold text-[14px] py-3 px-5 hover:bg-[#B89A52] transition-colors shadow-sm"
                 >
                   Back to main dashboard
                 </button>
@@ -343,8 +350,8 @@ export default function TrackMoveClient({
                 <div className="mt-1 text-[13px] text-[#666] font-sans">
                   {isInProgress && liveStage != null
                     ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
-                    : move.arrival_window || move.scheduled_time
-                      ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
+                    : arrivalWindow
+                      ? `Your crew arrives between ${arrivalWindow}`
                       : "Your crew is on the way"}
                 </div>
                 {crewMembers.length > 0 && (
@@ -404,8 +411,8 @@ export default function TrackMoveClient({
                     <span className="font-semibold text-[#2D2D2D]">
                       {scheduledDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </span>
-                    {(move.arrival_window || move.scheduled_time) && (
-                      <span className="text-[#2D2D2D] font-normal"> at {move.scheduled_time || move.arrival_window}</span>
+                    {arrivalWindow && (
+                      <span className="text-[#2D2D2D] font-normal"> • {arrivalWindow}</span>
                     )}
                   </div>
                 )}
@@ -481,7 +488,7 @@ export default function TrackMoveClient({
             {/* Move Timeline - Confirmed → Scheduled → In Progress → Completed (Paid shown in financial section) */}
             <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
-              <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4]">
+              <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4] before:transition-colors before:duration-500">
                 {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
                   const statusOrder = ["confirmed", "scheduled", "paid", "in_progress", "completed"];
                   const stepIdx = statusOrder.indexOf(s.value);
@@ -499,17 +506,20 @@ export default function TrackMoveClient({
                   const completedDate = isCompleted && s.value === "completed" ? formatMoveDate(move.updated_at ? new Date(move.updated_at) : scheduledDate) : null;
                   const actDateStr = scheduledDate ? scheduledDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
                   return (
-                    <div key={s.value} className="relative pb-5 last:pb-0">
+                    <div
+                      key={s.value}
+                      className="relative pb-5 last:pb-0 group cursor-default transition-colors duration-200"
+                    >
                       <div
-                        className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 ${
+                        className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 transition-all duration-200 ease-out ${
                           state === "done"
-                            ? "bg-[#22C55E] w-3.5 h-3.5 -left-5"
-                            : state === "act"
-                              ? "bg-[#F59E0B] w-3.5 h-3.5 -left-5 shadow-[0_0_0_4px_rgba(245,158,11,0.2)]"
-                              : "bg-[#E7E5E4]"
+                            ? "bg-[#22C55E] w-3.5 h-3.5 -left-5 group-hover:scale-110"
+                              : state === "act"
+                              ? "bg-[#F59E0B] w-3.5 h-3.5 -left-5 shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
+                              : "bg-[#E7E5E4] group-hover:bg-[#D4D4D4]"
                         }`}
                       />
-                      <div className={`text-[13px] font-semibold ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
+                      <div className={`text-[13px] font-semibold transition-colors duration-300 ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
                         {s.label}
                       </div>
                       <div className="text-[11px] text-[#666] mt-0.5">
@@ -531,9 +541,9 @@ export default function TrackMoveClient({
                       <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Date & Time</div>
                       <div className="text-[13px] text-[#1A1A1A]">
                         {formatMoveDate(scheduledDate)}
-                        {(move.arrival_window || move.scheduled_time) && (
+                        {arrivalWindow && (
                           <span className="block text-[12px] text-[#666] mt-0.5">
-                            Crew arrives between {move.arrival_window || move.scheduled_time}
+                            Crew arrives between {arrivalWindow}
                           </span>
                         )}
                       </div>
@@ -551,13 +561,13 @@ export default function TrackMoveClient({
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
                     <div className="font-hero text-[18px] font-bold text-[#C9A962]">{formatCurrency(totalBalance)}</div>
                   </div>
-                  {totalBalance > 0 && !showPaymentSuccess && (
+                  {totalBalance > 0 && !showPaymentSuccess && move.status !== "paid" && !paymentRecorded && (
                     <div className="pt-2">
                       <button
                         type="button"
                         onClick={handleMakePayment}
                         disabled={paymentLinkLoading}
-                        className="w-full rounded-lg bg-[#C9A962] text-[#0D0D0D] font-semibold text-[13px] py-3 px-4 hover:bg-[#B89A52] disabled:opacity-60 transition-colors"
+                        className="w-full rounded-lg bg-[#C9A962] text-white font-semibold text-[13px] py-3 px-4 hover:bg-[#B89A52] disabled:opacity-60 transition-colors"
                       >
                         {paymentLinkLoading ? "Preparing…" : "Make Payment"}
                       </button>

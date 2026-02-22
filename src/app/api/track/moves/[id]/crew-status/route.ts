@@ -16,7 +16,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, stage")
+      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, stage, scheduled_date, status, arrival_window")
       .eq("id", moveId)
       .single();
 
@@ -84,6 +84,9 @@ export async function GET(
         liveStage,
         lastLocationAt,
         hasActiveTracking: !!ts?.is_active,
+        scheduled_date: move?.scheduled_date ?? null,
+        status: move?.status ?? null,
+        arrival_window: move?.arrival_window ?? null,
       },
       {
         headers: {

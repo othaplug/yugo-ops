@@ -200,8 +200,8 @@ export default function DeviceSetupCodes() {
   return (
     <div className="space-y-6">
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-          <div>
+        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
               <Icon name="plug" className="w-[16px] h-[16px]" /> iPad Setup Codes
             </h2>
@@ -209,7 +209,7 @@ export default function DeviceSetupCodes() {
               Create codes for crew to register iPads. Crew enters the code at /crew/setup
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             {trucks.length === 0 && (
               <button
                 onClick={() => setAddTruckModalOpen(true)}
@@ -220,7 +220,7 @@ export default function DeviceSetupCodes() {
             )}
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
             >
               + Create Setup Code
             </button>
@@ -238,7 +238,7 @@ export default function DeviceSetupCodes() {
               </p>
               <button
                 onClick={() => setCreateModalOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
               >
                 Create your first code
               </button>
@@ -290,13 +290,13 @@ export default function DeviceSetupCodes() {
 
       {trucks.length > 0 && (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)] flex items-center gap-2 min-w-0">
               <Icon name="truck" className="w-[14px] h-[14px]" /> Fleet Trucks
             </h2>
             <button
               onClick={() => setAddTruckModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
             >
               + Add Truck
             </button>
@@ -361,7 +361,7 @@ export default function DeviceSetupCodes() {
               <button
                 type="submit"
                 disabled={savingTruck || !editTruckName.trim()}
-                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
               >
                 {savingTruck ? "Saving…" : "Save"}
               </button>
@@ -450,7 +450,7 @@ export default function DeviceSetupCodes() {
             <button
               type="submit"
               disabled={creating || (!formTruckId && !formTeamId)}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
             >
               {creating ? "Creating…" : "Create Code"}
             </button>
@@ -487,7 +487,7 @@ export default function DeviceSetupCodes() {
             <button
               type="submit"
               disabled={addTruckSaving || !newTruckName.trim()}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
             >
               {addTruckSaving ? "Adding…" : "Add Truck"}
             </button>
@@ -509,7 +509,7 @@ export default function DeviceSetupCodes() {
               <code className="text-[24px] font-bold text-[var(--gold)] tracking-[4px]">{createdCode.code}</code>
               <button
                 onClick={() => copyCode(createdCode.code)}
-                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
               >
                 Copy Code
               </button>
