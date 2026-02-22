@@ -869,6 +869,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         open={addPortalOpen}
         onClose={() => setAddPortalOpen(false)}
         teams={teams}
+        crewPortalMembers={crewPortalMembers}
         onAdded={() => {
           fetch("/api/admin/crew-members").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setCrewPortalMembers(data); });
         }}

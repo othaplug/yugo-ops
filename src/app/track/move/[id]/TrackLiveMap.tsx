@@ -197,31 +197,28 @@ export default function TrackLiveMap({
         </div>
       ) : !loading && hasActiveTracking ? (
         <>
-          {/* Small packing signal card - prototype style */}
-          {crewLoc && liveStage && (
-            <div className="rounded-lg border border-[#E7E5E4] bg-white px-4 py-3 shadow-sm mb-3 flex items-center gap-3">
-              <span className="relative flex h-3 w-3 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
-              </span>
-              <div>
-                <div className="text-[13px] font-semibold text-[#1A1A1A]">
-                  {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
-                </div>
-                <div className="text-[11px] text-[#666]">
-                  {liveStage === "loading" || liveStage === "unloading"
-                    ? "Your move is being prepared"
-                    : liveStage === "completed"
-                      ? "Your move is complete"
-                      : "Your crew is on the way"}
+          <div className="track-live-map-container relative rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4] shadow-sm">
+            {/* Live stage card - top-left overlay on map (screenshot style) */}
+            {liveStage && (
+              <div className="absolute top-3 left-3 z-10 rounded-lg border border-[#E7E5E4] bg-white px-4 py-3 shadow-md flex items-center gap-3">
+                <span className="relative flex h-3 w-3 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
+                </span>
+                <div>
+                  <div className="text-[13px] font-bold text-[#1A1A1A]">
+                    {liveStage === "loading" || liveStage === "unloading" ? "Packing" : CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                  </div>
+                  <div className="text-[11px] text-[#666]">
+                    {liveStage === "loading" || liveStage === "unloading"
+                      ? "Your move is being prepared"
+                      : liveStage === "completed"
+                        ? "Your move is complete"
+                        : "Your crew is on the way"}
+                  </div>
                 </div>
               </div>
-              {lastLocationAt && (
-                <span className="text-[10px] text-[#999] ml-auto">Updated {formatRelativeTime(lastLocationAt)}</span>
-              )}
-            </div>
-          )}
-          <div className="track-live-map-container rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4] shadow-sm">
+            )}
             {HAS_MAPBOX && MAPBOX_TOKEN ? (
               <MapboxMap
                 mapboxAccessToken={MAPBOX_TOKEN}

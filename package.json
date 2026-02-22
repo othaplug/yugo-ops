@@ -25,6 +25,7 @@
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
     "react-map-gl": "^8.1.0",
+    "recharts": "^3.7.0",
     "resend": "^6.9.2",
     "square": "^44.0.0",
     "twilio": "^5.12.1",

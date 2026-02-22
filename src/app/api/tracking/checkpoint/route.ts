@@ -64,6 +64,18 @@ export async function POST(req: NextRequest) {
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
+  // When crew starts live tracking (en route), set move/delivery status to in_progress globally
+  const enRouteStatuses = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"];
+  if (enRouteStatuses.includes(status)) {
+    const table = session.job_type === "move" ? "moves" : "deliveries";
+    await admin.from(table).update({ status: "in_progress", stage: status, updated_at: now }).eq("id", session.job_id);
+  } else {
+    await admin
+      .from(session.job_type === "move" ? "moves" : "deliveries")
+      .update({ stage: status, updated_at: now })
+      .eq("id", session.job_id);
+  }
+
   // Fetch job details for notifications
   let teamName = "";
   let jobName = "";

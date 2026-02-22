@@ -5,13 +5,12 @@ const DEV_SECRET = "dev-crew-secret-change-in-production";
 
 export function getCrewSessionSecret(): string {
   const secret = process.env[CREW_SECRET_ENV];
-  if (process.env.NODE_ENV === "production") {
-    if (!secret || secret.trim() === "" || secret === DEV_SECRET) {
-      throw new Error(
-        `${CREW_SECRET_ENV} must be set in production (min 32 chars). Add it to .env.local and restart. Run: npm run generate-crew-secret`
-      );
-    }
-    return secret.trim();
+  const isVercel = process.env.VERCEL === "1";
+  const hasValidSecret = secret && secret.trim().length >= 32 && secret.trim() !== DEV_SECRET;
+  if (isVercel && !hasValidSecret) {
+    throw new Error(
+      `${CREW_SECRET_ENV} must be set in production (min 32 chars). Add it in Vercel env vars. Run: npm run generate-crew-secret`
+    );
   }
   return secret?.trim() || DEV_SECRET;
 }

@@ -11,14 +11,32 @@ interface Team {
   active: boolean;
 }
 
+interface CrewPortalMember {
+  id: string;
+  name: string;
+  phone: string;
+  team_id: string;
+  is_active: boolean;
+}
+
 interface AddPortalAccessModalProps {
   open: boolean;
   onClose: () => void;
   teams: Team[];
+  crewPortalMembers: CrewPortalMember[];
   onAdded: () => void;
 }
 
-export default function AddPortalAccessModal({ open, onClose, teams, onAdded }: AddPortalAccessModalProps) {
+function norm(s: string) {
+  return String(s).trim().toLowerCase();
+}
+function nameMatches(a: string, b: string) {
+  const na = norm(a);
+  const nb = norm(b);
+  return na === nb || na.startsWith(nb + " ") || nb.startsWith(na + " ");
+}
+
+export default function AddPortalAccessModal({ open, onClose, teams, crewPortalMembers, onAdded }: AddPortalAccessModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,6 +44,10 @@ export default function AddPortalAccessModal({ open, onClose, teams, onAdded }: 
   const [teamId, setTeamId] = useState("");
   const [role, setRole] = useState<"lead" | "specialist" | "driver">("specialist");
   const [saving, setSaving] = useState(false);
+
+  const roster = [...new Set(teams.flatMap((t) => t.memberIds || []).filter(Boolean))];
+  const hasPortalAccess = (n: string) => crewPortalMembers.some((m) => nameMatches(m.name, n));
+  const availableForPortal = roster.filter((n) => !hasPortalAccess(n)).sort((a, b) => a.localeCompare(b));
 
   const handleClose = () => {
     setName("");
@@ -84,17 +106,28 @@ export default function AddPortalAccessModal({ open, onClose, teams, onAdded }: 
     <ModalOverlay open={open} onClose={handleClose} title="Add portal access" maxWidth="sm">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <p className="text-[11px] text-[var(--tx3)]">
-          This person will be able to log in to the Crew Portal (tablet/phone) with their phone and PIN. One or more people per team can have access; the <strong>lead</strong> is shown first on the tablet.
+          This person will be able to log in to the Crew Portal (tablet/phone) with their phone and PIN. Select from roster members who don&apos;t yet have access.
         </p>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
-          <input
-            type="text"
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team member</label>
+          <select
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Olu"
+            onChange={(e) => {
+              const v = e.target.value;
+              setName(v);
+              const team = activeTeams.find((t) => (t.memberIds || []).some((m) => nameMatches(m, v)));
+              if (team) setTeamId(team.id);
+            }}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-          />
+          >
+            <option value="">Choose team member…</option>
+            {availableForPortal.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          {availableForPortal.length === 0 && (
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Add members to team rosters first, or they already have portal access.</p>
+          )}
         </div>
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>

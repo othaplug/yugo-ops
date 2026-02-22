@@ -133,10 +133,18 @@ export default function TrackMoveClient({
 
   const moveCode = getMoveCode(move);
   const displayCode = formatJobId(moveCode, "move");
-  const statusVal = move.status || "confirmed";
+  // On move day: when crew shares live stage, treat as in_progress across timeline/progress bar (no refresh needed)
+  const EN_ROUTE_OR_ACTIVE = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route", "arrived_at_pickup", "loading", "arrived_at_destination", "unloading"];
+  const statusVal =
+    liveStage === "completed"
+      ? "completed"
+      : liveStage && EN_ROUTE_OR_ACTIVE.includes(liveStage)
+        ? "in_progress"
+        : move.status || "confirmed";
   const currentIdx = getStatusIdx(statusVal);
   const isCancelled = statusVal === "cancelled";
   const isCompleted = statusVal === "completed" || statusVal === "delivered";
+  const isInProgress = statusVal === "in_progress";
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const scheduledDate = move.scheduled_date ? new Date(move.scheduled_date) : null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
@@ -296,7 +304,7 @@ export default function TrackMoveClient({
         {/* Client + status header (exact design: name left, tag right) */}
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h1 className="font-serif text-[22px] sm:text-[26px] text-[#2D2D2D] leading-tight font-semibold tracking-tight">
+            <h1 className="font-hero text-[22px] sm:text-[26px] text-[#2D2D2D] leading-tight font-semibold tracking-tight">
               {move.client_name || "Your Move"}
             </h1>
             <p className="text-[13px] text-[#666] mt-0.5 font-sans">
@@ -333,7 +341,7 @@ export default function TrackMoveClient({
               <div className="text-center">
                 <div className="font-hero text-[28px] md:text-[32px] leading-tight text-[#C9A962] font-semibold">Today&apos;s the day!</div>
                 <div className="mt-1 text-[13px] text-[#666] font-sans">
-                  {move.status === "in_progress" && liveStage != null
+                  {isInProgress && liveStage != null
                     ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
                     : move.arrival_window || move.scheduled_time
                       ? `Your crew arrives between ${move.arrival_window || move.scheduled_time}`
@@ -351,7 +359,7 @@ export default function TrackMoveClient({
                       className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
                       style={{
                         width: `${
-                          move.status === "in_progress" && liveStage != null
+                          isInProgress && liveStage != null
                             ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
                             : isCompleted
                               ? 100
@@ -363,7 +371,7 @@ export default function TrackMoveClient({
                     />
                   </div>
                   <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
-                    {move.status === "in_progress" && liveStage != null
+                    {isInProgress && liveStage != null
                       ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
                       : isCompleted
                         ? "100%"
@@ -410,7 +418,7 @@ export default function TrackMoveClient({
                       className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
                       style={{
                         width: `${
-                          move.status === "in_progress" && liveStage != null
+                          isInProgress && liveStage != null
                             ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
                             : isCompleted
                               ? 100
@@ -422,7 +430,7 @@ export default function TrackMoveClient({
                     />
                   </div>
                   <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
-                    {move.status === "in_progress" && liveStage != null
+                    {isInProgress && liveStage != null
                       ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
                       : isCompleted
                         ? "100%"
@@ -621,36 +629,6 @@ export default function TrackMoveClient({
 
         {activeTab === "track" && (
           <div className="space-y-5">
-            <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-[14px] font-bold text-[#1A1A1A]">Progress Detail</h3>
-                  <span className="relative flex h-2 w-2" aria-hidden>
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#666] mb-4">Live stage of your move — updates when your coordinator updates</p>
-                <div className="mb-4">
-                  <div className="h-2.5 overflow-hidden rounded-full bg-[#E7E5E4]">
-                    <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{
-                        width: `${move.status === "in_progress" && liveStage != null
-                          ? 100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1) / 6
-                          : 0}%`,
-                        background: "linear-gradient(90deg, #ECDEC4, #C9A962)",
-                      }}
-                    />
-                  </div>
-                  <div className="mt-2 text-[13px] font-semibold" style={{ color: "#C9A962" }}>
-                    {move.status === "in_progress" && liveStage
-                      ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
-                      : "Not started — live stages begin when move is in progress"}
-                  </div>
-                </div>
-              </div>
-            </div>
             <TrackLiveMap
               moveId={move.id}
               token={token}
