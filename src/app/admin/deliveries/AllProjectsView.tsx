@@ -3,11 +3,12 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
-import Badge from "../components/Badge";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
+import { getStatusLabel } from "@/lib/move-status";
+import { ScheduleDeliveryItem, ScheduleMoveItem } from "../components/ScheduleItem";
 
 const PARTNER_TYPES = ["all", "retail", "designer", "hospitality", "gallery"] as const;
 const STATUS_OPTIONS = [
@@ -248,34 +249,27 @@ export default function AllProjectsView({
 
       {/* Partners tab: only partner list */}
       {mainTab === "partners" && (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-[var(--brd)] bg-[var(--bg)]/30">
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[var(--brd)]/50">
             <span className="text-[11px] font-semibold text-[var(--tx2)]">Partner projects</span>
             <span className="ml-2 text-[10px] text-[var(--tx3)]">({filteredDeliveries.length})</span>
           </div>
-          <div className="divide-y divide-[var(--brd)]">
+          <div className="divide-y divide-[var(--brd)]/50">
             {filteredDeliveries.length === 0 ? (
               <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
                 No projects {statusFilter === "pending" ? "pending" : dateFrom === today && dateTo === today ? "today" : "yet"}
               </div>
             ) : (
               filteredDeliveries.map((d) => (
-                <Link
+                <ScheduleDeliveryItem
                   key={d.id}
                   href={getDeliveryDetailPath(d)}
-                  className="flex items-center gap-3 px-4 py-3 bg-[var(--card)] hover:bg-[var(--bg)]/40 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{d.customer_name}</div>
-                    <div className="text-[10px] text-[var(--tx3)] truncate">{d.client_name} · {d.items?.length || 0} items · {d.delivery_number}</div>
-                  </div>
-                  <div className="hidden sm:block text-right shrink-0">
-                    <div className="text-[11px] text-[var(--tx2)]">{formatMoveDate(d.scheduled_date)}</div>
-                    <div className="text-[10px] text-[var(--tx3)]">{d.time_slot}</div>
-                  </div>
-                  <div className="sm:hidden text-[10px] text-[var(--tx3)] shrink-0">{formatMoveDate(d.scheduled_date)}</div>
-                  <Badge status={d.status} />
-                </Link>
+                  timeSlot={d.time_slot || "—"}
+                  pill={`${d.items?.length || 0} items`}
+                  status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                  title={`${d.customer_name} (${d.client_name})`}
+                  subtitle={`${d.category || "Delivery"} • ${d.client_name}`}
+                />
               ))
             )}
           </div>
@@ -284,36 +278,28 @@ export default function AllProjectsView({
 
       {/* Move tab: only moves list */}
       {mainTab === "move" && (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-[var(--brd)] bg-[var(--bg)]/30">
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[var(--brd)]/50">
             <span className="text-[11px] font-semibold text-[var(--tx2)]">Moves</span>
             <span className="ml-2 text-[10px] text-[var(--tx3)]">({filteredMoves.length})</span>
           </div>
-          <div className="divide-y divide-[var(--brd)]">
+          <div className="divide-y divide-[var(--brd)]/50">
             {filteredMoves.length === 0 ? (
               <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
                 No moves {statusFilter === "pending" ? "pending" : dateFrom === today && dateTo === today ? "today" : "yet"}
               </div>
             ) : (
-              filteredMoves.map((m) => (
-                <Link
+              filteredMoves.map((m, idx) => (
+                <ScheduleMoveItem
                   key={m.id}
                   href={getMoveDetailPath(m)}
-                  className="flex items-center gap-3 px-4 py-3 bg-[var(--card)] hover:bg-[var(--bg)]/40 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{m.client_name}</div>
-                    <div className="text-[10px] text-[var(--tx3)] truncate">
-                      {[m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" → ") || "—"}
-                    </div>
-                  </div>
-                  <div className="hidden sm:block text-right shrink-0">
-                    <div className="text-[11px] text-[var(--tx2)]">{formatMoveDate(m.scheduled_date)}</div>
-                    <div className="text-[10px] font-medium text-[var(--gold)]">{formatCurrency(m.estimate ?? 0)}</div>
-                  </div>
-                  <div className="sm:hidden text-[10px] text-[var(--tx3)] shrink-0">{formatMoveDate(m.scheduled_date)}</div>
-                  <Badge status={m.status} />
-                </Link>
+                  leftPrimary={String(idx + 1).padStart(2, "0")}
+                  leftSecondary={formatMoveDate(m.scheduled_date)}
+                  status={getStatusLabel(m.status)}
+                  title={m.client_name}
+                  price={formatCurrency(m.estimate ?? 0)}
+                  subtitle={[m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" → ") || "—"}
+                />
               ))
             )}
           </div>

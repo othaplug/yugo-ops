@@ -18,6 +18,7 @@ import MoveSignOffSection from "./MoveSignOffSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import ModalOverlay from "../../components/ModalOverlay";
+import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 
@@ -26,7 +27,12 @@ interface MoveDetailClientProps {
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
 }
-import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+
+function isMoveStatusCompleted(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "completed" || s === "delivered" || s === "done";
+}
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
@@ -42,7 +48,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [editingCard, setEditingCard] = useState<"status" | "stage" | null>(null);
+  const [editingCard, setEditingCard] = useState<"status" | null>(null);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
@@ -66,6 +72,41 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const daysUntil = move.scheduled_date ? Math.ceil((new Date(move.scheduled_date).getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
+  const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
+  const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
+
+  useEffect(() => {
+    fetch(`/api/admin/moves/${move.id}/tracking-duration`)
+      .then((r) => r.json())
+      .then((d) => setJobDuration(d))
+      .catch(() => {});
+  }, [move.id]);
+
+  useEffect(() => {
+    if (!jobDuration?.startedAt) {
+      setJobDurationElapsed(0);
+      return;
+    }
+    const start = new Date(jobDuration.startedAt).getTime();
+    const end = jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() : Date.now();
+    const tick = () => setJobDurationElapsed(Math.max(0, (jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() : Date.now()) - start));
+    tick();
+    if (!jobDuration.completedAt) {
+      const id = setInterval(tick, 1000);
+      return () => clearInterval(id);
+    }
+  }, [jobDuration?.startedAt, jobDuration?.completedAt]);
+
+  const jobDurationStr = jobDuration?.startedAt
+    ? (() => {
+        const ms = jobDurationElapsed || (jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() - new Date(jobDuration.startedAt).getTime() : Date.now() - new Date(jobDuration.startedAt).getTime());
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const h = Math.floor(m / 60);
+        if (h > 0) return `${h}h ${m % 60}m`;
+        return `${m}m ${s % 60}s`;
+      })()
+    : null;
 
   const toggleMember = (name: string) => {
     setAssignedMembers((prev) => {
@@ -80,8 +121,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <BackButton label="Back" />
 
-      {/* Hero - compact header */}
-      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 sm:p-5">
+      {/* Hero - compact header with glass */}
+      <div className="glass rounded-xl p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <button
@@ -118,7 +159,15 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
                   onChange={async (e) => {
                     const v = e.target.value as string;
-                    const { data, error } = await supabase.from("moves").update({ status: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                    const isCurrentlyCompleted = isMoveStatusCompleted(move.status);
+                    const isRestarting = isCurrentlyCompleted && v.toLowerCase() !== "completed";
+                    if (isRestarting && !window.confirm("Are you sure you want to restart this job? The crew will be able to start it again and status will update across all views.")) {
+                      setEditingCard(null);
+                      return;
+                    }
+                    const updates: Record<string, unknown> = { status: v, updated_at: new Date().toISOString() };
+                    if (isRestarting) updates.stage = null;
+                    const { data, error } = await supabase.from("moves").update(updates).eq("id", move.id).select().single();
                     if (error) {
                       toast(error.message || "Failed to update status", "alertTriangle");
                       return;
@@ -139,7 +188,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
                   aria-label="Edit status"
                 >
-                  <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-semibold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                     {getStatusLabel(move.status)}
                   </span>
                   <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
@@ -155,33 +204,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 </span>
                 Live stage
               </span>
-              {editingCard === "stage" ? (
-                <select
-                  defaultValue={move.stage ?? "pending"}
-                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[140px]"
-                  onChange={async (e) => {
-                    const v = e.target.value || null;
-                    const { data } = await supabase.from("moves").update({ stage: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
-                    if (data) setMove(data);
-                    setEditingCard(null);
-                    router.refresh();
-                  }}
-                >
-                  {LIVE_TRACKING_STAGES.map((o) => (
-                    <option key={o.key} value={o.key}>{o.label}</option>
-                  ))}
-                </select>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEditingCard("stage")}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn text-left min-w-0 w-fit sm:w-auto"
-                  aria-label="Edit live stage"
-                >
-                  <span className="text-[12px] font-medium text-[var(--tx)] truncate">{LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}</span>
-                  <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100 shrink-0" />
-                </button>
-              )}
+              <span className="text-[12px] font-medium text-[var(--tx)] truncate" title="Updated by crew from portal">
+                {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}
+              </span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
@@ -189,6 +214,15 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
             </div>
           </div>
+          {(normalizeStatus(move.status) || move.status) !== "cancelled" && (
+            <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
+              <SegmentedProgressBar
+                label="MOVE STATUS"
+                steps={MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s) => ({ key: s.value, label: s.label }))}
+                currentIndex={Math.max(0, MOVE_STATUS_INDEX[normalizeStatus(move.status) || move.status || "confirmed"] ?? 0)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -279,7 +313,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.scheduled_time || "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Duration</span><div className="text-[11px] font-medium text-[var(--tx)]">8h</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
         </div>
@@ -318,13 +352,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       </div>
 
       {/* Financial Snapshot */}
-      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Financial Snapshot</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Estimate</span><div className="text-[11px] font-bold text-[var(--gold)]">{formatCurrency(estimate)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[11px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[11px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[11px] font-medium text-[var(--grn)]">Deposit Received</div></div>
+      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Financial Snapshot</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+          <div className="rounded-lg bg-[var(--gdim)]/50 border border-[var(--gold)]/30 px-3 py-2.5">
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/80">Estimate</span>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--gold)] mt-0.5">{formatCurrency(estimate)}</div>
+          </div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[13px] font-medium text-[var(--grn)]">Deposit Received</div></div>
         </div>
       </div>
 
@@ -403,7 +440,10 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           complexity_indicators: move.complexity_indicators ?? [],
           internal_notes: stripClientMessagesFromNotes(move.internal_notes),
         }}
-        onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
+        onSaved={(updates) => {
+          setMove((prev: any) => ({ ...prev, ...updates }));
+          router.refresh();
+        }}
       />
 
       {deleteConfirmOpen && (

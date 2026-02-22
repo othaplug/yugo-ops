@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ToastProvider } from "./Toast";
 import { NotificationProvider } from "./NotificationContext";
+import { PendingChangeRequestsProvider, usePendingChangeRequests } from "./PendingChangeRequestsContext";
 import { ThemeProvider } from "./ThemeContext";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
@@ -99,6 +100,44 @@ function getPageTitle(pathname: string): { title: string; subtitle: string; useC
 
 const SIDEBAR_WIDTH = 220;
 
+function SidebarNavItem({
+  href,
+  active,
+  ItemIcon,
+  label,
+  showChangeRequestDot,
+  onNavigate,
+}: {
+  href: string;
+  active: boolean;
+  ItemIcon: React.ComponentType<{ className?: string }>;
+  label: string;
+  showChangeRequestDot: boolean;
+  onNavigate: () => void;
+}) {
+  const { pendingCount } = usePendingChangeRequests();
+  const showDot = showChangeRequestDot && pendingCount > 0;
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 ease-out border-l-2 -ml-px ${
+        active
+          ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
+          : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
+      }`}
+    >
+      <span className={`relative ${active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+        <ItemIcon />
+        {showDot && (
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]" aria-label={`${pendingCount} pending`} />
+        )}
+      </span>
+      <span className={active ? "font-bold" : ""}>{label}</span>
+    </Link>
+  );
+}
+
 export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -121,8 +160,9 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   return (
     <ThemeProvider>
       <NotificationProvider>
-        <ToastProvider>
-          <RealtimeListener />
+        <PendingChangeRequestsProvider>
+          <ToastProvider>
+            <RealtimeListener />
           <div className="flex min-h-screen bg-[var(--bg)]">
             {/* Skip to main content for keyboard users */}
             <a
@@ -184,7 +224,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               </div>
 
               {/* Nav sections - scrollable inside sidebar, no overflow past viewport */}
-              <nav className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
+              <nav className={`icon-glow flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
                 {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
                   const hasActive = section.items.some((item) => isActive(item.href));
@@ -205,22 +245,17 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                           {section.items.map((item) => {
                             const active = isActive(item.href);
                             const ItemIcon = item.Icon;
+                            const showChangeRequestDot = item.href === "/admin/change-requests";
                             return (
-                              <Link
+                              <SidebarNavItem
                                 key={item.href}
                                 href={item.href}
-                                onClick={() => setSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 ease-out border-l-2 -ml-px ${
-                                  active
-                                    ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                                    : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
-                                }`}
-                              >
-                                <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                                  <ItemIcon />
-                                </span>
-                                <span className={active ? "font-bold" : ""}>{item.label}</span>
-                              </Link>
+                                active={active}
+                                ItemIcon={ItemIcon}
+                                label={item.label}
+                                showChangeRequestDot={showChangeRequestDot}
+                                onNavigate={() => setSidebarOpen(false)}
+                              />
                             );
                           })}
                         </div>
@@ -275,7 +310,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               </main>
             </div>
           </div>
-        </ToastProvider>
+          </ToastProvider>
+        </PendingChangeRequestsProvider>
       </NotificationProvider>
     </ThemeProvider>
   );

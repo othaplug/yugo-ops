@@ -42,6 +42,10 @@ export default function DeviceSetupCodes() {
   const [formExpiresInHours, setFormExpiresInHours] = useState(24);
   const [creating, setCreating] = useState(false);
   const [createdCode, setCreatedCode] = useState<SetupCode | null>(null);
+  const [editingTruck, setEditingTruck] = useState<Truck | null>(null);
+  const [editTruckName, setEditTruckName] = useState("");
+  const [savingTruck, setSavingTruck] = useState(false);
+  const [deletingTruckId, setDeletingTruckId] = useState<string | null>(null);
 
   const fetchData = () => {
     setLoading(true);
@@ -128,6 +132,51 @@ export default function DeviceSetupCodes() {
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast("Code copied", "check");
+  };
+
+  const handleUpdateTruck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTruck || !editTruckName.trim()) return;
+    setSavingTruck(true);
+    try {
+      const res = await fetch("/api/admin/trucks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingTruck.id, name: editTruckName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Failed to update truck", "x");
+        return;
+      }
+      setTrucks((prev) => prev.map((t) => (t.id === editingTruck.id ? { ...t, name: data.name } : t)));
+      setEditingTruck(null);
+      setEditTruckName("");
+      toast("Truck updated", "check");
+    } catch {
+      toast("Failed to update truck", "x");
+    } finally {
+      setSavingTruck(false);
+    }
+  };
+
+  const handleRemoveTruck = async (truck: Truck) => {
+    if (!window.confirm(`Remove truck "${truck.name}"? Devices linked to it will keep working but the truck will no longer appear in the list.`)) return;
+    setDeletingTruckId(truck.id);
+    try {
+      const res = await fetch(`/api/admin/trucks?id=${encodeURIComponent(truck.id)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Failed to remove truck", "x");
+        return;
+      }
+      setTrucks((prev) => prev.filter((t) => t.id !== truck.id));
+      toast("Truck removed", "check");
+    } catch {
+      toast("Failed to remove truck", "x");
+    } finally {
+      setDeletingTruckId(null);
+    }
   };
 
   const truckMap = new Map(trucks.map((t) => [t.id, t.name]));
@@ -255,16 +304,70 @@ export default function DeviceSetupCodes() {
           <div className="px-5 py-4">
             <div className="flex flex-wrap gap-2">
               {trucks.map((t) => (
-                <span
+                <div
                   key={t.id}
-                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
                 >
-                  {t.name}
-                </span>
+                  <span>{t.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setEditingTruck(t); setEditTruckName(t.name); }}
+                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                  >
+                    Reassign
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTruck(t)}
+                    disabled={deletingTruckId === t.id}
+                    className="text-[10px] font-semibold text-[var(--red)] hover:underline disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </div>
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {editingTruck && (
+        <ModalOverlay
+          open={!!editingTruck}
+          onClose={() => { setEditingTruck(null); setEditTruckName(""); }}
+          title="Reassign truck"
+        >
+          <form onSubmit={handleUpdateTruck} className="space-y-5">
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck name</label>
+              <input
+                type="text"
+                value={editTruckName}
+                onChange={(e) => setEditTruckName(e.target.value)}
+                placeholder="e.g. Truck 1"
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+                required
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setEditingTruck(null); setEditTruckName(""); }}
+                disabled={savingTruck}
+                className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-[12px] font-medium hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingTruck || !editTruckName.trim()}
+                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              >
+                {savingTruck ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </form>
+        </ModalOverlay>
       )}
 
       <ModalOverlay

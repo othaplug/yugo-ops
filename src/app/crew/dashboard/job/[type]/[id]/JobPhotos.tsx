@@ -33,6 +33,8 @@ interface JobPhotosProps {
   onPhotoCountChange?: (count: number, atArrived: number) => void;
   /** Called when crew can advance from an arrived checkpoint (has photos or skipped). */
   onCanAdvanceFromArrivedChange?: (canAdvance: boolean) => void;
+  /** When true, only show photos; no add/upload. */
+  readOnly?: boolean;
 }
 
 interface PhotoItem {
@@ -46,7 +48,7 @@ interface PhotoItem {
 
 const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arrived"];
 
-export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange }: JobPhotosProps) {
+export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, readOnly = false }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photosAtArrived, setPhotosAtArrived] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   return (
     <div>
       <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
-      {showPrompt ? (
+      {readOnly ? null : showPrompt ? (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)]/20 p-4 mb-3">
           <p className="text-[12px] font-semibold text-[var(--tx)] mb-2">{prompt}</p>
           {requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
@@ -125,11 +127,10 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed transition-colors ${
+            className={`flex items-center justify-center w-full py-3 rounded-xl border-2 border-dashed transition-colors ${
               uploading ? "opacity-50 pointer-events-none border-[var(--brd)]" : "border-[var(--gold)]/50 hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 cursor-pointer"
             }`}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--gold)]" aria-hidden><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span className="text-[13px] font-semibold text-[var(--gold)]">Take Photo ({photosAtCurrentCheckpoint} taken)</span>
           </button>
         </div>
@@ -139,9 +140,8 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed border-[var(--brd)] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center w-full py-3 rounded-xl border-2 border-dashed border-[var(--brd)] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--gold)]" aria-hidden><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span className="text-[13px] font-semibold text-[var(--tx)]">Take Photo ({photos.length} taken)</span>
           </button>
         </div>
@@ -158,24 +158,26 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
             <img src={p.url} alt="" className="w-full h-full object-cover" />
           </a>
         ))}
-        <label
-          className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-[20px] font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
-            uploading ? "opacity-50 pointer-events-none" : ""
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileChange}
-            className="sr-only"
-          />
-          {uploading ? "…" : "+"}
-        </label>
+        {!readOnly && (
+          <label
+            className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-[20px] font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
+              uploading ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="sr-only"
+            />
+            {uploading ? "…" : "+"}
+          </label>
+        )}
       </div>
       <p className="text-[10px] text-[var(--tx3)] mt-2">{photos.length} photo{photos.length !== 1 ? "s" : ""} taken</p>
-      {requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
+      {!readOnly && requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
         <button
           type="button"
           onClick={() => {

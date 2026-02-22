@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { normalizePhone } from "@/lib/phone";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
 
@@ -28,8 +27,6 @@ interface DashboardData {
   readinessRequired?: boolean;
   isCrewLead?: boolean;
 }
-
-const DISPATCH_PHONE = "(647) 370-4525";
 
 export default function CrewDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -157,9 +154,7 @@ export default function CrewDashboardPage() {
                             color: completed ? "var(--grn)" : "var(--gold)",
                           }}
                         >
-                          {completed ? (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                        ) : index + 1}
+                          {index + 1}
                         </span>
                         <span className="text-[14px] font-semibold text-[var(--tx)] truncate">
                           {job.clientName}
@@ -176,55 +171,26 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {completed ? (
-                      <div className="mt-3 ml-8 text-[10px] text-[var(--grn)] font-medium flex items-center gap-1">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                        Completed
-                      </div>
-                    ) : canStart ? (
                       <div className="mt-3 ml-8 flex gap-2">
                         <Link
-                          href={`/crew/expense?job=${job.id}`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-[11px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
+                          href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
+                          className="flex-1 flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>
-                          Expense
+                          View Job
                         </Link>
-                        <a
-                          href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-[11px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
-                          Dispatch
-                        </a>
+                      </div>
+                    ) : canStart ? (
+                      <div className="mt-3 ml-8">
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-[12px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
+                          className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
                         >
-                          START JOB →
+                          START JOB
                         </Link>
                       </div>
                     ) : (
-                      <div className="mt-3 ml-8 flex flex-col gap-2">
-                        <div className="text-[10px] text-[var(--tx3)] flex items-center gap-1">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                          Complete previous job first
-                        </div>
-                        <div className="flex gap-2">
-                          <Link
-                            href={`/crew/expense?job=${job.id}`}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-[11px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>
-                            Expense
-                          </Link>
-                          <a
-                            href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-[11px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
-                            Dispatch
-                          </a>
-                        </div>
+                      <div className="mt-3 ml-8">
+                        <p className="text-[10px] text-[var(--tx3)]">Complete previous job first</p>
                       </div>
                     )}
                   </div>
@@ -236,17 +202,10 @@ export default function CrewDashboardPage() {
 
         <Link
           href="/crew/end-of-day"
-          className="mt-4 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-[13px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] transition-colors"
+          className="mt-4 flex items-center justify-center py-3.5 rounded-xl font-semibold text-[13px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] transition-colors"
         >
           End Day
         </Link>
-        <a
-          href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-          className="mt-3 flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[var(--brd)] text-[13px] font-medium text-[var(--tx)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
-          Call Dispatch
-        </a>
       </section>
     </PageContent>
   );

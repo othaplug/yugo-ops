@@ -258,7 +258,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
 
       {/* Scheduled / Unscheduled + Week Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-sm">
+        <div className="glass rounded-2xl p-5">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming</h3>
           <ul className="space-y-2 max-h-[280px] overflow-y-auto">
             {deliveriesThisWeek.map((d) => (

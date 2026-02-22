@@ -48,6 +48,7 @@ interface Session {
   status: string;
   isActive: boolean;
   startedAt: string | null;
+  completedAt?: string | null;
   checkpoints: { status: string; timestamp: string; note: string | null }[];
   lastLocation: { lat: number; lng: number } | null;
 }
@@ -110,6 +111,7 @@ export default function CrewJobPage({
         status: d.session.status,
         isActive: d.session.isActive,
         startedAt: d.session.startedAt,
+        completedAt: d.session.completedAt,
         checkpoints: d.checkpoints || [],
         lastLocation: d.lastLocation,
       });
@@ -325,13 +327,12 @@ export default function CrewJobPage({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {session?.isActive && (
-            <span className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)]">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              {formatElapsed(elapsedMs)}
+          {(session?.isActive || isCompleted) && (
+            <span className="text-[11px] text-[var(--tx3)] tabular-nums">
+              {formatElapsed(isCompleted && session?.completedAt && session?.startedAt ? new Date(session.completedAt).getTime() - new Date(session.startedAt).getTime() : elapsedMs)}
             </span>
           )}
-          {session && (
+          {session && !isCompleted && (
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${gpsStatus === "on" ? "bg-[var(--grn)]/15 text-[var(--grn)]" : "bg-[var(--brd)]/50 text-[var(--tx3)]"}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${gpsStatus === "on" ? "bg-[var(--grn)]" : "bg-[var(--tx3)]"}`} />
               GPS {gpsStatus === "on" ? "ON" : gpsStatus === "unavailable" ? "Unavailable" : "OFF"}
@@ -390,7 +391,7 @@ export default function CrewJobPage({
             )}
             {isCompleted && (
               <div className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--grn)] text-center bg-[rgba(45,159,90,0.15)]">
-                Completed
+                View Job
               </div>
             )}
           </div>
@@ -408,67 +409,77 @@ export default function CrewJobPage({
 
           <div>
             <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Timeline</h2>
-            <div className="space-y-2">
+            <div className="relative flex flex-col">
               {statusFlow.map((s, i) => {
                 const cp = session?.checkpoints?.find((c) => c.status === s);
                 const isCurrent = currentStatus === s;
-                const isPast = statusFlow.indexOf(currentStatus as any) > i;
+                const idx = statusFlow.indexOf(currentStatus as any);
+                const isPast = idx > i || (idx === i && isCompleted);
+                const isPending = idx < i;
+                const isLast = i === statusFlow.length - 1;
+                const lineBelowGreen = isPast;
                 return (
-                  <div key={s} className="relative flex items-center gap-3 text-[12px] pb-2 last:pb-0">
-                    <span
-                      className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center text-[9px] shrink-0 transition-all duration-300 ${
-                        isPast ? "bg-[var(--grn)] text-white" : isCurrent ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40" : "bg-[var(--brd)] text-[var(--tx3)]"
-                      }`}
-                    >
-                      {isPast || (isCurrent && isCompleted) ? (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                      ) : i + 1}
-                    </span>
-                    <span className={isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}>
-                      {getStatusLabel(s)}
-                    </span>
-                    {cp?.timestamp && (
-                      <span className="text-[10px] text-[var(--tx3)] ml-auto">
-                        {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  <div key={s} className="relative flex items-start gap-3 text-[12px]">
+                    <div className="flex flex-col items-center shrink-0">
+                      <span
+                        className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          isPast ? "bg-[var(--grn)] text-white" : isCurrent ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40" : "bg-[var(--brd)]/80 text-[var(--tx3)]"
+                        }`}
+                      >
+                        {isPast || (isCurrent && isCompleted) ? (
+                          <span className="text-[11px] font-bold leading-none">&#10003;</span>
+                        ) : (
+                          <span className="text-[9px] font-bold">{i + 1}</span>
+                        )}
                       </span>
-                    )}
+                      {!isLast && (
+                        <div className={`w-0.5 flex-1 min-h-[12px] ${lineBelowGreen ? "bg-[var(--grn)]" : "bg-[var(--brd)]"}`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 pb-4">
+                      <span className={isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}>
+                        {getStatusLabel(s)}
+                      </span>
+                      {cp?.timestamp && (
+                        <span className="text-[10px] text-[var(--tx3)] shrink-0">
+                          {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => noteInputRef.current?.focus()}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[var(--brd)] text-[12px] font-medium text-[var(--tx2)] hover:border-[var(--gold)]/50 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-              Note
-            </button>
-            <button
-              onClick={() => setReportModalOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[#D48A29]/50 text-[12px] font-medium text-[#D48A29] hover:border-[#D48A29] transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Issue
-            </button>
-            <a
-              href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--brd)] text-[12px] font-medium text-[var(--tx)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-              Call
-            </a>
-          </div>
-
-          {job.internalNotes && (
-            <div>
-              <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">Dispatch Notes</h2>
-              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">{job.internalNotes}</p>
+          {!isCompleted && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => noteInputRef.current?.focus()}
+                className="flex-1 flex items-center justify-center py-2.5 rounded-xl border border-dashed border-[var(--brd)] text-[12px] font-medium text-[var(--tx2)] hover:border-[var(--gold)]/50 transition-colors"
+              >
+                Note
+              </button>
+              <button
+                onClick={() => setReportModalOpen(true)}
+                className="flex-1 flex items-center justify-center py-2.5 rounded-xl border border-dashed border-[#D48A29]/50 text-[12px] font-medium text-[#D48A29] hover:border-[#D48A29] transition-colors"
+              >
+                Issue
+              </button>
+              <a
+                href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
+                className="flex-1 flex items-center justify-center py-2.5 rounded-xl border border-[var(--brd)] text-[12px] font-medium text-[var(--tx)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
+              >
+                Call
+              </a>
             </div>
           )}
+
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+            <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">Dispatch Notes</h2>
+            <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap">{job.internalNotes || "No dispatch notes for this job."}</p>
+          </div>
 
           {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
             <Link
@@ -519,6 +530,7 @@ export default function CrewJobPage({
             currentStatus={currentStatus}
             onRefresh={fetchJob}
             onCountChange={(v, t) => { setItemsVerified(v); setItemsTotal(t); }}
+            readOnly={isCompleted}
           />
         </div>
       )}
@@ -529,13 +541,14 @@ export default function CrewJobPage({
 
       {activeTab === "photos" && (
         <div className="mt-4">
-          {session?.isActive ? (
+          {session?.isActive || isCompleted ? (
             <JobPhotos
               jobId={id}
               jobType={jobType}
               sessionId={session?.id ?? null}
               currentStatus={currentStatus}
               onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+              readOnly={isCompleted}
             />
           ) : (
             <div className="text-center py-8 text-[13px] text-[var(--tx3)]">

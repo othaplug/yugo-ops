@@ -81,6 +81,9 @@ interface AdminPageClientProps {
   allDeliveries: Delivery[];
   b2cUpcoming: Move[];
   overdueAmount: number;
+  currentMonthRevenue: number;
+  revenuePctChange: number;
+  monthlyRevenue: { m: string; v: number }[];
   categoryBgs: Record<string, string>;
   categoryIcons: Record<string, string>;
   activityEvents?: ActivityEvent[];
@@ -169,6 +172,9 @@ export default function AdminPageClient({
   allDeliveries,
   b2cUpcoming,
   overdueAmount,
+  currentMonthRevenue,
+  revenuePctChange,
+  monthlyRevenue,
   categoryBgs,
   categoryIcons,
   activityEvents = [],
@@ -198,37 +204,45 @@ export default function AdminPageClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      {/* Metrics - .metrics */}
+      {/* Metrics - .metrics with glass */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-        <Link href="/admin/deliveries" className="mc">
-          <div className="mc-l">Today</div>
+        <Link href="/admin/deliveries" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">Today&apos;s Deliveries</div>
           <div className="mc-v">{todayDeliveries.length}</div>
+          <div className="mc-c text-[var(--tx3)]">Scheduled today</div>
         </Link>
-        <Link href="/admin/deliveries?filter=pending" className="mc">
-          <div className="mc-l">Pending</div>
+        <Link href="/admin/deliveries?filter=pending" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">Pending Deliveries</div>
           <div className="mc-v text-[var(--org)]">{allDeliveries.filter((d) => d.status === "pending").length}</div>
+          <div className="mc-c text-[var(--tx3)]">Awaiting schedule</div>
         </Link>
-        <Link href="/admin/revenue" className="mc">
-          <div className="mc-l">Revenue (Feb)</div>
-          <div className="mc-v">$38.4K</div>
-          <div className="mc-c up">↑ 23%</div>
+        <Link href="/admin/revenue" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">Revenue ({new Date().toLocaleString("en-US", { month: "short" })})</div>
+          <div className="mc-v">{currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}</div>
+          <div className={`mc-c ${revenuePctChange >= 0 ? "up text-[var(--grn)]" : "text-[var(--red)]"}`}>
+            {currentMonthRevenue > 0 || revenuePctChange !== 0
+              ? `${revenuePctChange >= 0 ? "↑" : "↓"} ${Math.abs(revenuePctChange)}% vs last month`
+              : "Paid invoices this month"}
+          </div>
         </Link>
-        <Link href="/admin/invoices" className="mc">
-          <div className="mc-l">Overdue</div>
+        <Link href="/admin/invoices" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">Overdue Invoices</div>
           <div className="mc-v text-[var(--red)]">{formatCurrency(overdueAmount)}</div>
+          <div className="mc-c text-[var(--tx3)]">Past due amount</div>
         </Link>
-        <Link href="/admin/moves/residential" className="mc">
-          <div className="mc-l">B2C</div>
+        <Link href="/admin/moves/residential" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">B2C Moves</div>
           <div className="mc-v">{b2cUpcoming.length}</div>
+          <div className="mc-c text-[var(--tx3)]">Upcoming residential</div>
         </Link>
       </div>
 
       <LiveOperationsCard />
 
-      {/* Today's B2B Deliveries */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mt-6 sm:mt-8">
+      {/* Today's B2B Deliveries - schedule layout */}
+      <div className="glass rounded-xl overflow-hidden mt-6 sm:mt-8">
         <div className="sh px-4 pt-4">
-          <div className="sh-t">Today&apos;s B2B Deliveries</div>
+          <div className="sh-t">Your schedule for today</div>
           <Link href="/admin/deliveries" className="sh-l">All →</Link>
         </div>
         <FilterBar
@@ -244,24 +258,30 @@ export default function AdminPageClient({
           hasActiveFilters={!!deliveryStatusFilter}
           onClear={() => setDeliveryStatusFilter("")}
         />
-        <div className="dl px-4 pb-4 dc-wrap">
+        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
         {filteredDeliveries.slice(0, 5).map((d) => (
-          <Link key={d.id} href={getDeliveryDetailPath(d)} className="dc">
-            <div className="dc-i">
-              <div className="dc-t">{d.customer_name} ({d.client_name})</div>
-              <div className="dc-s">{d.items?.length || 0} items</div>
+          <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+            <div className="flex flex-col items-start shrink-0 w-14">
+              <span className="text-[12px] font-semibold text-[var(--tx)]">{d.time_slot || "—"}</span>
+              <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
+                {d.items?.length || 0} items
+              </span>
             </div>
-            <div className="dc-tm">{d.time_slot}</div>
-            <span className={getBadgeClass(d.status || "")}>{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</span>
+            <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] font-semibold text-[var(--tx3)] mb-0.5">{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</div>
+              <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{d.customer_name} ({d.client_name})</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5">{(d.category || "Delivery")} • {d.client_name}</div>
+            </div>
           </Link>
         ))}
         </div>
       </div>
 
-      {/* B2C Moves */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mt-4">
+      {/* B2C Moves - schedule layout */}
+      <div className="glass rounded-xl overflow-hidden mt-4">
         <div className="sh px-4 pt-4">
-          <div className="sh-t">B2C Moves</div>
+          <div className="sh-t">Starting soon</div>
           <Link href="/admin/moves/residential" className="sh-l">All →</Link>
         </div>
         <FilterBar
@@ -277,15 +297,19 @@ export default function AdminPageClient({
           hasActiveFilters={!!moveStatusFilter}
           onClear={() => setMoveStatusFilter("")}
         />
-        <div className="dl px-4 pb-4 dc-wrap">
-        {filteredMoves.slice(0, 5).map((m) => (
-          <Link key={m.id} href={getMoveDetailPath(m)} className="dc">
-            <div className="dc-i">
-              <div className="dc-t">{m.client_name}</div>
-              <div className="dc-s">{m.from_address} → {m.to_address}</div>
+        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+        {filteredMoves.slice(0, 5).map((m, idx) => (
+          <Link key={m.id} href={getMoveDetailPath(m)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+            <div className="flex flex-col items-start shrink-0 w-14">
+              <span className="text-[10px] text-[var(--tx3)]">{String(idx + 1).padStart(2, "0")}</span>
+              <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{formatMoveDate(m.scheduled_date)}</span>
             </div>
-            <div className="dc-tm">{formatMoveDate(m.scheduled_date)}</div>
-            <span className={getBadgeClass(m.status || "")}>{getStatusLabel(m.status ?? null)}</span>
+            <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] font-semibold text-[var(--tx3)] mb-0.5">{getStatusLabel(m.status ?? null)}</div>
+              <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{m.client_name}</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{m.from_address} → {m.to_address}</div>
+            </div>
           </Link>
         ))}
         </div>
@@ -294,27 +318,22 @@ export default function AdminPageClient({
       {/* g2 - Monthly Revenue + Activity: horizontal scroll on mobile, grid on desktop */}
       <div className="relative mt-4">
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
-          {/* Monthly Revenue card */}
-          <div className="min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
+          {/* Monthly Revenue card - glass */}
+          <div className="glass min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
             <div className="sh shrink-0">
               <div className="sh-t">Monthly Revenue</div>
               <Link href="/admin/revenue" className="sh-l">Details →</Link>
             </div>
             <div className="flex items-end gap-2 h-[130px] pt-1 shrink-0">
-            {[
-              { m: "Sep", v: 15 },
-              { m: "Oct", v: 22 },
-              { m: "Nov", v: 28 },
-              { m: "Dec", v: 31 },
-              { m: "Jan", v: 34 },
-              { m: "Feb", v: 38.4 },
-            ].map((d, i) => {
-              const pct = Math.round((d.v / 40) * 100);
-              const isNow = i === 5;
+            {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "—", v: 0 }]).map((d, i) => {
+              const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.v));
+              const pct = Math.round((d.v / maxV) * 100);
+              const isNow = monthlyRevenue.length > 0 && i === monthlyRevenue.length - 1;
+              const valLabel = d.v >= 1 ? `$${d.v.toFixed(1)}K` : formatCurrency(d.v * 1000);
               return (
-                <div key={d.m} className="flex-1 flex flex-col items-center gap-1 h-full min-w-0">
+                <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-1 h-full min-w-0">
                   <span className={`text-[10px] font-semibold tabular-nums ${isNow ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}>
-                    ${d.v}K
+                    {valLabel}
                   </span>
                   <div className="flex-1 w-full flex items-end min-h-[48px]">
                     <div
@@ -335,8 +354,8 @@ export default function AdminPageClient({
             </div>
           </div>
 
-          {/* Activity card - relative for right-edge fade */}
-          <div className="relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] border border-[var(--brd)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
+          {/* Activity card - glass, relative for right-edge fade */}
+          <div className="glass relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
             <div className="sh shrink-0">
               <div className="sh-t">Activity</div>
             <button

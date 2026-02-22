@@ -27,6 +27,7 @@ interface JobInventoryProps {
   currentStatus: string;
   onRefresh?: () => void;
   onCountChange?: (verified: number, total: number) => void;
+  readOnly?: boolean;
 }
 
 export default function JobInventory({
@@ -38,6 +39,7 @@ export default function JobInventory({
   currentStatus,
   onRefresh,
   onCountChange,
+  readOnly = false,
 }: JobInventoryProps) {
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
   const [verifiedRooms, setVerifiedRooms] = useState<Set<string>>(new Set());
@@ -157,37 +159,40 @@ export default function JobInventory({
             return (
               <label
                 key={room}
-                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors cursor-pointer hover:border-[var(--gold)]/40 ${
+                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${!readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""} ${
                   verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={verified}
-                  onChange={() => toggleRoomVerify(room)}
+                  onChange={() => !readOnly && toggleRoomVerify(room)}
+                  disabled={readOnly}
                   className="rounded border-[var(--brd)]"
                 />
                 <span className="text-[13px] text-[var(--tx)]">{room}</span>
-                {verified && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2.5" className="ml-auto shrink-0"><path d="M20 6L9 17l-5-5"/></svg>}
+                {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
               </label>
             );
           })}
-          <button
-            type="button"
-            onClick={() => {
-              const r = window.prompt("Add room name");
-              if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
-            }}
-            className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
-          >
-            + Add room
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => {
+                const r = window.prompt("Add room name");
+                if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
+              }}
+              className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
+            >
+              + Add room
+            </button>
+          )}
         </div>
       ) : (
         <>
       {inventory.map((r) => (
-        <div key={r.room} className="mb-3">
-          <div className="text-[12px] font-semibold text-[var(--tx)] mb-1.5">{r.room}</div>
+        <div key={r.room} className="mb-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">{r.room.toUpperCase()}</div>
           <div className="space-y-1.5">
             {(r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name, quantity: 1 }))).map((item, i) => {
               const id = "id" in item ? item.id : `noid-${i}`;
@@ -200,20 +205,21 @@ export default function JobInventory({
                   key={id}
                   className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${
                     verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
-                  } ${hasId ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
+                  } ${hasId && !readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
                 >
                   {hasId ? (
                     <input
                       type="checkbox"
                       checked={verified}
-                      onChange={() => toggleVerify(id)}
+                      onChange={() => !readOnly && toggleVerify(id)}
+                      disabled={readOnly}
                       className="rounded border-[var(--brd)]"
                     />
                   ) : (
                     <span className="w-4" />
                   )}
                   <span className="text-[13px] text-[var(--tx)]">{name} x{qty}</span>
-                  {verified && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2.5" className="ml-auto shrink-0"><path d="M20 6L9 17l-5-5"/></svg>}
+                  {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
                 </label>
               );
             })}
@@ -230,10 +236,10 @@ export default function JobInventory({
           ))}
         </div>
       )}
-      {!isPremierNoInventory && (
+      {!isPremierNoInventory && !readOnly && (
       <button
         onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--brd)] text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
       >
         + Add Extra Item
       </button>

@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import { Icon } from "@/components/AppIcons";
-import Badge from "../../components/Badge";
 import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
+import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
 
 export default async function RetailPage() {
   const supabase = await createClient();
@@ -140,30 +139,28 @@ export default async function RetailPage() {
         </div>
 
         {/* Recent Deliveries */}
-        <div className="sh mt-6">
-          <div className="sh-t">Recent Deliveries</div>
-          <Link href="/admin/deliveries" className="sh-l">All →</Link>
-        </div>
-        <div className="dl mt-2">
-          {dels.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
-              No deliveries yet
-            </div>
-          ) : dels.slice(0, 5).map((d) => (
-            <Link
-              key={d.id}
-              href={getDeliveryDetailPath(d)}
-              className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--gdim)] text-[var(--tx2)]"><Icon name="sofa" className="w-[16px] h-[16px]" /></div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-semibold truncate">{d.customer_name} ({d.client_name})</div>
-                <div className="text-[9px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</div>
+        <div className="glass rounded-xl overflow-hidden mt-6">
+          <div className="sh px-4 pt-4">
+            <div className="sh-t">Recent Deliveries</div>
+            <Link href="/admin/deliveries" className="sh-l">All →</Link>
+          </div>
+          <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+            {dels.length === 0 ? (
+              <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+                No deliveries yet
               </div>
-              <div className="text-[10px] text-[var(--tx3)]">{d.time_slot}</div>
-              <Badge status={d.status} />
-            </Link>
-          ))}
+            ) : dels.slice(0, 5).map((d) => (
+              <ScheduleDeliveryItem
+                key={d.id}
+                href={getDeliveryDetailPath(d)}
+                timeSlot={d.time_slot || "—"}
+                pill={`${Array.isArray(d.items) ? d.items.length : 0} items`}
+                status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                title={`${d.customer_name} (${d.client_name})`}
+                subtitle={`Retail • ${d.client_name}`}
+              />
+            ))}
+          </div>
         </div>
     </div>
   );

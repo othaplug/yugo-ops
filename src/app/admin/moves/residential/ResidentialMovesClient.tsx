@@ -3,13 +3,14 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import Badge from "../../components/Badge";
 import { StatPctChange } from "../../components/StatPctChange";
 import MoveNotifyButton from "../MoveNotifyButton";
 import MoveDateFilter, { getDateRangeFromPreset } from "../../components/MoveDateFilter";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
+import { getStatusLabel } from "@/lib/move-status";
+import { ScheduleMoveItem } from "../../components/ScheduleItem";
 
 type Move = {
   id: string;
@@ -156,7 +157,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
         </Link>
       </div>
 
-      <div className="bg-[var(--card)] border border-[var(--brd)] border-t-0 rounded-xl overflow-hidden">
+      <div className="glass rounded-xl overflow-hidden">
         <div className="flex items-center justify-between gap-2 py-3 px-3 sm:pl-2 sm:pr-3 bg-[var(--bg)]/50 border-b border-[var(--brd)]">
           <div className="flex items-center gap-2 flex-1">
             <button
@@ -263,36 +264,25 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
           </div>
         )}
 
-        <div className="dl">
+        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
           {filtered.length === 0 ? (
             <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
               No residential moves yet
             </div>
-          ) : filtered.map((m) => (
-            <div
-              key={m.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2.5 px-3 py-3 sm:py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all duration-200 group"
-            >
-              <Link href={getMoveDetailPath(m)} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:flex-nowrap">
-                <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[11px] sm:text-[11px] font-semibold text-[var(--tx)] break-words line-clamp-2">
-                      {m.client_name || "—"}
-                    </div>
-                    <div className="text-[9px] text-[var(--tx3)] mt-0.5 truncate max-w-[280px] sm:max-w-none" title={`${m.from_address || ""} → ${m.to_address || ""}`}>
-                      {truncateAddress(m.from_address, m.to_address)}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-2.5 sm:flex-nowrap">
-                  <span className="text-[10px] text-[var(--tx3)] tabular-nums">{formatMoveDate(m.scheduled_date)}</span>
-                  <span className={`tabular-nums font-mono text-[10px] font-bold ${priceColor(m.status)}`}>
-                    {formatCurrency(m.estimate ?? 0)}
-                  </span>
-                  <Badge status={m.status ?? ""} />
-                </div>
-              </Link>
-              <div className="flex justify-end sm:justify-start shrink-0 touch-manipulation sm:pl-0">
+          ) : filtered.map((m, idx) => (
+            <div key={m.id} className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <ScheduleMoveItem
+                  href={getMoveDetailPath(m)}
+                  leftPrimary={String(idx + 1).padStart(2, "0")}
+                  leftSecondary={formatMoveDate(m.scheduled_date)}
+                  status={getStatusLabel(m.status ?? null)}
+                  title={m.client_name || "—"}
+                  price={formatCurrency(m.estimate ?? 0)}
+                  subtitle={truncateAddress(m.from_address, m.to_address)}
+                />
+              </div>
+              <div className="shrink-0">
                 <MoveNotifyButton move={m} />
               </div>
             </div>

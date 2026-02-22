@@ -11,6 +11,7 @@ import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
 import IncidentsSection from "../../components/IncidentsSection";
+import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 
 const PROGRESS_STEPS = ["pending", "confirmed", "in-transit", "delivered"] as const;
 const PROGRESS_LABELS: Record<string, string> = {
@@ -58,7 +59,6 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
   const statusColor = statusColorMap[delivery.status] || "text-[var(--tx3)] bg-[var(--card)]";
 
   const currentStepIdx = PROGRESS_STEPS.indexOf(delivery.status as typeof PROGRESS_STEPS[number]);
-  const progressPercent = delivery.status === "cancelled" ? 0 : currentStepIdx >= 0 ? ((currentStepIdx + 1) / PROGRESS_STEPS.length) * 100 : 25;
   const categoryStyle = CATEGORY_STYLES[delivery.category] || CATEGORY_STYLES.retail;
 
   return (
@@ -70,13 +70,13 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
         Back to Projects
       </Link>
 
-      {/* Header Card - partner-specific accent */}
-      <div className={`bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 ${categoryStyle.borderClass}`}>
+      {/* Header Card - glass + partner-specific accent */}
+      <div className={`glass rounded-xl p-5 ${categoryStyle.borderClass}`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{delivery.delivery_number}</h1>
-              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusColor}`}>
+              <span className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-wide ${statusColor}`}>
                 {delivery.status}
               </span>
               {delivery.scheduled_date && (
@@ -119,28 +119,16 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-4 pt-4 border-t border-[var(--brd)]">
-          <h3 className="font-heading text-[11px] font-bold text-[var(--tx3)] mb-2 uppercase tracking-wider">Progress</h3>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1 h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[var(--gold)] rounded-full transition-all duration-700 ease-out animate-progress-shimmer"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-semibold text-[var(--gold)]">
-              {PROGRESS_LABELS[delivery.status] || delivery.status}
-            </span>
+        {/* Segmented progress bar */}
+        {delivery.status !== "cancelled" && (
+          <div className="mt-4 pt-4 border-t border-[var(--brd)]">
+            <SegmentedProgressBar
+              label="DELIVERY STATUS"
+              steps={PROGRESS_STEPS.map((s) => ({ key: s, label: PROGRESS_LABELS[s] }))}
+              currentIndex={Math.max(0, currentStepIdx)}
+            />
           </div>
-          <div className="flex justify-between text-[9px] text-[var(--tx3)]">
-            {PROGRESS_STEPS.map((s) => (
-              <span key={s} className={delivery.status === s ? "text-[var(--gold)] font-semibold" : ""}>
-                {PROGRESS_LABELS[s]}
-              </span>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Team assigned */}
         {delivery.crew_id && (

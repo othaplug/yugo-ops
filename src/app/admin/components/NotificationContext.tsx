@@ -30,6 +30,7 @@ const DEFAULT: Notification[] = [
 function getLinkForNotification(notif: { icon?: string; title?: string }): string {
   const t = (notif.title || "").toLowerCase();
   const icon = notif.icon || "";
+  if (t.includes("change request") || icon === "clipboard") return "/admin/change-requests";
   if (t.includes("delivery") || icon === "truck" || icon === "party") return "/admin/deliveries";
   if (t.includes("invoice") || icon === "dollar") return "/admin/invoices";
   if (t.includes("message") || icon === "mail") return "/admin/messages";

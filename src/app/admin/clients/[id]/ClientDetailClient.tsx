@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getMoveDetailPath } from "@/lib/move-code";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Badge from "../../components/Badge";
@@ -15,6 +14,9 @@ import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
+import { getStatusLabel } from "@/lib/move-status";
+import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
 
 interface MoveRow {
   id: string;
@@ -26,10 +28,22 @@ interface MoveRow {
   created_at?: string | null;
 }
 
+interface ChangeRequestRow {
+  id: string;
+  move_id: string;
+  type: string;
+  description: string;
+  status: string;
+  urgency?: string;
+  created_at: string;
+  moves?: { move_code?: string; client_name?: string } | { move_code?: string; client_name?: string }[];
+}
+
 interface ClientDetailClientProps {
   client: any;
   deliveries: any[];
   moves: MoveRow[];
+  changeRequests?: ChangeRequestRow[];
   allInvoices: any[];
   outstandingTotal: number;
   partnerSince: Date | null;
@@ -42,6 +56,7 @@ export default function ClientDetailClient({
   client,
   deliveries,
   moves,
+  changeRequests = [],
   allInvoices,
   outstandingTotal,
   partnerSince,
@@ -242,42 +257,35 @@ export default function ClientDetailClient({
 
       {/* Recent moves (B2C) or Recent projects (partners) */}
       <h3 className="text-[13px] font-bold mb-2">{isClient ? "Recent moves" : "Recent projects"}</h3>
-      <div className="flex flex-col gap-1 mb-4">
+      <div className="divide-y divide-[var(--brd)]/50 -mx-2 mb-4">
         {isClient ? (
           moves.length === 0 ? (
             <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
           ) : (
-            moves.map((m) => (
-              <Link
+            moves.map((m, idx) => (
+              <ScheduleMoveItem
                 key={m.id}
                 href={getMoveDetailPath(m)}
-                className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-semibold break-words line-clamp-2">{m.client_name || m.move_number || "Move"}</div>
-                  <div className="text-[9px] text-[var(--tx3)]">{m.move_number ?? m.id}</div>
-                </div>
-                <div className="text-[10px] text-[var(--tx3)]">{formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}</div>
-                <Badge status={m.status ?? ""} />
-              </Link>
+                leftPrimary={String(idx + 1).padStart(2, "0")}
+                leftSecondary={formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}
+                status={getStatusLabel(m.status ?? null)}
+                title={m.client_name || m.move_number || "Move"}
+                subtitle={m.move_number ?? String(m.id).slice(0, 8)}
+              />
             ))
           )
         ) : (
           <>
             {deliveries.map((d) => (
-              <button
+              <ScheduleDeliveryButton
                 key={d.id}
-                type="button"
                 onClick={() => setSummaryDelivery(d)}
-                className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-semibold break-words line-clamp-2">{d.customer_name}</div>
-                  <div className="text-[9px] text-[var(--tx3)]">{d.delivery_number} • {d.items?.length || 0} items</div>
-                </div>
-                <div className="text-[10px] text-[var(--tx3)]">{formatMoveDate(d.scheduled_date)}</div>
-                <Badge status={d.status} />
-              </button>
+                timeSlot={d.time_slot || "—"}
+                pill={`${d.items?.length || 0} items`}
+                status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                title={d.customer_name}
+                subtitle={`${d.delivery_number} • ${d.client_name}`}
+              />
             ))}
             {deliveries.length === 0 && (
               <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No deliveries yet</div>
@@ -285,6 +293,42 @@ export default function ClientDetailClient({
           </>
         )}
       </div>
+
+      {/* Change requests (client-submitted) */}
+      {changeRequests.length > 0 && (
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[13px] font-bold">Change requests</h3>
+            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="flex flex-col gap-1 mb-4">
+            {changeRequests.slice(0, 5).map((cr) => {
+              const moveData = Array.isArray(cr.moves) ? cr.moves[0] : cr.moves;
+              const moveCode = moveData?.move_code ? formatJobId(moveData.move_code, "move") : "—";
+              return (
+                <Link
+                  key={cr.id}
+                  href={getMoveDetailPath({ move_code: moveData?.move_code, id: cr.move_id })}
+                  className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-semibold text-[var(--tx)]">{cr.type}</div>
+                    <div className="text-[9px] text-[var(--tx3)] line-clamp-1">{cr.description}</div>
+                  </div>
+                  <span className="text-[9px] text-[var(--tx3)] shrink-0">{moveCode}</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold shrink-0 ${
+                    cr.status === "pending" ? "bg-[var(--gdim)] text-[var(--gold)]" : cr.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
+                  }`}>
+                    {cr.status}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Invoices - click opens detail popup */}
       <div className="flex items-center justify-between mb-2">

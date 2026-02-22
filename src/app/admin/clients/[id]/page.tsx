@@ -48,6 +48,15 @@ export default async function ClientDetailPage({
         .limit(10)
     : { data: [] };
 
+  const moveIds = (moves || []).map((m: { id: string }) => m.id);
+  const { data: changeRequests } = moveIds.length > 0
+    ? await supabase
+        .from("move_change_requests")
+        .select("id, move_id, type, description, status, urgency, created_at, moves(move_code, client_name)")
+        .in("move_id", moveIds)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+
   const { data: invoices } = await supabase
     .from("invoices")
     .select("*")
@@ -77,6 +86,7 @@ export default async function ClientDetailPage({
         client={client}
         deliveries={deliveries || []}
         moves={moves || []}
+        changeRequests={changeRequests || []}
         allInvoices={allInvoices}
         outstandingTotal={outstandingTotal}
         partnerSince={partnerSince}

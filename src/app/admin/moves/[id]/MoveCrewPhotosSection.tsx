@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type CheckpointGroup = { checkpoint: string; label: string; photos: { id: string; url: string; takenAt: string; note: string | null }[] };
 
@@ -8,13 +8,22 @@ export default function MoveCrewPhotosSection({ moveId }: { moveId: string }) {
   const [groups, setGroups] = useState<CheckpointGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchPhotos = useCallback(() => {
     fetch(`/api/admin/moves/${moveId}/crew-photos`)
       .then((r) => r.json())
       .then((d) => setGroups(d.byCheckpoint ?? []))
       .catch(() => setGroups([]))
       .finally(() => setLoading(false));
   }, [moveId]);
+
+  useEffect(() => {
+    fetchPhotos();
+  }, [fetchPhotos]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchPhotos, 5000);
+    return () => clearInterval(interval);
+  }, [fetchPhotos]);
 
   if (loading) return <p className="text-[11px] text-[var(--tx3)]">Loading crew photos…</p>;
   if (groups.length === 0) return null;

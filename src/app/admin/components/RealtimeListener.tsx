@@ -3,10 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useNotifications } from "./NotificationContext";
+import { usePendingChangeRequests } from "./PendingChangeRequestsContext";
 
 export default function RealtimeListener() {
   const router = useRouter();
   const supabase = createClient();
+  const { addNotification } = useNotifications();
+  const { refetch: refetchPendingChangeRequests } = usePendingChangeRequests();
 
   useEffect(() => {
     const channel = supabase
@@ -26,12 +30,22 @@ export default function RealtimeListener() {
       .on("postgres_changes", { event: "*", schema: "public", table: "status_events" }, () => {
         router.refresh();
       })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "move_change_requests" }, () => {
+        addNotification({
+          icon: "clipboard",
+          title: "New client change request",
+          time: "Just now",
+          link: "/admin/change-requests",
+        });
+        refetchPendingChangeRequests();
+        router.refresh();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [router, supabase]);
+  }, [router, supabase, addNotification, refetchPendingChangeRequests]);
 
-  return null; // Invisible component, just listens
+  return null;
 }

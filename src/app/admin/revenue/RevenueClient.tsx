@@ -27,6 +27,7 @@ const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 interface RevenueClientProps {
   invoices: any[];
   clientTypeMap?: Record<string, string>;
+  clientNameToOrgId?: Record<string, string>;
 }
 
 /** Get revenue date for a paid invoice (when payment was received) */
@@ -35,7 +36,7 @@ function getRevenueDate(inv: any): Date {
   return ts ? new Date(ts) : new Date(0);
 }
 
-export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueClientProps) {
+export default function RevenueClient({ invoices, clientTypeMap = {}, clientNameToOrgId = {} }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
@@ -118,7 +119,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
     { key: "gallery", label: "Gallery", amount: byTypeRaw.gallery || 0, color: "var(--tx3)" },
     { key: "realtor", label: "Realtor", amount: byTypeRaw.realtor || 0, color: "var(--tx3)" },
     { key: "b2c", label: "B2C Moves", amount: byTypeRaw.b2c || 0, color: "var(--tx3)" },
-  ].filter((t) => t.amount > 0);
+  ];
   const maxByType = Math.max(1, ...byType.map((t) => t.amount));
   const invoicesByType = useMemo(() => {
     if (!selectedType) return [];
@@ -266,9 +267,9 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
           <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">By Type</h3>
+          <p className="text-[10px] text-[var(--tx3)] mb-3">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
           <div className="space-y-3">
-            {byType.length ? (
-              byType.map((t) => (
+            {byType.map((t) => (
                 <button
                   key={t.key}
                   type="button"
@@ -286,10 +287,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
                     />
                   </div>
                 </button>
-              ))
-            ) : (
-              <div className="text-[11px] text-[var(--tx3)]">No paid revenue by type yet</div>
-            )}
+              ))}
           </div>
         </div>
 
@@ -302,16 +300,20 @@ export default function RevenueClient({ invoices, clientTypeMap = {} }: RevenueC
           </div>
           <div className="space-y-2">
             {topClients.length > 0 ? (
-              topClients.map(([name, amount]) => (
-                <Link
-                  key={name}
-                  href="/admin/clients"
-                  className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg border border-transparent border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] hover:border-[var(--gold)]/40 hover:shadow-md hover:scale-[1.02] transition-all duration-200"
-                >
-                  <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
-                  <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
-                </Link>
-              ))
+              topClients.map(([name, amount]) => {
+                const orgId = clientNameToOrgId[name];
+                const href = orgId ? `/admin/clients/${orgId}/revenue` : "/admin/clients";
+                return (
+                  <Link
+                    key={name}
+                    href={href}
+                    className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg border border-transparent border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] hover:border-[var(--gold)]/40 hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                  >
+                    <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
+                    <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
+                  </Link>
+                );
+              })
             ) : (
               <div className="text-[11px] text-[var(--tx3)] py-4">No paid invoices yet</div>
             )}
