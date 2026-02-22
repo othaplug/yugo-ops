@@ -13,6 +13,8 @@ import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
 import ClientMessagesSection from "./ClientMessagesSection";
 import MovePhotosSection from "./MovePhotosSection";
+import MoveCrewPhotosSection from "./MoveCrewPhotosSection";
+import MoveSignOffSection from "./MoveSignOffSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -358,6 +360,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Inventory, Photos, Documents */}
       <MoveInventorySection moveId={move.id} />
       <MovePhotosSection moveId={move.id} />
+      <MoveCrewPhotosSection moveId={move.id} />
+      <MoveSignOffSection moveId={move.id} />
       <MoveDocumentsSection moveId={move.id} />
 
       {/* Client Messages - conversation thread */}

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import PartnerSignOut from "./PartnerSignOut";
+import PartnerDashboardClient from "./PartnerDashboardClient";
 
 export default async function PartnerDashboardPage() {
   const supabase = await createClient();
@@ -27,12 +27,8 @@ export default async function PartnerDashboardPage() {
       </header>
       <main className="max-w-[800px] mx-auto px-4 py-8">
         <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">{org?.name || "Partner dashboard"}</h1>
-        <p className="text-[13px] text-[var(--tx3)] mt-1">Partner portal — coming soon</p>
-        <p className="mt-4">
-          <Link href="/admin" className="text-[12px] text-[var(--gold)] hover:underline">
-            Go to admin dashboard
-          </Link>
-        </p>
+        <p className="text-[13px] text-[var(--tx3)] mt-1">View your deliveries and moves</p>
+        <PartnerDashboardClient />
       </main>
     </div>
   );

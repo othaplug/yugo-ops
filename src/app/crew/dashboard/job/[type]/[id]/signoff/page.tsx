@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use } from "react";
 
 const RATING_LABELS: Record<number, string> = {
@@ -33,6 +34,8 @@ export default function ClientSignOffPage({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [skipped, setSkipped] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
 
@@ -350,10 +353,23 @@ export default function ClientSignOffPage({
         <p className="text-center mt-8">
           <button
             type="button"
-            onClick={() => setSkipped(true)}
-            className="text-xs text-[muted] hover:text-[#C9A962]"
+            onClick={async () => {
+              setSkipping(true);
+              try {
+                await fetch("/api/crew/signoff/skip", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ jobId: id, jobType }),
+                });
+                router.push(`/crew/dashboard/job/${jobType}/${id}`);
+              } catch {
+                setSkipping(false);
+              }
+            }}
+            disabled={skipping}
+            className="text-xs text-[muted] hover:text-[#C9A962] disabled:opacity-50"
           >
-            Client not available — skip
+            {skipping ? "Skipping…" : "Client not available — skip"}
           </button>
         </p>
       </div>

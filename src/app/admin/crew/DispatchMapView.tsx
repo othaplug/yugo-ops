@@ -20,7 +20,7 @@ const MapboxMap = dynamic(
       return (
         <M
           mapboxAccessToken={MAPBOX_TOKEN}
-          initialViewState={{ ...center, zoom: markers.length > 1 ? 12 : 14 }}
+          initialViewState={{ longitude: center.lng, latitude: center.lat, zoom: markers.length > 1 ? 12 : 14 }}
           style={{ width: "100%", height: "100%" }}
           mapStyle="mapbox://styles/mapbox/dark-v11"
         >

@@ -125,7 +125,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-[#0D0D0D] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
           >
             {submitting ? "Submitting…" : "Complete & Continue"}
           </button>

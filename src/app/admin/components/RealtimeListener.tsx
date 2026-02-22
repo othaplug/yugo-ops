@@ -11,10 +11,13 @@ export default function RealtimeListener() {
   useEffect(() => {
     const channel = supabase
       .channel("admin-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, () => {
+        router.refresh();
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, () => {
         router.refresh();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "tracking_sessions" }, () => {
         router.refresh();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, () => {

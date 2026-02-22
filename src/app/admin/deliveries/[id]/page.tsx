@@ -19,12 +19,10 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     redirect(getDeliveryDetailPath(delivery));
   }
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("email")
-    .eq("name", delivery.client_name)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: org }, { data: orgs }] = await Promise.all([
+    supabase.from("organizations").select("email").eq("name", delivery.client_name).limit(1).maybeSingle(),
+    supabase.from("organizations").select("id, name, type").order("name"),
+  ]);
 
-  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} />;
+  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} organizations={orgs || []} />;
 }

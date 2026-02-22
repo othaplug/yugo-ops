@@ -10,6 +10,7 @@ import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 import SearchBox from "./SearchBox";
 import ClientDate from "./ClientDate";
+import RealtimeListener from "./RealtimeListener";
 import { Icons } from "./SidebarIcons";
 
 const SIDEBAR_SECTIONS_FULL = [
@@ -121,6 +122,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
     <ThemeProvider>
       <NotificationProvider>
         <ToastProvider>
+          <RealtimeListener />
           <div className="flex min-h-screen bg-[var(--bg)]">
             {/* Skip to main content for keyboard users */}
             <a

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 interface InventoryRoom {
   room: string;
   items: string[];
-  itemsWithId?: { id: string; item_name: string }[];
+  itemsWithId?: { id: string; item_name: string; quantity?: number }[];
 }
 
 interface ExtraItem {
@@ -16,24 +16,32 @@ interface ExtraItem {
   added_at?: string;
 }
 
+const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Garage", "Basement", "Other"];
+
 interface JobInventoryProps {
   jobId: string;
   jobType: "move" | "delivery";
+  moveType?: string;
   inventory: InventoryRoom[];
   extraItems: ExtraItem[];
   currentStatus: string;
   onRefresh?: () => void;
+  onCountChange?: (verified: number, total: number) => void;
 }
 
 export default function JobInventory({
   jobId,
   jobType,
+  moveType,
   inventory,
   extraItems,
   currentStatus,
   onRefresh,
+  onCountChange,
 }: JobInventoryProps) {
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
+  const [verifiedRooms, setVerifiedRooms] = useState<Set<string>>(new Set());
+  const [customRooms, setCustomRooms] = useState<string[]>([]);
   const [addExtraOpen, setAddExtraOpen] = useState(false);
   const [extraDesc, setExtraDesc] = useState("");
   const [extraRoom, setExtraRoom] = useState("");
@@ -48,9 +56,46 @@ export default function JobInventory({
       .then((r) => r.json())
       .then((d) => {
         if (d.verifiedIds) setVerifiedIds(new Set(d.verifiedIds));
+        if (d.verifiedRooms) setVerifiedRooms(new Set(d.verifiedRooms));
       })
       .catch(() => {});
   }, [jobId, jobType, isUnloading]);
+
+  const isPremierNoInventory = jobType === "move" && moveType === "residential" && inventory.length === 0;
+  const roomsToConfirm = [...DEFAULT_ROOMS, ...customRooms];
+  const allItemsWithId = inventory.flatMap((r) => r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name })));
+  const verifiableCount = allItemsWithId.filter((item) => {
+    const id = "id" in item ? item.id : "";
+    return typeof id === "string" && !id.startsWith("noid-");
+  }).length;
+  const verifiedCount = allItemsWithId.filter((item) => {
+    const id = "id" in item ? item.id : "";
+    return typeof id === "string" && !id.startsWith("noid-") && verifiedIds.has(id);
+  }).length;
+  const totalCount = isPremierNoInventory ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
+
+  useEffect(() => {
+    if (isPremierNoInventory) {
+      onCountChange?.(verifiedRooms.size, roomsToConfirm.length);
+    } else if (verifiableCount > 0) {
+      onCountChange?.(verifiedCount, verifiableCount);
+    } else {
+      onCountChange?.(0, totalCount);
+    }
+  }, [isPremierNoInventory, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange]);
+
+  const toggleRoomVerify = async (room: string) => {
+    if (verifiedRooms.has(room)) return;
+    try {
+      const res = await fetch(`/api/crew/inventory/${jobId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room, itemName: room, stage: isUnloading ? "unloading" : "loading" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setVerifiedRooms((prev) => new Set([...prev, room]));
+    } catch {}
+  };
 
   const toggleVerify = async (moveInventoryId: string) => {
     const isVerified = verifiedIds.has(moveInventoryId);
@@ -91,20 +136,63 @@ export default function JobInventory({
   };
 
   if (jobType === "delivery" && inventory.length === 0 && extraItems.length === 0) return null;
-  if (jobType === "move" && inventory.length === 0 && extraItems.length === 0) return null;
+  if (jobType === "move" && inventory.length === 0 && extraItems.length === 0 && !isPremierNoInventory) return null;
 
   return (
     <div className="mt-6">
-      <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">
-        {isUnloading ? "Unloading Verification" : "Inventory"}
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+          {isPremierNoInventory ? "Room Confirmation" : isUnloading ? "Unloading Verification" : "Inventory"}
+        </h2>
+        {isPremierNoInventory ? (
+          <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
+        ) : verifiableCount > 0 ? (
+          <span className="text-[11px] text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
+        ) : null}
+      </div>
+      {isPremierNoInventory ? (
+        <div className="space-y-1.5 mb-3">
+          {roomsToConfirm.map((room) => {
+            const verified = verifiedRooms.has(room);
+            return (
+              <label
+                key={room}
+                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors cursor-pointer hover:border-[var(--gold)]/40 ${
+                  verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={verified}
+                  onChange={() => toggleRoomVerify(room)}
+                  className="rounded border-[var(--brd)]"
+                />
+                <span className="text-[13px] text-[var(--tx)]">{room}</span>
+                {verified && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2.5" className="ml-auto shrink-0"><path d="M20 6L9 17l-5-5"/></svg>}
+              </label>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              const r = window.prompt("Add room name");
+              if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
+            }}
+            className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
+          >
+            + Add room
+          </button>
+        </div>
+      ) : (
+        <>
       {inventory.map((r) => (
         <div key={r.room} className="mb-3">
           <div className="text-[12px] font-semibold text-[var(--tx)] mb-1.5">{r.room}</div>
           <div className="space-y-1.5">
-            {(r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name }))).map((item, i) => {
+            {(r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name, quantity: 1 }))).map((item, i) => {
               const id = "id" in item ? item.id : `noid-${i}`;
               const name = "item_name" in item ? item.item_name : String(item);
+              const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
               const hasId = typeof id === "string" && !id.startsWith("noid-");
               const verified = hasId ? verifiedIds.has(id) : false;
               return (
@@ -124,8 +212,8 @@ export default function JobInventory({
                   ) : (
                     <span className="w-4" />
                   )}
-                  <span className="text-[13px] text-[var(--tx)]">{name}</span>
-                  {verified && <span className="text-[10px] text-[var(--grn)] ml-auto">✓</span>}
+                  <span className="text-[13px] text-[var(--tx)]">{name} x{qty}</span>
+                  {verified && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2.5" className="ml-auto shrink-0"><path d="M20 6L9 17l-5-5"/></svg>}
                 </label>
               );
             })}
@@ -142,12 +230,16 @@ export default function JobInventory({
           ))}
         </div>
       )}
+      {!isPremierNoInventory && (
       <button
         onClick={() => setAddExtraOpen(true)}
         className="w-full py-2.5 rounded-lg border border-dashed border-[var(--brd)] text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
       >
         + Add Extra Item
       </button>
+      )}
+        </>
+      )}
       {addExtraOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full">
@@ -193,7 +285,7 @@ export default function JobInventory({
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] font-semibold disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white font-semibold disabled:opacity-50"
                 >
                   {submitting ? "Adding…" : "Add"}
                 </button>

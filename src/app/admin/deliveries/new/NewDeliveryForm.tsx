@@ -28,16 +28,18 @@ export default function NewDeliveryForm({ organizations }: { organizations: Org[
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
-    const org = organizations.find((o) => o.id === form.get("org_id"));
+    const orgIdForm = form.get("org_id") as string;
+    const org = organizations.find((o) => o.id === orgIdForm);
     const itemsRaw = form.get("items") as string;
 
     const deliveryNumber = `PJ${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
 
+    const orgId = (orgIdForm || "").trim() || null;
     const { data: created, error } = await supabase
       .from("deliveries")
       .insert({
         delivery_number: deliveryNumber,
-        org_id: form.get("org_id"),
+        organization_id: orgId,
         client_name: org?.name || "",
         customer_name: form.get("customer_name"),
         pickup_address: pickupAddress || form.get("pickup_address"),

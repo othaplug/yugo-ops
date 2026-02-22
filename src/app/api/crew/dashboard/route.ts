@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       clientName: m.client_name || "—",
       fromAddress: m.from_address || "—",
       toAddress: m.to_address || "—",
-      jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Residential · Premier",
+      jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Premier Residential",
       scheduledTime: time,
       status: m.status || "scheduled",
       completedAt: null,
@@ -93,19 +93,23 @@ export async function GET(req: NextRequest) {
     return tA - tB;
   });
 
-  const { data: readinessCheck } = await supabase
-    .from("readiness_checks")
-    .select("id")
-    .eq("team_id", payload.teamId)
-    .eq("check_date", today)
-    .maybeSingle();
+  const [{ data: readinessCheck }, { data: crewRow }] = await Promise.all([
+    supabase.from("readiness_checks").select("id").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
+    supabase.from("crews").select("name").eq("id", payload.teamId).single(),
+  ]);
 
-  const readinessCompleted = !!readinessCheck;
+  const readinessCompleted = !!readinessCheck?.id;
   const isCrewLead = payload.role === "lead";
   const readinessRequired = !readinessCompleted && (isCrewLead || jobs.length > 0);
+  const teamName = crewRow?.name || "Team";
+
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const d = new Date();
+  const dateStr = `${dayNames[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 
   return NextResponse.json({
-    crewMember: payload,
+    crewMember: { ...payload, teamName, dateStr },
     jobs,
     readinessCompleted,
     readinessRequired,

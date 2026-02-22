@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   MOVE_STATUS_FLOW,
@@ -15,16 +15,28 @@ import JobInventory from "./JobInventory";
 
 const DISPATCH_PHONE = "(647) 370-4525";
 
+type TabId = "status" | "details" | "items" | "photos";
+
+interface CrewMember {
+  name: string;
+  role: string;
+}
+
 interface JobDetail {
   id: string;
   jobId: string;
   jobType: "move" | "delivery";
+  moveType?: string;
+  status?: string;
   clientName: string;
   fromAddress: string;
   toAddress: string;
+  fromAccess?: string | null;
+  toAccess?: string | null;
   access: string | null;
+  crewMembers?: CrewMember[];
   jobTypeLabel: string;
-  inventory: { room: string; items: string[] }[];
+  inventory: { room: string; items: string[]; itemsWithId?: { id: string; item_name: string; quantity?: number }[] }[];
   extraItems?: { id: string; description?: string; room?: string; quantity?: number; added_at?: string }[];
   internalNotes: string | null;
   scheduledTime: string | null;
@@ -38,6 +50,12 @@ interface Session {
   startedAt: string | null;
   checkpoints: { status: string; timestamp: string; note: string | null }[];
   lastLocation: { lat: number; lng: number } | null;
+}
+
+function formatElapsed(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}m ${s % 60}s`;
 }
 
 export default function CrewJobPage({
@@ -60,11 +78,21 @@ export default function CrewJobPage({
   const [reportDesc, setReportDesc] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [canAdvanceFromArrived, setCanAdvanceFromArrived] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("status");
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [itemsVerified, setItemsVerified] = useState(0);
+  const [itemsTotal, setItemsTotal] = useState(0);
+  const noteInputRef = useRef<HTMLInputElement | null>(null);
 
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
   const nextStatus = getNextStatus(currentStatus, jobType);
   const isCompleted = currentStatus === "completed";
+
+  const totalItems = itemsTotal > 0 ? itemsTotal : (job
+    ? (job.inventory?.flatMap((r) => r.itemsWithId || r.items.map((n) => ({ id: `noid`, item_name: n }))).length ?? 0) + (job.extraItems?.length ?? 0)
+    : 0);
 
   const fetchJob = useCallback(async () => {
     const r = await fetch(`/api/crew/job/${jobType}/${id}`);
@@ -102,6 +130,17 @@ export default function CrewJobPage({
     const interval = setInterval(fetchSession, 15000);
     return () => clearInterval(interval);
   }, [fetchSession]);
+
+  useEffect(() => {
+    if (!session?.startedAt || !session?.isActive) {
+      setElapsedMs(0);
+      return;
+    }
+    const tick = () => setElapsedMs(Date.now() - new Date(session.startedAt!).getTime());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session?.startedAt, session?.isActive]);
 
   const startJob = async () => {
     setAdvancing(true);
@@ -217,7 +256,6 @@ export default function CrewJobPage({
     return () => stopGpsTracking();
   }, [session?.id, session?.isActive, gpsStatus]);
 
-  // Wake Lock
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
     const requestLock = async () => {
@@ -247,15 +285,28 @@ export default function CrewJobPage({
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <p className="text-[14px] text-[var(--red)] mb-4">{error || "Job not found"}</p>
           <Link href="/crew/dashboard" className="text-[13px] text-[var(--gold)] hover:underline">
-            ← Back to Jobs
+            Back to Jobs
           </Link>
         </div>
       </PageContent>
     );
   }
 
-  const showStartButton = !session;
+  const jobCompleted = ["completed", "delivered", "done"].includes((job.status || "").toLowerCase());
+  const showStartButton = !session && !jobCompleted;
+  const atArrivedRequiringPhotos = ["arrived_at_pickup", "arrived_at_destination", "arrived"].includes(currentStatus);
+  const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
   const showAdvanceButton = session?.isActive && nextStatus && !showStartButton;
+
+  const itemsLabel = itemsTotal > 0 ? `Items (${itemsVerified}/${itemsTotal})` : `Items (${totalItems})`;
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "status", label: "Status" },
+    { id: "details", label: "Details" },
+    { id: "items", label: itemsLabel },
+    { id: "photos", label: "Photos" },
+  ];
+
+  const hasInventory = (job.inventory?.length ?? 0) > 0 || (job.extraItems?.length ?? 0) > 0 || (jobType === "move" && job.moveType === "residential" && (job.inventory?.length ?? 0) === 0);
 
   return (
     <PageContent className="max-w-[520px]">
@@ -263,148 +314,236 @@ export default function CrewJobPage({
         href="/crew/dashboard"
         className="inline-flex items-center gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
       >
-        ← Back to Jobs
+        Back to Jobs
       </Link>
 
-      <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-2">{job.clientName}</h1>
-      <p className="text-[12px] text-[var(--tx3)] mt-0.5">
-        {job.jobId} · {job.jobTypeLabel}
-      </p>
-
-      <div className="mt-4 space-y-2 text-[13px] text-[var(--tx2)]">
-        <div><span className="text-[var(--tx3)]">FROM:</span> {job.fromAddress}</div>
-        <div><span className="text-[var(--tx3)]">TO:</span> {job.toAddress}</div>
-        {job.access && (
-          <div><span className="text-[var(--tx3)]">ACCESS:</span> {job.access}</div>
-        )}
+      <div className="flex items-start justify-between gap-3 mt-2">
+        <div>
+          <h1 className="font-hero text-[20px] font-bold text-[var(--tx)]">{job.clientName}</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5">
+            {job.jobId} · {job.jobTypeLabel}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {session?.isActive && (
+            <span className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              {formatElapsed(elapsedMs)}
+            </span>
+          )}
+          {session && (
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${gpsStatus === "on" ? "bg-[var(--grn)]/15 text-[var(--grn)]" : "bg-[var(--brd)]/50 text-[var(--tx3)]"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${gpsStatus === "on" ? "bg-[var(--grn)]" : "bg-[var(--tx3)]"}`} />
+              GPS {gpsStatus === "on" ? "ON" : gpsStatus === "unavailable" ? "Unavailable" : "OFF"}
+            </span>
+          )}
+        </div>
       </div>
 
-      {session && (
-        <div className="mt-4 flex items-center gap-2 text-[12px] text-[var(--tx3)]">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${gpsStatus === "on" ? "bg-[var(--grn)]" : "bg-[var(--tx3)]"}`} />
-          <span>
-            Location sharing: {gpsStatus === "on" ? "ON" : gpsStatus === "unavailable" ? "Unavailable" : "OFF"}
-          </span>
+      <div className="flex gap-1 mt-4 border-b border-[var(--brd)]">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-3 py-2.5 text-[12px] font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === t.id
+                ? "border-[var(--gold)] text-[var(--gold)]"
+                : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "status" && (
+        <div className="mt-4 space-y-4">
+          <div>
+            {showStartButton && (
+              <button
+                onClick={startJob}
+                disabled={advancing}
+                className="w-full py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+              >
+                {advancing ? "Starting…" : "START JOB"}
+              </button>
+            )}
+            {showAdvanceButton && (
+              <>
+                {session?.isActive && (
+                  <JobPhotos
+                    jobId={id}
+                    jobType={jobType}
+                    sessionId={session?.id ?? null}
+                    currentStatus={currentStatus}
+                    onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+                  />
+                )}
+                <button
+                  onClick={advanceStatus}
+                  disabled={advancing || blockedByPhotos}
+                  className="w-full mt-3 py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                >
+                  {advancing ? "Updating…" : blockedByPhotos ? "Take photo to continue" : `${getStatusLabel(nextStatus!)}`}
+                </button>
+              </>
+            )}
+            {isCompleted && (
+              <div className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--grn)] text-center bg-[rgba(45,159,90,0.15)]">
+                Completed
+              </div>
+            )}
+          </div>
+
+          {showAdvanceButton && (
+            <input
+              ref={noteInputRef}
+              type="text"
+              placeholder="Add note (optional)"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+            />
+          )}
+
+          <div>
+            <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Timeline</h2>
+            <div className="space-y-2">
+              {statusFlow.map((s, i) => {
+                const cp = session?.checkpoints?.find((c) => c.status === s);
+                const isCurrent = currentStatus === s;
+                const isPast = statusFlow.indexOf(currentStatus as any) > i;
+                return (
+                  <div key={s} className="relative flex items-center gap-3 text-[12px] pb-2 last:pb-0">
+                    <span
+                      className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center text-[9px] shrink-0 transition-all duration-300 ${
+                        isPast ? "bg-[var(--grn)] text-white" : isCurrent ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40" : "bg-[var(--brd)] text-[var(--tx3)]"
+                      }`}
+                    >
+                      {isPast || (isCurrent && isCompleted) ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      ) : i + 1}
+                    </span>
+                    <span className={isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}>
+                      {getStatusLabel(s)}
+                    </span>
+                    {cp?.timestamp && (
+                      <span className="text-[10px] text-[var(--tx3)] ml-auto">
+                        {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => noteInputRef.current?.focus()}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[var(--brd)] text-[12px] font-medium text-[var(--tx2)] hover:border-[var(--gold)]/50 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+              Note
+            </button>
+            <button
+              onClick={() => setReportModalOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[#D48A29]/50 text-[12px] font-medium text-[#D48A29] hover:border-[#D48A29] transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Issue
+            </button>
+            <a
+              href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--brd)] text-[12px] font-medium text-[var(--tx)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+              Call
+            </a>
+          </div>
+
+          {job.internalNotes && (
+            <div>
+              <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">Dispatch Notes</h2>
+              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">{job.internalNotes}</p>
+            </div>
+          )}
+
+          {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
+            <Link
+              href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-[14px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] transition-colors"
+            >
+              Client Sign-Off
+            </Link>
+          )}
         </div>
       )}
 
-      <div className="mt-6">
-        {showStartButton && (
-          <button
-            onClick={startJob}
-            disabled={advancing}
-            className="w-full py-4 rounded-xl font-semibold text-[15px] text-[#0D0D0D] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
-          >
-            {advancing ? "Starting…" : "START JOB →"}
-          </button>
-        )}
-        {showAdvanceButton && (
-          <button
-            onClick={advanceStatus}
-            disabled={advancing}
-            className="w-full py-4 rounded-xl font-semibold text-[15px] text-[#0D0D0D] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
-          >
-            {advancing ? "Updating…" : `${getStatusLabel(nextStatus!)} →`}
-          </button>
-        )}
-        {isCompleted && (
-          <div className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--grn)] text-center bg-[rgba(45,159,90,0.15)]">
-            ✓ Completed
+      {activeTab === "details" && (
+        <div className="mt-4 space-y-4">
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+            <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Pickup</h3>
+            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
+            {job.fromAccess && <p className="text-[12px] text-[var(--tx3)] mt-1">Access: {job.fromAccess}</p>}
           </div>
-        )}
-      </div>
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+            <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Drop-off</h3>
+            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
+            {job.toAccess && <p className="text-[12px] text-[var(--tx3)] mt-1">Access: {job.toAccess}</p>}
+          </div>
+          {job.crewMembers && job.crewMembers.length > 0 && (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+              <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Crew ({job.crewMembers.length})</h3>
+              <div className="space-y-1.5">
+                {job.crewMembers.map((m, i) => (
+                  <div key={i} className="text-[13px] text-[var(--tx)]">
+                    {m.name} — {m.role}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-      {showAdvanceButton && (
-        <div className="mt-3">
-          <input
-            type="text"
-            placeholder="Add note... (optional)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+      {activeTab === "items" && hasInventory && (
+        <div className="mt-4">
+          <JobInventory
+            jobId={id}
+            jobType={jobType}
+            moveType={job.moveType}
+            inventory={job.inventory || []}
+            extraItems={job.extraItems || []}
+            currentStatus={currentStatus}
+            onRefresh={fetchJob}
+            onCountChange={(v, t) => { setItemsVerified(v); setItemsTotal(t); }}
           />
         </div>
       )}
 
-      {session?.isActive && (
-        <JobPhotos
-          jobId={id}
-          jobType={jobType}
-          sessionId={session?.id ?? null}
-          currentStatus={currentStatus}
-        />
+      {activeTab === "items" && !hasInventory && (
+        <div className="mt-6 text-center text-[13px] text-[var(--tx3)]">No inventory for this job.</div>
       )}
 
-      <div className="mt-6">
-        <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Timeline</h2>
-        <div className="space-y-2">
-          {statusFlow.map((s, i) => {
-            const cp = session?.checkpoints?.find((c) => c.status === s);
-            const isCurrent = currentStatus === s;
-            const isPast = statusFlow.indexOf(currentStatus as any) > i;
-            return (
-              <div key={s} className="flex items-center gap-3 text-[12px]">
-                <span
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] shrink-0 ${
-                    isPast ? "bg-[var(--grn)] text-white" : isCurrent ? "bg-[var(--gold)] text-[#0D0D0D]" : "bg-[var(--brd)] text-[var(--tx3)]"
-                  }`}
-                >
-                  {isPast ? "✓" : i + 1}
-                </span>
-                <span className={isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}>
-                  {getStatusLabel(s)}
-                </span>
-                {cp?.timestamp && (
-                  <span className="text-[10px] text-[var(--tx3)] ml-auto">
-                    {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {job.internalNotes && (
-        <div className="mt-6">
-          <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Notes from dispatch</h2>
-          <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap">{job.internalNotes}</p>
+      {activeTab === "photos" && (
+        <div className="mt-4">
+          {session?.isActive ? (
+            <JobPhotos
+              jobId={id}
+              jobType={jobType}
+              sessionId={session?.id ?? null}
+              currentStatus={currentStatus}
+              onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+            />
+          ) : (
+            <div className="text-center py-8 text-[13px] text-[var(--tx3)]">
+              Start the job to capture photos.
+            </div>
+          )}
         </div>
       )}
-
-      {(job.inventory?.length > 0 || job.extraItems?.length) && (
-        <JobInventory
-          jobId={id}
-          jobType={jobType}
-          inventory={job.inventory || []}
-          extraItems={job.extraItems || []}
-          currentStatus={currentStatus}
-          onRefresh={fetchJob}
-        />
-      )}
-
-      {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
-        <Link
-          href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-          className="mt-6 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-[14px] text-[#0D0D0D] bg-[#C9A962] hover:bg-[#D4B56C] transition-colors"
-        >
-          Client Sign-Off
-        </Link>
-      )}
-
-      <a
-        href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-        className="mt-3 flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[var(--brd)] text-[13px] font-medium text-[var(--tx)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-      >
-        📞 Call Dispatch
-      </a>
-
-      <button
-        onClick={() => setReportModalOpen(true)}
-        className="mt-3 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[#D48A29]/40 text-[13px] font-medium text-[#D48A29] bg-[rgba(212,138,41,0.08)] hover:bg-[rgba(212,138,41,0.12)] transition-colors"
-      >
-        ⚠️ Report Issue
-      </button>
 
       {reportModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
@@ -415,7 +554,7 @@ export default function CrewJobPage({
                 <p className="text-[13px] text-[var(--grn)] mb-4">Issue reported. Dispatch will be notified.</p>
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
-                  className="w-full py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] font-semibold hover:bg-[var(--gold2)]"
+                  className="w-full py-2.5 rounded-lg bg-[var(--gold)] text-white font-semibold hover:bg-[var(--gold2)]"
                 >
                   Done
                 </button>
@@ -475,7 +614,7 @@ export default function CrewJobPage({
                       }
                     }}
                     disabled={reportSubmitting}
-                    className="flex-1 py-2.5 rounded-lg bg-[#D48A29] text-[#0D0D0D] font-semibold disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-lg bg-[#D48A29] text-white font-semibold disabled:opacity-50"
                   >
                     {reportSubmitting ? "Sending…" : "Submit"}
                   </button>
@@ -488,16 +627,13 @@ export default function CrewJobPage({
 
       {confirmComplete && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full">
-            <h3 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-2">Mark as complete?</h3>
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full text-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--grn)]/20 flex items-center justify-center mx-auto mb-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-2">Complete this job?</h3>
             <p className="text-[13px] text-[var(--tx3)] mb-4">This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmComplete(false)}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--card)]"
-              >
-                Cancel
-              </button>
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => {
                   if ("geolocation" in navigator) {
@@ -511,9 +647,15 @@ export default function CrewJobPage({
                   }
                 }}
                 disabled={advancing}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#0D0D0D] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white bg-[var(--grn)] hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
-                Complete
+                Yes, Mark Complete
+              </button>
+              <button
+                onClick={() => setConfirmComplete(false)}
+                className="w-full py-2.5 rounded-lg text-[13px] font-medium border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--card)]"
+              >
+                Cancel
               </button>
             </div>
           </div>

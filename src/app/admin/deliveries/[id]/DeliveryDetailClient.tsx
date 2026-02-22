@@ -37,7 +37,7 @@ const CATEGORY_STYLES: Record<string, { borderClass: string }> = {
   b2c: { borderClass: "border-l-4 border-l-[#2D9F5A]" },
 };
 
-export default function DeliveryDetailClient({ delivery: initialDelivery, clientEmail }: { delivery: any; clientEmail?: string | null }) {
+export default function DeliveryDetailClient({ delivery: initialDelivery, clientEmail, organizations = [] }: { delivery: any; clientEmail?: string | null; organizations?: { id: string; name: string; type: string }[] }) {
   const router = useRouter();
   const supabase = createClient();
   const [delivery, setDelivery] = useState(initialDelivery);
@@ -110,7 +110,7 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 [&_button]:min-h-[44px] [&_button]:touch-manipulation">
-            <EditDeliveryModal delivery={delivery} open={editModalOpen} onOpenChange={setEditModalOpen} />
+            <EditDeliveryModal delivery={delivery} organizations={organizations} open={editModalOpen} onOpenChange={setEditModalOpen} />
             <button onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all">
               Edit
             </button>

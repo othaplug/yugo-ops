@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageContent from "@/app/admin/components/PageContent";
@@ -9,7 +9,15 @@ export default function CrewEndOfDayPage() {
   const [crewNote, setCrewNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[] } | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/crew/reports/end-of-day")
+      .then((r) => r.json())
+      .then((d) => setPreview(d))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +51,28 @@ export default function CrewEndOfDayPage() {
       <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Submit your daily report. Data is auto-compiled from today&apos;s activity.</p>
 
+      {preview?.summary && (
+        <div className="mt-4 p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
+          <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
+          <div className="grid grid-cols-2 gap-2 text-[12px]">
+            <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
+            <div><span className="text-[var(--tx3)]">Total job time:</span> {Math.floor((preview.summary.totalJobTime ?? 0) / 60)}h {((preview.summary.totalJobTime ?? 0) % 60)}m</div>
+            <div><span className="text-[var(--tx3)]">Photos:</span> {preview.summary.photosCount ?? 0}</div>
+            <div><span className="text-[var(--tx3)]">Expenses:</span> ${((preview.summary.expensesTotal ?? 0) / 100).toFixed(2)}</div>
+            <div><span className="text-[var(--tx3)]">Client sign-offs:</span> {preview.summary.clientSignOffs ?? 0}</div>
+            <div><span className="text-[var(--tx3)]">Avg satisfaction:</span> {preview.summary.averageSatisfaction ?? "—"}</div>
+          </div>
+          {preview.jobs && preview.jobs.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-[var(--brd)]">
+              <p className="text-[10px] font-semibold text-[var(--tx3)] mb-1">Jobs</p>
+              {preview.jobs.map((j, i) => (
+                <p key={i} className="text-[11px] text-[var(--tx2)]">{j.jobId} · {j.duration}m</p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Anything else to note? (optional)</label>
@@ -57,7 +87,7 @@ export default function CrewEndOfDayPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[#0D0D0D] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? "Submitting…" : "Submit & End Day"}
         </button>

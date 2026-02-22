@@ -27,14 +27,25 @@ export async function GET(
     if (d && d.crew_id === payload.teamId) {
       const items = Array.isArray(d.items) ? d.items : [];
       const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).order("added_at");
+      const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
+      const members = (crewRow?.members as string[] | null) || [];
+      const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
+      const fromAccess = (d as any).pickup_access || (d as any).from_access || null;
+      const toAccess = (d as any).delivery_access || (d as any).to_access || null;
+      const accessParts = [fromAccess, toAccess].filter(Boolean);
+      const access = accessParts.length ? accessParts.join(" -> ") : null;
       return NextResponse.json({
         id: d.id,
         jobId: d.delivery_number || d.id,
         jobType: "delivery",
+        status: d.status || "scheduled",
         clientName: `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "—",
         fromAddress: d.pickup_address || "Warehouse",
         toAddress: d.delivery_address || "—",
-        access: null,
+        fromAccess,
+        toAccess,
+        access,
+        crewMembers: crewWithRoles,
         jobTypeLabel: `Delivery · ${items.length} items`,
         itemCount: items.length,
         inventory: items.map((name: string) => ({ room: "Items", items: [name] })),
@@ -55,14 +66,21 @@ export async function GET(
   }
 
   const accessParts = [m.from_access, m.to_access].filter(Boolean);
-  const access = accessParts.length ? accessParts.join(" → ") : null;
+  const access = accessParts.length ? accessParts.join(" -> ") : null;
+
+  const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", m.crew_id).single();
+  const members = (crewRow?.members as string[] | null) || [];
+  const assigned = Array.isArray(m.assigned_members) ? m.assigned_members : members;
+  const crewWithRoles = assigned.length > 0
+    ? assigned.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }))
+    : members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
 
   const { data: inv } = await admin.from("move_inventory").select("id, room, item_name").eq("move_id", m.id).order("room");
-  const byRoom: Record<string, { id: string; item_name: string }[]> = {};
+  const byRoom: Record<string, { id: string; item_name: string; quantity: number }[]> = {};
   for (const row of inv || []) {
     const room = row.room || "Other";
     if (!byRoom[room]) byRoom[room] = [];
-    byRoom[room].push({ id: row.id, item_name: row.item_name || "" });
+    byRoom[room].push({ id: row.id, item_name: row.item_name || "", quantity: 1 });
   }
   const inventory = Object.entries(byRoom).map(([room, items]) => ({
     room,
@@ -76,10 +94,15 @@ export async function GET(
     id: m.id,
     jobId: m.move_code || m.id,
     jobType: "move",
+    moveType: m.move_type || "residential",
+    status: m.status || "scheduled",
     clientName: m.client_name || "—",
     fromAddress: m.from_address || "—",
     toAddress: m.to_address || "—",
+    fromAccess: m.from_access || null,
+    toAccess: m.to_access || null,
     access,
+    crewMembers: crewWithRoles,
     jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Premier Residential",
     inventory,
     extraItems: extra || [],

@@ -11,11 +11,12 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface EditDeliveryModalProps {
   delivery: any;
+  organizations?: { id: string; name: string; type: string }[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export default function EditDeliveryModal({ delivery, open: controlledOpen, onOpenChange }: EditDeliveryModalProps) {
+export default function EditDeliveryModal({ delivery, organizations = [], open: controlledOpen, onOpenChange }: EditDeliveryModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (v: boolean) => { onOpenChange?.(v); if (controlledOpen === undefined) setInternalOpen(v); };
@@ -47,6 +48,7 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
       return { name: line.trim(), qty: 1 };
     });
 
+    const orgId = (form.get("organization_id") as string)?.trim() || null;
     await supabase
       .from("deliveries")
       .update({
@@ -62,6 +64,8 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
         quoted_price: parseNumberInput(quotedPrice) || null,
         status: form.get("status") || delivery.status,
         special_handling: !!form.get("special_handling"),
+        organization_id: orgId || null,
+        client_name: orgId ? (organizations.find((o) => o.id === orgId)?.name ?? delivery.client_name) : delivery.client_name,
         updated_at: new Date().toISOString(),
       })
       .eq("id", delivery.id);
@@ -86,6 +90,16 @@ export default function EditDeliveryModal({ delivery, open: controlledOpen, onOp
   return (
     <ModalOverlay open={open} onClose={() => setOpen(false)} title={`Edit ${delivery.delivery_number}`} maxWidth="md">
       <form onSubmit={handleSave} className="p-5 space-y-3">
+          {organizations.length > 0 && (
+            <Field label="Client / Partner (for portal access)">
+              <select name="organization_id" className="field-input" defaultValue={delivery.organization_id || ""}>
+                <option value="">— None —</option>
+                {organizations.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Customer">
             <input name="customer_name" defaultValue={delivery.customer_name} className="field-input" />
           </Field>

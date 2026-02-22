@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
   const category = (body.category || "").toString().trim();
   const description = (body.description || "").toString().trim();
   const jobId = (body.jobId || body.job_id || "").toString().trim() || null;
+  const receiptStoragePath = (body.receiptStoragePath || body.receipt_storage_path || "").toString().trim() || null;
 
   if (amountCents <= 0 || !description) {
     return NextResponse.json({ error: "Amount and description required" }, { status: 400 });
@@ -66,9 +67,10 @@ export async function POST(req: NextRequest) {
       amount_cents: amountCents,
       category: category as (typeof CATEGORIES)[number],
       description,
+      receipt_storage_path: receiptStoragePath,
       status: "pending",
     })
-    .select("id, amount_cents, category, description, status, submitted_at")
+    .select("id, amount_cents, category, description, receipt_storage_path, status, submitted_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

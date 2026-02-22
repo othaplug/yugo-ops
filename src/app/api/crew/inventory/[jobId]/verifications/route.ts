@@ -29,9 +29,11 @@ export async function GET(
 
   const verifiedIds = new Set((verifications || []).filter((v) => v.move_inventory_id).map((v) => v.move_inventory_id));
   const verifiedKeys = new Set((verifications || []).filter((v) => v.room && v.item_name).map((v) => `${v.room}::${v.item_name}`));
+  const verifiedRooms = new Set((verifications || []).filter((v) => v.room && !v.move_inventory_id).map((v) => v.room!));
 
   return NextResponse.json({
     verifiedIds: Array.from(verifiedIds),
     verifiedKeys: Array.from(verifiedKeys),
+    verifiedRooms: Array.from(verifiedRooms),
   });
 }
