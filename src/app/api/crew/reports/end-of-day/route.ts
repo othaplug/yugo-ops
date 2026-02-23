@@ -56,11 +56,19 @@ export async function GET(req: NextRequest) {
     averageSatisfaction: Math.round(averageSatisfaction * 10) / 10,
   };
 
+  const { data: existingReport } = await admin
+    .from("end_of_day_reports")
+    .select("id")
+    .eq("team_id", payload.teamId)
+    .eq("report_date", today)
+    .maybeSingle();
+
   return NextResponse.json({
     summary,
     jobs: jobsSummary,
     readiness: readiness ? { passed: readiness.passed, flaggedItems: readiness.flagged_items || [] } : null,
     expenses: expenses.map((e) => ({ category: e.category, amount: e.amount_cents, description: e.description })),
+    alreadySubmitted: !!existingReport,
   });
 }
 
@@ -85,8 +93,6 @@ export async function POST(req: NextRequest) {
     .eq("team_id", payload.teamId)
     .eq("report_date", today)
     .maybeSingle();
-
-  if (existing) return NextResponse.json({ error: "Report already submitted for today" }, { status: 400 });
 
   const [readinessRes, expensesRes, sessionsRes] = await Promise.all([
     admin.from("readiness_checks").select("passed, flagged_items").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
@@ -146,17 +152,36 @@ export async function POST(req: NextRequest) {
     description: e.description,
   }));
 
+  const payloadRow = {
+    crew_lead_id: payload.crewMemberId,
+    summary,
+    jobs: jobsSummary,
+    readiness: readiness ? { passed: readiness.passed, flaggedItems: readiness.flagged_items || [] } : null,
+    expenses: expensesJson,
+    crew_note: crewNote,
+  };
+
+  if (existing) {
+    const { data: report, error } = await admin
+      .from("end_of_day_reports")
+      .update({
+        ...payloadRow,
+        generated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id)
+      .select("id, report_date, generated_at")
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(report);
+  }
+
   const { data: report, error } = await admin
     .from("end_of_day_reports")
     .insert({
       team_id: payload.teamId,
-      crew_lead_id: payload.crewMemberId,
       report_date: today,
-      summary,
-      jobs: jobsSummary,
-      readiness: readiness ? { passed: readiness.passed, flaggedItems: readiness.flagged_items || [] } : null,
-      expenses: expensesJson,
-      crew_note: crewNote,
+      ...payloadRow,
     })
     .select("id, report_date, generated_at")
     .single();

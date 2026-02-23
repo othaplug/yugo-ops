@@ -153,10 +153,13 @@ export default function ClientSignOffPage({
     return (
       <main className="min-h-screen bg-[#FAF8F4] flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
-          <h1 className="font-serif text-2xl text-[#1A1A1A] mb-2">Already Signed</h1>
+          <h1 className="font-hero text-2xl text-[#1A1A1A] mb-2">Already Signed</h1>
           <p className="text-[#555] mb-6">This job has already been signed off.</p>
-          <Link href={`/crew/dashboard/job/${jobType}/${id}`} className="text-[#C9A962] font-semibold hover:underline">
-            ← Back to Job
+          <Link
+            href={`/crew/dashboard/job/${jobType}/${id}`}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C]"
+          >
+            <span aria-hidden>←</span> Back to Job
           </Link>
         </div>
       </main>
@@ -170,12 +173,17 @@ export default function ClientSignOffPage({
   return (
     <main className="min-h-screen" style={{ background: bg, fontFamily: "'DM Sans', sans-serif" }}>
       <div className="max-w-[420px] mx-auto px-4 py-8">
+        <Link
+          href={`/crew/dashboard/job/${jobType}/${id}`}
+          className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-[13px] font-medium mb-4 border border-transparent hover:border-[#C9A962]/40 transition-colors"
+          style={{ color: mutedColor }}
+        >
+          <span aria-hidden>←</span> Back to Job
+        </Link>
         {phase === 1 && (
           <div className="animate-fade-in">
             <div className="text-center mb-8">
-              <h1 className="font-serif text-2xl mb-1" style={{ color: textColor }}>Y U G O</h1>
-              <div className="w-16 h-0.5 bg-[#C9A962] mx-auto my-3" />
-              <h2 className="text-lg font-semibold" style={{ color: textColor }}>Items Confirmation</h2>
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>Items Confirmation</h1>
               <p className="text-sm mt-2" style={{ color: mutedColor }}>Confirm that all items were received as described.</p>
             </div>
             <div className="space-y-4 mb-6">
@@ -221,9 +229,7 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="animate-fade-in">
             <div className="text-center mb-8">
-              <h1 className="font-serif text-2xl mb-1" style={{ color: textColor }}>Y U G O</h1>
-              <div className="w-16 h-0.5 bg-[#C9A962] mx-auto my-3" />
-              <h2 className="text-lg font-semibold" style={{ color: textColor }}>How was your experience?</h2>
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>How was your experience?</h1>
             </div>
             <div className="flex justify-center gap-2 mb-4">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -242,7 +248,7 @@ export default function ClientSignOffPage({
             </div>
             {rating && <p className="text-center text-sm mb-4" style={{ color: mutedColor }}>{RATING_LABELS[rating]}</p>}
             <div className="mb-4">
-              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>Would you recommend Yugo?</p>
+              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>Would you recommend us?</p>
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -287,9 +293,7 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="animate-fade-in">
             <div className="text-center mb-6">
-              <h1 className="font-serif text-2xl mb-1" style={{ color: textColor }}>Y U G O</h1>
-              <div className="w-16 h-0.5 bg-[#C9A962] mx-auto my-3" />
-              <h2 className="text-lg font-semibold" style={{ color: textColor }}>Almost done — sign to confirm</h2>
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>Almost done — sign to confirm</h1>
             </div>
             <div className="mb-4">
               <label className="block text-xs font-semibold mb-2 uppercase" style={{ color: mutedColor }}>Your name</label>
@@ -341,17 +345,13 @@ export default function ClientSignOffPage({
 
         {phase === 4 && (
           <div className="text-center py-12 animate-fade-in">
-            <div className="text-5xl mb-4">🎉</div>
-            <h1 className="text-2xl font-semibold mb-2" style={{ color: textColor }}>Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!</h1>
-            <p className="mb-6" style={{ color: mutedColor }}>We hope you love your new space. Welcome home.</p>
-            <div className="w-16 h-0.5 bg-[#C9A962] mx-auto my-4" />
-            <p className="font-serif text-[#C9A962]">Y U G O</p>
-            <p className="text-xs mt-1" style={{ color: mutedColor }}>The art of moving.</p>
+            <h1 className="font-hero text-2xl font-semibold mb-2" style={{ color: textColor }}>Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!</h1>
+            <p className="mb-8" style={{ color: mutedColor }}>We hope you love your new space. Welcome home.</p>
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-block mt-8 px-6 py-3 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C]"
+              className="inline-flex items-center gap-2 mt-8 px-6 py-3 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C]"
             >
-              Back to Job
+              <span aria-hidden>←</span> Back to Job
             </Link>
           </div>
         )}

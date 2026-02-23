@@ -13,7 +13,12 @@ export async function POST(
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { jobId } = await params;
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const description = (body.description || "").toString().trim();
   const room = (body.room || "").toString().trim() || null;
   const quantity = Math.max(1, parseInt(String(body.quantity), 10) || 1);
@@ -65,6 +70,14 @@ export async function POST(
     .select("id, description, room, quantity, added_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg =
+      (error.message?.includes("added_by") && error.message?.includes("null")) ||
+      error.message?.includes("requested_by") ||
+      error.message?.includes("job_type")
+        ? "Database migration required for extra items. Run: supabase db push"
+        : error.message;
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   return NextResponse.json(item);
 }

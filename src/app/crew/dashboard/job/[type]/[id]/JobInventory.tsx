@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { useToast } from "@/app/admin/components/Toast";
 
 interface InventoryRoom {
   room: string;
@@ -42,6 +43,7 @@ export default function JobInventory({
   onCountChange,
   readOnly = false,
 }: JobInventoryProps) {
+  const { toast } = useToast();
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
   const [verifiedRooms, setVerifiedRooms] = useState<Set<string>>(new Set());
   const [customRooms, setCustomRooms] = useState<string[]>([]);
@@ -128,14 +130,21 @@ export default function JobInventory({
           room: extraRoom.trim() || null,
           quantity: extraQty,
         }),
+        credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || "Failed to submit request");
+      }
       setAddExtraOpen(false);
       setExtraDesc("");
       setExtraRoom("");
       setExtraQty(1);
+      toast("Request submitted for approval", "check");
       onRefresh?.();
-    } catch {}
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to submit request", "x");
+    }
     setSubmitting(false);
   };
 

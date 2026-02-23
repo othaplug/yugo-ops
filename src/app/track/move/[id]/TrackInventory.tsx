@@ -62,7 +62,10 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           quantity: extraQty,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || "Failed to submit request");
+      }
       setAddExtraOpen(false);
       setExtraDesc("");
       setExtraRoom("");
@@ -75,8 +78,8 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           setExtraItems(data.extraItems ?? []);
         })
         .catch(() => {});
-    } catch {
-      toast("Failed to submit request", "x");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to submit request", "x");
     }
     setSubmitting(false);
   };

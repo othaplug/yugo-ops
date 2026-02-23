@@ -159,6 +159,11 @@ export default function CrewDashboardPage() {
                         <span className="text-[14px] font-semibold text-[var(--tx)] truncate">
                           {job.clientName}
                         </span>
+                        {completed && (
+                          <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40">
+                            Completed
+                          </span>
+                        )}
                       </div>
                       <span className="text-[11px] font-medium text-[var(--tx3)] shrink-0">
                         {job.scheduledTime}
@@ -170,8 +175,18 @@ export default function CrewDashboardPage() {
                       <div className="text-[10px] text-[var(--tx3)]">{job.jobTypeLabel}</div>
                     </div>
 
-                    {completed ? null : canStart ? (
+                    {completed ? (
                       <div className="mt-3 ml-8">
+                        <Link
+                          href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
+                          className="text-[11px] text-[var(--tx3)] hover:text-[var(--gold)]"
+                        >
+                          View details
+                        </Link>
+                      </div>
+                    ) : canStart ? (
+                      <div className="mt-3 ml-8">
+                        <p className="text-[10px] text-[var(--grn)] font-medium mb-1.5">Next — ready to start</p>
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
                           className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"

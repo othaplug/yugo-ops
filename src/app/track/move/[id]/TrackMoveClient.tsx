@@ -11,6 +11,7 @@ import TrackDocuments from "./TrackDocuments";
 import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import { useToast } from "@/app/admin/components/Toast";
 import {
   MOVE_STATUS_OPTIONS,
   MOVE_STATUS_INDEX,
@@ -74,6 +75,7 @@ export default function TrackMoveClient({
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
+  const { toast } = useToast();
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
 
@@ -191,14 +193,14 @@ export default function TrackMoveClient({
           }),
         }
       );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error || "Failed to submit");
       setChangeSubmitted(true);
       setChangeModalOpen(false);
       setChangeDesc("");
       setChangeAddress("");
-    } catch {
-      // Could add toast
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to submit change request", "x");
     } finally {
       setChangeSubmitting(false);
     }

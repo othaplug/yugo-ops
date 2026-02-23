@@ -289,8 +289,11 @@ export default function CrewJobPage({
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <p className="text-[14px] text-[var(--red)] mb-4">{error || "Job not found"}</p>
-          <Link href="/crew/dashboard" className="text-[13px] text-[var(--gold)] hover:underline">
-            Back to Jobs
+          <Link
+            href="/crew/dashboard"
+            className="inline-flex items-center gap-2 py-2.5 px-3 rounded-lg text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+          >
+            <span aria-hidden>←</span> Back to Jobs
           </Link>
         </div>
       </PageContent>
@@ -317,8 +320,9 @@ export default function CrewJobPage({
     <PageContent className="max-w-[520px]">
       <Link
         href="/crew/dashboard"
-        className="inline-flex items-center gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+        className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-[13px] font-medium text-[var(--tx2)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors border border-transparent hover:border-[var(--gold)]/30"
       >
+        <span aria-hidden className="text-[16px] leading-none">←</span>
         Back to Jobs
       </Link>
 

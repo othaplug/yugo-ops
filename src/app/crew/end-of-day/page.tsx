@@ -9,7 +9,7 @@ export default function CrewEndOfDayPage() {
   const [crewNote, setCrewNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[] } | null>(null);
+  const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[]; alreadySubmitted?: boolean } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,7 +49,11 @@ export default function CrewEndOfDayPage() {
         ← Back to Dashboard
       </Link>
       <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
-      <p className="text-[12px] text-[var(--tx3)] mt-1">Submit your daily report. Data is auto-compiled from today&apos;s activity.</p>
+      <p className="text-[12px] text-[var(--tx3)] mt-1">
+        {preview?.alreadySubmitted
+          ? "You already submitted a report for today. Submit again to update it with any new jobs or expenses."
+          : "Submit your daily report. Data is auto-compiled from today's activity."}
+      </p>
 
       {preview?.summary && (
         <div className="mt-4 p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
@@ -89,7 +93,7 @@ export default function CrewEndOfDayPage() {
           disabled={submitting}
           className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
-          {submitting ? "Submitting…" : "Submit & End Day"}
+          {submitting ? (preview?.alreadySubmitted ? "Updating…" : "Submitting…") : preview?.alreadySubmitted ? "Update report" : "Submit & End Day"}
         </button>
       </form>
     </PageContent>

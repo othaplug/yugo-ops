@@ -24,9 +24,14 @@ export async function POST(
   }
 
   try {
-    const body = await req.json();
-    const type = body.type || "Other";
-    const description = (body.description || "").trim();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+    const type = (body.type || "Other") as string;
+    const description = String(body.description ?? "").trim();
     const urgency = body.urgency === "urgent" ? "urgent" : "normal";
 
     if (!description) {
@@ -49,7 +54,7 @@ export async function POST(
       .select("id")
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ error: error.message || "Failed to save request" }, { status: 400 });
     return NextResponse.json({ ok: true, id: cr?.id });
   } catch (err: unknown) {
     return NextResponse.json(
