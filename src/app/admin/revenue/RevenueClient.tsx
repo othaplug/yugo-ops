@@ -193,7 +193,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
       </div>
 
       {/* Revenue Trend - real interactive chart */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6">
         <h3 className="font-heading text-[15px] font-bold text-[var(--tx)] mb-1">
           Revenue Trend{period === "monthly" ? ` — ${now.toLocaleString("en-US", { month: "long", year: "numeric" })}` : ` — ${now.getFullYear()}`}
         </h3>

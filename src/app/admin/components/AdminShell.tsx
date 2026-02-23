@@ -186,7 +186,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <aside
               className={`
                 fixed top-0 left-0 z-50 h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
-                bg-[var(--bg2)] border-r border-[var(--brd)]
+                bg-[var(--bg2)]/70 backdrop-blur-2xl border-r border-[var(--brd)]/50
                 transition-all duration-300 ease-out
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
                 ${sidebarCollapsed ? "md:w-0 md:overflow-hidden md:border-0" : "w-[220px]"}
@@ -274,7 +274,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <div className="flex-1 flex flex-col min-w-0 min-h-0 admin-main-offset">
               {/* Topbar - floating, static; safe area on notched devices */}
               <div
-                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 bg-[var(--bg)]/80 backdrop-blur-md border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-2 pr-3 sm:pl-3 sm:pr-4 md:pl-3 md:pr-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
+                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 bg-[var(--bg)]/60 backdrop-blur-2xl border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-2 pr-3 sm:pl-3 sm:pr-4 md:pl-3 md:pr-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <button

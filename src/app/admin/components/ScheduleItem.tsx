@@ -37,7 +37,7 @@ export function ScheduleDeliveryItem({
   subtitle: string;
 }) {
   return (
-    <Link href={href} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+    <Link href={href} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>
         {pill && (
@@ -75,7 +75,7 @@ export function ScheduleMoveItem({
   price?: string;
 }) {
   return (
-    <Link href={href} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+    <Link href={href} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[10px] text-[var(--tx3)]">{leftPrimary}</span>
         {leftSecondary && <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{leftSecondary}</span>}
@@ -113,7 +113,7 @@ export function ScheduleDeliveryButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg w-full text-left"
+      className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg w-full text-left"
     >
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>

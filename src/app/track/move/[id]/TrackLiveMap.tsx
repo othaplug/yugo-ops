@@ -197,7 +197,7 @@ export default function TrackLiveMap({
         </div>
       ) : !loading && hasActiveTracking ? (
         <>
-          <div className="track-live-map-container relative rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4] shadow-sm">
+          <div className="track-live-map-container relative rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]">
             {/* Live stage card - top-left overlay on map (screenshot style) */}
             {liveStage && (
               <div className="absolute top-3 left-3 z-10 rounded-lg border border-[#E7E5E4] bg-white px-4 py-3 shadow-md flex items-center gap-3">

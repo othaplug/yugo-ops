@@ -178,7 +178,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
             <div
               key={day.toISOString()}
               className={`bg-[var(--card)] border rounded-lg p-2 sm:p-1.5 min-h-[100px] sm:min-h-[120px] transition-all cursor-pointer hover:border-[var(--gold)]/50 ${
-                today ? "border-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,.2)] bg-[var(--gdim)]/30" : "border-[var(--brd)]"
+                today ? "border-[var(--gold)] bg-[var(--gdim)]/30" : "border-[var(--brd)]"
               } ${isSelected ? "ring-2 ring-[var(--gold)]/40 ring-inset" : ""}`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(day)}
@@ -256,9 +256,9 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
         ))}
       </div>
 
-      {/* Scheduled / Unscheduled + Week Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-        <div className="glass rounded-2xl p-5">
+      {/* Scheduled / Unscheduled + Week Summary - horizontal scroll on mobile */}
+      <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-2 px-1 scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 md:gap-4 mt-5" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl p-5">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming</h3>
           <ul className="space-y-2 max-h-[280px] overflow-y-auto">
             {deliveriesThisWeek.map((d) => (
@@ -292,7 +292,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
           </Link>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-sm">
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl p-5">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Week Summary</h3>
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setSummaryModal("total")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">

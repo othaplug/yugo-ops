@@ -56,7 +56,7 @@ export default function TrackDocuments({
 
   if (loading) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
         <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
         <p className="text-[12px] text-[#666]">Loading...</p>
       </div>
@@ -65,7 +65,7 @@ export default function TrackDocuments({
 
   if (allDocs.length === 0) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
         <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
         <p className="text-[12px] text-[#666]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
       </div>
@@ -73,7 +73,7 @@ export default function TrackDocuments({
   }
 
   return (
-    <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#E7E5E4]">
         <h3 className="text-[14px] font-bold text-[#1A1A1A]">Documents</h3>
       </div>

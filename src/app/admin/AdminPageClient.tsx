@@ -278,12 +278,12 @@ export default function AdminPageClient({
           hasActiveFilters={!!deliveryStatusFilter}
           onClear={() => setDeliveryStatusFilter("")}
         />
-        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+        <div className="divide-y divide-[var(--brd)]/50 px-6 pb-4">
         {filteredDeliveries.slice(0, 5).map((d) => {
           const statusKey = (d.status || "").toLowerCase();
           const lineColor = DELIVERY_STATUS_LINE_COLOR[statusKey] || "var(--gold)";
           return (
-          <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+          <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
             <div className="flex flex-col items-start shrink-0 w-14">
               <span className="text-[12px] font-semibold text-[var(--tx)]">{d.time_slot || "—"}</span>
               <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
@@ -321,14 +321,14 @@ export default function AdminPageClient({
           hasActiveFilters={!!moveStatusFilter}
           onClear={() => setMoveStatusFilter("")}
         />
-        <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
+        <div className="divide-y divide-[var(--brd)]/50 px-6 pb-4">
         {filteredMoves.slice(0, 5).map((m, idx) => {
           const statusKey = (m.status || "").toLowerCase();
           const normalized = normalizeStatus(m.status ?? null) || "";
           const lineColor = MOVE_STATUS_LINE_COLOR[statusKey] || MOVE_STATUS_LINE_COLOR[normalized] || "var(--gold)";
           const statusStyle = MOVE_STATUS_COLORS_ADMIN[statusKey] || MOVE_STATUS_COLORS_ADMIN[normalized] || "text-[var(--tx3)] bg-[var(--gdim)]";
           return (
-          <Link key={m.id} href={getMoveDetailPath(m)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
+          <Link key={m.id} href={getMoveDetailPath(m)} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
             <div className="flex flex-col items-start shrink-0 w-14">
               <span className="text-[10px] text-[var(--tx3)]">{String(idx + 1).padStart(2, "0")}</span>
               <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{formatMoveDate(m.scheduled_date)}</span>
@@ -349,7 +349,7 @@ export default function AdminPageClient({
       <div className="relative mt-4">
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
           {/* Monthly Revenue card - glass */}
-          <div className="glass min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
+          <div className="glass min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
             <div className="sh shrink-0">
               <div className="sh-t">Monthly Revenue</div>
               <Link href="/admin/revenue" className="sh-l">Details →</Link>
@@ -385,7 +385,7 @@ export default function AdminPageClient({
           </div>
 
           {/* Activity card - glass, relative for right-edge fade */}
-          <div className="glass relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] md:shadow-none flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
+          <div className="glass relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
             <div className="sh shrink-0">
               <div className="sh-t">Activity</div>
             <button

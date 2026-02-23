@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
 import ChangeRequestsClient from "./ChangeRequestsClient";
 
 export default async function ChangeRequestsPage() {
-  const supabase = await createClient();
-  const { data: requests } = await supabase
+  const admin = createAdminClient();
+  const { data: requests } = await admin
     .from("move_change_requests")
     .select(`
       id,

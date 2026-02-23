@@ -151,7 +151,6 @@ export default function AddressAutocomplete({
   const initAutocomplete = useCallback(() => {
     if (!inputRef.current || !window.google?.maps?.places || autocompleteRef.current) return;
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: ["ca", "us"] } as unknown as { country: string },
       types: ["address"],
       fields: ["address_components", "formatted_address", "geometry"],
     });

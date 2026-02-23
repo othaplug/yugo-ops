@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider } from "@/app/admin/components/ThemeContext";
 import { ToastProvider } from "@/app/admin/components/Toast";
 import { Icons } from "@/app/admin/components/SidebarIcons";
+import CrewSettingsDropdown from "./CrewSettingsDropdown";
 
 const CREW_PAGE_TITLES: Record<string, { title: string; subtitle: string; hideHeaderTitle?: boolean }> = {
   "/crew/dashboard": { title: "Dashboard", subtitle: "", hideHeaderTitle: true },
@@ -185,14 +186,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="flex-shrink-0">
-                <form action="/api/crew/logout" method="POST">
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </form>
+                <CrewSettingsDropdown />
               </div>
             </div>
 

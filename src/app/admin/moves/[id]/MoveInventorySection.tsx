@@ -37,7 +37,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editBox, setEditBox] = useState("");
+  const [editItemName, setEditItemName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [extraActioning, setExtraActioning] = useState<string | null>(null);
@@ -209,7 +209,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
     fetch(`/api/admin/moves/${moveId}/inventory/${itemId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ box_number: editBox || null }),
+      body: JSON.stringify({ item_name: (editItemName || "").trim() || undefined }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -221,6 +221,11 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
 
   const handleDelete = (item: InventoryItem) => {
     setDeleteConfirm(item);
+  };
+
+  const startEdit = (item: InventoryItem) => {
+    setEditingId(item.id);
+    setEditItemName(item.item_name || "");
   };
 
   const confirmDelete = async () => {
@@ -238,11 +243,6 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
     } finally {
       setDeleting(false);
     }
-  };
-
-  const startEdit = (item: InventoryItem) => {
-    setEditingId(item.id);
-    setEditBox(item.box_number || "");
   };
 
   const byRoom = items.reduce<Record<string, InventoryItem[]>>((acc, item) => {
@@ -320,7 +320,6 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                           <tr className="border-b border-[var(--brd)]/40">
                             <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
                             <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
-                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-20 text-right">Box</th>
                             <th className="w-16" aria-label="Actions" />
                           </tr>
                         </thead>
@@ -329,23 +328,21 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             const rows = expandItemRow(item);
                             return rows.map((r, ri) => (
                               <tr key={`${item.id}-${ri}`} className="border-b border-[var(--brd)]/30 last:border-0 group hover:bg-[var(--bg)]/20 transition-colors">
-                                <td className="px-3 py-2 text-[12px] font-medium text-[var(--tx)]">{r.label}</td>
-                                <td className="px-3 py-2 text-[12px] text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
-                                <td className="px-3 py-2 text-[11px] text-[var(--tx3)] text-right">
-                                  {ri === 0 && (editingId === item.id ? (
+                                <td className="px-3 py-2 text-[12px] font-medium text-[var(--tx)]">
+                                  {ri === 0 && editingId === item.id ? (
                                     <input
                                       type="text"
-                                      value={editBox}
-                                      onChange={(e) => setEditBox(e.target.value)}
-                                      placeholder="Box #"
-                                      className="w-14 text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1.5 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                                      value={editItemName}
+                                      onChange={(e) => setEditItemName(e.target.value)}
+                                      placeholder="Item name"
+                                      className="w-full min-w-[120px] text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                                      autoFocus
                                     />
-                                  ) : item.box_number ? (
-                                    <span>Box {item.box_number}</span>
                                   ) : (
-                                    "—"
-                                  ))}
+                                    r.label
+                                  )}
                                 </td>
+                                <td className="px-3 py-2 text-[12px] text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
                                 <td className="px-3 py-2 text-right">
                                   {ri === 0 && (
                                     <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100">

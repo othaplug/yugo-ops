@@ -88,6 +88,19 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
     animation-duration: 0.01ms !important;
   }
 }
+/* Crew portal: user-enabled reduce motion */
+[data-reduce-motion="true"] a,
+[data-reduce-motion="true"] button,
+[data-reduce-motion="true"] [role="button"],
+[data-reduce-motion="true"] input,
+[data-reduce-motion="true"] select,
+[data-reduce-motion="true"] textarea,
+[data-reduce-motion="true"] .animate-fade-up,
+[data-reduce-motion="true"] .animate-fade-in,
+[data-reduce-motion="true"] .animate-slide-in {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+}
 
 /* Premium scrollbar - app-wide */
 * {

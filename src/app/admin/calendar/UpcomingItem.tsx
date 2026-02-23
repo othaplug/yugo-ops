@@ -42,7 +42,7 @@ export default function UpcomingItem({ href, name, date, time, badgeType }: Upco
   const secondary = timeFormatted ? `${dateFormatted} • ${timeFormatted}` : dateFormatted;
 
   return (
-    <Link href={href} className="flex gap-3 py-3 hover:bg-[var(--bg)]/30 transition-colors -mx-2 px-2 rounded-lg">
+    <Link href={href} className="flex gap-3 py-3 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[10px] text-[var(--tx3)]">{dateFormatted}</span>
         {timeFormatted && <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{timeFormatted}</span>}

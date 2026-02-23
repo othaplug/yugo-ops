@@ -270,9 +270,9 @@ export default function UnifiedTrackingView({
         </div>
       </div>
 
-      {/* Activity: Active jobs + Teams in two equal cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      {/* Activity: Active jobs + Teams - horizontal scroll on mobile, grid on desktop */}
+      <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-2 px-1 scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 md:gap-4" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
             <h3 className="text-[13px] font-bold text-[var(--tx)]">Active jobs</h3>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -308,7 +308,7 @@ export default function UnifiedTrackingView({
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
             <h3 className="text-[13px] font-bold text-[var(--tx)]">Teams</h3>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">

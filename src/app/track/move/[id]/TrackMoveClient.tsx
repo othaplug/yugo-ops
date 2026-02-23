@@ -276,7 +276,7 @@ export default function TrackMoveClient({
 
       <main className="max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8">
         {showPaymentSuccess && (
-          <div className="mb-5 rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 shadow-sm animate-fade-up">
+          <div className="mb-5 rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 animate-fade-up">
             <div className="flex flex-col sm:flex-row sm:items-start gap-6">
               <div className="flex justify-center sm:justify-start shrink-0">
                 <div className="relative w-[72px] h-[72px] sm:w-20 sm:h-20">
@@ -341,7 +341,7 @@ export default function TrackMoveClient({
         </div>
 
         {/* Main countdown card - light cream, rounded, centered content */}
-        <div className="rounded-[16px] bg-[#FAF8F5] border border-[#EDE9E3] p-6 sm:p-8 mb-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+        <div className="rounded-[16px] bg-[#FAF8F5] border border-[#EDE9E3] p-6 sm:p-8 mb-5">
           {isCompleted ? (
             <div className="text-center">
               <div className="font-hero text-[24px] sm:text-[28px] leading-tight text-[#1A1A1A] font-semibold">
@@ -379,22 +379,18 @@ export default function TrackMoveClient({
                 <div className="mt-6">
                   <DeliveryProgressBar
                     percent={
-                      isInProgress && liveStage != null
-                        ? (100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6
-                        : isCompleted
-                          ? 100
-                          : currentIdx >= 0
-                            ? ((currentIdx + 1) * 100) / 5
-                            : 0
+                      isCompleted
+                        ? 100
+                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
+                          ? (100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6
+                          : 0
                     }
                     sublabel={
-                      isInProgress && liveStage != null
-                        ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
-                        : isCompleted
-                          ? "100%"
-                          : currentIdx >= 0
-                            ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
-                            : "0%"
+                      isCompleted
+                        ? "100%"
+                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
+                          ? `${Math.round((100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6)}%`
+                          : "0%"
                     }
                     variant="dark"
                   />
@@ -434,22 +430,18 @@ export default function TrackMoveClient({
                 <div className="mt-6">
                   <DeliveryProgressBar
                     percent={
-                      isInProgress && liveStage != null
-                        ? (100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6
-                        : isCompleted
-                          ? 100
-                          : currentIdx >= 0
-                            ? ((currentIdx + 1) * 100) / 5
-                            : 0
+                      isCompleted
+                        ? 100
+                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
+                          ? (100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6
+                          : 0
                     }
                     sublabel={
-                      isInProgress && liveStage != null
-                        ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
-                        : isCompleted
-                          ? "100%"
-                          : currentIdx >= 0
-                            ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
-                            : "0%"
+                      isCompleted
+                        ? "100%"
+                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
+                          ? `${Math.round((100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6)}%`
+                          : "0%"
                     }
                     variant="dark"
                   />
@@ -461,7 +453,7 @@ export default function TrackMoveClient({
 
         {/* Live tracking highlight on move day - front and center */}
         {!isCompleted && daysUntil === 0 && (
-          <div className="mb-5 rounded-xl border-2 border-[#C9A962]/50 bg-[#FAF8F5] p-4 sm:p-5 shadow-sm">
+          <div className="mb-5 rounded-xl border-2 border-[#C9A962]/50 bg-[#FAF8F5] p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="relative flex h-3 w-3 shrink-0">
@@ -510,7 +502,7 @@ export default function TrackMoveClient({
                 key={t.key}
                 type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`sidebar-nav-lift shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 rounded-t-lg ${
+                className={`shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 rounded-t-lg transition-colors ${
                   activeTab === t.key
                     ? "text-[#C9A962] border-[#C9A962]"
                     : "text-[#999] border-transparent hover:text-[#666]"
@@ -524,7 +516,6 @@ export default function TrackMoveClient({
             className="absolute right-0 top-0 bottom-0 w-10 pointer-events-none rounded-tr-lg"
             style={{
               background: "linear-gradient(to left, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.6) 40%, transparent 100%)",
-              boxShadow: "inset -12px 0 12px -12px rgba(0,0,0,0.06)",
             }}
             aria-hidden
           />
@@ -534,7 +525,7 @@ export default function TrackMoveClient({
         {activeTab === "dash" && (
           <div className="space-y-6">
             {/* Move Timeline - Confirmed → Scheduled → In Progress → Completed (Paid shown in financial section) */}
-            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+            <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
               <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4] before:transition-colors before:duration-500">
                 {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
@@ -598,7 +589,7 @@ export default function TrackMoveClient({
 
             {/* Move Details + Your Crew grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+              <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">Move Details</h3>
                 <div className="space-y-3">
                   {scheduledDate && (
@@ -646,7 +637,7 @@ export default function TrackMoveClient({
                 </div>
               </div>
 
-              <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+              <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#999] mb-4">
                   Your Crew ({crewMembers.length})
                 </h3>
@@ -683,7 +674,7 @@ export default function TrackMoveClient({
 {changeSubmitted && (
               <div className="rounded-xl border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3">
                 <div className="text-[13px] font-semibold text-[#1A1A1A]">Change request submitted</div>
-                <div className="text-[12px] text-[#666] mt-0.5">Your coordinator will reach out within 2 hours.</div>
+                <div className="text-[12px] text-[#666] mt-0.5">Your coordinator will reach out within 10 minutes.</div>
               </div>
             )}
 
@@ -706,7 +697,7 @@ export default function TrackMoveClient({
         {activeTab === "track" && (
           <div className="space-y-5">
             {isCompleted ? (
-              <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 shadow-sm text-center">
+              <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 text-center">
                 <h2 className="font-hero text-[20px] font-semibold text-[#1A1A1A]">Your move is complete</h2>
                 <p className="mt-2 text-[13px] text-[#666]">Thank you for choosing us. We hope your move went smoothly.</p>
                 <a
@@ -749,7 +740,7 @@ export default function TrackMoveClient({
         )}
 
         {activeTab === "msg" && (
-          <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
             <h3 className="text-[14px] font-bold mb-3 text-[#1A1A1A]">Messages with your coordinator</h3>
             <div className="space-y-1.5 text-[13px] mb-4 text-[#1A1A1A]">
               <p>Phone: <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="text-[#C9A962] hover:underline">{formatPhone(YUGO_PHONE)}</a></p>

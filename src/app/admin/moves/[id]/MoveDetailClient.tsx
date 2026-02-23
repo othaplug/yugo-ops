@@ -294,6 +294,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             crewId={move.crew_id}
             crewName={selectedCrew?.name}
             destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
+            moveId={move.id}
           />
         </CollapsibleSection>
       )}
