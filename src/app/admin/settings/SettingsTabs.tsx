@@ -27,7 +27,7 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
           <Link
             key={tab.id}
             href={href}
-            className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
+            className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
               isActive
                 ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"

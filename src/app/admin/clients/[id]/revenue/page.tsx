@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
 
 export default async function ClientRevenuePage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,15 +48,15 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total paid</div>
-          <div className="text-lg font-bold font-heading text-[var(--grn)]">{formatCurrency(totalPaid)}</div>
+          <div className="text-lg font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(totalPaid)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className="text-lg font-bold font-heading text-[var(--gold)]">{formatCurrency(totalOutstanding)}</div>
+          <div className="text-lg font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalOutstanding)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Past due</div>
-          <div className="text-lg font-bold font-heading text-[var(--red)]">{formatCurrency(totalOverdue)}</div>
+          <div className="text-lg font-bold font-heading text-[var(--red)]">{formatCompactCurrency(totalOverdue)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Invoices</div>

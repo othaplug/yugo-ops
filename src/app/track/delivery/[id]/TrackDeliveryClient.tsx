@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 
 const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
 const STAGE_LABELS: Record<string, string> = {
@@ -68,18 +69,14 @@ export default function TrackDeliveryClient({
           {delivery.delivery_number} — {delivery.customer_name}
         </h1>
 
-        {isInProgress && (
+        {(isInProgress || isCompleted) && (
           <div className="mb-6">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#2A2A2A]">
-                <div
-                  className="h-full rounded-full bg-[#C9A962] transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className="text-[13px] font-semibold text-[#C9A962] tabular-nums">{Math.round(progressPercent)}%</span>
-            </div>
-            <p className="text-[12px] text-[#999] mt-2">{liveStage ? STAGE_LABELS[liveStage] || liveStage : "Tracking…"}</p>
+            <DeliveryProgressBar
+              percent={progressPercent}
+              sublabel={`${Math.round(progressPercent)}%`}
+              label={liveStage ? STAGE_LABELS[liveStage] || liveStage : isCompleted ? "Completed" : "Tracking…"}
+              variant="dark"
+            />
           </div>
         )}
 

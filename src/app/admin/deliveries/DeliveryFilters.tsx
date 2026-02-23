@@ -63,7 +63,7 @@ export default function DeliveryFilters({
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`flex-1 text-center py-[7px] text-[10px] font-bold border-b-2 transition-all cursor-pointer
+            className={`sidebar-nav-lift flex-1 text-center py-[7px] text-[10px] font-bold border-b-2 rounded-t-lg cursor-pointer
               ${filter === tab.key
                 ? "text-[var(--gold)] border-[var(--gold)]"
                 : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"

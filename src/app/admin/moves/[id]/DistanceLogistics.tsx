@@ -35,7 +35,7 @@ export default function DistanceLogistics({
         } else {
           setDistance(null);
           setDuration(null);
-          setError(d.error || "Unable to fetch");
+          setError(d.error || null);
         }
       })
       .catch(() => {

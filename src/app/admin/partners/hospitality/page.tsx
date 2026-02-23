@@ -3,7 +3,7 @@ import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
 
 export default async function HospitalityPage() {
@@ -80,16 +80,16 @@ export default async function HospitalityPage() {
               <StatPctChange current={deliveriesThisMonth} previous={deliveriesLastMonth} />
             </div>
           </div>
-          <Link href="/admin/revenue" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
+          <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue ({monthLabel})</div>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold font-heading text-[var(--grn)]">{formatCurrency(revenueThisMonth)}</span>
+              <span className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(revenueThisMonth)}</span>
               <StatPctChange current={revenueThisMonth} previous={revenueLastMonth} />
             </div>
           </Link>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-            <div className={`text-xl font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCurrency(outstandingTotal)}</div>
+            <div className={`text-xl font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCompactCurrency(outstandingTotal)}</div>
           </div>
         </div>
 

@@ -20,11 +20,11 @@ export default function CollapsibleSection({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
-    <div className="rounded-xl overflow-hidden">
+    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left bg-[var(--card)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)]/30 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[var(--bg)]/50 transition-colors"
       >
         {collapsed ? (
           <ChevronRight className="w-4 h-4 text-[var(--tx3)] shrink-0" />
@@ -36,7 +36,7 @@ export default function CollapsibleSection({
           <span className="text-[11px] text-[var(--tx3)] truncate">— {subtitle}</span>
         )}
       </button>
-      {!collapsed && <div className="mt-2">{children}</div>}
+      {!collapsed && <div className="p-4 border-t border-[var(--brd)]">{children}</div>}
     </div>
   );
 }

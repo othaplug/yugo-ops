@@ -99,10 +99,10 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/crew/dashboard"
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 border-l-2 -ml-px ${
+                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
                       isActive("/crew/dashboard")
                         ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
+                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
                     }`}
                   >
                     <span className={pathname === "/crew/dashboard" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
@@ -113,10 +113,10 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/crew/expense"
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 border-l-2 -ml-px ${
+                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
                       isActive("/crew/expense")
                         ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
+                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
                     }`}
                   >
                     <span className={pathname === "/crew/expense" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
@@ -127,10 +127,10 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/crew/end-of-day"
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 text-[12px] font-medium transition-all duration-150 border-l-2 -ml-px ${
+                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
                       isActive("/crew/end-of-day")
                         ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)] border-l-transparent"
+                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
                     }`}
                   >
                     <span className={pathname === "/crew/end-of-day" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
@@ -149,7 +149,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               <form action="/api/crew/logout" method="POST" className="w-full">
                 <button
                   type="submit"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] border border-[var(--brd)] transition-colors"
+                  className="sidebar-nav-lift w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] border border-[var(--brd)]"
                 >
                   Sign out
                 </button>

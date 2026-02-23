@@ -7,7 +7,7 @@ import { Icon } from "@/components/AppIcons";
 import FilterBar from "./components/FilterBar";
 import LiveOperationsCard from "./components/LiveOperationsCard";
 import { formatMoveDate } from "@/lib/date-format";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
 
@@ -85,9 +85,11 @@ interface EodSummary {
 
 interface AdminPageClientProps {
   todayDeliveries: Delivery[];
+  yesterdayDeliveriesCount?: number;
   allDeliveries: Delivery[];
   b2cUpcoming: Move[];
   overdueAmount: number;
+  overdueInvoicesCount?: number;
   currentMonthRevenue: number;
   revenuePctChange: number;
   monthlyRevenue: { m: string; v: number }[];
@@ -213,42 +215,46 @@ export default function AdminPageClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      {/* Metrics - .metrics with glass */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-        <Link href="/admin/deliveries" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">Today&apos;s Deliveries</div>
-          <div className="mc-v">{todayDeliveries.length}</div>
-          <div className="mc-c text-[var(--tx3)]">Scheduled today</div>
-        </Link>
-        <Link href="/admin/deliveries?filter=pending" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">Pending Deliveries</div>
-          <div className="mc-v text-[var(--org)]">{allDeliveries.filter((d) => d.status === "pending").length}</div>
-          <div className="mc-c text-[var(--tx3)]">Awaiting schedule</div>
-        </Link>
-        <Link href="/admin/revenue" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">Revenue ({new Date().toLocaleString("en-US", { month: "short" })})</div>
-          <div className="mc-v">{currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}</div>
-          <div className={`mc-c ${revenuePctChange >= 0 ? "up text-[var(--grn)]" : "text-[var(--red)]"}`}>
-            {currentMonthRevenue > 0 || revenuePctChange !== 0
-              ? `${revenuePctChange >= 0 ? "↑" : "↓"} ${Math.abs(revenuePctChange)}% vs last month`
-              : "Paid invoices this month"}
-          </div>
-        </Link>
-        <Link href="/admin/invoices" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">Overdue Invoices</div>
-          <div className="mc-v text-[var(--red)]">{formatCurrency(overdueAmount)}</div>
-          <div className="mc-c text-[var(--tx3)]">Past due amount</div>
-        </Link>
-        <Link href="/admin/moves/residential" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">B2C Moves</div>
-          <div className="mc-v">{b2cUpcoming.length}</div>
-          <div className="mc-c text-[var(--tx3)]">Upcoming residential</div>
-        </Link>
-        <Link href="/admin/reports" className="mc glass block w-full min-h-0 relative z-10">
-          <div className="mc-l">End-of-Day Reports</div>
-          <div className="mc-v">{eodSummary?.submittedCount ?? 0}/{eodSummary?.totalTeams ?? 0}</div>
-          <div className="mc-c text-[var(--tx3)]">{eodSummary?.pending?.length ? `${eodSummary.pending.length} pending` : "All submitted"}</div>
-        </Link>
+      {/* Metrics — horizontal scroll on mobile, grid on desktop */}
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)]/50 p-4 mb-6 -mx-3 sm:mx-0">
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-1 pl-1 pr-3 scrollbar-hide md:overflow-visible md:grid md:grid-cols-3 lg:grid-cols-6 md:snap-none md:pl-0 md:pr-0" style={{ WebkitOverflowScrolling: "touch" }}>
+          <Link href="/admin/deliveries" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Today&apos;s Deliveries</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{todayDeliveries.length}</span>
+            <span className="text-[10px] text-[var(--tx3)]">Scheduled today</span>
+          </Link>
+          <Link href="/admin/deliveries?filter=pending" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Pending</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--org)] tabular-nums">{allDeliveries.filter((d) => d.status === "pending").length}</span>
+            <span className="text-[10px] text-[var(--tx3)]">Awaiting schedule</span>
+          </Link>
+          <Link href="/admin/moves/residential" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">B2C Moves</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{b2cUpcoming.length}</span>
+            <span className="text-[10px] text-[var(--tx3)]">Upcoming residential</span>
+          </Link>
+          <Link href="/admin/revenue" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Revenue</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
+              {currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}
+            </span>
+            <span className={`text-[10px] ${revenuePctChange >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+              {currentMonthRevenue > 0 || revenuePctChange !== 0
+                ? `${revenuePctChange >= 0 ? "↑" : "↓"} ${Math.abs(revenuePctChange)}% vs last month`
+                : "This month"}
+            </span>
+          </Link>
+          <Link href="/admin/invoices" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Overdue</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</span>
+            <span className="text-[10px] text-[var(--tx3)]">Past due</span>
+          </Link>
+          <Link href="/admin/reports" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
+            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">EOD Reports</span>
+            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{eodSummary?.submittedCount ?? 0}/{eodSummary?.totalTeams ?? 0}</span>
+            <span className="text-[10px] text-[var(--tx3)]">{eodSummary?.pending?.length ? `${eodSummary.pending.length} pending` : "All submitted"}</span>
+          </Link>
+        </div>
       </div>
 
       <LiveOperationsCard />

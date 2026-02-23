@@ -3,7 +3,7 @@
 import { useState } from "react";
 import AddRealtorModal from "./AddRealtorModal";
 import { StatPctChange } from "../../components/StatPctChange";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCompactCurrency } from "@/lib/format-currency";
 
 type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
 
@@ -77,7 +77,7 @@ export default function RealtorsMetrics({
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Commission</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
+            <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalCommission)}</span>
             <StatPctChange current={commissionCur} previous={commissionPrev} />
           </div>
         </div>

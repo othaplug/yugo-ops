@@ -10,6 +10,7 @@ import TrackDocuments from "./TrackDocuments";
 import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { useToast } from "@/app/admin/components/Toast";
 import {
   MOVE_STATUS_OPTIONS,
@@ -373,34 +374,30 @@ export default function TrackMoveClient({
                   <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
                 )}
               </div>
-              {/* Progress bar on move day: shows live stage once crew starts sharing GPS */}
+              {/* Progress bar on move day: car + start/end markers */}
               {scheduledDate && (
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#E8E4DF]">
-                    <div
-                      className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
-                      style={{
-                        width: `${
-                          isInProgress && liveStage != null
-                            ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
-                            : isCompleted
-                              ? 100
-                              : currentIdx >= 0
-                                ? Math.round(((currentIdx + 1) * 100) / 5)
-                                : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
-                    {isInProgress && liveStage != null
-                      ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
-                      : isCompleted
-                        ? "100%"
-                        : currentIdx >= 0
-                          ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
-                          : "0%"}
-                  </span>
+                <div className="mt-6">
+                  <DeliveryProgressBar
+                    percent={
+                      isInProgress && liveStage != null
+                        ? (100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6
+                        : isCompleted
+                          ? 100
+                          : currentIdx >= 0
+                            ? ((currentIdx + 1) * 100) / 5
+                            : 0
+                    }
+                    sublabel={
+                      isInProgress && liveStage != null
+                        ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
+                        : isCompleted
+                          ? "100%"
+                          : currentIdx >= 0
+                            ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
+                            : "0%"
+                    }
+                    variant="dark"
+                  />
                 </div>
               )}
             </>
@@ -432,34 +429,30 @@ export default function TrackMoveClient({
                   </div>
                 )}
               </div>
-              {/* Progress bar - full width, rounded ends, percentage to the right */}
+              {/* Progress bar - car + start/end markers */}
               {scheduledDate && (
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex-1 h-2.5 min-w-0 overflow-hidden rounded-full bg-[#E8E4DF]">
-                    <div
-                      className="h-full rounded-full bg-[#C9A962] transition-all duration-700 ease-out"
-                      style={{
-                        width: `${
-                          isInProgress && liveStage != null
-                            ? Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)
-                            : isCompleted
-                              ? 100
-                              : currentIdx >= 0
-                                ? Math.round(((currentIdx + 1) * 100) / 5)
-                                : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[13px] font-semibold text-[#C9A962] shrink-0 tabular-nums">
-                    {isInProgress && liveStage != null
-                      ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
-                      : isCompleted
-                        ? "100%"
-                        : currentIdx >= 0
-                          ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
-                          : "0%"}
-                  </span>
+                <div className="mt-6">
+                  <DeliveryProgressBar
+                    percent={
+                      isInProgress && liveStage != null
+                        ? (100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6
+                        : isCompleted
+                          ? 100
+                          : currentIdx >= 0
+                            ? ((currentIdx + 1) * 100) / 5
+                            : 0
+                    }
+                    sublabel={
+                      isInProgress && liveStage != null
+                        ? `${Math.round((100 * Math.max(0, (LIVE_STAGE_MAP[liveStage || ""] ?? -1) + 1)) / 6)}%`
+                        : isCompleted
+                          ? "100%"
+                          : currentIdx >= 0
+                            ? `${Math.round(((currentIdx + 1) * 100) / 5)}%`
+                            : "0%"
+                    }
+                    variant="dark"
+                  />
                 </div>
               )}
             </>
@@ -517,7 +510,7 @@ export default function TrackMoveClient({
                 key={t.key}
                 type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                className={`sidebar-nav-lift shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 rounded-t-lg ${
                   activeTab === t.key
                     ? "text-[#C9A962] border-[#C9A962]"
                     : "text-[#999] border-transparent hover:text-[#666]"

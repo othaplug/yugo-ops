@@ -43,7 +43,7 @@ export default function FilterBar({ filters, onClear, hasActiveFilters, classNam
         <button
           type="button"
           onClick={onClear}
-          className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+          className="sidebar-nav-lift text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] px-2 py-1 rounded-lg"
         >
           Clear filters
         </button>

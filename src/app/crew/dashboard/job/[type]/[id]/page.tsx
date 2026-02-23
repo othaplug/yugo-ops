@@ -11,6 +11,7 @@ import {
 } from "@/lib/crew-tracking-status";
 import { normalizePhone } from "@/lib/phone";
 import PageContent from "@/app/admin/components/PageContent";
+import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 
@@ -94,6 +95,8 @@ export default function CrewJobPage({
   const currentStatus = session?.status || "not_started";
   const nextStatus = getNextStatus(currentStatus, jobType);
   const isCompleted = currentStatus === "completed";
+  const progressIdx = statusFlow.indexOf(currentStatus as any);
+  const progressPercent = isCompleted ? 100 : progressIdx >= 0 ? ((progressIdx + 1) / statusFlow.length) * 100 : 0;
 
   const totalItems = itemsTotal > 0 ? itemsTotal : (job
     ? (job.inventory?.flatMap((r) => r.itemsWithId || r.items.map((n) => ({ id: `noid`, item_name: n }))).length ?? 0) + (job.extraItems?.length ?? 0)
@@ -366,6 +369,16 @@ export default function CrewJobPage({
 
       {activeTab === "status" && (
         <div className="mt-4 space-y-4">
+          {/* Job progress bar - car + start/end markers */}
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+            <DeliveryProgressBar
+              percent={progressPercent}
+              label={getStatusLabel(currentStatus)}
+              sublabel={`${Math.round(progressPercent)}%`}
+              variant="dark"
+            />
+          </div>
+
           <div>
             {showStartButton && (
               <button

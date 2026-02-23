@@ -59,7 +59,7 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-4 py-[7px] text-[11px] font-medium border-l-2 transition-all duration-100
+                className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-lg text-[11px] font-medium border-l-2 -ml-px
                   ${isActive 
                     ? "bg-[var(--gdim)] text-[var(--gold)] border-[var(--gold)] font-semibold" 
                     : "text-[var(--tx2)] border-transparent hover:bg-[var(--gdim)] hover:text-[var(--tx)]"
@@ -75,7 +75,7 @@ export default function Sidebar() {
 
       {/* User Footer */}
       <div className="mt-auto px-4 py-3 border-t border-[var(--brd)]">
-        <Link href="/admin/settings" className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--gdim)] transition-all">
+        <Link href="/admin/settings" className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-lg hover:bg-[var(--gdim)]">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-[9px] font-bold text-white">
             JO
           </div>

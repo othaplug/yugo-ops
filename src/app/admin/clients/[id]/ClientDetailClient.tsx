@@ -13,7 +13,7 @@ import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
@@ -241,12 +241,12 @@ export default function ClientDetailClient({
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Total paid</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCurrency(paidTotal)}</div>
+          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
           <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
-            {outstandingTotal > 0 ? formatCurrency(outstandingTotal) : formatCurrency(0)}
+            {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 col-span-2 sm:col-span-1">
@@ -335,7 +335,7 @@ export default function ClientDetailClient({
         <h3 className="text-[13px] font-bold">Invoices</h3>
         {outstandingTotal > 0 && (
           <div className="text-[11px] font-semibold text-[var(--org)]">
-            Outstanding: {formatCurrency(outstandingTotal)}
+            Outstanding: {formatCompactCurrency(outstandingTotal)}
           </div>
         )}
       </div>

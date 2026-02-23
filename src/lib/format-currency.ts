@@ -9,6 +9,16 @@ export function formatCurrency(value: number | string | null | undefined): strin
 }
 
 /**
+ * Compact format for dashboards: $1.8K, $25K, or full amount if under $1K
+ */
+export function formatCompactCurrency(value: number | string | null | undefined): string {
+  const n = typeof value === "string" ? parseFloat(value) : Number(value);
+  if (Number.isNaN(n)) return "$0";
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}K`;
+  return formatCurrency(n);
+}
+
+/**
  * Format for estimate/quote text inputs only: 1,234.00
  * - Comma thousands, always two decimals, no $
  */

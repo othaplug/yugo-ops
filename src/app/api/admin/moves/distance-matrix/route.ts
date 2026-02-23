@@ -35,10 +35,7 @@ export async function GET(req: NextRequest) {
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "Distance Matrix API not configured. Add GOOGLE_MAPS_API_KEY to .env.local", distance: null, duration: null },
-      { status: 200 }
-    );
+    return NextResponse.json({ distance: null, duration: null });
   }
 
   try {

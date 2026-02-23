@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
 import GalleryClient from "./GalleryClient";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 
 export default async function GalleryPage() {
   const supabase = await createClient();
@@ -79,13 +79,13 @@ export default async function GalleryPage() {
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--grn)]">{formatCurrency(revenueTotal)}</span>
+            <span className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(revenueTotal)}</span>
             <StatPctChange current={revenueThisMonth} previous={revenueLastMonth} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className={`text-xl font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCurrency(outstandingTotal)}</div>
+          <div className={`text-xl font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCompactCurrency(outstandingTotal)}</div>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import InviteUserModal from "./InviteUserModal";
 import AddTeamMemberModal from "./AddTeamMemberModal";
 import AddPortalAccessModal from "./AddPortalAccessModal";
 import DeviceSetupCodes from "./DeviceSetupCodes";
+import TruckAssignments from "./TruckAssignments";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import { useRouter } from "next/navigation";
@@ -375,7 +376,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <Link
             key={t.id}
             href={`/admin/platform?tab=${t.id}`}
-            className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
+            className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
               activeTab === t.id
                 ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
@@ -711,8 +712,13 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
       )}
 
-      {/* iPad Setup Codes */}
-      {activeTab === "devices" && <DeviceSetupCodes />}
+      {/* iPad Setup Codes + Truck Assignments */}
+      {activeTab === "devices" && (
+        <div className="space-y-6">
+          <DeviceSetupCodes />
+          <TruckAssignments />
+        </div>
+      )}
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
       {activeTab === "app" && (

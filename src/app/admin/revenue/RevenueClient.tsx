@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import BackButton from "../components/BackButton";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 
 type Period = "6mo" | "year" | "ytd" | "monthly";
 
@@ -169,26 +169,26 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
       <div className="mb-4"><BackButton label="Back" /></div>
       {/* KPI Cards - real data */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-        <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
+        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{currentMonthLabel} Revenue</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCurrency(currentMonthRevenue)}</div>
+          <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
           {pctChange !== 0 && (
             <div className={`text-[10px] font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
               {pctChange >= 0 ? "↑" : "↓"}{Math.abs(pctChange)}% vs last month
             </div>
           )}
         </Link>
-        <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
+        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">YTD</div>
-          <div className="text-xl font-bold font-heading">{formatCurrency(ytdRevenue)}</div>
+          <div className="text-xl font-bold font-heading">{formatCompactCurrency(ytdRevenue)}</div>
         </Link>
-        <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
+        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(outstanding)}</div>
+          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(outstanding)}</div>
         </Link>
-        <Link href="/admin/invoices" className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
+        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg Job</div>
-          <div className="text-xl font-bold font-heading">{formatCurrency(avgJob)}</div>
+          <div className="text-xl font-bold font-heading">{formatCompactCurrency(avgJob)}</div>
         </Link>
       </div>
 
