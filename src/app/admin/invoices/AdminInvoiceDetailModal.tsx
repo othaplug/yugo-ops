@@ -167,7 +167,7 @@ export default function AdminInvoiceDetailModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save Changes"}
           </button>

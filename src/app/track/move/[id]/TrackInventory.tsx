@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/AppIcons";
 import { ChevronDown } from "lucide-react";
+import { useToast } from "@/app/admin/components/Toast";
 
 type InventoryItem = {
   id: string;
@@ -12,10 +13,25 @@ type InventoryItem = {
   sort_order: number;
 };
 
+type ExtraItem = {
+  id: string;
+  description?: string | null;
+  room?: string | null;
+  quantity?: number;
+  added_at?: string;
+};
+
 export default function TrackInventory({ moveId, token }: { moveId: string; token: string }) {
+  const { toast } = useToast();
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  const [addExtraOpen, setAddExtraOpen] = useState(false);
+  const [extraDesc, setExtraDesc] = useState("");
+  const [extraRoom, setExtraRoom] = useState("");
+  const [extraQty, setExtraQty] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,11 +41,45 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
       .then((data) => {
         if (cancelled) return;
         setItems(data.items ?? []);
+        setExtraItems(data.extraItems ?? []);
       })
-      .catch(() => { if (!cancelled) setItems([]); })
+      .catch(() => { if (!cancelled) { setItems([]); setExtraItems([]); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [moveId, token]);
+
+  const handleAddExtra = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!extraDesc.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/track/moves/${moveId}/extra-item?token=${encodeURIComponent(token)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: extraDesc.trim(),
+          room: extraRoom.trim() || null,
+          quantity: extraQty,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setAddExtraOpen(false);
+      setExtraDesc("");
+      setExtraRoom("");
+      setExtraQty(1);
+      toast("Request submitted for approval", "check");
+      fetch(`/api/track/moves/${moveId}/inventory?token=${encodeURIComponent(token)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setItems(data.items ?? []);
+          setExtraItems(data.extraItems ?? []);
+        })
+        .catch(() => {});
+    } catch {
+      toast("Failed to submit request", "x");
+    }
+    setSubmitting(false);
+  };
 
   const handleExport = () => {
     const rows = items.map((i) => {
@@ -54,6 +104,19 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
     acc[room].push(item);
     return acc;
   }, {});
+  if (extraItems.length > 0) {
+    const room = "Added on-site";
+    if (!byRoom[room]) byRoom[room] = [];
+    extraItems.forEach((e) => {
+      byRoom[room].push({
+        id: e.id,
+        room,
+        item_name: `${e.description ?? "—"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`,
+        box_number: e.room || null,
+        sort_order: 0,
+      });
+    });
+  }
   const rooms = Object.keys(byRoom).sort();
 
   const toggleRoom = (room: string) => {
@@ -78,14 +141,68 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && extraItems.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
         <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
           <Icon name="package" className="w-[12px] h-[12px]" />
           Inventory
         </h3>
-        <p className="text-[12px] text-[#666]">No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
+        <p className="text-[12px] text-[#666] mb-4">No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
+        <button
+          type="button"
+          onClick={() => setAddExtraOpen(true)}
+          className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+        >
+          + Add Extra Item
+        </button>
+        {addExtraOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">
+              <h3 className="text-[16px] font-bold text-[#1A1A1A] mb-2">Add Extra Item</h3>
+              <p className="text-[11px] text-[#666] mb-4">Your request will be sent to your coordinator for approval.</p>
+              <form onSubmit={handleAddExtra} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Description</label>
+                  <input
+                    value={extraDesc}
+                    onChange={(e) => setExtraDesc(e.target.value)}
+                    placeholder="e.g. Extra boxes from garage"
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={extraQty}
+                    onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Room (optional)</label>
+                  <input
+                    value={extraRoom}
+                    onChange={(e) => setExtraRoom(e.target.value)}
+                    placeholder="e.g. Garage"
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setAddExtraOpen(false)} className="flex-1 py-2.5 rounded-lg border border-[#E7E5E4] text-[#1A1A1A] text-[13px]">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={submitting || !extraDesc.trim()} className="flex-1 py-2.5 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50">
+                    {submitting ? "Submitting…" : "Submit"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -149,6 +266,62 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           );
         })}
       </div>
+      <div className="px-5 py-4 border-t border-[#E7E5E4]">
+        <button
+          type="button"
+          onClick={() => setAddExtraOpen(true)}
+          className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+        >
+          + Add Extra Item
+        </button>
+      </div>
+      {addExtraOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">
+            <h3 className="text-[16px] font-bold text-[#1A1A1A] mb-2">Add Extra Item</h3>
+            <p className="text-[11px] text-[#666] mb-4">Your request will be sent to your coordinator for approval.</p>
+            <form onSubmit={handleAddExtra} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-semibold text-[#666] mb-1">Description</label>
+                <input
+                  value={extraDesc}
+                  onChange={(e) => setExtraDesc(e.target.value)}
+                  placeholder="e.g. Extra boxes from garage"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-[#666] mb-1">Quantity</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={extraQty}
+                  onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-[#666] mb-1">Room (optional)</label>
+                <input
+                  value={extraRoom}
+                  onChange={(e) => setExtraRoom(e.target.value)}
+                  placeholder="e.g. Garage"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setAddExtraOpen(false)} className="flex-1 py-2.5 rounded-lg border border-[#E7E5E4] text-[#1A1A1A] text-[13px]">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting || !extraDesc.trim()} className="flex-1 py-2.5 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50">
+                  {submitting ? "Submitting…" : "Submit"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -125,7 +125,7 @@ export default function TrackDocuments({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
                 >
                   Download
                 </a>

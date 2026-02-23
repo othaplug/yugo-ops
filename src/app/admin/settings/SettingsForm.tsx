@@ -38,7 +38,7 @@ export default function SettingsForm() {
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50 whitespace-nowrap"
+        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 whitespace-nowrap"
       >
         {loading ? "Updating..." : "Update"}
       </button>

@@ -22,6 +22,7 @@ const MapboxMap = dynamic(
       crewName,
       token,
       mapStyle,
+      destination,
     }: {
       center: { longitude: number; latitude: number };
       hasPosition: boolean;
@@ -29,6 +30,7 @@ const MapboxMap = dynamic(
       crewName?: string;
       token: string;
       mapStyle: string;
+      destination?: { lat: number; lng: number };
     }) {
       return (
         <M
@@ -39,14 +41,8 @@ const MapboxMap = dynamic(
         >
           {hasPosition && crew && (
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-lg"
-                style={{
-                  background: "linear-gradient(135deg, #C9A962, #8B7332)",
-                  border: "2px solid white",
-                }}
-              >
-                {(crewName || crew?.name || "?").replace("Team ", "").slice(0, 1).toUpperCase()}
+              <div className="truck-marker-animated" style={{ width: 44, height: 44 }}>
+                <img src="/crew-car.png" alt="" width={44} height={44} className="block drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]" />
               </div>
             </Marker>
           )}
@@ -75,7 +71,16 @@ interface Crew {
   current_lng: number | null;
 }
 
-export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; crewName?: string }) {
+export default function LiveTrackingMap({
+  crewId,
+  crewName,
+  destination,
+}: {
+  crewId: string;
+  crewName?: string;
+  /** Optional destination for route line / bounds (e.g. move to_address) */
+  destination?: { lat: number; lng: number };
+}) {
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -137,6 +142,7 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
                 ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
                 : null}
               crewName={crewName}
+              destination={destination}
             />
           )}
         </div>
@@ -165,6 +171,7 @@ export default function LiveTrackingMap({ crewId, crewName }: { crewId: string; 
               : null}
             crewName={crewName}
             mapStyle={mapStyle}
+            destination={destination ?? undefined}
           />
         )}
       </div>

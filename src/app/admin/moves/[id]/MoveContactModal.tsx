@@ -114,7 +114,7 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
         </label>
         <div className="flex gap-2 mt-4">
           <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50">
+          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>

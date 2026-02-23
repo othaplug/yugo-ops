@@ -200,7 +200,7 @@ export default function MessagesClient({
           </div>
           <button
             onClick={() => setSlackConnectedLocal(true)}
-            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all shrink-0"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
           >
             Connect
           </button>
@@ -359,7 +359,7 @@ export default function MessagesClient({
                   <button
                     onClick={() => sendReply(openThread!)}
                     disabled={sending || !replyText.trim()}
-                    className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 h-[40px]"
+                    className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 h-[40px]"
                   >
                     {sending ? "Sending…" : "Send"}
                   </button>

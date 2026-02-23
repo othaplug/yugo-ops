@@ -86,7 +86,7 @@ export default function TrackMessageThread({ moveId, token }: { moveId: string; 
                     className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
                       isClient
                         ? "bg-white border border-[#E7E5E4] text-[#1A1A1A]"
-                        : "bg-[#C9A962] text-white"
+                        : "bg-[#C9A962] text-[var(--btn-text-on-accent)]"
                     }`}
                   >
                     <p className="text-[13px] leading-snug whitespace-pre-wrap">{m.content}</p>

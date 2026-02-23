@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
+
+/** Timeline line color by status (delivery or move) — matches current stage */
+function getLineColor(status: string): string {
+  const s = (status || "").toLowerCase();
+  return DELIVERY_STATUS_LINE_COLOR[s] || MOVE_STATUS_LINE_COLOR[s] || "var(--gold)";
+}
 
 /** Status → color class for schedule items (moves, deliveries, projects) */
 function getStatusColor(status: string): string {
@@ -39,7 +46,7 @@ export function ScheduleDeliveryItem({
           </span>
         )}
       </div>
-      <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+      <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
         <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>
@@ -73,7 +80,7 @@ export function ScheduleMoveItem({
         <span className="text-[10px] text-[var(--tx3)]">{leftPrimary}</span>
         {leftSecondary && <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{leftSecondary}</span>}
       </div>
-      <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+      <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
         <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>
@@ -116,7 +123,7 @@ export function ScheduleDeliveryButton({
           </span>
         )}
       </div>
-      <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+      <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
         <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>

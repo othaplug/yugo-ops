@@ -106,6 +106,10 @@ export default function AddressAutocomplete({
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [isScriptReady, setScriptReady] = useState(false);
   const isInternalUpdate = useRef(false);
+  const onChangeRef = useRef(onChange);
+  const onRawChangeRef = useRef(onRawChange);
+  onChangeRef.current = onChange;
+  onRawChangeRef.current = onRawChange;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -147,7 +151,7 @@ export default function AddressAutocomplete({
   const initAutocomplete = useCallback(() => {
     if (!inputRef.current || !window.google?.maps?.places || autocompleteRef.current) return;
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: "ca" },
+      componentRestrictions: { country: ["ca", "us"] } as unknown as { country: string },
       types: ["address"],
       fields: ["address_components", "formatted_address", "geometry"],
     });
@@ -157,19 +161,19 @@ export default function AddressAutocomplete({
       if (result) {
         if (inputRef.current) inputRef.current.value = result.fullAddress;
         isInternalUpdate.current = true;
-        onChange(result);
-        onRawChange?.(result.fullAddress);
+        onChangeRef.current(result);
+        onRawChangeRef.current?.(result.fullAddress);
       }
     });
     autocompleteRef.current = autocomplete;
-  }, [onChange, onRawChange]);
+  }, []);
 
   useEffect(() => {
     if (!isScriptReady) return;
     // Delay init so input is visible (fixes modals where input mounts when popup opens)
     const t = setTimeout(() => {
       initAutocomplete();
-    }, 50);
+    }, 150);
     return () => {
       clearTimeout(t);
       autocompleteRef.current = null;

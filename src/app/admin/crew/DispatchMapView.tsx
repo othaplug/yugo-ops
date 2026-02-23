@@ -26,12 +26,8 @@ const MapboxMap = dynamic(
         >
           {markers.map((m) => (
             <Marker key={m.id} longitude={m.lng} latitude={m.lat} anchor="center">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform animate-pulse"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
-                title={m.name}
-              >
-                {(m.name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}
+              <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={m.name}>
+                <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
               </div>
             </Marker>
           ))}
@@ -151,13 +147,13 @@ export default function DispatchMapView() {
         <div className="flex gap-2">
           <button
             onClick={() => setView("map")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             Map
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             List
           </button>

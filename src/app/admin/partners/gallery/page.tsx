@@ -96,7 +96,7 @@ export default async function GalleryPage() {
           <Link href="/admin/deliveries/new?type=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap">
             Create Project
           </Link>
-          <Link href="/admin/clients/new?type=partner&partnerType=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
+          <Link href="/admin/clients/new?type=partner&partnerType=gallery" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap">
             Add Partner
           </Link>
         </div>

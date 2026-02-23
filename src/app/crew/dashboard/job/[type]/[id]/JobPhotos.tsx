@@ -48,6 +48,9 @@ interface PhotoItem {
 
 const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arrived"];
 
+/** No add-photo before arrival at pickup. Photos only after crew taps "Arrived at Pickup". */
+const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route"];
+
 export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, readOnly = false }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photosAtArrived, setPhotosAtArrived] = useState(0);
@@ -58,6 +61,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   const category = CHECKPOINT_TO_CATEGORY[currentStatus] || "other";
   const prompt = CATEGORY_PROMPTS[category] || "Add photo";
   const showPrompt = ARRIVED_CHECKPOINTS.includes(currentStatus);
+  const canAddPhotos = !NO_PHOTO_STATUSES.includes(currentStatus);
   const requiresPhotosBeforeLoading =
     (jobType === "move" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination")) ||
     (jobType === "delivery" && currentStatus === "arrived");
@@ -117,7 +121,9 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   return (
     <div>
       <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
-      {readOnly ? null : showPrompt ? (
+      {readOnly ? null : !canAddPhotos ? (
+        <p className="text-[11px] text-[var(--tx3)] mb-3">Add photos after arriving at pickup.</p>
+      ) : showPrompt ? (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)]/20 p-4 mb-3">
           <p className="text-[12px] font-semibold text-[var(--tx)] mb-2">{prompt}</p>
           {requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
@@ -158,7 +164,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
             <img src={p.url} alt="" className="w-full h-full object-cover" />
           </a>
         ))}
-        {!readOnly && (
+        {!readOnly && canAddPhotos && (
           <label
             className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-[20px] font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
               uploading ? "opacity-50 pointer-events-none" : ""

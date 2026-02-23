@@ -1,47 +1,42 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const YUGO_GOLD = "#C9A962";
 
-function makeCrewIcon(name: string) {
+/** Crew car icon for map marker (golden hatchback) */
+function makeCrewIcon() {
   return L.divIcon({
-    className: "crew-marker",
-    html: `
-      <div style="
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, ${YUGO_GOLD}, #8B7332);
-        border: 2px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: bold;
-        color: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      ">${(name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}</div>
-    `,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
+    className: "crew-marker truck-marker truck-marker-animated",
+    html: `<div style="position:relative;width:44px;height:44px;"><img src="/crew-car.png" alt="" width="44" height="44" style="display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35));" /></div>`,
+    iconSize: [44, 48],
+    iconAnchor: [22, 44],
   });
 }
+
+const ROUTE_LINE_OPTIONS = { color: "#C9A962", weight: 4, opacity: 0.85 };
 
 function MapController({
   center,
   hasPosition,
+  destination,
 }: {
   center: [number, number];
   hasPosition: boolean;
+  destination?: [number, number];
 }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, hasPosition ? 14 : 10);
-  }, [map, center, hasPosition]);
+    if (hasPosition && destination) {
+      const bounds = L.latLngBounds([center, destination]);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    } else {
+      map.setView(center, hasPosition ? 14 : 10);
+    }
+  }, [map, center, hasPosition, destination]);
   return null;
 }
 
@@ -49,13 +44,17 @@ export function LiveTrackingMapLeaflet({
   center,
   crew,
   crewName,
+  destination,
 }: {
   center: { longitude: number; latitude: number };
   crew: { current_lat: number; current_lng: number; name?: string } | null;
   crewName?: string;
+  destination?: { lat: number; lng: number };
 }) {
   const centerArr: [number, number] = [center.latitude, center.longitude];
   const hasPosition = crew != null;
+  const destArr: [number, number] | undefined =
+    destination ? [destination.lat, destination.lng] : undefined;
 
   return (
     <MapContainer
@@ -65,15 +64,21 @@ export function LiveTrackingMapLeaflet({
       scrollWheelZoom
       className="track-live-map"
     >
-      <MapController center={centerArr} hasPosition={hasPosition} />
+      <MapController center={centerArr} hasPosition={hasPosition} destination={destArr} />
       <TileLayer
         attribution=""
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {hasPosition && crew && destArr && (
+        <Polyline
+          positions={[[crew.current_lat, crew.current_lng], destArr]}
+          pathOptions={ROUTE_LINE_OPTIONS}
+        />
+      )}
       {hasPosition && crew && (
         <Marker
           position={[crew.current_lat, crew.current_lng]}
-          icon={makeCrewIcon(crewName || crew.name || "Crew")}
+          icon={makeCrewIcon()}
         >
           <Popup>{(crewName || crew.name || "Crew").replace("Team ", "")}</Popup>
         </Marker>

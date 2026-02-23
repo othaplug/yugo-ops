@@ -10,6 +10,8 @@ export default async function AdminPage() {
     { data: moves },
     { data: invoices },
     activityResult,
+    { data: eodReports },
+    { data: crews },
   ] = await Promise.all([
     supabase.from("deliveries").select("*").order("scheduled_date", { ascending: true }),
     supabase.from("moves").select("*"),
@@ -26,12 +28,26 @@ export default async function AdminPage() {
         return { data: [] };
       }
     })(),
+    supabase.from("end_of_day_reports").select("team_id, summary, generated_at").eq("report_date", today),
+    supabase.from("crews").select("id, name").order("name"),
   ]);
 
   const allDeliveries = deliveries || [];
   const allMoves = moves || [];
   const allInvoices = invoices || [];
   const activity = activityResult?.data ?? [];
+  const eodSubmitted = new Set((eodReports || []).map((r: { team_id: string }) => r.team_id));
+  const eodSummary = {
+    submitted: (eodReports || []).map((r: { team_id: string; summary?: Record<string, unknown>; generated_at?: string }) => ({
+      teamId: r.team_id,
+      teamName: (crews || []).find((c: { id: string }) => c.id === r.team_id)?.name || "Team",
+      summary: r.summary,
+      generatedAt: r.generated_at,
+    })),
+    pending: (crews || []).filter((c: { id: string }) => !eodSubmitted.has(c.id)).map((c: { id: string; name?: string }) => ({ teamId: c.id, teamName: c.name ?? "Team" })),
+    totalTeams: (crews || []).length,
+    submittedCount: (eodReports || []).length,
+  };
 
   const todayDeliveries = allDeliveries.filter((d) => d.scheduled_date === today);
   const overdueAmount = allInvoices
@@ -103,6 +119,7 @@ export default async function AdminPage() {
       categoryBgs={categoryBgs}
       categoryIcons={categoryIcons}
       activityEvents={activity}
+      eodSummary={eodSummary}
     />
   );
 }

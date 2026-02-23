@@ -21,6 +21,7 @@
   --prdim: rgba(201,169,98,.08);
   --red: #D14343;
   --rdim: rgba(209,67,67,.06);
+  --btn-text-on-accent: #0D0D0D;
   --font-heading: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
   /* Instrument Serif only; serif = generic fallback if font file doesn't load */
   --font-hero: 'Instrument Serif', serif;
@@ -45,6 +46,7 @@
   --ordim: rgba(212,138,41,.12);
   --red: #D14343;
   --rdim: rgba(209,67,67,.12);
+  --btn-text-on-accent: #FFFFFF;
 }
 
 html {
@@ -424,6 +426,15 @@ input[type="time"] {
   0% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0.5); }
   70% { box-shadow: 0 0 0 15px rgba(201, 169, 78, 0); }
   100% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0); }
+}
+
+/* Truck marker - Uber-style animated moving vehicle */
+@keyframes truck-marker-move {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.02); }
+}
+.truck-marker-animated {
+  animation: truck-marker-move 1.5s ease-in-out infinite;
 }
 
 /* Leaflet zoom controls – dark theme */

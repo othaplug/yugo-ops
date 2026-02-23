@@ -38,14 +38,8 @@ const MapboxMap = dynamic(
           >
             {crews.map((c) => (
               <Marker key={c.id} longitude={c.current_lng} latitude={c.current_lat} anchor="center">
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform"
-                  style={{
-                    background: "linear-gradient(135deg, #C9A962, #8B7332)",
-                  }}
-                  title={c.name}
-                >
-                  {(c.name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}
+                <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={c.name}>
+                  <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
                 </div>
               </Marker>
             ))}
@@ -260,7 +254,7 @@ function CrewListAndModal({
                             <div className="flex flex-col items-center flex-1 min-w-0">
                               <div
                                 className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-colors ${
-                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-white" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
+                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
                                 }`}
                               >
                                 {isPast ? "✓" : i + 1}

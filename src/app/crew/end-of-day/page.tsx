@@ -87,7 +87,7 @@ export default function CrewEndOfDayPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? "Submitting…" : "Submit & End Day"}
         </button>

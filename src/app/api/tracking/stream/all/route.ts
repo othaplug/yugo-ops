@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getPlatformToggles } from "@/lib/platform-settings";
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
 /** GET SSE stream for all active sessions. Staff only; requires crew tracking enabled. */
 export async function GET(req: NextRequest) {
@@ -49,7 +49,9 @@ export async function GET(req: NextRequest) {
           const moveMap = new Map((moves || []).map((m) => [m.id, m]));
           const deliveryMap = new Map((deliveries || []).map((d) => [d.id, d]));
 
-          const sessionsWithDetails = (sessions || []).map((s) => {
+          const completedStatuses = ["completed", "delivered", "done"];
+          const activeOnly = (sessions || []).filter((s) => !completedStatuses.includes((s.status || "").toLowerCase()));
+          const sessionsWithDetails = activeOnly.map((s) => {
             const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
             const jobName = job ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`) : "—";
             const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;

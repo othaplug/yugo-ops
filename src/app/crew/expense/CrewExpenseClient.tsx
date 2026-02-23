@@ -149,7 +149,7 @@ export default function CrewExpenseClient() {
                 type="button"
                 onClick={() => setCategory(c.id)}
                 className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors ${
-                  category === c.id ? "bg-[var(--gold)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"
+                  category === c.id ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"
                 }`}
               >
                 {c.label}
@@ -222,7 +222,7 @@ export default function CrewExpenseClient() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? "Submitting…" : "Submit Expense"}
         </button>

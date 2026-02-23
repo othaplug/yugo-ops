@@ -198,7 +198,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
               </div>
             </div>
-            <button type="button" onClick={() => openEdit(projectDetail)} className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)]">
+            <button type="button" onClick={() => openEdit(projectDetail)} className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
               Edit project
             </button>
           </div>

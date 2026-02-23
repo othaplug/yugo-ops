@@ -141,7 +141,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                 <button
                   type="submit"
                   disabled={verifying || code.length !== 6}
-                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
                 >
                   {verifying ? "Verifying…" : "Verify"}
                 </button>

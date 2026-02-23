@@ -145,7 +145,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
         </div>
         <button
           onClick={() => setInviteOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
         >
           + Invite Portal User
         </button>
@@ -231,7 +231,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
               <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50">
+              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 {resetLoading ? "Sending…" : "Set password & send email"}
               </button>
             </div>
@@ -286,7 +286,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
             <button type="button" onClick={() => setInviteOpen(false)} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
               Cancel
             </button>
-            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50">
+            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
               {inviteLoading ? "Sending…" : "Send Invitation"}
             </button>
           </div>

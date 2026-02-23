@@ -69,9 +69,10 @@ export async function GET(req: NextRequest) {
     const session = sessionByTeam.get(c.id);
     const loc = session?.last_location as { lat?: number; lng?: number } | null;
     const hasSessionPos = loc?.lat != null && loc?.lng != null;
-    const hasCrewPos = c.current_lat != null && c.current_lng != null;
-    const lat = hasCrewPos ? c.current_lat : hasSessionPos ? loc!.lat! : null;
-    const lng = hasCrewPos ? c.current_lng : hasSessionPos ? loc!.lng! : null;
+    // Only show crew on map when they have an active job and are sharing location (session position).
+    // Do not use crew.current_lat/lng from DB — that can be stale from a previous job.
+    const lat = hasSessionPos ? loc!.lat! : null;
+    const lng = hasSessionPos ? loc!.lng! : null;
 
     const pendingDeliveries = (deliveryByCrew.get(c.id) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
     const pendingMoves = (moveByCrew.get(c.id) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
@@ -99,25 +100,28 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const activeSessions = (sessions || []).map((s) => {
-    const job = s.job_type === "move"
-      ? (moves || []).find((m) => m.id === s.job_id)
-      : (deliveries || []).find((d) => d.id === s.job_id);
-    const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
-    const crew = crews?.find((c) => c.id === s.team_id);
-    const loc = s.last_location as { lat?: number; lng?: number } | null;
-    return {
-      id: s.id,
-      jobId,
-      jobType: s.job_type,
-      status: s.status,
-      teamName: crew?.name || "Crew",
-      teamId: s.team_id,
-      lastLocation: loc,
-      updatedAt: s.updated_at,
-      detailHref: s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`,
-    };
-  });
+  const completedStatuses = ["completed", "delivered", "done"];
+  const activeSessions = (sessions || [])
+    .filter((s) => !completedStatuses.includes((s.status || "").toLowerCase()))
+    .map((s) => {
+      const job = s.job_type === "move"
+        ? (moves || []).find((m) => m.id === s.job_id)
+        : (deliveries || []).find((d) => d.id === s.job_id);
+      const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
+      const crew = crews?.find((c) => c.id === s.team_id);
+      const loc = s.last_location as { lat?: number; lng?: number } | null;
+      return {
+        id: s.id,
+        jobId,
+        jobType: s.job_type,
+        status: s.status,
+        teamName: crew?.name || "Crew",
+        teamId: s.team_id,
+        lastLocation: loc,
+        updatedAt: s.updated_at,
+        detailHref: s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`,
+      };
+    });
 
   return NextResponse.json(
     { crews: crewsOut, activeSessions },

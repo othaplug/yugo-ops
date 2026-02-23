@@ -116,7 +116,7 @@ export default function AllProjectsView({
         <BackButton label="Back" />
         <Link
           href={mainTab === "move" ? "/admin/moves/new" : "/admin/deliveries/new"}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all duration-200"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-200"
         >
           {mainTab === "move" ? "+ New Move" : "+ New Project"}
         </Link>
@@ -148,7 +148,7 @@ export default function AllProjectsView({
               key={t.key}
               onClick={() => setPartnerType(t.key)}
               className={`px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors
-                ${partnerType === t.key ? "bg-[var(--gold)] text-white" : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50"}`}
+                ${partnerType === t.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50"}`}
             >
               {t.label}
             </button>
@@ -168,7 +168,7 @@ export default function AllProjectsView({
           </svg>
           Filters
           {activeFilterCount > 0 && (
-            <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">
               {activeFilterCount}
             </span>
           )}

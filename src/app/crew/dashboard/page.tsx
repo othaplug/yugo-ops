@@ -170,20 +170,11 @@ export default function CrewDashboardPage() {
                       <div className="text-[10px] text-[var(--tx3)]">{job.jobTypeLabel}</div>
                     </div>
 
-                    {completed ? (
-                      <div className="mt-3 ml-8 flex gap-2">
-                        <Link
-                          href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="flex-1 flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--tx)] border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/50 transition-colors"
-                        >
-                          View Job
-                        </Link>
-                      </div>
-                    ) : canStart ? (
+                    {completed ? null : canStart ? (
                       <div className="mt-3 ml-8">
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
+                          className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
                         >
                           START JOB
                         </Link>
@@ -202,7 +193,7 @@ export default function CrewDashboardPage() {
 
         <Link
           href="/crew/end-of-day"
-          className="mt-4 flex items-center justify-center py-3.5 rounded-xl font-semibold text-[13px] text-white bg-[var(--gold)] hover:bg-[#D4B56C] transition-colors"
+          className="mt-4 flex items-center justify-center py-3.5 rounded-xl font-semibold text-[13px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] transition-colors"
         >
           End Day
         </Link>

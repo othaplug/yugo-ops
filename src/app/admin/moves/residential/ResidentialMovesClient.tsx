@@ -170,7 +170,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               </svg>
               Filter
               {activeFilterCount > 0 && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -196,7 +196,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               )}
             </div>
           </div>
-          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
+          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
             + New Move
           </Link>
         </div>

@@ -9,7 +9,7 @@ export default function NotFound() {
         <div className="flex flex-wrap justify-center gap-2">
           <Link
             href="/admin"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
           >
             ← Command Center
           </Link>

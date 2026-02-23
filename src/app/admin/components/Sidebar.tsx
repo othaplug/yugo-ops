@@ -8,6 +8,7 @@ const NAV = [
   { label: "Dashboard", items: [
     { name: "Command Center", icon: "target", href: "/admin" },
     { name: "All Projects", icon: "projects", href: "/admin/deliveries" },
+    { name: "Reports", icon: "fileText", href: "/admin/reports" },
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},

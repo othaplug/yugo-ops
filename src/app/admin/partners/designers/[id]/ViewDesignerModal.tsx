@@ -54,7 +54,7 @@ export default function ViewDesignerModal({ open, onClose, designer }: ViewDesig
         <div className="px-5 py-4 border-t border-[var(--brd)]">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+            className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
           >
             Close
           </button>

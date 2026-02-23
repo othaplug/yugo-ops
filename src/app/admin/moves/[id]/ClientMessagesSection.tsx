@@ -126,7 +126,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
           <button
             type="submit"
             disabled={sending || !reply.trim()}
-            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? "Sending…" : "Send"}
           </button>

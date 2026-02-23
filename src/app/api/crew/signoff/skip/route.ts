@@ -46,5 +46,31 @@ export async function POST(req: NextRequest) {
     });
   } catch {}
 
+  // Complete the job when sign-off is skipped
+  const { data: activeSession } = await admin
+    .from("tracking_sessions")
+    .select("id")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (activeSession) {
+    const now = new Date().toISOString();
+    await admin
+      .from("tracking_sessions")
+      .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
+      .eq("id", activeSession.id);
+    const table = jobType === "move" ? "moves" : "deliveries";
+    await admin
+      .from(table)
+      .update({
+        status: jobType === "move" ? "completed" : "delivered",
+        stage: "completed",
+        updated_at: now,
+      })
+      .eq("id", entityId);
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MOVE_STATUS_FLOW,
   DELIVERY_STATUS_FLOW,
@@ -33,6 +34,9 @@ interface JobDetail {
   toAddress: string;
   fromAccess?: string | null;
   toAccess?: string | null;
+  accessNotes?: string | null;
+  arrivalWindow?: string | null;
+  scheduledDate?: string | null;
   access: string | null;
   crewMembers?: CrewMember[];
   jobTypeLabel: string;
@@ -64,6 +68,7 @@ export default function CrewJobPage({
 }: {
   params: Promise<{ type: string; id: string }>;
 }) {
+  const router = useRouter();
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
   const [job, setJob] = useState<JobDetail | null>(null);
@@ -72,7 +77,6 @@ export default function CrewJobPage({
   const [error, setError] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [note, setNote] = useState("");
-  const [confirmComplete, setConfirmComplete] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<"off" | "on" | "unavailable">("off");
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState("damage");
@@ -166,7 +170,7 @@ export default function CrewJobPage({
   const advanceStatus = async () => {
     if (!session || !nextStatus) return;
     if (nextStatus === "completed") {
-      setConfirmComplete(true);
+      router.push(`/crew/dashboard/job/${jobType}/${id}/signoff`);
       return;
     }
     if ("geolocation" in navigator) {
@@ -183,7 +187,6 @@ export default function CrewJobPage({
   const doAdvance = async (status: string, lat?: number, lng?: number) => {
     if (!session) return;
     setAdvancing(true);
-    setConfirmComplete(false);
     try {
       const r = await fetch("/api/tracking/checkpoint", {
         method: "POST",
@@ -364,7 +367,7 @@ export default function CrewJobPage({
               <button
                 onClick={startJob}
                 disabled={advancing}
-                className="w-full py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
               >
                 {advancing ? "Starting…" : "START JOB"}
               </button>
@@ -383,15 +386,15 @@ export default function CrewJobPage({
                 <button
                   onClick={advanceStatus}
                   disabled={advancing || blockedByPhotos}
-                  className="w-full mt-3 py-4 rounded-xl font-semibold text-[15px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="w-full mt-3 py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
-                  {advancing ? "Updating…" : blockedByPhotos ? "Take photo to continue" : `${getStatusLabel(nextStatus!)}`}
+                  {advancing ? "Updating…" : blockedByPhotos ? "Take photo to continue" : nextStatus === "completed" ? "Complete & Get Client Sign-Off" : getStatusLabel(nextStatus!)}
                 </button>
               </>
             )}
             {isCompleted && (
               <div className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--grn)] text-center bg-[rgba(45,159,90,0.15)]">
-                View Job
+                Job complete
               </div>
             )}
           </div>
@@ -429,7 +432,7 @@ export default function CrewJobPage({
                           isPast
                             ? "bg-[var(--grn)] text-white group-hover:scale-110"
                               : isCurrent
-                              ? "bg-[var(--gold)] text-white scale-110 ring-2 ring-[var(--gold)]/40 group-hover:ring-[var(--gold)]/60"
+                              ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] scale-110 ring-2 ring-[var(--gold)]/40 group-hover:ring-[var(--gold)]/60"
                               : "bg-[var(--brd)]/80 text-[var(--tx3)] group-hover:bg-[var(--brd)]"
                         }`}
                       >
@@ -495,7 +498,7 @@ export default function CrewJobPage({
           {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-[14px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] transition-colors"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-[14px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] transition-colors"
             >
               Client Sign-Off
             </Link>
@@ -505,6 +508,18 @@ export default function CrewJobPage({
 
       {activeTab === "details" && (
         <div className="mt-4 space-y-4">
+          {(job.scheduledDate || job.arrivalWindow) && (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+              <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Schedule</h3>
+              {job.scheduledDate && (
+                <p className="text-[14px] font-semibold text-[var(--tx)]">
+                  {new Date(job.scheduledDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              )}
+              {job.arrivalWindow && <p className="text-[12px] text-[var(--tx3)] mt-1">Window: {job.arrivalWindow}</p>}
+              {job.scheduledTime && <p className="text-[12px] text-[var(--tx3)] mt-0.5">Time: {job.scheduledTime}</p>}
+            </div>
+          )}
           <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
             <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Pickup</h3>
             <p className="text-[14px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
@@ -515,6 +530,12 @@ export default function CrewJobPage({
             <p className="text-[14px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
             {job.toAccess && <p className="text-[12px] text-[var(--tx3)] mt-1">Access: {job.toAccess}</p>}
           </div>
+          {job.accessNotes && (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+              <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Access notes</h3>
+              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap">{job.accessNotes}</p>
+            </div>
+          )}
           {job.crewMembers && job.crewMembers.length > 0 && (
             <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
               <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Crew ({job.crewMembers.length})</h3>
@@ -578,7 +599,7 @@ export default function CrewJobPage({
                 <p className="text-[13px] text-[var(--grn)] mb-4">Issue reported. Dispatch will be notified.</p>
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
-                  className="w-full py-2.5 rounded-lg bg-[var(--gold)] text-white font-semibold hover:bg-[var(--gold2)]"
+                  className="w-full py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold hover:bg-[var(--gold2)]"
                 >
                   Done
                 </button>
@@ -638,7 +659,7 @@ export default function CrewJobPage({
                       }
                     }}
                     disabled={reportSubmitting}
-                    className="flex-1 py-2.5 rounded-lg bg-[#D48A29] text-white font-semibold disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-lg bg-[#D48A29] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50"
                   >
                     {reportSubmitting ? "Sending…" : "Submit"}
                   </button>
@@ -649,42 +670,6 @@ export default function CrewJobPage({
         </div>
       )}
 
-      {confirmComplete && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full text-center">
-            <div className="w-12 h-12 rounded-full bg-[var(--grn)]/20 flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
-            </div>
-            <h3 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-2">Complete this job?</h3>
-            <p className="text-[13px] text-[var(--tx3)] mb-4">This cannot be undone.</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                      (p) => doAdvance("completed", p.coords.latitude, p.coords.longitude),
-                      () => doAdvance("completed"),
-                      { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
-                    );
-                  } else {
-                    doAdvance("completed");
-                  }
-                }}
-                disabled={advancing}
-                className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white bg-[var(--grn)] hover:bg-[var(--grn)]/90 disabled:opacity-50"
-              >
-                Yes, Mark Complete
-              </button>
-              <button
-                onClick={() => setConfirmComplete(false)}
-                className="w-full py-2.5 rounded-lg text-[13px] font-medium border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--card)]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </PageContent>
   );
 }

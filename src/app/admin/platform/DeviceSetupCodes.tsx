@@ -46,6 +46,7 @@ export default function DeviceSetupCodes() {
   const [editTruckName, setEditTruckName] = useState("");
   const [savingTruck, setSavingTruck] = useState(false);
   const [deletingTruckId, setDeletingTruckId] = useState<string | null>(null);
+  const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
 
   const fetchData = () => {
     setLoading(true);
@@ -182,6 +183,24 @@ export default function DeviceSetupCodes() {
   const truckMap = new Map(trucks.map((t) => [t.id, t.name]));
   const teamMap = new Map(teams.map((t) => [t.id, t.name]));
 
+  const handleDeleteCode = async (codeId: string) => {
+    setDeletingCodeId(codeId);
+    try {
+      const res = await fetch(`/api/admin/device-setup-codes/${codeId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast(d.error || "Failed to delete", "x");
+        return;
+      }
+      toast("Code deleted", "check");
+      fetchData();
+    } catch {
+      toast("Failed to delete", "x");
+    } finally {
+      setDeletingCodeId(null);
+    }
+  };
+
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -220,7 +239,7 @@ export default function DeviceSetupCodes() {
             )}
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               + Create Setup Code
             </button>
@@ -238,7 +257,7 @@ export default function DeviceSetupCodes() {
               </p>
               <button
                 onClick={() => setCreateModalOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
               >
                 Create your first code
               </button>
@@ -280,6 +299,14 @@ export default function DeviceSetupCodes() {
                     <span className="text-[9px] text-[var(--tx3)]">
                       {c.used_at ? `Used ${formatDate(c.used_at)}` : `Expires ${formatDate(c.expires_at)}`}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCode(c.id)}
+                      disabled={deletingCodeId === c.id}
+                      className="text-[10px] font-semibold text-[var(--red)] hover:underline disabled:opacity-50"
+                    >
+                      {deletingCodeId === c.id ? "…" : "Delete"}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -361,7 +388,7 @@ export default function DeviceSetupCodes() {
               <button
                 type="submit"
                 disabled={savingTruck || !editTruckName.trim()}
-                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
               >
                 {savingTruck ? "Saving…" : "Save"}
               </button>
@@ -450,7 +477,7 @@ export default function DeviceSetupCodes() {
             <button
               type="submit"
               disabled={creating || (!formTruckId && !formTeamId)}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
             >
               {creating ? "Creating…" : "Create Code"}
             </button>
@@ -487,7 +514,7 @@ export default function DeviceSetupCodes() {
             <button
               type="submit"
               disabled={addTruckSaving || !newTruckName.trim()}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
             >
               {addTruckSaving ? "Adding…" : "Add Truck"}
             </button>
@@ -509,7 +536,7 @@ export default function DeviceSetupCodes() {
               <code className="text-[24px] font-bold text-[var(--gold)] tracking-[4px]">{createdCode.code}</code>
               <button
                 onClick={() => copyCode(createdCode.code)}
-                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
+                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
               >
                 Copy Code
               </button>

@@ -13,11 +13,23 @@ type InventoryItem = {
   sort_order: number;
 };
 
+type ExtraItem = {
+  id: string;
+  description?: string | null;
+  room?: string | null;
+  quantity?: number;
+  added_at?: string;
+  status: string;
+  requested_by: string;
+};
+
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Other"];
 
 export default function MoveInventorySection({ moveId }: { moveId: string }) {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [extraLoading, setExtraLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [newRoom, setNewRoom] = useState("");
   const [newItemName, setNewItemName] = useState("");
@@ -28,8 +40,49 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
   const [editBox, setEditBox] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [extraActioning, setExtraActioning] = useState<string | null>(null);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  const handleExtraApprove = async (itemId: string) => {
+    setExtraActioning(itemId);
+    try {
+      const r = await fetch(`/api/admin/moves/${moveId}/extra-items/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      });
+      const data = await r.json();
+      if (!r.ok || data.error) {
+        toast(data.error || "Failed to approve", "x");
+        return;
+      }
+      toast("Extra item approved", "check");
+      fetchExtraItems();
+    } finally {
+      setExtraActioning(null);
+    }
+  };
+
+  const handleExtraReject = async (itemId: string) => {
+    setExtraActioning(itemId);
+    try {
+      const r = await fetch(`/api/admin/moves/${moveId}/extra-items/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "rejected" }),
+      });
+      const data = await r.json();
+      if (!r.ok || data.error) {
+        toast(data.error || "Failed to reject", "x");
+        return;
+      }
+      toast("Extra item rejected", "check");
+      fetchExtraItems();
+    } finally {
+      setExtraActioning(null);
+    }
+  };
 
   const fetchItems = () => {
     fetch(`/api/admin/moves/${moveId}/inventory`)
@@ -39,8 +92,21 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
       .finally(() => setLoading(false));
   };
 
+  const fetchExtraItems = () => {
+    fetch(`/api/admin/moves/${moveId}/extra-items`)
+      .then((r) => r.json())
+      .then((data) => setExtraItems(data.items ?? []))
+      .catch(() => setExtraItems([]))
+      .finally(() => setExtraLoading(false));
+  };
+
   useEffect(() => {
     fetchItems();
+  }, [moveId]);
+
+  useEffect(() => {
+    setExtraLoading(true);
+    fetchExtraItems();
   }, [moveId]);
 
   /** Parse bulk text: "Couch x2" -> "Couch x2", "Coffee Table" -> "Coffee Table" */
@@ -264,19 +330,75 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
             </div>
           )}
 
+          {/* Pending extra items (crew/client requests) */}
+          {!extraLoading && extraItems.length > 0 && (
+            <div className="mb-4 pt-4 border-t border-[var(--brd)]/40">
+              <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Extra items</h4>
+              <ul className="space-y-2">
+                {extraItems.map((e) => {
+                  const pending = e.status === "pending";
+                  const desc = `${e.description ?? "—"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`;
+                  const by = e.requested_by === "client" ? "Client" : "Crew";
+                  return (
+                    <li
+                      key={e.id}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-[11px] ${
+                        pending ? "bg-amber-500/10 border-amber-500/30" : "bg-[var(--bg)]/50 border-[var(--brd)]/30"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium text-[var(--tx)]">{desc}</span>
+                        {(e.room || by) && (
+                          <span className="ml-2 text-[10px] text-[var(--tx3)]">
+                            {e.room ? `${e.room} · ` : ""}{by}
+                          </span>
+                        )}
+                        {!pending && (
+                          <span className={`ml-2 text-[10px] font-medium ${e.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+                            {e.status}
+                          </span>
+                        )}
+                      </div>
+                      {pending && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleExtraApprove(e.id)}
+                            disabled={extraActioning === e.id}
+                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--grn)] text-white hover:opacity-90 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExtraReject(e.id)}
+                            disabled={extraActioning === e.id}
+                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           <div className="space-y-3 pt-1 border-t border-[var(--brd)]/40">
             <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg)]/50 w-fit">
               <button
                 type="button"
                 onClick={() => setBulkMode(false)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-white shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Single
               </button>
               <button
                 type="button"
                 onClick={() => setBulkMode(true)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-white shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Bulk add
               </button>
@@ -310,7 +432,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleBulkAdd}
                   disabled={adding || !bulkText.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add all
                 </button>
@@ -356,7 +478,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleAdd}
                   disabled={adding || !newItemName.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add
                 </button>

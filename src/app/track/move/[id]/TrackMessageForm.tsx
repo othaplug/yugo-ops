@@ -57,7 +57,7 @@ export default function TrackMessageForm({
         <button
           type="submit"
           disabled={sending || !message.trim()}
-          className="rounded-lg px-5 py-2.5 text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg px-5 py-2.5 text-[12px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {sending ? "Sending…" : "Send"}
         </button>

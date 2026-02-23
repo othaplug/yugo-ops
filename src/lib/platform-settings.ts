@@ -31,3 +31,30 @@ export async function getPlatformToggles(): Promise<PlatformToggles> {
   } catch (_) {}
   return DEFAULTS;
 }
+
+const DEFAULT_READINESS_ITEMS = [
+  { label: "Truck in good condition" },
+  { label: "Equipment & supplies ready" },
+  { label: "Dolly, straps, blankets" },
+  { label: "First aid kit accessible" },
+  { label: "Fuel level adequate" },
+];
+
+/** Server-side: read readiness checklist items from platform_settings. */
+export async function getReadinessItems(): Promise<{ label: string }[]> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("platform_settings")
+      .select("readiness_items")
+      .eq("id", "default")
+      .maybeSingle();
+    const items = (data as { readiness_items?: unknown })?.readiness_items;
+    if (Array.isArray(items) && items.length > 0) {
+      return items
+        .filter((i): i is { label: string } => i && typeof i === "object" && typeof (i as { label?: unknown }).label === "string")
+        .map((i) => ({ label: (i as { label: string }).label }));
+    }
+  } catch (_) {}
+  return DEFAULT_READINESS_ITEMS;
+}

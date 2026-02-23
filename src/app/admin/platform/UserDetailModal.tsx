@@ -189,7 +189,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               </select>
             )}
           </div>
-          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] disabled:opacity-50">
+          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>

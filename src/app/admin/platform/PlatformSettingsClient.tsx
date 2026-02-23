@@ -39,6 +39,121 @@ function formatLastActive(iso: string): string {
 
 const RATES_KEY = "yugo-platform-rates";
 
+function ReadinessChecklistSection() {
+  const { toast } = useToast();
+  const [items, setItems] = useState<{ label: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/platform-settings/readiness")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.items)) setItems(d.items);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (items.length === 0) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/platform-settings/readiness", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Failed to save", "x");
+        return;
+      }
+      setItems(data.items || items);
+      toast("Readiness checklist updated", "check");
+    } catch {
+      toast("Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addItem = () => {
+    const label = newLabel.trim();
+    if (!label) return;
+    setItems((prev) => [...prev, { label }]);
+    setNewLabel("");
+  };
+
+  const removeItem = (idx: number) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateItem = (idx: number, label: string) => {
+    setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, label } : x)));
+  };
+
+  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading…</p></div>;
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="clipboard" className="w-[16px] h-[16px]" /> Readiness Checklist
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Configure items for crew pre-trip readiness check</p>
+      </div>
+      <div className="px-5 py-5 space-y-4">
+        <div className="space-y-2">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={item.label}
+                onChange={(e) => updateItem(i, e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)]"
+              />
+              <button
+                type="button"
+                onClick={() => removeItem(i)}
+                className="p-2 rounded-lg text-[var(--red)] hover:bg-[var(--rdim)]"
+                aria-label="Remove"
+              >
+                <Icon name="x" className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())}
+            placeholder="Add new item..."
+            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+          />
+          <button
+            type="button"
+            onClick={addItem}
+            disabled={!newLabel.trim()}
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || items.length === 0}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save checklist"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface Team {
   id: string;
   label: string;
@@ -262,7 +377,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             href={`/admin/platform?tab=${t.id}`}
             className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all ${
               activeTab === t.id
-                ? "bg-[var(--gold)] text-white"
+                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
             }`}
           >
@@ -326,7 +441,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               }
             }}
             disabled={ratesSaving}
-            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {ratesSaving ? "Saving…" : "Save Rates"}
           </button>
@@ -345,7 +460,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             <div className="flex flex-nowrap items-center gap-2">
               <button
                 onClick={() => setAddTeamModalOpen(true)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
               >
                 + Add Team
               </button>
@@ -517,7 +632,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
             <button
               onClick={() => setAddPortalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               + Add portal access
             </button>
@@ -672,6 +787,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         </div>
       </div>
 
+      {/* Readiness Checklist - configurable items for crew pre-trip check */}
+      <ReadinessChecklistSection />
+
       {/* Danger Zone - in App Settings */}
       <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--red)]/10 bg-[rgba(209,67,67,0.04)]">
@@ -707,7 +825,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           </div>
           <Link
             href="/admin/partners/retail"
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all inline-block"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all inline-block"
           >
             Manage Partners →
           </Link>
@@ -750,7 +868,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </Link>
             <button
               onClick={() => setInviteUserOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all shrink-0"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
             >
               + Invite Team Member
             </button>
@@ -768,7 +886,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
               >
                 Invite your first user
               </button>
@@ -838,7 +956,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <button
             onClick={addTeam}
             disabled={!addTeamName.trim()}
-            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Team
           </button>
@@ -1010,7 +1128,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <button
                 type="submit"
                 disabled={resetPinValue.length !== 6 || resetPinSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {resetPinSaving ? "Saving…" : "Set new PIN"}
               </button>

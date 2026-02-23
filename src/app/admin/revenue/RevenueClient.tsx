@@ -204,7 +204,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
                 key={opt.key}
                 onClick={() => setPeriod(opt.key)}
                 className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 ${
-                  period === opt.key ? "bg-[var(--gold)] text-white shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                  period === opt.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
                 }`}
               >
                 {opt.label}

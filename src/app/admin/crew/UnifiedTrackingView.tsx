@@ -39,15 +39,9 @@ const MapboxMap = dynamic(
             mapStyle="mapbox://styles/mapbox/dark-v11"
           >
             {crews.map((c) => (
-              <Marker key={c.id} longitude={c.current_lng} latitude={c.current_lat} anchor="center">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform"
-                  style={{
-                    background: "linear-gradient(135deg, #C9A962, #8B7332)",
-                  }}
-                  title={c.name}
-                >
-                  {(c.name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}
+              <Marker key={c.id} longitude={c.current_lng} latitude={c.current_lat} anchor="bottom">
+                <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={c.name}>
+                  <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
                 </div>
               </Marker>
             ))}
@@ -84,6 +78,16 @@ interface Delivery {
   status: string;
   delivery_address?: string;
   pickup_address?: string;
+}
+
+interface Move {
+  id: string;
+  move_code?: string;
+  crew_id: string;
+  scheduled_date?: string;
+  status: string;
+  from_address?: string;
+  to_address?: string;
 }
 
 interface Session {
@@ -131,9 +135,13 @@ function formatRelative(iso: string): string {
 export default function UnifiedTrackingView({
   initialCrews,
   initialDeliveries,
+  todayMoves = [],
+  todayDeliveries = [],
 }: {
   initialCrews: Crew[];
   initialDeliveries: Delivery[];
+  todayMoves?: Move[];
+  todayDeliveries?: Delivery[];
 }) {
   const [crews, setCrews] = useState<Crew[]>(initialCrews);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
@@ -156,7 +164,7 @@ export default function UnifiedTrackingView({
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 10000);
+    const id = setInterval(load, 3000);
     return () => clearInterval(id);
   }, []);
 
@@ -349,19 +357,53 @@ export default function UnifiedTrackingView({
         maxWidth="md"
       >
         {selectedCrew && (
-          <CrewDetailModal crew={selectedCrew} deliveries={initialDeliveries} />
+          <CrewDetailModal
+            crew={selectedCrew}
+            deliveries={initialDeliveries}
+            todayMoves={todayMoves}
+            todayDeliveries={todayDeliveries}
+          />
         )}
       </ModalOverlay>
     </div>
   );
 }
 
-function CrewDetailModal({ crew, deliveries }: { crew: Crew; deliveries: Delivery[] }) {
+function CrewDetailModal({
+  crew,
+  deliveries,
+  todayMoves = [],
+  todayDeliveries = [],
+}: {
+  crew: Crew;
+  deliveries: Delivery[];
+  todayMoves?: Move[];
+  todayDeliveries?: Delivery[];
+}) {
   const isEnRoute = crew.status === "en-route";
   const crewDeliveries = deliveries.filter((d) => d.crew_id === crew.id);
   const pendingDeliveries = crewDeliveries.filter((d) => !["delivered", "cancelled"].includes(d.status));
   const activeProject = pendingDeliveries[0];
   const nextProject = pendingDeliveries[1];
+
+  const crewTodayMoves = todayMoves.filter((m) => m.crew_id === crew.id);
+  const crewTodayDeliveries = todayDeliveries.filter((d) => d.crew_id === crew.id);
+  const todayJobs = [
+    ...crewTodayMoves.map((m) => ({
+      id: m.id,
+      label: m.move_code || `#${m.id.slice(0, 8)}`,
+      type: "move" as const,
+      address: m.to_address || m.from_address || "—",
+      status: m.status,
+    })),
+    ...crewTodayDeliveries.map((d) => ({
+      id: d.id,
+      label: d.delivery_number || `#${d.id.slice(0, 8)}`,
+      type: "delivery" as const,
+      address: d.delivery_address || d.pickup_address || "—",
+      status: d.status,
+    })),
+  ].sort((a, b) => (a.label < b.label ? -1 : 1));
 
   return (
     <div className="p-5 space-y-5">
@@ -380,6 +422,24 @@ function CrewDetailModal({ crew, deliveries }: { crew: Crew; deliveries: Deliver
           <span className="text-[10px] text-[var(--tx3)]">Updated {formatDate(crew.updated_at)}</span>
         )}
       </div>
+
+      {todayJobs.length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Today&apos;s jobs ({todayJobs.length})</div>
+          <div className="space-y-2">
+            {todayJobs.map((j) => (
+              <Link
+                key={j.id}
+                href={j.type === "move" ? `/admin/moves/${j.label}` : `/admin/deliveries/${j.label}`}
+                className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-colors"
+              >
+                <div className="text-[12px] font-semibold text-[var(--tx)]">{j.label}</div>
+                <div className="text-[11px] text-[var(--tx2)] truncate mt-0.5">{j.address}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {activeProject && (
         <div>

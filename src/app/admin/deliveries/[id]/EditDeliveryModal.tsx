@@ -174,7 +174,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
           <Field label="Instructions">
             <textarea name="instructions" rows={2} defaultValue={delivery.instructions} className="field-input resize-y" />
           </Field>
-          <button type="submit" disabled={loading} className="w-full px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white disabled:opacity-50">
+          <button type="submit" disabled={loading} className="w-full px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
             {loading ? "Saving..." : "Save Changes"}
           </button>
       </form>

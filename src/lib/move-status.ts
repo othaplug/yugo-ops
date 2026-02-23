@@ -90,6 +90,31 @@ export const MOVE_STATUS_COLORS_ADMIN: Record<string, string> = {
   "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
 };
 
+/** Timeline/line color by move status (CSS var or hex for the vertical line next to time) */
+export const MOVE_STATUS_LINE_COLOR: Record<string, string> = {
+  confirmed: "var(--grn)",
+  scheduled: "#3B82F6",
+  paid: "var(--grn)",
+  final_payment_received: "var(--grn)",
+  in_progress: "var(--org)",
+  completed: "var(--grn)",
+  cancelled: "var(--red)",
+  delivered: "var(--grn)",
+  pending: "var(--gold)",
+  "in-transit": "var(--gold)",
+};
+
+/** Timeline/line color by delivery status */
+export const DELIVERY_STATUS_LINE_COLOR: Record<string, string> = {
+  pending: "var(--gold)",
+  scheduled: "#3B82F6",
+  confirmed: "#3B82F6",
+  dispatched: "var(--org)",
+  "in-transit": "var(--org)",
+  delivered: "var(--grn)",
+  cancelled: "var(--red)",
+};
+
 /** Map status to display label. Never show underscores or raw enum in UI. */
 export function getStatusLabel(status: string | null): string {
   if (!status) return "—";

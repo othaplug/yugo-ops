@@ -10,6 +10,7 @@ import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
 import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
   MOVE_STATUS_OPTIONS,
   MOVE_STATUS_INDEX,
@@ -69,6 +70,7 @@ export default function TrackMoveClient({
   const [changeModalOpen, setChangeModalOpen] = useState(false);
   const [changeType, setChangeType] = useState(CHANGE_TYPES[0]);
   const [changeDesc, setChangeDesc] = useState("");
+  const [changeAddress, setChangeAddress] = useState("");
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
@@ -149,6 +151,12 @@ export default function TrackMoveClient({
   const isCancelled = statusVal === "cancelled";
   const isCompleted = statusVal === "completed" || statusVal === "delivered";
   const isInProgress = statusVal === "in_progress";
+
+  // When job completes, switch away from Live Tracking tab if it was selected
+  useEffect(() => {
+    if (isCompleted && activeTab === "track") setActiveTab("dash");
+  }, [isCompleted, activeTab]);
+
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const [liveScheduledDate, setLiveScheduledDate] = useState<string | null>(move.scheduled_date || null);
   const [liveArrivalWindow, setLiveArrivalWindow] = useState<string | null>(move.arrival_window || null);
@@ -163,7 +171,12 @@ export default function TrackMoveClient({
   const crewRoles = ["Lead", "Specialist", "Specialist", "Driver"];
 
   const handleSubmitChange = async () => {
-    if (!changeDesc.trim()) return;
+    const isAddressChange = changeType === "Change destination address";
+    if (isAddressChange && !changeAddress.trim()) return;
+    const desc = isAddressChange
+      ? `New address: ${changeAddress.trim()}${changeDesc.trim() ? `\n\n${changeDesc.trim()}` : ""}`
+      : changeDesc.trim();
+    if (!desc) return;
     setChangeSubmitting(true);
     try {
       const res = await fetch(
@@ -173,7 +186,7 @@ export default function TrackMoveClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: changeType,
-            description: changeDesc.trim(),
+            description: desc,
             urgency: changeUrgent ? "urgent" : "normal",
           }),
         }
@@ -183,6 +196,7 @@ export default function TrackMoveClient({
       setChangeSubmitted(true);
       setChangeModalOpen(false);
       setChangeDesc("");
+      setChangeAddress("");
     } catch {
       // Could add toast
     } finally {
@@ -213,7 +227,7 @@ export default function TrackMoveClient({
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
-    { key: "track", label: "Live Tracking" },
+    ...(isCompleted ? [] : [{ key: "track" as TabKey, label: "Live Tracking" }]),
     { key: "inv", label: "Inventory" },
     { key: "photos", label: "Photos" },
     { key: "docs", label: "Documents" },
@@ -230,7 +244,7 @@ export default function TrackMoveClient({
           </p>
           <a
             href={`tel:${normalizePhone(YUGO_PHONE)}`}
-            className="inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+            className="inline-block rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
           >
             Contact us
           </a>
@@ -280,7 +294,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={handleBackToDashboard}
-                  className="mt-5 rounded-lg bg-[#C9A962] text-white font-semibold text-[14px] py-3 px-5 hover:bg-[#B89A52] transition-colors shadow-sm"
+                  className="mt-5 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[14px] py-3 px-5 hover:bg-[#B89A52] transition-colors shadow-sm"
                 >
                   Back to main dashboard
                 </button>
@@ -338,7 +352,7 @@ export default function TrackMoveClient({
                 href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-block rounded-lg bg-[#C9A962] text-white font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+                className="mt-4 inline-block rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
               >
                 Leave a Review
               </a>
@@ -567,7 +581,7 @@ export default function TrackMoveClient({
                         type="button"
                         onClick={handleMakePayment}
                         disabled={paymentLinkLoading}
-                        className="w-full rounded-lg bg-[#C9A962] text-white font-semibold text-[13px] py-3 px-4 hover:bg-[#B89A52] disabled:opacity-60 transition-colors"
+                        className="w-full rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[13px] py-3 px-4 hover:bg-[#B89A52] disabled:opacity-60 transition-colors"
                       >
                         {paymentLinkLoading ? "Preparing…" : "Make Payment"}
                       </button>
@@ -625,19 +639,21 @@ export default function TrackMoveClient({
               </div>
             )}
 
-            {/* Request a Change */}
-            <button
-              type="button"
-              onClick={() => setChangeModalOpen(true)}
-              className="w-full rounded-xl border-2 border-dashed border-[#E7E5E4] py-4 text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors flex items-center justify-center gap-2 bg-white"
-            >
-              <Icon name="clipboard" className="w-[14px] h-[14px]" />
-              Request a Change
-            </button>
+            {/* Request a Change - hide when complete */}
+            {!isCompleted && (
+              <button
+                type="button"
+                onClick={() => setChangeModalOpen(true)}
+                className="w-full rounded-xl border-2 border-dashed border-[#E7E5E4] py-4 text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors flex items-center justify-center gap-2 bg-white"
+              >
+                <Icon name="clipboard" className="w-[14px] h-[14px]" />
+                Request a Change
+              </button>
+            )}
           </div>
         )}
 
-        {activeTab === "track" && (
+        {activeTab === "track" && !isCompleted && (
           <div className="space-y-5">
             <TrackLiveMap
               moveId={move.id}
@@ -716,13 +732,27 @@ export default function TrackMoveClient({
                   ))}
                 </select>
               </div>
+              {changeType === "Change destination address" && (
+                <div>
+                  <AddressAutocomplete
+                    value={changeAddress}
+                    onRawChange={setChangeAddress}
+                    onChange={(r) => setChangeAddress(r.fullAddress)}
+                    placeholder="Enter new destination address"
+                    label="New Address"
+                    className="w-full rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-3 py-2 text-[12px] text-[#1A1A1A] focus:border-[#C9A962] outline-none"
+                  />
+                </div>
+              )}
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase text-[#999]">Details</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase text-[#999]">
+                  {changeType === "Change destination address" ? "Additional details (optional)" : "Details"}
+                </label>
                 <textarea
                   value={changeDesc}
                   onChange={(e) => setChangeDesc(e.target.value)}
-                  placeholder="Describe what you need changed..."
-                  rows={4}
+                  placeholder={changeType === "Change destination address" ? "e.g. Access code, special instructions..." : "Describe what you need changed..."}
+                  rows={changeType === "Change destination address" ? 2 : 4}
                   className="w-full resize-y rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-3 py-2 text-[12px] text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none"
                 />
               </div>
@@ -750,8 +780,11 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={handleSubmitChange}
-                  disabled={changeSubmitting}
-                  className="flex-1 rounded-lg bg-[#C9A962] py-2.5 text-[12px] font-bold text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
+                  disabled={
+                    changeSubmitting ||
+                    (changeType === "Change destination address" ? !changeAddress.trim() : !changeDesc.trim())
+                  }
+                  className="flex-1 rounded-lg bg-[#C9A962] py-2.5 text-[12px] font-bold text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
                 >
                   {changeSubmitting ? "Submitting…" : "Submit"}
                 </button>

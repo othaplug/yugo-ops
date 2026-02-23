@@ -24,6 +24,7 @@ export async function POST(
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
 
   let entityId: string;
+  let jobType: "move" | "delivery" = "move";
   if (isUuid) {
     const [moveRes, delRes] = await Promise.all([
       admin.from("moves").select("id, crew_id").eq("id", jobId).maybeSingle(),
@@ -32,6 +33,7 @@ export async function POST(
     const move = moveRes.data;
     const delivery = delRes.data;
     if (!move && !delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    jobType = delivery ? "delivery" : "move";
     const crewId = move?.crew_id || delivery?.crew_id;
     if (crewId !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
     entityId = move?.id || delivery?.id || jobId;
@@ -43,6 +45,7 @@ export async function POST(
     const move = moveRes.data;
     const delivery = delRes.data;
     if (!move && !delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    jobType = delivery ? "delivery" : "move";
     const crewId = move?.crew_id || delivery?.crew_id;
     if (crewId !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
     entityId = move?.id || delivery?.id || jobId;
@@ -51,7 +54,10 @@ export async function POST(
     .from("extra_items")
     .insert({
       job_id: entityId,
+      job_type: jobType,
       added_by: payload.crewMemberId,
+      requested_by: "crew",
+      status: "pending",
       description,
       room,
       quantity,

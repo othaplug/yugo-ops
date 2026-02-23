@@ -16,6 +16,7 @@ import MovePhotosSection from "./MovePhotosSection";
 import MoveCrewPhotosSection from "./MoveCrewPhotosSection";
 import MoveSignOffSection from "./MoveSignOffSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
+import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import IncidentsSection from "../../components/IncidentsSection";
 import DistanceLogistics from "./DistanceLogistics";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -83,6 +84,36 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       .then((d) => setJobDuration(d))
       .catch(() => {});
   }, [move.id]);
+
+  // Live status: subscribe to moves table so crew checkpoint updates appear in real time
+  useEffect(() => {
+    const channel = supabase
+      .channel(`move-${move.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "moves", filter: `id=eq.${move.id}` }, (payload) => {
+        const next = payload.new as Record<string, unknown>;
+        setMove((prev: any) => ({ ...prev, ...next }));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [move.id]);
+
+  // Polling fallback for live status when move is in progress (in case realtime lags)
+  const isInProgress = !["completed", "delivered", "cancelled"].includes((move.status || "").toLowerCase());
+  useEffect(() => {
+    if (!isInProgress) return;
+    const poll = () =>
+      fetch(`/api/admin/moves/${move.id}/stage`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.stage != null || d?.status != null) setMove((prev: any) => ({ ...prev, ...d }));
+        })
+        .catch(() => {});
+    poll();
+    const id = setInterval(poll, 2000);
+    return () => clearInterval(id);
+  }, [move.id, isInProgress]);
 
   useEffect(() => {
     if (!jobDuration?.startedAt) {
@@ -252,6 +283,15 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </div>
 
+      {/* Live Crew Tracking Map - only when move is in progress and crew assigned */}
+      {isInProgress && move.crew_id && (
+        <LiveTrackingMap
+          crewId={move.crew_id}
+          crewName={selectedCrew?.name}
+          destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
+        />
+      )}
+
       <MoveContactModal
         open={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
@@ -314,7 +354,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   router.refresh();
                   setCrewModalOpen(false);
                 }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
               >
                 Save Assignments
               </button>
@@ -486,7 +526,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || "Failed to delete");
                     toast("Move deleted", "check");
-                    router.push("/admin/moves");
+                    router.push(isOffice ? "/admin/moves/office" : "/admin/moves/residential");
                   } catch (e) {
                     toast(e instanceof Error ? e.message : "Failed to delete move", "x");
                   } finally {

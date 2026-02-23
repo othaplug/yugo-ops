@@ -5,29 +5,13 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const YUGO_GOLD = "#C9A962";
-
-function makeCrewIcon(name: string) {
+/** Crew car icon for map markers */
+function makeCrewIcon() {
   return L.divIcon({
-    className: "crew-marker",
-    html: `
-      <div style="
-        width: 28px;
-        height: 28px;
-        background: linear-gradient(135deg, ${YUGO_GOLD}, #8B7332);
-        border: 2px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: bold;
-        color: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      ">${(name?.replace("Team ", "") || "?").slice(0, 1).toUpperCase()}</div>
-    `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    className: "crew-marker truck-marker truck-marker-animated",
+    html: `<div style="position:relative;width:36px;height:36px;"><img src="/crew-car.png" alt="" width="36" height="36" style="display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));" /></div>`,
+    iconSize: [40, 44],
+    iconAnchor: [20, 40],
   });
 }
 
@@ -82,7 +66,7 @@ export function CrewMapLeaflet({
         <Marker
           key={c.id}
           position={[c.current_lat, c.current_lng]}
-          icon={makeCrewIcon(c.name)}
+          icon={makeCrewIcon()}
         >
           <Popup>{(c.name || "Crew").replace("Team ", "")}</Popup>
         </Marker>

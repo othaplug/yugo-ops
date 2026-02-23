@@ -109,7 +109,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {saving ? "Updating…" : "Update password"}
               </button>

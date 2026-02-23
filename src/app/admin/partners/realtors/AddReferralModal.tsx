@@ -173,7 +173,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           <button
             type="submit"
             disabled={loading || realtors.length === 0}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {loading ? "Creating…" : "Create Referral"}
           </button>

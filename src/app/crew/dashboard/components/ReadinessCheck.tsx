@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const DEFAULT_ITEMS = [
+const FALLBACK_ITEMS = [
   { label: "Truck in good condition", status: "ok" as const, note: null as string | null },
   { label: "Equipment & supplies ready", status: "ok" as const, note: null as string | null },
   { label: "Dolly, straps, blankets", status: "ok" as const, note: null as string | null },
@@ -15,7 +15,20 @@ interface ReadinessCheckProps {
 }
 
 export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
-  const [items, setItems] = useState<{ label: string; status: "ok" | "issue"; note: string | null }[]>(DEFAULT_ITEMS);
+  const [items, setItems] = useState<{ label: string; status: "ok" | "issue"; note: string | null }[]>(FALLBACK_ITEMS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/crew/readiness")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.items) && d.items.length > 0) {
+          setItems(d.items.map((i: { label: string }) => ({ label: i.label, status: "ok" as const, note: null })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -59,6 +72,14 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
   };
 
   const flaggedCount = items.filter((i) => i.status === "issue").length;
+
+  if (loading) {
+    return (
+      <div className="max-w-[420px] mx-auto rounded-xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
+        <p className="text-[13px] text-[var(--tx3)]">Loading readiness check…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[420px] mx-auto">
@@ -125,7 +146,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-white bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
           >
             {submitting ? "Submitting…" : "Complete & Continue"}
           </button>

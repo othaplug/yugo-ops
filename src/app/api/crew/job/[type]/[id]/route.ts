@@ -26,7 +26,7 @@ export async function GET(
       : await admin.from("deliveries").select("*").ilike("delivery_number", jobId).single();
     if (d && d.crew_id === payload.teamId) {
       const items = Array.isArray(d.items) ? d.items : [];
-      const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).order("added_at");
+      const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
       const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
       const members = (crewRow?.members as string[] | null) || [];
       const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
@@ -44,6 +44,9 @@ export async function GET(
         toAddress: d.delivery_address || "—",
         fromAccess,
         toAccess,
+        accessNotes: (d as any).access_notes || (d as any).instructions || null,
+        arrivalWindow: (d as any).delivery_window || (d as any).time_slot || null,
+        scheduledDate: (d as any).scheduled_date || null,
         access,
         crewMembers: crewWithRoles,
         jobTypeLabel: `Delivery · ${items.length} items`,
@@ -88,7 +91,7 @@ export async function GET(
     itemsWithId: items,
   }));
 
-  const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", m.id).order("added_at");
+  const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", m.id).eq("status", "approved").order("added_at");
 
   return NextResponse.json({
     id: m.id,
@@ -101,6 +104,9 @@ export async function GET(
     toAddress: m.to_address || "—",
     fromAccess: m.from_access || null,
     toAccess: m.to_access || null,
+    accessNotes: (m as any).access_notes || null,
+    arrivalWindow: (m as any).arrival_window || null,
+    scheduledDate: (m as any).scheduled_date || null,
     access,
     crewMembers: crewWithRoles,
     jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Premier Residential",

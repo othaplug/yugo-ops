@@ -75,7 +75,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <div className="h-14 px-4 flex items-center justify-between shrink-0 bg-transparent">
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.06)] backdrop-blur-xl border border-[rgba(201,169,98,0.35)] text-[var(--gold)] font-hero text-[13px] font-semibold tracking-[3px]">
-                  OPS+
+                  YUGO
                 </span>
               </div>
               <button
@@ -196,7 +196,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden animate-fade-in min-h-0 admin-main-offset">
+            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 admin-main-offset animate-fade-in">
               {children}
             </main>
           </div>

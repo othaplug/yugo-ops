@@ -9,7 +9,7 @@ import LiveOperationsCard from "./components/LiveOperationsCard";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
-import { getStatusLabel } from "@/lib/move-status";
+import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
 
 const BADGE_MAP: Record<string, string> = {
   pending: "b-go",
@@ -76,6 +76,13 @@ type ActivityEvent = {
   created_at: string;
 };
 
+interface EodSummary {
+  submitted: { teamId: string; teamName: string; summary?: Record<string, unknown>; generatedAt?: string }[];
+  pending: { teamId: string; teamName: string }[];
+  totalTeams: number;
+  submittedCount: number;
+}
+
 interface AdminPageClientProps {
   todayDeliveries: Delivery[];
   allDeliveries: Delivery[];
@@ -87,6 +94,7 @@ interface AdminPageClientProps {
   categoryBgs: Record<string, string>;
   categoryIcons: Record<string, string>;
   activityEvents?: ActivityEvent[];
+  eodSummary?: EodSummary;
 }
 
 function getActivityHref(e: ActivityEvent): string {
@@ -178,6 +186,7 @@ export default function AdminPageClient({
   categoryBgs,
   categoryIcons,
   activityEvents = [],
+  eodSummary,
 }: AdminPageClientProps) {
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("");
   const [moveStatusFilter, setMoveStatusFilter] = useState("");
@@ -235,6 +244,11 @@ export default function AdminPageClient({
           <div className="mc-v">{b2cUpcoming.length}</div>
           <div className="mc-c text-[var(--tx3)]">Upcoming residential</div>
         </Link>
+        <Link href="/admin/reports" className="mc glass block w-full min-h-0 relative z-10">
+          <div className="mc-l">End-of-Day Reports</div>
+          <div className="mc-v">{eodSummary?.submittedCount ?? 0}/{eodSummary?.totalTeams ?? 0}</div>
+          <div className="mc-c text-[var(--tx3)]">{eodSummary?.pending?.length ? `${eodSummary.pending.length} pending` : "All submitted"}</div>
+        </Link>
       </div>
 
       <LiveOperationsCard />
@@ -259,7 +273,10 @@ export default function AdminPageClient({
           onClear={() => setDeliveryStatusFilter("")}
         />
         <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
-        {filteredDeliveries.slice(0, 5).map((d) => (
+        {filteredDeliveries.slice(0, 5).map((d) => {
+          const statusKey = (d.status || "").toLowerCase();
+          const lineColor = DELIVERY_STATUS_LINE_COLOR[statusKey] || "var(--gold)";
+          return (
           <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
             <div className="flex flex-col items-start shrink-0 w-14">
               <span className="text-[12px] font-semibold text-[var(--tx)]">{d.time_slot || "—"}</span>
@@ -267,14 +284,15 @@ export default function AdminPageClient({
                 {d.items?.length || 0} items
               </span>
             </div>
-            <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+            <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: lineColor }} aria-hidden />
             <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-semibold text-[var(--tx3)] mb-0.5">{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</div>
+              <div className={`inline-flex px-2.5 py-1 rounded-md text-[9px] font-bold mb-1.5 ${getBadgeClass(statusKey)}`}>{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</div>
               <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{d.customer_name} ({d.client_name})</div>
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">{(d.category || "Delivery")} • {d.client_name}</div>
             </div>
           </Link>
-        ))}
+          );
+        })}
         </div>
       </div>
 
@@ -298,20 +316,26 @@ export default function AdminPageClient({
           onClear={() => setMoveStatusFilter("")}
         />
         <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
-        {filteredMoves.slice(0, 5).map((m, idx) => (
+        {filteredMoves.slice(0, 5).map((m, idx) => {
+          const statusKey = (m.status || "").toLowerCase();
+          const normalized = normalizeStatus(m.status ?? null) || "";
+          const lineColor = MOVE_STATUS_LINE_COLOR[statusKey] || MOVE_STATUS_LINE_COLOR[normalized] || "var(--gold)";
+          const statusStyle = MOVE_STATUS_COLORS_ADMIN[statusKey] || MOVE_STATUS_COLORS_ADMIN[normalized] || "text-[var(--tx3)] bg-[var(--gdim)]";
+          return (
           <Link key={m.id} href={getMoveDetailPath(m)} className="flex gap-3 py-4 hover:bg-[var(--bg)]/30 transition-colors -mx-4 px-4 rounded-lg">
             <div className="flex flex-col items-start shrink-0 w-14">
               <span className="text-[10px] text-[var(--tx3)]">{String(idx + 1).padStart(2, "0")}</span>
               <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{formatMoveDate(m.scheduled_date)}</span>
             </div>
-            <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[48px]" aria-hidden />
+            <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: lineColor }} aria-hidden />
             <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-semibold text-[var(--tx3)] mb-0.5">{getStatusLabel(m.status ?? null)}</div>
+              <div className={`inline-flex px-2.5 py-1 rounded-md text-[9px] font-bold mb-1.5 ${statusStyle}`}>{getStatusLabel(m.status ?? null)}</div>
               <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{m.client_name}</div>
               <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{m.from_address} → {m.to_address}</div>
             </div>
           </Link>
-        ))}
+          );
+        })}
         </div>
       </div>
 

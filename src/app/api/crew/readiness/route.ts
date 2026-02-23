@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 
-const DEFAULT_READINESS_ITEMS = [
+const FALLBACK_ITEMS = [
   { label: "Truck in good condition", status: "ok" as const, note: null },
   { label: "Equipment & supplies ready", status: "ok" as const, note: null },
   { label: "Dolly, straps, blankets", status: "ok" as const, note: null },
@@ -11,7 +11,7 @@ const DEFAULT_READINESS_ITEMS = [
   { label: "Fuel level adequate", status: "ok" as const, note: null },
 ];
 
-/** GET: Check if today's readiness is done for the team */
+/** GET: Check if today's readiness is done for the team. Items come from platform_settings. */
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
@@ -21,12 +21,15 @@ export async function GET() {
   const today = new Date().toISOString().split("T")[0];
   const admin = createAdminClient();
 
-  const { data: check } = await admin
-    .from("readiness_checks")
-    .select("id, passed, flagged_items, completed_at")
-    .eq("team_id", payload.teamId)
-    .eq("check_date", today)
-    .maybeSingle();
+  const [{ data: check }, { data: settings }] = await Promise.all([
+    admin.from("readiness_checks").select("id, passed, flagged_items, completed_at").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
+    admin.from("platform_settings").select("readiness_items").eq("id", "default").maybeSingle(),
+  ]);
+
+  const raw = (settings as { readiness_items?: unknown[] })?.readiness_items;
+  const configItems = Array.isArray(raw)
+    ? raw.filter((x) => x && typeof x === "object" && "label" in x).map((x) => ({ label: String((x as { label: string }).label), status: "ok" as const, note: null as string | null }))
+    : FALLBACK_ITEMS;
 
   return NextResponse.json({
     completed: !!check,
@@ -34,7 +37,7 @@ export async function GET() {
     flaggedItems: check?.flagged_items ?? [],
     completedAt: check?.completed_at ?? null,
     isCrewLead: payload.role === "lead",
-    items: DEFAULT_READINESS_ITEMS,
+    items: configItems.length > 0 ? configItems : FALLBACK_ITEMS,
   });
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 
 interface InventoryRoom {
   room: string;
@@ -49,6 +50,7 @@ export default function JobInventory({
   const [extraRoom, setExtraRoom] = useState("");
   const [extraQty, setExtraQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
 
   const isUnloading = ["unloading", "arrived_at_destination", "delivering", "completed"].includes(currentStatus);
 
@@ -190,42 +192,68 @@ export default function JobInventory({
         </div>
       ) : (
         <>
-      {inventory.map((r) => (
-        <div key={r.room} className="mb-4">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">{r.room.toUpperCase()}</div>
-          <div className="space-y-1.5">
-            {(r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name, quantity: 1 }))).map((item, i) => {
-              const id = "id" in item ? item.id : `noid-${i}`;
-              const name = "item_name" in item ? item.item_name : String(item);
-              const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
-              const hasId = typeof id === "string" && !id.startsWith("noid-");
-              const verified = hasId ? verifiedIds.has(id) : false;
-              return (
-                <label
-                  key={id}
-                  className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${
-                    verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
-                  } ${hasId && !readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
-                >
-                  {hasId ? (
-                    <input
-                      type="checkbox"
-                      checked={verified}
-                      onChange={() => !readOnly && toggleVerify(id)}
-                      disabled={readOnly}
-                      className="rounded border-[var(--brd)]"
-                    />
-                  ) : (
-                    <span className="w-4" />
-                  )}
-                  <span className="text-[13px] text-[var(--tx)]">{name} x{qty}</span>
-                  {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
-                </label>
-              );
+      {inventory.map((r) => {
+        const expanded = !collapsedRooms.has(r.room);
+        const items = r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name, quantity: 1 }));
+        return (
+        <div key={r.room} className="mb-3 rounded-lg overflow-hidden border border-[var(--brd)]/40 transition-colors hover:border-[var(--brd)]/60">
+          <button
+            type="button"
+            onClick={() => setCollapsedRooms((prev) => {
+              const next = new Set(prev);
+              if (next.has(r.room)) next.delete(r.room);
+              else next.add(r.room);
+              return next;
             })}
+            className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+              <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
+            </span>
+          </button>
+          <div
+            className="grid transition-[grid-template-rows] duration-200 ease-out"
+            style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+          >
+            <div className="overflow-hidden">
+              <div className="space-y-1.5 px-3 pb-3 pt-0.5">
+                {items.map((item, i) => {
+                  const id = "id" in item ? item.id : `noid-${i}`;
+                  const name = "item_name" in item ? item.item_name : String(item);
+                  const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
+                  const hasId = typeof id === "string" && !id.startsWith("noid-");
+                  const verified = hasId ? verifiedIds.has(id) : false;
+                  return (
+                    <label
+                      key={id}
+                      className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${
+                        verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
+                      } ${hasId && !readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
+                    >
+                      {hasId ? (
+                        <input
+                          type="checkbox"
+                          checked={verified}
+                          onChange={() => !readOnly && toggleVerify(id)}
+                          disabled={readOnly}
+                          className="rounded border-[var(--brd)]"
+                        />
+                      ) : (
+                        <span className="w-4" />
+                      )}
+                      <span className="text-[13px] text-[var(--tx)]">{name} x{qty}</span>
+                      {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
-      ))}
+        );
+      })}
       {extraItems.length > 0 && (
         <div className="mb-3">
           <div className="text-[12px] font-semibold text-[var(--gold)] mb-1.5">Added on-site</div>
@@ -247,9 +275,10 @@ export default function JobInventory({
         </>
       )}
       {addExtraOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
             <h3 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
+            <p className="text-[11px] text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>
             <form onSubmit={handleAddExtra} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Description</label>
@@ -291,9 +320,9 @@ export default function JobInventory({
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-white font-semibold disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50"
                 >
-                  {submitting ? "Adding…" : "Add"}
+                  {submitting ? "Submitting…" : "Submit for approval"}
                 </button>
               </div>
             </form>
