@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icon } from "@/components/AppIcons";
 import { formatCurrency } from "@/lib/format-currency";
 
 type DocItem = {
@@ -58,10 +57,7 @@ export default function TrackDocuments({
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="fileText" className="w-[12px] h-[12px]" />
-          Documents
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
         <p className="text-[12px] text-[#666]">Loading...</p>
       </div>
     );
@@ -70,10 +66,7 @@ export default function TrackDocuments({
   if (allDocs.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="fileText" className="w-[12px] h-[12px]" />
-          Documents
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
         <p className="text-[12px] text-[#666]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
       </div>
     );
@@ -82,10 +75,7 @@ export default function TrackDocuments({
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-[#E7E5E4]">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2">
-          <Icon name="fileText" className="w-[12px] h-[12px]" />
-          Documents
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Documents</h3>
       </div>
       <div className="p-5 space-y-2">
         {allDocs.map((doc) => {
@@ -99,8 +89,8 @@ export default function TrackDocuments({
               className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-[#E7E5E4] flex items-center justify-center shrink-0">
-                  <Icon name="fileText" className="w-5 h-5 text-[#999]" />
+                <div className="w-10 h-10 rounded-lg bg-[#E7E5E4] flex items-center justify-center shrink-0 text-[#999] text-[12px] font-semibold">
+                  Doc
                 </div>
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>

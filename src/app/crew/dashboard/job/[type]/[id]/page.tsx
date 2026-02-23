@@ -414,54 +414,40 @@ export default function CrewJobPage({
             />
           )}
 
-          <div>
-            <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Timeline</h2>
-            <div className="relative flex flex-col">
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 shadow-sm">
+            <h2 className="font-hero text-[14px] font-bold text-[var(--tx)] mb-4">Move Timeline</h2>
+            <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[var(--brd)] before:transition-colors before:duration-500">
               {statusFlow.map((s, i) => {
                 const cp = session?.checkpoints?.find((c) => c.status === s);
                 const isCurrent = currentStatus === s;
                 const idx = statusFlow.indexOf(currentStatus as any);
                 const isPast = idx > i || (idx === i && isCompleted);
-                const isPending = idx < i;
-                const isLast = i === statusFlow.length - 1;
-                const lineBelowGreen = isPast;
+                const isLastStep = s === statusFlow[statusFlow.length - 1];
+                const state = isPast ? "done" : isCurrent ? "act" : "wait";
                 return (
                   <div
                     key={s}
-                    className="relative flex items-start gap-3 text-[12px] group cursor-default"
+                    className="relative pb-5 last:pb-0 group cursor-default transition-colors duration-200"
                   >
-                    <div className="flex flex-col items-center shrink-0">
-                      <span
-                        className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ease-out ${
-                          isPast
-                            ? "bg-[var(--grn)] text-white group-hover:scale-110"
-                              : isCurrent
-                              ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] scale-110 ring-2 ring-[var(--gold)]/40 group-hover:ring-[var(--gold)]/60"
-                              : "bg-[var(--brd)]/80 text-[var(--tx3)] group-hover:bg-[var(--brd)]"
-                        }`}
-                      >
-                        {isPast || (isCurrent && isCompleted) ? (
-                          <span className="text-[11px] font-bold leading-none">&#10003;</span>
-                        ) : (
-                          <span className="text-[9px] font-bold">{i + 1}</span>
-                        )}
-                      </span>
-                      {!isLast && (
-                        <div
-                          className={`w-0.5 flex-1 min-h-[12px] transition-all duration-200 ease-out ${
-                            lineBelowGreen ? "bg-[var(--grn)]" : "bg-[var(--brd)]"
-                          }`}
-                        />
-                      )}
+                    <div
+                      className={`absolute -left-[19px] top-0.5 rounded-full border-2 border-[var(--card)] z-10 transition-all duration-300 ease-out client-timeline-dot ${
+                        state === "done" && isLastStep
+                          ? "w-5 h-5 -left-6 bg-[#22C55E] shadow-[0_0_0_0_4px_rgba(34,197,94,0.25)] client-timeline-dot-completed"
+                          : state === "done"
+                            ? "w-3.5 h-3.5 -left-5 bg-[#22C55E] group-hover:scale-110"
+                            : state === "act"
+                              ? "w-3.5 h-3.5 -left-5 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
+                              : "w-3 h-3 bg-[var(--brd)]/80 group-hover:bg-[var(--brd)]"
+                      }`}
+                    />
+                    <div className={`text-[13px] font-semibold transition-colors duration-300 ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[var(--tx3)]"}`}>
+                      {getStatusLabel(s)}
                     </div>
-                    <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 pb-4 transition-colors duration-300">
-                      <span className={`font-medium ${isPast || isCurrent ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}>
-                        {getStatusLabel(s)}
-                      </span>
-                      {cp?.timestamp && (
-                        <span className="text-[10px] text-[var(--tx3)] shrink-0 tabular-nums">
-                          {new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                        </span>
+                    <div className="text-[11px] text-[var(--tx3)] mt-0.5 flex items-center justify-between gap-2">
+                      {cp?.timestamp ? (
+                        <span className="tabular-nums">{new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                      ) : (
+                        <span>{state === "done" ? "Done" : state === "act" ? "In progress" : "Upcoming"}</span>
                       )}
                     </div>
                   </div>

@@ -16,24 +16,42 @@ export default function ChangeRequestsClient({
   const router = useRouter();
   const { toast } = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [approveModal, setApproveModal] = useState<{ id: string } | null>(null);
+  const [approveFeeDollars, setApproveFeeDollars] = useState("");
 
-  const handleReview = async (id: string, status: "approved" | "rejected") => {
+  const handleReview = async (id: string, status: "approved" | "rejected", feeCents?: number) => {
     setLoadingId(id);
     try {
+      const body: { status: string; fee_cents?: number } = { status };
+      if (status === "approved" && typeof feeCents === "number" && feeCents > 0) body.fee_cents = feeCents;
       const res = await fetch(`/api/admin/change-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
       toast(status === "approved" ? "Approved" : "Rejected", "check");
+      setApproveModal(null);
+      setApproveFeeDollars("");
       router.refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Failed", "x");
     } finally {
       setLoadingId(null);
     }
+  };
+
+  const openApproveModal = (id: string) => {
+    setApproveModal({ id });
+    setApproveFeeDollars("");
+  };
+
+  const confirmApproveWithFee = () => {
+    if (!approveModal) return;
+    const dollars = parseFloat(approveFeeDollars);
+    const feeCents = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
+    handleReview(approveModal.id, "approved", feeCents);
   };
 
   const renderRow = (r: any) => {
@@ -85,7 +103,7 @@ export default function ChangeRequestsClient({
             <div className="flex gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => handleReview(r.id, "approved")}
+                onClick={() => openApproveModal(r.id)}
                 disabled={loadingId === r.id}
                 className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
@@ -124,6 +142,41 @@ export default function ChangeRequestsClient({
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-12 text-center">
           <p className="text-[13px] text-[var(--tx3)]">No change requests yet.</p>
           <p className="text-[11px] text-[var(--tx3)] mt-1">Clients submit requests from their move portal.</p>
+        </div>
+      )}
+
+      {approveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
+            <h2 id="approve-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve change request</h2>
+            <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              value={approveFeeDollars}
+              onChange={(e) => setApproveFeeDollars(e.target.value)}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setApproveModal(null); setApproveFeeDollars(""); }}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmApproveWithFee}
+                disabled={loadingId === approveModal.id}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
+              >
+                {loadingId === approveModal.id ? "…" : "Approve"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

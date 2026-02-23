@@ -102,6 +102,15 @@ body {
   display: none;
 }
 
+/* Client timeline: completed step green dot animation */
+@keyframes client-completed-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); transform: scale(1); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.05); }
+}
+.client-timeline-dot-completed {
+  animation: client-completed-dot 2s ease-in-out infinite;
+}
+
 /* Instrument Sans for headings */
 .font-heading {
   font-family: var(--font-heading);
@@ -243,6 +252,17 @@ input[type="time"] {
 .animate-timeline-line {
   animation: timelineLineFill 0.2s ease-out forwards;
   transform-origin: top;
+}
+
+/* Client portal: completed step green dot with distinct animation */
+@keyframes client-completed-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4), 0 0 0 0 rgba(34, 197, 94, 0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0), 0 0 0 12px rgba(34, 197, 94, 0); transform: scale(1.08); }
+}
+[data-theme="light"] .client-timeline-dot-completed,
+.client-timeline-dot-completed {
+  animation: client-completed-dot 2s ease-in-out infinite;
+  background: #22C55E !important;
 }
 
 /* Safe area for notched devices - applied via utility */

@@ -73,26 +73,20 @@ export default function TrackMessageThread({ moveId, token }: { moveId: string; 
               return (
                 <div
                   key={m.id}
-                  className={`flex gap-3 ${isClient ? "justify-start" : "justify-end"} ${!isClient ? "flex-row-reverse" : ""}`}
+                  className={`flex w-full ${isClient ? "justify-start" : "justify-end"}`}
                 >
-                  <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                      isClient ? "bg-[#3B82F6] text-white" : "bg-[#E8D5A3] text-[#1A1A1A]"
-                    }`}
-                  >
-                    {initials}
-                  </div>
-                  <div
-                    className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
-                      isClient
-                        ? "bg-white border border-[#E7E5E4] text-[#1A1A1A]"
-                        : "bg-[#C9A962] text-[var(--btn-text-on-accent)]"
-                    }`}
-                  >
-                    <p className="text-[13px] leading-snug whitespace-pre-wrap">{m.content}</p>
-                    <p className="text-[10px] text-[#666] mt-1.5">
-                      {formatMsgTime(m.created_at)}
-                    </p>
+                  <div className={`flex gap-3 max-w-[85%] sm:max-w-[80%] ${isClient ? "flex-row" : "flex-row-reverse"}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isClient ? "bg-[#3B82F6] text-white" : "bg-[#E8D5A3] text-[#1A1A1A]"}`}>
+                      {initials}
+                    </div>
+                    <div
+                      className={`min-w-0 rounded-xl px-4 py-2.5 ${
+                        isClient ? "bg-white border border-[#E7E5E4] text-[#1A1A1A]" : "bg-[#C9A962] text-[var(--btn-text-on-accent)]"
+                      }`}
+                    >
+                      <p className="text-[13px] leading-snug whitespace-pre-wrap">{m.content}</p>
+                      <p className={`text-[10px] mt-1.5 ${isClient ? "text-[#666]" : "text-white/80"}`}>{formatMsgTime(m.created_at)}</p>
+                    </div>
                   </div>
                 </div>
               );

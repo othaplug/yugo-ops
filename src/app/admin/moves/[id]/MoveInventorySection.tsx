@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
@@ -42,15 +42,19 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
   const [deleting, setDeleting] = useState(false);
   const [extraActioning, setExtraActioning] = useState<string | null>(null);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  const [approveExtraModal, setApproveExtraModal] = useState<{ itemId: string } | null>(null);
+  const [approveExtraFeeDollars, setApproveExtraFeeDollars] = useState("");
   const { toast } = useToast();
 
-  const handleExtraApprove = async (itemId: string) => {
+  const handleExtraApprove = async (itemId: string, feeCents?: number) => {
     setExtraActioning(itemId);
     try {
+      const body: { status: string; fee_cents?: number } = { status: "approved" };
+      if (typeof feeCents === "number" && feeCents > 0) body.fee_cents = feeCents;
       const r = await fetch(`/api/admin/moves/${moveId}/extra-items/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "approved" }),
+        body: JSON.stringify(body),
       });
       const data = await r.json();
       if (!r.ok || data.error) {
@@ -58,10 +62,19 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
         return;
       }
       toast("Extra item approved", "check");
+      setApproveExtraModal(null);
+      setApproveExtraFeeDollars("");
       fetchExtraItems();
     } finally {
       setExtraActioning(null);
     }
+  };
+
+  const confirmExtraApprove = () => {
+    if (!approveExtraModal) return;
+    const dollars = parseFloat(approveExtraFeeDollars);
+    const feeCents = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : undefined;
+    handleExtraApprove(approveExtraModal.itemId, feeCents);
   };
 
   const handleExtraReject = async (itemId: string) => {
@@ -109,25 +122,49 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
     fetchExtraItems();
   }, [moveId]);
 
-  /** Parse bulk text: "Couch x2" -> "Couch x2", "Coffee Table" -> "Coffee Table" */
+  /** Capitalize first letter of each word (e.g. "couch x2" -> "Couch x2") */
+  const capitalizeItem = (s: string): string => {
+    const t = s.trim();
+    if (!t) return t;
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  };
+
+  /** Parse bulk text: split by newline or comma; normalize "word x2" format; capitalize first letter */
   const parseBulkLines = (text: string): string[] => {
     return text
-      .split("\n")
+      .split(/[\n,]+/)
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => {
         const m = line.match(/^(.+?)\s+x(\d+)$/i);
-        return m ? `${m[1].trim()} x${m[2]}` : line;
+        const normalized = m ? `${m[1].trim()} x${m[2]}` : line;
+        return capitalizeItem(normalized);
       });
   };
 
+  const parsedBulkItems = useMemo(() => parseBulkLines(bulkText), [bulkText]);
+  const [bulkSelected, setBulkSelected] = useState<Set<number>>(new Set());
+  const bulkSelectedCount = parsedBulkItems.filter((_, i) => bulkSelected.has(i)).length;
+  useEffect(() => {
+    setBulkSelected(new Set(parsedBulkItems.map((_, i) => i)));
+  }, [bulkText]);
+
+  const toggleBulkItem = (index: number) => {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const handleBulkAdd = async () => {
-    if (!newRoom || !bulkText.trim()) return;
-    const itemNames = parseBulkLines(bulkText);
-    if (itemNames.length === 0) return;
+    if (!newRoom || parsedBulkItems.length === 0) return;
+    const toAdd = parsedBulkItems.filter((_, i) => bulkSelected.has(i));
+    if (toAdd.length === 0) return;
     setAdding(true);
     let added = 0;
-    for (const itemName of itemNames) {
+    for (const itemName of toAdd) {
       const res = await fetch(`/api/admin/moves/${moveId}/inventory`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,6 +179,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
     }
     if (added > 0) {
       setBulkText("");
+      setBulkSelected(new Set());
       fetchItems();
       toast(`Added ${added} item${added > 1 ? "s" : ""}`, "check");
     }
@@ -215,6 +253,24 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
   }, {});
   const rooms = Object.keys(byRoom).sort();
 
+  /** Expand "Table x1, Couch x2" into rows [{ label: "Table", qty: 1 }, { label: "Couch", qty: 2 }] for display */
+  const expandItemRow = (item: InventoryItem): { label: string; qty: number }[] => {
+    const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
+    const parts = item.item_name.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 0) {
+      const m = item.item_name.match(/^(.+?)\s+x(\d+)$/i);
+      const label = capitalize(m ? m[1].trim() : item.item_name);
+      const qty = m ? parseInt(m[2], 10) : 1;
+      return [{ label, qty }];
+    }
+    return parts.map((part) => {
+      const m = part.match(/^(.+?)\s+x(\d+)$/i);
+      const label = capitalize(m ? m[1].trim() : part);
+      const qty = m ? parseInt(m[2], 10) : 1;
+      return { label, qty };
+    });
+  };
+
   const toggleRoom = (room: string) => {
     setCollapsedRooms((prev) => {
       const next = new Set(prev);
@@ -259,69 +315,59 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                     style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
                   >
                     <div className="overflow-hidden">
-                      <ul className="divide-y divide-[var(--brd)]/30">
-                    {byRoom[room].map((item) => (
-                      <li key={item.id} className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-[var(--bg)]/30 transition-colors">
-                        {editingId === item.id ? (
-                          <>
-                            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                              <input
-                                type="text"
-                                value={editBox}
-                                onChange={(e) => setEditBox(e.target.value)}
-                                placeholder="Box #"
-                                className="w-16 text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-                              />
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => handleUpdate(item.id)}
-                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-[var(--grn)] hover:bg-[var(--grdim)] transition-colors"
-                                aria-label="Save"
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingId(null)}
-                                className="px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--tx3)] hover:bg-[var(--brd)]/50 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[12px] font-medium text-[var(--tx)]">{item.item_name}</span>
-                              {item.box_number && (
-                                <span className="ml-2 text-[10px] text-[var(--tx3)]">· Box {item.box_number}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
-                              <button
-                                type="button"
-                                onClick={() => startEdit(item)}
-                                className="p-1.5 rounded-md text-[var(--tx3)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] transition-colors"
-                                aria-label="Edit"
-                              >
-                                <Pencil className="w-[11px] h-[11px]" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(item)}
-                                className="p-1.5 rounded-md text-[var(--tx3)] hover:bg-[var(--rdim)] hover:text-[var(--red)] transition-colors"
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="w-[11px] h-[11px]" />
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                      </ul>
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-[var(--brd)]/40">
+                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
+                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
+                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-20 text-right">Box</th>
+                            <th className="w-16" aria-label="Actions" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {byRoom[room].flatMap((item) => {
+                            const rows = expandItemRow(item);
+                            return rows.map((r, ri) => (
+                              <tr key={`${item.id}-${ri}`} className="border-b border-[var(--brd)]/30 last:border-0 group hover:bg-[var(--bg)]/20 transition-colors">
+                                <td className="px-3 py-2 text-[12px] font-medium text-[var(--tx)]">{r.label}</td>
+                                <td className="px-3 py-2 text-[12px] text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
+                                <td className="px-3 py-2 text-[11px] text-[var(--tx3)] text-right">
+                                  {ri === 0 && (editingId === item.id ? (
+                                    <input
+                                      type="text"
+                                      value={editBox}
+                                      onChange={(e) => setEditBox(e.target.value)}
+                                      placeholder="Box #"
+                                      className="w-14 text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1.5 py-0.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                                    />
+                                  ) : item.box_number ? (
+                                    <span>Box {item.box_number}</span>
+                                  ) : (
+                                    "—"
+                                  ))}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {ri === 0 && (
+                                    <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100">
+                                      {editingId === item.id ? (
+                                        <>
+                                          <button type="button" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-[var(--grn)] hover:bg-[var(--grdim)]">Save</button>
+                                          <button type="button" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 rounded text-[10px] text-[var(--tx3)]">Cancel</button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button type="button" onClick={() => startEdit(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" aria-label="Edit"><Pencil className="w-[11px] h-[11px]" /></button>
+                                          <button type="button" onClick={() => handleDelete(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--rdim)] hover:text-[var(--red)]" aria-label="Delete"><Trash2 className="w-[11px] h-[11px]" /></button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ));
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -363,7 +409,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
-                            onClick={() => handleExtraApprove(e.id)}
+                            onClick={() => { setApproveExtraModal({ itemId: e.id }); setApproveExtraFeeDollars(""); }}
                             disabled={extraActioning === e.id}
                             className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--grn)] text-white hover:opacity-90 disabled:opacity-50"
                           >
@@ -419,22 +465,45 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (one per line, e.g. Couch x2)</label>
+                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
                   <textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
-                    placeholder={"Couch x2\nCoffee Table\nBox 1 x5"}
-                    rows={4}
+                    placeholder={"Table x1, Couch x2\nCoffee Table"}
+                    rows={3}
                     className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-y"
                   />
                 </div>
+                {parsedBulkItems.length > 0 && (
+                  <div className="rounded-md border border-[var(--brd)] bg-[var(--bg)]/50 overflow-hidden">
+                    <div className="text-[8px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
+                      List — check items to add
+                    </div>
+                    <ul className="divide-y divide-[var(--brd)]/30 max-h-[200px] overflow-y-auto">
+                      {parsedBulkItems.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 px-2 py-2 hover:bg-[var(--bg)]/30 transition-colors">
+                          <input
+                            type="checkbox"
+                            id={`bulk-${i}`}
+                            checked={bulkSelected.has(i)}
+                            onChange={() => toggleBulkItem(i)}
+                            className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                          />
+                          <label htmlFor={`bulk-${i}`} className="text-[12px] font-medium text-[var(--tx)] cursor-pointer flex-1">
+                            {item}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleBulkAdd}
-                  disabled={adding || !bulkText.trim() || !newRoom}
+                  disabled={adding || parsedBulkItems.length === 0 || !newRoom || bulkSelectedCount === 0}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
                 >
-                  <Plus className="w-[11px] h-[11px]" /> Add all
+                  <Plus className="w-[11px] h-[11px]" /> Add {bulkSelectedCount > 0 ? `${bulkSelectedCount} selected` : "all"}
                 </button>
               </div>
             ) : (
@@ -514,6 +583,41 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
             </div>
           </div>
         </ModalOverlay>
+      )}
+
+      {approveExtraModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-extra-modal-title">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
+            <h2 id="approve-extra-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve extra item</h2>
+            <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              value={approveExtraFeeDollars}
+              onChange={(e) => setApproveExtraFeeDollars(e.target.value)}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setApproveExtraModal(null); setApproveExtraFeeDollars(""); }}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmExtraApprove}
+                disabled={extraActioning === approveExtraModal.itemId}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
+              >
+                {extraActioning === approveExtraModal.itemId ? "…" : "Approve"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

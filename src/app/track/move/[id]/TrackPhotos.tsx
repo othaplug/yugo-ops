@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icon } from "@/components/AppIcons";
 
 type Photo = { id: string; url: string; caption: string | null; created_at?: string };
 
@@ -52,10 +51,7 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="image" className="w-[12px] h-[12px]" />
-          Photos
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Photos</h3>
         <p className="text-[12px] text-[#666]">Loading...</p>
       </div>
     );
@@ -64,10 +60,7 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   if (photos.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="image" className="w-[12px] h-[12px]" />
-          Photos
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Photos</h3>
         <p className="text-[12px] text-[#666]">No photos uploaded yet. Your coordinator may add photos from the pre-move survey.</p>
       </div>
     );
@@ -76,10 +69,7 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2">
-          <Icon name="image" className="w-[12px] h-[12px]" />
-          Photos ({photos.length})
-        </h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Photos ({photos.length})</h3>
         <div className="flex gap-2">
           <button
             type="button"

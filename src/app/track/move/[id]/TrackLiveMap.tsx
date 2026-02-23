@@ -225,6 +225,8 @@ export default function TrackLiveMap({
                 center={mapCenter}
                 crew={crewLoc}
                 crewName={crewLoc?.name}
+                pickup={pickup}
+                dropoff={dropoff}
               />
             ) : (
               <LeafletMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} />

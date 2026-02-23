@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icon } from "@/components/AppIcons";
-import { ChevronDown } from "lucide-react";
 import { useToast } from "@/app/admin/components/Toast";
 
 type InventoryItem = {
@@ -135,8 +133,7 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="package" className="w-[12px] h-[12px]" />
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">
           Inventory
         </h3>
         <p className="text-[12px] text-[#666]">Loading...</p>
@@ -147,8 +144,7 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
   if (items.length === 0 && extraItems.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2 mb-4">
-          <Icon name="package" className="w-[12px] h-[12px]" />
+        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">
           Inventory
         </h3>
         <p className="text-[12px] text-[#666] mb-4">No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
@@ -213,8 +209,7 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] flex items-center gap-2">
-          <Icon name="package" className="w-[12px] h-[12px]" />
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">
           Inventory
         </h3>
         <button
@@ -236,31 +231,48 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
                 className="w-full flex items-center justify-between gap-2 bg-[#FAFAF8] px-4 py-2.5 text-left hover:bg-[#F5F5F3] transition-colors cursor-pointer group border-b border-[#E7E5E4]"
               >
                 <h4 className="text-[12px] font-bold text-[#C9A962] group-hover:text-[#B8983E] transition-colors">{room}</h4>
-                <ChevronDown className={`w-[14px] h-[14px] text-[#999] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
+                <span className={`text-[10px] text-[#999] transition-transform duration-200 ease-out inline-block ${expanded ? "rotate-0" : "-rotate-90"}`} aria-hidden>▼</span>
               </button>
               <div
                 className="grid transition-[grid-template-rows] duration-200 ease-out"
                 style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
               >
                 <div className="overflow-hidden">
-                  <table className="w-full text-left">
+                  <table className="w-full text-left border-collapse table-fixed">
                     <thead>
-                      <tr>
-                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Item</th>
-                        <th className="text-[10px] font-semibold uppercase text-[#999] px-4 py-2 border-b border-[#E7E5E4]">Qty</th>
+                      <tr className="bg-[#F5F5F3]">
+                        <th className="text-[10px] font-bold uppercase tracking-wider text-[#666] px-4 py-3 border-b-2 border-[#E7E5E4] w-[1%] whitespace-nowrap">Item</th>
+                        <th className="text-[10px] font-bold uppercase tracking-wider text-[#666] px-4 py-3 border-b-2 border-[#E7E5E4] text-right w-16">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {byRoom[room].map((item) => {
-                        const qtyMatch = item.item_name.match(/\s+x(\d+)$/i);
-                        const baseName = qtyMatch ? item.item_name.replace(/\s+x\d+$/i, "").trim() : item.item_name;
-                        const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-                        return (
-                        <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0">
-                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{baseName}</td>
-                          <td className="px-4 py-2.5 text-[12px] font-medium text-[#1A1A1A]">{qty}</td>
-                        </tr>
-                      );})}
+                      {byRoom[room].flatMap((item) => {
+                        const parts = item.item_name.split(",").map((p) => p.trim()).filter(Boolean);
+                        const capitalize = (str: string) =>
+                          str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
+                        if (parts.length === 0) {
+                          const label = capitalize(item.item_name);
+                          const qtyMatch = item.item_name.match(/\s+x(\d+)$/i);
+                          const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+                          return [
+                            <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{label}</td>
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
+                            </tr>,
+                          ];
+                        }
+                        return parts.map((part, pi) => {
+                          const qtyMatch = part.match(/\s+x(\d+)$/i);
+                          const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+                          const label = capitalize(part);
+                          return (
+                            <tr key={`${item.id}-${pi}`} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{label}</td>
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
+                            </tr>
+                          );
+                        });
+                      })}
                     </tbody>
                   </table>
                 </div>

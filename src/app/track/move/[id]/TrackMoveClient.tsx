@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
-import { Icon } from "@/components/AppIcons";
 import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
@@ -57,6 +56,9 @@ export default function TrackMoveClient({
   fromNotify = false,
   paymentSuccess = false,
   linkExpired = false,
+  additionalFeesCents = 0,
+  changeRequestFeesCents = 0,
+  extraItemFeesCents = 0,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -64,6 +66,9 @@ export default function TrackMoveClient({
   fromNotify?: boolean;
   paymentSuccess?: boolean;
   linkExpired?: boolean;
+  additionalFeesCents?: number;
+  changeRequestFeesCents?: number;
+  extraItemFeesCents?: number;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
@@ -154,10 +159,6 @@ export default function TrackMoveClient({
   const isCompleted = statusVal === "completed" || statusVal === "delivered";
   const isInProgress = statusVal === "in_progress";
 
-  // When job completes, switch away from Live Tracking tab if it was selected
-  useEffect(() => {
-    if (isCompleted && activeTab === "track") setActiveTab("dash");
-  }, [isCompleted, activeTab]);
 
   const typeLabel = move.move_type === "office" ? "Office / Commercial" : "Premier Residential";
   const [liveScheduledDate, setLiveScheduledDate] = useState<string | null>(move.scheduled_date || null);
@@ -165,7 +166,10 @@ export default function TrackMoveClient({
   const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
   const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const totalBalance = Number(move.estimate || 0);
+  const baseBalance =
+    move.status === "paid" || paymentRecorded || showPaymentSuccess ? 0 : Number(move.estimate || 0);
+  const feesDollars = (additionalFeesCents || 0) / 100;
+  const totalBalance = baseBalance + feesDollars;
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
   const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
 
@@ -229,7 +233,7 @@ export default function TrackMoveClient({
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
-    ...(isCompleted ? [] : [{ key: "track" as TabKey, label: "Live Tracking" }]),
+    { key: "track" as TabKey, label: "Live Tracking" },
     { key: "inv", label: "Inventory" },
     { key: "photos", label: "Photos" },
     { key: "docs", label: "Documents" },
@@ -311,15 +315,10 @@ export default function TrackMoveClient({
           >
             <div className="overflow-hidden">
               <div
-                className={`rounded-xl border border-[#C9A962]/40 bg-[#C9A962]/10 px-4 py-3 flex items-center gap-3 transition-opacity duration-300 ease-out ${showNotifyBanner ? "opacity-100" : "opacity-0"}`}
+                className={`rounded-xl border border-[#C9A962]/40 bg-[#C9A962]/10 px-4 py-3 transition-opacity duration-300 ease-out ${showNotifyBanner ? "opacity-100" : "opacity-0"}`}
               >
-                <div className="w-8 h-8 rounded-full bg-[#C9A962]/20 flex items-center justify-center shrink-0">
-                  <Icon name="check" className="w-4 h-4 text-[#C9A962]" />
-                </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-[#1A1A1A]">Your move status was recently updated</div>
-                  <div className="text-[11px] text-[#666]">View the details below to see what changed.</div>
-                </div>
+                <div className="text-[13px] font-semibold text-[#1A1A1A]">Your move status was recently updated</div>
+                <div className="text-[11px] text-[#666] mt-0.5">View the details below to see what changed.</div>
               </div>
             </div>
           </div>
@@ -467,6 +466,46 @@ export default function TrackMoveClient({
           )}
         </div>
 
+        {/* Live tracking highlight on move day - front and center */}
+        {!isCompleted && daysUntil === 0 && (
+          <div className="mb-5 rounded-xl border-2 border-[#C9A962]/50 bg-[#FAF8F5] p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="relative flex h-3 w-3 shrink-0">
+                  {isInProgress && liveStage != null && (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
+                    </>
+                  )}
+                  {(!isInProgress || liveStage == null) && (
+                    <span className="inline-flex rounded-full h-3 w-3 bg-[#C9A962]/60" />
+                  )}
+                </span>
+                <div>
+                  <h3 className="text-[14px] font-bold text-[#1A1A1A]">
+                    {isInProgress && liveStage != null
+                      ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "Live"
+                      : "Live Tracking"}
+                  </h3>
+                  <p className="text-[12px] text-[#666] mt-0.5">
+                    {isInProgress && liveStage != null
+                      ? "See your crew on the map"
+                      : "Map will appear when your crew starts"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("track")}
+                className="shrink-0 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+              >
+                View map
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabs - horizontally scrollable on mobile with fade hint */}
         <div className="relative mb-5 overflow-hidden">
           <div
@@ -511,6 +550,7 @@ export default function TrackMoveClient({
                   const effectiveStatus = statusVal === "delivered" ? "completed" : statusVal;
                   const stepCurrentIdx = statusOrder.indexOf(effectiveStatus);
                   const state = isCancelled ? "wait" : stepIdx < stepCurrentIdx ? "done" : stepIdx === stepCurrentIdx ? "act" : "wait";
+                  const isCompletedStep = s.value === "completed";
                   const subLabels: Record<string, { done: string; act: string; wait: string }> = {
                     confirmed: { done: "Your move is confirmed", act: "Your move is confirmed", wait: "Upcoming" },
                     scheduled: { done: "Crew and date assigned", act: "Crew and date assigned", wait: "Upcoming" },
@@ -527,12 +567,14 @@ export default function TrackMoveClient({
                       className="relative pb-5 last:pb-0 group cursor-default transition-colors duration-200"
                     >
                       <div
-                        className={`absolute -left-[19px] top-0.5 w-3 h-3 rounded-full border-2 border-white z-10 transition-all duration-200 ease-out ${
-                          state === "done"
-                            ? "bg-[#22C55E] w-3.5 h-3.5 -left-5 group-hover:scale-110"
-                              : state === "act"
-                              ? "bg-[#F59E0B] w-3.5 h-3.5 -left-5 shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
-                              : "bg-[#E7E5E4] group-hover:bg-[#D4D4D4]"
+                        className={`absolute -left-[19px] top-0.5 rounded-full border-2 border-white z-10 transition-all duration-300 ease-out client-timeline-dot ${
+                          state === "done" && isCompletedStep
+                            ? "w-5 h-5 -left-6 bg-[#22C55E] shadow-[0_0_0_0_4px_rgba(34,197,94,0.25)] client-timeline-dot-completed"
+                            : state === "done"
+                            ? "w-3.5 h-3.5 -left-5 bg-[#22C55E] group-hover:scale-110"
+                            : state === "act"
+                            ? "w-3.5 h-3.5 -left-5 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
+                            : "w-3 h-3 bg-[#E7E5E4] group-hover:bg-[#D4D4D4]"
                         }`}
                       />
                       <div className={`text-[13px] font-semibold transition-colors duration-300 ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
@@ -546,6 +588,12 @@ export default function TrackMoveClient({
                 })}
               </div>
             </div>
+
+            {additionalFeesCents > 0 && (
+              <div className="mb-4 rounded-xl border border-[#C9A962] bg-[#FDF8F0] p-4 text-[13px] text-[#1A1A1A]">
+                You have additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved change requests and extra items. Pay below.
+              </div>
+            )}
 
             {/* Move Details + Your Crew grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -577,7 +625,7 @@ export default function TrackMoveClient({
                     <div className="text-[10px] font-semibold uppercase text-[#999] mb-0.5">Total Balance</div>
                     <div className="font-hero text-[18px] font-bold text-[#C9A962]">{formatCurrency(totalBalance)}</div>
                   </div>
-                  {totalBalance > 0 && !showPaymentSuccess && move.status !== "paid" && !paymentRecorded && (
+                  {totalBalance > 0 && (
                     <div className="pt-2">
                       <button
                         type="button"
@@ -632,12 +680,9 @@ export default function TrackMoveClient({
             </div>
 
 {changeSubmitted && (
-              <div className="rounded-xl border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3 flex items-center gap-3">
-                <Icon name="check" className="w-5 h-5 text-[#22C55E] shrink-0" />
-                <div>
-                  <div className="text-[13px] font-semibold text-[#1A1A1A]">Change request submitted</div>
-                  <div className="text-[12px] text-[#666]">Your coordinator will reach out within 2 hours.</div>
-                </div>
+              <div className="rounded-xl border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3">
+                <div className="text-[13px] font-semibold text-[#1A1A1A]">Change request submitted</div>
+                <div className="text-[12px] text-[#666] mt-0.5">Your coordinator will reach out within 2 hours.</div>
               </div>
             )}
 
@@ -648,22 +693,36 @@ export default function TrackMoveClient({
                 onClick={() => setChangeModalOpen(true)}
                 className="w-full rounded-xl border-2 border-dashed border-[#E7E5E4] py-4 text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors flex items-center justify-center gap-2 bg-white"
               >
-                <Icon name="clipboard" className="w-[14px] h-[14px]" />
                 Request a Change
               </button>
             )}
           </div>
         )}
 
-        {activeTab === "track" && !isCompleted && (
+        {activeTab === "track" && (
           <div className="space-y-5">
-            <TrackLiveMap
-              moveId={move.id}
-              token={token}
-              move={move}
-              crew={crew}
-              onLiveStageChange={setLiveStage}
-            />
+            {isCompleted ? (
+              <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 sm:p-8 shadow-sm text-center">
+                <h2 className="font-hero text-[20px] font-semibold text-[#1A1A1A]">Your move is complete</h2>
+                <p className="mt-2 text-[13px] text-[#666]">Thank you for choosing us. We hope your move went smoothly.</p>
+                <a
+                  href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-block rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[#B89A52] transition-colors"
+                >
+                  Leave a Review
+                </a>
+              </div>
+            ) : (
+              <TrackLiveMap
+                moveId={move.id}
+                token={token}
+                move={move}
+                crew={crew}
+                onLiveStageChange={setLiveStage}
+              />
+            )}
           </div>
         )}
 
@@ -688,15 +747,9 @@ export default function TrackMoveClient({
         {activeTab === "msg" && (
           <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 shadow-sm">
             <h3 className="text-[14px] font-bold mb-3 text-[#1A1A1A]">Messages with your coordinator</h3>
-            <div className="space-y-2 text-[13px] mb-4 text-[#1A1A1A]">
-              <p className="flex items-center gap-2">
-                <Icon name="phone" className="w-[12px] h-[12px] text-[#C9A962]" />
-                <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="text-[#C9A962] hover:underline">{formatPhone(YUGO_PHONE)}</a>
-              </p>
-              <p className="flex items-center gap-2">
-                <Icon name="mail" className="w-[12px] h-[12px] text-[#C9A962]" />
-                <a href={`mailto:${YUGO_EMAIL}`} className="text-[#C9A962] hover:underline">{YUGO_EMAIL}</a>
-              </p>
+            <div className="space-y-1.5 text-[13px] mb-4 text-[#1A1A1A]">
+              <p>Phone: <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="text-[#C9A962] hover:underline">{formatPhone(YUGO_PHONE)}</a></p>
+              <p>Email: <a href={`mailto:${YUGO_EMAIL}`} className="text-[#C9A962] hover:underline">{YUGO_EMAIL}</a></p>
             </div>
             <TrackMessageThread moveId={move.id} token={token} />
           </div>

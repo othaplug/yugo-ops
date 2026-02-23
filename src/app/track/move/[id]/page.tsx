@@ -48,6 +48,22 @@ export default async function TrackMovePage({
     crew = c;
   }
 
+  // Approved fees from change requests and extra items (for client balance)
+  const { data: approvedChanges } = await supabase
+    .from("move_change_requests")
+    .select("fee_cents")
+    .eq("move_id", move.id)
+    .eq("status", "approved");
+  const { data: approvedExtras } = await supabase
+    .from("extra_items")
+    .select("fee_cents")
+    .eq("job_id", move.id)
+    .eq("job_type", "move")
+    .eq("status", "approved");
+  const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+  const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+  const additionalFeesCents = changeFeesCents + extraFeesCents;
+
   return (
     <TrackMoveClient
       move={move}
@@ -56,6 +72,9 @@ export default async function TrackMovePage({
       fromNotify={from === "notify"}
       paymentSuccess={payment === "success"}
       linkExpired={linkExpired}
+      additionalFeesCents={additionalFeesCents}
+      changeRequestFeesCents={changeFeesCents}
+      extraItemFeesCents={extraFeesCents}
     />
   );
 }

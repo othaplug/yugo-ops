@@ -17,6 +17,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
     const status = body.status === "approved" || body.status === "rejected" ? body.status : null;
+    const feeCents = typeof body.fee_cents === "number" && body.fee_cents >= 0 ? Math.round(body.fee_cents) : 0;
 
     if (!status) {
       return NextResponse.json({ error: "status must be approved or rejected" }, { status: 400 });
@@ -40,16 +41,25 @@ export async function PATCH(
         status,
         reviewed_at: new Date().toISOString(),
         reviewed_by: user?.id ?? null,
+        fee_cents: status === "approved" ? feeCents : 0,
       })
       .eq("id", id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    const { data: requestWithFee } = await admin
+      .from("move_change_requests")
+      .select("fee_cents")
+      .eq("id", id)
+      .single();
 
     const { data: move } = await admin
       .from("moves")
       .select("client_email, client_name")
       .eq("id", request.move_id)
       .single();
+
+    const feeCentsFinal = status === "approved" ? (requestWithFee?.fee_cents ?? feeCents) : 0;
 
     if (move?.client_email && process.env.RESEND_API_KEY) {
       try {
@@ -61,6 +71,7 @@ export async function PATCH(
           type: request.type,
           description: request.description,
           portalUrl: trackUrl,
+          feeCents: feeCentsFinal,
         });
         await resend.emails.send({
           from: "OPS+ <notifications@opsplus.co>",

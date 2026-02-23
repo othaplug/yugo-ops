@@ -291,9 +291,11 @@ export function changeRequestNotificationEmail(params: {
   type: string;
   description: string;
   portalUrl: string;
+  feeCents?: number;
 }) {
-  const { client_name, status, type, description, portalUrl } = params;
+  const { client_name, status, type, description, portalUrl, feeCents = 0 } = params;
   const isApproved = status === "approved";
+  const feeDollars = feeCents > 0 ? (feeCents / 100).toFixed(2) : "";
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
@@ -308,6 +310,39 @@ export function changeRequestNotificationEmail(params: {
             ${isApproved ? "Approved" : "Declined"}
           </span>
         </div>
+        ${isApproved && feeDollars ? `
+        <p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:16px 0 0">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>
+        ` : ""}
+      </div>
+      
+      <a href="${portalUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+        Track your move →
+      </a>
+      
+      ${emailFooter()}
+    </div>
+  `;
+}
+
+export function extraItemApprovalEmail(params: {
+  client_name: string;
+  description: string;
+  portalUrl: string;
+  feeCents?: number;
+}) {
+  const { client_name, description, portalUrl, feeCents = 0 } = params;
+  const feeDollars = feeCents > 0 ? (feeCents / 100).toFixed(2) : "";
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+      ${emailLogo()}
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Extra Item Approved</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Your extra item has been approved</h1>
+      
+      <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+        <p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:0">${description}</p>
+        ${feeDollars ? `
+        <p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:16px 0 0">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>
+        ` : ""}
       </div>
       
       <a href="${portalUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">

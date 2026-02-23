@@ -36,7 +36,7 @@ export async function POST(
     const admin = createAdminClient();
     const { data: move, error: moveError } = await admin
       .from("moves")
-      .select("id, estimate, client_name, move_code")
+      .select("id, estimate, status, client_name, move_code")
       .eq("id", moveId)
       .single();
 
@@ -44,8 +44,27 @@ export async function POST(
       return NextResponse.json({ error: "Move not found" }, { status: 404 });
     }
 
-    const amountDollars = Number(move.estimate || 0);
-    if (amountDollars <= 0) {
+    const baseDollars =
+      move.status === "paid" ? 0 : Number(move.estimate || 0);
+    const [changeFeesRes, extraFeesRes] = await Promise.all([
+      admin
+        .from("move_change_requests")
+        .select("fee_cents")
+        .eq("move_id", moveId)
+        .eq("status", "approved"),
+      admin
+        .from("extra_items")
+        .select("fee_cents")
+        .eq("job_id", moveId)
+        .eq("job_type", "move")
+        .eq("status", "approved"),
+    ]);
+    const changeFeesCents = (changeFeesRes.data ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+    const extraFeesCents = (extraFeesRes.data ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+    const totalCents =
+      Math.round(baseDollars * 100) + changeFeesCents + extraFeesCents;
+
+    if (totalCents <= 0) {
       return NextResponse.json(
         { error: "No balance due for this move" },
         { status: 400 }
@@ -65,7 +84,7 @@ export async function POST(
       );
     }
 
-    const amountCents = Math.round(amountDollars * 100);
+    const amountCents = totalCents;
     const idempotencyKey = `move-${moveId}-${Date.now()}`;
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
     const redirectUrl = baseUrl ? `${baseUrl}/track/move/${moveId}?payment=success` : undefined;

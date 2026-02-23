@@ -90,7 +90,7 @@ function MapController({
       if (hasCrew && crew) {
         bounds.extend([crew.current_lat, crew.current_lng]);
       }
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 14 });
     } else {
       const zoom = hasCrew ? 14 : 10;
       map.setView([center.lat, center.lng], zoom);
