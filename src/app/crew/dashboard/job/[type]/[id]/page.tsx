@@ -216,7 +216,7 @@ export default function CrewJobPage({
 
   const watchIdRef = { current: null as number | null };
   const lastSentRef = { current: 0 };
-  const SEND_INTERVAL = 30000;
+  const SEND_INTERVAL = 15000; // 15s — send location every 10–30s while job is active
 
   const startGpsTracking = (sessionId: string) => {
     if (!("geolocation" in navigator)) {

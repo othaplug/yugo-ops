@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import AdminPageClient from "./AdminPageClient";
 
 export default async function AdminPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
 
   const [
@@ -28,8 +30,8 @@ export default async function AdminPage() {
         return { data: [] };
       }
     })(),
-    supabase.from("end_of_day_reports").select("team_id, summary, generated_at").eq("report_date", today),
-    supabase.from("crews").select("id, name").order("name"),
+    admin.from("end_of_day_reports").select("team_id, summary, generated_at").eq("report_date", today),
+    admin.from("crews").select("id, name").order("name"),
   ]);
 
   const allDeliveries = deliveries || [];

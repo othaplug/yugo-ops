@@ -10,6 +10,7 @@ import DownloadPDFButton from "./DownloadPDFButton";
 import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 
@@ -139,12 +140,14 @@ export default function DeliveryDetailClient({ delivery: initialDelivery, client
         )}
       </div>
 
-      {/* Live Crew Tracking Map */}
+      {/* Live Crew Tracking Map - collapsible, collapsed by default */}
       {delivery.crew_id && (
-        <LiveTrackingMap
-          crewId={delivery.crew_id}
-          crewName={delivery.crew_name}
-        />
+        <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={delivery.crew_name || "Crew"}>
+          <LiveTrackingMap
+            crewId={delivery.crew_id}
+            crewName={delivery.crew_name}
+          />
+        </CollapsibleSection>
       )}
 
       {/* Details Grid */}

@@ -198,3 +198,91 @@ export function generateDeliveryPDF(delivery: {
 
   return doc;
 }
+
+export interface EODReportForPDF {
+  id: string;
+  team_id: string;
+  report_date: string;
+  summary?: Record<string, unknown>;
+  jobs?: { jobId: string; type: string; duration: number; signOff?: boolean; hasDamage?: boolean; displayId: string; clientName: string }[];
+  crew_note?: string | null;
+  generated_at?: string;
+  crews?: { name?: string } | null;
+}
+
+export function generateEODReportPDF(reports: EODReportForPDF[]) {
+  const doc = new jsPDF();
+  const gold = [201, 169, 98] as [number, number, number];
+  const dark = [13, 13, 13] as [number, number, number];
+  const gray = [100, 100, 100] as [number, number, number];
+
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text("EOD", 20, 22);
+  doc.setFontSize(8);
+  doc.setTextColor(...gray);
+  doc.text("End-of-Day Reports", 20, 28);
+
+  let y = 40;
+  reports.forEach((r, idx) => {
+    const crewName = (r.crews as { name?: string })?.name || "Team";
+    if (y > 260) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...dark);
+    doc.text(`${crewName} — ${r.report_date}`, 20, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+    if (r.generated_at) {
+      doc.text(`Generated: ${new Date(r.generated_at).toLocaleString("en-US")}`, 20, y);
+      y += 5;
+    }
+    const jobs = r.jobs || [];
+    if (jobs.length > 0) {
+      const body = jobs.map((j) => [
+        j.displayId ?? j.jobId?.slice(0, 8) ?? "—",
+        j.clientName ?? "—",
+        j.type,
+        String(j.duration ?? 0),
+        j.signOff ? "Yes" : "No",
+        j.hasDamage ? "Yes" : "No",
+      ]);
+      autoTable(doc, {
+        startY: y,
+        head: [["Job ID", "Client", "Type", "Min", "Signed", "Damage"]],
+        body,
+        theme: "grid",
+        headStyles: { fillColor: gold, textColor: dark, fontStyle: "bold" },
+        styles: { fontSize: 8 },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 8;
+    }
+    if (r.crew_note) {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...gray);
+      doc.text("Crew note:", 20, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(r.crew_note, 170);
+      doc.text(lines, 20, y);
+      y += lines.length * 4 + 6;
+    }
+    if (idx < reports.length - 1) {
+      doc.setDrawColor(220, 220, 220);
+      doc.line(20, y, 190, y);
+      y += 10;
+    }
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(...gray);
+  doc.text("EOD • opsplus.co", 20, 285);
+
+  return doc;
+}

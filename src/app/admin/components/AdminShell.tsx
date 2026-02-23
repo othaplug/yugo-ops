@@ -75,6 +75,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDa
   "/admin/revenue": { title: "Revenue", subtitle: "Financial overview" },
   "/admin/clients": { title: "Contacts", subtitle: "Partners & move clients" },
   "/admin/change-requests": { title: "Change Requests", subtitle: "Client requests to review" },
+  "/admin/reports": { title: "EOD", subtitle: "End-of-Day Reports" },
   "/admin/messages": { title: "Messages", subtitle: "Communications" },
   "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
   "/admin/settings/personal": { title: "Profile Settings", subtitle: "Account, security & preferences" },

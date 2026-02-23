@@ -9,6 +9,8 @@ type InventoryItem = {
   item_name: string;
   box_number: string | null;
   sort_order: number;
+  /** Set for extra items so item column shows name only and Qty column shows this */
+  quantity?: number;
 };
 
 type ExtraItem = {
@@ -112,9 +114,10 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
       byRoom[room].push({
         id: e.id,
         room,
-        item_name: `${e.description ?? "—"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`,
+        item_name: (e.description ?? "—").trim(),
         box_number: e.room || null,
         sort_order: 0,
+        quantity: e.quantity ?? 1,
       });
     });
   }
@@ -250,24 +253,30 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
                         const parts = item.item_name.split(",").map((p) => p.trim()).filter(Boolean);
                         const capitalize = (str: string) =>
                           str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
+                        const baseName = (name: string) => {
+                          const m = name.match(/\s+x(\d+)$/i);
+                          return m ? name.replace(/\s+x\d+$/i, "").trim() : name;
+                        };
+                        const qtyFromName = (name: string) => {
+                          const m = name.match(/\s+x(\d+)$/i);
+                          return m ? parseInt(m[1], 10) : 1;
+                        };
                         if (parts.length === 0) {
-                          const label = capitalize(item.item_name);
-                          const qtyMatch = item.item_name.match(/\s+x(\d+)$/i);
-                          const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+                          const displayName = capitalize(baseName(item.item_name));
+                          const qty = item.quantity ?? qtyFromName(item.item_name);
                           return [
                             <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{label}</td>
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{displayName}</td>
                               <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
                             </tr>,
                           ];
                         }
                         return parts.map((part, pi) => {
-                          const qtyMatch = part.match(/\s+x(\d+)$/i);
-                          const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-                          const label = capitalize(part);
+                          const displayName = capitalize(baseName(part));
+                          const qty = qtyFromName(part);
                           return (
                             <tr key={`${item.id}-${pi}`} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{label}</td>
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{displayName}</td>
                               <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
                             </tr>
                           );

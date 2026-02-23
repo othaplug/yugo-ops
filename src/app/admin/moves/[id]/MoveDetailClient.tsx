@@ -17,6 +17,7 @@ import MoveCrewPhotosSection from "./MoveCrewPhotosSection";
 import MoveSignOffSection from "./MoveSignOffSection";
 import MoveDocumentsSection from "./MoveDocumentsSection";
 import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import DistanceLogistics from "./DistanceLogistics";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -283,13 +284,18 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </div>
 
-      {/* Live Crew Tracking Map - only when move is in progress and crew assigned */}
-      {isInProgress && move.crew_id && (
-        <LiveTrackingMap
-          crewId={move.crew_id}
-          crewName={selectedCrew?.name}
-          destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
-        />
+      {/* Live Crew Tracking Map - collapsible, collapsed by default */}
+      {move.crew_id && (
+        <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={selectedCrew?.name || "Crew"}>
+          {!isInProgress && (
+            <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed — live tracking still shown for vehicle and asset security.</p>
+          )}
+          <LiveTrackingMap
+            crewId={move.crew_id}
+            crewName={selectedCrew?.name}
+            destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
+          />
+        </CollapsibleSection>
       )}
 
       <MoveContactModal

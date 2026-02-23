@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const [readinessRes, expensesRes, sessionsRes] = await Promise.all([
     admin.from("readiness_checks").select("passed, flagged_items").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     admin.from("crew_expenses").select("category, amount_cents, description").eq("team_id", payload.teamId).gte("submitted_at", today).lte("submitted_at", today + "T23:59:59.999Z"),
-    admin.from("tracking_sessions").select("job_id, job_type, started_at, status, checkpoints").eq("team_id", payload.teamId).gte("started_at", today),
+    admin.from("tracking_sessions").select("id, job_id, job_type, started_at, status, checkpoints").eq("team_id", payload.teamId).gte("started_at", today),
   ]);
 
   const readiness = readinessRes.data;
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   const [readinessRes, expensesRes, sessionsRes] = await Promise.all([
     admin.from("readiness_checks").select("passed, flagged_items").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     admin.from("crew_expenses").select("category, amount_cents, description").eq("team_id", payload.teamId).gte("submitted_at", today).lte("submitted_at", today + "T23:59:59.999Z"),
-    admin.from("tracking_sessions").select("job_id, job_type, started_at, status, checkpoints").eq("team_id", payload.teamId).gte("started_at", today),
+    admin.from("tracking_sessions").select("id, job_id, job_type, started_at, status, checkpoints").eq("team_id", payload.teamId).gte("started_at", today),
   ]);
 
   const readiness = readinessRes.data;
@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
     return {
       jobId: s.job_id,
       type: s.job_type,
+      sessionId: (s as { id?: string }).id ?? null,
       duration,
       status: s.status,
       signOff: !!so,

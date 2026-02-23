@@ -166,9 +166,9 @@ export default function TrackMoveClient({
   const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
   const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const baseBalance =
-    move.status === "paid" || paymentRecorded || showPaymentSuccess ? 0 : Number(move.estimate || 0);
-  const feesDollars = (additionalFeesCents || 0) / 100;
+  const isPaid = move.status === "paid" || paymentRecorded || showPaymentSuccess;
+  const baseBalance = isPaid ? 0 : Number(move.estimate || 0);
+  const feesDollars = isPaid ? 0 : (additionalFeesCents || 0) / 100;
   const totalBalance = baseBalance + feesDollars;
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
   const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
@@ -549,7 +549,15 @@ export default function TrackMoveClient({
                   const stepIdx = statusOrder.indexOf(s.value);
                   const effectiveStatus = statusVal === "delivered" ? "completed" : statusVal;
                   const stepCurrentIdx = statusOrder.indexOf(effectiveStatus);
-                  const state = isCancelled ? "wait" : stepIdx < stepCurrentIdx ? "done" : stepIdx === stepCurrentIdx ? "act" : "wait";
+                  const state = isCancelled
+                    ? "wait"
+                    : s.value === "completed" && effectiveStatus === "completed"
+                      ? "done"
+                      : stepIdx < stepCurrentIdx
+                        ? "done"
+                        : stepIdx === stepCurrentIdx
+                          ? "act"
+                          : "wait";
                   const isCompletedStep = s.value === "completed";
                   const subLabels: Record<string, { done: string; act: string; wait: string }> = {
                     confirmed: { done: "Your move is confirmed", act: "Your move is confirmed", wait: "Upcoming" },
@@ -589,7 +597,7 @@ export default function TrackMoveClient({
               </div>
             </div>
 
-            {additionalFeesCents > 0 && (
+            {additionalFeesCents > 0 && !isPaid && (
               <div className="mb-4 rounded-xl border border-[#C9A962] bg-[#FDF8F0] p-4 text-[13px] text-[#1A1A1A]">
                 You have additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved change requests and extra items. Pay below.
               </div>
@@ -686,7 +694,7 @@ export default function TrackMoveClient({
               </div>
             )}
 
-            {/* Request a Change - hide when complete */}
+            {/* Request a Change - hide when move is completed */}
             {!isCompleted && (
               <button
                 type="button"
@@ -695,6 +703,9 @@ export default function TrackMoveClient({
               >
                 Request a Change
               </button>
+            )}
+            {isCompleted && (
+              <p className="text-[12px] text-[#666]">Change requests are closed for completed moves.</p>
             )}
           </div>
         )}

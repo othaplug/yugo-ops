@@ -35,22 +35,47 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: session } = await admin
     .from("tracking_sessions")
-    .select("id, team_id, is_active, status")
+    .select("id, team_id, is_active, status, last_location, updated_at, checkpoints")
     .eq("id", sessionId)
     .single();
 
   if (!session || session.team_id !== payload.teamId) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
-  if (!session.is_active) return NextResponse.json({ ok: true });
+
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  const lastLoc = session.last_location as { lat?: number; lng?: number } | null;
+  const updatedAt = session.updated_at ? new Date(session.updated_at).getTime() : 0;
+  const samePosition = lastLoc && typeof lastLoc.lat === "number" && typeof lastLoc.lng === "number" &&
+    Math.abs(lastLoc.lat - latNum) < 0.0002 && Math.abs(lastLoc.lng - lngNum) < 0.0002;
+  const idleMins = (Date.now() - updatedAt) / 60000;
+  if (session.is_active && samePosition && idleMins >= 10) {
+    const checkpoints = Array.isArray(session.checkpoints) ? [...session.checkpoints] : [];
+    const lastCp = checkpoints[checkpoints.length - 1] as { status?: string } | undefined;
+    if (lastCp?.status !== "idle") {
+      checkpoints.push({ status: "idle", timestamp: new Date().toISOString(), lat: latNum, lng: lngNum, note: `No movement ${Math.round(idleMins)}+ min` });
+      await admin.from("tracking_sessions").update({ checkpoints, updated_at: new Date().toISOString() }).eq("id", sessionId);
+    }
+  }
 
   const ts = timestamp || new Date().toISOString();
   const lastLocation = {
-    lat: Number(lat),
-    lng: Number(lng),
+    lat: latNum,
+    lng: lngNum,
     accuracy: Number(accuracy) || 0,
     timestamp: ts,
   };
+
+  // Always update crew position (vehicle/asset security) so admin map shows current truck location even after job completion
+  await admin.from("crews").update({
+    current_lat: lastLocation.lat,
+    current_lng: lastLocation.lng,
+    updated_at: ts,
+    status: session.is_active && session.status && !["completed", "not_started"].includes(session.status) ? "en-route" : "standby",
+  }).eq("id", session.team_id);
+
+  if (!session.is_active) return NextResponse.json({ ok: true });
 
   await Promise.all([
     admin.from("location_updates").insert({
@@ -66,12 +91,6 @@ export async function POST(req: NextRequest) {
       last_location: lastLocation,
       updated_at: ts,
     }).eq("id", sessionId),
-    admin.from("crews").update({
-      current_lat: lastLocation.lat,
-      current_lng: lastLocation.lng,
-      updated_at: ts,
-      status: session.status && !["completed", "not_started"].includes(session.status) ? "en-route" : "standby",
-    }).eq("id", session.team_id),
   ]);
 
   return NextResponse.json({ ok: true });

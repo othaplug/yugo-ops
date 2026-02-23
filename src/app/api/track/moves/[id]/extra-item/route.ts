@@ -33,7 +33,6 @@ export async function POST(
     .from("extra_items")
     .insert({
       job_id: moveId,
-      job_type: "move",
       added_by: null,
       requested_by: "client",
       status: "pending",
