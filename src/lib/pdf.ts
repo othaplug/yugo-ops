@@ -212,7 +212,7 @@ export interface SignOffReceiptData {
   npsScore?: number | null;
   wouldRecommend?: boolean | null;
   damageReportDeadline?: string | null;
-  confirmations: { label: string; value: boolean }[];
+  confirmations: { label: string; value: boolean; valueLabel?: string }[];
   feedbackNote?: string | null;
   exceptions?: string | null;
   escalationTriggered?: boolean;
@@ -287,7 +287,7 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
 
   // Confirmations table
   if (data.confirmations.length > 0) {
-    const body = data.confirmations.map((c) => [c.label, c.value ? "Yes" : "No"]);
+    const body = data.confirmations.map((c) => [c.label, c.valueLabel ?? (c.value ? "Yes" : "No")]);
     autoTable(doc, {
       startY: y,
       head: [["Confirmation", "Status"]],
@@ -301,7 +301,8 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
       didParseCell: (hookData) => {
         if (hookData.section === "body" && hookData.column.index === 1) {
           const val = (hookData.row.raw as string[])?.[1];
-          (hookData.cell.styles as { textColor?: number[] }).textColor = val === "Yes" ? green : red;
+          const color = val === "Yes" ? green : val === "N/A" ? gray : red;
+          (hookData.cell.styles as { textColor?: number[] }).textColor = color;
         }
       },
     });

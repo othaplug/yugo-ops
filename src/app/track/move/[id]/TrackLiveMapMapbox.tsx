@@ -121,7 +121,7 @@ export function TrackLiveMapMapbox({
         zoom: hasPosition ? 14 : 10,
       }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle="mapbox://styles/mapbox/dark-v11"
+      mapStyle="mapbox://styles/mapbox/light-v11"
     >
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
       {fullRouteGeoJson && (
@@ -144,7 +144,7 @@ export function TrackLiveMapMapbox({
             id="route-tracking-layer"
             type="line"
             paint={{
-              "line-color": "#1A1A1A",
+              "line-color": "#8B5CF6",
               "line-width": 5,
               "line-opacity": 1,
             }}

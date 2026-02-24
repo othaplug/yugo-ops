@@ -69,13 +69,13 @@ export async function POST(
   const signedLng = typeof body.signedLng === "number" ? body.signedLng : null;
   const npsScore = typeof body.npsScore === "number" && body.npsScore >= 0 && body.npsScore <= 10 ? body.npsScore : null;
   const crewWoreProtection = body.crewWoreProtection === true;
-  const furnitureReassembled = body.furnitureReassembled === true;
+  const furnitureReassembled = body.furnitureReassembled === true ? true : body.furnitureReassembled === false ? false : null;
   const itemsPlacedCorrectly = body.itemsPlacedCorrectly === true;
   const propertyLeftClean = body.propertyLeftClean === true;
   const clientPresentDuringUnloading = body.clientPresentDuringUnloading === true;
   const noPropertyDamage = body.noPropertyDamage === true;
   const preExistingConditionsNoted = body.preExistingConditionsNoted === true;
-  const claimsProcessExplained = body.claimsProcessExplained === true;
+  const claimsProcessExplained = false;
   const photosReviewedByClient = body.photosReviewedByClient === true;
 
   if (!signedBy || !signatureDataUrl) {

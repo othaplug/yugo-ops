@@ -167,7 +167,6 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
               <div><span className="text-[var(--tx3)]">Furniture reassembled:</span> <YesNo value={signOff.furniture_reassembled} /></div>
               <div><span className="text-[var(--tx3)]">Items in correct rooms:</span> <YesNo value={signOff.items_placed_correctly} /></div>
               <div><span className="text-[var(--tx3)]">Property left clean:</span> <YesNo value={signOff.property_left_clean} /></div>
-              <div><span className="text-[var(--tx3)]">Claims process explained:</span> <YesNo value={signOff.claims_process_explained} /></div>
             </div>
           </div>
 

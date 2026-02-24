@@ -152,7 +152,7 @@ export function TrackLiveMapLeaflet({
       <MapController center={center} pickup={pickup ?? null} dropoff={dropoff ?? null} crew={crew} />
       {USE_MAPBOX ? (
         <TileLayer
-          url={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}
+          url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}
           tileSize={512}
           zoomOffset={-1}
           attribution=""
@@ -176,7 +176,7 @@ export function TrackLiveMapLeaflet({
       {trackingLinePositions.length === 2 && (
         <Polyline
           positions={trackingLinePositions}
-          color="#1A1A1A"
+          color="#8B5CF6"
           weight={5}
           opacity={1}
           lineCap="round"

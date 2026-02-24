@@ -99,18 +99,17 @@ export default function ClientSignOffPage({
 
   // Phase 2: Experience + new checkboxes
   const [rating, setRating] = useState<number | null>(null);
-  const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
   const [npsScore, setNpsScore] = useState<number | null>(null);
   const [noIssuesDuringMove, setNoIssuesDuringMove] = useState(false);
   const [noDamages, setNoDamages] = useState(false);
   const [walkthroughCompleted, setWalkthroughCompleted] = useState(false);
   const [crewConductedProfessionally, setCrewConductedProfessionally] = useState(false);
   const [crewWoreProtection, setCrewWoreProtection] = useState(false);
-  const [furnitureReassembled, setFurnitureReassembled] = useState(false);
+  /** true = Yes, false = No, null = N/A (does not apply) */
+  const [furnitureReassembled, setFurnitureReassembled] = useState<boolean | null>(null);
   const [itemsPlacedCorrectly, setItemsPlacedCorrectly] = useState(false);
   const [propertyLeftClean, setPropertyLeftClean] = useState(false);
   const [noPropertyDamage, setNoPropertyDamage] = useState(false);
-  const [claimsProcessExplained, setClaimsProcessExplained] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState("");
 
   // Phase 3: Signature
@@ -238,18 +237,16 @@ export default function ClientSignOffPage({
           preExistingConditionsNoted,
           photosReviewedByClient,
           satisfactionRating: rating,
-          wouldRecommend,
           npsScore,
           noIssuesDuringMove,
           noDamages,
           walkthroughCompleted,
           crewConductedProfessionally,
           crewWoreProtection,
-          furnitureReassembled,
+          furnitureReassembled: furnitureReassembled === null ? null : furnitureReassembled,
           itemsPlacedCorrectly,
           propertyLeftClean,
           noPropertyDamage,
-          claimsProcessExplained,
           feedbackNote: feedbackNote.trim() || null,
           exceptions: exceptions.trim() || null,
         }),
@@ -452,12 +449,12 @@ export default function ClientSignOffPage({
               </p>
             )}
 
-            {/* NPS Score */}
+            {/* NPS Score - single horizontal row */}
             <div className="mb-5">
               <p className="text-sm font-medium mb-2" style={{ color: textColor }}>
                 How likely are you to recommend us? (0–10)
               </p>
-              <div className="flex flex-wrap justify-center gap-1.5">
+              <div className="flex flex-nowrap justify-center gap-1 overflow-x-auto pb-1">
                 {Array.from({ length: 11 }, (_, i) => i).map((n) => {
                   const isSelected = npsScore === n;
                   let bg_color = "bg-[#E0DDD8]";
@@ -471,7 +468,7 @@ export default function ClientSignOffPage({
                       key={n}
                       type="button"
                       onClick={() => setNpsScore(n)}
-                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${bg_color} ${
+                      className={`shrink-0 w-9 h-9 rounded-lg text-sm font-medium transition-all ${bg_color} ${
                         isSelected ? "text-white scale-110 ring-2 ring-offset-1 ring-[#C9A962]" : ""
                       }`}
                       style={!isSelected ? { color: mutedColor } : undefined}
@@ -503,43 +500,34 @@ export default function ClientSignOffPage({
               <Checkbox checked={walkthroughCompleted} onChange={setWalkthroughCompleted} label="I completed the walkthrough with the crew" textColor={textColor} />
               <Checkbox checked={crewConductedProfessionally} onChange={setCrewConductedProfessionally} label="The crew conducted themselves professionally" textColor={textColor} />
               <Checkbox checked={crewWoreProtection} onChange={setCrewWoreProtection} label="The crew used floor/wall protection during the move" textColor={textColor} />
-              <Checkbox checked={furnitureReassembled} onChange={setFurnitureReassembled} label="All disassembled furniture was reassembled" textColor={textColor} />
+              {/* Furniture reassembled: Yes / No / N/A */}
+              <div className="p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <p className="text-sm font-medium mb-2" style={{ color: textColor }}>
+                  All disassembled furniture was reassembled
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(["yes", "no", "na"] as const).map((opt) => {
+                    const value = opt === "yes" ? true : opt === "no" ? false : null;
+                    const isSelected = furnitureReassembled === value;
+                    const label = opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A — Does not apply";
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setFurnitureReassembled(value)}
+                        className={`px-4 py-2.5 rounded-xl border-2 font-medium transition-colors ${
+                          isSelected ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]" : "border-[#E0DDD8]"
+                        }`}
+                        style={!isSelected ? { color: mutedColor } : undefined}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <Checkbox checked={itemsPlacedCorrectly} onChange={setItemsPlacedCorrectly} label="All items were placed in the correct rooms" textColor={textColor} />
               <Checkbox checked={propertyLeftClean} onChange={setPropertyLeftClean} label="The crew left the property clean and free of debris" textColor={textColor} />
-              <Checkbox checked={claimsProcessExplained} onChange={setClaimsProcessExplained} label="The crew explained the claims process for any future issues" textColor={textColor} />
-            </div>
-
-            {/* Would recommend */}
-            <div className="mb-4">
-              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>
-                Would you recommend us?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setWouldRecommend(true)}
-                  className={`flex-1 py-3 rounded-xl border-2 font-medium transition-colors ${
-                    wouldRecommend === true
-                      ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]"
-                      : "border-[#E0DDD8]"
-                  }`}
-                  style={wouldRecommend !== true ? { color: mutedColor } : undefined}
-                >
-                  Absolutely
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWouldRecommend(false)}
-                  className={`flex-1 py-3 rounded-xl border-2 font-medium transition-colors ${
-                    wouldRecommend === false
-                      ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]"
-                      : "border-[#E0DDD8]"
-                  }`}
-                  style={wouldRecommend !== false ? { color: mutedColor } : undefined}
-                >
-                  Not sure
-                </button>
-              </div>
             </div>
 
             <textarea

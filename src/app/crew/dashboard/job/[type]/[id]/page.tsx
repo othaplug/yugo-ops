@@ -78,7 +78,7 @@ export default function CrewJobPage({
   const [error, setError] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [note, setNote] = useState("");
-  const [gpsStatus, setGpsStatus] = useState<"off" | "on" | "unavailable">("off");
+  const [gpsStatus, setGpsStatus] = useState<"off" | "on" | "unavailable">("on");
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState("damage");
   const [reportDesc, setReportDesc] = useState("");
@@ -179,7 +179,6 @@ export default function CrewJobPage({
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Failed to start");
       await fetchSession();
-      setGpsStatus("on");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -243,35 +242,6 @@ export default function CrewJobPage({
   const lastSentRef = { current: 0 };
   const SEND_INTERVAL = 15000; // 15s — send location every 10–30s while job is active
 
-  const startGpsTracking = (sessionId: string) => {
-    if (!("geolocation" in navigator)) {
-      setGpsStatus("unavailable");
-      return;
-    }
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const now = Date.now();
-        if (now - lastSentRef.current < SEND_INTERVAL) return;
-        lastSentRef.current = now;
-        fetch("/api/tracking/location", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            speed: pos.coords.speed,
-            heading: pos.coords.heading,
-            timestamp: new Date().toISOString(),
-          }),
-        }).catch(() => {});
-      },
-      () => setGpsStatus("unavailable"),
-      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
-    );
-  };
-
   const stopGpsTracking = () => {
     if (watchIdRef.current != null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -279,12 +249,39 @@ export default function CrewJobPage({
     }
   };
 
+  // GPS always on while on job page — with or without active session, so team location stays visible on tracking page
   useEffect(() => {
-    if (session?.isActive && session.id && gpsStatus === "on") {
-      startGpsTracking(session.id);
+    if (!("geolocation" in navigator)) {
+      setGpsStatus("unavailable");
+      return;
     }
+    setGpsStatus("on");
+    const sessionId = session?.isActive && session?.id ? session.id : undefined;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - lastSentRef.current < SEND_INTERVAL) return;
+        lastSentRef.current = now;
+        const body: Record<string, unknown> = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
+          heading: pos.coords.heading,
+          timestamp: new Date().toISOString(),
+        };
+        if (sessionId) body.sessionId = sessionId;
+        fetch("/api/tracking/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).catch(() => {});
+      },
+      () => setGpsStatus("unavailable"),
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+    );
     return () => stopGpsTracking();
-  }, [session?.id, session?.isActive, gpsStatus]);
+  }, [session?.id, session?.isActive]);
 
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;

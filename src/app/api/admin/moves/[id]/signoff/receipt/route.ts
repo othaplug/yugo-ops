@@ -45,10 +45,13 @@ export async function GET(
     { label: "Walkthrough completed with crew", value: !!signOff.walkthrough_completed },
     { label: "Crew conducted professionally", value: !!signOff.crew_conducted_professionally },
     { label: "Crew used floor/wall protection", value: !!signOff.crew_wore_protection },
-    { label: "Furniture reassembled", value: !!signOff.furniture_reassembled },
+    {
+      label: "Furniture reassembled",
+      value: signOff.furniture_reassembled === true,
+      valueLabel: signOff.furniture_reassembled === true ? "Yes" : signOff.furniture_reassembled === false ? "No" : "N/A",
+    },
     { label: "Items placed in correct rooms", value: !!signOff.items_placed_correctly },
     { label: "Property left clean", value: !!signOff.property_left_clean },
-    { label: "Claims process explained", value: !!signOff.claims_process_explained },
   ];
 
   const doc = generateSignOffReceiptPDF({
