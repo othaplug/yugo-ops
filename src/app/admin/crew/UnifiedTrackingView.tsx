@@ -153,8 +153,11 @@ export default function UnifiedTrackingView({
       setLoading(true);
       const r = await fetch("/api/tracking/crews-map");
       const d = await r.json();
-      setCrews(d.crews || []);
-      setActiveSessions(d.activeSessions || []);
+      if (r.ok && d && Array.isArray(d.crews)) {
+        setCrews(d.crews);
+        setActiveSessions(Array.isArray(d.activeSessions) ? d.activeSessions : []);
+      }
+      // On 401/403 or error, keep existing state so we don't wipe initialCrews (which may have positions from server)
     } catch {
       // keep existing
     } finally {
@@ -230,8 +233,10 @@ export default function UnifiedTrackingView({
             <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
               {crewsWithPosition.length > 0
-                ? `${crewsWithPosition.length} team${crewsWithPosition.length === 1 ? "" : "s"} on map • Click a team for details`
-                : "Teams appear when crews share location from the Crew Portal app on their tablet"}
+                ? `${crewsWithPosition.length} team${crewsWithPosition.length === 1 ? "" : "s"} on map • Full-time tracking (job or not) • Click a team for details`
+                : crews.length > 0
+                  ? "No location yet — have crews open the Crew app (dashboard or job) and allow location access so they appear on the map."
+                  : "Teams appear when crews share location from the Crew Portal app (tracking is always on when the app sends position)."}
             </p>
           </div>
           {loading && (

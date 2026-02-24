@@ -21,18 +21,47 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { sessionId, lat, lng, accuracy, speed, heading, timestamp } = body;
-  if (!sessionId || lat == null || lng == null) {
-    return NextResponse.json({ error: "sessionId, lat, lng required" }, { status: 400 });
+  if (lat == null || lng == null) {
+    return NextResponse.json({ error: "lat, lng required" }, { status: 400 });
   }
 
-  const now = Date.now();
-  const last = rateLimit.get(sessionId) ?? 0;
-  if (now - last < RATE_LIMIT_MS) {
-    return NextResponse.json({ ok: true, throttled: true });
-  }
-  rateLimit.set(sessionId, now);
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  const ts = timestamp || new Date().toISOString();
+  const lastLocation = {
+    lat: latNum,
+    lng: lngNum,
+    accuracy: Number(accuracy) || 0,
+    timestamp: ts,
+  };
 
   const admin = createAdminClient();
+
+  // Full-time tracking: sessionId is optional. When provided, update session + crew; when omitted, update only crew so position is always visible on tracking page.
+  const rateLimitKey = sessionId || `team:${payload.teamId}`;
+  const now = Date.now();
+  const last = rateLimit.get(rateLimitKey) ?? 0;
+  if (now - last < RATE_LIMIT_MS) {
+    if (!sessionId) {
+      await admin.from("crews").update({
+        current_lat: lastLocation.lat,
+        current_lng: lastLocation.lng,
+        updated_at: ts,
+      }).eq("id", payload.teamId);
+    }
+    return NextResponse.json({ ok: true, throttled: true });
+  }
+  rateLimit.set(rateLimitKey, now);
+
+  if (!sessionId) {
+    await admin.from("crews").update({
+      current_lat: lastLocation.lat,
+      current_lng: lastLocation.lng,
+      updated_at: ts,
+    }).eq("id", payload.teamId);
+    return NextResponse.json({ ok: true });
+  }
+
   const { data: session } = await admin
     .from("tracking_sessions")
     .select("id, team_id, is_active, status, last_location, updated_at, checkpoints")
@@ -43,8 +72,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const latNum = Number(lat);
-  const lngNum = Number(lng);
   const lastLoc = session.last_location as { lat?: number; lng?: number } | null;
   const updatedAt = session.updated_at ? new Date(session.updated_at).getTime() : 0;
   const samePosition = lastLoc && typeof lastLoc.lat === "number" && typeof lastLoc.lng === "number" &&
@@ -58,14 +85,6 @@ export async function POST(req: NextRequest) {
       await admin.from("tracking_sessions").update({ checkpoints, updated_at: new Date().toISOString() }).eq("id", sessionId);
     }
   }
-
-  const ts = timestamp || new Date().toISOString();
-  const lastLocation = {
-    lat: latNum,
-    lng: lngNum,
-    accuracy: Number(accuracy) || 0,
-    timestamp: ts,
-  };
 
   // Always update crew position (vehicle/asset security) so admin map shows current truck location even after job completion
   await admin.from("crews").update({

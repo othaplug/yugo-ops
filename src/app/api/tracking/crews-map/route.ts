@@ -67,12 +67,12 @@ export async function GET(req: NextRequest) {
 
   const crewsOut = (crews || []).map((c) => {
     const session = sessionByTeam.get(c.id);
-    const loc = session?.last_location as { lat?: number; lng?: number } | null;
-    const hasSessionPos = loc?.lat != null && loc?.lng != null;
-    // Only show crew on map when they have an active job and are sharing location (session position).
-    // Do not use crew.current_lat/lng from DB — that can be stale from a previous job.
-    const lat = hasSessionPos ? loc!.lat! : null;
-    const lng = hasSessionPos ? loc!.lng! : null;
+    const sessionLoc = session?.last_location as { lat?: number; lng?: number } | null;
+    const hasSessionPos = sessionLoc?.lat != null && sessionLoc?.lng != null;
+    const hasCrewPos = c.current_lat != null && c.current_lng != null;
+    // Full-time tracking: show crew on map whenever we have a position — from active session (preferred) or from crew row (updated by location API at all times).
+    const lat = hasSessionPos ? sessionLoc!.lat! : (hasCrewPos ? c.current_lat! : null);
+    const lng = hasSessionPos ? sessionLoc!.lng! : (hasCrewPos ? c.current_lng! : null);
 
     const pendingDeliveries = (deliveryByCrew.get(c.id) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
     const pendingMoves = (moveByCrew.get(c.id) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
@@ -86,10 +86,11 @@ export async function GET(req: NextRequest) {
       "standby";
 
     const members = (c.members as string[] | null) || membersByTeam.get(c.id) || [];
+    const displayName = (c.name && c.name.trim()) || members[0] || `Team ${(c.id || "").slice(0, 8)}`;
 
     return {
       id: c.id,
-      name: c.name,
+      name: displayName,
       members,
       status: effectiveStatus,
       current_lat: lat,
@@ -109,13 +110,15 @@ export async function GET(req: NextRequest) {
         : (deliveries || []).find((d) => d.id === s.job_id);
       const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
       const crew = crews?.find((c) => c.id === s.team_id);
+      const members = membersByTeam.get(s.team_id) || [];
+      const teamName = (crew?.name && crew.name.trim()) || members[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
       const loc = s.last_location as { lat?: number; lng?: number } | null;
       return {
         id: s.id,
         jobId,
         jobType: s.job_type,
         status: s.status,
-        teamName: crew?.name || "Crew",
+        teamName,
         teamId: s.team_id,
         lastLocation: loc,
         updatedAt: s.updated_at,

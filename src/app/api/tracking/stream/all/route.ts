@@ -39,8 +39,23 @@ export async function GET(req: NextRequest) {
             .order("updated_at", { ascending: false });
 
           const teamIds = [...new Set((sessions || []).map((s) => s.team_id))];
-          const { data: crews } = teamIds.length ? await admin.from("crews").select("id, name").in("id", teamIds) : { data: [] };
-          const teamMap = new Map((crews || []).map((c) => [c.id, c.name]));
+          const [{ data: crews }, { data: crewMembers }] = teamIds.length
+            ? await Promise.all([
+                admin.from("crews").select("id, name").in("id", teamIds),
+                admin.from("crew_members").select("id, name, team_id").eq("is_active", true).in("team_id", teamIds),
+              ])
+            : [{ data: [] as { id: string; name: string | null }[] }, { data: [] as { team_id: string; name: string }[] }];
+          const membersByTeam = new Map<string, string[]>();
+          for (const m of crewMembers || []) {
+            const list = membersByTeam.get(m.team_id) || [];
+            list.push(m.name);
+            membersByTeam.set(m.team_id, list);
+          }
+          const teamNameMap = new Map<string, string>();
+          for (const c of crews || []) {
+            const name = (c.name && c.name.trim()) || membersByTeam.get(c.id)?.[0] || `Team ${(c.id || "").slice(0, 8)}`;
+            teamNameMap.set(c.id, name);
+          }
 
           const moveIds = (sessions || []).filter((s) => s.job_type === "move").map((s) => s.job_id);
           const deliveryIds = (sessions || []).filter((s) => s.job_type === "delivery").map((s) => s.job_id);
@@ -56,6 +71,7 @@ export async function GET(req: NextRequest) {
             const jobName = job ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`) : "—";
             const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
             const detailHref = s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`;
+            const teamName = teamNameMap.get(s.team_id) || membersByTeam.get(s.team_id)?.[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
             return {
               id: s.id,
               job_id: s.job_id,
@@ -66,7 +82,7 @@ export async function GET(req: NextRequest) {
               lastLocation: s.last_location,
               updatedAt: s.updated_at,
               team_id: s.team_id,
-              teamName: teamMap.get(s.team_id) || "—",
+              teamName,
               detailHref,
             };
           });
