@@ -83,14 +83,15 @@ export default function ClientSignOffPage({
   const [geoLat, setGeoLat] = useState<number | null>(null);
   const [geoLng, setGeoLng] = useState<number | null>(null);
 
-  // Photo gate
+  // Photo gallery (optional display)
   const [jobPhotos, setJobPhotos] = useState<PhotoItem[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
-  const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
 
   // Phase 1: Items confirmation
   const [clientName, setClientName] = useState("");
+  const [inventoryReviewedByClient, setInventoryReviewedByClient] = useState(false);
   const [allItemsReceived, setAllItemsReceived] = useState(true);
+  const [itemsLeftBehind, setItemsLeftBehind] = useState("");
   const [conditionAccepted, setConditionAccepted] = useState(true);
   const [walkthroughConductedByClient, setWalkthroughConductedByClient] = useState(false);
   const [clientPresentDuringUnloading, setClientPresentDuringUnloading] = useState(false);
@@ -235,7 +236,7 @@ export default function ClientSignOffPage({
           walkthroughConductedByClient,
           clientPresentDuringUnloading,
           preExistingConditionsNoted,
-          photosReviewedByClient,
+          photosReviewedByClient: inventoryReviewedByClient,
           satisfactionRating: rating,
           npsScore,
           noIssuesDuringMove,
@@ -248,7 +249,12 @@ export default function ClientSignOffPage({
           propertyLeftClean,
           noPropertyDamage,
           feedbackNote: feedbackNote.trim() || null,
-          exceptions: exceptions.trim() || null,
+          exceptions: [
+            itemsLeftBehind.trim() ? `Items not received / left behind: ${itemsLeftBehind.trim()}` : null,
+            exceptions.trim() || null,
+          ]
+            .filter(Boolean)
+            .join("\n\n") || null,
         }),
       });
       const data = await res.json();
@@ -316,7 +322,8 @@ export default function ClientSignOffPage({
   const mutedColor = "#555";
 
   const phase1Valid =
-    (allItemsReceived && conditionAccepted) || exceptions.trim().length > 0;
+    inventoryReviewedByClient &&
+    ((allItemsReceived && conditionAccepted) || exceptions.trim().length > 0 || itemsLeftBehind.trim().length > 0);
 
   const phase2Valid =
     !!rating &&
@@ -350,13 +357,13 @@ export default function ClientSignOffPage({
               </p>
             </div>
 
-            {/* Photo gallery gate */}
+            {/* Optional photo gallery */}
             {!photosLoading && jobPhotos.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs font-semibold uppercase mb-2" style={{ color: mutedColor }}>
                   Crew-documented photos ({jobPhotos.length})
                 </p>
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-3 gap-2">
                   {jobPhotos.slice(0, 9).map((p) => (
                     <div
                       key={p.id}
@@ -375,27 +382,42 @@ export default function ClientSignOffPage({
                     </div>
                   )}
                 </div>
-                <Checkbox
-                  checked={photosReviewedByClient}
-                  onChange={setPhotosReviewedByClient}
-                  label="I have reviewed the photos taken by the crew"
-                  textColor={textColor}
-                />
               </div>
             )}
 
             <div className="space-y-3 mb-6">
+              <Checkbox
+                checked={inventoryReviewedByClient}
+                onChange={setInventoryReviewedByClient}
+                label="I have reviewed the inventory list and confirmed that every item is present at this location"
+                textColor={textColor}
+              />
               <Checkbox checked={allItemsReceived} onChange={setAllItemsReceived} label="All items received" textColor={textColor} />
+              {!allItemsReceived && (
+                <div className="pl-1">
+                  <p className="text-xs font-medium mb-1.5" style={{ color: mutedColor }}>
+                    Items not received or left behind
+                  </p>
+                  <textarea
+                    value={itemsLeftBehind}
+                    onChange={(e) => setItemsLeftBehind(e.target.value)}
+                    placeholder="List any items that were not received or were left behind (e.g. item name, room)"
+                    className="w-full p-4 rounded-xl border border-[#E0DDD8] bg-white text-sm"
+                    style={{ color: textColor }}
+                    rows={3}
+                  />
+                </div>
+              )}
               <Checkbox checked={conditionAccepted} onChange={setConditionAccepted} label="Everything in good condition" textColor={textColor} />
               <Checkbox checked={walkthroughConductedByClient} onChange={setWalkthroughConductedByClient} label="Walkthrough conducted by client" textColor={textColor} />
               <Checkbox checked={clientPresentDuringUnloading} onChange={setClientPresentDuringUnloading} label="I was present during unloading" textColor={textColor} />
               <Checkbox checked={preExistingConditionsNoted} onChange={setPreExistingConditionsNoted} label="Pre-existing conditions were noted before the move" textColor={textColor} />
 
-              {(!allItemsReceived || !conditionAccepted) && (
+              {!conditionAccepted && (
                 <textarea
                   value={exceptions}
                   onChange={(e) => setExceptions(e.target.value)}
-                  placeholder="Please describe any issues..."
+                  placeholder="Describe any issues with condition or damage..."
                   className="w-full p-4 rounded-xl border border-[#E0DDD8] bg-white text-sm"
                   style={{ color: textColor }}
                   rows={3}
@@ -509,7 +531,7 @@ export default function ClientSignOffPage({
                   {(["yes", "no", "na"] as const).map((opt) => {
                     const value = opt === "yes" ? true : opt === "no" ? false : null;
                     const isSelected = furnitureReassembled === value;
-                    const label = opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A — Does not apply";
+                    const label = opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A";
                     return (
                       <button
                         key={opt}
