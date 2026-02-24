@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
+import { expandItemRow } from "@/lib/inventory-parse";
 
 type InventoryItem = {
   id: string;
@@ -85,11 +86,9 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
   };
 
   const handleExport = () => {
-    const rows = items.map((i) => {
-      const qtyMatch = i.item_name.match(/\s+x(\d+)$/i);
-      const baseName = qtyMatch ? i.item_name.replace(/\s+x\d+$/i, "").trim() : i.item_name;
-      const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-      return { Room: i.room || "", Item: baseName, Qty: qty };
+    const rows = items.flatMap((i) => {
+      const expanded = expandItemRow(i.item_name);
+      return expanded.map((r) => ({ Room: i.room || "", Item: r.label, Qty: r.qty }));
     });
     const csv = ["Room,Item,Qty", ...rows.map((r) => `"${r.Room}","${r.Item}","${r.Qty}"`)].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -250,33 +249,14 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
                     </thead>
                     <tbody>
                       {byRoom[room].flatMap((item) => {
-                        const parts = item.item_name.split(",").map((p) => p.trim()).filter(Boolean);
                         const capitalize = (str: string) =>
                           str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
-                        const baseName = (name: string) => {
-                          const m = name.match(/\s+x(\d+)$/i);
-                          return m ? name.replace(/\s+x\d+$/i, "").trim() : name;
-                        };
-                        const qtyFromName = (name: string) => {
-                          const m = name.match(/\s+x(\d+)$/i);
-                          return m ? parseInt(m[1], 10) : 1;
-                        };
-                        if (parts.length === 0) {
-                          const displayName = capitalize(baseName(item.item_name));
-                          const qty = item.quantity ?? qtyFromName(item.item_name);
-                          return [
-                            <tr key={item.id} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{displayName}</td>
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
-                            </tr>,
-                          ];
-                        }
-                        return parts.map((part, pi) => {
-                          const displayName = capitalize(baseName(part));
-                          const qty = qtyFromName(part);
+                        const rows = expandItemRow(item.item_name);
+                        return rows.map((r, ri) => {
+                          const qty = rows.length === 1 && item.quantity != null ? item.quantity : r.qty;
                           return (
-                            <tr key={`${item.id}-${pi}`} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{displayName}</td>
+                            <tr key={`${item.id}-${ri}`} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
+                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{capitalize(r.label)}</td>
                               <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
                             </tr>
                           );

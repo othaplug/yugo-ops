@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
+import { expandItemRow as expandItemRowFromName } from "@/lib/inventory-parse";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 
@@ -254,21 +255,10 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
   const rooms = Object.keys(byRoom).sort();
 
   /** Expand "Table x1, Couch x2" into rows [{ label: "Table", qty: 1 }, { label: "Couch", qty: 2 }] for display */
+  const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
   const expandItemRow = (item: InventoryItem): { label: string; qty: number }[] => {
-    const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
-    const parts = item.item_name.split(",").map((p) => p.trim()).filter(Boolean);
-    if (parts.length === 0) {
-      const m = item.item_name.match(/^(.+?)\s+x(\d+)$/i);
-      const label = capitalize(m ? m[1].trim() : item.item_name);
-      const qty = m ? parseInt(m[2], 10) : 1;
-      return [{ label, qty }];
-    }
-    return parts.map((part) => {
-      const m = part.match(/^(.+?)\s+x(\d+)$/i);
-      const label = capitalize(m ? m[1].trim() : part);
-      const qty = m ? parseInt(m[2], 10) : 1;
-      return { label, qty };
-    });
+    const rows = expandItemRowFromName(item.item_name);
+    return rows.map((r) => ({ label: capitalize(r.label || item.item_name), qty: r.qty }));
   };
 
   const toggleRoom = (room: string) => {

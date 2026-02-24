@@ -232,9 +232,6 @@ export default function JobInventory({
                   const id = "id" in item ? item.id : `noid-${i}`;
                   const rawName = "item_name" in item ? item.item_name : String(item);
                   const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
-                  // Strip trailing " xN" from name to avoid "Table x2 x2" when bulk-add stores qty in both name and quantity
-                  const baseName = rawName.replace(/\s*x\d+$/i, "").trim() || rawName;
-                  const display = qty > 1 ? `${baseName} x${qty}` : baseName;
                   const hasId = typeof id === "string" && !id.startsWith("noid-");
                   const verified = hasId ? verifiedIds.has(id) : false;
                   return (
@@ -255,8 +252,9 @@ export default function JobInventory({
                       ) : (
                         <span className="w-4" />
                       )}
-                      <span className="text-[13px] text-[var(--tx)]">{display}</span>
-                      {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
+                      <span className="text-[13px] text-[var(--tx)] flex-1">{rawName}</span>
+                      <span className="text-[11px] text-[var(--tx3)] tabular-nums w-6 text-right">{qty}</span>
+                      {verified && <span className="text-[var(--grn)]">&#10003;</span>}
                     </label>
                   );
                 })}

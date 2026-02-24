@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { parseItemNameAndQty } from "@/lib/inventory-parse";
 
 /** GET job detail for crew portal. */
 export async function GET(
@@ -25,7 +26,11 @@ export async function GET(
       ? await admin.from("deliveries").select("*").eq("id", jobId).single()
       : await admin.from("deliveries").select("*").ilike("delivery_number", jobId).single();
     if (d && d.crew_id === payload.teamId) {
-      const items = Array.isArray(d.items) ? d.items : [];
+      const rawItems = Array.isArray(d.items) ? d.items : [];
+      const items = rawItems.map((name: string, i: number) => {
+        const { baseName, qty } = parseItemNameAndQty(name);
+        return { id: `noid-${i}`, item_name: baseName || name, quantity: qty };
+      });
       const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
       const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
       const members = (crewRow?.members as string[] | null) || [];
@@ -49,9 +54,9 @@ export async function GET(
         scheduledDate: (d as any).scheduled_date || null,
         access,
         crewMembers: crewWithRoles,
-        jobTypeLabel: `Delivery · ${items.length} items`,
-        itemCount: items.length,
-        inventory: items.map((name: string) => ({ room: "Items", items: [name] })),
+        jobTypeLabel: `Delivery · ${rawItems.length} items`,
+        itemCount: rawItems.length,
+        inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
         extraItems: extra || [],
         internalNotes: d.instructions || d.next_action || null,
         scheduledTime: d.time_slot || null,
@@ -83,7 +88,8 @@ export async function GET(
   for (const row of inv || []) {
     const room = row.room || "Other";
     if (!byRoom[room]) byRoom[room] = [];
-    byRoom[room].push({ id: row.id, item_name: row.item_name || "", quantity: 1 });
+    const { baseName, qty } = parseItemNameAndQty(row.item_name || "");
+    byRoom[room].push({ id: row.id, item_name: baseName || row.item_name || "", quantity: qty });
   }
   const inventory = Object.entries(byRoom).map(([room, items]) => ({
     room,
