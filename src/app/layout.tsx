@@ -1,5 +1,4 @@
 import "./globals.css";
-import GoogleMapsScript from "@/components/GoogleMapsScript";
 import { ToastProvider } from "@/app/admin/components/Toast";
 
 export const metadata = {
@@ -26,7 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
-        <GoogleMapsScript />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

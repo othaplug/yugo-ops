@@ -1,37 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
-
-interface GoogleMapsAutocompleteInstance {
-  addListener(event: string, fn: () => void): void;
-  getPlace(): GooglePlaceResult;
-}
-
-declare global {
-  namespace google {
-    namespace maps {
-      namespace places {
-        type Autocomplete = GoogleMapsAutocompleteInstance;
-      }
-    }
-  }
-  interface Window {
-    google?: {
-      maps: {
-        places: {
-          Autocomplete: new (input: HTMLInputElement, opts?: { componentRestrictions?: { country: string }; types?: string[]; bounds?: unknown; fields?: string[] }) => GoogleMapsAutocompleteInstance;
-        };
-        LatLngBounds: new (sw: { lat: number; lng: number }, ne: { lat: number; lng: number }) => unknown;
-      };
-    };
-  }
-}
-
-interface GooglePlaceResult {
-  address_components?: { long_name: string; short_name: string; types: string[] }[];
-  formatted_address?: string;
-  geometry?: { location?: { lat: () => number; lng: () => number } };
-}
+import { useRef, useEffect, useState, useCallback } from "react";
 
 export interface AddressResult {
   fullAddress: string;
@@ -56,32 +25,41 @@ export interface AddressAutocompleteProps {
   className?: string;
   id?: string;
   name?: string;
+  /** ISO 3166-1 alpha-2 country code to bias results (e.g. "CA") */
+  country?: string;
 }
 
-function getComponent(place: GooglePlaceResult, type: string, short = false): string {
-  const comp = place.address_components?.find((c) => c.types.includes(type));
-  if (!comp) return "";
-  return short ? (comp.short_name || "") : (comp.long_name || "");
+interface MapboxFeature {
+  id: string;
+  type: string;
+  place_type: string[];
+  text: string;
+  place_name: string;
+  geometry: { type: string; coordinates: [number, number] };
+  context?: { id: string; text: string; short_code?: string }[];
+  properties?: Record<string, unknown>;
 }
 
-function parsePlace(place: GooglePlaceResult): AddressResult | null {
-  if (!place.address_components || place.address_components.length === 0) return null;
-  const streetNumber = getComponent(place, "street_number");
-  const route = getComponent(place, "route");
-  const streetName = [streetNumber, route].filter(Boolean).join(" ").trim() || route || streetNumber;
-  const unit = getComponent(place, "subpremise") ? `Unit ${getComponent(place, "subpremise")}` : "";
-  const city = getComponent(place, "locality") || getComponent(place, "sublocality") || getComponent(place, "administrative_area_level_2");
-  const province = getComponent(place, "administrative_area_level_1", true);
-  const postalCode = getComponent(place, "postal_code");
-  const country = getComponent(place, "country");
-  const fullAddress = place.formatted_address || [streetName, unit, city, province, postalCode, country].filter(Boolean).join(", ");
-  const lat = place.geometry?.location?.lat?.() ?? 0;
-  const lng = place.geometry?.location?.lng?.() ?? 0;
+function mapboxFeatureToAddressResult(f: MapboxFeature): AddressResult {
+  const [lng, lat] = f.geometry?.coordinates ?? [0, 0];
+  const ctx = f.context ?? [];
+  const getCtx = (prefix: string) => ctx.find((c) => c.id.startsWith(prefix))?.text ?? "";
+  const getCtxShort = (prefix: string) => ctx.find((c) => c.id.startsWith(prefix))?.short_code ?? "";
+
+  const country = getCtx("country.") || getCtxShort("country.") || "";
+  const province = getCtx("region.") || getCtxShort("region.") || "";
+  const postalCode = getCtx("postcode.") || "";
+  const city = getCtx("place.") || getCtx("locality.") || "";
+  const fullAddress = f.place_name || f.text || "";
+
+  // Mapbox often has "address" type with text = street name; no separate street_number
+  const streetName = f.place_type?.includes("address") ? (f.text || fullAddress) : fullAddress;
+
   return {
     fullAddress,
-    streetNumber,
+    streetNumber: "",
     streetName: streetName || fullAddress,
-    unit,
+    unit: "",
     city,
     province,
     postalCode,
@@ -90,6 +68,8 @@ function parsePlace(place: GooglePlaceResult): AddressResult | null {
     lng,
   };
 }
+
+const DEBOUNCE_MS = 280;
 
 export default function AddressAutocomplete({
   value,
@@ -101,90 +81,129 @@ export default function AddressAutocomplete({
   className = "",
   id,
   name,
+  country: countryBias = "",
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [isScriptReady, setScriptReady] = useState(false);
+  const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
   const isInternalUpdate = useRef(false);
-  const onChangeRef = useRef(onChange);
-  const onRawChangeRef = useRef(onRawChange);
-  onChangeRef.current = onChange;
-  onRawChangeRef.current = onRawChange;
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.google?.maps?.places) {
-      setScriptReady(true);
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
       return;
     }
-    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!key) return;
-    const existing = document.querySelector('script[src*="maps.googleapis.com"][src*="places"]');
-    if (existing) {
-      const check = setInterval(() => {
-        if (window.google?.maps?.places) {
-          setScriptReady(true);
-          clearInterval(check);
-        }
-      }, 100);
-      return () => clearInterval(check);
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ q: query, limit: "8" });
+      if (countryBias) params.set("country", countryBias);
+      const res = await fetch(`/api/mapbox/geocode?${params}`);
+      const data = await res.json();
+      setSuggestions((data.features ?? []) as MapboxFeature[]);
+      setHighlightIdx(-1);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
     }
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptReady(true);
-    document.head.appendChild(script);
-    return () => {
-      script.remove();
-    };
-  }, []);
+  }, [countryBias]);
 
-  // Sync input when value changes from parent (e.g. loading edit data, form reset)
   useEffect(() => {
-    if (inputRef.current && !isInternalUpdate.current && inputRef.current.value !== value) {
+    if (isInternalUpdate.current) return;
+    if (inputRef.current && inputRef.current.value !== value) {
       inputRef.current.value = value ?? "";
     }
     isInternalUpdate.current = false;
   }, [value]);
 
-  const initAutocomplete = useCallback(() => {
-    if (!inputRef.current || !window.google?.maps?.places || autocompleteRef.current) return;
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ["address"],
-      fields: ["address_components", "formatted_address", "geometry"],
-    });
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      const result = parsePlace(place);
-      if (result) {
-        if (inputRef.current) inputRef.current.value = result.fullAddress;
-        isInternalUpdate.current = true;
-        onChangeRef.current(result);
-        onRawChangeRef.current?.(result.fullAddress);
+  useEffect(() => {
+    const handle = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const raw = inputRef.current?.value?.trim() ?? "";
+      onRawChange?.(raw);
+      if (raw.length < 2) {
+        setSuggestions([]);
+        setOpen(false);
+        return;
       }
-    });
-    autocompleteRef.current = autocomplete;
+      debounceRef.current = setTimeout(() => {
+        fetchSuggestions(raw);
+        setOpen(true);
+        debounceRef.current = null;
+      }, DEBOUNCE_MS);
+    };
+
+    const input = inputRef.current;
+    if (!input) return;
+    input.addEventListener("input", handle);
+    input.addEventListener("focus", () => suggestions.length > 0 && setOpen(true));
+    return () => {
+      input.removeEventListener("input", handle);
+      input.removeEventListener("focus", () => {});
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fetchSuggestions, suggestions.length, onRawChange]);
+
+  useEffect(() => {
+    const onBlur = () => {
+      setTimeout(() => setOpen(false), 180);
+    };
+    const input = inputRef.current;
+    input?.addEventListener("blur", onBlur);
+    return () => input?.removeEventListener("blur", onBlur);
   }, []);
 
   useEffect(() => {
-    if (!isScriptReady) return;
-    // Delay init so input is visible (fixes modals where input mounts when popup opens)
-    const t = setTimeout(() => {
-      initAutocomplete();
-    }, 150);
-    return () => {
-      clearTimeout(t);
-      autocompleteRef.current = null;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     };
-  }, [isScriptReady, initAutocomplete]);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
+
+  const select = useCallback(
+    (f: MapboxFeature) => {
+      const result = mapboxFeatureToAddressResult(f);
+      if (inputRef.current) {
+        inputRef.current.value = result.fullAddress;
+        isInternalUpdate.current = true;
+      }
+      setSuggestions([]);
+      setOpen(false);
+      onChange(result);
+      onRawChange?.(result.fullAddress);
+    },
+    [onChange, onRawChange]
+  );
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!open || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIdx((i) => (i < suggestions.length - 1 ? i + 1 : i));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIdx((i) => (i > 0 ? i - 1 : -1));
+    } else if (e.key === "Enter" && highlightIdx >= 0 && suggestions[highlightIdx]) {
+      e.preventDefault();
+      select(suggestions[highlightIdx]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setHighlightIdx(-1);
+    }
+  };
 
   const inputClass =
     "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all " +
     (className || "");
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="w-full relative">
       {label && (
         <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
           {label}
@@ -195,16 +214,46 @@ export default function AddressAutocomplete({
         ref={inputRef}
         type="text"
         defaultValue={value}
-        onChange={(e) => {
-          onRawChange?.(e.target.value);
-        }}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         required={required}
         className={inputClass}
         id={id}
         name={name}
         autoComplete="off"
+        aria-autocomplete="list"
+        aria-expanded={open}
+        aria-controls="address-suggestions"
+        role="combobox"
       />
+      {open && (suggestions.length > 0 || loading) && (
+        <ul
+          id="address-suggestions"
+          role="listbox"
+          className="absolute z-[100] left-0 right-0 mt-1 py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg max-h-[280px] overflow-y-auto"
+        >
+          {loading && suggestions.length === 0 ? (
+            <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
+          ) : (
+            suggestions.map((f, i) => (
+              <li
+                key={f.id}
+                role="option"
+                aria-selected={i === highlightIdx}
+                className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
+                  i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
+                }`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  select(f);
+                }}
+              >
+                {f.place_name}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
     </div>
   );
 }

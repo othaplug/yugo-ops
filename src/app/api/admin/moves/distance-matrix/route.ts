@@ -2,10 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { getSuperAdminEmail } from "@/lib/super-admin";
 
+const MAPBOX_TOKEN =
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+
+async function geocodeAddress(address: string): Promise<{ lng: number; lat: number } | null> {
+  if (!MAPBOX_TOKEN) return null;
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&types=address,place&limit=1`;
+    const res = await fetch(url, { next: { revalidate: 0 } });
+    const data = await res.json();
+    const coords = data.features?.[0]?.geometry?.coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      return { lng: coords[0], lat: coords[1] };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 /**
  * GET /api/admin/moves/distance-matrix?from=ADDRESS&to=ADDRESS
- * Returns distance and drive time between two addresses using Google Distance Matrix API.
- * Requires GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY. Enable Distance Matrix API in Google Cloud.
+ * Returns distance and drive time between two addresses using Mapbox Directions API.
+ * Requires MAPBOX_ACCESS_TOKEN or NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN.
  */
 export const dynamic = "force-dynamic";
 
@@ -33,41 +55,36 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing from or to address" }, { status: 400 });
   }
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
+  if (!MAPBOX_TOKEN) {
     return NextResponse.json({ distance: null, duration: null });
   }
 
   try {
-    const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-    url.searchParams.set("origins", from);
-    url.searchParams.set("destinations", to);
-    url.searchParams.set("units", "metric");
-    url.searchParams.set("mode", "driving");
-    url.searchParams.set("key", apiKey);
-
-    const res = await fetch(url.toString(), { next: { revalidate: 0 } });
-    const data = await res.json();
-
-    if (data.status !== "OK") {
+    const [origin, dest] = await Promise.all([geocodeAddress(from), geocodeAddress(to)]);
+    if (!origin || !dest) {
       return NextResponse.json(
-        { error: data.error_message || data.status, distance: null, duration: null },
+        { error: "Could not geocode one or both addresses", distance: null, duration: null },
         { status: 200 }
       );
     }
 
-    const row = data.rows?.[0];
-    const element = row?.elements?.[0];
+    const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${MAPBOX_TOKEN}`;
+    const res = await fetch(url, { next: { revalidate: 0 } });
+    const data = await res.json();
 
-    if (!element || element.status !== "OK") {
+    const route = data.routes?.[0];
+    if (!route) {
       return NextResponse.json(
         { error: "Route not found", distance: null, duration: null },
         { status: 200 }
       );
     }
 
-    const distanceText = element.distance?.text ?? `${(element.distance?.value ?? 0) / 1000} km`;
-    const durationText = element.duration?.text ?? `${Math.round((element.duration?.value ?? 0) / 60)} min`;
+    const distanceMeters = route.distance ?? 0;
+    const durationSeconds = route.duration ?? 0;
+    const distanceText = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} km` : `${Math.round(distanceMeters)} m`;
+    const durationText = durationSeconds >= 60 ? `${Math.round(durationSeconds / 60)} min` : `${Math.round(durationSeconds)} sec`;
 
     return NextResponse.json({
       distance: distanceText,

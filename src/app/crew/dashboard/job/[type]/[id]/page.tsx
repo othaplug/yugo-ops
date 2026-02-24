@@ -91,6 +91,11 @@ export default function CrewJobPage({
   const [itemsTotal, setItemsTotal] = useState(0);
   const noteInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Pickup verification modal
+  const [pickupModalOpen, setPickupModalOpen] = useState(false);
+  const [pickupPhotosCount, setPickupPhotosCount] = useState(0);
+  const [pickupVerificationDone, setPickupVerificationDone] = useState(false);
+
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
   const nextStatus = getNextStatus(currentStatus, jobType);
@@ -139,6 +144,18 @@ export default function CrewJobPage({
     const interval = setInterval(fetchSession, 15000);
     return () => clearInterval(interval);
   }, [fetchSession]);
+
+  // Auto-open pickup verification modal if crew is at arrived_at_pickup and hasn't completed verification
+  useEffect(() => {
+    if (
+      currentStatus === "arrived_at_pickup" &&
+      !pickupVerificationDone &&
+      !loading &&
+      session?.isActive
+    ) {
+      setPickupModalOpen(true);
+    }
+  }, [currentStatus, pickupVerificationDone, loading, session?.isActive]);
 
   useEffect(() => {
     if (!session?.startedAt || !session?.isActive) {
@@ -209,6 +226,11 @@ export default function CrewJobPage({
       if (status === "completed") {
         stopGpsTracking();
         setGpsStatus("off");
+      }
+      // Open pickup verification modal when arriving at pickup
+      if (status === "arrived_at_pickup") {
+        setPickupModalOpen(true);
+        setPickupVerificationDone(false);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -307,6 +329,7 @@ export default function CrewJobPage({
   const showStartButton = !session && !jobCompleted;
   const atArrivedRequiringPhotos = ["arrived_at_pickup", "arrived_at_destination", "arrived"].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
+  const blockedByPickupVerification = currentStatus === "arrived_at_pickup" && !pickupVerificationDone;
   const showAdvanceButton = session?.isActive && nextStatus && !showStartButton;
 
   const itemsLabel = itemsTotal > 0 ? `Items (${itemsVerified}/${itemsTotal})` : `Items (${totalItems})`;
@@ -400,12 +423,28 @@ export default function CrewJobPage({
                     onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
                   />
                 )}
+                {currentStatus === "arrived_at_pickup" && !pickupVerificationDone && (
+                  <button
+                    onClick={() => setPickupModalOpen(true)}
+                    className="w-full mt-3 py-4 rounded-xl font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    Verify Inventory & Take Photos
+                  </button>
+                )}
                 <button
                   onClick={advanceStatus}
-                  disabled={advancing || blockedByPhotos}
+                  disabled={advancing || blockedByPhotos || blockedByPickupVerification}
                   className="w-full mt-3 py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
-                  {advancing ? "Updating…" : blockedByPhotos ? "Take photo to continue" : nextStatus === "completed" ? "Complete & Get Client Sign-Off" : getStatusLabel(nextStatus!)}
+                  {advancing
+                    ? "Updating…"
+                    : blockedByPickupVerification
+                      ? "Complete verification first"
+                      : blockedByPhotos
+                        ? "Take photo to continue"
+                        : nextStatus === "completed"
+                          ? "Complete & Get Client Sign-Off"
+                          : getStatusLabel(nextStatus!)}
                 </button>
               </>
             )}
@@ -590,6 +629,93 @@ export default function CrewJobPage({
               Start the job to capture photos.
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Pickup Verification Modal ── */}
+      {pickupModalOpen && job && (
+        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 animate-fade-in">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
+              <h3 className="font-hero text-[18px] font-bold text-[var(--tx)]">
+                Pickup Verification
+              </h3>
+              <p className="text-[12px] text-[var(--tx3)] mt-1">
+                Verify all items with the client and take photos before loading.
+              </p>
+            </div>
+
+            <div className="px-5 py-4 space-y-5">
+              {/* Inventory verification section */}
+              <div>
+                <h4 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-3">
+                  Step 1 — Verify Inventory
+                </h4>
+                <JobInventory
+                  jobId={id}
+                  jobType={jobType}
+                  moveType={job.moveType}
+                  inventory={job.inventory || []}
+                  extraItems={job.extraItems || []}
+                  currentStatus={currentStatus}
+                  onRefresh={fetchJob}
+                  onCountChange={(v, t) => {
+                    setItemsVerified(v);
+                    setItemsTotal(t);
+                  }}
+                />
+              </div>
+
+              {/* Photo section */}
+              <div>
+                <h4 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-3">
+                  Step 2 — Document Condition
+                </h4>
+                <p className="text-[12px] text-[var(--tx3)] mb-3">
+                  Take photos of items and rooms before loading begins.
+                </p>
+                {session && (
+                  <JobPhotos
+                    jobId={id}
+                    jobType={jobType}
+                    sessionId={session.id}
+                    currentStatus={currentStatus}
+                    onPhotoCountChange={(count) => setPickupPhotosCount(count)}
+                    onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2">
+              <div className="flex items-center justify-between text-[12px] text-[var(--tx3)] mb-1">
+                <span>
+                  Items: {itemsVerified}/{itemsTotal > 0 ? itemsTotal : totalItems} verified
+                </span>
+                <span>{pickupPhotosCount} photo{pickupPhotosCount !== 1 ? "s" : ""} taken</span>
+              </div>
+              <button
+                onClick={() => {
+                  setPickupVerificationDone(true);
+                  setPickupModalOpen(false);
+                }}
+                disabled={pickupPhotosCount < 1}
+                className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+              >
+                {pickupPhotosCount < 1
+                  ? "Take at least 1 photo to continue"
+                  : "Complete Verification"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickupModalOpen(false)}
+                className="w-full py-2.5 rounded-xl text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
+              >
+                Minimize (come back later)
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

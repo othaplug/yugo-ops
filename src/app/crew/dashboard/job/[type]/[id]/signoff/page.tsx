@@ -13,6 +13,59 @@ const RATING_LABELS: Record<number, string> = {
   5: "Exceptional",
 };
 
+const NPS_LABELS: Record<number, string> = {
+  0: "Not at all likely",
+  1: "Very unlikely",
+  2: "Unlikely",
+  3: "Somewhat unlikely",
+  4: "Neutral",
+  5: "Neutral",
+  6: "Somewhat likely",
+  7: "Likely",
+  8: "Very likely",
+  9: "Extremely likely",
+  10: "Absolutely!",
+};
+
+const SKIP_REASONS = [
+  { value: "client_not_home", label: "Client not home" },
+  { value: "client_refused", label: "Client refused to sign" },
+  { value: "client_requested_delay", label: "Client requested delay" },
+  { value: "emergency", label: "Emergency" },
+  { value: "other", label: "Other" },
+] as const;
+
+interface PhotoItem {
+  id: string;
+  url: string;
+  category: string;
+  note?: string;
+}
+
+function Checkbox({
+  checked,
+  onChange,
+  label,
+  textColor,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  textColor: string;
+}) {
+  return (
+    <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-5 h-5 rounded"
+      />
+      <span style={{ color: textColor }}>{label}</span>
+    </label>
+  );
+}
+
 export default function ClientSignOffPage({
   params,
 }: {
@@ -20,30 +73,75 @@ export default function ClientSignOffPage({
 }) {
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
+
+  // Phase: 1=photos+items, 2=experience+NPS, 3=signature, 4=thank you, 5=skip form
   const [phase, setPhase] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<{ id: string } | null>(null);
+
+  // Geolocation
+  const [geoLat, setGeoLat] = useState<number | null>(null);
+  const [geoLng, setGeoLng] = useState<number | null>(null);
+
+  // Photo gate
+  const [jobPhotos, setJobPhotos] = useState<PhotoItem[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(true);
+  const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
+
+  // Phase 1: Items confirmation
   const [clientName, setClientName] = useState("");
   const [allItemsReceived, setAllItemsReceived] = useState(true);
   const [conditionAccepted, setConditionAccepted] = useState(true);
   const [walkthroughConductedByClient, setWalkthroughConductedByClient] = useState(false);
+  const [clientPresentDuringUnloading, setClientPresentDuringUnloading] = useState(false);
+  const [preExistingConditionsNoted, setPreExistingConditionsNoted] = useState(false);
   const [exceptions, setExceptions] = useState("");
+
+  // Phase 2: Experience + new checkboxes
   const [rating, setRating] = useState<number | null>(null);
   const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
+  const [npsScore, setNpsScore] = useState<number | null>(null);
   const [noIssuesDuringMove, setNoIssuesDuringMove] = useState(false);
   const [noDamages, setNoDamages] = useState(false);
   const [walkthroughCompleted, setWalkthroughCompleted] = useState(false);
   const [crewConductedProfessionally, setCrewConductedProfessionally] = useState(false);
+  const [crewWoreProtection, setCrewWoreProtection] = useState(false);
+  const [furnitureReassembled, setFurnitureReassembled] = useState(false);
+  const [itemsPlacedCorrectly, setItemsPlacedCorrectly] = useState(false);
+  const [propertyLeftClean, setPropertyLeftClean] = useState(false);
+  const [noPropertyDamage, setNoPropertyDamage] = useState(false);
+  const [claimsProcessExplained, setClaimsProcessExplained] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState("");
+
+  // Phase 3: Signature
   const [signature, setSignature] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [skipped, setSkipped] = useState(false);
-  const [skipping, setSkipping] = useState(false);
-  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
 
+  // Skip tracking (Phase 5)
+  const [skipping, setSkipping] = useState(false);
+  const [skipReason, setSkipReason] = useState("");
+  const [skipNote, setSkipNote] = useState("");
+  const [skipSubmitting, setSkipSubmitting] = useState(false);
+
+  const router = useRouter();
+
+  // Request geolocation on mount
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeoLat(pos.coords.latitude);
+          setGeoLng(pos.coords.longitude);
+        },
+        () => {}
+      );
+    }
+  }, []);
+
+  // Init canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -54,13 +152,19 @@ export default function ClientSignOffPage({
     ctx.lineCap = "round";
   }, [phase]);
 
+  // Check existing sign-off + load photos
   useEffect(() => {
-    fetch(`/api/crew/signoff/${id}?jobType=${jobType}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.id) setExisting(d);
+    Promise.all([
+      fetch(`/api/crew/signoff/${id}?jobType=${jobType}`).then((r) => r.json()),
+      fetch(`/api/crew/photos/${id}?jobType=${jobType}`).then((r) => r.json()).catch(() => []),
+    ])
+      .then(([signoffData, photosData]) => {
+        if (signoffData?.id) setExisting(signoffData);
+        const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
+        setJobPhotos(photos);
+        setPhotosLoading(false);
       })
-      .catch(() => {})
+      .catch(() => { setPhotosLoading(false); })
       .finally(() => setLoading(false));
   }, [id, jobType]);
 
@@ -125,15 +229,27 @@ export default function ClientSignOffPage({
           jobType,
           signedBy: clientName.trim(),
           signatureDataUrl: dataUrl,
+          signedLat: geoLat,
+          signedLng: geoLng,
           allItemsReceived,
           conditionAccepted,
           walkthroughConductedByClient,
+          clientPresentDuringUnloading,
+          preExistingConditionsNoted,
+          photosReviewedByClient,
           satisfactionRating: rating,
           wouldRecommend,
+          npsScore,
           noIssuesDuringMove,
           noDamages,
           walkthroughCompleted,
           crewConductedProfessionally,
+          crewWoreProtection,
+          furnitureReassembled,
+          itemsPlacedCorrectly,
+          propertyLeftClean,
+          noPropertyDamage,
+          claimsProcessExplained,
           feedbackNote: feedbackNote.trim() || null,
           exceptions: exceptions.trim() || null,
         }),
@@ -149,6 +265,28 @@ export default function ClientSignOffPage({
       setError("Connection error");
     }
     setSubmitting(false);
+  };
+
+  const handleSkipSubmit = async () => {
+    if (!skipReason) return;
+    setSkipSubmitting(true);
+    try {
+      await fetch("/api/crew/signoff/skip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: id,
+          jobType,
+          skipReason,
+          skipNote: skipNote.trim() || null,
+          locationLat: geoLat,
+          locationLng: geoLng,
+        }),
+      });
+      router.push(`/crew/dashboard/job/${jobType}/${id}`);
+    } catch {
+      setSkipSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -180,6 +318,18 @@ export default function ClientSignOffPage({
   const textColor = "#1A1A1A";
   const mutedColor = "#555";
 
+  const phase1Valid =
+    (allItemsReceived && conditionAccepted) || exceptions.trim().length > 0;
+
+  const phase2Valid =
+    !!rating &&
+    noIssuesDuringMove &&
+    noDamages &&
+    walkthroughCompleted &&
+    crewConductedProfessionally &&
+    noPropertyDamage &&
+    npsScore !== null;
+
   return (
     <main className="min-h-screen" style={{ background: bg, fontFamily: "'DM Sans', sans-serif" }}>
       <div className="max-w-[420px] mx-auto px-4 py-8">
@@ -190,40 +340,60 @@ export default function ClientSignOffPage({
         >
           <span aria-hidden>←</span> Back to Job
         </Link>
+
+        {/* ── Phase 1: Photo Review + Items Confirmation ── */}
         {phase === 1 && (
           <div className="animate-fade-in">
             <div className="text-center mb-8">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>Items Confirmation</h1>
-              <p className="text-sm mt-2" style={{ color: mutedColor }}>Confirm that all items were received as described.</p>
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+                Items Confirmation
+              </h1>
+              <p className="text-sm mt-2" style={{ color: mutedColor }}>
+                Review photos and confirm all items were received.
+              </p>
             </div>
-            <div className="space-y-4 mb-6">
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={allItemsReceived}
-                  onChange={(e) => setAllItemsReceived(e.target.checked)}
-                  className="w-5 h-5 rounded"
+
+            {/* Photo gallery gate */}
+            {!photosLoading && jobPhotos.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold uppercase mb-2" style={{ color: mutedColor }}>
+                  Crew-documented photos ({jobPhotos.length})
+                </p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {jobPhotos.slice(0, 9).map((p) => (
+                    <div
+                      key={p.id}
+                      className="aspect-square rounded-lg overflow-hidden bg-[#E0DDD8]"
+                    >
+                      <img
+                        src={p.url}
+                        alt={p.category}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                  {jobPhotos.length > 9 && (
+                    <div className="aspect-square rounded-lg bg-[#E0DDD8] flex items-center justify-center text-sm font-medium" style={{ color: mutedColor }}>
+                      +{jobPhotos.length - 9} more
+                    </div>
+                  )}
+                </div>
+                <Checkbox
+                  checked={photosReviewedByClient}
+                  onChange={setPhotosReviewedByClient}
+                  label="I have reviewed the photos taken by the crew"
+                  textColor={textColor}
                 />
-                <span style={{ color: textColor }}>All items received</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={conditionAccepted}
-                  onChange={(e) => setConditionAccepted(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>Everything in good condition</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={walkthroughConductedByClient}
-                  onChange={(e) => setWalkthroughConductedByClient(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>Walkthrough conducted by client</span>
-              </label>
+              </div>
+            )}
+
+            <div className="space-y-3 mb-6">
+              <Checkbox checked={allItemsReceived} onChange={setAllItemsReceived} label="All items received" textColor={textColor} />
+              <Checkbox checked={conditionAccepted} onChange={setConditionAccepted} label="Everything in good condition" textColor={textColor} />
+              <Checkbox checked={walkthroughConductedByClient} onChange={setWalkthroughConductedByClient} label="Walkthrough conducted by client" textColor={textColor} />
+              <Checkbox checked={clientPresentDuringUnloading} onChange={setClientPresentDuringUnloading} label="I was present during unloading" textColor={textColor} />
+              <Checkbox checked={preExistingConditionsNoted} onChange={setPreExistingConditionsNoted} label="Pre-existing conditions were noted before the move" textColor={textColor} />
+
               {(!allItemsReceived || !conditionAccepted) && (
                 <textarea
                   value={exceptions}
@@ -235,9 +405,10 @@ export default function ClientSignOffPage({
                 />
               )}
             </div>
+
             <button
               onClick={() => setPhase(2)}
-              disabled={(!allItemsReceived || !conditionAccepted) && !exceptions.trim()}
+              disabled={!phase1Valid}
               className="w-full py-4 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               Continue to Rating
@@ -245,12 +416,17 @@ export default function ClientSignOffPage({
           </div>
         )}
 
+        {/* ── Phase 2: Experience + NPS + Confirmation Checkboxes ── */}
         {phase === 2 && (
           <div className="animate-fade-in">
-            <div className="text-center mb-8">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>How was your experience?</h1>
+            <div className="text-center mb-6">
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+                How was your experience?
+              </h1>
             </div>
-            <div className="flex justify-center gap-2 mb-4">
+
+            {/* Star rating */}
+            <div className="flex justify-center gap-2 mb-3">
               {[1, 2, 3, 4, 5].map((n) => {
                 const isFilled = rating != null && n <= rating;
                 return (
@@ -259,7 +435,9 @@ export default function ClientSignOffPage({
                     type="button"
                     onClick={() => setRating(n)}
                     className={`w-12 h-12 rounded-full text-xl transition-transform ${
-                      isFilled ? "bg-[#C9A962] text-[var(--btn-text-on-accent)]" : "bg-[#E0DDD8] hover:bg-[#C9A962]/30"
+                      isFilled
+                        ? "bg-[#C9A962] text-[var(--btn-text-on-accent)]"
+                        : "bg-[#E0DDD8] hover:bg-[#C9A962]/30"
                     } ${rating === n ? "scale-110" : ""}`}
                     style={!isFilled ? { color: mutedColor } : undefined}
                   >
@@ -268,54 +446,82 @@ export default function ClientSignOffPage({
                 );
               })}
             </div>
-            {rating && <p className="text-center text-sm mb-4" style={{ color: mutedColor }}>{RATING_LABELS[rating]}</p>}
-            <div className="space-y-3 mb-4">
-              <p className="text-sm font-medium" style={{ color: textColor }}>Please confirm the following:</p>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={noIssuesDuringMove}
-                  onChange={(e) => setNoIssuesDuringMove(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>I did not experience any issues during my move</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={noDamages}
-                  onChange={(e) => setNoDamages(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>No damages to report</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={walkthroughCompleted}
-                  onChange={(e) => setWalkthroughCompleted(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>I completed the walkthrough with the crew</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
-                <input
-                  type="checkbox"
-                  checked={crewConductedProfessionally}
-                  onChange={(e) => setCrewConductedProfessionally(e.target.checked)}
-                  className="w-5 h-5 rounded"
-                />
-                <span style={{ color: textColor }}>The crew conducted themselves professionally</span>
-              </label>
+            {rating && (
+              <p className="text-center text-sm mb-5" style={{ color: mutedColor }}>
+                {RATING_LABELS[rating]}
+              </p>
+            )}
+
+            {/* NPS Score */}
+            <div className="mb-5">
+              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>
+                How likely are you to recommend us? (0–10)
+              </p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {Array.from({ length: 11 }, (_, i) => i).map((n) => {
+                  const isSelected = npsScore === n;
+                  let bg_color = "bg-[#E0DDD8]";
+                  if (isSelected) {
+                    if (n <= 6) bg_color = "bg-red-400";
+                    else if (n <= 8) bg_color = "bg-yellow-400";
+                    else bg_color = "bg-green-500";
+                  }
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNpsScore(n)}
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${bg_color} ${
+                        isSelected ? "text-white scale-110 ring-2 ring-offset-1 ring-[#C9A962]" : ""
+                      }`}
+                      style={!isSelected ? { color: mutedColor } : undefined}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+              {npsScore !== null && (
+                <p className="text-center text-xs mt-1.5" style={{ color: mutedColor }}>
+                  {NPS_LABELS[npsScore]}
+                </p>
+              )}
+              <div className="flex justify-between text-[10px] mt-1 px-1" style={{ color: mutedColor }}>
+                <span>Not likely</span>
+                <span>Extremely likely</span>
+              </div>
             </div>
+
+            {/* Confirmation checkboxes */}
+            <div className="space-y-3 mb-4">
+              <p className="text-sm font-medium" style={{ color: textColor }}>
+                Please confirm the following:
+              </p>
+              <Checkbox checked={noIssuesDuringMove} onChange={setNoIssuesDuringMove} label="I did not experience any issues during my move" textColor={textColor} />
+              <Checkbox checked={noDamages} onChange={setNoDamages} label="No damages to my belongings to report" textColor={textColor} />
+              <Checkbox checked={noPropertyDamage} onChange={setNoPropertyDamage} label="No damage to walls, floors, doorways, or stairwells" textColor={textColor} />
+              <Checkbox checked={walkthroughCompleted} onChange={setWalkthroughCompleted} label="I completed the walkthrough with the crew" textColor={textColor} />
+              <Checkbox checked={crewConductedProfessionally} onChange={setCrewConductedProfessionally} label="The crew conducted themselves professionally" textColor={textColor} />
+              <Checkbox checked={crewWoreProtection} onChange={setCrewWoreProtection} label="The crew used floor/wall protection during the move" textColor={textColor} />
+              <Checkbox checked={furnitureReassembled} onChange={setFurnitureReassembled} label="All disassembled furniture was reassembled" textColor={textColor} />
+              <Checkbox checked={itemsPlacedCorrectly} onChange={setItemsPlacedCorrectly} label="All items were placed in the correct rooms" textColor={textColor} />
+              <Checkbox checked={propertyLeftClean} onChange={setPropertyLeftClean} label="The crew left the property clean and free of debris" textColor={textColor} />
+              <Checkbox checked={claimsProcessExplained} onChange={setClaimsProcessExplained} label="The crew explained the claims process for any future issues" textColor={textColor} />
+            </div>
+
+            {/* Would recommend */}
             <div className="mb-4">
-              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>Would you recommend us?</p>
+              <p className="text-sm font-medium mb-2" style={{ color: textColor }}>
+                Would you recommend us?
+              </p>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setWouldRecommend(true)}
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-colors ${
-                    wouldRecommend === true ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]" : "border-[#E0DDD8]"
+                    wouldRecommend === true
+                      ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]"
+                      : "border-[#E0DDD8]"
                   }`}
                   style={wouldRecommend !== true ? { color: mutedColor } : undefined}
                 >
@@ -325,7 +531,9 @@ export default function ClientSignOffPage({
                   type="button"
                   onClick={() => setWouldRecommend(false)}
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-colors ${
-                    wouldRecommend === false ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]" : "border-[#E0DDD8]"
+                    wouldRecommend === false
+                      ? "border-[#C9A962] bg-[#C9A962]/10 text-[#C9A962]"
+                      : "border-[#E0DDD8]"
                   }`}
                   style={wouldRecommend !== false ? { color: mutedColor } : undefined}
                 >
@@ -333,6 +541,7 @@ export default function ClientSignOffPage({
                 </button>
               </div>
             </div>
+
             <textarea
               value={feedbackNote}
               onChange={(e) => setFeedbackNote(e.target.value)}
@@ -341,15 +550,10 @@ export default function ClientSignOffPage({
               style={{ color: textColor }}
               rows={2}
             />
+
             <button
               onClick={() => setPhase(3)}
-              disabled={
-                !rating ||
-                !noIssuesDuringMove ||
-                !noDamages ||
-                !walkthroughCompleted ||
-                !crewConductedProfessionally
-              }
+              disabled={!phase2Valid}
               className="w-full py-4 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               Continue to Sign
@@ -357,13 +561,21 @@ export default function ClientSignOffPage({
           </div>
         )}
 
+        {/* ── Phase 3: Signature ── */}
         {phase === 3 && (
           <div className="animate-fade-in">
             <div className="text-center mb-6">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>Almost done — sign to confirm</h1>
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+                Almost done — sign to confirm
+              </h1>
             </div>
             <div className="mb-4">
-              <label className="block text-xs font-semibold mb-2 uppercase" style={{ color: mutedColor }}>Your name</label>
+              <label
+                className="block text-xs font-semibold mb-2 uppercase"
+                style={{ color: mutedColor }}
+              >
+                Your name
+              </label>
               <input
                 type="text"
                 value={clientName}
@@ -375,8 +587,17 @@ export default function ClientSignOffPage({
             </div>
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-semibold uppercase" style={{ color: mutedColor }}>Signature</label>
-                <button type="button" onClick={clearSignature} className="text-xs text-[#C9A962] font-medium">
+                <label
+                  className="text-xs font-semibold uppercase"
+                  style={{ color: mutedColor }}
+                >
+                  Signature
+                </label>
+                <button
+                  type="button"
+                  onClick={clearSignature}
+                  className="text-xs text-[#C9A962] font-medium"
+                >
                   Clear
                 </button>
               </div>
@@ -394,8 +615,21 @@ export default function ClientSignOffPage({
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
               />
-              <p className="text-xs mt-1" style={{ color: mutedColor }}>Sign with your finger or stylus</p>
+              <p className="text-xs mt-1" style={{ color: mutedColor }}>
+                Sign with your finger or stylus
+              </p>
             </div>
+
+            {/* Legal disclosure */}
+            <div className="p-3 rounded-xl bg-[#E0DDD8]/30 mb-4">
+              <p className="text-[11px] leading-relaxed" style={{ color: mutedColor }}>
+                By signing, I confirm all items listed were received as described. I understand I
+                have <strong>24 hours</strong> from this sign-off to report any concealed damage not
+                visible during the walkthrough. After this period, the condition of items is
+                considered accepted.
+              </p>
+            </div>
+
             {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
             <button
               onClick={handleSubmit}
@@ -404,48 +638,121 @@ export default function ClientSignOffPage({
             >
               {submitting ? "Submitting…" : "Confirm & Sign Off"}
             </button>
-            <p className="text-xs mt-4 text-center" style={{ color: mutedColor }}>
-              By signing, you confirm the items listed were received as described.
-            </p>
           </div>
         )}
 
+        {/* ── Phase 4: Thank You ── */}
         {phase === 4 && (
           <div className="text-center py-12 animate-fade-in">
-            <h1 className="font-hero text-2xl font-semibold mb-2" style={{ color: textColor }}>Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!</h1>
-            <p className="mb-8" style={{ color: mutedColor }}>We hope you love your new space. Welcome home.</p>
+            <h1
+              className="font-hero text-2xl font-semibold mb-2"
+              style={{ color: textColor }}
+            >
+              Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!
+            </h1>
+            <p className="mb-4" style={{ color: mutedColor }}>
+              We hope you love your new space. Welcome home.
+            </p>
+            <p className="text-xs mb-8" style={{ color: mutedColor }}>
+              A confirmation receipt has been generated. If you notice any concealed damage within
+              24 hours, please contact us immediately.
+            </p>
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-flex items-center gap-2 mt-8 px-6 py-3 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C]"
+              className="inline-flex items-center gap-2 mt-4 px-6 py-3 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C]"
             >
               <span aria-hidden>←</span> Back to Job
             </Link>
           </div>
         )}
 
-        <p className="text-center mt-8">
-          <button
-            type="button"
-            onClick={async () => {
-              setSkipping(true);
-              try {
-                await fetch("/api/crew/signoff/skip", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ jobId: id, jobType }),
-                });
-                router.push(`/crew/dashboard/job/${jobType}/${id}`);
-              } catch {
-                setSkipping(false);
+        {/* ── Phase 5: Skip Form ── */}
+        {phase === 5 && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-6">
+              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+                Skip Sign-Off
+              </h1>
+              <p className="text-sm mt-2" style={{ color: mutedColor }}>
+                Please provide a reason for skipping the client sign-off.
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <label className="block text-xs font-semibold uppercase" style={{ color: mutedColor }}>
+                Reason
+              </label>
+              {SKIP_REASONS.map((r) => (
+                <label
+                  key={r.value}
+                  className={`flex items-center gap-3 p-4 rounded-xl border bg-white transition-colors ${
+                    skipReason === r.value ? "border-[#C9A962]" : "border-[#E0DDD8]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="skipReason"
+                    value={r.value}
+                    checked={skipReason === r.value}
+                    onChange={() => setSkipReason(r.value)}
+                    className="w-5 h-5"
+                  />
+                  <span style={{ color: textColor }}>{r.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <textarea
+              value={skipNote}
+              onChange={(e) => setSkipNote(e.target.value)}
+              placeholder="Additional details (required for 'Other')..."
+              className="w-full p-4 rounded-xl border border-[#E0DDD8] bg-white text-sm mb-4"
+              style={{ color: textColor }}
+              rows={3}
+            />
+
+            {geoLat && (
+              <p className="text-[10px] mb-3" style={{ color: mutedColor }}>
+                Location captured ({geoLat.toFixed(4)}, {geoLng?.toFixed(4)})
+              </p>
+            )}
+
+            <button
+              onClick={handleSkipSubmit}
+              disabled={
+                skipSubmitting ||
+                !skipReason ||
+                (skipReason === "other" && !skipNote.trim())
               }
-            }}
-            disabled={skipping}
-            className="text-xs hover:text-[#C9A962] disabled:opacity-50"
-            style={{ color: mutedColor }}
-          >
-            {skipping ? "Skipping…" : "Client not available — skip"}
-          </button>
-        </p>
+              className="w-full py-4 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {skipSubmitting ? "Submitting…" : "Confirm Skip"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPhase(1)}
+              className="w-full py-3 mt-3 rounded-xl font-medium border border-[#E0DDD8] transition-colors"
+              style={{ color: mutedColor }}
+            >
+              Go back
+            </button>
+          </div>
+        )}
+
+        {/* Skip link — visible in phases 1-3 */}
+        {phase >= 1 && phase <= 3 && (
+          <p className="text-center mt-8">
+            <button
+              type="button"
+              onClick={() => setPhase(5)}
+              className="text-xs hover:text-[#C9A962] disabled:opacity-50"
+              style={{ color: mutedColor }}
+            >
+              Client not available — skip
+            </button>
+          </p>
+        )}
       </div>
     </main>
   );

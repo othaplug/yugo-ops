@@ -15,6 +15,9 @@ type Crew = { current_lat: number; current_lng: number; name?: string } | null;
 const YUGO_GOLD = "#C9A94E";
 const YUGO_GREEN = "#22C55E";
 
+/** Stages where crew is heading to pickup; otherwise heading to dropoff */
+const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup"];
+
 const pickupIcon = L.divIcon({
   className: "custom-marker",
   html: `
@@ -105,15 +108,20 @@ export function TrackLiveMapLeaflet({
   crew,
   pickup,
   dropoff,
+  liveStage,
 }: {
   center: Center;
   crew: Crew;
   pickup?: Center | null;
   dropoff?: Center | null;
+  /** Current stage: tracking line goes from vehicle to the address they're heading to */
+  liveStage?: string | null;
 }) {
   const hasPosition = crew != null;
   const hasRoute = pickup && dropoff;
-  const routePositions: [number, number][] = useMemo(() => {
+
+  /** Full journey (pickup → dropoff), subtle dashed */
+  const fullRoutePositions: [number, number][] = useMemo(() => {
     if (!pickup || !dropoff) return [];
     return [
       [pickup.lat, pickup.lng],
@@ -121,13 +129,15 @@ export function TrackLiveMapLeaflet({
     ];
   }, [pickup, dropoff]);
 
-  const routeStyle = useMemo(
-    () =>
-      hasPosition
-        ? { color: YUGO_GOLD, weight: 4, opacity: 1 }
-        : { color: YUGO_GOLD, weight: 3, opacity: 0.8, dashArray: "8, 12" as const },
-    [hasPosition]
-  );
+  /** Tracking line: vehicle → address they're going to right now */
+  const trackingLinePositions: [number, number][] = useMemo(() => {
+    if (!crew || !pickup || !dropoff) return [];
+    const currentDestination = PICKUP_STAGES.includes(liveStage || "") ? pickup : dropoff;
+    return [
+      [crew.current_lat, crew.current_lng],
+      [currentDestination.lat, currentDestination.lng],
+    ];
+  }, [crew, pickup, dropoff, liveStage]);
 
   const zoom = hasPosition ? 14 : 10;
 
@@ -153,13 +163,22 @@ export function TrackLiveMapLeaflet({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
       )}
-      {routePositions.length === 2 && (
+      {fullRoutePositions.length === 2 && (
         <Polyline
-          positions={routePositions}
-          color={routeStyle.color}
-          weight={routeStyle.weight}
-          opacity={routeStyle.opacity}
-          dashArray={routeStyle.dashArray}
+          positions={fullRoutePositions}
+          color={YUGO_GOLD}
+          weight={2}
+          opacity={0.4}
+          dashArray="4, 6"
+          lineCap="round"
+        />
+      )}
+      {trackingLinePositions.length === 2 && (
+        <Polyline
+          positions={trackingLinePositions}
+          color="#1A1A1A"
+          weight={5}
+          opacity={1}
           lineCap="round"
         />
       )}

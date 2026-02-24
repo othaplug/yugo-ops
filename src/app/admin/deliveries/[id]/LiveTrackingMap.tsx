@@ -16,6 +16,8 @@ const MapboxMap = dynamic(
     const M = mod.default;
     const Marker = mod.Marker;
     const Nav = mod.NavigationControl;
+    const Source = mod.Source;
+    const Layer = mod.Layer;
     return function MapWithControls({
       center,
       hasPosition,
@@ -33,6 +35,21 @@ const MapboxMap = dynamic(
       mapStyle: string;
       destination?: { lat: number; lng: number };
     }) {
+      const routeGeoJson =
+        hasPosition && crew && destination
+          ? {
+              type: "Feature" as const,
+              properties: {},
+              geometry: {
+                type: "LineString" as const,
+                coordinates: [
+                  [crew.current_lng, crew.current_lat],
+                  [destination.lng, destination.lat],
+                ],
+              },
+            }
+          : null;
+
       return (
         <M
           mapboxAccessToken={token}
@@ -40,6 +57,24 @@ const MapboxMap = dynamic(
           style={{ width: "100%", height: "100%" }}
           mapStyle={mapStyle}
         >
+          {routeGeoJson && (
+            <Source id="route-tracking" type="geojson" data={routeGeoJson}>
+              <Layer
+                id="route-tracking-layer"
+                type="line"
+                paint={{
+                  "line-color": "#1A1A1A",
+                  "line-width": 5,
+                  "line-opacity": 1,
+                }}
+              />
+            </Source>
+          )}
+          {destination && (
+            <Marker longitude={destination.lng} latitude={destination.lat} anchor="center">
+              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
+            </Marker>
+          )}
           {hasPosition && crew && (
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
               <div className="truck-marker-animated" style={{ width: 44, height: 44 }}>

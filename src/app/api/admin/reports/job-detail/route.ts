@@ -195,19 +195,28 @@ export async function GET(req: NextRequest) {
     }
   }
   if (kmTravelled == null && job.fromAddress && job.toAddress) {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (apiKey) {
+    const mapboxToken =
+      process.env.MAPBOX_ACCESS_TOKEN ||
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (mapboxToken) {
       try {
-        const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-        url.searchParams.set("origins", job.fromAddress);
-        url.searchParams.set("destinations", job.toAddress);
-        url.searchParams.set("units", "metric");
-        url.searchParams.set("mode", "driving");
-        url.searchParams.set("key", apiKey);
-        const res = await fetch(url.toString(), { next: { revalidate: 0 } });
-        const data = await res.json();
-        const value = data.rows?.[0]?.elements?.[0]?.distance?.value;
-        if (typeof value === "number") kmTravelled = value / 1000;
+        const geo = (addr: string) =>
+          fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${mapboxToken}&types=address,place&limit=1`
+          ).then((r) => r.json());
+        const [fromData, toData] = await Promise.all([geo(job.fromAddress!), geo(job.toAddress!)]);
+        const fromCoords = fromData.features?.[0]?.geometry?.coordinates;
+        const toCoords = toData.features?.[0]?.geometry?.coordinates;
+        if (Array.isArray(fromCoords) && fromCoords.length >= 2 && Array.isArray(toCoords) && toCoords.length >= 2) {
+          const coords = `${fromCoords[0]},${fromCoords[1]};${toCoords[0]},${toCoords[1]}`;
+          const dirRes = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${mapboxToken}`
+          );
+          const dirData = await dirRes.json();
+          const distM = dirData.routes?.[0]?.distance;
+          if (typeof distM === "number") kmTravelled = distM / 1000;
+        }
       } catch {
         // ignore
       }

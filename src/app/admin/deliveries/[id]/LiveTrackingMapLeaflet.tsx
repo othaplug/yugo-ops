@@ -17,7 +17,8 @@ function makeCrewIcon() {
   });
 }
 
-const ROUTE_LINE_OPTIONS = { color: "#C9A962", weight: 4, opacity: 0.85 };
+/** Bold tracking line from vehicle to destination (design: black line leading to address) */
+const ROUTE_LINE_OPTIONS = { color: "#1A1A1A", weight: 5, opacity: 1 };
 
 function MapController({
   center,

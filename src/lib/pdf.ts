@@ -199,6 +199,177 @@ export function generateDeliveryPDF(delivery: {
   return doc;
 }
 
+export interface SignOffReceiptData {
+  jobId: string;
+  jobType: string;
+  displayId: string;
+  clientName?: string;
+  signedBy: string;
+  signedAt: string;
+  signedLat?: number | null;
+  signedLng?: number | null;
+  satisfactionRating?: number | null;
+  npsScore?: number | null;
+  wouldRecommend?: boolean | null;
+  damageReportDeadline?: string | null;
+  confirmations: { label: string; value: boolean }[];
+  feedbackNote?: string | null;
+  exceptions?: string | null;
+  escalationTriggered?: boolean;
+  escalationReason?: string | null;
+  discrepancyFlags?: string[];
+}
+
+export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
+  const doc = new jsPDF();
+  const gold = [201, 169, 98] as [number, number, number];
+  const dark = [13, 13, 13] as [number, number, number];
+  const gray = [100, 100, 100] as [number, number, number];
+  const red = [220, 38, 38] as [number, number, number];
+  const green = [22, 163, 74] as [number, number, number];
+
+  // Header
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text("OPS+", 20, 22);
+  doc.setFontSize(8);
+  doc.setTextColor(...gray);
+  doc.text("Client Sign-Off Receipt", 20, 28);
+
+  // Job info
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text(data.displayId, 20, 42);
+  doc.setFontSize(9);
+  doc.setTextColor(...gray);
+  doc.text(`Type: ${data.jobType}`, 100, 42);
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(20, 48, 190, 48);
+
+  let y = 58;
+
+  // Sign-off details
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...gray);
+  doc.text("SIGN-OFF DETAILS", 20, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...dark);
+  doc.text(`Signed by: ${data.signedBy}`, 20, y); y += 5;
+  if (data.clientName) { doc.text(`Client: ${data.clientName}`, 20, y); y += 5; }
+  doc.text(`Date: ${new Date(data.signedAt).toLocaleString("en-US")}`, 20, y); y += 5;
+  if (data.signedLat != null && data.signedLng != null) {
+    doc.text(`Location: ${data.signedLat.toFixed(5)}, ${data.signedLng.toFixed(5)}`, 20, y); y += 5;
+  }
+  if (data.satisfactionRating != null) {
+    doc.text(`Satisfaction: ${data.satisfactionRating}/5`, 20, y); y += 5;
+  }
+  if (data.npsScore != null) {
+    const npsCategory = data.npsScore <= 6 ? "Detractor" : data.npsScore <= 8 ? "Passive" : "Promoter";
+    doc.text(`NPS Score: ${data.npsScore}/10 (${npsCategory})`, 20, y); y += 5;
+  }
+  if (data.wouldRecommend != null) {
+    doc.text(`Would recommend: ${data.wouldRecommend ? "Yes" : "No"}`, 20, y); y += 5;
+  }
+  y += 3;
+
+  // Damage report deadline
+  if (data.damageReportDeadline) {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...red);
+    doc.text(`Damage report deadline: ${new Date(data.damageReportDeadline).toLocaleString("en-US")}`, 20, y);
+    y += 8;
+  }
+
+  // Confirmations table
+  if (data.confirmations.length > 0) {
+    const body = data.confirmations.map((c) => [c.label, c.value ? "Yes" : "No"]);
+    autoTable(doc, {
+      startY: y,
+      head: [["Confirmation", "Status"]],
+      body,
+      theme: "grid",
+      headStyles: { fillColor: gold, textColor: dark, fontStyle: "bold" },
+      styles: { fontSize: 8 },
+      columnStyles: {
+        1: { cellWidth: 25, halign: "center" },
+      },
+      didParseCell: (hookData: { section: string; column: { index: number }; cell: { styles: { textColor: number[] } }; row: { raw: unknown } }) => {
+        if (hookData.section === "body" && hookData.column.index === 1) {
+          const val = (hookData.row.raw as string[])?.[1];
+          hookData.cell.styles.textColor = val === "Yes" ? green : red;
+        }
+      },
+    });
+    y = (doc as any).lastAutoTable?.finalY + 8;
+  }
+
+  // Feedback & exceptions
+  if (data.feedbackNote) {
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gray);
+    doc.text("FEEDBACK", 20, y); y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    const lines = doc.splitTextToSize(data.feedbackNote, 170);
+    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+  }
+
+  if (data.exceptions) {
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...red);
+    doc.text("EXCEPTIONS / ISSUES", 20, y); y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    const lines = doc.splitTextToSize(data.exceptions, 170);
+    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+  }
+
+  // Escalation warning
+  if (data.escalationTriggered && data.escalationReason) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...red);
+    doc.text("ESCALATION TRIGGERED", 20, y); y += 5;
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(data.escalationReason, 170);
+    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+  }
+
+  // Discrepancy flags
+  if (data.discrepancyFlags && data.discrepancyFlags.length > 0) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(245, 158, 11);
+    doc.text("DISCREPANCY FLAGS", 20, y); y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    data.discrepancyFlags.forEach((f) => {
+      const lines = doc.splitTextToSize(`• ${f}`, 170);
+      doc.text(lines, 20, y); y += lines.length * 4 + 2;
+    });
+  }
+
+  // Legal footer
+  if (y > 265) { doc.addPage(); y = 20; }
+  y = Math.max(y + 5, 270);
+  doc.setFontSize(7);
+  doc.setTextColor(...gray);
+  doc.text(
+    "By signing, the client confirms all items were received as described. Concealed damage must be reported within 24 hours.",
+    20, y, { maxWidth: 170 }
+  );
+  doc.text("OPS+ • opsplus.co", 20, 285);
+
+  return doc;
+}
+
 export interface EODReportForPDF {
   id: string;
   team_id: string;

@@ -16,7 +16,7 @@ Copy `.env.example` to `.env.local` and configure. **Required for production:**
 | `TRACK_SIGNING_SECRET` | Min 32 chars for track link HMAC |
 | `CREW_SESSION_SECRET` | Min 32 chars for crew PIN hashing and JWT |
 
-**Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN`, VAPID keys for web push.
+**Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` (or `MAPBOX_ACCESS_TOKEN` for server-side: maps, address autocomplete, distance/directions), `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN`, VAPID keys for web push.
 
 ## Getting Started
 

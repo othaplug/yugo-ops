@@ -57,6 +57,9 @@ function FitBoundsController({
   return null;
 }
 
+/** Stages where crew is heading to pickup; otherwise heading to dropoff */
+const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup"];
+
 export function TrackLiveMapMapbox({
   mapboxAccessToken,
   center,
@@ -64,6 +67,7 @@ export function TrackLiveMapMapbox({
   crewName,
   pickup,
   dropoff,
+  liveStage,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -71,10 +75,13 @@ export function TrackLiveMapMapbox({
   crewName?: string;
   pickup?: CenterLatLng | null;
   dropoff?: CenterLatLng | null;
+  /** Current stage: line is drawn from vehicle to the address they're heading to */
+  liveStage?: string | null;
 }) {
   const hasPosition = crew != null;
 
-  const routeGeoJson = useMemo(() => {
+  /** Full journey line (pickup → dropoff), subtle */
+  const fullRouteGeoJson = useMemo(() => {
     if (!pickup || !dropoff) return null;
     return {
       type: "Feature" as const,
@@ -89,6 +96,23 @@ export function TrackLiveMapMapbox({
     };
   }, [pickup, dropoff]);
 
+  /** Tracking line: vehicle → address they're going to right now (design inspiration: bold black line to destination) */
+  const trackingLineGeoJson = useMemo(() => {
+    if (!crew || !pickup || !dropoff) return null;
+    const currentDestination = PICKUP_STAGES.includes(liveStage || "") ? pickup : dropoff;
+    return {
+      type: "Feature" as const,
+      properties: {},
+      geometry: {
+        type: "LineString" as const,
+        coordinates: [
+          [crew.current_lng, crew.current_lat],
+          [currentDestination.lng, currentDestination.lat],
+        ],
+      },
+    };
+  }, [crew, pickup, dropoff, liveStage]);
+
   return (
     <Map
       mapboxAccessToken={mapboxAccessToken}
@@ -100,18 +124,42 @@ export function TrackLiveMapMapbox({
       mapStyle="mapbox://styles/mapbox/dark-v11"
     >
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
-      {routeGeoJson && (
-        <Source id="route-line" type="geojson" data={routeGeoJson}>
+      {fullRouteGeoJson && (
+        <Source id="route-full" type="geojson" data={fullRouteGeoJson}>
           <Layer
-            id="route-line-layer"
+            id="route-full-layer"
             type="line"
             paint={{
               "line-color": YUGO_GOLD,
-              "line-width": 4,
+              "line-width": 2,
+              "line-opacity": 0.4,
+              "line-dasharray": [2, 2],
+            }}
+          />
+        </Source>
+      )}
+      {trackingLineGeoJson && (
+        <Source id="route-tracking" type="geojson" data={trackingLineGeoJson}>
+          <Layer
+            id="route-tracking-layer"
+            type="line"
+            paint={{
+              "line-color": "#1A1A1A",
+              "line-width": 5,
               "line-opacity": 1,
             }}
           />
         </Source>
+      )}
+      {pickup && (
+        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
+          <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#C9A962]" />
+        </Marker>
+      )}
+      {dropoff && (
+        <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="center">
+          <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
+        </Marker>
       )}
       {hasPosition && crew && (
         <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
