@@ -1,0 +1,13 @@
+---
+description: All changes and implementations must go in the main yugo-ops directory
+alwaysApply: true
+---
+
+# Use main yugo-ops directory for all changes
+
+For this project, **all code changes and implementations must be made in the main yugo-ops repository directory**, not in a worktree.
+
+- **Main repository path:** `/Users/ochedagr8/Documents/yugo-ops`
+- **Important:** The user must **open this folder in Cursor** (File → Open Folder → `/Users/ochedagr8/Documents/yugo-ops`). If a worktree is open instead, edits cannot be written to the main repo and `git status` there will stay clean.
+- When the workspace root is the main repo, use normal relative paths (e.g. `src/...`) so all edits land where the user runs `git add` / `git push`.
+- If the user reports "nothing to commit" in the main repo, remind them to open `/Users/ochedagr8/Documents/yugo-ops` in Cursor and re-apply or copy changes there.

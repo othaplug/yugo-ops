@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
+import { useTheme } from "@/app/admin/components/ThemeContext";
 
 const LiveTrackingMapLeaflet = dynamic(
   () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
@@ -63,7 +64,7 @@ const MapboxMap = dynamic(
                 id="route-tracking-layer"
                 type="line"
                 paint={{
-                  "line-color": "#1A1A1A",
+                  "line-color": "#8B5CF6",
                   "line-width": 5,
                   "line-opacity": 1,
                 }}
@@ -124,7 +125,10 @@ export default function LiveTrackingMap({
   const [loading, setLoading] = useState(true);
   const [liveStage, setLiveStage] = useState<string | null>(null);
   const supabase = createClient();
-  const mapStyle = "mapbox://styles/mapbox/dark-v11";
+  const { theme } = useTheme();
+  const mapStyle = theme === "light"
+    ? "mapbox://styles/mapbox/light-v11"
+    : "mapbox://styles/mapbox/dark-v11";
 
   // Initial fetch + realtime subscription for crew position
   useEffect(() => {
@@ -257,6 +261,7 @@ export default function LiveTrackingMap({
                 : null}
               crewName={crewName}
               destination={destination}
+              mapTheme={theme}
             />
           )}
         </div>

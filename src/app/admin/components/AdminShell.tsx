@@ -117,7 +117,7 @@ function SidebarNavItem({
   onNavigate: () => void;
 }) {
   const { pendingCount } = usePendingChangeRequests();
-  const showDot = showChangeRequestDot && pendingCount > 0;
+  const showBadge = showChangeRequestDot && pendingCount > 0;
   return (
     <Link
       href={href}
@@ -128,13 +128,20 @@ function SidebarNavItem({
           : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
       }`}
     >
-      <span className={`relative ${active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+      <span className={`relative shrink-0 ${active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
         <ItemIcon />
-        {showDot && (
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]" aria-label={`${pendingCount} pending`} />
+        {showBadge && (
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]" aria-hidden />
         )}
       </span>
-      <span className={active ? "font-bold" : ""}>{label}</span>
+      <span className={`min-w-0 flex-1 flex items-center justify-between gap-2 ${active ? "font-bold" : ""}`}>
+        <span className="truncate">{label}</span>
+        {showBadge && (
+          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center" aria-label={`${pendingCount} new request${pendingCount !== 1 ? "s" : ""}`}>
+            {pendingCount > 99 ? "99+" : pendingCount}
+          </span>
+        )}
+      </span>
     </Link>
   );
 }

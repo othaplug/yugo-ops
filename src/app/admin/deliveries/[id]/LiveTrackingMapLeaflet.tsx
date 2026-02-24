@@ -17,8 +17,8 @@ function makeCrewIcon() {
   });
 }
 
-/** Bold tracking line from vehicle to destination (design: black line leading to address) */
-const ROUTE_LINE_OPTIONS = { color: "#1A1A1A", weight: 5, opacity: 1 };
+/** Tracking line from vehicle to destination (matches client progress bar purple) */
+const ROUTE_LINE_OPTIONS = { color: "#8B5CF6", weight: 5, opacity: 1 };
 
 function MapController({
   center,
@@ -46,16 +46,23 @@ export function LiveTrackingMapLeaflet({
   crew,
   crewName,
   destination,
+  mapTheme = "light",
 }: {
   center: { longitude: number; latitude: number };
   crew: { current_lat: number; current_lng: number; name?: string } | null;
   crewName?: string;
   destination?: { lat: number; lng: number };
+  /** When "dark", use dark base tiles to match admin/crew appearance */
+  mapTheme?: "light" | "dark";
 }) {
   const centerArr: [number, number] = [center.latitude, center.longitude];
   const hasPosition = crew != null;
   const destArr: [number, number] | undefined =
     destination ? [destination.lat, destination.lng] : undefined;
+  const tileUrl =
+    mapTheme === "dark"
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
     <MapContainer
@@ -66,10 +73,7 @@ export function LiveTrackingMapLeaflet({
       className="track-live-map"
     >
       <MapController center={centerArr} hasPosition={hasPosition} destination={destArr} />
-      <TileLayer
-        attribution=""
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer attribution="" url={tileUrl} />
       {hasPosition && crew && destArr && (
         <Polyline
           positions={[[crew.current_lat, crew.current_lng], destArr]}

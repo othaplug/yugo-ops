@@ -21,8 +21,13 @@ export function PendingChangeRequestsProvider({ children }: { children: ReactNod
 
   useEffect(() => {
     refetch();
+    // Refetch again after 2s so badge appears quickly if first request was slow or realtime is delayed
+    const early = setTimeout(refetch, 2000);
     const interval = setInterval(refetch, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(early);
+      clearInterval(interval);
+    };
   }, [refetch]);
 
   return (
