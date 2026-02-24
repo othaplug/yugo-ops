@@ -196,14 +196,16 @@ export default function LiveTrackingMap({
               </span>
               <div>
                 <div className="text-[13px] font-bold text-[var(--tx)]">
-                  {liveStage === "loading" || liveStage === "unloading" ? "Packing" : CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                  {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
                 </div>
                 <div className="text-[11px] text-[var(--tx3)]">
-                  {liveStage === "loading" || liveStage === "unloading"
-                    ? "Move is being prepared"
-                    : liveStage === "completed"
-                      ? "Move is complete"
-                      : "Crew is on the way"}
+                  {liveStage === "loading"
+                    ? "Crew is loading items"
+                    : liveStage === "unloading"
+                      ? "Crew is unloading items"
+                      : liveStage === "completed"
+                        ? "Move is complete"
+                        : "Crew is on the way"}
                 </div>
               </div>
             </div>
@@ -242,14 +244,16 @@ export default function LiveTrackingMap({
             </span>
             <div>
               <div className="text-[13px] font-bold text-[var(--tx)]">
-                {liveStage === "loading" || liveStage === "unloading" ? "Packing" : CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
               </div>
               <div className="text-[11px] text-[var(--tx3)]">
-                {liveStage === "loading" || liveStage === "unloading"
-                  ? "Move is being prepared"
-                  : liveStage === "completed"
-                    ? "Move is complete"
-                    : "Crew is on the way"}
+                {liveStage === "loading"
+                  ? "Crew is loading items"
+                  : liveStage === "unloading"
+                    ? "Crew is unloading items"
+                    : liveStage === "completed"
+                      ? "Move is complete"
+                      : "Crew is on the way"}
               </div>
             </div>
           </div>

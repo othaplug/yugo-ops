@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import { extraItemApprovalEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -11,7 +11,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
   const { id, itemId } = await params;
   const body = await req.json();

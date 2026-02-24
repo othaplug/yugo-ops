@@ -50,6 +50,11 @@ export async function POST(
   const signatureDataUrl = (body.signatureDataUrl || body.signature_data_url || "").toString().trim();
   const allItemsReceived = body.allItemsReceived !== undefined ? !!body.allItemsReceived : (body.all_items_received !== undefined ? !!body.all_items_received : true);
   const conditionAccepted = body.conditionAccepted !== undefined ? !!body.conditionAccepted : (body.condition_accepted !== undefined ? !!body.condition_accepted : true);
+  const walkthroughConductedByClient = body.walkthroughConductedByClient === true;
+  const noIssuesDuringMove = body.noIssuesDuringMove === true;
+  const noDamages = body.noDamages === true;
+  const walkthroughCompleted = body.walkthroughCompleted === true;
+  const crewConductedProfessionally = body.crewConductedProfessionally === true;
   const satisfactionRating = body.satisfactionRating ?? body.satisfaction_rating;
   const wouldRecommend = body.wouldRecommend ?? body.would_recommend;
   const feedbackNote = (body.feedbackNote || body.feedback_note || "").toString().trim() || null;
@@ -95,8 +100,13 @@ export async function POST(
       signature_data_url: signatureDataUrl,
       all_items_received: allItemsReceived,
       condition_accepted: conditionAccepted,
+      walkthrough_conducted_by_client: walkthroughConductedByClient,
       satisfaction_rating: satisfactionRating >= 1 && satisfactionRating <= 5 ? satisfactionRating : null,
       would_recommend: wouldRecommend,
+      no_issues_during_move: noIssuesDuringMove,
+      no_damages: noDamages,
+      walkthrough_completed: walkthroughCompleted,
+      crew_conducted_professionally: crewConductedProfessionally,
       feedback_note: feedbackNote,
       exceptions,
     })

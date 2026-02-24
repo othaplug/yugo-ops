@@ -26,9 +26,14 @@ export default function ClientSignOffPage({
   const [clientName, setClientName] = useState("");
   const [allItemsReceived, setAllItemsReceived] = useState(true);
   const [conditionAccepted, setConditionAccepted] = useState(true);
+  const [walkthroughConductedByClient, setWalkthroughConductedByClient] = useState(false);
   const [exceptions, setExceptions] = useState("");
   const [rating, setRating] = useState<number | null>(null);
   const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
+  const [noIssuesDuringMove, setNoIssuesDuringMove] = useState(false);
+  const [noDamages, setNoDamages] = useState(false);
+  const [walkthroughCompleted, setWalkthroughCompleted] = useState(false);
+  const [crewConductedProfessionally, setCrewConductedProfessionally] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState("");
   const [signature, setSignature] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -122,8 +127,13 @@ export default function ClientSignOffPage({
           signatureDataUrl: dataUrl,
           allItemsReceived,
           conditionAccepted,
+          walkthroughConductedByClient,
           satisfactionRating: rating,
           wouldRecommend,
+          noIssuesDuringMove,
+          noDamages,
+          walkthroughCompleted,
+          crewConductedProfessionally,
           feedbackNote: feedbackNote.trim() || null,
           exceptions: exceptions.trim() || null,
         }),
@@ -205,6 +215,15 @@ export default function ClientSignOffPage({
                 />
                 <span style={{ color: textColor }}>Everything in good condition</span>
               </label>
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <input
+                  type="checkbox"
+                  checked={walkthroughConductedByClient}
+                  onChange={(e) => setWalkthroughConductedByClient(e.target.checked)}
+                  className="w-5 h-5 rounded"
+                />
+                <span style={{ color: textColor }}>Walkthrough conducted by client</span>
+              </label>
               {(!allItemsReceived || !conditionAccepted) && (
                 <textarea
                   value={exceptions}
@@ -232,21 +251,63 @@ export default function ClientSignOffPage({
               <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>How was your experience?</h1>
             </div>
             <div className="flex justify-center gap-2 mb-4">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setRating(n)}
-                  className={`w-12 h-12 rounded-full text-xl transition-transform ${
-                    rating === n ? "bg-[#C9A962] text-[var(--btn-text-on-accent)] scale-110" : "bg-[#E0DDD8] hover:bg-[#C9A962]/30"
-                  }`}
-                  style={rating !== n ? { color: mutedColor } : undefined}
-                >
-                  ★
-                </button>
-              ))}
+              {[1, 2, 3, 4, 5].map((n) => {
+                const isFilled = rating != null && n <= rating;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRating(n)}
+                    className={`w-12 h-12 rounded-full text-xl transition-transform ${
+                      isFilled ? "bg-[#C9A962] text-[var(--btn-text-on-accent)]" : "bg-[#E0DDD8] hover:bg-[#C9A962]/30"
+                    } ${rating === n ? "scale-110" : ""}`}
+                    style={!isFilled ? { color: mutedColor } : undefined}
+                  >
+                    {isFilled ? "★" : "☆"}
+                  </button>
+                );
+              })}
             </div>
             {rating && <p className="text-center text-sm mb-4" style={{ color: mutedColor }}>{RATING_LABELS[rating]}</p>}
+            <div className="space-y-3 mb-4">
+              <p className="text-sm font-medium" style={{ color: textColor }}>Please confirm the following:</p>
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <input
+                  type="checkbox"
+                  checked={noIssuesDuringMove}
+                  onChange={(e) => setNoIssuesDuringMove(e.target.checked)}
+                  className="w-5 h-5 rounded"
+                />
+                <span style={{ color: textColor }}>I did not experience any issues during my move</span>
+              </label>
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <input
+                  type="checkbox"
+                  checked={noDamages}
+                  onChange={(e) => setNoDamages(e.target.checked)}
+                  className="w-5 h-5 rounded"
+                />
+                <span style={{ color: textColor }}>No damages to report</span>
+              </label>
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <input
+                  type="checkbox"
+                  checked={walkthroughCompleted}
+                  onChange={(e) => setWalkthroughCompleted(e.target.checked)}
+                  className="w-5 h-5 rounded"
+                />
+                <span style={{ color: textColor }}>I completed the walkthrough with the crew</span>
+              </label>
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[#E0DDD8] bg-white">
+                <input
+                  type="checkbox"
+                  checked={crewConductedProfessionally}
+                  onChange={(e) => setCrewConductedProfessionally(e.target.checked)}
+                  className="w-5 h-5 rounded"
+                />
+                <span style={{ color: textColor }}>The crew conducted themselves professionally</span>
+              </label>
+            </div>
             <div className="mb-4">
               <p className="text-sm font-medium mb-2" style={{ color: textColor }}>Would you recommend us?</p>
               <div className="flex gap-3">
@@ -282,7 +343,13 @@ export default function ClientSignOffPage({
             />
             <button
               onClick={() => setPhase(3)}
-              disabled={!rating}
+              disabled={
+                !rating ||
+                !noIssuesDuringMove ||
+                !noDamages ||
+                !walkthroughCompleted ||
+                !crewConductedProfessionally
+              }
               className="w-full py-4 rounded-xl font-semibold text-[var(--btn-text-on-accent)] bg-[#C9A962] hover:bg-[#D4B56C] disabled:opacity-50 transition-colors"
             >
               Continue to Sign

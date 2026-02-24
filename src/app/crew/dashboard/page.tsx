@@ -53,6 +53,7 @@ export default function CrewDashboardPage() {
 
   const completedStatuses = ["delivered", "completed", "done", "cancelled"];
   const isCompleted = (j: Job) => completedStatuses.includes((j.status || "").toLowerCase());
+  const isInProgress = (j: Job) => (j.status || "").toLowerCase() === "in_progress";
 
   const firstIncompleteIndex = data?.jobs.findIndex((j) => !isCompleted(j)) ?? -1;
   const canStartJob = (index: number) => index === firstIncompleteIndex;
@@ -186,12 +187,14 @@ export default function CrewDashboardPage() {
                       </div>
                     ) : canStart ? (
                       <div className="mt-3 ml-8">
-                        <p className="text-[10px] text-[var(--grn)] font-medium mb-1.5">Next — ready to start</p>
+                        <p className="text-[10px] text-[var(--grn)] font-medium mb-1.5">
+                          {isInProgress(job) ? "In progress" : "Next — ready to start"}
+                        </p>
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
                           className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
                         >
-                          START JOB
+                          {isInProgress(job) ? "RETURN TO JOB" : "START JOB"}
                         </Link>
                       </div>
                     ) : (

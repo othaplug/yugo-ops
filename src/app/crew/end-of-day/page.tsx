@@ -9,7 +9,7 @@ export default function CrewEndOfDayPage() {
   const [crewNote, setCrewNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[]; alreadySubmitted?: boolean } | null>(null);
+  const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; displayId?: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[]; alreadySubmitted?: boolean } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function CrewEndOfDayPage() {
             <div className="mt-3 pt-3 border-t border-[var(--brd)]">
               <p className="text-[10px] font-semibold text-[var(--tx3)] mb-1">Jobs</p>
               {preview.jobs.map((j, i) => (
-                <p key={i} className="text-[11px] text-[var(--tx2)]">{j.jobId} · {j.duration}m</p>
+                <p key={i} className="text-[11px] text-[var(--tx2)]">{j.displayId ?? j.jobId} · {j.duration}m</p>
               ))}
             </div>
           )}

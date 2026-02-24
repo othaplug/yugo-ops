@@ -207,14 +207,16 @@ export default function TrackLiveMap({
                 </span>
                 <div>
                   <div className="text-[13px] font-bold text-[#1A1A1A]">
-                    {liveStage === "loading" || liveStage === "unloading" ? "Packing" : CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                    {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
                   </div>
                   <div className="text-[11px] text-[#666]">
-                    {liveStage === "loading" || liveStage === "unloading"
-                      ? "Your move is being prepared"
-                      : liveStage === "completed"
-                        ? "Your move is complete"
-                        : "Your crew is on the way"}
+                    {liveStage === "loading"
+                      ? "Crew is loading your items"
+                      : liveStage === "unloading"
+                        ? "Crew is unloading your items"
+                        : liveStage === "completed"
+                          ? "Your move is complete"
+                          : "Your crew is on the way"}
                   </div>
                 </div>
               </div>

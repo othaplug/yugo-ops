@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { formatJobId } from "@/lib/move-code";
 
 /** GET preview of end-of-day report data (before submit). */
 export async function GET(req: NextRequest) {
@@ -24,6 +25,17 @@ export async function GET(req: NextRequest) {
   const sessions = sessionsRes.data || [];
 
   const jobIds = [...new Set(sessions.map((s) => s.job_id))];
+  const moveIds = sessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
+  const deliveryIds = sessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
+
+  const [movesRes, deliveriesRes] = await Promise.all([
+    moveIds.length ? admin.from("moves").select("id, move_code").in("id", [...new Set(moveIds)]) : { data: [] },
+    deliveryIds.length ? admin.from("deliveries").select("id, delivery_number").in("id", [...new Set(deliveryIds)]) : { data: [] },
+  ]);
+  const jobDisplayMap = new Map<string, string>();
+  (movesRes.data || []).forEach((m) => jobDisplayMap.set(m.id, formatJobId(m.move_code || m.id, "move")));
+  (deliveriesRes.data || []).forEach((d) => jobDisplayMap.set(d.id, formatJobId(d.delivery_number || d.id, "delivery")));
+
   let signOffs: { job_id: string; satisfaction_rating: number | null; signed_by: string }[] = [];
   if (jobIds.length > 0) {
     const { data: so } = await admin.from("client_sign_offs").select("job_id, satisfaction_rating, signed_by").in("job_id", jobIds);
@@ -37,7 +49,8 @@ export async function GET(req: NextRequest) {
     const end = (s.checkpoints as { timestamp?: string }[])?.[(s.checkpoints as unknown[]).length - 1];
     const endTime = end && typeof end === "object" && "timestamp" in end ? new Date((end as { timestamp: string }).timestamp).getTime() : Date.now();
     const duration = Math.round((endTime - start) / 60000);
-    return { jobId: s.job_id, type: s.job_type, duration, status: s.status, signOff: !!so, rating: so?.satisfaction_rating ?? null };
+    const displayId = jobDisplayMap.get(s.job_id) || s.job_id;
+    return { jobId: s.job_id, displayId, type: s.job_type, duration, status: s.status, signOff: !!so, rating: so?.satisfaction_rating ?? null };
   });
 
   const totalJobTime = jobsSummary.reduce((s, j) => s + (j.duration || 0), 0);
@@ -105,6 +118,17 @@ export async function POST(req: NextRequest) {
   const sessions = sessionsRes.data || [];
 
   const jobIds = [...new Set(sessions.map((s) => s.job_id))];
+  const moveIds = sessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
+  const deliveryIds = sessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
+
+  const [movesRes, deliveriesRes] = await Promise.all([
+    moveIds.length ? admin.from("moves").select("id, move_code").in("id", [...new Set(moveIds)]) : { data: [] },
+    deliveryIds.length ? admin.from("deliveries").select("id, delivery_number").in("id", [...new Set(deliveryIds)]) : { data: [] },
+  ]);
+  const jobDisplayMap = new Map<string, string>();
+  (movesRes.data || []).forEach((m) => jobDisplayMap.set(m.id, formatJobId(m.move_code || m.id, "move")));
+  (deliveriesRes.data || []).forEach((d) => jobDisplayMap.set(d.id, formatJobId(d.delivery_number || d.id, "delivery")));
+
   let signOffs: { job_id: string; job_type: string; satisfaction_rating: number | null; signed_by: string }[] = [];
   if (jobIds.length > 0) {
     const { data: so } = await admin.from("client_sign_offs").select("job_id, job_type, satisfaction_rating, signed_by").in("job_id", jobIds);
@@ -118,8 +142,10 @@ export async function POST(req: NextRequest) {
     const end = (s.checkpoints as { timestamp?: string }[])?.[(s.checkpoints as unknown[]).length - 1];
     const endTime = end && typeof end === "object" && "timestamp" in end ? new Date((end as { timestamp: string }).timestamp).getTime() : Date.now();
     const duration = Math.round((endTime - start) / 60000);
+    const displayId = jobDisplayMap.get(s.job_id) || s.job_id;
     return {
       jobId: s.job_id,
+      displayId,
       type: s.job_type,
       sessionId: (s as { id?: string }).id ?? null,
       duration,
