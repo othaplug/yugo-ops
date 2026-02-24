@@ -298,10 +298,10 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
       columnStyles: {
         1: { cellWidth: 25, halign: "center" },
       },
-      didParseCell: (hookData: { section: string; column: { index: number }; cell: { styles: { textColor: number[] } }; row: { raw: unknown } }) => {
+      didParseCell: (hookData) => {
         if (hookData.section === "body" && hookData.column.index === 1) {
           const val = (hookData.row.raw as string[])?.[1];
-          hookData.cell.styles.textColor = val === "Yes" ? green : red;
+          (hookData.cell.styles as { textColor?: number[] }).textColor = val === "Yes" ? green : red;
         }
       },
     });
