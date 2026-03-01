@@ -89,6 +89,7 @@ export default function ClientSignOffPage({
 
   // Phase 1: Items confirmation
   const [clientName, setClientName] = useState("");
+  const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
   const [inventoryReviewedByClient, setInventoryReviewedByClient] = useState(false);
   const [allItemsReceived, setAllItemsReceived] = useState(true);
   const [itemsLeftBehind, setItemsLeftBehind] = useState("");
@@ -152,20 +153,32 @@ export default function ClientSignOffPage({
     ctx.lineCap = "round";
   }, [phase]);
 
-  // Check existing sign-off + load photos
+  // Check existing sign-off + load photos (each fetch fails independently)
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/crew/signoff/${id}?jobType=${jobType}`).then((r) => r.json()),
-      fetch(`/api/crew/photos/${id}?jobType=${jobType}`).then((r) => r.json()).catch(() => []),
-    ])
-      .then(([signoffData, photosData]) => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [signoffRes, photosRes] = await Promise.all([
+          fetch(`/api/crew/signoff/${id}?jobType=${jobType}`),
+          fetch(`/api/crew/photos/${id}?jobType=${jobType}`),
+        ]);
+        if (cancelled) return;
+        const signoffData = signoffRes.ok ? await signoffRes.json() : null;
+        const photosData = photosRes.ok ? await photosRes.json() : { photos: [] };
         if (signoffData?.id) setExisting(signoffData);
         const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
         setJobPhotos(photos);
-        setPhotosLoading(false);
-      })
-      .catch(() => { setPhotosLoading(false); })
-      .finally(() => setLoading(false));
+      } catch {
+        // Network error - continue with empty photos
+      } finally {
+        if (!cancelled) {
+          setPhotosLoading(false);
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, [id, jobType]);
 
   const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
@@ -236,7 +249,7 @@ export default function ClientSignOffPage({
           walkthroughConductedByClient,
           clientPresentDuringUnloading,
           preExistingConditionsNoted,
-          photosReviewedByClient: inventoryReviewedByClient,
+          photosReviewedByClient: jobPhotos.length > 0 ? photosReviewedByClient : true,
           satisfactionRating: rating,
           npsScore,
           noIssuesDuringMove,
@@ -259,7 +272,12 @@ export default function ClientSignOffPage({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to submit");
+        const errMsg = data.error || "Failed to submit";
+        setError(
+          data.code === "SCHEMA_UPDATE_REQUIRED"
+            ? "A system update is needed. Please contact your dispatch or try again in a few minutes."
+            : errMsg
+        );
         setSubmitting(false);
         return;
       }
@@ -322,7 +340,9 @@ export default function ClientSignOffPage({
   const mutedColor = "#555";
 
   const phase1Valid =
+    (jobPhotos.length === 0 || photosReviewedByClient) &&
     inventoryReviewedByClient &&
+    walkthroughConductedByClient &&
     ((allItemsReceived && conditionAccepted) || exceptions.trim().length > 0 || itemsLeftBehind.trim().length > 0);
 
   const phase2Valid =
@@ -332,6 +352,8 @@ export default function ClientSignOffPage({
     walkthroughCompleted &&
     crewConductedProfessionally &&
     noPropertyDamage &&
+    itemsPlacedCorrectly &&
+    propertyLeftClean &&
     npsScore !== null;
 
   return (
@@ -339,11 +361,25 @@ export default function ClientSignOffPage({
       <div className="max-w-[420px] mx-auto px-4 py-8">
         <Link
           href={`/crew/dashboard/job/${jobType}/${id}`}
-          className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-[13px] font-medium mb-4 border border-transparent hover:border-[#C9A962]/40 transition-colors"
+          className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-[13px] font-medium mb-4 border border-transparent hover:border-[#C9A962]/40 hover:bg-[#C9A962]/5 transition-colors"
           style={{ color: mutedColor }}
         >
           <span aria-hidden>←</span> Back to Job
         </Link>
+
+        {/* Progress indicator (phases 1–3) */}
+        {phase >= 1 && phase <= 3 && (
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3].map((p) => (
+              <div
+                key={p}
+                className={`h-1 flex-1 rounded-full transition-colors ${
+                  phase >= p ? "bg-[#C9A962]" : "bg-[#E0DDD8]"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* ── Phase 1: Photo Review + Items Confirmation ── */}
         {phase === 1 && (
@@ -357,7 +393,7 @@ export default function ClientSignOffPage({
               </p>
             </div>
 
-            {/* Optional photo gallery */}
+            {/* Photo gallery - required review when photos exist */}
             {!photosLoading && jobPhotos.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs font-semibold uppercase mb-2" style={{ color: mutedColor }}>
@@ -382,6 +418,12 @@ export default function ClientSignOffPage({
                     </div>
                   )}
                 </div>
+                <Checkbox
+                  checked={photosReviewedByClient}
+                  onChange={setPhotosReviewedByClient}
+                  label="I have reviewed the crew photos above"
+                  textColor={textColor}
+                />
               </div>
             )}
 
@@ -640,7 +682,11 @@ export default function ClientSignOffPage({
               </p>
             </div>
 
-            {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+            {error && (
+              <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-sm text-red-700 font-medium">{error}</p>
+              </div>
+            )}
             <button
               onClick={handleSubmit}
               disabled={submitting || !clientName.trim()}

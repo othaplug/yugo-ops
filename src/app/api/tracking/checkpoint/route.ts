@@ -111,5 +111,47 @@ export async function POST(req: NextRequest) {
     toAddress
   ).catch(() => {});
 
+  // Auto-invoice when move completes (if no invoice linked yet)
+  if (isCompleted && session.job_type === "move") {
+    try {
+      const { data: existingInv } = await admin
+        .from("invoices")
+        .select("id")
+        .eq("move_id", session.job_id)
+        .limit(1)
+        .maybeSingle();
+      if (!existingInv) {
+        const { data: move } = await admin
+          .from("moves")
+          .select("client_name, estimate")
+          .eq("id", session.job_id)
+          .single();
+        const amount = Math.round(Number(move?.estimate || 0));
+        if (amount > 0 && move?.client_name) {
+          const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+          const dueDate = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+          await admin.from("invoices").insert({
+            invoice_number: invoiceNumber,
+            client_name: move.client_name,
+            amount,
+            status: "sent",
+            due_date: dueDate,
+            move_id: session.job_id,
+            line_items: JSON.stringify([{ d: "Move service", q: 1, r: amount }]),
+          });
+          await admin.from("status_events").insert({
+            entity_type: "move",
+            entity_id: session.job_id,
+            event_type: "invoice_created",
+            description: `Auto-invoice ${invoiceNumber} created for $${amount}`,
+            icon: "dollar",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[checkpoint] auto-invoice failed:", err);
+    }
+  }
+
   return NextResponse.json({ ok: true, status, checkpoint: newCheckpoint });
 }

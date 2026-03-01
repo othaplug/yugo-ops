@@ -67,7 +67,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           <aside
             className={`
               fixed top-0 left-0 z-50 h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
-              bg-[var(--bg2)] border-r border-[var(--brd)]
+              glass-sidebar border-r border-[var(--brd)]
               transition-all duration-300 ease-out
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
               w-[220px]
@@ -162,7 +162,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
             <div
-              className="fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 bg-[var(--bg)]/80 backdrop-blur-md border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] safe-area-top left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"
+              className="fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] safe-area-top left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <button

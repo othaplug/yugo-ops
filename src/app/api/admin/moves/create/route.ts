@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
         internal_notes: (body.internal_notes as string)?.trim() || null,
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
         crew_id: (body.crew_id as string)?.trim() || null,
+        coordinator_name: (body.coordinator_name as string)?.trim() || null,
         assigned_members: Array.isArray(body.assigned_members) ? body.assigned_members : [],
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
         updated_at: new Date().toISOString(),

@@ -7,6 +7,3 @@ export function getResend(): Resend {
   }
   return new Resend(key);
 }
-
-/** @deprecated Use getResend() for request-time key. Kept for clients/create, referrals, etc. */
-export const resend = new Resend(process.env.RESEND_API_KEY || "");

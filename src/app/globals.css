@@ -130,10 +130,8 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   transition: transform var(--transition-normal) var(--ease-out-expo), box-shadow var(--transition-normal) var(--ease-smooth);
 }
 .embossed-hover:hover {
-  transform: translateY(-6px) scale(1.04);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(201, 169, 98, 0.4);
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(201, 169, 98, 0.2);
 }
 
 /* Sidebar nav item - lifted on hover */
@@ -197,6 +195,28 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
 }
+
+/* Partner portal (light theme) form inputs */
+.field-input-partner {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E8E4DF;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 16px;
+  color: #1A1A1A;
+  font-family: inherit;
+  outline: none;
+  transition: border 0.15s ease, box-shadow 0.15s ease;
+}
+@media (min-width: 640px) {
+  .field-input-partner { font-size: 13px; padding: 8px 10px; }
+}
+.field-input-partner:focus {
+  border-color: #C9A962;
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.12);
+}
+.field-input-partner::placeholder { color: #aaa; }
 
 /* Focus visible for keyboard accessibility (dark theme) */
 a:focus-visible,
@@ -339,6 +359,78 @@ input[type="time"] {
 [data-theme="light"] .glass {
   background: rgba(255, 255, 255, 0.5);
   border-color: rgba(0, 0, 0, 0.06);
+}
+
+.glass-sidebar {
+  background: rgba(15, 15, 15, 0.75);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .glass-sidebar {
+  background: rgba(255, 255, 255, 0.7);
+  border-right-color: rgba(0, 0, 0, 0.06);
+}
+
+.glass-topbar {
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .glass-topbar {
+  background: rgba(255, 255, 255, 0.65);
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.glass-card {
+  background: rgba(30, 30, 30, 0.4);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.map-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+.map-fullscreen-btn {
+  position: absolute;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+}
+[data-theme="light"] .map-fullscreen-btn {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1A1A1A;
+}
+.map-fullscreen-btn:hover {
+  background: rgba(50, 50, 50, 0.9);
+}
+[data-theme="light"] .map-fullscreen-btn:hover {
+  background: rgba(240, 240, 240, 0.95);
 }
 
 /* Icon outline + subtle glow - matches screenshot aesthetic */
@@ -494,6 +586,19 @@ input[type="time"] {
 .track-live-map .crew-marker {
   background: transparent !important;
   border: none !important;
+}
+
+/* Crew name labels on map (permanent tooltips) */
+.track-live-map .crew-label-tooltip.leaflet-tooltip {
+  background: var(--card) !important;
+  border: 1px solid var(--brd) !important;
+  color: var(--tx) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 2px 6px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Crew marker pulse animation */

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import PartnerSignOut from "./PartnerSignOut";
-import PartnerDashboardClient from "./PartnerDashboardClient";
+import PartnerPortalClient from "./PartnerPortalClient";
 
 export default async function PartnerDashboardPage() {
   const supabase = await createClient();
@@ -11,25 +10,22 @@ export default async function PartnerDashboardPage() {
   const { data: partnerUser } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single();
   if (!partnerUser) redirect("/partner/login");
 
-  const { data: org } = await supabase.from("organizations").select("name, type").eq("id", partnerUser.org_id).single();
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id, name, type, contact_name, email, phone")
+    .eq("id", partnerUser.org_id)
+    .single();
+
+  const contactName = org?.contact_name || user.email?.split("@")[0] || "Partner";
+  const firstName = contactName.split(" ")[0];
 
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
-      <header className="border-b border-[var(--brd)] bg-[var(--card)] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-hero text-[18px] tracking-[2px] text-[var(--gold)]">OPS+</span>
-          <span className="text-[11px] text-[var(--tx3)]">Partner</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] text-[var(--tx2)]">{user.email}</span>
-          <PartnerSignOut />
-        </div>
-      </header>
-      <main className="max-w-[800px] mx-auto px-4 py-8">
-        <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">{org?.name || "Partner dashboard"}</h1>
-        <p className="text-[13px] text-[var(--tx3)] mt-1">View your deliveries and moves</p>
-        <PartnerDashboardClient />
-      </main>
-    </div>
+    <PartnerPortalClient
+      orgId={org?.id || partnerUser.org_id}
+      orgName={org?.name || "Partner"}
+      orgType={org?.type || "retail"}
+      contactName={firstName}
+      userEmail={user.email || ""}
+    />
   );
 }

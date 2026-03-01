@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
@@ -65,6 +65,9 @@ export default function CreateMoveForm({
   const [loading, setLoading] = useState(false);
   const [moveType, setMoveType] = useState<"residential" | "office">("residential");
   const [organizationId, setOrganizationId] = useState("");
+  const [contactSearch, setContactSearch] = useState("");
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const contactDropdownRef = useRef<HTMLDivElement>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -85,6 +88,7 @@ export default function CreateMoveForm({
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>([]);
   const [customComplexity, setCustomComplexity] = useState("");
   const [preferredContact, setPreferredContact] = useState("email");
+  const [coordinatorName, setCoordinatorName] = useState("");
   const [crewId, setCrewId] = useState("");
   const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
   const [newRoom, setNewRoom] = useState("");
@@ -95,6 +99,31 @@ export default function CreateMoveForm({
   const [teamMembers, setTeamMembers] = useState<Set<string>>(new Set());
   const selectedCrewMembers = crewId ? (crews.find((c) => c.id === crewId)?.members || []) : [];
   const [docFiles, setDocFiles] = useState<File[]>([]);
+
+  const filteredOrgs = organizations.filter((o) => {
+    const term = contactSearch.toLowerCase();
+    return (
+      (o.name?.toLowerCase().includes(term) ||
+        o.email?.toLowerCase().includes(term) ||
+        o.phone?.toLowerCase().includes(term) ||
+        o.contact_name?.toLowerCase().includes(term))
+    );
+  });
+
+  const duplicateEmailMatch =
+    clientEmail?.trim() &&
+    !organizationId &&
+    organizations.find((o) => o.email?.toLowerCase().trim() === clientEmail.trim().toLowerCase());
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contactDropdownRef.current && !contactDropdownRef.current.contains(e.target as Node)) {
+        setShowContactDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Auto-fill when client/partner selected
   useEffect(() => {
@@ -224,6 +253,7 @@ export default function CreateMoveForm({
       formData.append("internal_notes", internalNotes);
       formData.append("complexity_indicators", JSON.stringify(complexityIndicators));
       formData.append("preferred_contact", preferredContact);
+      formData.append("coordinator_name", coordinatorName.trim());
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
       formData.append("inventory", JSON.stringify(inventory));
@@ -293,18 +323,57 @@ export default function CreateMoveForm({
           <div className="space-y-4 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Client</h3>
             <Field label="Select to auto fill">
-              <select
-                value={organizationId}
-                onChange={(e) => setOrganizationId(e.target.value)}
-                className={fieldInput}
-              >
-                <option value="">Select to auto fill…</option>
-                {organizations.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.contact_name || o.name}
-                  </option>
-                ))}
-              </select>
+              <div ref={contactDropdownRef} className="relative">
+                <input
+                  type="text"
+                  value={organizationId ? (organizations.find((o) => o.id === organizationId)?.contact_name || organizations.find((o) => o.id === organizationId)?.name || "") : contactSearch}
+                  onChange={(e) => {
+                    setContactSearch(e.target.value);
+                    setOrganizationId("");
+                    setShowContactDropdown(true);
+                  }}
+                  onFocus={() => setShowContactDropdown(true)}
+                  placeholder="Search by name, email, or phone…"
+                  className={`${fieldInput} ${organizationId ? "pr-8" : ""}`}
+                />
+                {organizationId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOrganizationId("");
+                      setContactSearch("");
+                      setShowContactDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--tx3)] hover:text-[var(--tx)] text-[14px]"
+                    aria-label="Clear selection"
+                  >
+                    ×
+                  </button>
+                )}
+                {showContactDropdown && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[200px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                    {filteredOrgs.length === 0 ? (
+                      <div className="px-3 py-2 text-[11px] text-[var(--tx3)]">No matches</div>
+                    ) : (
+                      filteredOrgs.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => {
+                            setOrganizationId(o.id);
+                            setContactSearch("");
+                            setShowContactDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                        >
+                          {o.contact_name || o.name}
+                          {o.email && <span className="text-[var(--tx3)] ml-1">({o.email})</span>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </Field>
             <div className="grid sm:grid-cols-3 gap-4">
               <Field label="Client Name *">
@@ -339,6 +408,21 @@ export default function CreateMoveForm({
                 />
               </Field>
             </div>
+            {duplicateEmailMatch && (
+              <div className="px-3 py-2 rounded-lg bg-[var(--org)]/15 border border-[var(--org)]/40 text-[11px] font-medium text-[var(--org)]">
+                A contact with this email already exists
+              </div>
+            )}
+            <Field label="Move Coordinator (optional)">
+              <input
+                type="text"
+                name="coordinator_name"
+                value={coordinatorName}
+                onChange={(e) => setCoordinatorName(e.target.value)}
+                placeholder="Coordinator name"
+                className={fieldInput}
+              />
+            </Field>
             <Field label="Preferred Contact">
               <select
                 value={preferredContact}

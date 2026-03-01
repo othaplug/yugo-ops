@@ -33,10 +33,16 @@ export async function GET(
   if (!entity) return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
   // Auth: client uses token, admin uses platform auth
-  const isClient = !!token;
-  if (isClient) {
+  if (token) {
     const valid = verifyTrackToken(entity.jobType === "move" ? "move" : "delivery", entity.id, token);
     if (!valid) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  } else {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user.id).single();
+    if (!platformUser) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { data: session } = await admin

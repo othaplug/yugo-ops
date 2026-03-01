@@ -25,6 +25,7 @@ interface EditMoveDetailsModalProps {
     to_lat?: number | null;
     to_lng?: number | null;
     crew_id?: string | null;
+    coordinator_name?: string | null;
     scheduled_date?: string | null;
     arrival_window?: string | null;
     from_access?: string | null;
@@ -34,6 +35,7 @@ interface EditMoveDetailsModalProps {
     internal_notes?: string | null;
   };
   crews?: { id: string; name: string }[];
+  isCompleted?: boolean;
   onSaved?: (updates: Record<string, unknown>) => void;
 }
 
@@ -49,7 +51,7 @@ function Field({ label, children, className = "" }: { label: string; children: R
 const inputBase =
   "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all";
 
-export default function EditMoveDetailsModal({ open, onClose, moveId, initial, crews = [], onSaved }: EditMoveDetailsModalProps) {
+export default function EditMoveDetailsModal({ open, onClose, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -86,6 +88,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   const [internalNotes, setInternalNotes] = useState(initial.internal_notes || "");
   const [customComplexity, setCustomComplexity] = useState("");
   const [crewId, setCrewId] = useState(initial.crew_id || "");
+  const [coordinatorName, setCoordinatorName] = useState(initial.coordinator_name || "");
   const [saving, setSaving] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
 
@@ -106,6 +109,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
     setComplexityIndicators(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
     setInternalNotes(initial.internal_notes || "");
     setCrewId(initial.crew_id || "");
+    setCoordinatorName(initial.coordinator_name || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: sync only when open/moveId changes to keep deps array fixed size
   }, [open, moveId]);
 
@@ -134,6 +138,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
         arrival_window: arrivalWindow.trim() || null,
         access_notes: accessNotesMerged,
         crew_id: crewId.trim() || null,
+        coordinator_name: coordinatorName.trim() || null,
         complexity_indicators: complexityIndicators.length ? complexityIndicators : null,
         internal_notes: internalNotes.trim() || null,
         updated_at,
@@ -171,6 +176,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
       <form onSubmit={handleSave} className="flex flex-col min-h-0">
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
           {/* Location */}
+          <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4">
             <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
               <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
@@ -223,8 +229,10 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               </div>
             </div>
           </section>
+          </fieldset>
 
           {/* Schedule */}
+          <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
             <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
               <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
@@ -252,20 +260,32 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               </Field>
             </div>
           </section>
+          </fieldset>
 
-          {/* Crew */}
-          {crews.length > 0 && (
-            <section className="pt-4 border-t border-[var(--brd)]/60">
-              <Field label="Crew (for live tracking)">
-                <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputBase}>
-                  <option value="">No crew assigned</option>
-                  {crews.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </Field>
-            </section>
-          )}
+          {/* Crew & Coordinator */}
+          <section className="pt-4 border-t border-[var(--brd)]/60">
+            {crews.length > 0 && (
+              <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
+                <Field label="Crew (for live tracking)">
+                  <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputBase}>
+                    <option value="">No crew assigned</option>
+                    {crews.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </Field>
+              </fieldset>
+            )}
+            <Field label="Coordinator" className={crews.length > 0 ? "mt-4" : ""}>
+              <input
+                type="text"
+                value={coordinatorName}
+                onChange={(e) => setCoordinatorName(e.target.value)}
+                placeholder="Coordinator name"
+                className={inputBase}
+              />
+            </Field>
+          </section>
 
           {/* Optional: Complexity & Internal notes */}
           <section className="pt-4 border-t border-[var(--brd)]/60">

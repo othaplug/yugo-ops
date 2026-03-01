@@ -3,9 +3,18 @@ import RevenueClient from "./RevenueClient";
 
 export default async function RevenuePage() {
   const supabase = await createClient();
-  const [{ data: invoices }, { data: orgs }] = await Promise.all([
+  const [
+    { data: invoices },
+    { data: orgs },
+    { data: paidMoves },
+  ] = await Promise.all([
     supabase.from("invoices").select("id, client_name, organization_id, amount, status, created_at, updated_at, invoice_number"),
     supabase.from("organizations").select("id, name, type"),
+    supabase
+      .from("moves")
+      .select("id, move_code, client_name, estimate, payment_marked_paid_at")
+      .eq("payment_marked_paid", true)
+      .not("payment_marked_paid_at", "is", null),
   ]);
   const clientTypeMap: Record<string, string> = {};
   const clientNameToOrgId: Record<string, string> = {};
@@ -21,6 +30,7 @@ export default async function RevenuePage() {
   return (
     <RevenueClient
       invoices={invoices || []}
+      paidMoves={paidMoves || []}
       clientTypeMap={clientTypeMap}
       clientNameToOrgId={clientNameToOrgId}
     />

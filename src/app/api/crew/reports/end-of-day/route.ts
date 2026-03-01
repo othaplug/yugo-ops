@@ -96,6 +96,15 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const crewNote = (body.crewNote || body.crew_note || "").toString().trim() || null;
+  const jobNotesRaw = body.jobNotes;
+  const jobNotes: Record<string, string> =
+    jobNotesRaw && typeof jobNotesRaw === "object" && !Array.isArray(jobNotesRaw)
+      ? Object.fromEntries(
+          Object.entries(jobNotesRaw)
+            .filter(([, v]) => typeof v === "string" && v.trim().length > 0)
+            .map(([k, v]) => [k, (v as string).trim()])
+        )
+      : {};
 
   const today = new Date().toISOString().split("T")[0];
   const admin = createAdminClient();
@@ -143,6 +152,7 @@ export async function POST(req: NextRequest) {
     const endTime = end && typeof end === "object" && "timestamp" in end ? new Date((end as { timestamp: string }).timestamp).getTime() : Date.now();
     const duration = Math.round((endTime - start) / 60000);
     const displayId = jobDisplayMap.get(s.job_id) || s.job_id;
+    const note = jobNotes[s.job_id] || null;
     return {
       jobId: s.job_id,
       displayId,
@@ -152,6 +162,7 @@ export async function POST(req: NextRequest) {
       status: s.status,
       signOff: !!so,
       rating: so?.satisfaction_rating ?? null,
+      note: note || undefined,
     };
   });
 

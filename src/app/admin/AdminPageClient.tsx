@@ -213,8 +213,21 @@ export default function AdminPageClient({
     ? b2cUpcoming.filter((m) => (m.status || "").toLowerCase() === moveStatusFilter.toLowerCase())
     : b2cUpcoming;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+      {/* Welcome */}
+      <div className="mb-6">
+        <h1 className="font-heading text-[28px] sm:text-[32px] md:text-[36px] font-bold text-[var(--tx)] tracking-tight">
+          {greeting}
+        </h1>
+        <p className="text-[14px] text-[var(--tx2)] mt-1">
+          You have {todayDeliveries.length} jobs scheduled today
+        </p>
+      </div>
+
       {/* Metrics — horizontal scroll on mobile, grid on desktop */}
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)]/50 p-4 mb-6 -mx-3 sm:mx-0">
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-1 pl-1 pr-3 scrollbar-hide md:overflow-visible md:grid md:grid-cols-3 lg:grid-cols-6 md:snap-none md:pl-0 md:pr-0" style={{ WebkitOverflowScrolling: "touch" }}>

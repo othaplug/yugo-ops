@@ -17,8 +17,9 @@ function makeCrewIcon() {
   });
 }
 
-/** Tracking line from vehicle to destination (matches client progress bar purple) */
-const ROUTE_LINE_OPTIONS = { color: "#8B5CF6", weight: 5, opacity: 1 };
+/** Tracking line from vehicle to destination - light: purple, dark: gold for visibility */
+const ROUTE_LINE_LIGHT = { color: "#8B5CF6", weight: 5, opacity: 1 };
+const ROUTE_LINE_DARK = { color: "#C9A962", weight: 5, opacity: 1 };
 
 function MapController({
   center,
@@ -77,7 +78,7 @@ export function LiveTrackingMapLeaflet({
       {hasPosition && crew && destArr && (
         <Polyline
           positions={[[crew.current_lat, crew.current_lng], destArr]}
-          pathOptions={ROUTE_LINE_OPTIONS}
+          pathOptions={mapTheme === "dark" ? ROUTE_LINE_DARK : ROUTE_LINE_LIGHT}
         />
       )}
       {hasPosition && crew && (

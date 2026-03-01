@@ -142,6 +142,13 @@ export const Icons = {
       <path d="M8 16h.01" />
     </svg>
   ),
+  barChart: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="20" x2="12" y2="10" />
+      <line x1="18" y1="20" x2="18" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  ),
   lock: () => (
     <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />

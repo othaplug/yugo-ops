@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -42,10 +42,12 @@ export function CrewMapLeaflet({
   crews,
   center,
   zoom,
+  onCrewClick,
 }: {
   crews: { id: string; name: string; current_lat: number; current_lng: number }[];
   center: { longitude: number; latitude: number };
   zoom: number;
+  onCrewClick?: (id: string) => void;
 }) {
   const centerArr: [number, number] = [center.latitude, center.longitude];
 
@@ -67,8 +69,14 @@ export function CrewMapLeaflet({
           key={c.id}
           position={[c.current_lat, c.current_lng]}
           icon={makeCrewIcon()}
+          eventHandlers={{
+            click: () => onCrewClick?.(c.id),
+          }}
         >
           <Popup>{(c.name || "Crew").replace("Team ", "")}</Popup>
+          <Tooltip permanent direction="top" offset={[0, -36]} className="crew-label-tooltip">
+            {(c.name || "Crew").replace("Team ", "")}
+          </Tooltip>
         </Marker>
       ))}
     </MapContainer>

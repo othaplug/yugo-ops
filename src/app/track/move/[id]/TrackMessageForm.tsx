@@ -6,10 +6,12 @@ export default function TrackMessageForm({
   moveId,
   token,
   onSent,
+  moveStatus,
 }: {
   moveId: string;
   token: string;
   onSent?: (sentContent?: string) => void;
+  moveStatus?: string;
 }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -41,6 +43,19 @@ export default function TrackMessageForm({
       setSending(false);
     }
   };
+
+  const isComplete = moveStatus === "completed" || moveStatus === "delivered";
+
+  if (isComplete) {
+    return (
+      <p className="text-[13px] text-[#666] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
+        This move is complete. For support, contact us at{" "}
+        <a href="mailto:hello@yugo.com" className="text-[#C9A962] hover:underline">
+          hello@yugo.com
+        </a>
+      </p>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">

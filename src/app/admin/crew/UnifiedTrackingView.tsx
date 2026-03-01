@@ -1,10 +1,9 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import ModalOverlay from "../components/ModalOverlay";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 
 const MAPBOX_TOKEN =
@@ -26,10 +25,12 @@ const MapboxMap = dynamic(
         crews,
         center,
         zoom,
+        onCrewClick,
       }: {
         crews: { id: string; name: string; current_lat: number; current_lng: number }[];
         center: { lat: number; lng: number };
         zoom: number;
+        onCrewClick?: (id: string) => void;
       }) {
         return (
           <M
@@ -40,9 +41,17 @@ const MapboxMap = dynamic(
           >
             {crews.map((c) => (
               <Marker key={c.id} longitude={c.current_lng} latitude={c.current_lat} anchor="bottom">
-                <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={c.name}>
+                <button
+                  type="button"
+                  onClick={() => onCrewClick?.(c.id)}
+                  className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated flex flex-col items-center"
+                  title={c.name}
+                >
                   <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
-                </div>
+                  <span className="text-[10px] font-semibold text-[var(--tx)] whitespace-nowrap mt-0.5 px-1.5 py-0.5 rounded bg-[var(--card)]/95 border border-[var(--brd)] shadow-sm">
+                    {(c.name || "Crew").replace("Team ", "")}
+                  </span>
+                </button>
               </Marker>
             ))}
             <Nav position="bottom-right" showCompass showZoom />
@@ -147,8 +156,10 @@ export default function UnifiedTrackingView({
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(false);
+  const [eventSourceConnected, setEventSourceConnected] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const r = await fetch("/api/tracking/crews-map");
@@ -157,23 +168,35 @@ export default function UnifiedTrackingView({
         setCrews(d.crews);
         setActiveSessions(Array.isArray(d.activeSessions) ? d.activeSessions : []);
       }
-      // On 401/403 or error, keep existing state so we don't wipe initialCrews (which may have positions from server)
     } catch {
       // keep existing
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 3000);
-    return () => clearInterval(id);
   }, []);
 
+  // Initial load
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // EventSource for live updates (primary)
   useEffect(() => {
     if (typeof EventSource === "undefined") return;
     const es = new EventSource("/api/tracking/stream/all");
+
+    es.addEventListener("open", () => {
+      setEventSourceConnected(true);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    });
+
+    es.addEventListener("error", () => {
+      setEventSourceConnected(false);
+    });
+
     es.addEventListener("sessions", (e) => {
       try {
         const d = JSON.parse(e.data);
@@ -211,8 +234,27 @@ export default function UnifiedTrackingView({
         }
       } catch {}
     });
-    return () => es.close();
+
+    return () => {
+      es.close();
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
   }, []);
+
+  // 15s polling fallback when EventSource is not connected or has errored
+  useEffect(() => {
+    if (eventSourceConnected) return;
+    pollIntervalRef.current = setInterval(load, 15000);
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [eventSourceConnected, load]);
 
   const crewsWithPosition = crews.filter((c) => c.current_lat != null && c.current_lng != null);
   const center =
@@ -256,6 +298,7 @@ export default function UnifiedTrackingView({
                 }))}
                 center={center}
                 zoom={zoom}
+                onCrewClick={(id) => setSelectedCrew(crews.find((c) => c.id === id) || null)}
               />
             ) : (
               <div className="w-full h-full min-h-[280px] bg-[var(--bg2)]">
@@ -268,16 +311,28 @@ export default function UnifiedTrackingView({
                   }))}
                   center={{ latitude: center.lat, longitude: center.lng }}
                   zoom={zoom}
+                  onCrewClick={(id) => setSelectedCrew(crews.find((c) => c.id === id) || null)}
                 />
               </div>
+            )}
+            {selectedCrew && (
+              <CrewDetailOverlay
+                crew={selectedCrew}
+                session={activeSessions.find((s) => s.teamId === selectedCrew.id)}
+                deliveries={initialDeliveries}
+                todayMoves={todayMoves}
+                todayDeliveries={todayDeliveries}
+                onClose={() => setSelectedCrew(null)}
+              />
             )}
           </div>
         </div>
       </div>
 
       {/* Activity: Active jobs + Teams - horizontal scroll on mobile, grid on desktop */}
-      <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-2 px-1 scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 md:gap-4" style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl overflow-hidden">
+      <div className="relative">
+        <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-3 pb-2 px-1 md:gap-4" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[280px] shrink-0 snap-start md:min-w-0 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
             <h3 className="text-[13px] font-bold text-[var(--tx)]">Active jobs</h3>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -313,7 +368,7 @@ export default function UnifiedTrackingView({
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl overflow-hidden">
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[280px] shrink-0 snap-start md:min-w-0 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg2)]">
             <h3 className="text-[13px] font-bold text-[var(--tx)]">Teams</h3>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -353,157 +408,127 @@ export default function UnifiedTrackingView({
             )}
           </div>
         </div>
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg)] to-transparent pointer-events-none md:hidden" aria-hidden />
       </div>
 
-      <ModalOverlay
-        open={!!selectedCrew}
-        onClose={() => setSelectedCrew(null)}
-        title={selectedCrew?.name || ""}
-        maxWidth="md"
-      >
-        {selectedCrew && (
-          <CrewDetailModal
-            crew={selectedCrew}
-            deliveries={initialDeliveries}
-            todayMoves={todayMoves}
-            todayDeliveries={todayDeliveries}
-          />
-        )}
-      </ModalOverlay>
     </div>
   );
 }
 
-function CrewDetailModal({
+function CrewDetailOverlay({
   crew,
+  session,
   deliveries,
   todayMoves = [],
   todayDeliveries = [],
+  onClose,
 }: {
   crew: Crew;
+  session?: Session;
   deliveries: Delivery[];
   todayMoves?: Move[];
   todayDeliveries?: Delivery[];
+  onClose: () => void;
 }) {
   const isEnRoute = crew.status === "en-route";
   const crewDeliveries = deliveries.filter((d) => d.crew_id === crew.id);
   const pendingDeliveries = crewDeliveries.filter((d) => !["delivered", "cancelled"].includes(d.status));
   const activeProject = pendingDeliveries[0];
-  const nextProject = pendingDeliveries[1];
-
   const crewTodayMoves = todayMoves.filter((m) => m.crew_id === crew.id);
   const crewTodayDeliveries = todayDeliveries.filter((d) => d.crew_id === crew.id);
-  const todayJobs = [
-    ...crewTodayMoves.map((m) => ({
-      id: m.id,
-      label: m.move_code || `#${m.id.slice(0, 8)}`,
-      type: "move" as const,
-      address: m.to_address || m.from_address || "—",
-      status: m.status,
-    })),
-    ...crewTodayDeliveries.map((d) => ({
-      id: d.id,
-      label: d.delivery_number || `#${d.id.slice(0, 8)}`,
-      type: "delivery" as const,
-      address: d.delivery_address || d.pickup_address || "—",
-      status: d.status,
-    })),
-  ].sort((a, b) => (a.label < b.label ? -1 : 1));
+  const currentJob =
+    activeProject
+      ? { label: activeProject.delivery_number || `#${activeProject.id.slice(0, 8)}`, type: "delivery" as const, address: activeProject.delivery_address || activeProject.pickup_address }
+      : crewTodayMoves[0]
+        ? { label: crewTodayMoves[0].move_code || `#${crewTodayMoves[0].id.slice(0, 8)}`, type: "move" as const, address: crewTodayMoves[0].to_address || crewTodayMoves[0].from_address }
+        : crewTodayDeliveries[0]
+          ? { label: crewTodayDeliveries[0].delivery_number || `#${crewTodayDeliveries[0].id.slice(0, 8)}`, type: "delivery" as const, address: crewTodayDeliveries[0].delivery_address || crewTodayDeliveries[0].pickup_address }
+          : null;
+  const statusLabel = session ? (CREW_STATUS_TO_LABEL[session.status] || session.status) : (isEnRoute ? "En route" : "Standby");
 
   return (
-    <div className="p-5 space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${
-            isEnRoute ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--grdim)] text-[var(--grn)]"
-          }`}
+    <div
+      className="absolute top-4 right-4 w-[320px] max-h-[400px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-lg z-20 animate-fade-up"
+      role="dialog"
+      aria-label="Crew details"
+    >
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <h3 className="text-[14px] font-bold text-[var(--tx)] truncate flex-1">{crew.name}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors"
+          aria-label="Close"
         >
-          <span
-            className={`w-2 h-2 rounded-full ${isEnRoute ? "bg-[var(--gold)] animate-pulse" : "bg-[var(--grn)]"}`}
-          />
-          {isEnRoute ? "En route" : "Standby"}
-        </span>
-        {crew.updated_at && (
-          <span className="text-[10px] text-[var(--tx3)]">Updated {formatDate(crew.updated_at)}</span>
-        )}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M1 1l14 14M15 1L1 15" />
+          </svg>
+        </button>
       </div>
 
-      {todayJobs.length > 0 && (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${
+              isEnRoute ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--grdim)] text-[var(--grn)]"
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${isEnRoute ? "bg-[var(--gold)] animate-pulse" : "bg-[var(--grn)]"}`} />
+            {statusLabel}
+          </span>
+          {crew.updated_at && (
+            <span className="text-[10px] text-[var(--tx3)]">Updated {formatDate(crew.updated_at)}</span>
+          )}
+        </div>
+
+        {currentJob && (
+          <>
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current job</div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">{currentJob.label}</div>
+              {currentJob.address && (
+                <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{currentJob.address}</div>
+              )}
+            </div>
+            {session && (
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Progress stage</div>
+                <div className="text-[12px] text-[var(--tx)]">{CREW_STATUS_TO_LABEL[session.status] || session.status}</div>
+              </div>
+            )}
+          </>
+        )}
+
+        {crew.delay_minutes != null && crew.delay_minutes > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--ordim)] border border-[var(--org)]/30">
+            <span className="text-[12px] font-semibold text-[var(--org)]">~{crew.delay_minutes} min delay</span>
+          </div>
+        )}
+
         <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Today&apos;s jobs ({todayJobs.length})</div>
-          <div className="space-y-2">
-            {todayJobs.map((j) => (
-              <Link
-                key={j.id}
-                href={j.type === "move" ? `/admin/moves/${j.label}` : `/admin/deliveries/${j.label}`}
-                className="block px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-colors"
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team members</div>
+          <div className="flex flex-wrap gap-2">
+            {(crew.members || []).map((m) => (
+              <span
+                key={m}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
               >
-                <div className="text-[12px] font-semibold text-[var(--tx)]">{j.label}</div>
-                <div className="text-[11px] text-[var(--tx2)] truncate mt-0.5">{j.address}</div>
-              </Link>
+                {m}
+              </span>
             ))}
           </div>
         </div>
-      )}
 
-      {activeProject && (
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current project</div>
-          <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] space-y-1.5">
-            <div className="text-[12px] font-semibold text-[var(--tx)]">
-              {activeProject.delivery_number || `#${activeProject.id.slice(0, 8)}`}
-            </div>
-            {(activeProject.pickup_address || activeProject.delivery_address) && (
-              <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
-                {activeProject.pickup_address && (
-                  <div className="truncate">
-                    <span className="text-[var(--tx3)]">From:</span> {activeProject.pickup_address}
-                  </div>
-                )}
-                {activeProject.delivery_address && (
-                  <div className="truncate">
-                    <span className="text-[var(--tx3)]">To:</span> {activeProject.delivery_address}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {crew.delay_minutes != null && crew.delay_minutes > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--ordim)] border border-[var(--org)]/30">
-          <span className="text-[12px] font-semibold text-[var(--org)]">~{crew.delay_minutes} min delay</span>
-        </div>
-      )}
-
-      <div>
-        <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team members</div>
-        <div className="flex flex-wrap gap-2">
-          {(crew.members || []).map((m) => (
-            <span
-              key={m}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
-            >
-              {m}
-            </span>
-          ))}
-        </div>
+        {currentJob && (
+          <Link
+            href={currentJob.type === "move" ? `/admin/moves/${currentJob.label}` : `/admin/deliveries/${currentJob.label}`}
+            className="block text-center py-2.5 rounded-xl bg-[var(--gdim)] text-[var(--gold)] text-[12px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
+          >
+            View job →
+          </Link>
+        )}
       </div>
-
-      {nextProject && (
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Up next</div>
-          <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/60 border border-[var(--brd)]/80">
-            <div className="text-[12px] font-semibold text-[var(--tx)]">
-              {nextProject.delivery_number || `#${nextProject.id.slice(0, 8)}`}
-            </div>
-            {nextProject.delivery_address && (
-              <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{nextProject.delivery_address}</div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

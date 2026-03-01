@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-auth";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -11,6 +12,9 @@ const MAPBOX_TOKEN =
  * Proxies Mapbox Geocoding API for address autocomplete. Returns GeoJSON FeatureCollection.
  */
 export async function GET(req: NextRequest) {
+  const { error: authErr } = await requireAuth();
+  if (authErr) return authErr;
+
   const q = req.nextUrl.searchParams.get("q")?.trim();
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") || "8", 10), 10);
   const country = req.nextUrl.searchParams.get("country") || "";

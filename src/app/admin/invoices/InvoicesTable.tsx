@@ -68,12 +68,12 @@ export default function InvoicesTable({
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">Invoice</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">Client</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">Amount</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">Due</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">Status</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]"></th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Invoice</th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Client</th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Amount</th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Due</th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Status</th>
+            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]"></th>
           </tr>
         </thead>
         <tbody>
@@ -81,26 +81,26 @@ export default function InvoicesTable({
             <tr
               key={inv.id}
               onClick={() => onRowClick?.(inv)}
-              className="hover:bg-[var(--gdim)] transition-colors cursor-pointer"
+              className="hover:bg-[var(--bg2)] transition-colors cursor-pointer"
             >
-              <td className="px-4 py-2.5 text-[10px] font-semibold font-mono border-b border-[var(--brd)]">
+              <td className="px-4 py-3 text-[11px] font-semibold font-mono border-b border-[var(--brd)]">
                 {inv.invoice_number}
               </td>
-              <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">
+              <td className="px-4 py-3 text-[11px] border-b border-[var(--brd)]">
                 <Link href="/admin/clients" onClick={(e) => e.stopPropagation()} className="hover:text-[var(--gold)] transition-colors">
                   {inv.client_name}
                 </Link>
               </td>
-              <td className="px-4 py-2.5 text-[10px] font-bold border-b border-[var(--brd)]">
+              <td className="px-4 py-3 text-[11px] font-bold border-b border-[var(--brd)]">
                 {formatCurrency(inv.amount)}
               </td>
-              <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">
+              <td className="px-4 py-3 text-[11px] border-b border-[var(--brd)]">
                 {inv.due_date}
               </td>
-              <td className="px-4 py-2.5 border-b border-[var(--brd)]">
+              <td className="px-4 py-3 border-b border-[var(--brd)]">
                 <Badge status={inv.status} />
               </td>
-              <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)] border-b border-[var(--brd)]">
+              <td className="px-4 py-3 text-[10px] text-[var(--tx3)] border-b border-[var(--brd)]">
                 Click to edit
               </td>
             </tr>

@@ -16,7 +16,7 @@ function formatMsgTime(iso: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
-export default function TrackMessageThread({ moveId, token }: { moveId: string; token: string }) {
+export default function TrackMessageThread({ moveId, token, moveStatus }: { moveId: string; token: string; moveStatus?: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -96,7 +96,7 @@ export default function TrackMessageThread({ moveId, token }: { moveId: string; 
         </div>
       )}
 
-      <TrackMessageForm moveId={moveId} token={token} onSent={handleSent} />
+      <TrackMessageForm moveId={moveId} token={token} onSent={handleSent} moveStatus={moveStatus} />
     </div>
   );
 }

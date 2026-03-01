@@ -9,6 +9,16 @@ type Crew = { current_lat: number; current_lng: number; name?: string } | null;
 
 const DEFAULT_CENTER: Center = { lat: 43.665, lng: -79.385 };
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
@@ -78,6 +88,8 @@ export default function TrackLiveMap({
   const [liveStage, setLiveStage] = useState<string | null>(null);
   const [lastLocationAt, setLastLocationAt] = useState<string | null>(null);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
+  const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const loadInitial = async () => {
     try {
@@ -104,6 +116,7 @@ export default function TrackLiveMap({
       } else {
         setDropoff(null);
       }
+      setEtaMinutes(data.etaMinutes ?? null);
       return data.hasActiveTracking;
     } catch {
       setCrewLoc(null);
@@ -162,6 +175,18 @@ export default function TrackLiveMap({
   const scheduledStr = move?.scheduled_date
     ? new Date(move.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
     : null;
+
+  // Compute ETA client-side when we have crew position + destination (updates with location stream)
+  const computedEtaMinutes =
+    crewLoc && liveStage && ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"].includes(liveStage)
+      ? (() => {
+          const dest = liveStage === "en_route_to_pickup" ? pickup : dropoff ?? pickup;
+          if (!dest) return null;
+          const km = haversineKm(crewLoc.current_lat, crewLoc.current_lng, dest.lat, dest.lng);
+          return Math.max(1, Math.round((km / 35) * 60));
+        })()
+      : null;
+  const displayEta = etaMinutes ?? computedEtaMinutes;
   const crewMembers = crew?.members?.length ? crew.members.join(", ") : crew?.name || "";
   const showPlaceholder = !loading && !hasActiveTracking;
 
@@ -197,7 +222,38 @@ export default function TrackLiveMap({
         </div>
       ) : !loading && hasActiveTracking ? (
         <>
-          <div className="track-live-map-container relative rounded-xl overflow-hidden h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]">
+          <div className={`track-live-map-container relative rounded-xl overflow-hidden ${isFullscreen ? "map-fullscreen" : "h-[320px]"} bg-[#FAFAF8] border border-[#E7E5E4]`}>
+            {/* Fullscreen toggle */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="map-fullscreen-btn top-3 right-3"
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              )}
+            </button>
+
+            {/* Recenter button */}
+            <button
+              type="button"
+              onClick={() => {
+                if ("geolocation" in navigator) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    () => {}
+                  );
+                }
+              }}
+              className="map-fullscreen-btn bottom-3 left-3"
+              title="My location"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </button>
+
             {/* Live stage card - top-left overlay on map (screenshot style) */}
             {liveStage && (
               <div className="absolute top-3 left-3 z-10 rounded-lg border border-[#E7E5E4] bg-white px-4 py-3 shadow-md flex items-center gap-3">
@@ -216,7 +272,9 @@ export default function TrackLiveMap({
                         ? "Crew is unloading your items"
                         : liveStage === "completed"
                           ? "Your move is complete"
-                          : "Your crew is on the way"}
+                          : displayEta != null
+                            ? `Arriving in ~${displayEta} min`
+                            : "Your crew is on the way"}
                   </div>
                 </div>
               </div>
@@ -235,6 +293,18 @@ export default function TrackLiveMap({
               <LeafletMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
             )}
           </div>
+          {hasActiveTracking && crewLoc && (
+            <div className="flex gap-3 mt-3">
+              <a href="tel:+14165551234" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-medium text-[#1A1A1A] hover:border-[#C9A962]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                Call Crew
+              </a>
+              <a href="sms:+14165551234" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-medium text-[#1A1A1A] hover:border-[#C9A962]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Text Crew
+              </a>
+            </div>
+          )}
           {liveStage && (
             <div className="flex items-center gap-2 flex-wrap text-[11px]">
               {TRACKING_STAGES.map((s) => {

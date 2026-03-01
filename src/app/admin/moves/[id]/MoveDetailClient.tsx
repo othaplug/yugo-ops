@@ -76,6 +76,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
+  const isCompleted = isMoveStatusCompleted(move.status);
+  const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
 
@@ -155,6 +157,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <BackButton label="Back" />
 
+      {isCompleted && (
+        <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
+          This move is complete. Some fields are locked for transparency.
+        </div>
+      )}
+
       {/* Hero - compact header with glass */}
       <div className="glass rounded-xl p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -166,6 +174,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             >
               {move.client_name}
             </button>
+            {move.coordinator_name && (
+              <span className="text-[11px] text-[var(--tx2)]">
+                Coordinator: {move.coordinator_name}
+              </span>
+            )}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
                 <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
@@ -378,9 +391,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Time Intelligence - editable */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
-          <Pencil className="w-[11px] h-[11px]" />
-        </button>
+        {!isCompleted && (
+          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+            <Pencil className="w-[11px] h-[11px]" />
+          </button>
+        )}
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Time & Intelligence</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
@@ -393,9 +408,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Addresses - same grid pattern as other cards */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
-          <Pencil className="w-[11px] h-[11px]" />
-        </button>
+        {!isCompleted && (
+          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
+            <Pencil className="w-[11px] h-[11px]" />
+          </button>
+        )}
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Addresses</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
           <div>
@@ -413,13 +430,20 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Crew - same structure as other cards */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
-          <Pencil className="w-[11px] h-[11px]" />
-        </button>
+        {!isCompleted && (
+          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
+            <Pencil className="w-[11px] h-[11px]" />
+          </button>
+        )}
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Crew</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
-          <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
+          {isCompleted ? (
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+          ) : (
+            <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+          )}
         </div>
       </div>
 
@@ -432,8 +456,39 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
           </div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[13px] font-medium text-[var(--grn)]">Deposit Received</div></div>
+          <div>
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span>
+            {isPaid ? (
+              <div className="mt-0.5"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40">Paid</span></div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                <span className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/admin/moves/${move.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
+                      if (data) setMove(data);
+                      router.refresh();
+                      toast("Move marked as paid", "check");
+                    } catch (err) {
+                      toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
+                    }
+                  }}
+                  className="text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
+                >
+                  Mark as Paid
+                </button>
+              </div>
+            )}
+          </div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[13px] font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit Received"}</div></div>
         </div>
       </div>
 
@@ -488,6 +543,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         onClose={() => setDetailsModalOpen(false)}
         moveId={move.id}
         crews={crews}
+        isCompleted={isCompleted}
         initial={{
           from_address: move.from_address,
           to_address: move.to_address || move.delivery_address,
@@ -496,6 +552,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           to_lat: move.to_lat,
           to_lng: move.to_lng,
           crew_id: move.crew_id,
+          coordinator_name: move.coordinator_name,
           scheduled_date: move.scheduled_date,
           arrival_window: move.arrival_window,
           from_access: move.from_access,

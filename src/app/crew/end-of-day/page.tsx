@@ -7,6 +7,7 @@ import PageContent from "@/app/admin/components/PageContent";
 
 export default function CrewEndOfDayPage() {
   const [crewNote, setCrewNote] = useState("");
+  const [jobNotes, setJobNotes] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<{ summary?: { jobsCompleted?: number; totalJobTime?: number; photosCount?: number; expensesTotal?: number; clientSignOffs?: number; averageSatisfaction?: number }; jobs?: { jobId: string; displayId?: string; type: string; duration: number }[]; expenses?: { category: string; amount: number; description: string }[]; alreadySubmitted?: boolean } | null>(null);
@@ -27,7 +28,10 @@ export default function CrewEndOfDayPage() {
       const res = await fetch("/api/crew/reports/end-of-day", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ crewNote: crewNote.trim() || null }),
+        body: JSON.stringify({
+          crewNote: crewNote.trim() || null,
+          jobNotes: Object.keys(jobNotes).length > 0 ? jobNotes : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -68,9 +72,17 @@ export default function CrewEndOfDayPage() {
           </div>
           {preview.jobs && preview.jobs.length > 0 && (
             <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-              <p className="text-[10px] font-semibold text-[var(--tx3)] mb-1">Jobs</p>
+              <p className="text-[10px] font-semibold text-[var(--tx3)] mb-2">Jobs</p>
               {preview.jobs.map((j, i) => (
-                <p key={i} className="text-[11px] text-[var(--tx2)]">{j.displayId ?? j.jobId} · {j.duration}m</p>
+                <div key={i} className="mb-3 last:mb-0">
+                  <p className="text-[11px] text-[var(--tx2)] font-medium">{j.displayId ?? j.jobId} · {j.duration}m</p>
+                  <textarea
+                    value={jobNotes[j.jobId] ?? ""}
+                    onChange={(e) => setJobNotes((prev) => ({ ...prev, [j.jobId]: e.target.value }))}
+                    placeholder="Note for this job (optional)"
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[60px]"
+                  />
+                </div>
               ))}
             </div>
           )}

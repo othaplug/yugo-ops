@@ -11,7 +11,7 @@ import {
 } from "@/lib/crew-tracking-status";
 import { normalizePhone } from "@/lib/phone";
 import PageContent from "@/app/admin/components/PageContent";
-import DeliveryProgressBar from "@/components/DeliveryProgressBar";
+import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 
@@ -389,12 +389,23 @@ export default function CrewJobPage({
 
       {activeTab === "status" && (
         <div className="mt-4 space-y-4">
-          {/* Job progress bar - car + start/end markers */}
+          {/* Job progress bar - stage labels, purple line, starts when en route */}
           <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-            <DeliveryProgressBar
-              percent={progressPercent}
-              label={getStatusLabel(currentStatus)}
-              sublabel={`${Math.round(progressPercent)}%`}
+            <StageProgressBar
+              stages={
+                jobType === "move"
+                  ? [{ label: "En Route" }, { label: "Loading" }, { label: "Unloading" }, { label: "Complete" }]
+                  : [{ label: "En Route" }, { label: "Arrived" }, { label: "Delivering" }, { label: "Complete" }]
+              }
+              currentIndex={
+                isCompleted
+                  ? 3
+                  : progressIdx >= 0
+                    ? jobType === "move"
+                      ? progressIdx <= 0 ? 0 : progressIdx <= 2 ? 1 : progressIdx <= 5 ? 2 : 3
+                      : Math.min(progressIdx, 3)
+                    : -1
+              }
               variant="dark"
             />
           </div>
@@ -697,13 +708,16 @@ export default function CrewJobPage({
                   setPickupVerificationDone(true);
                   setPickupModalOpen(false);
                 }}
-                disabled={pickupPhotosCount < 1}
+                disabled={pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)}
                 className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
               >
-                {pickupPhotosCount < 1
+                {pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)
                   ? "Take at least 1 photo to continue"
                   : "Complete Verification"}
               </button>
+              {(itemsTotal === 0 && totalItems === 0) && (
+                <p className="text-[11px] text-[var(--tx3)] text-center">No items to verify — take a photo of the space or complete to continue.</p>
+              )}
               <button
                 type="button"
                 onClick={() => setPickupModalOpen(false)}

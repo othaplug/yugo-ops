@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Error({
@@ -10,8 +10,14 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [dashboardUrl, setDashboardUrl] = useState("/admin");
+
   useEffect(() => {
     console.error("App error:", error);
+    const path = window.location.pathname;
+    if (path.startsWith("/partner")) setDashboardUrl("/partner");
+    else if (path.startsWith("/crew")) setDashboardUrl("/crew/dashboard");
+    else setDashboardUrl("/admin");
   }, [error]);
 
   return (
@@ -31,7 +37,7 @@ export default function Error({
             Try again
           </button>
           <Link
-            href="/admin"
+            href={dashboardUrl}
             className="px-5 py-2.5 rounded-lg text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-colors"
           >
             Go to Dashboard

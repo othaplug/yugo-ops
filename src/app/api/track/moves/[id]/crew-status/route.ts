@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 
+/** Haversine distance in km */
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -75,6 +95,28 @@ export async function GET(
         ? { lat: move.to_lat, lng: move.to_lng }
         : null;
 
+    // Compute ETA (minutes) when crew has position and destination
+    let etaMinutes: number | null = null;
+    const enRouteStages = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"];
+    if (
+      crew &&
+      (ts?.is_active || liveStage) &&
+      enRouteStages.includes(liveStage || "")
+    ) {
+      const dest =
+        liveStage === "en_route_to_pickup" ? pickup : dropoff ?? pickup;
+      if (dest) {
+        const km = haversineKm(
+          crew.current_lat,
+          crew.current_lng,
+          dest.lat,
+          dest.lng
+        );
+        const avgSpeedKmh = 35;
+        etaMinutes = Math.max(1, Math.round((km / avgSpeedKmh) * 60));
+      }
+    }
+
     return NextResponse.json(
       {
         crew,
@@ -83,6 +125,7 @@ export async function GET(
         dropoff,
         liveStage,
         lastLocationAt,
+        etaMinutes,
         hasActiveTracking: !!ts?.is_active,
         scheduled_date: move?.scheduled_date ?? null,
         status: move?.status ?? null,

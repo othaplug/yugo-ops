@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resend } from "@/lib/resend";
-import { requireAuth } from "@/lib/api-auth";
+import { getResend } from "@/lib/resend";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAuth();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
   try {
     const { to, subject, html } = await req.json();
@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: true });
     }
 
-    const { data, error } = await resend.emails.send({
+    const r = getResend();
+    const { data, error } = await r.emails.send({
       from: "OPS+ <notifications@opsplus.co>",
       to,
       subject,

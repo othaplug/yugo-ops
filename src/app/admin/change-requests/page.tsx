@@ -15,6 +15,7 @@ export default async function ChangeRequestsPage() {
       urgency,
       status,
       created_at,
+      reviewed_at,
       moves (
         id,
         client_name,
@@ -27,8 +28,9 @@ export default async function ChangeRequestsPage() {
     `)
     .order("created_at", { ascending: false });
 
-  const pending = (requests || []).filter((r: any) => r.status === "pending");
-  const reviewed = (requests || []).filter((r: any) => r.status !== "pending");
+  const all = requests || [];
+  const pending = all.filter((r: any) => r.status === "pending");
+  const reviewed = all.filter((r: any) => r.status !== "pending");
 
   return (
     <div className="mx-auto max-w-[1000px] px-5 py-5 md:px-6 md:py-6 animate-fade-up">
@@ -40,6 +42,7 @@ export default async function ChangeRequestsPage() {
         Client-submitted change requests. Review and approve or reject.
       </p>
       <ChangeRequestsClient
+        all={all}
         pending={pending}
         reviewed={reviewed}
       />

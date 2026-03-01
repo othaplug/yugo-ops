@@ -257,8 +257,9 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
       </div>
 
       {/* Scheduled / Unscheduled + Week Summary - horizontal scroll on mobile */}
-      <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-2 px-1 scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 md:gap-4 mt-5" style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl p-5">
+      <div className="relative mt-5">
+        <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-3 pb-2 px-1 md:gap-4" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[280px] shrink-0 snap-start md:min-w-0 rounded-xl p-5">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Upcoming</h3>
           <ul className="space-y-2 max-h-[280px] overflow-y-auto">
             {deliveriesThisWeek.map((d) => (
@@ -292,7 +293,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
           </Link>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-xl p-5">
+        <div className="bg-[var(--card)] border border-[var(--brd)] min-w-[280px] shrink-0 snap-start md:min-w-0 rounded-xl p-5">
           <h3 className="font-heading text-[14px] font-bold text-[var(--tx)] mb-4">Week Summary</h3>
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setSummaryModal("total")} className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 transition-all text-left active:scale-[0.99]">
@@ -317,6 +318,8 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
             </button>
           </div>
         </div>
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg)] to-transparent pointer-events-none md:hidden" aria-hidden />
       </div>
 
       {/* Week summary modal - uses GlobalModal (Portal) */}

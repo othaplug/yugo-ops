@@ -12,6 +12,7 @@ import DeviceSetupCodes from "./DeviceSetupCodes";
 import TruckAssignments from "./TruckAssignments";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
+import PartnersManagement from "./PartnersManagement";
 import { useRouter } from "next/navigation";
 
 const TABS = [
@@ -821,38 +822,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* Partners Management */}
       {activeTab === "partners" && (
-      <div id="partners" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="handshake" className="w-[16px] h-[16px]" /> Partners Management
-            </h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Retail, designers, hospitality, galleries</p>
-          </div>
-          <Link
-            href="/admin/partners/retail"
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all inline-block"
-          >
-            Manage Partners →
-          </Link>
-        </div>
-        <div className="px-5 py-5 space-y-2">
-          {[
-            { label: "Retail", slug: "retail" },
-            { label: "Designers", slug: "designers" },
-            { label: "Hospitality", slug: "hospitality" },
-            { label: "Galleries", slug: "gallery" },
-            { label: "Realtors", slug: "realtors" },
-          ].map(({ label, slug }) => (
-            <div key={slug} className="flex items-center justify-between py-2.5 border-b border-[var(--brd)] last:border-0">
-              <div className="text-[13px] font-medium text-[var(--tx)]">{label}</div>
-              <Link href={`/admin/partners/${slug}`} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                Manage →
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+        <PartnersManagement />
       )}
 
       {/* User Management - Superadmin only */}

@@ -16,77 +16,81 @@ type NotificationContextType = {
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
-  addNotification: (notif: Omit<Notification, "id" | "read">) => void;
+  addNotification: (notif: Omit<Notification, "id" | "read"> & { id?: string } | { id: string; title: string; icon?: string; link?: string; created_at?: string }) => void;
 };
 
-const STORAGE_KEY = "yugo-notifications";
-const DEFAULT: Notification[] = [
-  { id: "1", icon: "party", title: "New delivery created: PJ1047", time: "2 min ago", read: false, link: "/admin/deliveries" },
-  { id: "2", icon: "dollar", title: "Invoice INV-2891 paid", time: "1 hour ago", read: false, link: "/admin/invoices" },
-  { id: "3", icon: "mail", title: "Message from Restoration Hardware", time: "3 hours ago", read: true, link: "/admin/messages" },
-  { id: "4", icon: "truck", title: "Delivery PJ1046 completed", time: "5 hours ago", read: true, link: "/admin/deliveries" },
-];
-
-function getLinkForNotification(notif: { icon?: string; title?: string }): string {
-  const t = (notif.title || "").toLowerCase();
-  const icon = notif.icon || "";
-  if (t.includes("change request") || icon === "clipboard") return "/admin/change-requests";
-  if (t.includes("delivery") || icon === "truck" || icon === "party") return "/admin/deliveries";
-  if (t.includes("invoice") || icon === "dollar") return "/admin/invoices";
-  if (t.includes("message") || icon === "mail") return "/admin/messages";
-  return "/admin";
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso);
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return "Just now";
+  if (sec < 120) return "1 min ago";
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  if (sec < 172800) return "1 day ago";
+  return `${Math.floor(sec / 86400)} days ago`;
 }
 
-function loadNotifications(): Notification[] {
-  if (typeof window === "undefined") return DEFAULT;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as Notification[];
-      return parsed.map((n) => ({
-        ...n,
-        link: n.link || getLinkForNotification(n),
-      }));
-    }
-  } catch {}
-  return DEFAULT;
-}
-
-function saveNotifications(notifications: Notification[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-  } catch {}
+function mapDbToNotification(row: { id: string; title: string; icon?: string; link?: string; read?: boolean; created_at?: string }): Notification {
+  return {
+    id: row.id,
+    icon: row.icon || "bell",
+    title: row.title,
+    time: row.created_at ? formatRelativeTime(row.created_at) : "Just now",
+    read: !!row.read,
+    link: row.link,
+  };
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(DEFAULT);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    setNotifications(loadNotifications());
+    const loadNotifications = async () => {
+      const res = await fetch("/api/admin/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        const rows = data.notifications || [];
+        setNotifications(rows.map(mapDbToNotification));
+      }
+    };
+    loadNotifications();
   }, []);
 
-  useEffect(() => {
-    saveNotifications(notifications);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markAsRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    await fetch("/api/admin/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, read: true }),
+    });
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await fetch("/api/admin/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true, read: true }),
+    });
   }, [notifications]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  }, []);
-
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, []);
-
-  const addNotification = useCallback((notif: Omit<Notification, "id" | "read"> & { link?: string }) => {
-    setNotifications(prev => [
-      { ...notif, id: Date.now().toString(), read: false },
-      ...prev
-    ]);
+  const addNotification = useCallback((notif: Omit<Notification, "id" | "read"> & { id?: string } | { id: string; title: string; icon?: string; link?: string; created_at?: string }) => {
+    const n: Notification =
+      "created_at" in notif && notif.created_at
+        ? mapDbToNotification(notif as { id: string; title: string; icon?: string; link?: string; created_at?: string })
+        : {
+            ...(notif as Omit<Notification, "id" | "read">),
+            id: (notif as { id?: string }).id ?? crypto.randomUUID(),
+            read: false,
+            time: (notif as { time?: string }).time || "Just now",
+          };
+    setNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)]);
   }, []);
 
   return (

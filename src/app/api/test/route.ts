@@ -9,7 +9,7 @@ export async function GET() {
   const { error: authErr } = await requireAuth();
   if (authErr) return authErr;
   const supabase = await createClient();
-  const { data, error } = await supabase.from("orgs").select("*").limit(5);
+  const { data, error } = await supabase.from("organizations").select("*").limit(5);
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, data });

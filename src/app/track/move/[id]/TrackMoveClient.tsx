@@ -11,13 +11,13 @@ import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
+import StageProgressBar from "@/components/StageProgressBar";
 import { useToast } from "@/app/admin/components/Toast";
 import {
   MOVE_STATUS_OPTIONS,
   MOVE_STATUS_INDEX,
   MOVE_STATUS_COLORS,
   LIVE_TRACKING_STAGES,
-  LIVE_STAGE_MAP,
   getStatusLabel,
 } from "@/lib/move-status";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
@@ -327,12 +327,28 @@ export default function TrackMoveClient({
         {/* Client + status header (exact design: name left, tag right) */}
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h1 className="font-hero text-[22px] sm:text-[26px] text-[#2D2D2D] leading-tight font-semibold tracking-tight">
-              {move.client_name || "Your Move"}
-            </h1>
-            <p className="text-[13px] text-[#666] mt-0.5 font-sans">
-              {displayCode} • {typeLabel}
-            </p>
+            {(() => {
+              const hour = new Date().getHours();
+              const greeting = hour >= 5 && hour < 12 ? "Good morning" : hour >= 12 && hour < 17 ? "Good afternoon" : "Good evening";
+              const firstName = (move.client_name || "there").split(" ")[0];
+              const subtitle = isCompleted ? "Here's your move summary" : "Here's your move overview";
+              return (
+                <>
+                  <p className="text-[13px] text-[#666] mb-0.5 font-sans">
+                    {greeting}, {firstName}
+                  </p>
+                  <h1 className="font-hero text-[22px] sm:text-[26px] text-[#2D2D2D] leading-tight font-semibold tracking-tight">
+                    {move.client_name || "Your Move"}
+                  </h1>
+                  <p className="text-[13px] text-[#666] mt-0.5 font-sans">
+                    {displayCode} • {typeLabel}
+                  </p>
+                  <p className="text-[12px] text-[#666] mt-0.5 font-sans">
+                    {subtitle}
+                  </p>
+                </>
+              );
+            })()}
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold shrink-0 bg-[#F5E6C8] text-[#B8860B]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C9A962]" aria-hidden />
@@ -374,23 +390,24 @@ export default function TrackMoveClient({
                   <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
                 )}
               </div>
-              {/* Progress bar on move day: car + start/end markers */}
+              {/* Stage progress bar - starts when team is en route, purple line, stage labels */}
               {scheduledDate && (
                 <div className="mt-6">
-                  <DeliveryProgressBar
-                    percent={
+                  <StageProgressBar
+                    stages={[{ label: "En Route" }, { label: "Loading" }, { label: "Unloading" }, { label: "Complete" }]}
+                    currentIndex={
                       isCompleted
-                        ? 100
-                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
-                          ? (100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6
-                          : 0
-                    }
-                    sublabel={
-                      isCompleted
-                        ? "100%"
-                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
-                          ? `${Math.round((100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6)}%`
-                          : "0%"
+                        ? 3
+                        : isInProgress && liveStage != null
+                          ? (() => {
+                              const s = liveStage as string;
+                              if (["job_complete", "completed"].includes(s)) return 3;
+                              if (["unloading", "arrived_at_destination", "in_transit", "en_route_to_destination"].includes(s)) return 2;
+                              if (["loading", "arrived_on_site", "arrived_at_pickup"].includes(s)) return 1;
+                              if (["on_route", "en_route", "en_route_to_pickup"].includes(s)) return 0;
+                              return -1;
+                            })()
+                          : -1
                     }
                     variant="dark"
                   />
@@ -425,23 +442,24 @@ export default function TrackMoveClient({
                   </div>
                 )}
               </div>
-              {/* Progress bar - car + start/end markers */}
+              {/* Stage progress bar - starts when team is en route */}
               {scheduledDate && (
                 <div className="mt-6">
-                  <DeliveryProgressBar
-                    percent={
+                  <StageProgressBar
+                    stages={[{ label: "En Route" }, { label: "Loading" }, { label: "Unloading" }, { label: "Complete" }]}
+                    currentIndex={
                       isCompleted
-                        ? 100
-                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
-                          ? (100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6
-                          : 0
-                    }
-                    sublabel={
-                      isCompleted
-                        ? "100%"
-                        : isInProgress && liveStage != null && LIVE_STAGE_MAP[liveStage] != null && LIVE_STAGE_MAP[liveStage] >= 0
-                          ? `${Math.round((100 * ((LIVE_STAGE_MAP[liveStage] ?? 0) + 1)) / 6)}%`
-                          : "0%"
+                        ? 3
+                        : isInProgress && liveStage != null
+                          ? (() => {
+                              const s = liveStage as string;
+                              if (["job_complete", "completed"].includes(s)) return 3;
+                              if (["unloading", "arrived_at_destination", "in_transit", "en_route_to_destination"].includes(s)) return 2;
+                              if (["loading", "arrived_on_site", "arrived_at_pickup"].includes(s)) return 1;
+                              if (["on_route", "en_route", "en_route_to_pickup"].includes(s)) return 0;
+                              return -1;
+                            })()
+                          : -1
                     }
                     variant="dark"
                   />
@@ -527,7 +545,7 @@ export default function TrackMoveClient({
             {/* Move Timeline - Confirmed → Scheduled → In Progress → Completed (Paid shown in financial section) */}
             <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
               <h3 className="text-[14px] font-bold mb-4 text-[#1A1A1A]">Move Timeline</h3>
-              <div className="relative pl-7 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4] before:transition-colors before:duration-500">
+              <div className="relative pl-7 before:content-[''] before:absolute before:left-[11px] before:top-0 before:bottom-0 before:w-0.5 before:bg-[#E7E5E4] before:transition-colors before:duration-500">
                 {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
                   const statusOrder = ["confirmed", "scheduled", "paid", "in_progress", "completed"];
                   const stepIdx = statusOrder.indexOf(s.value);
@@ -559,13 +577,13 @@ export default function TrackMoveClient({
                       className="relative pb-5 last:pb-0 group cursor-default transition-colors duration-200"
                     >
                       <div
-                        className={`absolute -left-[19px] top-0.5 rounded-full border-2 border-white z-10 transition-all duration-300 ease-out client-timeline-dot ${
+                        className={`absolute -left-[17px] top-0.5 -translate-x-1/2 rounded-full border-2 border-white z-10 transition-all duration-300 ease-out client-timeline-dot ${
                           state === "done" && isCompletedStep
-                            ? "w-5 h-5 -left-6 bg-[#22C55E] shadow-[0_0_0_0_4px_rgba(34,197,94,0.25)] client-timeline-dot-completed"
+                            ? "w-5 h-5 bg-[#22C55E] shadow-[0_0_0_0_4px_rgba(34,197,94,0.25)] client-timeline-dot-completed"
                             : state === "done"
-                            ? "w-3.5 h-3.5 -left-5 bg-[#22C55E] group-hover:scale-110"
+                            ? "w-3.5 h-3.5 bg-[#22C55E] group-hover:scale-110"
                             : state === "act"
-                            ? "w-3.5 h-3.5 -left-5 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
+                            ? "w-3.5 h-3.5 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.2)] group-hover:shadow-[0_0_0_6px_rgba(245,158,11,0.3)]"
                             : "w-3 h-3 bg-[#E7E5E4] group-hover:bg-[#D4D4D4]"
                         }`}
                       />
@@ -746,7 +764,7 @@ export default function TrackMoveClient({
               <p>Phone: <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="text-[#C9A962] hover:underline">{formatPhone(YUGO_PHONE)}</a></p>
               <p>Email: <a href={`mailto:${YUGO_EMAIL}`} className="text-[#C9A962] hover:underline">{YUGO_EMAIL}</a></p>
             </div>
-            <TrackMessageThread moveId={move.id} token={token} />
+            <TrackMessageThread moveId={move.id} token={token} moveStatus={statusVal} />
           </div>
         )}
       </main>
@@ -764,7 +782,7 @@ export default function TrackMoveClient({
       {/* Change Request Modal */}
       {changeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl border border-[#E7E5E4] bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-xl border border-[#E7E5E4] bg-white p-5">
             <h3 className="mb-3 text-[16px] font-bold text-[#1A1A1A] font-heading">Request a Change</h3>
             <p className="mb-4 text-[12px] text-[#666] leading-relaxed">
               Submit a change request. Your coordinator will review and confirm.

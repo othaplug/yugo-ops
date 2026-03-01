@@ -4,20 +4,24 @@ import { getPlatformToggles } from "@/lib/platform-settings";
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const toggles = await getPlatformToggles();
-  if (!toggles.partner_portal) redirect("/portal-disabled");
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/partner/login");
+    return <>{children}</>;
   }
 
+  if (!toggles.partner_portal) redirect("/portal-disabled");
+
   const { data: platformUser } = await supabase.from("platform_users").select("user_id").eq("user_id", user.id).single();
-  const { data: partnerUser } = await supabase.from("partner_users").select("user_id").eq("user_id", user.id).single();
+  const { data: partnerUser } = await supabase.from("partner_users").select("user_id, org_id").eq("user_id", user.id).single();
 
   if (platformUser && !partnerUser) redirect("/admin");
-  if (!partnerUser) redirect("/partner/login");
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-[#FAF8F5]">
+      {children}
+    </div>
+  );
 }

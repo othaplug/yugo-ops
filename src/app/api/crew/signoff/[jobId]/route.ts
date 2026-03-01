@@ -186,7 +186,17 @@ export async function POST(
     .select("id, signed_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // Schema cache / missing column - suggest running migrations
+    const msg = String(error.message || "");
+    if (msg.includes("schema cache") || msg.includes("column") && msg.includes("client_sign_offs")) {
+      return NextResponse.json({
+        error: "Database schema update required. Please run: supabase db push (or apply migrations in Supabase dashboard).",
+        code: "SCHEMA_UPDATE_REQUIRED",
+      }, { status: 503 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   // Log escalation as a status event so admin dashboard picks it up
   if (escalationTriggered) {

@@ -26,23 +26,35 @@ const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 
 interface RevenueClientProps {
   invoices: any[];
+  paidMoves?: any[];
   clientTypeMap?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
 }
 
 /** Get revenue date for a paid invoice (when payment was received) */
-function getRevenueDate(inv: any): Date {
+function getInvoiceRevenueDate(inv: any): Date {
   const ts = inv.updated_at || inv.created_at;
   return ts ? new Date(ts) : new Date(0);
 }
 
-export default function RevenueClient({ invoices, clientTypeMap = {}, clientNameToOrgId = {} }: RevenueClientProps) {
+/** Get revenue date for a paid move (when payment was marked) */
+function getMoveRevenueDate(m: any): Date {
+  const ts = m.payment_marked_paid_at;
+  return ts ? new Date(ts) : new Date(0);
+}
+
+export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap = {}, clientNameToOrgId = {} }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const all = invoices || [];
   const paid = all.filter((i) => i.status === "paid");
-  const paidTotal = paid.reduce((s, i) => s + Number(i.amount), 0);
+  const paidMovesList = paidMoves || [];
+
+  const invoiceRevenue = paid.reduce((s, i) => s + Number(i.amount), 0);
+  const moveRevenue = paidMovesList.reduce((s, m) => s + Number(m.estimate || 0), 0);
+  const paidTotal = invoiceRevenue + moveRevenue;
+
   const outstanding = all
     .filter((i) => i.status === "sent" || i.status === "overdue")
     .reduce((s, i) => s + Number(i.amount), 0);
@@ -51,11 +63,15 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
   paid.forEach((i) => {
     byClient[i.client_name] = (byClient[i.client_name] || 0) + Number(i.amount);
   });
+  paidMovesList.forEach((m) => {
+    const name = m.client_name || "—";
+    byClient[name] = (byClient[name] || 0) + Number(m.estimate || 0);
+  });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  /** Build real revenue data from paid invoices, grouped by month or day */
+  /** Build real revenue data from paid invoices + move payments, grouped by month or day */
   const chartData = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -66,10 +82,17 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
       const byDay: Record<number, number> = {};
       for (let d = 1; d <= daysInMonth; d++) byDay[d] = 0;
       paid.forEach((inv) => {
-        const d = getRevenueDate(inv);
+        const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === year && d.getMonth() === month) {
           const day = d.getDate();
           byDay[day] = (byDay[day] || 0) + Number(inv.amount);
+        }
+      });
+      paidMovesList.forEach((m) => {
+        const d = getMoveRevenueDate(m);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          const day = d.getDate();
+          byDay[day] = (byDay[day] || 0) + Number(m.estimate || 0);
         }
       });
       return Array.from({ length: daysInMonth }, (_, i) => {
@@ -95,8 +118,12 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
       }
       let sum = 0;
       paid.forEach((inv) => {
-        const d = getRevenueDate(inv);
+        const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === y && d.getMonth() === m) sum += Number(inv.amount);
+      });
+      paidMovesList.forEach((move) => {
+        const d = getMoveRevenueDate(move);
+        if (d.getFullYear() === y && d.getMonth() === m) sum += Number(move.estimate || 0);
       });
       result.push({
         label: MONTH_LABELS[m],
@@ -105,7 +132,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
       });
     }
     return result;
-  }, [period, paid]);
+  }, [period, paid, paidMovesList]);
 
   const byTypeRaw: Record<string, number> = {};
   paid.forEach((i) => {
@@ -130,31 +157,50 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
   const currentMonthRevenue = useMemo(() => {
     const y = now.getFullYear();
     const m = now.getMonth();
-    return paid
+    const invSum = paid
       .filter((inv) => {
-        const d = getRevenueDate(inv);
+        const d = getInvoiceRevenueDate(inv);
         return d.getFullYear() === y && d.getMonth() === m;
       })
       .reduce((s, i) => s + Number(i.amount), 0);
-  }, [paid, now]);
+    const moveSum = paidMovesList
+      .filter((move) => {
+        const d = getMoveRevenueDate(move);
+        return d.getFullYear() === y && d.getMonth() === m;
+      })
+      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    return invSum + moveSum;
+  }, [paid, paidMovesList, now]);
   const prevMonthRevenue = useMemo(() => {
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const y = prev.getFullYear();
     const m = prev.getMonth();
-    return paid
+    const invSum = paid
       .filter((inv) => {
-        const d = getRevenueDate(inv);
+        const d = getInvoiceRevenueDate(inv);
         return d.getFullYear() === y && d.getMonth() === m;
       })
       .reduce((s, i) => s + Number(i.amount), 0);
-  }, [paid, now]);
+    const moveSum = paidMovesList
+      .filter((move) => {
+        const d = getMoveRevenueDate(move);
+        return d.getFullYear() === y && d.getMonth() === m;
+      })
+      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    return invSum + moveSum;
+  }, [paid, paidMovesList, now]);
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
-    return paid
-      .filter((inv) => getRevenueDate(inv).getFullYear() === y)
+    const invSum = paid
+      .filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y)
       .reduce((s, i) => s + Number(i.amount), 0);
-  }, [paid, now]);
-  const avgJob = paid.length > 0 ? Math.round(paidTotal / paid.length) : 0;
+    const moveSum = paidMovesList
+      .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
+      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    return invSum + moveSum;
+  }, [paid, paidMovesList, now]);
+  const totalPaidItems = paid.length + paidMovesList.length;
+  const avgJob = totalPaidItems > 0 ? Math.round(paidTotal / totalPaidItems) : 0;
   const pctChange =
     prevMonthRevenue > 0
       ? Math.round(((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100)
@@ -191,6 +237,25 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
           <div className="text-xl font-bold font-heading">{formatCompactCurrency(avgJob)}</div>
         </Link>
       </div>
+
+      {/* Revenue breakdown: Move vs Invoice */}
+      {(invoiceRevenue > 0 || moveRevenue > 0) && (
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-6">
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Revenue by Source</h3>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[var(--gold)]" />
+              <span className="text-[11px] text-[var(--tx2)]">Invoice payments</span>
+              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(invoiceRevenue)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[var(--grn)]" />
+              <span className="text-[11px] text-[var(--tx2)]">Move payments</span>
+              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(moveRevenue)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Revenue Trend - real interactive chart */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6">
@@ -257,7 +322,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-[13px] text-[var(--tx3)]">
-              No paid revenue in this period. Revenue appears when invoices are marked paid.
+              No paid revenue in this period. Revenue appears when invoices are marked paid or moves are marked paid.
             </div>
           )}
         </div>
@@ -315,7 +380,7 @@ export default function RevenueClient({ invoices, clientTypeMap = {}, clientName
                 );
               })
             ) : (
-              <div className="text-[11px] text-[var(--tx3)] py-4">No paid invoices yet</div>
+              <div className="text-[11px] text-[var(--tx3)] py-4">No paid invoices or moves yet</div>
             )}
           </div>
         </div>

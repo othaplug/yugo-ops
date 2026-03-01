@@ -27,6 +27,7 @@ const MapboxMap = dynamic(
       token,
       mapStyle,
       destination,
+      routeLineColor,
     }: {
       center: { longitude: number; latitude: number };
       hasPosition: boolean;
@@ -35,6 +36,7 @@ const MapboxMap = dynamic(
       token: string;
       mapStyle: string;
       destination?: { lat: number; lng: number };
+      routeLineColor?: string;
     }) {
       const routeGeoJson =
         hasPosition && crew && destination
@@ -64,7 +66,7 @@ const MapboxMap = dynamic(
                 id="route-tracking-layer"
                 type="line"
                 paint={{
-                  "line-color": "#8B5CF6",
+                  "line-color": routeLineColor ?? "#8B5CF6",
                   "line-width": 5,
                   "line-opacity": 1,
                 }}
@@ -124,11 +126,13 @@ export default function LiveTrackingMap({
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveStage, setLiveStage] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const supabase = createClient();
   const { theme } = useTheme();
   const mapStyle = theme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
+  const routeLineColor = theme === "dark" ? "#C9A962" : "#8B5CF6";
 
   // Initial fetch + realtime subscription for crew position
   useEffect(() => {
@@ -226,7 +230,20 @@ export default function LiveTrackingMap({
         <p className="text-[11px] text-[var(--tx3)] mb-3">
           {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
         </p>
-        <div className="relative rounded-lg border border-[var(--brd)] overflow-hidden" style={{ height: 320 }}>
+        <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
+          {/* Fullscreen toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="map-fullscreen-btn top-3 right-3"
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            )}
+          </button>
           {liveStage && (
             <div className="absolute top-3 left-3 z-10 rounded-lg border border-[var(--brd)] bg-[var(--card)] px-4 py-3 shadow-md flex items-center gap-3">
               <span className="relative flex h-3 w-3 shrink-0">
@@ -275,7 +292,20 @@ export default function LiveTrackingMap({
       <p className="text-[11px] text-[var(--tx3)] mb-3">
         {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
       </p>
-      <div className="relative rounded-lg border border-[var(--brd)] overflow-hidden" style={{ height: 320 }}>
+      <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
+        {/* Fullscreen toggle */}
+        <button
+          type="button"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="map-fullscreen-btn top-3 right-3"
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          )}
+        </button>
         {liveStage && (
           <div className="absolute top-3 left-3 z-10 rounded-lg border border-[var(--brd)] bg-[var(--card)] px-4 py-3 shadow-md flex items-center gap-3">
             <span className="relative flex h-3 w-3 shrink-0">
@@ -313,6 +343,7 @@ export default function LiveTrackingMap({
             crewName={crewName}
             mapStyle={mapStyle}
             destination={destination ?? undefined}
+            routeLineColor={routeLineColor}
           />
         )}
       </div>
