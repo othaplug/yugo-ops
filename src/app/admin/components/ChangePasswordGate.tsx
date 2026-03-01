@@ -71,10 +71,8 @@ export default function ChangePasswordGate({ children }: { children: React.React
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-[rgba(201,169,98,0.12)] border border-[rgba(201,169,98,0.35)] mb-4">
-                <span className="font-hero text-[20px] tracking-[3px] text-[var(--gold)]">OPS+</span>
-              </div>
-              <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to OPS+</h2>
+              <span className="font-hero text-[22px] tracking-[4px] text-[var(--gold)] mb-4 inline-block">YUGO</span>
+              <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to YUGO</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">

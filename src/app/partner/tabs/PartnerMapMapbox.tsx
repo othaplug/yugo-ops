@@ -1,7 +1,35 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import Map, { Marker, Source, Layer, NavigationControl } from "react-map-gl/mapbox";
+import Map, { Marker, Source, Layer, NavigationControl, useMap } from "react-map-gl/mapbox";
+
+function MyLocationButton() {
+  const { current: mapRef } = useMap();
+  const handleClick = () => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const map = mapRef?.getMap?.();
+        if (map) map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
+      },
+      () => {}
+    );
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="absolute bottom-14 right-4 z-10 p-2.5 bg-white rounded-lg shadow-md border border-[#E8E4DF] hover:bg-[#F5F3F0] transition-colors"
+      title="My location"
+      aria-label="Center on my location"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    </button>
+  );
+}
 
 interface ActiveDelivery {
   id: string;
@@ -96,6 +124,7 @@ export default function PartnerMapMapbox({
       })}
 
       <NavigationControl position="bottom-right" showCompass showZoom />
+      <MyLocationButton />
     </Map>
   );
 }

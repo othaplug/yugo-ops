@@ -95,10 +95,10 @@ export async function POST(req: NextRequest) {
 
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: emailTrimmed,
-      replyTo: "OPS+ <notifications@opsplus.co>",
-      subject: "You're invited to OPS+ — Log in to continue setup",
+      replyTo: "YUGO <notifications@opsplus.co>",
+      subject: "You're invited to YUGO — Log in to continue setup",
       html: inviteUserEmail({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
       text: inviteUserEmailText({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

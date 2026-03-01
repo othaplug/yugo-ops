@@ -9,14 +9,29 @@ import { formatPhone, normalizePhone } from "@/lib/phone";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
+const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage", "Assembly Required"];
+const TIME_OPTIONS = (() => {
+  const times: string[] = [];
+  for (let h = 6; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      if (h === 20 && m === 30) break;
+      const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      const ampm = h < 12 ? "AM" : "PM";
+      times.push(`${h12}:${m.toString().padStart(2, "0")} ${ampm}`);
+    }
+  }
+  return times;
+})();
+
 interface EditDeliveryModalProps {
   delivery: any;
   organizations?: { id: string; name: string; type: string }[];
+  crews?: { id: string; name: string; members?: string[] }[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export default function EditDeliveryModal({ delivery, organizations = [], open: controlledOpen, onOpenChange }: EditDeliveryModalProps) {
+export default function EditDeliveryModal({ delivery, organizations = [], crews = [], open: controlledOpen, onOpenChange }: EditDeliveryModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (v: boolean) => { onOpenChange?.(v); if (controlledOpen === undefined) setInternalOpen(v); };
@@ -24,6 +39,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
   const [pickupAddress, setPickupAddress] = useState(delivery?.pickup_address ?? "");
   const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
   const [quotedPrice, setQuotedPrice] = useState("");
+  const [crewId, setCrewId] = useState(delivery?.crew_id || "");
   const router = useRouter();
   const supabase = createClient();
 
@@ -32,6 +48,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
       setPickupAddress(delivery.pickup_address ?? "");
       setDeliveryAddress(delivery.delivery_address ?? "");
       setQuotedPrice(formatNumberInput(delivery.quoted_price) || "");
+      setCrewId(delivery.crew_id || "");
     }
   }, [open, delivery]);
 
@@ -49,6 +66,8 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
     });
 
     const orgId = (form.get("organization_id") as string)?.trim() || null;
+
+
     await supabase
       .from("deliveries")
       .update({
@@ -58,6 +77,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
         delivery_address: deliveryAddress || form.get("delivery_address"),
         pickup_address: pickupAddress || form.get("pickup_address"),
         scheduled_date: form.get("scheduled_date"),
+        time_slot: form.get("time_slot") || null,
         delivery_window: form.get("delivery_window"),
         instructions: form.get("instructions"),
         items,
@@ -66,6 +86,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
         special_handling: !!form.get("special_handling"),
         organization_id: orgId || null,
         client_name: orgId ? (organizations.find((o) => o.id === orgId)?.name ?? delivery.client_name) : delivery.client_name,
+        crew_id: crewId || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", delivery.id);
@@ -89,26 +110,32 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
 
   return (
     <ModalOverlay open={open} onClose={() => setOpen(false)} title={`Edit ${delivery.delivery_number}`} maxWidth="md">
-      <form onSubmit={handleSave} className="p-5 space-y-3">
+      <form onSubmit={handleSave} className="p-5 space-y-4">
+        {/* Client / Partner */}
+        <Section label="Client & Customer">
           {organizations.length > 0 && (
-            <Field label="Client / Partner (for portal access)">
+            <Field label="Client / Partner">
               <select name="organization_id" className="field-input" defaultValue={delivery.organization_id || ""}>
                 <option value="">— None —</option>
-                {organizations.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
+                {organizations.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
             </Field>
           )}
-          <Field label="Customer">
-            <input name="customer_name" defaultValue={delivery.customer_name} className="field-input" />
-          </Field>
-          <Field label="Email">
-            <input name="customer_email" type="email" defaultValue={delivery.customer_email} className="field-input" />
-          </Field>
-          <Field label="Phone">
-            <input name="customer_phone" type="tel" defaultValue={delivery.customer_phone ? formatPhone(delivery.customer_phone) : ""} placeholder="(123) 456-7890" className="field-input" />
-          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Customer">
+              <input name="customer_name" defaultValue={delivery.customer_name} className="field-input" />
+            </Field>
+            <Field label="Email">
+              <input name="customer_email" type="email" defaultValue={delivery.customer_email} className="field-input" />
+            </Field>
+            <Field label="Phone">
+              <input name="customer_phone" type="tel" defaultValue={delivery.customer_phone ? formatPhone(delivery.customer_phone) : ""} placeholder="(123) 456-7890" className="field-input" />
+            </Field>
+          </div>
+        </Section>
+
+        {/* Addresses */}
+        <Section label="Addresses">
           <Field label="Pickup Address">
             <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Pickup address" label="" className="field-input" />
             <input type="hidden" name="pickup_address" value={pickupAddress} />
@@ -117,20 +144,78 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
             <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Delivery address" label="" className="field-input" />
             <input type="hidden" name="delivery_address" value={deliveryAddress} />
           </Field>
-          <Field label="Date">
-            <input name="scheduled_date" type="date" defaultValue={delivery.scheduled_date} className="field-input" />
-          </Field>
-          <Field label="Window">
-            <select name="delivery_window" defaultValue={delivery.delivery_window} className="field-input">
-              <option value="">Select window…</option>
-              {TIME_WINDOW_OPTIONS.map((w) => (
-                <option key={w} value={w}>{w}</option>
-              ))}
-              {delivery.delivery_window && !TIME_WINDOW_OPTIONS.includes(delivery.delivery_window) && (
-                <option value={delivery.delivery_window}>{delivery.delivery_window}</option>
-              )}
-            </select>
-          </Field>
+        </Section>
+
+        {/* Schedule */}
+        <Section label="Schedule">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Date">
+              <input name="scheduled_date" type="date" defaultValue={delivery.scheduled_date} className="field-input" />
+            </Field>
+            <Field label="Time Slot">
+              <select name="time_slot" defaultValue={delivery.time_slot || ""} className="field-input">
+                <option value="">Select time…</option>
+                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {delivery.time_slot && !TIME_OPTIONS.includes(delivery.time_slot) && (
+                  <option value={delivery.time_slot}>{delivery.time_slot}</option>
+                )}
+              </select>
+            </Field>
+            <Field label="Window">
+              <select name="delivery_window" defaultValue={delivery.delivery_window} className="field-input">
+                <option value="">Select window…</option>
+                {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+                {delivery.delivery_window && !TIME_WINDOW_OPTIONS.includes(delivery.delivery_window) && (
+                  <option value={delivery.delivery_window}>{delivery.delivery_window}</option>
+                )}
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        {/* Crew & Pricing */}
+        <Section label="Crew & Pricing">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Assign Crew">
+              <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className="field-input">
+                <option value="">Unassigned</option>
+                {crews.map((c) => <option key={c.id} value={c.id}>{c.name}{c.members?.length ? ` (${c.members.length})` : ""}</option>)}
+              </select>
+            </Field>
+            <Field label="Quoted Price">
+              <input
+                type="text"
+                name="quoted_price"
+                value={quotedPrice}
+                onChange={(e) => setQuotedPrice(e.target.value)}
+                onBlur={() => { const n = parseNumberInput(quotedPrice); if (n > 0) setQuotedPrice(formatNumberInput(n)); }}
+                placeholder="1,234.00"
+                inputMode="decimal"
+                className="field-input"
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Status">
+              <select name="status" defaultValue={delivery.status} className="field-input">
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="in-transit">In Transit</option>
+                <option value="delivered">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </Field>
+            <Field label="Special Handling">
+              <label className="flex items-center gap-2 cursor-pointer h-full pt-1">
+                <input name="special_handling" type="checkbox" defaultChecked={!!delivery.special_handling} className="rounded border-[var(--brd)]" />
+                <span className="text-[12px]">Requires special handling</span>
+              </label>
+            </Field>
+          </div>
+        </Section>
+
+        {/* Items & Notes */}
+        <Section label="Items & Notes">
           <Field label="Items (one per line, e.g. Couch x2)">
             <textarea name="items" rows={3} defaultValue={(delivery.items || []).map((i: any) => {
               if (typeof i === "object" && i != null) {
@@ -141,44 +226,25 @@ export default function EditDeliveryModal({ delivery, organizations = [], open: 
               return i;
             }).join("\n")} className="field-input resize-y" />
           </Field>
-          <Field label="Quoted Price">
-            <input
-              type="text"
-              name="quoted_price"
-              value={quotedPrice}
-              onChange={(e) => setQuotedPrice(e.target.value)}
-              onBlur={() => {
-                const n = parseNumberInput(quotedPrice);
-                if (n > 0) setQuotedPrice(formatNumberInput(n));
-              }}
-              placeholder="1,234.00"
-              inputMode="decimal"
-              className="field-input"
-            />
-          </Field>
-          <Field label="Status">
-            <select name="status" defaultValue={delivery.status} className="field-input">
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="in-transit">In Transit</option>
-              <option value="delivered">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </Field>
-          <Field label="Special Handling">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input name="special_handling" type="checkbox" defaultChecked={!!delivery.special_handling} className="rounded border-[var(--brd)]" />
-              <span className="text-[12px]">Requires special handling</span>
-            </label>
-          </Field>
           <Field label="Instructions">
             <textarea name="instructions" rows={2} defaultValue={delivery.instructions} className="field-input resize-y" />
           </Field>
-          <button type="submit" disabled={loading} className="w-full px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
-            {loading ? "Saving..." : "Save Changes"}
-          </button>
+        </Section>
+
+        <button type="submit" disabled={loading} className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--gold2)] transition-colors">
+          {loading ? "Saving..." : "Save Changes"}
+        </button>
       </form>
     </ModalOverlay>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</div>
+      {children}
+    </div>
   );
 }
 

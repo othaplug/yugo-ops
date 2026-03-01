@@ -13,6 +13,7 @@ import SearchBox from "./SearchBox";
 import ClientDate from "./ClientDate";
 import RealtimeListener from "./RealtimeListener";
 import { Icons } from "./SidebarIcons";
+import YugoLogo, { BetaBadge } from "@/components/YugoLogo";
 
 const SIDEBAR_SECTIONS_FULL = [
     {
@@ -98,7 +99,7 @@ function getPageTitle(pathname: string): { title: string; subtitle: string; useC
   if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Project", subtitle: "", useClientDate: false };
   if (pathname.match(/^\/admin\/moves\/(?!residential|office|new$)[^/]+$/)) return { title: "Move Detail", subtitle: "", useClientDate: false };
-  return { title: "OPS+", subtitle: "", useClientDate: false };
+  return { title: "YUGO", subtitle: "", useClientDate: false };
 }
 
 const SIDEBAR_WIDTH = 220;
@@ -164,6 +165,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
+    // For /admin/crew, only "Tracking" is active on exact /admin/crew; Crew Analytics on /admin/crew/analytics
+    if (href === "/admin/crew") return pathname === "/admin/crew";
     return pathname.startsWith(href);
   };
 
@@ -206,9 +209,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               <div className="h-14 px-4 flex items-center shrink-0 bg-transparent">
                 <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${sidebarCollapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : ""}`}>
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.06)] backdrop-blur-xl border border-[rgba(201,169,98,0.35)] text-[var(--gold)] font-heading text-[13px] font-semibold tracking-[3px] shadow-[0_0_24px_rgba(201,169,98,0.06),inset_0_1px_0_rgba(255,255,255,0.03)]">
-                      OPS+
-                    </span>
+                    <YugoLogo size={18} />
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -298,7 +299,10 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     </svg>
                   </button>
                   <div className="min-w-0 flex-1 py-0.5">
-                    <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
+                      <BetaBadge />
+                    </div>
                     {(subtitle || useClientDate) && (
                       <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">
                         {useClientDate ? <ClientDate /> : subtitle}

@@ -39,7 +39,7 @@ export async function POST(
 
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: email,
       subject: `Track your move — ${jobIdDisplay}`,
       html: trackingLinkEmail({

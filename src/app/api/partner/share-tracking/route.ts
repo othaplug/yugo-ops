@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
       const resend = getResend();
       const { error: sendError } = await resend.emails.send({
-        from: "OPS+ <notifications@opsplus.co>",
+        from: "YUGO <notifications@opsplus.co>",
         to: recipient,
         subject: `Track your delivery — ${delivery.delivery_number}`,
         html: `
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
             <p style="font-size:14px;color:#666;margin:0 0 8px">${delivery.customer_name || "Customer"} — ${delivery.delivery_address || ""}</p>
             <p style="font-size:14px;color:#666;margin:0 0 24px">Track your delivery in real-time using the link below.</p>
             <a href="${trackUrl}" style="display:inline-block;padding:12px 28px;background:#C9A962;color:#fff;font-weight:700;text-decoration:none;border-radius:8px;font-size:14px">Track Delivery</a>
-            <p style="font-size:12px;color:#aaa;margin-top:24px">Delivery ${delivery.delivery_number} — Powered by Yugo OPS+</p>
+            <p style="font-size:12px;color:#aaa;margin-top:24px">Delivery ${delivery.delivery_number} — Powered by Yugo YUGO</p>
           </div>
         `,
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

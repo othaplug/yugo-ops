@@ -114,9 +114,9 @@ export async function POST(req: NextRequest) {
         const loginUrl = `${origin.replace(/\/$/, "")}/crew/login`;
         const resend = getResend();
         await resend.emails.send({
-          from: "OPS+ <notifications@opsplus.co>",
+          from: "YUGO <notifications@opsplus.co>",
           to: emailTrimmed,
-          subject: "You're invited to the OPS+ Crew Portal",
+          subject: "You're invited to the YUGO Crew Portal",
           html: crewPortalInviteEmail({
             name: data.name,
             email: emailTrimmed,

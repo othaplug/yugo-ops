@@ -313,22 +313,15 @@ export default function CrewLoginPage() {
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <h1
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "8px 20px",
-                borderRadius: 9999,
-                background: "rgba(201,169,98,0.08)",
-                border: "1px solid rgba(201,169,98,0.4)",
                 color: "#C9A962",
                 fontFamily: "'Instrument Serif', Georgia, serif",
-                fontSize: 18,
+                fontSize: 22,
                 fontWeight: 600,
-                letterSpacing: 3,
+                letterSpacing: 4,
                 margin: 0,
               }}
             >
-              Y U G O
+              YUGO
             </h1>
           </div>
 

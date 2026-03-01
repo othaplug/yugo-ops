@@ -65,9 +65,9 @@ export async function POST(
     const loginUrl = `${getEmailBaseUrl()}/login`;
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: email,
-      subject: "Your OPS+ Partner Portal password has been reset",
+      subject: "Your YUGO Partner Portal password has been reset",
       html: partnerPasswordResetEmail({
         contactName: name,
         companyName: org.name,

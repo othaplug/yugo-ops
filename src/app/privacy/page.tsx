@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <strong>Last updated:</strong> February 2025
         </p>
         <p className="text-[14px] text-[#666] leading-relaxed mb-6">
-          Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) operates the OPS+ platform and related moving and logistics services. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our services, websites, and applications.
+          Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) operates the YUGO platform and related moving and logistics services. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our services, websites, and applications.
         </p>
 
         <section className="mb-8">

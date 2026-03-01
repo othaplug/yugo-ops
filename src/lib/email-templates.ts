@@ -6,20 +6,20 @@ function emailFooter(loginUrl?: string) {
   const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
   return `
     <div style="font-size:10px;color:#999;text-align:left;margin-top:32px;padding-top:20px;border-top:1px solid #2A2A2A">
-      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</span>
+      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</span>
       <span style="color:#888;margin:0 6px">·</span>
       <a href="${url}" style="color:#C9A962;text-decoration:none">Learn more</a>
-      <div style="margin-top:6px;font-size:9px;color:#888">Powered by OPS+</div>
+      <div style="margin-top:6px;font-size:9px;color:#888">Powered by YUGO</div>
     </div>
   `;
 }
 
-/** OPS+ logo centered at top — used for all emails */
+/** YUGO logo centered at top — used for all emails */
 function emailLogo() {
   return notifyEmailLogo();
 }
 
-/** Global email wrapper: same container + logo + footer used across all OPS+ transactional emails */
+/** Global email wrapper: same container + logo + footer used across all YUGO transactional emails */
 function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
@@ -30,11 +30,11 @@ function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
   `;
 }
 
-/** OPS+ oval badge only (matches notify/track email screenshot) */
+/** YUGO oval badge only (matches notify/track email screenshot) */
 function notifyEmailLogo() {
   return `
     <div style="text-align:center;margin-bottom:28px">
-      <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">OPS+</div>
+      <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</div>
     </div>
   `;
 }
@@ -367,9 +367,9 @@ export function inviteUserEmail(params: {
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${name ? `, ${name}` : ""}</h1>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to YUGO${name ? `, ${name}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
-        You&apos;ve been invited to join OPS+ as a <strong style="color:#C9A962">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
+        You&apos;ve been invited to join YUGO as a <strong style="color:#C9A962">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
       </p>
       <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your credentials</div>
@@ -392,9 +392,9 @@ export function inviteUserEmailText(params: { name: string; email: string; roleL
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `You're Invited
 
-Welcome to OPS+${name ? `, ${name}` : ""}
+Welcome to YUGO${name ? `, ${name}` : ""}
 
-You've been invited to join OPS+ as a ${roleLabel}. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
+You've been invited to join YUGO as a ${roleLabel}. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
 
 Your credentials:
 Email: ${email}
@@ -404,7 +404,7 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by OPS+ | Learn more: ${baseUrl}`;
+Powered by YUGO | Learn more: ${baseUrl}`;
 }
 
 export function invitePartnerEmail(params: {
@@ -421,9 +421,9 @@ export function invitePartnerEmail(params: {
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">You&apos;re Invited as a Partner</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${contactName ? `, ${contactName}` : ""}</h1>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to YUGO${contactName ? `, ${contactName}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
-        <strong style="color:#C9A962">${companyName}</strong> has been invited as a <strong style="color:#C9A962">${typeLabel}</strong> partner on OPS+. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
+        <strong style="color:#C9A962">${companyName}</strong> has been invited as a <strong style="color:#C9A962">${typeLabel}</strong> partner on YUGO. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.
       </p>
       <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your credentials</div>
@@ -446,9 +446,9 @@ export function invitePartnerEmailText(params: { contactName: string; companyNam
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `You're Invited as a Partner
 
-Welcome to OPS+${contactName ? `, ${contactName}` : ""}
+Welcome to YUGO${contactName ? `, ${contactName}` : ""}
 
-${companyName} has been invited as a ${typeLabel} partner on OPS+. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
+${companyName} has been invited as a ${typeLabel} partner on YUGO. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
 
 Your credentials:
 Email: ${email}
@@ -458,7 +458,7 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by OPS+ | Learn more: ${baseUrl}`;
+Powered by YUGO | Learn more: ${baseUrl}`;
 }
 
 export function partnerPasswordResetEmail(params: {
@@ -473,7 +473,7 @@ export function partnerPasswordResetEmail(params: {
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Password Reset</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">New password for your OPS+ partner account</h1>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">New password for your YUGO partner account</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
         A new temporary password has been set for your <strong style="color:#C9A962">${companyName}</strong> partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you&apos;ll be prompted to set a new password.
       </p>
@@ -496,7 +496,7 @@ export function partnerPasswordResetEmail(params: {
 export function partnerPasswordResetEmailText(params: { contactName: string; companyName: string; email: string; tempPassword: string; loginUrl: string }) {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
-  return `Password Reset – OPS+ Partner Portal
+  return `Password Reset – YUGO Partner Portal
 
 A new temporary password has been set for your ${companyName} partner portal access. Sign in with the credentials below and you'll be prompted to set a new password.
 
@@ -508,7 +508,7 @@ Log in: ${loginUrl}
 
 For security, we recommend changing this password after you sign in. If you didn't request this, contact your admin.
 
-Powered by OPS+ | Learn more: ${baseUrl}`;
+Powered by YUGO | Learn more: ${baseUrl}`;
 }
 
 function darkEmailWrapper(html: string) {
@@ -529,7 +529,7 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Partner Portal Access</div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to OPS+${displayName !== "Partner" ? `, ${displayName}` : ""}</h1>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to YUGO${displayName !== "Partner" ? `, ${displayName}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 16px">
         Your partner portal is ready. Sign in anytime to:
       </p>
@@ -561,7 +561,7 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
         Your referral for <strong style="color:#C9A962">${ref}</strong> has been received and added to our pipeline.
       </p>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 24px">
-        We&apos;ll be in touch as we process the lead. Thank you for partnering with OPS+.
+        We&apos;ll be in touch as we process the lead. Thank you for partnering with YUGO.
       </p>
       ${emailFooter()}
     </div>
@@ -575,7 +575,7 @@ export function crewPortalInviteEmail(params: { name: string; email: string; log
       <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Crew Portal Access</div>
       <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">Welcome to the Crew Portal${name ? `, ${name}` : ""}</h1>
       <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
-        You&apos;ve been invited to log in to the OPS+ Crew Portal to start jobs, update status, and share your location with dispatch.
+        You&apos;ve been invited to log in to the YUGO Crew Portal to start jobs, update status, and share your location with dispatch.
       </p>
       <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
         <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your login</div>
@@ -599,7 +599,7 @@ export function crewPortalInviteEmailText(params: { name: string; email: string;
 
 Welcome to the Crew Portal${name ? `, ${name}` : ""}
 
-You've been invited to log in to the OPS+ Crew Portal to start jobs, update status, and share your location with dispatch.
+You've been invited to log in to the YUGO Crew Portal to start jobs, update status, and share your location with dispatch.
 
 Your login:
 Phone: ${phoneDisplay}
@@ -609,12 +609,12 @@ Log in: ${loginUrl}
 
 Sessions expire after one shift (12h). Keep your PIN secure. If you didn't expect this invite, you can safely ignore this email.
 
-Powered by OPS+`;
+Powered by YUGO`;
 }
 
 export function verificationCodeEmail(params: { code: string; purpose: "email_change" | "2fa" }) {
   const { code, purpose } = params;
-  const title = purpose === "email_change" ? "Verify your email change" : "Your OPS+ login code";
+  const title = purpose === "email_change" ? "Verify your email change" : "Your YUGO login code";
   const desc = purpose === "email_change"
     ? "You requested to change your email address. Enter this code to confirm:"
     : "Use this code to complete your sign-in. It expires in 15 minutes.";

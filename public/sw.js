@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  let data = { title: "OPS+", body: "You have a new notification" };
+  let data = { title: "YUGO", body: "You have a new notification" };
   try {
     data = event.data.json();
   } catch {
@@ -13,7 +13,7 @@ self.addEventListener("push", (event) => {
     badge: "/favicon.ico",
     data: { url: data.url || "/client" },
   };
-  event.waitUntil(self.registration.showNotification(data.title || "OPS+", options));
+  event.waitUntil(self.registration.showNotification(data.title || "YUGO", options));
 });
 
 self.addEventListener("notificationclick", (event) => {

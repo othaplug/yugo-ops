@@ -13,6 +13,8 @@ import PartnerRealtorTab from "./tabs/PartnerRealtorTab";
 import PartnerProjectsTab from "./tabs/PartnerProjectsTab";
 import PartnerScheduleModal from "./PartnerScheduleModal";
 import PartnerShareModal from "./PartnerShareModal";
+import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
+import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 
 interface Props {
   orgId: string;
@@ -127,7 +129,11 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : features.showProjects ? "projects" : "today");
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleInitialDate, setScheduleInitialDate] = useState("");
   const [shareTarget, setShareTarget] = useState<Delivery | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Delivery | null>(null);
+  const [editTarget, setEditTarget] = useState<Delivery | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const [loginInfo, setLoginInfo] = useState<{ isFirstLogin: boolean; passwordChanged: boolean; loginCount: number; lastLoginAt: string | null } | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -183,18 +189,34 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5]">
+    <div className="min-h-screen bg-[#F5F3F0]" data-theme="light">
       {/* Header */}
-      <header className="bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+      <header className="bg-white/95 backdrop-blur border-b border-[#E8E4DF] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="font-serif text-[18px] tracking-[1px] text-[#1A1A1A] font-semibold">YUGO</span>
-          <span className="text-[13px] text-[#666] font-medium">{orgName}</span>
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-[#C9A962]/15 text-[#C9A962] border border-[#C9A962]/30">OPS+</span>
+          <span className="font-hero text-[19px] tracking-[1.5px] text-[#1A1A1A] font-semibold">YUGO</span>
+          <span className="text-[13px] text-[#666] font-medium hidden sm:inline">{orgName}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-[8px] font-bold tracking-[2px] uppercase bg-[#C9A962]/12 text-[#8B6914] border border-[#C9A962]/25">BETA</span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="relative p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen(!notifOpen)}
+              className="relative p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {data && data.todayDeliveries.length > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#C9A962]" />
+              )}
+            </button>
+            {notifOpen && (
+              <NotificationsDropdown
+                todayDeliveries={data?.todayDeliveries || []}
+                upcomingDeliveries={data?.upcomingDeliveries || []}
+                onClose={() => setNotifOpen(false)}
+                onViewDelivery={(d) => { setDetailTarget(d); setNotifOpen(false); }}
+              />
+            )}
+          </div>
           <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold">
             {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase() || contactName.charAt(1)?.toUpperCase() || ""}
           </div>
@@ -224,7 +246,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
                     <span className="text-[28px]" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-serif text-[28px] font-semibold text-[#1A1714] mb-2">Welcome to OPS+, {contactName}!</h2>
+                  <h2 className="font-hero text-[28px] font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
                   <p className="text-[14px] text-[#888] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>
@@ -233,7 +255,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
               {welcomeStep === 1 && (
                 <div>
-                  <h3 className="font-serif text-[22px] font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
+                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
                       { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
@@ -263,7 +285,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
-                  <h3 className="font-serif text-[22px] font-semibold text-[#1A1714] mb-2">Secure your account</h3>
+                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-2">Secure your account</h3>
                   <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto mb-4">
                     For your security, we strongly recommend changing your password to something personal and memorable.
                   </p>
@@ -289,7 +311,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h3 className="font-serif text-[22px] font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
+                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
                   <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto">
                     Your portal is ready. If you need help at any time, reach out to your Yugo account manager.
                   </p>
@@ -332,37 +354,39 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       <main className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Returning user welcome-back banner */}
         {isReturning && loginInfo?.lastLoginAt && (
-          <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-[#E8E4DF]" style={{ animation: "fadeSlideUp 0.4s ease" }}>
+          <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[#E8E4DF] shadow-sm" style={{ animation: "fadeSlideUp 0.4s ease" }}>
             <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-            <div className="w-8 h-8 rounded-lg bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+            <div className="w-9 h-9 rounded-xl bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[13px] font-semibold text-[#1A1714]">Welcome back, {contactName}</span>
-              <span className="text-[12px] text-[#999] ml-2">
+              <span className="text-[14px] font-semibold text-[#1A1714]">Welcome back, {contactName}</span>
+              <span className="text-[12px] text-[#888] ml-2">
                 Last visit: {new Date(loginInfo.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
             </div>
           </div>
         )}
 
-        {/* Greeting */}
-        <h1 className="font-serif text-[26px] sm:text-[30px] font-semibold text-[#1A1A1A] leading-tight">
-          {isReturning ? "Welcome back" : getPartnerGreeting()}, {contactName}
-        </h1>
-        {features.showReferrals ? (
-          <p className="text-[14px] text-[#888] mt-1">Your referral dashboard and commission tracking</p>
-        ) : features.showProjects ? (
-          <p className="text-[14px] text-[#888] mt-1">
-            {data?.projects?.length ?? 0} active project{(data?.projects?.length ?? 0) !== 1 ? "s" : ""}
-            {data && data.allDeliveries.some((d) => (d.status || "").toLowerCase() === "delayed") ? " · 1 vendor delay requiring attention" : ""}
-          </p>
-        ) : (
-          <p className="text-[14px] text-[#888] mt-1">{dayStr} — here are your deliveries</p>
-        )}
+        {/* Hero + Greeting */}
+        <div className="mb-6">
+          <h1 className="font-hero text-[28px] sm:text-[32px] font-semibold text-[#1A1A1A] leading-tight tracking-tight">
+            {isReturning ? "Welcome back" : getPartnerGreeting()}, {contactName}
+          </h1>
+          {features.showReferrals ? (
+            <p className="text-[15px] text-[#666] mt-1.5">Your referral dashboard and commission tracking</p>
+          ) : features.showProjects ? (
+            <p className="text-[15px] text-[#666] mt-1.5">
+              {data?.projects?.length ?? 0} active project{(data?.projects?.length ?? 0) !== 1 ? "s" : ""}
+              {data && data.allDeliveries.some((d) => (d.status || "").toLowerCase() === "delayed") ? " · 1 vendor delay requiring attention" : ""}
+            </p>
+          ) : (
+            <p className="text-[15px] text-[#666] mt-1.5">{dayStr} — here are your deliveries</p>
+          )}
+        </div>
 
         {/* Primary Actions */}
-        <div className="flex flex-wrap gap-2 mt-5">
+        <div className="flex flex-wrap gap-2.5 mb-6">
           {features.canCreateDelivery && (
             <button
               onClick={() => setScheduleOpen(true)}
@@ -374,9 +398,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           )}
           {!features.showReferrals && (
             <>
-              {features.showProjects && (
+              {features.showProjects && data && data.allDeliveries.length > 0 && (
                 <button
-                  onClick={() => {/* share with client placeholder */}}
+                  onClick={() => setShareTarget(data.allDeliveries[0])}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-white text-[#1A1A1A] border border-[#E8E4DF] hover:border-[#C9A962] transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -403,25 +427,25 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
         {/* KPI Cards */}
         {loading ? (
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
             {[1,2,3,4].map((i) => (
-              <div key={i} className="bg-white border border-[#E8E4DF] rounded-xl p-4 animate-pulse h-[90px]" />
+              <div key={i} className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 animate-pulse h-[100px] shadow-sm" />
             ))}
           </div>
         ) : features.showReferrals ? (
-          <RealtorKPIs data={data} />
+          <div className="mb-8"><RealtorKPIs data={data} /></div>
         ) : (
-          <DeliveryKPIs data={data} />
+          <div className="mb-8"><DeliveryKPIs data={data} /></div>
         )}
 
         {/* Tabs */}
-        <div className="mt-6 border-b border-[#E8E4DF]">
-          <div className="flex gap-0 overflow-x-auto">
+        <div className="bg-white rounded-2xl border border-[#E8E4DF] shadow-sm overflow-hidden mb-4">
+          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[#E8E4DF] px-2 sm:px-4">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`px-4 py-2.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                className={`px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
                   activeTab === t.key
                     ? "border-[#C9A962] text-[#C9A962]"
                     : "border-transparent text-[#888] hover:text-[#1A1A1A]"
@@ -431,10 +455,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               </button>
             ))}
           </div>
-        </div>
 
         {/* Tab Content */}
-        <div className="mt-4">
+        <div className="p-4 sm:p-6 bg-white rounded-b-2xl min-h-[320px]">
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
               projects={(data.projects || []).map((p) => {
@@ -472,6 +495,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               deliveries={data.todayDeliveries}
               label="today"
               onShare={(d) => setShareTarget(d)}
+              onDetailClick={(d) => setDetailTarget(d)}
+              onEditClick={(d) => setEditTarget(d)}
               orgType={orgType}
             />
           )}
@@ -480,11 +505,19 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               deliveries={data.upcomingDeliveries}
               label="upcoming"
               onShare={(d) => setShareTarget(d)}
+              onDetailClick={(d) => setDetailTarget(d)}
+              onEditClick={(d) => setEditTarget(d)}
               orgType={orgType}
             />
           )}
           {activeTab === "calendar" && data && (
-            <PartnerCalendarTab deliveries={data.allDeliveries} />
+            <PartnerCalendarTab
+              deliveries={data.allDeliveries}
+              onSelectDate={(date) => {
+                setScheduleInitialDate(date);
+                setScheduleOpen(true);
+              }}
+            />
           )}
           {activeTab === "tracking" && (
             <PartnerLiveMapTab orgId={orgId} />
@@ -515,6 +548,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <MaterialsTab />
           )}
         </div>
+        </div>
       </main>
 
       {/* Modals */}
@@ -522,8 +556,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <PartnerScheduleModal
           orgId={orgId}
           orgType={orgType}
-          onClose={() => setScheduleOpen(false)}
-          onCreated={() => { setScheduleOpen(false); loadData(); }}
+          initialDate={scheduleInitialDate}
+          onClose={() => { setScheduleOpen(false); setScheduleInitialDate(""); }}
+          onCreated={() => { setScheduleOpen(false); setScheduleInitialDate(""); loadData(); }}
         />
       )}
       {shareTarget && (
@@ -532,34 +567,55 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           onClose={() => setShareTarget(null)}
         />
       )}
+      {detailTarget && (
+        <PartnerDeliveryDetailModal
+          delivery={detailTarget}
+          onClose={() => setDetailTarget(null)}
+          onShare={() => {
+            setShareTarget(detailTarget);
+            setDetailTarget(null);
+          }}
+          onEdit={() => {
+            setEditTarget(detailTarget);
+            setDetailTarget(null);
+          }}
+        />
+      )}
+      {editTarget && (
+        <PartnerEditDeliveryModal
+          delivery={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); loadData(); }}
+        />
+      )}
     </div>
   );
 }
 
 function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   return (
-    <div className="mt-6">
-      <div className="text-[10px] font-bold tracking-wider uppercase text-[#888] mb-2">Completed</div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-4">
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#888] mb-3">Performance</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">This Month</div>
-          <div className="text-[28px] font-bold text-[#1A1A1A] mt-1 font-serif">{data?.completedThisMonth ?? 0}</div>
+          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
           <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-4">
+        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">On-Time Rate</div>
-          <div className="text-[28px] font-bold text-[#1A1A1A] mt-1 font-serif">{data?.onTimeRate ?? 100}%</div>
+          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-4">
+        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Damage Claims</div>
-          <div className="text-[28px] font-bold text-[#1A1A1A] mt-1 font-serif">{data?.damageClaims ?? 0}</div>
-          <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">Lifetime</div>
+          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
+          <div className="text-[11px] text-[#888] mt-0.5">Lifetime</div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-4">
+        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Outstanding</div>
-          <div className="text-[28px] font-bold text-[#1A1A1A] mt-1 font-serif">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
+          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (
             <div className="text-[11px] text-[#888] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
           )}
@@ -574,7 +630,7 @@ function RealtorKPIs({ data }: { data: DashboardData | null }) {
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="bg-white border border-[#E8E4DF] rounded-xl p-6 flex flex-col items-center justify-center min-h-[180px]">
         <div className="text-[10px] font-semibold tracking-wider uppercase text-[#C9A962]">Total Earned</div>
-        <div className="text-[42px] font-bold text-[#2D9F5A] mt-2 font-serif">{formatCurrency(data?.totalEarned ?? 0)}</div>
+        <div className="text-[42px] font-bold text-[#2D9F5A] mt-2 font-hero">{formatCurrency(data?.totalEarned ?? 0)}</div>
         <div className="text-[12px] text-[#2D9F5A] mt-1 font-medium">
           {data?.completedReferrals ?? 0} completed move{(data?.completedReferrals ?? 0) !== 1 ? "s" : ""}
         </div>
@@ -631,6 +687,70 @@ function ReferralForm() {
   );
 }
 
+function NotificationsDropdown({
+  todayDeliveries,
+  upcomingDeliveries,
+  onClose,
+  onViewDelivery,
+}: {
+  todayDeliveries: Delivery[];
+  upcomingDeliveries: Delivery[];
+  onClose: () => void;
+  onViewDelivery: (d: Delivery) => void;
+}) {
+  const inProgress = todayDeliveries.filter((d) => {
+    const s = (d.status || "").toLowerCase().replace(/-/g, "_");
+    return ["dispatched", "in_transit", "in_transit_to_destination"].includes(s);
+  });
+  const upcoming3 = upcomingDeliveries.slice(0, 3);
+  const hasItems = inProgress.length > 0 || todayDeliveries.length > 0 || upcoming3.length > 0;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute right-0 top-full mt-2 z-50 w-[320px] bg-white border border-[#E8E4DF] rounded-xl shadow-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#E8E4DF]">
+          <h3 className="text-[13px] font-bold text-[#1A1A1A]">Notifications</h3>
+        </div>
+        <div className="max-h-[320px] overflow-y-auto">
+          {!hasItems && (
+            <div className="px-4 py-6 text-center text-[13px] text-[#888]">All caught up!</div>
+          )}
+          {inProgress.map((d) => (
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+              </div>
+              <p className="text-[11px] text-[#888] mt-0.5 ml-4">Delivery in progress</p>
+            </button>
+          ))}
+          {todayDeliveries.filter((d) => !inProgress.includes(d)).slice(0, 3).map((d) => (
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+              </div>
+              <p className="text-[11px] text-[#888] mt-0.5 ml-4">Scheduled today · {d.time_slot || "No time set"}</p>
+            </button>
+          ))}
+          {upcoming3.map((d) => (
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#C9A962] flex-shrink-0" />
+                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+              </div>
+              <p className="text-[11px] text-[#888] mt-0.5 ml-4">
+                Upcoming · {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function MaterialsTab() {
   const materials = [
     { name: "Yugo Service Guide (PDF)", desc: "Overview of all service tiers", icon: "doc" },
@@ -640,7 +760,7 @@ function MaterialsTab() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-[16px] font-bold text-[#1A1A1A] font-serif">Marketing Materials</h3>
+      <h3 className="text-[16px] font-bold text-[#1A1A1A] font-hero">Marketing Materials</h3>
       {materials.map((m) => (
         <div key={m.name} className="bg-white border border-[#E8E4DF] rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

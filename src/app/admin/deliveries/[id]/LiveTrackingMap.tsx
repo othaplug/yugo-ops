@@ -115,17 +115,19 @@ export default function LiveTrackingMap({
   crewName,
   destination,
   moveId,
+  deliveryId,
 }: {
   crewId: string;
   crewName?: string;
-  /** Optional destination for route line / bounds (e.g. move to_address) */
   destination?: { lat: number; lng: number };
-  /** Optional move ID for move detail: fetches crew status and shows status card overlay */
   moveId?: string;
+  /** Delivery ID: checks for an active tracking session before showing GPS */
+  deliveryId?: string;
 }) {
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveStage, setLiveStage] = useState<string | null>(null);
+  const [hasActiveSession, setHasActiveSession] = useState<boolean | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const supabase = createClient();
   const { theme } = useTheme();
@@ -166,12 +168,18 @@ export default function LiveTrackingMap({
     };
   }, [crewId]);
 
-  // Fetch and subscribe to live stage when moveId provided (admin move detail)
+  // Fetch and subscribe to live stage when moveId OR deliveryId provided
   const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const subscribedSessionIdRef = useRef<string | null>(null);
+  const jobId = moveId || deliveryId;
+  const jobApiPath = moveId
+    ? `/api/admin/moves/${moveId}/crew-status`
+    : deliveryId
+      ? `/api/admin/deliveries/${deliveryId}/crew-status`
+      : null;
 
   useEffect(() => {
-    if (!moveId) return;
+    if (!jobApiPath) return;
 
     const subscribeIfNeeded = (sessionId: string) => {
       if (!sessionId || subscribedSessionIdRef.current === sessionId) return;
@@ -186,8 +194,9 @@ export default function LiveTrackingMap({
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "tracking_sessions", filter: `id=eq.${sessionId}` },
           (payload) => {
-            const row = payload.new as { status?: string };
+            const row = payload.new as { status?: string; is_active?: boolean };
             if (row?.status) setLiveStage(row.status);
+            if (row?.is_active != null) setHasActiveSession(row.is_active);
           }
         )
         .subscribe();
@@ -196,17 +205,18 @@ export default function LiveTrackingMap({
 
     const load = async () => {
       try {
-        const res = await fetch(`/api/admin/moves/${moveId}/crew-status`);
+        const res = await fetch(jobApiPath);
         const data = await res.json();
         if (data?.liveStage != null) setLiveStage(data.liveStage);
         if (data?.sessionId) subscribeIfNeeded(data.sessionId);
+        setHasActiveSession(!!data?.hasActiveTracking);
       } catch {
         // ignore
       }
     };
 
     load();
-    const pollId = setInterval(load, 5000);
+    const pollId = setInterval(load, 8000);
 
     return () => {
       clearInterval(pollId);
@@ -216,12 +226,30 @@ export default function LiveTrackingMap({
       }
       subscribedSessionIdRef.current = null;
     };
-  }, [moveId]);
+  }, [jobId, jobApiPath]);
 
   const hasPosition = crew?.current_lat != null && crew?.current_lng != null;
   const center = hasPosition
     ? { longitude: crew!.current_lng!, latitude: crew!.current_lat! }
     : DEFAULT_CENTER;
+
+  const isDeliveryMode = !!deliveryId;
+  const sessionActive = hasActiveSession === true;
+  const gpsLive = hasPosition && sessionActive;
+
+  if (isDeliveryMode && !sessionActive && !loading) {
+    return (
+      <div className="px-6 py-8 text-center">
+        <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center mx-auto mb-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[var(--tx3)]"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned — waiting to start</p>
+        <p className="text-[10px] text-[var(--tx3)] mt-1">
+          Live tracking will activate when {crewName || "the crew"} starts this job and their GPS goes live
+        </p>
+      </div>
+    );
+  }
 
   if (!HAS_MAPBOX) {
     return (

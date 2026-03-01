@@ -161,9 +161,9 @@ export async function POST(req: NextRequest) {
           loginUrl,
         };
         await resend.emails.send({
-          from: "OPS+ <notifications@opsplus.co>",
+          from: "YUGO <notifications@opsplus.co>",
           to: emailTrimmed,
-          subject: `You're invited to OPS+ — ${nameTrimmed}`,
+          subject: `You're invited to YUGO — ${nameTrimmed}`,
           html: invitePartnerEmail(inviteParams),
           text: invitePartnerEmailText(inviteParams),
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

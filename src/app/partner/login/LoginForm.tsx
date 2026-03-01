@@ -111,13 +111,8 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
           {/* Brand */}
           <div style={{ marginBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <div style={{
-                padding: "5px 14px", borderRadius: 8,
-                background: "linear-gradient(135deg, rgba(201,169,98,0.12), rgba(201,169,98,0.04))",
-                border: "1px solid rgba(201,169,98,0.2)",
-              }}>
-                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 15, fontWeight: 600, letterSpacing: 2.5, color: "#C9A962" }}>OPS+</span>
-              </div>
+              <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 20, fontWeight: 600, letterSpacing: 4, color: "#C9A962" }}>YUGO</span>
+              <div style={{ height: 16, width: 1, background: "rgba(201,169,98,0.3)" }} />
               <span style={{ fontSize: 11, fontWeight: 600, color: "#C9A962", letterSpacing: 0.5 }}>Partner Portal</span>
             </div>
           </div>

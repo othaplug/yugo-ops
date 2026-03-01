@@ -103,13 +103,8 @@ export default function AdminLoginPage() {
         <div className="adm-card">
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <div style={{
-              padding: "6px 16px", borderRadius: 6,
-              background: "rgba(201,169,98,0.08)", border: "1px solid rgba(201,169,98,0.2)",
-            }}>
-              <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 16, fontWeight: 600, letterSpacing: 3, color: "#C9A962" }}>OPS+</span>
-            </div>
-            <div style={{ height: 20, width: 1, background: "#1E1E22" }} />
+            <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 20, fontWeight: 600, letterSpacing: 4, color: "#C9A962" }}>YUGO</span>
+            <div style={{ height: 16, width: 1, background: "#1E1E22" }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#4A4A4E" }}>Admin Console</span>
           </div>
 
@@ -117,7 +112,7 @@ export default function AdminLoginPage() {
             <>
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 20, fontWeight: 600, color: "#E8E5E0", marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>
-                  {isFirstTime ? "Welcome to OPS+" : "Welcome back"}
+                  {isFirstTime ? "Welcome to YUGO" : "Welcome back"}
                 </div>
                 <div style={{ fontSize: 12, color: "#4A4A4E" }}>
                   {isFirstTime ? "Sign in with your credentials" : "Sign in to your operations dashboard"}

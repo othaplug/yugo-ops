@@ -119,10 +119,10 @@ export async function POST(req: NextRequest) {
     const inviteParams = { contactName: contactNameTrimmed, companyName: nameTrimmed, email: emailTrimmed, typeLabel, tempPassword: password, loginUrl };
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: emailTrimmed,
-      replyTo: "OPS+ <notifications@opsplus.co>",
-      subject: "You're invited to OPS+ — Log in to continue setup",
+      replyTo: "YUGO <notifications@opsplus.co>",
+      subject: "You're invited to YUGO — Log in to continue setup",
       html: invitePartnerEmail(inviteParams),
       text: invitePartnerEmailText(inviteParams),
       headers: {

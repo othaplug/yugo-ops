@@ -75,9 +75,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           >
             <div className="h-14 px-4 flex items-center justify-between shrink-0 bg-transparent">
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.06)] backdrop-blur-xl border border-[rgba(201,169,98,0.35)] text-[var(--gold)] font-hero text-[13px] font-semibold tracking-[3px]">
-                  YUGO
-                </span>
+                <span className="font-hero text-[18px] tracking-[4px] text-[var(--gold)] font-semibold">YUGO</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}

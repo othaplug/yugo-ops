@@ -50,9 +50,9 @@ export async function POST(req: NextRequest) {
           property: property || "",
         });
         await resend.emails.send({
-          from: "OPS+ <notifications@opsplus.co>",
+          from: "YUGO <notifications@opsplus.co>",
           to: emailToSend,
-          subject: "Referral received — OPS+",
+          subject: "Referral received — YUGO",
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });

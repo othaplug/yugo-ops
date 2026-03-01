@@ -56,9 +56,9 @@ export async function POST(
     });
 
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: toEmail,
-      subject: `Welcome to OPS+ — ${org.name}`,
+      subject: `Welcome to YUGO — ${org.name}`,
       html,
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

@@ -21,7 +21,7 @@ export default function CookiesPage() {
           <strong>Last updated:</strong> February 2025
         </p>
         <p className="text-[14px] text-[#666] leading-relaxed mb-6">
-          This Cookie Policy explains how Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) uses cookies and similar technologies when you use our websites, applications, and the OPS+ platform. This policy should be read together with our{" "}
+          This Cookie Policy explains how Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) uses cookies and similar technologies when you use our websites, applications, and the YUGO platform. This policy should be read together with our{" "}
           <Link href="/privacy" className="text-[#C9A962] hover:underline">
             Privacy Policy
           </Link>

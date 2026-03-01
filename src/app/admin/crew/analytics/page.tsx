@@ -1,6 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import BackButton from "../../components/BackButton";
-import Link from "next/link";
+import CrewAnalyticsClient from "./CrewAnalyticsClient";
 
 export default async function CrewAnalyticsPage({
   searchParams,
@@ -31,9 +30,6 @@ export default async function CrewAnalyticsPage({
   const crews = crewsRes.data || [];
   const signOffs = signOffsRes.data || [];
   const sessions = sessionsRes.data || [];
-
-  const moveIds = sessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
-  const deliveryIds = sessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
 
   const signOffByJob = new Map<string, { rating: number | null }>();
   signOffs.forEach((s) => signOffByJob.set(`${s.job_id}:${s.job_type}`, { rating: s.satisfaction_rating }));
@@ -88,82 +84,5 @@ export default async function CrewAnalyticsPage({
     };
   });
 
-  const sorted = analytics.sort((a, b) => b.jobsCompleted - a.jobsCompleted);
-
-  return (
-    <div className="max-w-[900px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4 flex items-center justify-between">
-        <BackButton label="Back" />
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/crew"
-            className="text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]"
-          >
-            Tracking
-          </Link>
-          <span className="text-[var(--tx3)]">|</span>
-          <span className="text-[12px] font-medium text-[var(--tx)]">
-            {from} → {to}
-          </span>
-        </div>
-      </div>
-      <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] mb-1">Crew Performance</h1>
-      <p className="text-[13px] text-[var(--tx3)] mb-6">
-        Satisfaction, sign-off rate, and average job duration by crew.
-      </p>
-
-      <div className="space-y-4">
-        {sorted.map((a) => (
-          <div
-            key={a.id}
-            className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h2 className="font-hero text-[15px] font-bold text-[var(--tx)]">{a.name}</h2>
-                {a.members.length > 0 && (
-                  <p className="text-[11px] text-[var(--tx3)] mt-0.5">{a.members.join(", ")}</p>
-                )}
-              </div>
-              <span className="text-[11px] font-semibold text-[var(--tx3)]">
-                {a.jobsCompleted} job{a.jobsCompleted !== 1 ? "s" : ""} completed
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-[12px]">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">
-                  Avg satisfaction
-                </div>
-                <div className="text-[15px] font-bold text-[var(--tx)]">
-                  {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">
-                  Sign-off rate
-                </div>
-                <div className="text-[15px] font-bold text-[var(--tx)]">
-                  {a.signOffRate}%
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">
-                  Avg job time
-                </div>
-                <div className="text-[15px] font-bold text-[var(--tx)]">
-                  {a.avgDuration > 0 ? `${a.avgDuration}m` : "—"}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {sorted.length === 0 && (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-8 text-center text-[var(--tx3)] text-[13px]">
-          No crew activity in this date range.
-        </div>
-      )}
-    </div>
-  );
+  return <CrewAnalyticsClient analytics={analytics} from={from} to={to} />;
 }

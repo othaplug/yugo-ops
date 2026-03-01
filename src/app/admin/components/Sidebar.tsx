@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
+import YugoLogo from "@/components/YugoLogo";
 
 const NAV = [
   { label: "Dashboard", items: [
@@ -40,10 +41,8 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[220px] bg-[var(--bg2)] border-r border-[var(--brd)] overflow-y-auto z-50">
       {/* Logo */}
-      <div className="px-4 py-[18px] border-b border-[var(--brd)]">
-        <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.06)] backdrop-blur-xl border border-[rgba(201,169,98,0.35)] text-[var(--gold)] font-heading text-[13px] font-semibold tracking-[3px] shadow-[0_0_24px_rgba(201,169,98,0.06),inset_0_1px_0_rgba(255,255,255,0.03)]">
-          OPS+
-        </span>
+      <div className="px-5 py-[18px] border-b border-[var(--brd)]">
+        <YugoLogo size={18} />
       </div>
 
       {/* Nav Sections */}

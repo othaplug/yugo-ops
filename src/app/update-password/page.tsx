@@ -98,14 +98,10 @@ export default function UpdatePasswordPage() {
         <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "36px 40px", boxShadow: isLight ? "0 4px 24px rgba(0,0,0,0.04)" : "0 4px 24px rgba(0,0,0,0.2)" }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <h1 style={{
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              padding: "8px 20px", borderRadius: 9999,
-              background: isLight ? "rgba(201,169,98,0.1)" : "rgba(201,169,98,0.08)",
-              border: `1px solid ${isLight ? "rgba(201,169,98,0.45)" : "rgba(201,169,98,0.4)"}`,
               color: "#C9A962", fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: 18, fontWeight: 600, letterSpacing: 3, margin: 0,
+              fontSize: 22, fontWeight: 600, letterSpacing: 4, margin: 0,
             }}>
-              OPS+
+              YUGO
             </h1>
           </div>
 

@@ -15,7 +15,7 @@ export function generateInvoicePDF(invoice: {
   // Header
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.text("OPS+", 20, 30);
+  doc.text("YUGO", 20, 30);
   doc.setFontSize(8);
   doc.setTextColor(150);
   doc.text("Invoice", 20, 36);
@@ -58,7 +58,7 @@ export function generateInvoicePDF(invoice: {
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(150);
-  doc.text("OPS+ • opsplus.co", 20, 280);
+  doc.text("YUGO • opsplus.co", 20, 280);
 
   return doc;
 }
@@ -88,7 +88,7 @@ export function generateDeliveryPDF(delivery: {
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...dark);
-  doc.text("OPS+", 20, 22);
+  doc.text("YUGO", 20, 22);
   doc.setFontSize(8);
   doc.setTextColor(...gray);
   doc.text("Project Overview", 20, 28);
@@ -194,7 +194,7 @@ export function generateDeliveryPDF(delivery: {
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(...gray);
-  doc.text("OPS+ • opsplus.co", 20, 285);
+  doc.text("YUGO • opsplus.co", 20, 285);
 
   return doc;
 }
@@ -232,7 +232,7 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...dark);
-  doc.text("OPS+", 20, 22);
+  doc.text("YUGO", 20, 22);
   doc.setFontSize(8);
   doc.setTextColor(...gray);
   doc.text("Client Sign-Off Receipt", 20, 28);
@@ -366,7 +366,7 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
     "By signing, the client confirms all items were received as described. Concealed damage must be reported within 24 hours.",
     20, y, { maxWidth: 170 }
   );
-  doc.text("OPS+ • opsplus.co", 20, 285);
+  doc.text("YUGO • opsplus.co", 20, 285);
 
   return doc;
 }

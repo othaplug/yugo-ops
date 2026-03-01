@@ -57,9 +57,9 @@ export async function POST(
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: emailTrimmed,
-      subject: "You're invited to OPS+ Partner Portal",
+      subject: "You're invited to YUGO Partner Portal",
       html: invitePartnerEmail({
         contactName: nameTrimmed,
         companyName: org.name,

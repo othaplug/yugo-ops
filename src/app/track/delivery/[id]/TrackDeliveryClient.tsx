@@ -60,9 +60,7 @@ export default function TrackDeliveryClient({
     <div className="min-h-screen bg-[#0F0F0F] text-[#E8E5E0] font-sans">
       <div className="max-w-[560px] mx-auto px-5 py-8 md:py-12">
         <div className="text-center mb-8">
-          <span className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[rgba(201,169,98,0.08)] border border-[rgba(201,169,98,0.35)] text-[#C9A962] font-semibold tracking-widest text-sm">
-            OPS+
-          </span>
+          <span className="text-[#C9A962] font-semibold text-[22px] tracking-[4px]" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>YUGO</span>
         </div>
         <div className="text-[9px] font-bold tracking-widest uppercase text-[#C9A962] mb-2">Project Tracking</div>
         <h1 className="text-xl md:text-2xl font-bold mb-6">
@@ -121,7 +119,7 @@ export default function TrackDeliveryClient({
         </div>
 
         <p className="text-center text-[11px] text-[#666] mt-8">
-          <Link href="/" className="text-[#C9A962] hover:underline">OPS+</Link> · Powered by OPS+
+          <Link href="/" className="text-[#C9A962] hover:underline">YUGO</Link> · Powered by YUGO
         </p>
       </div>
     </div>

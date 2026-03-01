@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
 
     const resend = new Resend(apiKey);
     const { data, error } = await resend.emails.send({
-      from: "OPS+ <notifications@opsplus.co>",
+      from: "YUGO <notifications@opsplus.co>",
       to: email,
-      subject: "OPS+ Test Email",
+      subject: "YUGO Test Email",
       html: `<p>If you received this, Resend is working correctly.</p>`,
     });
 

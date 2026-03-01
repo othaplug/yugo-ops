@@ -1,9 +1,34 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+
+function MyLocationButtonLeaflet() {
+  const map = useMap();
+  const handleClick = () => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14),
+      () => {}
+    );
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="absolute bottom-14 right-4 z-[1000] p-2.5 bg-white rounded-lg shadow-md border border-[#E8E4DF] hover:bg-[#F5F3F0] transition-colors"
+      title="My location"
+      aria-label="Center on my location"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    </button>
+  );
+}
 
 interface ActiveDelivery {
   id: string;
@@ -34,6 +59,25 @@ const destIcon = new L.DivIcon({
   iconAnchor: [7, 7],
 });
 
+function FitBounds({ deliveries }: { deliveries: ActiveDelivery[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (deliveries.length === 0) return;
+    const pts = deliveries
+      .filter((d) => d.crew_lat != null)
+      .flatMap((d) => {
+        const arr: L.LatLngTuple[] = [[d.crew_lat!, d.crew_lng!]];
+        if (d.dest_lat != null && d.dest_lng != null) arr.push([d.dest_lat, d.dest_lng]);
+        return arr;
+      });
+    if (pts.length > 0) {
+      const bounds = L.latLngBounds(pts);
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [map, deliveries]);
+  return null;
+}
+
 export default function PartnerMapLeaflet({
   center,
   deliveries,
@@ -43,31 +87,15 @@ export default function PartnerMapLeaflet({
   deliveries: ActiveDelivery[];
   onSelect: (d: ActiveDelivery) => void;
 }) {
-  const mapRef = useRef<L.Map | null>(null);
-
-  useEffect(() => {
-    if (mapRef.current && deliveries.length > 0) {
-      const bounds = L.latLngBounds(
-        deliveries
-          .filter((d) => d.crew_lat != null)
-          .flatMap((d) => {
-            const pts: L.LatLngTuple[] = [[d.crew_lat!, d.crew_lng!]];
-            if (d.dest_lat != null && d.dest_lng != null) pts.push([d.dest_lat, d.dest_lng]);
-            return pts;
-          })
-      );
-      if (bounds.isValid()) mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [deliveries]);
-
   return (
+    <div className="relative w-full h-full">
     <MapContainer
       center={[center.latitude, center.longitude]}
       zoom={12}
       style={{ width: "100%", height: "100%" }}
-      ref={mapRef}
       zoomControl={false}
     >
+      <FitBounds deliveries={deliveries} />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         attribution=""
@@ -95,6 +123,8 @@ export default function PartnerMapLeaflet({
           </div>
         );
       })}
+      <MyLocationButtonLeaflet />
     </MapContainer>
+    </div>
   );
 }

@@ -14,15 +14,15 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
   if (error || !delivery) notFound();
 
-  // Redirect UUID URLs to canonical short URL: /admin/deliveries/PJ1234
   if (byUuid && delivery.delivery_number?.trim()) {
     redirect(getDeliveryDetailPath(delivery));
   }
 
-  const [{ data: org }, { data: orgs }] = await Promise.all([
+  const [{ data: org }, { data: orgs }, { data: crews }] = await Promise.all([
     supabase.from("organizations").select("email").eq("name", delivery.client_name).limit(1).maybeSingle(),
     supabase.from("organizations").select("id, name, type").order("name"),
+    supabase.from("crews").select("id, name, members").order("name"),
   ]);
 
-  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} organizations={orgs || []} />;
+  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} organizations={orgs || []} crews={crews || []} />;
 }

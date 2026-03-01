@@ -25,27 +25,34 @@ export async function POST(req: NextRequest) {
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
     const deliveryNumber = `PJ${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
-    const itemsRaw = (body.items || "").trim();
-    const items = itemsRaw ? itemsRaw.split("\n").filter((i: string) => i.trim()) : [];
+    const items = Array.isArray(body.items)
+      ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())
+      : typeof body.items === "string"
+        ? body.items.split("\n").map((i: string) => i.trim()).filter(Boolean)
+        : [];
+
+    const insertPayload: Record<string, unknown> = {
+      delivery_number: deliveryNumber,
+      organization_id: orgId,
+      client_name: org?.name || "",
+      customer_name: customerName,
+      customer_email: (body.customer_email || "").trim() || null,
+      customer_phone: (body.customer_phone || "").trim() || null,
+      pickup_address: (body.pickup_address || "").trim() || null,
+      delivery_address: deliveryAddress,
+      scheduled_date: scheduledDate,
+      time_slot: (body.time_slot || "").trim() || null,
+      delivery_window: (body.delivery_window || "").trim() || null,
+      items,
+      instructions: (body.instructions || "").trim() || null,
+      special_handling: !!body.special_handling,
+      status: "scheduled",
+      category: org?.type || "retail",
+    };
 
     const { data: created, error: dbError } = await supabase
       .from("deliveries")
-      .insert({
-        delivery_number: deliveryNumber,
-        organization_id: orgId,
-        client_name: org?.name || "",
-        customer_name: customerName,
-        customer_email: (body.customer_email || "").trim() || null,
-        pickup_address: (body.pickup_address || "").trim() || null,
-        delivery_address: deliveryAddress,
-        scheduled_date: scheduledDate,
-        time_slot: (body.time_slot || "").trim() || null,
-        items,
-        instructions: (body.instructions || "").trim() || null,
-        special_handling: !!body.special_handling,
-        status: "scheduled",
-        category: org?.type || "retail",
-      })
+      .insert(insertPayload as Record<string, never>)
       .select("id, delivery_number")
       .single();
 
