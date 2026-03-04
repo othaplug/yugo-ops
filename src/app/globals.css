@@ -441,6 +441,30 @@ input[type="time"] {
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.08));
 }
 
+/* YUGO logo – no black wrapper/background; subtle glow only */
+.yugo-logo-glow,
+.yugo-logo-glow img,
+.yugo-logo-no-bg,
+.yugo-logo-transparent {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+/* Black logo on light: ensure img shows transparency, no dark fill */
+.yugo-logo-transparent {
+  background-color: transparent !important;
+  opacity: 1;
+}
+.yugo-logo-glow {
+  filter: drop-shadow(0 0 2px rgba(201, 169, 98, 0.35)) drop-shadow(0 0 4px rgba(201, 169, 98, 0.12));
+}
+[data-theme="light"] .yugo-logo-glow:not(.yugo-logo-black) {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.06)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.04));
+}
+.yugo-logo-glow.yugo-logo-black {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.08)) drop-shadow(0 0 3px rgba(0, 0, 0, 0.05));
+}
+
 /* Prototype component classes */
 .mc {
   background: var(--card);

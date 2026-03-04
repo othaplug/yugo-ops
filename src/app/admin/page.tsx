@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTodayString } from "@/lib/business-timezone";
 import AdminPageClient from "./AdminPageClient";
 
 export default async function AdminPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
 
   const [
     { data: deliveries },

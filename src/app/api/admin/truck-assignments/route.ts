@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { getTodayString } from "@/lib/business-timezone";
 
 /** GET: List truck assignments for a date. Query: ?date=YYYY-MM-DD */
 export async function GET(req: NextRequest) {
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
   if (authErr) return authErr;
 
   const date = (req.nextUrl.searchParams.get("date") || "").trim();
-  const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().split("T")[0];
+  const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : getTodayString();
 
   const admin = createAdminClient();
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     const truckId = (body.truckId || "").toString().trim();
     const teamId = (body.teamId || "").toString().trim();
     const date = (body.date || "").toString().trim();
-    const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().split("T")[0];
+    const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : getTodayString();
 
     if (!truckId || !teamId) {
       return NextResponse.json({ error: "truckId and teamId required" }, { status: 400 });
@@ -83,7 +84,7 @@ export async function DELETE(req: NextRequest) {
 
   const truckId = req.nextUrl.searchParams.get("truckId")?.trim();
   const date = req.nextUrl.searchParams.get("date")?.trim();
-  const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().split("T")[0];
+  const useDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : getTodayString();
 
   if (!truckId) {
     return NextResponse.json({ error: "truckId required" }, { status: 400 });

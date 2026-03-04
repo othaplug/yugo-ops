@@ -106,9 +106,15 @@ export async function POST(
 
     if (createRes.errors && createRes.errors.length > 0) {
       const first = createRes.errors[0] as { code?: string; message?: string; detail?: string; category?: string };
-      console.error("[payment-link] Square API error:", first?.code, first?.message || first?.detail);
+      const squareCode = first?.code ?? "UNKNOWN";
+      const squareMsg = first?.message || first?.detail || "";
+      console.error("[payment-link] Square API error:", squareCode, squareMsg);
       return NextResponse.json(
-        { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
+        {
+          error: "Payment is temporarily unavailable. Please contact us to arrange payment.",
+          code: squareCode,
+          detail: squareMsg,
+        },
         { status: 502 }
       );
     }
@@ -117,16 +123,24 @@ export async function POST(
     if (!url) {
       console.error("[payment-link] No URL in Square response");
       return NextResponse.json(
-        { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
+        {
+          error: "Payment is temporarily unavailable. Please contact us to arrange payment.",
+          code: "NO_PAYMENT_URL",
+        },
         { status: 502 }
       );
     }
 
     return NextResponse.json({ url, paymentUrl: url });
   } catch (err: unknown) {
-    console.error("[payment-link]", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[payment-link] Exception:", message, err);
     return NextResponse.json(
-      { error: "Payment is temporarily unavailable. Please contact us to arrange payment." },
+      {
+        error: "Payment is temporarily unavailable. Please contact us to arrange payment.",
+        code: "SERVER_ERROR",
+        detail: process.env.NODE_ENV === "development" ? message : undefined,
+      },
       { status: 500 }
     );
   }

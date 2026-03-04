@@ -1,8 +1,15 @@
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
 import TrackDeliveryClient from "./TrackDeliveryClient";
+
+export const metadata: Metadata = {
+  title: "Track Your Delivery — YUGO",
+  robots: "noindex, nofollow",
+};
+export const dynamic = "force-dynamic";
 
 export default async function TrackDeliveryPage({
   params,

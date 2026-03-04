@@ -22,7 +22,7 @@ type ExtraItem = {
   added_at?: string;
 };
 
-export default function TrackInventory({ moveId, token }: { moveId: string; token: string }) {
+export default function TrackInventory({ moveId, token, moveComplete = false }: { moveId: string; token: string; moveComplete?: boolean }) {
   const { toast } = useToast();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
@@ -150,13 +150,15 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           Inventory
         </h3>
         <p className="text-[12px] text-[#666] mb-4">No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
-        <button
-          type="button"
-          onClick={() => setAddExtraOpen(true)}
-          className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
-        >
-          + Add Extra Item
-        </button>
+        {!moveComplete && (
+          <button
+            type="button"
+            onClick={() => setAddExtraOpen(true)}
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+          >
+            + Add Extra Item
+          </button>
+        )}
         {addExtraOpen && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">
@@ -270,15 +272,17 @@ export default function TrackInventory({ moveId, token }: { moveId: string; toke
           );
         })}
       </div>
-      <div className="px-5 py-4 border-t border-[#E7E5E4]">
-        <button
-          type="button"
-          onClick={() => setAddExtraOpen(true)}
-          className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
-        >
-          + Add Extra Item
-        </button>
-      </div>
+      {!moveComplete && (
+        <div className="px-5 py-4 border-t border-[#E7E5E4]">
+          <button
+            type="button"
+            onClick={() => setAddExtraOpen(true)}
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+          >
+            + Add Extra Item
+          </button>
+        </div>
+      )}
       {addExtraOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">

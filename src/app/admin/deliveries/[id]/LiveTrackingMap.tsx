@@ -12,6 +12,13 @@ const LiveTrackingMapLeaflet = dynamic(
   { ssr: false }
 );
 
+/** GeoJSON LineString feature for the driving route */
+type RouteGeoJson = {
+  type: "Feature";
+  properties: Record<string, unknown>;
+  geometry: { type: "LineString"; coordinates: [number, number][] };
+} | null;
+
 const MapboxMap = dynamic(
   () => import("react-map-gl/mapbox").then((mod) => {
     const M = mod.default;
@@ -28,6 +35,7 @@ const MapboxMap = dynamic(
       mapStyle,
       destination,
       routeLineColor,
+      routeGeoJson,
     }: {
       center: { longitude: number; latitude: number };
       hasPosition: boolean;
@@ -37,21 +45,21 @@ const MapboxMap = dynamic(
       mapStyle: string;
       destination?: { lat: number; lng: number };
       routeLineColor?: string;
+      routeGeoJson?: RouteGeoJson;
     }) {
-      const routeGeoJson =
-        hasPosition && crew && destination
-          ? {
-              type: "Feature" as const,
-              properties: {},
-              geometry: {
-                type: "LineString" as const,
-                coordinates: [
-                  [crew.current_lng, crew.current_lat],
-                  [destination.lng, destination.lat],
-                ],
-              },
-            }
-          : null;
+      const lineGeoJson = routeGeoJson ?? (hasPosition && crew && destination
+        ? {
+            type: "Feature" as const,
+            properties: {},
+            geometry: {
+              type: "LineString" as const,
+              coordinates: [
+                [crew.current_lng, crew.current_lat],
+                [destination.lng, destination.lat],
+              ] as [number, number][],
+            },
+          }
+        : null);
 
       return (
         <M
@@ -60,8 +68,8 @@ const MapboxMap = dynamic(
           style={{ width: "100%", height: "100%" }}
           mapStyle={mapStyle}
         >
-          {routeGeoJson && (
-            <Source id="route-tracking" type="geojson" data={routeGeoJson}>
+          {lineGeoJson && (
+            <Source id="route-tracking" type="geojson" data={lineGeoJson}>
               <Layer
                 id="route-tracking-layer"
                 type="line"
@@ -80,9 +88,11 @@ const MapboxMap = dynamic(
           )}
           {hasPosition && crew && (
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
-              <div className="truck-marker-animated" style={{ width: 44, height: 44 }}>
-                <img src="/crew-car.png" alt="" width={44} height={44} className="block drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]" />
-              </div>
+              <div
+                className="w-4 h-4 rounded-full border-2 border-white shadow-md"
+                style={{ backgroundColor: routeLineColor ?? "#8B5CF6" }}
+                title={crewName || crew.name || "Crew"}
+              />
             </Marker>
           )}
           <Nav position="bottom-right" showCompass showZoom />
@@ -129,6 +139,8 @@ export default function LiveTrackingMap({
   const [liveStage, setLiveStage] = useState<string | null>(null);
   const [hasActiveSession, setHasActiveSession] = useState<boolean | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [routeGeoJson, setRouteGeoJson] = useState<RouteGeoJson>(null);
+  const [routePositions, setRoutePositions] = useState<[number, number][]>([]);
   const supabase = createClient();
   const { theme } = useTheme();
   const mapStyle = theme === "light"
@@ -233,6 +245,37 @@ export default function LiveTrackingMap({
     ? { longitude: crew!.current_lng!, latitude: crew!.current_lat! }
     : DEFAULT_CENTER;
 
+  // Fetch real driving route (roads, not straight line) when we have crew position and destination
+  useEffect(() => {
+    if (!hasPosition || !crew || !destination) {
+      setRouteGeoJson(null);
+      setRoutePositions([]);
+      return;
+    }
+    const from = `${crew.current_lng},${crew.current_lat}`;
+    const to = `${destination.lng},${destination.lat}`;
+    fetch(`/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const coordsList = data?.coordinates;
+        if (Array.isArray(coordsList) && coordsList.length > 0) {
+          setRouteGeoJson({
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: coordsList },
+          });
+          setRoutePositions(coordsList.map((c: [number, number]) => [c[1], c[0]]));
+        } else {
+          setRouteGeoJson(null);
+          setRoutePositions([]);
+        }
+      })
+      .catch(() => {
+        setRouteGeoJson(null);
+        setRoutePositions([]);
+      });
+  }, [hasPosition, crew?.current_lat, crew?.current_lng, destination?.lat, destination?.lng]);
+
   const isDeliveryMode = !!deliveryId;
   const sessionActive = hasActiveSession === true;
   const gpsLive = hasPosition && sessionActive;
@@ -307,6 +350,7 @@ export default function LiveTrackingMap({
               crewName={crewName}
               destination={destination}
               mapTheme={theme}
+              routePositions={routePositions.length > 0 ? routePositions : undefined}
             />
           )}
         </div>
@@ -372,6 +416,7 @@ export default function LiveTrackingMap({
             mapStyle={mapStyle}
             destination={destination ?? undefined}
             routeLineColor={routeLineColor}
+            routeGeoJson={routeGeoJson ?? undefined}
           />
         )}
       </div>

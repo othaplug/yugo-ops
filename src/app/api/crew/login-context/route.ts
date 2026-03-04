@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getTodayString, getLocalDateDisplay } from "@/lib/business-timezone";
 
 /** GET: Returns crew lead + team members for device-based login. Query: ?deviceId=xxx. Rate limited per deviceId. */
 export async function GET(req: NextRequest) {
@@ -76,10 +77,7 @@ export async function GET(req: NextRequest) {
     const truckName = truckRow?.name || "Truck";
     const teamName = teamRow?.name || "Team";
 
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const d = new Date();
-    const dateStr = dayNames[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
+    const dateStr = getLocalDateDisplay(new Date());
 
     return NextResponse.json({
       hasDevice: true,

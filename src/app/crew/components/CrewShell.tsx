@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider } from "@/app/admin/components/ThemeContext";
 import { ToastProvider } from "@/app/admin/components/Toast";
 import { Icons } from "@/app/admin/components/SidebarIcons";
+import YugoLogo from "@/components/YugoLogo";
 import CrewSettingsDropdown from "./CrewSettingsDropdown";
 
 const CREW_PAGE_TITLES: Record<string, { title: string; subtitle: string; hideHeaderTitle?: boolean }> = {
@@ -75,7 +76,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           >
             <div className="h-14 px-4 flex items-center justify-between shrink-0 bg-transparent">
               <div className="flex items-center gap-1.5">
-                <span className="font-hero text-[18px] tracking-[4px] text-[var(--gold)] font-semibold">YUGO</span>
+                <YugoLogo size={18} variant="gold" />
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}

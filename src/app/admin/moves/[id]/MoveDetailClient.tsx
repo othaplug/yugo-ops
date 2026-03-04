@@ -202,8 +202,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
               {editingCard === "status" ? (
                 <select
-                  defaultValue={normalizeStatus(move.status) || move.status || "confirmed"}
                   className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  value={(() => {
+                    const s = normalizeStatus(move.status) || move.status || "confirmed";
+                    return s === "paid" ? "scheduled" : s;
+                  })()}
                   onChange={async (e) => {
                     const v = e.target.value as string;
                     const isCurrentlyCompleted = isMoveStatusCompleted(move.status);
@@ -246,9 +249,17 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     if (data) setMove(data);
                     setEditingCard(null);
                     router.refresh();
+                    // Sync status to HubSpot deal (fire-and-forget)
+                    if (move.hubspot_deal_id) {
+                      fetch("/api/hubspot/update-deal", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ dealId: move.hubspot_deal_id, properties: { dealstage: v } }),
+                      }).catch(() => {});
+                    }
                   }}
                 >
-                  {MOVE_STATUS_OPTIONS.map((s) => (
+                  {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "paid").map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
@@ -450,45 +461,43 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Financial Snapshot */}
       <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Financial Snapshot</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
           <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/15 to-[var(--gold)]/5 border-2 border-[var(--gold)]/40 px-4 py-3 shadow-sm">
             <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
             <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
           </div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(isPaid ? 0 : balanceDue)}</div></div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 flex flex-wrap items-center gap-3">
           <div>
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span>
-            {isPaid ? (
-              <div className="mt-0.5"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40">Paid</span></div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                <span className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(balanceDue)}</span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`/api/admin/moves/${move.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
-                      if (data) setMove(data);
-                      router.refresh();
-                      toast("Move marked as paid", "check");
-                    } catch (err) {
-                      toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
-                    }
-                  }}
-                  className="text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
-                >
-                  Mark as Paid
-                </button>
-              </div>
-            )}
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
+            <div className="mt-0.5 text-[13px] font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit received"}</div>
           </div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Status</span><div className="text-[13px] font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit Received"}</div></div>
+          {!isPaid && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/admin/moves/${move.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
+                  if (data) setMove(data);
+                  router.refresh();
+                  toast("Move marked as paid", "check");
+                } catch (err) {
+                  toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
+                }
+              }}
+              className="text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
+            >
+              Mark as Paid
+            </button>
+          )}
         </div>
       </div>
 

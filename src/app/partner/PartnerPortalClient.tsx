@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
 import { formatCurrency } from "@/lib/format-currency";
-import PartnerSignOut from "./PartnerSignOut";
 import PartnerDeliveriesTab from "./tabs/PartnerDeliveriesTab";
 import PartnerCalendarTab from "./tabs/PartnerCalendarTab";
 import PartnerInvoicesTab from "./tabs/PartnerInvoicesTab";
@@ -15,6 +14,8 @@ import PartnerScheduleModal from "./PartnerScheduleModal";
 import PartnerShareModal from "./PartnerShareModal";
 import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
 import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
+import PartnerSettingsPanel from "./PartnerSettingsPanel";
+import YugoLogo from "@/components/YugoLogo";
 
 interface Props {
   orgId: string;
@@ -134,6 +135,26 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [detailTarget, setDetailTarget] = useState<Delivery | null>(null);
   const [editTarget, setEditTarget] = useState<Delivery | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const [partnerTheme, setPartnerTheme] = useState<string>("light");
+
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("partner-theme") : null;
+    const resolved = stored === "dark" ? "dark" : stored === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : "light";
+    setPartnerTheme(resolved);
+    document.documentElement.setAttribute("data-theme", resolved);
+    document.documentElement.classList.toggle("dark", resolved === "dark");
+
+    const onThemeChange = (e: Event) => {
+      const r = (e as CustomEvent).detail || "light";
+      setPartnerTheme(r);
+    };
+    window.addEventListener("partner-theme-change", onThemeChange);
+    return () => window.removeEventListener("partner-theme-change", onThemeChange);
+  }, []);
 
   const [loginInfo, setLoginInfo] = useState<{ isFirstLogin: boolean; passwordChanged: boolean; loginCount: number; lastLoginAt: string | null } | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -189,13 +210,13 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       ];
 
   return (
-    <div className="min-h-screen bg-[#F5F3F0]" data-theme="light">
+    <div className={`min-h-screen ${partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"}`} data-theme={partnerTheme}>
       {/* Header */}
-      <header className="bg-white/95 backdrop-blur border-b border-[#E8E4DF] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="font-hero text-[19px] tracking-[1.5px] text-[#1A1A1A] font-semibold">YUGO</span>
-          <span className="text-[13px] text-[#666] font-medium hidden sm:inline">{orgName}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-[8px] font-bold tracking-[2px] uppercase bg-[#C9A962]/12 text-[#8B6914] border border-[#C9A962]/25">BETA</span>
+          <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
+          <span className="text-[13px] text-[var(--tx3)] font-medium hidden sm:inline">{orgName}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-[8px] font-bold tracking-[2px] uppercase bg-[var(--gold)]/12 text-[var(--gold)] border border-[var(--gold)]/25">BETA</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -217,10 +238,19 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               />
             )}
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+            title="Settings"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </button>
+          <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer" onClick={() => setSettingsOpen(true)}>
             {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase() || contactName.charAt(1)?.toUpperCase() || ""}
           </div>
-          <PartnerSignOut />
         </div>
       </header>
 
@@ -438,22 +468,27 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           <div className="mb-8"><DeliveryKPIs data={data} /></div>
         )}
 
-        {/* Tabs */}
+        {/* Tabs — fixed min-widths so counts (e.g. Today (0)) don't cause layout shift */}
         <div className="bg-white rounded-2xl border border-[#E8E4DF] shadow-sm overflow-hidden mb-4">
           <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[#E8E4DF] px-2 sm:px-4">
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
-                className={`px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
-                  activeTab === t.key
-                    ? "border-[#C9A962] text-[#C9A962]"
-                    : "border-transparent text-[#888] hover:text-[#1A1A1A]"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+            {tabs.map((t) => {
+              const hasCount = /\(\d+\)$/.test(t.label);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveTab(t.key)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
+                    hasCount ? "min-w-[7rem]" : "min-w-[5rem]"
+                  } ${
+                    activeTab === t.key
+                      ? "border-[#C9A962] text-[#C9A962]"
+                      : "border-transparent text-[#888] hover:text-[#1A1A1A]"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
 
         {/* Tab Content */}
@@ -588,6 +623,14 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           onSaved={() => { setEditTarget(null); loadData(); }}
         />
       )}
+      <PartnerSettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        orgName={orgName}
+        contactName={contactName}
+        userEmail={userEmail}
+        orgType={orgType}
+      />
     </div>
   );
 }

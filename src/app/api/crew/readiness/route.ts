@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { getTodayString } from "@/lib/business-timezone";
 
 const FALLBACK_ITEMS = [
   { label: "Truck in good condition", status: "ok" as const, note: null },
@@ -18,7 +19,7 @@ export async function GET() {
   const payload = token ? verifyCrewToken(token) : null;
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const admin = createAdminClient();
 
   const [{ data: check }, { data: settings }] = await Promise.all([
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
   const passed = flaggedItems.length === 0;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const admin = createAdminClient();
 
   const { data: existing } = await admin

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 export default function ChangePasswordGate({ children }: { children: React.ReactNode }) {
   const [showModal, setShowModal] = useState(false);
@@ -71,7 +72,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
-              <span className="font-hero text-[22px] tracking-[4px] text-[var(--gold)] mb-4 inline-block">YUGO</span>
+              <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
               <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to YUGO</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
             </div>

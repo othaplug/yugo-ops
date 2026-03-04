@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 
 export async function GET(
   req: NextRequest,
@@ -268,6 +269,9 @@ export async function POST(
         updated_at: now,
       })
       .eq("id", entityId);
+    if (jobType === "move") {
+      syncDealStageByMoveId(entityId, "completed").catch(() => {});
+    }
   }
 
   return NextResponse.json(inserted);

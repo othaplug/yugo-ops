@@ -21,6 +21,7 @@ import { formatCurrency } from "@/lib/format-currency";
 const PROGRESS_STEPS = ["pending", "confirmed", "in-transit", "delivered"] as const;
 const PROGRESS_LABELS: Record<string, string> = {
   pending: "Pending",
+  pending_approval: "Pending approval",
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   "in-transit": "In Transit",
@@ -87,6 +88,7 @@ export default function DeliveryDetailClient({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState(false);
+  const [approveDeclineLoading, setApproveDeclineLoading] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
   const [copyingLink, setCopyingLink] = useState(false);
 
@@ -98,6 +100,7 @@ export default function DeliveryDetailClient({
 
   const statusColorMap: Record<string, string> = {
     pending: "text-amber-600 bg-amber-500/10",
+    pending_approval: "text-amber-600 bg-amber-500/10",
     scheduled: "text-blue-600 bg-blue-500/10",
     confirmed: "text-emerald-600 bg-emerald-500/10",
     "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
@@ -154,6 +157,24 @@ export default function DeliveryDetailClient({
     toast(crewId ? `Assigned to ${crew?.name}` : "Crew unassigned", "check");
   };
 
+  const handleApproveDecline = async (newStatus: "scheduled" | "cancelled") => {
+    setApproveDeclineLoading(true);
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", delivery.id)
+      .select()
+      .single();
+    setApproveDeclineLoading(false);
+    if (error) {
+      toast(error.message || "Failed to update", "alertTriangle");
+      return;
+    }
+    if (data) setDelivery(data);
+    router.refresh();
+    toast(newStatus === "scheduled" ? "Delivery approved" : "Delivery declined", "check");
+  };
+
   const items = Array.isArray(delivery.items) ? delivery.items : [];
   const itemsDisplay = items.map((i: any) => {
     if (typeof i === "string") return { name: i, qty: 1 };
@@ -167,6 +188,32 @@ export default function DeliveryDetailClient({
       {completed && (
         <div className="mt-3 rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
           This delivery is {delivery.status}. Some fields are locked.
+        </div>
+      )}
+
+      {delivery.status === "pending_approval" && (
+        <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[12px] font-medium text-amber-800 dark:text-amber-200">
+            Partner requested this delivery. Approve to confirm or decline to cancel.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleApproveDecline("scheduled")}
+              disabled={approveDeclineLoading}
+              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            >
+              {approveDeclineLoading ? "…" : "Approve"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApproveDecline("cancelled")}
+              disabled={approveDeclineLoading}
+              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              Decline
+            </button>
+          </div>
         </div>
       )}
 

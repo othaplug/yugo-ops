@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 
 export async function POST(req: NextRequest) {
   const toggles = await getPlatformToggles();
@@ -76,8 +77,14 @@ export async function POST(req: NextRequest) {
         updated_at: now,
       })
       .eq("id", session.job_id);
+    if (session.job_type === "move") {
+      syncDealStageByMoveId(session.job_id, "completed").catch(() => {});
+    }
   } else if (enRouteStatuses.includes(status)) {
     await admin.from(table).update({ status: "in_progress", stage: status, updated_at: now }).eq("id", session.job_id);
+    if (session.job_type === "move") {
+      syncDealStageByMoveId(session.job_id, "in_progress").catch(() => {});
+    }
   } else {
     await admin.from(table).update({ stage: status, updated_at: now }).eq("id", session.job_id);
   }

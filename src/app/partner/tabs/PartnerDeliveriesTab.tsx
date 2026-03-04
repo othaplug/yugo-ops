@@ -170,8 +170,14 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
   const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase().replace(/ /g, "_")] || "bg-gray-50 text-gray-600";
 
   const copyTrackingLink = async () => {
-    const url = `${window.location.origin}/track/delivery/${encodeURIComponent(d.delivery_number)}`;
     try {
+      const res = await fetch("/api/partner/share-tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delivery_id: d.id, method: "link", recipient: "copy" }),
+      });
+      const data = await res.json();
+      const url = data.trackUrl || `${window.location.origin}/track/delivery/${encodeURIComponent(d.delivery_number)}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { getTodayString } from "@/lib/business-timezone";
 
 /** GET: List end-of-day reports (admin). */
 export async function GET(req: NextRequest) {
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
   if (authErr) return authErr;
 
   const { searchParams } = new URL(req.url);
-  const date = searchParams.get("date") || new Date().toISOString().split("T")[0];
+  const date = searchParams.get("date") || getTodayString();
   const limit = Math.min(100, parseInt(searchParams.get("limit") || "50", 10));
 
   const admin = createAdminClient();

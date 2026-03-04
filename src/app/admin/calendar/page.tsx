@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTodayString, getAppTimezone } from "@/lib/business-timezone";
 import BackButton from "../components/BackButton";
 import CalendarView from "./CalendarView";
 
 export default async function CalendarPage() {
   const supabase = await createClient();
+  const today = getTodayString();
+  const appTimezone = getAppTimezone();
 
   const [{ data: deliveries }, { data: moves }] = await Promise.all([
     supabase.from("deliveries").select("*").order("scheduled_date"),
@@ -16,6 +19,8 @@ export default async function CalendarPage() {
       <CalendarView
         deliveries={deliveries || []}
         moves={moves || []}
+        today={today}
+        appTimezone={appTimezone}
       />
     </div>
   );

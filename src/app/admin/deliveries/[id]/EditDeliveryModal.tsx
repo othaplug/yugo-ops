@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -41,6 +42,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState(delivery?.crew_id || "");
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = createClient();
 
   useEffect(() => {
@@ -67,8 +69,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
 
     const orgId = (form.get("organization_id") as string)?.trim() || null;
 
-
-    await supabase
+    const { data, error } = await supabase
       .from("deliveries")
       .update({
         customer_name: form.get("customer_name"),
@@ -89,11 +90,18 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
         crew_id: crewId || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", delivery.id);
+      .eq("id", delivery.id)
+      .select()
+      .single();
 
     setLoading(false);
+    if (error) {
+      toast(error.message || "Failed to save changes", "alertTriangle");
+      return;
+    }
     setOpen(false);
     router.refresh();
+    toast("Changes saved", "check");
   };
 
   if (!open) {

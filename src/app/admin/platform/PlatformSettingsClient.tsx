@@ -13,6 +13,7 @@ import TruckAssignments from "./TruckAssignments";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
+import PricingControlPanel from "./PricingControlPanel";
 import { useRouter } from "next/navigation";
 
 const TABS = [
@@ -39,7 +40,6 @@ function formatLastActive(iso: string): string {
   return d.toLocaleDateString();
 }
 
-const RATES_KEY = "yugo-platform-rates";
 
 function ReadinessChecklistSection() {
   const { toast } = useToast();
@@ -201,12 +201,6 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [partnerPortal, setPartnerPortal] = useState(initialToggles.partnerPortal);
   const [autoInvoicing, setAutoInvoicing] = useState(initialToggles.autoInvoicing);
   const [togglesSaving, setTogglesSaving] = useState(false);
-  const [rates, setRates] = useState([
-    { tier: "Essentials", rate: "150" },
-    { tier: "Premier", rate: "220" },
-    { tier: "Estate", rate: "350" },
-    { tier: "Office", rate: "3K-$25K" },
-  ]);
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
@@ -214,7 +208,6 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const [addTeamName, setAddTeamName] = useState("");
   const [addTeamMembers, setAddTeamMembers] = useState<string[]>([]);
-  const [ratesSaving, setRatesSaving] = useState(false);
   const [crewPortalMembers, setCrewPortalMembers] = useState<CrewPortalMember[]>([]);
   const [crewPortalLoading, setCrewPortalLoading] = useState(false);
   const [resetPinMember, setResetPinMember] = useState<CrewPortalMember | null>(null);
@@ -283,16 +276,6 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(RATES_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) setRates(parsed);
-      }
-    } catch (_) {}
-  }, []);
 
   useEffect(() => {
     if (!addTeamModalOpen) return;
@@ -388,68 +371,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         ))}
       </div>
 
-      {/* Pricing & Rates - editable */}
-      {activeTab === "pricing" && (
-      <div id="pricing" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4 min-w-0">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="dollar" className="w-[16px] h-[16px]" /> Pricing & Rates
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Service tiers and hourly rates — edit below</p>
-        </div>
-        <div className="px-5 py-5 space-y-3">
-          {rates.map((r, i) => (
-            <div key={r.tier} className="flex items-center justify-between gap-3 py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg min-w-0">
-              <input
-                value={r.tier}
-                onChange={(e) => {
-                  const next = [...rates];
-                  next[i] = { ...next[i], tier: e.target.value };
-                  setRates(next);
-                }}
-                className="flex-1 bg-transparent text-[13px] font-medium text-[var(--tx)] outline-none border-none"
-              />
-              <input
-                value={r.rate}
-                onChange={(e) => {
-                  const next = [...rates];
-                  next[i] = { ...next[i], rate: e.target.value };
-                  setRates(next);
-                }}
-                className="w-24 px-2 py-1 bg-[var(--card)] border border-[var(--brd)] rounded text-[12px] font-semibold text-[var(--gold)] outline-none focus:border-[var(--gold)]"
-              />
-            </div>
-          ))}
-          <button
-            onClick={async () => {
-              if (typeof window === "undefined") {
-                toast("Cannot save in this environment", "x");
-                return;
-              }
-              setRatesSaving(true);
-              try {
-                const data = JSON.stringify(rates);
-                localStorage.setItem(RATES_KEY, data);
-                await new Promise((r) => setTimeout(r, 400));
-                toast("Rates saved", "check");
-              } catch (e: unknown) {
-                const err = e as Error;
-                const msg = err?.name === "QuotaExceededError"
-                  ? "Storage full — clear some data"
-                  : "Failed to save rates";
-                toast(msg, "x");
-              } finally {
-                setRatesSaving(false);
-              }
-            }}
-            disabled={ratesSaving}
-            className="mt-2 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
-          >
-            {ratesSaving ? "Saving…" : "Save Rates"}
-          </button>
-        </div>
-      </div>
-      )}
+      {/* Pricing Control Panel */}
+      {activeTab === "pricing" && <PricingControlPanel />}
 
       {/* Teams - view & edit members */}
       {activeTab === "crews" && (

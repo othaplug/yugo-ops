@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTodayString } from "@/lib/business-timezone";
 import BackButton from "../components/BackButton";
 import UnifiedTrackingView from "./UnifiedTrackingView";
 
 export default async function CrewPage() {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayString();
   const [{ data: crews }, { data: deliveries }, { data: moves }] = await Promise.all([
     supabase.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
     supabase.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("scheduled_date"),

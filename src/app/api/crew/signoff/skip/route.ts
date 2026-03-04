@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 
 const VALID_SKIP_REASONS = [
   "client_not_home",
@@ -107,6 +108,9 @@ export async function POST(req: NextRequest) {
         updated_at: now,
       })
       .eq("id", entityId);
+    if (jobType === "move") {
+      syncDealStageByMoveId(entityId, "completed").catch(() => {});
+    }
   }
 
   return NextResponse.json({ ok: true });

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
 
@@ -89,7 +90,7 @@ export default function CrewSetupPage() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <h1
+            <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -98,16 +99,10 @@ export default function CrewSetupPage() {
                 borderRadius: 9999,
                 background: "rgba(201,169,98,0.08)",
                 border: "1px solid rgba(201,169,98,0.4)",
-                color: "#C9A962",
-                fontFamily: "'Instrument Serif', Georgia, serif",
-                fontSize: 18,
-                fontWeight: 600,
-                letterSpacing: 3,
-                margin: 0,
               }}
             >
-              YUGO
-            </h1>
+              <YugoLogo size={18} variant="gold" />
+            </div>
           </div>
 
           <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6 }}>

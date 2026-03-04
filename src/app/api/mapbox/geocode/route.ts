@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get("q")?.trim();
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") || "8", 10), 10);
-  const country = req.nextUrl.searchParams.get("country") || "";
+  // Restrict to North America (US, CA, MX) by default; caller can override with country= param
+  const country = req.nextUrl.searchParams.get("country") ?? "US,CA,MX";
 
   if (!q || q.length < 2) {
     return NextResponse.json({ type: "FeatureCollection", features: [] });
@@ -35,8 +36,8 @@ export async function GET(req: NextRequest) {
       access_token: MAPBOX_TOKEN,
       types: "address,place",
       limit: String(limit),
+      country,
     });
-    if (country) params.set("country", country);
 
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params}`;
     const res = await fetch(url, { next: { revalidate: 0 } });

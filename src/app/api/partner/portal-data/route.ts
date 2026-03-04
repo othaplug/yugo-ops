@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { getTodayString, getMonthStartString } from "@/lib/business-timezone";
 
 export async function GET() {
   const { orgId, error } = await requirePartner();
   if (error) return error;
 
-  const supabase = await createClient();
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const admin = createAdminClient();
+  const todayStr = getTodayString();
+  const thisMonthStart = getMonthStartString();
 
-  const { data: org } = await supabase
+  const { data: org } = await admin
     .from("organizations")
     .select("type")
     .eq("id", orgId!)
@@ -26,28 +26,28 @@ export async function GET() {
     { data: referrals },
     { data: galleryProjects },
   ] = await Promise.all([
-    supabase
+    admin
       .from("deliveries")
       .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at")
       .eq("organization_id", orgId!)
       .order("scheduled_date", { ascending: true })
       .order("created_at", { ascending: false }),
-    supabase
+    admin
       .from("moves")
       .select("id, move_code, client_name, status, stage, scheduled_date, scheduled_time, from_address, to_address, crew_id")
       .eq("organization_id", orgId!)
       .order("scheduled_date", { ascending: false })
       .limit(20),
-    supabase
+    admin
       .from("invoices")
       .select("id, invoice_number, client_name, amount, status, due_date, created_at")
       .eq("organization_id", orgId!)
       .order("created_at", { ascending: false }),
     orgType === "realtor"
-      ? supabase.from("referrals").select("*").order("created_at", { ascending: false })
+      ? admin.from("referrals").select("*").order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     (orgType === "designer" || orgType === "gallery")
-      ? supabase.from("gallery_projects").select("*").eq("gallery_org_id", orgId!).order("created_at", { ascending: false })
+      ? admin.from("gallery_projects").select("*").eq("gallery_org_id", orgId!).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
   ]);
 

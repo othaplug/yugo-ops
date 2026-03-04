@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 
 export async function POST(req: NextRequest) {
@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const supabase = await createClient();
+    const admin = createAdminClient();
 
-    const { data: org } = await supabase
+    const { data: org } = await admin
       .from("organizations")
       .select("name, type")
       .eq("id", orgId!)
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
       items,
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
-      status: "scheduled",
+      status: "pending_approval",
       category: org?.type || "retail",
     };
 
-    const { data: created, error: dbError } = await supabase
+    const { data: created, error: dbError } = await admin
       .from("deliveries")
       .insert(insertPayload as Record<string, never>)
       .select("id, delivery_number")

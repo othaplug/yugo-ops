@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  "";
+
+/** GET ?from=lng,lat&to=lng,lat — returns driving route geometry (GeoJSON coordinates) */
+export async function GET(req: NextRequest) {
+  const from = req.nextUrl.searchParams.get("from");
+  const to = req.nextUrl.searchParams.get("to");
+  if (!from || !to || !MAPBOX_TOKEN) {
+    return NextResponse.json({ error: "Missing from, to, or Mapbox token" }, { status: 400 });
+  }
+  const coords = `${from};${to}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const coordsList = data?.routes?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordsList) || coordsList.length === 0) {
+      return NextResponse.json({ coordinates: null });
+    }
+    return NextResponse.json({ coordinates: coordsList });
+  } catch (e) {
+    console.error("[mapbox/directions]", e);
+    return NextResponse.json({ error: "Directions failed" }, { status: 502 });
+  }
+}

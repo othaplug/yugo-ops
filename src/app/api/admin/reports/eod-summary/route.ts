@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { getTodayString } from "@/lib/business-timezone";
 
 /** GET: Today's EOD summary for Command Center (teams submitted, pending). */
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const admin = createAdminClient();
 
   const [{ data: reports }, { data: crews }] = await Promise.all([

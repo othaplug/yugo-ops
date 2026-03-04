@@ -57,16 +57,6 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(sec / 3600)} hours ago`;
 }
 
-const TRACKING_STAGES = [
-  "en_route_to_pickup",
-  "arrived_at_pickup",
-  "loading",
-  "en_route_to_destination",
-  "arrived_at_destination",
-  "unloading",
-  "completed",
-];
-
 export default function TrackLiveMap({
   moveId,
   token,
@@ -303,24 +293,6 @@ export default function TrackLiveMap({
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 Text Crew
               </a>
-            </div>
-          )}
-          {liveStage && (
-            <div className="flex items-center gap-2 flex-wrap text-[11px]">
-              {TRACKING_STAGES.map((s) => {
-                const idx = TRACKING_STAGES.indexOf(s);
-                const currentIdx = TRACKING_STAGES.indexOf(liveStage);
-                const isPast = currentIdx > idx;
-                const isCurrent = currentIdx === idx;
-                return (
-                  <span
-                    key={s}
-                    className={`transition-all duration-300 ${isPast ? "text-[#22C55E]" : isCurrent ? "text-[#C9A962] font-semibold" : "text-[#999]"}`}
-                  >
-                    {isPast ? "✓" : isCurrent ? "●" : "○"} {CREW_STATUS_TO_LABEL[s] || s}
-                  </span>
-                );
-              })}
             </div>
           )}
         </>

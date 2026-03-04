@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { getTodayString, getLocalDateDisplay, getAppTimezone } from "@/lib/business-timezone";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const supabase = createAdminClient();
 
   const [movesRes, deliveriesRes] = await Promise.all([
@@ -103,10 +104,7 @@ export async function GET(req: NextRequest) {
   const readinessRequired = !readinessCompleted && (isCrewLead || jobs.length > 0);
   const teamName = crewRow?.name || "Team";
 
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const d = new Date();
-  const dateStr = `${dayNames[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+  const dateStr = getLocalDateDisplay(new Date(), getAppTimezone());
 
   return NextResponse.json({
     crewMember: { ...payload, teamName, dateStr },

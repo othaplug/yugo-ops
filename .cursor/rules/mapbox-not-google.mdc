@@ -1,0 +1,15 @@
+---
+description: Use Mapbox instead of Google Maps for all mapping functionality
+alwaysApply: true
+---
+
+# Mapbox — Not Google Maps
+
+This project uses **Mapbox** for all mapping, geocoding, and location services. **Never** use Google Maps APIs.
+
+- **Map rendering:** Use Mapbox GL JS or `react-map-gl` (or Leaflet with Mapbox tiles)
+- **Geocoding:** Use Mapbox Geocoding API (`api.mapbox.com/geocoding/v5/mapbox.places/`)
+- **Directions / routing:** Use Mapbox Directions API
+- **Environment variable:** `MAPBOX_TOKEN` (already configured in `.env.local`)
+
+When a prompt or specification mentions "Google Maps API", automatically substitute with the equivalent Mapbox API. Do not install `@googlemaps/*`, `google-maps-react`, or any Google Maps SDK.

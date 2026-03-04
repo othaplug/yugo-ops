@@ -1,0 +1,1396 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import BackButton from "../../components/BackButton";
+import { useToast } from "../../components/Toast";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import { formatPhone } from "@/lib/phone";
+import { Home, Building2, Package, Gem, Star, Truck, ChevronDown, Check, Send, Eye, Loader2, ChevronRight } from "lucide-react";
+
+// ─── Types ──────────────────────────────────────
+
+interface Addon {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number;
+  price_type: "flat" | "per_unit" | "tiered" | "percent";
+  unit_label: string | null;
+  tiers: { label: string; price: number }[] | null;
+  percent_value: number | null;
+  applicable_service_types: string[];
+  excluded_tiers: string[] | null;
+  is_popular: boolean;
+  display_order: number;
+}
+
+interface AddonSelection {
+  addon_id: string;
+  slug: string;
+  quantity: number;
+  tier_index: number;
+}
+
+interface TierResult {
+  price: number;
+  deposit: number;
+  tax: number;
+  total: number;
+  includes: string[];
+}
+
+interface QuoteResult {
+  quote_id: string;
+  service_type: string;
+  tiers?: Record<string, TierResult>;
+  custom_price?: TierResult;
+  distance_km: number | null;
+  drive_time_min: number | null;
+  move_date: string;
+  factors: Record<string, unknown>;
+  addons: { items: { name: string; subtotal: number }[]; total: number };
+}
+
+// ─── Constants ──────────────────────────────────
+
+const SERVICE_TYPES = [
+  { value: "local_move", Icon: Home, label: "Residential", desc: "Local or long distance home move" },
+  { value: "office_move", Icon: Building2, label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
+  { value: "single_item", Icon: Package, label: "Single Item", desc: "One item or small batch delivery" },
+  { value: "white_glove", Icon: Gem, label: "White Glove", desc: "Premium handling, assembly, placement" },
+  { value: "specialty", Icon: Star, label: "Specialty / Event", desc: "Art, piano, trade show, staging, estate" },
+  { value: "b2b_delivery", Icon: Truck, label: "B2B One-Off", desc: "One-off delivery from a business source" },
+] as const;
+
+const MOVE_SIZES = [
+  { value: "studio", label: "Studio" },
+  { value: "1br", label: "1 Bedroom" },
+  { value: "2br", label: "2 Bedroom" },
+  { value: "3br", label: "3 Bedroom" },
+  { value: "4br", label: "4 Bedroom" },
+  { value: "5br_plus", label: "5+ Bedroom" },
+  { value: "partial", label: "Partial Move" },
+];
+
+const ACCESS_OPTIONS = [
+  { value: "", label: "Select…" },
+  { value: "elevator", label: "Elevator" },
+  { value: "ground_floor", label: "Ground floor" },
+  { value: "loading_dock", label: "Loading dock" },
+  { value: "walk_up_2nd", label: "Walk-up (2nd floor)" },
+  { value: "walk_up_3rd", label: "Walk-up (3rd floor)" },
+  { value: "walk_up_4th_plus", label: "Walk-up (4th+)" },
+  { value: "long_carry", label: "Long carry" },
+  { value: "narrow_stairs", label: "Narrow stairs" },
+  { value: "no_parking_nearby", label: "No parking nearby" },
+];
+
+const SPECIALTY_ITEM_TYPES = [
+  "piano_upright", "piano_grand", "pool_table", "safe_under_300lbs", "safe_over_300lbs",
+  "hot_tub", "artwork_per_piece", "antique_per_piece", "wine_collection",
+  "gym_equipment_per_piece", "motorcycle", "aquarium",
+];
+
+const ITEM_CATEGORIES = [
+  { value: "standard_furniture", label: "Standard furniture" },
+  { value: "large_heavy", label: "Large / heavy" },
+  { value: "fragile_specialty", label: "Fragile / specialty" },
+  { value: "appliance", label: "Appliance" },
+  { value: "multiple_2_to_5", label: "Multiple (2-5 items)" },
+  { value: "oversized", label: "Oversized" },
+];
+
+const WEIGHT_CLASSES = ["Under 50 lbs", "50-150 lbs", "150-300 lbs", "300-500 lbs", "Over 500 lbs"];
+const ASSEMBLY_OPTIONS = ["None", "Disassembly at pickup", "Assembly at delivery", "Both"];
+const PROJECT_TYPES = [
+  "Art installation", "Trade show", "Estate cleanout", "Home staging",
+  "Wine transport", "Medical equipment", "Piano move", "Event setup/teardown", "Custom",
+];
+const TIMING_PREFS = ["Weekday business hours", "Evening/night", "Weekend", "Phased multi-day"];
+
+const TAX_RATE = 0.13;
+
+// ─── Helpers ────────────────────────────────────
+
+const fieldInput =
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function cfgNum(config: Record<string, string>, key: string, fb: number) {
+  const v = config[key];
+  return v !== undefined ? Number(v) : fb;
+}
+
+// Frontend-only quick estimate (optimistic, before API call)
+function quickEstimate(
+  config: Record<string, string>,
+  serviceType: string,
+  moveSize: string,
+  addonTotal: number,
+): { essentials: number; premier: number; estate: number } | { single: number } | null {
+  const BASE: Record<string, number> = {
+    studio: 549, "1br": 799, "2br": 1199, "3br": 1699, "4br": 2399, "5br_plus": 3199, partial: 499,
+  };
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+
+  if (serviceType === "local_move") {
+    const base = BASE[moveSize] ?? 1199;
+    const ess = Math.max(roundTo(base, rounding) + addonTotal, 549);
+    const prem = roundTo(base * cfgNum(config, "tier_premier_multiplier", 1.35), rounding) + addonTotal;
+    const est = roundTo(base * cfgNum(config, "tier_estate_multiplier", 1.85), rounding) + addonTotal;
+    return { essentials: ess, premier: prem, estate: est };
+  }
+  return null;
+}
+
+function roundTo(n: number, nearest: number) {
+  return Math.round(n / nearest) * nearest;
+}
+
+function fmtPrice(n: number) {
+  return n.toLocaleString("en-CA", { style: "currency", currency: "CAD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+// ─── Component ──────────────────────────────────
+
+export default function QuoteFormClient({
+  addons: allAddons,
+  config,
+}: {
+  addons: Addon[];
+  config: Record<string, string>;
+}) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
+  const hubspotDealId = searchParams.get("hubspot_deal_id") || "";
+
+  // ── Form state ────────────────────────────
+  const [serviceType, setServiceType] = useState("local_move");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [fromAddress, setFromAddress] = useState("");
+  const [toAddress, setToAddress] = useState("");
+  const [fromAccess, setFromAccess] = useState("");
+  const [toAccess, setToAccess] = useState("");
+  const [moveDate, setMoveDate] = useState("");
+  const [moveSize, setMoveSize] = useState("2br");
+
+  // Specialty items
+  const [specialtyItems, setSpecialtyItems] = useState<{ type: string; qty: number }[]>([]);
+
+  // Office fields
+  const [sqft, setSqft] = useState("");
+  const [wsCount, setWsCount] = useState("");
+  const [hasIt, setHasIt] = useState(false);
+  const [hasConf, setHasConf] = useState(false);
+  const [hasReception, setHasReception] = useState(false);
+  const [timingPref, setTimingPref] = useState("");
+
+  // Single item fields
+  const [itemCategory, setItemCategory] = useState("standard_furniture");
+  const [itemWeight, setItemWeight] = useState("");
+  const [assembly, setAssembly] = useState("None");
+  const [stairCarry, setStairCarry] = useState(false);
+  const [stairFlights, setStairFlights] = useState(1);
+  const [numItems, setNumItems] = useState(1);
+
+  // White glove
+  const [declaredValue, setDeclaredValue] = useState("");
+
+  // Specialty
+  const [projectType, setProjectType] = useState("Custom");
+  const [timelineHours, setTimelineHours] = useState(4);
+  const [cratingPieces, setCratingPieces] = useState(0);
+  const [climateControl, setClimateControl] = useState(false);
+
+  // Add-ons
+  const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
+
+  // Quote result (set only after successful generate; required for Send)
+  const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
+  const [quoteId, setQuoteId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [hubspotLoaded, setHubspotLoaded] = useState(false);
+  const [hubspotBanner, setHubspotBanner] = useState("");
+  const prefillDone = useRef(false);
+
+  // Contact search for auto-fill (same as Create Move)
+  const [contactSearch, setContactSearch] = useState("");
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [dbContacts, setDbContacts] = useState<{ hubspot_id: string; name: string; email: string; phone: string; address: string; postal: string }[]>([]);
+  const contactDropdownRef = useRef<HTMLDivElement>(null);
+  const contactSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contactDropdownRef.current && !contactDropdownRef.current.contains(e.target as Node)) {
+        setShowContactDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (contactSearchTimerRef.current) clearTimeout(contactSearchTimerRef.current);
+    if (!contactSearch || contactSearch.length < 2) {
+      setDbContacts([]);
+      return;
+    }
+    contactSearchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/contacts/search?q=${encodeURIComponent(contactSearch)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDbContacts(data.contacts || []);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 300);
+    return () => {
+      if (contactSearchTimerRef.current) clearTimeout(contactSearchTimerRef.current);
+    };
+  }, [contactSearch]);
+
+  // ── HubSpot pre-fill ──────────────────────
+  useEffect(() => {
+    if (!hubspotDealId || prefillDone.current) return;
+    prefillDone.current = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/hubspot/get-deal?dealId=${encodeURIComponent(hubspotDealId)}`);
+        if (!res.ok) return;
+        const d = await res.json();
+        if (d.serviceType) setServiceType(d.serviceType);
+        if (d.fromAddress) setFromAddress(d.fromAddress);
+        if (d.toAddress) setToAddress(d.toAddress);
+        if (d.fromAccess) setFromAccess(d.fromAccess);
+        if (d.toAccess) setToAccess(d.toAccess);
+        if (d.moveDate) setMoveDate(d.moveDate);
+        if (d.moveSize) setMoveSize(d.moveSize);
+        if (d.firstName) setFirstName(d.firstName);
+        if (d.lastName) setLastName(d.lastName);
+        if (d.email) setEmail(d.email);
+        if (d.phone) setPhone(d.phone);
+        if (d.squareFootage) setSqft(d.squareFootage);
+        if (d.workstationCount) setWsCount(d.workstationCount);
+        setHubspotBanner(`Pre-filled from HubSpot Deal #${d.jobNo || hubspotDealId}`);
+        setHubspotLoaded(true);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [hubspotDealId]);
+
+  // ── Applicable add-ons (popular first) ────
+  const applicableAddons = useMemo(
+    () =>
+      [...allAddons.filter((a) => a.applicable_service_types.includes(serviceType))].sort(
+        (a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0),
+      ),
+    [allAddons, serviceType],
+  );
+  const popularAddons = useMemo(() => applicableAddons.filter((a) => a.is_popular), [applicableAddons]);
+  const otherAddons = useMemo(() => applicableAddons.filter((a) => !a.is_popular), [applicableAddons]);
+  const [showAllAddons, setShowAllAddons] = useState(false);
+
+  // When service type changes, clear add-ons that no longer apply
+  useEffect(() => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      for (const [id] of next) {
+        const addon = allAddons.find((a) => a.id === id);
+        if (addon && !addon.applicable_service_types.includes(serviceType)) {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  }, [serviceType, allAddons]);
+
+  // ── Add-on subtotal ───────────────────────
+  const addonSubtotal = useMemo(() => {
+    let total = 0;
+    for (const [id, sel] of selectedAddons) {
+      const addon = allAddons.find((a) => a.id === id);
+      if (!addon) continue;
+      switch (addon.price_type) {
+        case "flat":
+          total += addon.price;
+          break;
+        case "per_unit":
+          total += addon.price * (sel.quantity || 1);
+          break;
+        case "tiered":
+          total += addon.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
+          break;
+        case "percent":
+          total += Math.round(1199 * (addon.percent_value ?? 0));
+          break;
+      }
+    }
+    return total;
+  }, [selectedAddons, allAddons]);
+
+  // ── Quick optimistic estimate ─────────────
+  const liveEstimate = useMemo(
+    () => quickEstimate(config, serviceType, moveSize, addonSubtotal),
+    [config, serviceType, moveSize, addonSubtotal],
+  );
+
+  // ── Toggle add-on ─────────────────────────
+  const toggleAddon = useCallback((addon: Addon) => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      if (next.has(addon.id)) {
+        next.delete(addon.id);
+      } else {
+        next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: 0 });
+      }
+      return next;
+    });
+  }, []);
+
+  const updateAddonQty = useCallback((id: string, qty: number) => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(id);
+      if (cur) next.set(id, { ...cur, quantity: Math.max(1, qty) });
+      return next;
+    });
+  }, []);
+
+  const updateAddonTier = useCallback((id: string, idx: number) => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(id);
+      if (cur) next.set(id, { ...cur, tier_index: idx });
+      return next;
+    });
+  }, []);
+
+  // ── Toggle specialty item ─────────────────
+  const toggleSpecialtyItem = useCallback((type: string) => {
+    setSpecialtyItems((prev) => {
+      const existing = prev.find((i) => i.type === type);
+      if (existing) return prev.filter((i) => i.type !== type);
+      return [...prev, { type, qty: 1 }];
+    });
+  }, []);
+
+  const updateSpecialtyQty = useCallback((type: string, qty: number) => {
+    setSpecialtyItems((prev) =>
+      prev.map((i) => (i.type === type ? { ...i, qty: Math.max(1, qty) } : i)),
+    );
+  }, []);
+
+  // ── Build API payload ─────────────────────
+  const buildPayload = useCallback(() => {
+    const base: Record<string, unknown> = {
+      service_type: serviceType,
+      from_address: fromAddress,
+      to_address: toAddress,
+      from_access: fromAccess || undefined,
+      to_access: toAccess || undefined,
+      move_date: moveDate,
+      hubspot_deal_id: hubspotDealId || undefined,
+      selected_addons: Array.from(selectedAddons.values()),
+    };
+
+    if (serviceType === "local_move" || serviceType === "long_distance") {
+      base.move_size = moveSize;
+      base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
+    }
+    if (serviceType === "office_move") {
+      base.square_footage = Number(sqft) || undefined;
+      base.workstation_count = Number(wsCount) || undefined;
+      base.has_it_equipment = hasIt;
+      base.has_conference_room = hasConf;
+      base.has_reception_area = hasReception;
+      base.timing_preference = timingPref || undefined;
+    }
+    if (serviceType === "single_item") {
+      base.item_category = itemCategory;
+      base.item_weight_class = itemWeight || undefined;
+      base.assembly_needed = assembly;
+      base.stair_carry = stairCarry;
+      base.stair_flights = stairFlights;
+      base.number_of_items = numItems;
+    }
+    if (serviceType === "white_glove") {
+      base.item_category = itemCategory;
+      base.item_weight_class = itemWeight || undefined;
+      base.declared_value = Number(declaredValue) || undefined;
+      base.stair_carry = stairCarry;
+      base.stair_flights = stairFlights;
+    }
+    if (serviceType === "specialty") {
+      base.project_type = projectType;
+      base.timeline_hours = timelineHours;
+      base.custom_crating_pieces = cratingPieces > 0 ? cratingPieces : undefined;
+      base.climate_control = climateControl;
+    }
+    return base;
+  }, [
+    serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, hubspotDealId,
+    selectedAddons, moveSize, specialtyItems, sqft, wsCount, hasIt, hasConf, hasReception,
+    timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights, numItems,
+    declaredValue, projectType, timelineHours, cratingPieces, climateControl,
+  ]);
+
+  // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
+  const handleGenerate = async () => {
+    if (!fromAddress || !toAddress || !moveDate) {
+      toast("Please fill addresses and move date", "alertTriangle");
+      return;
+    }
+    setGenerating(true);
+    setSendSuccess(false);
+    try {
+      const res = await fetch("/api/quotes/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload()),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Quote generation failed");
+      const id = data.quote_id ?? data.quoteId;
+      if (!id) throw new Error("Generate did not return a quote_id");
+      setQuoteResult(data);
+      setQuoteId(id);
+      toast(`Quote ${id} generated`, "check");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed", "x");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // ── Send quote (Step 2: only after generate; requires quoteId from state) ────────────────────────────
+  const handleSend = async () => {
+    if (!quoteId) {
+      toast("Generate a quote first", "alertTriangle");
+      return;
+    }
+    if (!email) {
+      toast("Client email is required to send", "alertTriangle");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("/api/quotes/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quoteId,
+          quote_id: quoteId,
+          email,
+          client_name: [firstName, lastName].filter(Boolean).join(" "),
+          hubspot_deal_id: hubspotDealId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Send failed");
+
+      // Push quote data back to HubSpot deal
+      if (hubspotDealId && quoteResult) {
+        const essentials = quoteResult.tiers?.essentials;
+        const price = essentials?.price ?? quoteResult.custom_price?.price ?? null;
+        const tax = essentials?.tax ?? quoteResult.custom_price?.tax ?? null;
+        const total = essentials?.total ?? quoteResult.custom_price?.total ?? null;
+
+        fetch("/api/hubspot/update-deal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dealId: hubspotDealId,
+            properties: {
+              amount: price,
+              total_price: total,
+              taxes: tax,
+              quote_url: `${window.location.origin}/quote/${quoteId}`,
+              dealstage: "quote_sent",
+            },
+          }),
+        }).catch(() => {});
+      }
+
+      setSendSuccess(true);
+      toast(`Quote ${quoteId} sent to ${email}`, "mail");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to send", "x");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // ── Render ────────────────────────────────
+  return (
+    <>
+      <div className="mb-4">
+        <BackButton label="Back" />
+      </div>
+
+      {hubspotBanner && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" />
+          {hubspotBanner}
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-5">
+        {/* ═══ LEFT PANEL — Form ═══ */}
+        <div className="lg:w-[60%] flex flex-col gap-4">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-[var(--brd)]">
+              <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
+              <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+                Fill in the details and generate a quote. The live preview updates as you type.
+              </p>
+            </div>
+
+            <div className="p-5 space-y-0">
+              {/* ── 1. Service type ── */}
+              <div className="mb-5">
+                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Service Type</label>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                  {SERVICE_TYPES.map((card) => {
+                    const sel = serviceType === card.value;
+                    return (
+                      <button
+                        key={card.value}
+                        type="button"
+                        onClick={() => setServiceType(card.value)}
+                        className={`relative text-left px-3 py-2.5 rounded-xl border-2 transition-all ${
+                          sel
+                            ? "bg-[#FAF7F2] dark:bg-[#2A2520] border-[#B8962E] shadow-sm"
+                            : "bg-[var(--card)] border-[var(--brd)] hover:shadow-md hover:-translate-y-0.5"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className={`shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg ${sel ? "bg-[#B8962E]/15" : "bg-[var(--bg)]"}`}>
+                            <card.Icon className={`w-3.5 h-3.5 ${sel ? "text-[#B8962E]" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className={`text-[12px] leading-tight ${sel ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
+                              {card.label}
+                            </div>
+                            <div className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
+                              {card.desc}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--brd)] my-5" />
+
+              {/* ── 2. Client ── */}
+              <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Client</h3>
+                <Field label="Select to auto fill">
+                  <div ref={contactDropdownRef} className="relative">
+                    <input
+                      type="text"
+                      value={contactSearch}
+                      onChange={(e) => {
+                        setContactSearch(e.target.value);
+                        setShowContactDropdown(true);
+                      }}
+                      onFocus={() => setShowContactDropdown(true)}
+                      placeholder="Search by name, email, or phone…"
+                      className={fieldInput}
+                    />
+                    {showContactDropdown && dbContacts.length > 0 && (
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Contacts</div>
+                        {dbContacts.map((c) => (
+                          <button
+                            key={c.hubspot_id}
+                            type="button"
+                            onClick={() => {
+                              const parts = (c.name || "").trim().split(/\s+/);
+                              setFirstName(parts[0] || "");
+                              setLastName(parts.slice(1).join(" ") || "");
+                              setEmail(c.email || "");
+                              setPhone(c.phone ? formatPhone(c.phone) : "");
+                              if (c.address) setFromAddress(c.address);
+                              setContactSearch("");
+                              setShowContactDropdown(false);
+                              setDbContacts([]);
+                            }}
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                          >
+                            {c.name}
+                            {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
+                            {c.phone && <span className="text-[var(--tx3)] ml-1">— {formatPhone(c.phone)}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {showContactDropdown && contactSearch.length >= 2 && dbContacts.length === 0 && (
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 px-3 py-2 text-[11px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                        No matches
+                      </div>
+                    )}
+                  </div>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="First Name">
+                    <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={fieldInput} />
+                  </Field>
+                  <Field label="Last Name">
+                    <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={fieldInput} />
+                  </Field>
+                  <Field label="Email">
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@email.com" className={fieldInput} />
+                  </Field>
+                  <Field label="Phone">
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(416) 555-1234" className={fieldInput} />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--brd)] my-5" />
+
+              {/* ── 3. Addresses ── */}
+              <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Addresses</h3>
+                <div className="flex flex-col sm:flex-row gap-3 items-end">
+                  <div className="flex-1 min-w-0 w-full">
+                    <AddressAutocomplete
+                      value={fromAddress}
+                      onRawChange={setFromAddress}
+                      onChange={(r) => setFromAddress(r.fullAddress)}
+                      placeholder="Origin address"
+                      label="From Address"
+                      required
+                      className={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[150px]">
+                    <Field label="Access">
+                      <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
+                        {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 items-end">
+                  <div className="flex-1 min-w-0 w-full">
+                    <AddressAutocomplete
+                      value={toAddress}
+                      onRawChange={setToAddress}
+                      onChange={(r) => setToAddress(r.fullAddress)}
+                      placeholder="Destination address"
+                      label="To Address"
+                      required
+                      className={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[150px]">
+                    <Field label="Access">
+                      <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
+                        {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--brd)] my-5" />
+
+              {/* ── 4. Move details ── */}
+              <div className="mb-5">
+                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Move Details</h3>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="Move Date *">
+                    <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
+                  </Field>
+                  {(serviceType === "local_move" || serviceType === "long_distance") && (
+                    <Field label="Move Size">
+                      <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
+                        {MOVE_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--brd)] my-5" />
+
+              {/* ── 5. Specialty items ── */}
+              {(serviceType === "local_move" || serviceType === "long_distance") && (
+                <div className="mb-5 space-y-2 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Specialty Items</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SPECIALTY_ITEM_TYPES.map((type) => {
+                      const active = specialtyItems.some((i) => i.type === type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleSpecialtyItem(type)}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                            active
+                              ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
+                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                          }`}
+                        >
+                          {type.replace(/_/g, " ")}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {specialtyItems.length > 0 && (
+                    <div className="space-y-1 mt-2">
+                      {specialtyItems.map((item) => (
+                        <div key={item.type} className="flex items-center gap-2">
+                          <span className="text-[11px] text-[var(--tx)] flex-1">{item.type.replace(/_/g, " ")}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={20}
+                            value={item.qty}
+                            onChange={(e) => updateSpecialtyQty(item.type, parseInt(e.target.value) || 1)}
+                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-center text-[var(--tx)]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Office fields ── */}
+              {serviceType === "office_move" && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Office Details</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Square Footage">
+                      <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={fieldInput} />
+                    </Field>
+                    <Field label="Workstations">
+                      <input type="number" min={0} value={wsCount} onChange={(e) => setWsCount(e.target.value)} placeholder="20" className={fieldInput} />
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "IT Equipment", val: hasIt, set: setHasIt },
+                      { label: "Conference Room", val: hasConf, set: setHasConf },
+                      { label: "Reception Area", val: hasReception, set: setHasReception },
+                    ].map((tog) => (
+                      <div key={tog.label} className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-[var(--tx)]">{tog.label}</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={tog.val}
+                          onClick={() => tog.set(!tog.val)}
+                          className={`relative w-9 h-5 rounded-full transition-colors ${tog.val ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${tog.val ? "translate-x-4" : ""}`} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <Field label="Timing Preference">
+                    <select value={timingPref} onChange={(e) => setTimingPref(e.target.value)} className={fieldInput}>
+                      <option value="">Select…</option>
+                      {TIMING_PREFS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </Field>
+                </div>
+              )}
+
+              {/* ── Single item fields ── */}
+              {serviceType === "single_item" && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Item Details</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Category">
+                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
+                        {ITEM_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Weight Class">
+                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={fieldInput}>
+                        <option value="">Select…</option>
+                        {WEIGHT_CLASSES.map((w) => <option key={w} value={w}>{w}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Assembly">
+                      <select value={assembly} onChange={(e) => setAssembly(e.target.value)} className={fieldInput}>
+                        {ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Number of Items">
+                      <input type="number" min={1} max={5} value={numItems} onChange={(e) => setNumItems(Number(e.target.value) || 1)} className={fieldInput} />
+                    </Field>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
+                    <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
+                    </button>
+                  </div>
+                  {stairCarry && (
+                    <Field label="Flights">
+                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={fieldInput} />
+                    </Field>
+                  )}
+                </div>
+              )}
+
+              {/* ── White glove fields ── */}
+              {serviceType === "white_glove" && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">White Glove Details</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Item Category">
+                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
+                        {ITEM_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Declared Value ($)">
+                      <input type="number" min={0} value={declaredValue} onChange={(e) => setDeclaredValue(e.target.value)} placeholder="For insurance" className={fieldInput} />
+                    </Field>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Weight Class">
+                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={fieldInput}>
+                        <option value="">Select…</option>
+                        {WEIGHT_CLASSES.map((w) => <option key={w} value={w}>{w}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
+                    <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
+                    </button>
+                  </div>
+                  {stairCarry && (
+                    <Field label="Flights">
+                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={fieldInput} />
+                    </Field>
+                  )}
+                </div>
+              )}
+
+              {/* ── Specialty fields ── */}
+              {serviceType === "specialty" && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Specialty Details</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Project Type">
+                      <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
+                        {PROJECT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Timeline (hours)">
+                      <input type="number" min={1} max={80} value={timelineHours} onChange={(e) => setTimelineHours(Number(e.target.value) || 4)} className={fieldInput} />
+                    </Field>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Custom Crating (pieces)">
+                      <input type="number" min={0} value={cratingPieces} onChange={(e) => setCratingPieces(Number(e.target.value) || 0)} className={fieldInput} />
+                    </Field>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Climate Control Required</span>
+                    <button type="button" role="switch" aria-checked={climateControl} onClick={() => setClimateControl(!climateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${climateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${climateControl ? "translate-x-4" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-[var(--brd)] my-5" />
+
+              {/* ── 6. Add-ons (popular first, show all expander) ── */}
+              {applicableAddons.length > 0 && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h3>
+                  <div className="space-y-2">
+                    {popularAddons.map((addon) => {
+                      const sel = selectedAddons.get(addon.id);
+                      const isSelected = !!sel;
+                      let displayPrice = "";
+                      if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
+                      else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
+                      else if (addon.price_type === "tiered") displayPrice = "varies";
+                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      return (
+                        <div key={addon.id} className="space-y-1">
+                          <label className="flex items-start gap-2.5 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleAddon(addon)}
+                              className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
+                                {addon.is_popular && (
+                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                )}
+                                <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
+                              </div>
+                              {addon.description && (
+                                <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
+                              )}
+                            </div>
+                          </label>
+                          {isSelected && addon.price_type === "per_unit" && (
+                            <div className="ml-6 flex items-center gap-2">
+                              <span className="text-[10px] text-[var(--tx3)]">Qty:</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={99}
+                                value={sel!.quantity}
+                                onChange={(e) => updateAddonQty(addon.id, parseInt(e.target.value) || 1)}
+                                className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                              />
+                              <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
+                            </div>
+                          )}
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
+                            <div className="ml-6 flex items-center gap-2">
+                              <select
+                                value={sel!.tier_index}
+                                onChange={(e) => updateAddonTier(addon.id, parseInt(e.target.value))}
+                                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                              >
+                                {addon.tiers.map((t, i) => (
+                                  <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {otherAddons.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllAddons((v) => !v)}
+                        className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors py-1.5"
+                      >
+                        {showAllAddons ? "Hide other add-ons" : "Show all add-ons ▾"}
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAllAddons ? "rotate-90" : ""}`} />
+                      </button>
+                    )}
+                    {showAllAddons && otherAddons.map((addon) => {
+                      const sel = selectedAddons.get(addon.id);
+                      const isSelected = !!sel;
+                      let displayPrice = "";
+                      if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
+                      else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
+                      else if (addon.price_type === "tiered") displayPrice = "varies";
+                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      return (
+                        <div key={addon.id} className="space-y-1">
+                          <label className="flex items-start gap-2.5 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleAddon(addon)}
+                              className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
+                                {addon.is_popular && (
+                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                )}
+                                <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
+                              </div>
+                              {addon.description && (
+                                <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
+                              )}
+                            </div>
+                          </label>
+                          {isSelected && addon.price_type === "per_unit" && (
+                            <div className="ml-6 flex items-center gap-2">
+                              <span className="text-[10px] text-[var(--tx3)]">Qty:</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={99}
+                                value={sel!.quantity}
+                                onChange={(e) => updateAddonQty(addon.id, parseInt(e.target.value) || 1)}
+                                className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                              />
+                              <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
+                            </div>
+                          )}
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
+                            <div className="ml-6 flex items-center gap-2">
+                              <select
+                                value={sel!.tier_index}
+                                onChange={(e) => updateAddonTier(addon.id, parseInt(e.target.value))}
+                                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                              >
+                                {addon.tiers.map((t, i) => (
+                                  <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="pt-3 border-t border-[var(--brd)] flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[var(--tx)]">Add-ons total</span>
+                    <span className="text-[14px] font-bold text-[var(--gold)]">{fmtPrice(addonSubtotal)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Spacer so sticky button bar doesn't cover last section */}
+              <div className="h-24" />
+            </div>
+          </div>
+
+          {/* ── Sticky bottom button bar ── */}
+          <div className="sticky bottom-0 z-10 py-4 px-6 bg-[var(--bg)] border-t border-[var(--brd)] rounded-b-xl">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={generating}
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {generating ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…</> : quoteId ? "Regenerate" : "Generate Quote"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={sending || !quoteId || sendSuccess}
+                className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 ${
+                  sendSuccess
+                    ? "border-[var(--grn)] bg-[var(--grn)]/10 text-[var(--grn)] cursor-default"
+                    : "border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 disabled:opacity-40"
+                }`}
+              >
+                {sending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</> : sendSuccess ? <>Sent ✓</> : <><Send className="w-3.5 h-3.5" /> Send Quote</>}
+              </button>
+              <button
+                type="button"
+                onClick={() => quoteResult && window.open(`/quote/${quoteResult.quote_id}`, "_blank")}
+                disabled={!quoteResult}
+                className="py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5" /> Preview
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ RIGHT PANEL — Live Quote Preview ═══ */}
+        <div className="lg:w-[40%]">
+          <div className="sticky top-6 space-y-4">
+            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-[var(--brd)]">
+                <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+                  {quoteResult ? `Quote ${quoteResult.quote_id}` : "Live Quote Preview"}
+                </h2>
+                {!quoteResult && (
+                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">Updates as you fill in the form</p>
+                )}
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* ── Official result (after Generate) ── */}
+                {quoteResult ? (
+                  <>
+                    {quoteResult.tiers ? (
+                      <TiersDisplay tiers={quoteResult.tiers} />
+                    ) : quoteResult.custom_price ? (
+                      <SinglePriceDisplay price={quoteResult.custom_price} label={serviceType.replace(/_/g, " ")} />
+                    ) : null}
+
+                    {quoteResult.addons && quoteResult.addons.items.length > 0 && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h4>
+                        {quoteResult.addons.items.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between text-[11px]">
+                            <span className="text-[var(--tx2)]">{item.name}</span>
+                            <span className="text-[var(--tx)] font-medium">{fmtPrice(item.subtotal)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <FactorsDisplayCollapsible factors={quoteResult.factors} distance={quoteResult.distance_km} time={quoteResult.drive_time_min} />
+                  </>
+                ) : (
+                  /* ── Optimistic live preview ── */
+                  <>
+                    {liveEstimate && "essentials" in liveEstimate ? (
+                      <OptimisticTiers est={liveEstimate} />
+                    ) : (
+                      <div className="text-center py-5">
+                        <div className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center mx-auto mb-2">
+                          <ChevronDown className="w-4 h-4 text-[var(--tx3)]" />
+                        </div>
+                        <p className="text-[11px] text-[var(--tx3)]">Fill in the form to see a live estimate</p>
+                      </div>
+                    )}
+
+                    {addonSubtotal > 0 && (
+                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-[var(--brd)]">
+                        <span className="text-[var(--tx3)]">Add-ons</span>
+                        <span className="text-[var(--tx)] font-medium">+{fmtPrice(addonSubtotal)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Quote metadata ── */}
+            {quoteResult && (
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Quote ID</span>
+                  <span className="font-mono font-bold text-[var(--tx)]">{quoteResult.quote_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Distance</span>
+                  <span className="text-[var(--tx)]">{quoteResult.distance_km ? `${quoteResult.distance_km} km` : "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Drive Time</span>
+                  <span className="text-[var(--tx)]">{quoteResult.drive_time_min ? `${quoteResult.drive_time_min} min` : "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Move Date</span>
+                  <span className="text-[var(--tx)]">{quoteResult.move_date || "—"}</span>
+                </div>
+                {hubspotDealId && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)]">HubSpot Deal</span>
+                    <span className="font-mono text-[var(--tx)]">#{hubspotDealId}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Sub-Components ─────────────────────────────
+
+function TiersDisplay({ tiers }: { tiers: Record<string, TierResult> }) {
+  const tierOrder = ["essentials", "premier", "estate"] as const;
+  const tierColors = {
+    essentials: { bg: "bg-[var(--bg)]", border: "border-[var(--brd)]", accent: "text-[var(--tx)]" },
+    premier: { bg: "bg-[#FAF7F2] dark:bg-[#2A2520]", border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]", accent: "text-[#B8962E]" },
+    estate: { bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]", border: "border-[#C9A84C]/60", accent: "text-[#C9A84C]" },
+  };
+  const tierLabels = { essentials: "Essentials", premier: "Premier", estate: "Estate" };
+
+  return (
+    <div className="space-y-3">
+      {tierOrder.map((name) => {
+        const t = tiers[name];
+        if (!t) return null;
+        const c = tierColors[name];
+        const isPremier = name === "premier";
+        return (
+          <div key={name} className={`rounded-xl border-2 ${c.border} ${c.bg} p-5 space-y-2`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
+                {isPremier && (
+                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <span className={`text-3xl font-black tabular-nums ${c.accent}`}>{fmtPrice(t.price)}</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+              <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+              <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-[var(--tx3)]">Deposit to book</span>
+              <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+            </div>
+            {t.includes.length > 0 && (
+              <details className="group">
+                <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+                  <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
+                  What&apos;s included ▾
+                </summary>
+                <ul className="mt-1.5 space-y-0.5 pl-5">
+                  {t.includes.map((inc, i) => (
+                    <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+                      <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
+                      {inc}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: string }) {
+  return (
+    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold text-[#B8962E] capitalize">{label}</span>
+        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--tx3)]">Deposit to book</span>
+        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+      {t.includes.length > 0 && (
+        <details className="group">
+          <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+            <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
+            What&apos;s included ▾
+          </summary>
+          <ul className="mt-1.5 space-y-0.5 pl-5">
+            {t.includes.map((inc, i) => (
+              <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+                <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
+                {inc}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function OptimisticTiers({ est }: { est: { essentials: number; premier: number; estate: number } }) {
+  const tiers = [
+    { name: "Essentials", price: est.essentials },
+    { name: "Premier", price: est.premier },
+    { name: "Estate", price: est.estate },
+  ];
+  return (
+    <div className="space-y-2">
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Estimated Pricing</p>
+      {tiers.map((t) => {
+        const tax = Math.round(t.price * TAX_RATE);
+        return (
+          <div key={t.name} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+            <span className="text-[12px] font-semibold text-[var(--tx)]">{t.name}</span>
+            <div className="text-right">
+              <span className="text-[16px] font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
+              <span className="text-[9px] text-[var(--tx3)] ml-1.5">+{fmtPrice(tax)} HST</span>
+            </div>
+          </div>
+        );
+      })}
+      <p className="text-[9px] text-[var(--tx3)] italic text-center">
+        Estimate only — generate quote for exact pricing with distance, date &amp; access factors
+      </p>
+    </div>
+  );
+}
+
+function FactorsDisplay({
+  factors,
+  distance,
+  time,
+}: {
+  factors: Record<string, unknown>;
+  distance: number | null;
+  time: number | null;
+}) {
+  const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
+  if (entries.length === 0 && distance == null) return null;
+
+  return (
+    <div className="space-y-1.5">
+      {distance != null && (
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">Distance</span>
+          <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
+        </div>
+      )}
+      {entries.map(([key, val]) => (
+        <div key={key} className="flex items-center justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">{key.replace(/_/g, " ")}</span>
+          <span className="text-[var(--tx)] font-medium">
+            {typeof val === "number"
+              ? val >= 10
+                ? fmtPrice(val)
+                : `×${val}`
+              : String(val)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FactorsDisplayCollapsible({
+  factors,
+  distance,
+  time,
+}: {
+  factors: Record<string, unknown>;
+  distance: number | null;
+  time: number | null;
+}) {
+  const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
+  const hasContent = entries.length > 0 || distance != null;
+  if (!hasContent) return null;
+
+  return (
+    <details className="pt-3 border-t border-[var(--brd)] group" defaultValue={undefined}>
+      <summary className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
+        Factors applied ▾
+      </summary>
+      <div className="mt-2">
+        <FactorsDisplay factors={factors} distance={distance} time={time} />
+      </div>
+    </details>
+  );
+}

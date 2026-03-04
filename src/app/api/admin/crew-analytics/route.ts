@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { getTodayString, getLocalDateString } from "@/lib/business-timezone";
 
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
 
   const url = new URL(req.url);
-  const today = new Date().toISOString().split("T")[0];
-  const from = url.searchParams.get("from") || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+  const today = getTodayString();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+  const from = url.searchParams.get("from") || getLocalDateString(thirtyDaysAgo);
   const to = url.searchParams.get("to") || today;
 
   const admin = createAdminClient();

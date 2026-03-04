@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 
 export async function POST(
   req: NextRequest,
@@ -47,6 +48,7 @@ export async function POST(
 
     if (docError) return NextResponse.json({ error: docError.message }, { status: 500 });
     if (moveError) return NextResponse.json({ error: moveError.message }, { status: 500 });
+    syncDealStageByMoveId(moveId, "paid").catch(() => {});
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     console.error("[record-payment]", err);

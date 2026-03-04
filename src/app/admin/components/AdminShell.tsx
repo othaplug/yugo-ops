@@ -99,7 +99,9 @@ function getPageTitle(pathname: string): { title: string; subtitle: string; useC
   if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
   if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Project", subtitle: "", useClientDate: false };
   if (pathname.match(/^\/admin\/moves\/(?!residential|office|new$)[^/]+$/)) return { title: "Move Detail", subtitle: "", useClientDate: false };
-  return { title: "YUGO", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/quotes/new")) return { title: "Generate Quote", subtitle: "", useClientDate: false };
+  if (pathname.startsWith("/admin/quotes/")) return { title: "Quote Detail", subtitle: "", useClientDate: false };
+  return { title: "Dashboard", subtitle: "", useClientDate: false };
 }
 
 const SIDEBAR_WIDTH = 220;
@@ -208,8 +210,9 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               {/* Logo bar - completely transparent, floating text only */}
               <div className="h-14 px-4 flex items-center shrink-0 bg-transparent">
                 <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${sidebarCollapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : ""}`}>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <YugoLogo size={18} />
+                    <BetaBadge />
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -301,7 +304,6 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                   <div className="min-w-0 flex-1 py-0.5">
                     <div className="flex items-center gap-2">
                       <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
-                      <BetaBadge />
                     </div>
                     {(subtitle || useClientDate) && (
                       <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">

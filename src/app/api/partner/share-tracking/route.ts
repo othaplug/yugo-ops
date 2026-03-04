@@ -12,8 +12,11 @@ export async function POST(req: NextRequest) {
   try {
     const { delivery_id, method, recipient } = await req.json();
 
-    if (!delivery_id || !recipient) {
-      return NextResponse.json({ error: "Missing delivery_id or recipient" }, { status: 400 });
+    if (!delivery_id) {
+      return NextResponse.json({ error: "Missing delivery_id" }, { status: 400 });
+    }
+    if (method === "email" && !recipient) {
+      return NextResponse.json({ error: "Missing recipient email" }, { status: 400 });
     }
 
     const supabase = await createClient();

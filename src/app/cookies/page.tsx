@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 export default function CookiesPage() {
   const router = useRouter();
@@ -10,8 +11,8 @@ export default function CookiesPage() {
     <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans">
       <header className="sticky top-0 z-50 bg-white border-b border-[#E7E5E4]">
         <div className="max-w-[720px] mx-auto px-4 py-4">
-          <Link href="/" className="font-hero text-lg tracking-[2px] text-[#C9A962] hover:underline">
-            Yugo
+          <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
+            <YugoLogo size={20} variant="gold" onLightBackground />
           </Link>
         </div>
       </header>

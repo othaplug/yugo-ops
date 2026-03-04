@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -103,7 +104,7 @@ export default function AdminLoginPage() {
         <div className="adm-card">
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 20, fontWeight: 600, letterSpacing: 4, color: "#C9A962" }}>YUGO</span>
+            <YugoLogo size={20} variant="gold" />
             <div style={{ height: 16, width: 1, background: "#1E1E22" }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#4A4A4E" }}>Admin Console</span>
           </div>

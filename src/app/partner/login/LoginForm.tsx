@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 interface LoginFormProps {
   title: string;
@@ -111,7 +112,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
           {/* Brand */}
           <div style={{ marginBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 20, fontWeight: 600, letterSpacing: 4, color: "#C9A962" }}>YUGO</span>
+              <YugoLogo size={20} variant="gold" />
               <div style={{ height: 16, width: 1, background: "rgba(201,169,98,0.3)" }} />
               <span style={{ fontSize: 11, fontWeight: 600, color: "#C9A962", letterSpacing: 0.5 }}>Partner Portal</span>
             </div>
@@ -272,8 +273,9 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
           <h2 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, color: "#E8E5E0", marginBottom: 8, lineHeight: 1.3 }}>
             Your delivery operations,<br />all in one place
           </h2>
-          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6 }}>
-            Track deliveries, schedule pickups, share live updates with your clients, and manage invoices — powered by Yugo.
+          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 6 }}>
+            Track deliveries, schedule pickups, share live updates with your clients, and manage invoices — powered by{" "}
+            <YugoLogo size={16} variant="gold" />
           </p>
         </div>
       </div>

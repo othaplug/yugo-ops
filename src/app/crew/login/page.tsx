@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatPhone, normalizePhone } from "@/lib/phone";
+import YugoLogo from "@/components/YugoLogo";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
 const DISPATCH_PHONE = "(647) 370-4525";
@@ -311,18 +312,7 @@ export default function CrewLoginPage() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <h1
-              style={{
-                color: "#C9A962",
-                fontFamily: "'Instrument Serif', Georgia, serif",
-                fontSize: 22,
-                fontWeight: 600,
-                letterSpacing: 4,
-                margin: 0,
-              }}
-            >
-              YUGO
-            </h1>
+            <YugoLogo size={22} variant="gold" />
           </div>
 
           <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 26, color: "#F5F5F3", marginBottom: 6 }}>

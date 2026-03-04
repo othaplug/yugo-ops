@@ -20,7 +20,7 @@ function emailLogo() {
 }
 
 /** Global email wrapper: same container + logo + footer used across all YUGO transactional emails */
-function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
+export function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
   return `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
       ${emailLogo()}
@@ -610,6 +610,156 @@ Log in: ${loginUrl}
 Sessions expire after one shift (12h). Keep your PIN secure. If you didn't expect this invite, you can safely ignore this email.
 
 Powered by YUGO`;
+}
+
+export function bookingConfirmationEmail(params: {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  fromAddress: string;
+  toAddress: string;
+  tierLabel: string;
+  serviceLabel: string;
+  totalWithTax: number;
+  depositPaid: number;
+  balanceRemaining: number;
+  trackingUrl: string;
+}): string {
+  const {
+    clientName,
+    moveCode,
+    moveDate,
+    fromAddress,
+    toAddress,
+    tierLabel,
+    serviceLabel,
+    totalWithTax,
+    depositPaid,
+    balanceRemaining,
+    trackingUrl,
+  } = params;
+
+  const dateDisplay = moveDate
+    ? new Date(moveDate + "T00:00:00").toLocaleDateString("en-CA", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "To be confirmed";
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">You&apos;re All Set${clientName ? `, ${clientName}` : ""}!</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your deposit has been received and your ${serviceLabel.toLowerCase()} is confirmed.
+    </p>
+
+    <div style="text-align:center;margin-bottom:24px">
+      <span style="display:inline-block;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(201,169,98,0.15);color:#C9A962;border:1px solid rgba(201,169,98,0.3)">
+        ${moveCode}
+      </span>
+    </div>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Move Details</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:3px 0">Service:</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${serviceLabel}${tierLabel ? ` &mdash; ${tierLabel}` : ""}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${dateDisplay}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${fromAddress}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${toAddress}</td></tr>
+      </table>
+    </div>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Summary</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:3px 0">Total (incl. HST):</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(totalWithTax)}</td></tr>
+        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&check; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(depositPaid)}</td></tr>
+        <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
+        <tr><td style="color:#666;padding:3px 0">Balance remaining:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(balanceRemaining)}</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What Happens Next</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
+        <div>1. Your coordinator will reach out within 24 hours</div>
+        <div>2. We&apos;ll confirm your crew and timing details</div>
+        <div>3. Track your move anytime using the link below</div>
+      </div>
+    </div>
+
+    <a href="${trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px;text-align:center">
+      Track Your Move &rarr;
+    </a>
+
+    <p style="font-size:11px;color:#666;margin-top:16px;text-align:center">
+      Questions? Reply to this email or call us anytime.
+    </p>
+  `);
+}
+
+export function internalBookingAlertEmail(params: {
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  moveCode: string;
+  serviceLabel: string;
+  tierLabel: string;
+  totalWithTax: number;
+  depositPaid: number;
+  fromAddress: string;
+  toAddress: string;
+  moveDate: string | null;
+  paymentId: string;
+}): string {
+  const {
+    clientName,
+    clientEmail,
+    clientPhone,
+    moveCode,
+    serviceLabel,
+    tierLabel,
+    totalWithTax,
+    depositPaid,
+    fromAddress,
+    toAddress,
+    moveDate,
+    paymentId,
+  } = params;
+
+  const dateDisplay = moveDate
+    ? new Date(moveDate + "T00:00:00").toLocaleDateString("en-CA", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })
+    : "TBD";
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">New Booking</div>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${clientName} &mdash; ${serviceLabel}${tierLabel ? ` (${tierLabel})` : ""}</h1>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:16px">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:4px 0;width:100px">Move:</td><td style="color:#C9A962;font-weight:600;padding:4px 0">${moveCode}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${clientName}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${clientEmail}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${clientPhone || "—"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;padding:4px 0">${dateDisplay}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Route:</td><td style="color:#E8E5E0;padding:4px 0">${fromAddress} &rarr; ${toAddress}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0">${formatCurrency(totalWithTax)}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Deposit:</td><td style="color:#2D9F5A;font-weight:600;padding:4px 0">${formatCurrency(depositPaid)}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Square:</td><td style="color:#E8E5E0;padding:4px 0;font-size:10px;font-family:monospace">${paymentId}</td></tr>
+      </table>
+    </div>
+
+    <div style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
+      <div style="font-size:11px;color:#C9A962;font-weight:600">Action needed:</div>
+      <div style="font-size:12px;color:#B8B5B0;margin-top:4px">Assign a crew and confirm timing with the client within 24 hours.</div>
+    </div>
+  `);
 }
 
 export function verificationCodeEmail(params: { code: string; purpose: "email_change" | "2fa" }) {

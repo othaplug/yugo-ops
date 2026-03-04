@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { getTodayString } from "@/lib/business-timezone";
 
 const CATEGORIES = ["parking", "supplies", "fuel", "tolls", "food", "other"] as const;
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     .order("submitted_at", { ascending: false });
 
   if (today === "true") {
-    const d = new Date().toISOString().split("T")[0];
+    const d = getTodayString();
     query = query.gte("submitted_at", d).lte("submitted_at", d + "T23:59:59.999Z");
   }
 

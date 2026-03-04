@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 
+const MAPBOX_TOKEN =
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  if (!MAPBOX_TOKEN || !address?.trim()) return null;
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address.trim())}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=address,place`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    const data = await res.json();
+    const feat = data?.features?.[0];
+    if (feat?.center) return { lat: feat.center[1], lng: feat.center[0] };
+  } catch {}
+  return null;
+}
+
 /** Haversine distance in km */
 function haversineKm(
   lat1: number,
@@ -36,7 +54,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, stage, scheduled_date, status, arrival_window")
+      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, to_address, stage, scheduled_date, status, arrival_window")
       .eq("id", moveId)
       .single();
 
@@ -90,10 +108,13 @@ export async function GET(
       move.from_lat != null && move.from_lng != null
         ? { lat: move.from_lat, lng: move.from_lng }
         : null;
-    const dropoff =
+    let dropoff: { lat: number; lng: number } | null =
       move.to_lat != null && move.to_lng != null
         ? { lat: move.to_lat, lng: move.to_lng }
         : null;
+    if (!dropoff && move.to_address) {
+      dropoff = await geocodeAddress(move.to_address);
+    }
 
     // Compute ETA (minutes) when crew has position and destination
     let etaMinutes: number | null = null;
@@ -117,6 +138,11 @@ export async function GET(
       }
     }
 
+    // Show live map when: active tracking session, move status is in_progress, or move has a stage set (crew/admin started — so client always sees map once crew has begun)
+    const moveInProgress = move?.status === "in_progress";
+    const hasStageSet = liveStage != null && String(liveStage).trim() !== "" && liveStage !== "pending";
+    const hasActiveTracking = !!ts?.is_active || !!moveInProgress || !!hasStageSet;
+
     return NextResponse.json(
       {
         crew,
@@ -126,7 +152,7 @@ export async function GET(
         liveStage,
         lastLocationAt,
         etaMinutes,
-        hasActiveTracking: !!ts?.is_active,
+        hasActiveTracking,
         scheduled_date: move?.scheduled_date ?? null,
         status: move?.status ?? null,
         arrival_window: move?.arrival_window ?? null,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import YugoLogo from "@/components/YugoLogo";
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
@@ -97,12 +98,7 @@ export default function UpdatePasswordPage() {
 
         <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "36px 40px", boxShadow: isLight ? "0 4px 24px rgba(0,0,0,0.04)" : "0 4px 24px rgba(0,0,0,0.2)" }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <h1 style={{
-              color: "#C9A962", fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: 22, fontWeight: 600, letterSpacing: 4, margin: 0,
-            }}>
-              YUGO
-            </h1>
+            <YugoLogo size={22} variant="gold" />
           </div>
 
           {success ? (

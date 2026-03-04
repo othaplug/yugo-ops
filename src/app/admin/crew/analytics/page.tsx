@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTodayString, getLocalDateString } from "@/lib/business-timezone";
 import CrewAnalyticsClient from "./CrewAnalyticsClient";
 
 export default async function CrewAnalyticsPage({
@@ -7,8 +8,8 @@ export default async function CrewAnalyticsPage({
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const today = new Date().toISOString().split("T")[0];
-  const from = params.from || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+  const today = getTodayString();
+  const from = params.from || getLocalDateString(new Date(Date.now() - 30 * 86400000));
   const to = params.to || today;
 
   const admin = createAdminClient();

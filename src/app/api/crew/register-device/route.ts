@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
+import { getTodayString } from "@/lib/business-timezone";
 
 function generateDeviceId(): string {
   return "ipad-" + randomBytes(16).toString("hex");
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayString();
 
     const { data: setupCode, error: codeErr } = await admin
       .from("device_setup_codes")

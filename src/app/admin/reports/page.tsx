@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTodayString } from "@/lib/business-timezone";
 import BackButton from "../components/BackButton";
 import ReportsClient from "./ReportsClient";
 import { formatJobId } from "@/lib/move-code";
@@ -9,7 +10,7 @@ export default async function ReportsPage({
   searchParams: Promise<{ date?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const from = params.from || params.date || today;
   const to = params.to || params.date || today;
   const date = params.date || from;

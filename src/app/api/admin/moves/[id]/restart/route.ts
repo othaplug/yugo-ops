@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /**
  * POST /api/admin/moves/[id]/restart
@@ -27,7 +28,7 @@ export async function POST(
 
     const { data: move, error: fetchErr } = await admin
       .from("moves")
-      .select("id, status")
+      .select("id, status, hubspot_deal_id")
       .eq("id", moveId)
       .single();
 
@@ -55,6 +56,8 @@ export async function POST(
       .single();
 
     if (moveErr) return NextResponse.json({ error: moveErr.message }, { status: 500 });
+
+    syncDealStage(move.hubspot_deal_id, newStatus).catch(() => {});
 
     // 2. End any active tracking sessions for this move (so crew can start fresh)
     await admin

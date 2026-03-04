@@ -12,6 +12,10 @@ import UpcomingItem from "./UpcomingItem";
 interface CalendarViewProps {
   deliveries: any[];
   moves: any[];
+  /** Today's date (YYYY-MM-DD) in app timezone. Used for "today" highlight and consistency. */
+  today?: string;
+  /** App business timezone (e.g. America/Toronto). Used to align calendar day with server. */
+  appTimezone?: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -22,7 +26,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   b2c: "#2D9F5A",
 };
 
-export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
+function toLocalDateString(d: Date, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")?.value ?? "";
+  const m = parts.find((p) => p.type === "month")?.value ?? "";
+  const day = parts.find((p) => p.type === "day")?.value ?? "";
+  return `${y}-${m}-${day}`;
+}
+
+export default function CalendarView({ deliveries, moves, today: todayStr, appTimezone = "America/Toronto" }: CalendarViewProps) {
   const router = useRouter();
   const supabase = createClient();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -46,7 +63,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
   });
 
   const getEventsForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = todayStr ? toLocalDateString(date, appTimezone) : date.toISOString().split("T")[0];
     const dayNum = date.getDate();
 
     const dels = deliveries.filter((d) => {
@@ -67,7 +84,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
 
   const handleDrop = async (date: Date) => {
     if (!dragId || !dragType) return;
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = toLocalDateString(date, appTimezone);
 
     if (dragType === "delivery") {
       await supabase
@@ -87,6 +104,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
   };
 
   const isToday = (date: Date) => {
+    if (todayStr) return toLocalDateString(date, appTimezone) === todayStr;
     const now = new Date();
     return date.toDateString() === now.toDateString();
   };
@@ -129,7 +147,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
       {/* Day Headers - highlighted when in view, better mobile spacing */}
       <div className="grid grid-cols-7 gap-1 sm:gap-[3px] mb-2">
         {days.map((day) => {
-          const dateStr = day.toISOString().split("T")[0];
+          const dateStr = toLocalDateString(day, appTimezone);
           const today = isToday(day);
           const isSelected = selectedDate === dateStr;
           return (
@@ -166,7 +184,7 @@ export default function CalendarView({ deliveries, moves }: CalendarViewProps) {
         {days.map((day) => {
           const { dels, mvs } = getEventsForDay(day);
           const today = isToday(day);
-          const dateStr = day.toISOString().split("T")[0];
+          const dateStr = toLocalDateString(day, appTimezone);
           const isSelected = selectedDate === dateStr;
 
           const handleCellClick = () => {

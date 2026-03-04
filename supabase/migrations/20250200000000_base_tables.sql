@@ -139,8 +139,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Enable realtime on base tables
-ALTER PUBLICATION supabase_realtime ADD TABLE public.organizations;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.crews;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.moves;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.deliveries;
+-- Enable realtime on base tables (skip if already a member)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'organizations') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.organizations;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'crews') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.crews;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'moves') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.moves;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'deliveries') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.deliveries;
+  END IF;
+END $$;

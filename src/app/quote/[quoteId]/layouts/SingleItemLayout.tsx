@@ -1,0 +1,157 @@
+import { MapPin, ArrowRight, Package, Check } from "lucide-react";
+import {
+  type Quote,
+  WINE,
+  FOREST,
+  GOLD,
+  CREAM,
+  TAX_RATE,
+  fmtPrice,
+  calculateDeposit,
+} from "../quote-shared";
+
+interface Props {
+  quote: Quote;
+  onConfirm: () => void;
+  confirmed: boolean;
+}
+
+export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props) {
+  const f = quote.factors_applied as Record<string, unknown> | null;
+  const price = quote.custom_price ?? 0;
+  const tax = Math.round(price * TAX_RATE);
+  const deposit = calculateDeposit("single_item", price);
+  const isFullPayment = price < 500;
+
+  const category = ((f?.item_category as string) ?? "item").replace(/_/g, " ");
+  const weight = f?.weight_class as string | undefined;
+  const includes = (f?.includes as string[] | undefined) ?? [
+    "Professional handling & transport",
+    "Protective blanket wrapping",
+    "Careful loading & unloading",
+    "Floor protection at both locations",
+  ];
+
+  return (
+    <section className="mb-10 space-y-6">
+      {/* Item card */}
+      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
+        <div className="p-5 md:p-7">
+          <div className="flex items-start gap-4">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${WINE}10` }}
+            >
+              <Package className="w-7 h-7" style={{ color: WINE }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span
+                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                >
+                  {category}
+                </span>
+                {weight && (
+                  <span
+                    className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                    style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
+                  >
+                    {weight}
+                  </span>
+                )}
+              </div>
+              <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+                {(f?.item_description as string) ?? "Single Item Delivery"}
+              </p>
+              {f?.assembly_surcharge != null && (
+                <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+                  Assembly / disassembly included
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Route strip */}
+        <div className="px-5 md:px-7 py-4 border-t border-[#E2DDD5]" style={{ backgroundColor: CREAM }}>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
+                Pickup
+              </p>
+              <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
+                {quote.from_address}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
+            <div className="flex-1 min-w-0 text-right">
+              <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
+                Delivery
+              </p>
+              <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
+                {quote.to_address}
+              </p>
+            </div>
+          </div>
+          {quote.distance_km != null && (
+            <p className="text-[10px] text-center mt-2" style={{ color: `${FOREST}50` }}>
+              {quote.distance_km} km{quote.drive_time_min ? ` \u00b7 ~${quote.drive_time_min} min` : ""}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Service includes */}
+      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
+        <h2
+          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-3"
+          style={{ color: FOREST }}
+        >
+          Service Includes
+        </h2>
+        <div className="space-y-2">
+          {includes.map((item, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Price + CTA */}
+      <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
+        <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
+          {fmtPrice(price)}
+        </p>
+        <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+          +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
+        </p>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+            confirmed ? "opacity-80" : ""
+          }`}
+          style={{ backgroundColor: confirmed ? FOREST : WINE }}
+        >
+          {confirmed ? (
+            <span className="flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" /> Selected
+            </span>
+          ) : isFullPayment ? (
+            `Book Now \u2014 ${fmtPrice(price + tax)}`
+          ) : (
+            `Book Now \u2014 ${fmtPrice(deposit)} Deposit`
+          )}
+        </button>
+        <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
+          {isFullPayment
+            ? "Full payment at booking"
+            : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}
+        </p>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,431 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { getResend } from "@/lib/resend";
+import { twilioClient } from "@/lib/twilio";
+import { signTrackToken } from "@/lib/track-token";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import {
+  bookingConfirmationEmail,
+  internalBookingAlertEmail,
+} from "@/lib/email-templates";
+
+/* ═══════════════════════════════════════════════════════════
+   runPostPaymentActions
+   ─────────────────────────────────────────────────────────
+   Orchestrates every action that should fire after a
+   successful deposit payment. Each action runs independently
+   via Promise.allSettled — one failure never blocks others.
+
+   Called fire-and-forget from POST /api/payments/process.
+   ═══════════════════════════════════════════════════════════ */
+
+export interface PostPaymentInput {
+  quoteId: string;
+  moveId: string;
+  moveCode: string;
+  paymentId: string;
+  amount: number;
+}
+
+export interface PostPaymentResult {
+  actions: {
+    name: string;
+    status: "fulfilled" | "rejected";
+    error?: string;
+  }[];
+}
+
+const TIER_LABELS: Record<string, string> = {
+  essentials: "Essentials",
+  premier: "Premier",
+  estate: "Estate",
+  custom: "Standard",
+};
+
+const SERVICE_LABELS: Record<string, string> = {
+  local_move: "Local Residential Move",
+  long_distance: "Long Distance Move",
+  office_move: "Office Relocation",
+  single_item: "Single Item Delivery",
+  white_glove: "White Glove Service",
+  specialty: "Specialty Service",
+  b2b_oneoff: "Delivery",
+};
+
+function getSeason(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const month = new Date(dateStr + "T00:00:00").getMonth();
+  if (month >= 2 && month <= 4) return "spring";
+  if (month >= 5 && month <= 7) return "summer";
+  if (month >= 8 && month <= 10) return "fall";
+  return "winter";
+}
+
+function getDayOfWeek(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+    weekday: "long",
+  });
+}
+
+export async function runPostPaymentActions(
+  input: PostPaymentInput,
+): Promise<PostPaymentResult> {
+  const supabase = createAdminClient();
+
+  /* ── Fetch quote + move in parallel ── */
+  const [quoteRes, moveRes] = await Promise.all([
+    supabase
+      .from("quotes")
+      .select("*, contacts:contact_id(name, email, phone)")
+      .eq("quote_id", input.quoteId)
+      .single(),
+    supabase.from("moves").select("*").eq("id", input.moveId).single(),
+  ]);
+
+  const quote = quoteRes.data;
+  const move = moveRes.data;
+
+  if (!quote || !move) {
+    const msg = `Data fetch failed: quote=${!!quote}, move=${!!move}`;
+    console.error("[postPayment]", msg);
+    return {
+      actions: [{ name: "data_fetch", status: "rejected", error: msg }],
+    };
+  }
+
+  /* ── Derive shared data ── */
+  const contact = quote.contacts as {
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+
+  const clientName = move.client_name || contact?.name || "";
+  const clientEmail = move.client_email || contact?.email || "";
+  const clientPhone = move.client_phone || contact?.phone || "";
+  const hubspotDealId = quote.hubspot_deal_id as string | null;
+
+  const baseUrl = getEmailBaseUrl();
+  const trackToken = signTrackToken("move", input.moveId);
+  const trackingUrl = `${baseUrl}/track/move/${input.moveCode}?token=${trackToken}`;
+
+  const selectedTier = move.tier_selected || quote.selected_tier;
+  const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
+  const serviceLabel =
+    SERVICE_LABELS[quote.service_type] ?? quote.service_type;
+  const totalWithTax = Number(move.amount) || 0;
+  const depositAmount = input.amount;
+  const balanceAmount = totalWithTax - depositAmount;
+
+  const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+  const neighbourhoodTier = (factors.neighbourhood_tier as string) ?? null;
+
+  /* ── Compute base price for addon calculation ── */
+  let basePrice = 0;
+  if (selectedTier && quote.tiers) {
+    const tierData = (
+      quote.tiers as Record<string, { price: number; total: number }>
+    )[selectedTier];
+    basePrice = tierData?.price ?? 0;
+  } else {
+    basePrice = Number(quote.custom_price) || 0;
+  }
+
+  /* ── Compute addon analytics ── */
+  const selectedAddons = (quote.selected_addons || []) as Array<{
+    addon_id?: string;
+    slug?: string;
+    quantity?: number;
+    tier_index?: number;
+  }>;
+  const addonCount = selectedAddons.length;
+  const addonSlugs = selectedAddons
+    .map((a) => a.slug)
+    .filter(Boolean) as string[];
+
+  let addonRevenue = 0;
+  if (addonCount > 0) {
+    const addonIds = selectedAddons
+      .map((a) => a.addon_id)
+      .filter(Boolean) as string[];
+
+    if (addonIds.length > 0) {
+      const { data: addonRecords } = await supabase
+        .from("addons")
+        .select("id, price, price_type, tiers, percent_value")
+        .in("id", addonIds);
+
+      for (const sel of selectedAddons) {
+        const record = (addonRecords ?? []).find(
+          (r) => r.id === sel.addon_id,
+        ) as {
+          price: number;
+          price_type: string;
+          tiers: { price: number }[] | null;
+          percent_value: number | null;
+        } | null;
+        if (!record) continue;
+
+        switch (record.price_type) {
+          case "flat":
+            addonRevenue += record.price;
+            break;
+          case "per_unit":
+            addonRevenue += record.price * (sel.quantity || 1);
+            break;
+          case "tiered":
+            addonRevenue += record.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
+            break;
+          case "percent":
+            addonRevenue += Math.round(
+              basePrice * (record.percent_value ?? 0),
+            );
+            break;
+        }
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     ACTION DEFINITIONS
+     Each returns a Promise<void>. Failures are caught by
+     Promise.allSettled — they never block other actions.
+     ═══════════════════════════════════════════════════════ */
+
+  const actionDefs: { name: string; critical: boolean; fn: () => Promise<void> }[] = [
+    /* ── 1. HubSpot deal update ── */
+    {
+      name: "hubspot_deal_update",
+      critical: true,
+      fn: async () => {
+        if (!hubspotDealId) return;
+
+        await syncDealStage(hubspotDealId, "confirmed");
+
+        const token = process.env.HUBSPOT_ACCESS_TOKEN;
+        if (!token) return;
+
+        await fetch(
+          `https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              properties: {
+                amount: String(totalWithTax),
+                deposit_received_at: new Date().toISOString(),
+                square_invoice_id: input.paymentId,
+                opsplus_move_id: input.moveId,
+                contract_signed: "true",
+                package_type: tierLabel || serviceLabel,
+              },
+            }),
+          },
+        );
+      },
+    },
+
+    /* ── 2. Client confirmation email ── */
+    {
+      name: "client_confirmation_email",
+      critical: true,
+      fn: async () => {
+        if (!clientEmail) return;
+
+        const resend = getResend();
+        const html = bookingConfirmationEmail({
+          clientName,
+          moveCode: input.moveCode,
+          moveDate: quote.move_date,
+          fromAddress: quote.from_address,
+          toAddress: quote.to_address,
+          tierLabel,
+          serviceLabel,
+          totalWithTax,
+          depositPaid: depositAmount,
+          balanceRemaining: balanceAmount,
+          trackingUrl,
+        });
+
+        await resend.emails.send({
+          from: "YUGO <notifications@opsplus.co>",
+          to: clientEmail,
+          subject: `Booking confirmed — ${input.moveCode}`,
+          html,
+          headers: {
+            Precedence: "auto",
+            "X-Auto-Response-Suppress": "All",
+          },
+        });
+      },
+    },
+
+    /* ── 3. Client confirmation SMS ── */
+    {
+      name: "client_confirmation_sms",
+      critical: false,
+      fn: async () => {
+        const from = process.env.TWILIO_PHONE_NUMBER;
+        if (
+          !clientPhone ||
+          !from ||
+          !process.env.TWILIO_ACCOUNT_SID ||
+          !process.env.TWILIO_AUTH_TOKEN
+        )
+          return;
+
+        const digits = clientPhone.replace(/\D/g, "");
+        if (digits.length < 10) return;
+
+        const to = digits.startsWith("1") ? `+${digits}` : `+1${digits}`;
+        const fromDigits = from.replace(/\D/g, "");
+        const fromE164 = fromDigits.startsWith("1")
+          ? `+${fromDigits}`
+          : `+1${fromDigits}`;
+
+        await twilioClient.messages.create({
+          to,
+          from: fromE164,
+          body: [
+            `You're booked with YUGO! Ref: ${input.moveCode}.`,
+            `Your coordinator will reach out within 24hrs.`,
+            `Track your move: ${trackingUrl}`,
+          ].join(" "),
+        });
+      },
+    },
+
+    /* ── 4. Internal admin notification ── */
+    {
+      name: "admin_notification",
+      critical: false,
+      fn: async () => {
+        const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+        if (!adminEmail) return;
+
+        const resend = getResend();
+        const html = internalBookingAlertEmail({
+          clientName,
+          clientEmail,
+          clientPhone,
+          moveCode: input.moveCode,
+          serviceLabel,
+          tierLabel,
+          totalWithTax,
+          depositPaid: depositAmount,
+          fromAddress: quote.from_address,
+          toAddress: quote.to_address,
+          moveDate: quote.move_date,
+          paymentId: input.paymentId,
+        });
+
+        await resend.emails.send({
+          from: "YUGO OPS+ <notifications@opsplus.co>",
+          to: adminEmail,
+          subject: `New booking: ${clientName} — ${tierLabel || serviceLabel} — $${totalWithTax}`,
+          html,
+        });
+      },
+    },
+
+    /* ── 5. Quote analytics ── */
+    {
+      name: "quote_analytics",
+      critical: false,
+      fn: async () => {
+        await supabase.from("quote_analytics").insert({
+          quote_id: quote.id,
+          outcome: "won",
+          quoted_amount: basePrice,
+          final_amount: totalWithTax,
+          neighbourhood_tier: neighbourhoodTier,
+          move_size: quote.move_size,
+          service_type: quote.service_type,
+          season: getSeason(quote.move_date),
+          day_of_week: getDayOfWeek(quote.move_date),
+          tier_selected: selectedTier,
+          deposit_amount: depositAmount,
+          move_id: input.moveId,
+          square_payment_id: input.paymentId,
+          addon_revenue: addonRevenue,
+          addon_count: addonCount,
+          addon_slugs: addonSlugs,
+        });
+      },
+    },
+
+    /* ── 6. Payment event log ── */
+    {
+      name: "payment_event_log",
+      critical: false,
+      fn: async () => {
+        await supabase.from("quote_events").insert({
+          quote_id: input.quoteId,
+          event_type: "payment_started",
+          metadata: {
+            source: "server",
+            payment_id: input.paymentId,
+            amount: depositAmount,
+            move_id: input.moveId,
+            move_code: input.moveCode,
+          },
+        });
+      },
+    },
+  ];
+
+  /* ── Execute all actions in parallel ── */
+  const results = await Promise.allSettled(
+    actionDefs.map((a) => a.fn()),
+  );
+
+  /* ── Map results ── */
+  const actionResults = results.map((r, i) => ({
+    name: actionDefs[i].name,
+    status: r.status as "fulfilled" | "rejected",
+    error:
+      r.status === "rejected"
+        ? String((r as PromiseRejectedResult).reason)
+        : undefined,
+  }));
+
+  /* ── Log failures to webhook_logs ── */
+  const failures = actionResults.filter((a) => a.status === "rejected");
+  if (failures.length > 0) {
+    const logPromises = failures.map((f) =>
+      supabase
+        .from("webhook_logs")
+        .insert({
+          source: "post_payment_automation",
+          event_type: `${f.name}:failed`,
+          payload: {
+            quote_id: input.quoteId,
+            move_id: input.moveId,
+            move_code: input.moveCode,
+          },
+          status: "error",
+          error: f.error ?? "Unknown error",
+        })
+        .then(() => {}),
+    );
+    await Promise.allSettled(logPromises);
+
+    const criticalFailures = failures.filter((f) => {
+      const def = actionDefs.find((d) => d.name === f.name);
+      return def?.critical;
+    });
+
+    if (criticalFailures.length > 0) {
+      console.error(
+        "[postPayment] CRITICAL failures:",
+        criticalFailures.map((f) => `${f.name}: ${f.error}`),
+      );
+    }
+  }
+
+  return { actions: actionResults };
+}

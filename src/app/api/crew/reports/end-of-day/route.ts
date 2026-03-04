@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { formatJobId } from "@/lib/move-code";
+import { getTodayString } from "@/lib/business-timezone";
 
 /** GET preview of end-of-day report data (before submit). */
 export async function GET(req: NextRequest) {
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
   const payload = token ? verifyCrewToken(token) : null;
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const admin = createAdminClient();
 
   const [readinessRes, expensesRes, sessionsRes] = await Promise.all([
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
         )
       : {};
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayString();
   const admin = createAdminClient();
 
   const { data: existing } = await admin

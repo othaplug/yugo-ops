@@ -1,0 +1,164 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email/send";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { signTrackToken } from "@/lib/track-token";
+
+/**
+ * Vercel Cron: runs daily at 10 AM EST.
+ * Sends T-72hr checklist emails and T-24hr crew detail emails.
+ */
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = createAdminClient();
+  const baseUrl = getEmailBaseUrl();
+  const now = new Date();
+
+  const toDateStr = (offset: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset);
+    return d.toISOString().split("T")[0];
+  };
+
+  const threeDaysOut = toDateStr(3);
+  const oneDayOut = toDateStr(1);
+
+  const results = { sent72hr: 0, sent24hr: 0, errors: [] as string[] };
+
+  /* ── T-72 Hour Emails ── */
+  const { data: moves72 } = await supabase
+    .from("moves")
+    .select("id, move_code, client_name, client_email, scheduled_date, from_address, to_address, from_access, to_access")
+    .in("status", ["confirmed", "scheduled"])
+    .eq("scheduled_date", threeDaysOut)
+    .is("pre_move_72hr_sent", null);
+
+  if (moves72 && moves72.length > 0) {
+    for (const move of moves72) {
+      if (!move.client_email) continue;
+
+      const trackToken = signTrackToken("move", move.id);
+      const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+
+      try {
+        const result = await sendEmail({
+          to: move.client_email,
+          subject: `Your move is in 3 days — ${move.move_code || "Checklist"}`,
+          template: "pre-move-72hr",
+          data: {
+            clientName: move.client_name || "",
+            moveCode: move.move_code || move.id,
+            moveDate: move.scheduled_date,
+            fromAddress: move.from_address || "",
+            toAddress: move.to_address || "",
+            fromAccess: move.from_access,
+            toAccess: move.to_access,
+            trackingUrl,
+          },
+        });
+
+        if (result.success) {
+          await supabase
+            .from("moves")
+            .update({ pre_move_72hr_sent: new Date().toISOString() })
+            .eq("id", move.id);
+          results.sent72hr++;
+        } else {
+          results.errors.push(`72hr:${move.move_code}:${result.error}`);
+        }
+      } catch (err) {
+        results.errors.push(`72hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
+  /* ── T-24 Hour Emails ── */
+  const { data: moves24 } = await supabase
+    .from("moves")
+    .select(`
+      id, move_code, client_name, client_email,
+      scheduled_date, scheduled_time, from_address, to_address,
+      crew_id, crew_size, truck_info, arrival_window,
+      crews:crew_id(name, members)
+    `)
+    .in("status", ["confirmed", "scheduled"])
+    .eq("scheduled_date", oneDayOut)
+    .is("pre_move_24hr_sent", null);
+
+  if (moves24 && moves24.length > 0) {
+    const { data: coordConfig } = await supabase
+      .from("platform_config")
+      .select("key, value")
+      .in("key", ["coordinator_name", "coordinator_phone"]);
+
+    const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
+    const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
+
+    for (const move of moves24) {
+      if (!move.client_email) continue;
+
+      const trackToken = signTrackToken("move", move.id);
+      const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+
+      const crewRaw = move.crews as { name: string; members: string[] } | { name: string; members: string[] }[] | null;
+      const crew = Array.isArray(crewRaw) ? crewRaw[0] ?? null : crewRaw;
+      const crewLeadName = crew?.name || null;
+      const crewSize = move.crew_size ?? (crew?.members?.length || null);
+
+      try {
+        const result = await sendEmail({
+          to: move.client_email,
+          subject: `Your crew is ready for tomorrow — ${move.move_code || "Details"}`,
+          template: "pre-move-24hr",
+          data: {
+            clientName: move.client_name || "",
+            moveCode: move.move_code || move.id,
+            moveDate: move.scheduled_date,
+            fromAddress: move.from_address || "",
+            toAddress: move.to_address || "",
+            crewLeadName,
+            crewSize,
+            truckInfo: move.truck_info || null,
+            arrivalWindow: move.arrival_window || move.scheduled_time || null,
+            coordinatorName,
+            coordinatorPhone,
+            trackingUrl,
+          },
+        });
+
+        if (result.success) {
+          await supabase
+            .from("moves")
+            .update({ pre_move_24hr_sent: new Date().toISOString() })
+            .eq("id", move.id);
+          results.sent24hr++;
+        } else {
+          results.errors.push(`24hr:${move.move_code}:${result.error}`);
+        }
+      } catch (err) {
+        results.errors.push(`24hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
+  if (results.errors.length > 0) {
+    await supabase.from("webhook_logs").insert({
+      source: "cron_pre_move_emails",
+      event_type: "partial_failure",
+      payload: results,
+      status: "error",
+      error: results.errors.join("; ").slice(0, 500),
+    }).then(() => {});
+  }
+
+  return NextResponse.json({
+    ok: true,
+    sent72hr: results.sent72hr,
+    sent24hr: results.sent24hr,
+    errors: results.errors.length,
+  });
+}

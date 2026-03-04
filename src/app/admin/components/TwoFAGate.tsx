@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import GlobalModal from "@/components/ui/Modal";
+import YugoLogo from "@/components/YugoLogo";
 
 const VERIFIED_KEY = "ops-2fa-verified";
 
@@ -106,7 +107,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
         <GlobalModal open={showModal} onClose={() => {}} title="" noHeader>
           <div className="p-6">
             <div className="text-center mb-6">
-              <span className="font-hero text-[22px] tracking-[4px] text-[var(--gold)] mb-4 inline-block">YUGO</span>
+              <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
               <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Two-factor verification</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">Enter the 6-digit code sent to your email</p>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/format-currency";
+import YugoLogo from "@/components/YugoLogo";
 
 interface DashboardData {
   completedThisMonth: number;
@@ -124,7 +125,10 @@ export default function PartnerBillingTab({ data, orgName }: { data: DashboardDa
 
       {/* Industry Comparison */}
       <div>
-        <h3 className="text-[16px] font-bold text-[#1A1A1A] font-hero mb-3">Yugo vs Industry Standards</h3>
+        <h3 className="text-[16px] font-bold text-[#1A1A1A] font-hero mb-3 flex items-center gap-2">
+          <YugoLogo size={18} variant="black" />
+          <span>vs Industry Standards</span>
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <ComparisonCard label="On-Time Delivery" yugoValue={`${overallOnTime}%`} industryValue="82%" />
           <ComparisonCard
@@ -177,7 +181,9 @@ function ComparisonCard({ label, yugoValue, industryValue, accent }: { label: st
       <div className="flex items-baseline justify-between mt-2">
         <div>
           <span className="text-[22px] font-bold text-[#1A1A1A] font-hero">{yugoValue}</span>
-          <div className="text-[10px] text-[#888]">Yugo</div>
+          <div className="mt-0.5 flex items-center">
+            <YugoLogo size={12} variant="black" />
+          </div>
         </div>
         <div className="text-right">
           <span className="text-[16px] font-bold text-[#aaa]">{industryValue}</span>
