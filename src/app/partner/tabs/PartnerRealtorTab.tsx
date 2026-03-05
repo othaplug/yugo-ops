@@ -43,7 +43,7 @@ export default function PartnerRealtorTab({
 }) {
   if (referrals.length === 0) {
     return (
-      <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
+      <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
         <p className="text-[14px] text-[#888]">
           {mode === "active" ? "No active referrals." : "No completed referrals yet."}
         </p>
@@ -52,14 +52,14 @@ export default function PartnerRealtorTab({
   }
 
   return (
-    <div className="space-y-3">
-      {referrals.map((r) => {
+    <div className="space-y-0">
+      {referrals.map((r, i) => {
         const badgeClass = STATUS_BADGE[(r.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
         const statusLabel = toTitleCase(r.status || "");
         const tierLabel = TIER_LABEL[r.tier || "standard"] || r.tier || "Standard";
 
         return (
-          <div key={r.id} className="bg-white border border-[#E8E4DF] rounded-xl p-5 hover:border-[#C9A962]/40 transition-colors">
+          <div key={r.id} className={`py-5 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-[15px] font-bold text-[#1A1A1A]">{r.client_name || "Unnamed Client"}</h3>

@@ -73,7 +73,8 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
         setLinkTitle("");
         setLinkUrl("");
         fetchData();
-      });
+      })
+      .catch((err) => console.error("[MoveDocuments] addLink failed:", err));
   };
 
   const handleLinkInvoice = () => {
@@ -89,7 +90,8 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
         if (data.error) throw new Error(data.error);
         setLinkInvoiceId("");
         fetchData();
-      });
+      })
+      .catch((err) => console.error("[MoveDocuments] linkInvoice failed:", err));
   };
 
   const handleUnlinkInvoice = (invoiceId: string) => {
@@ -178,7 +180,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 {linkedInvoices.map((inv) => (
                   <li key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
                     <span className="text-[var(--tx)]">
-                      {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount)})
+                      {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST` : ""})
                     </span>
                     <button
                       type="button"

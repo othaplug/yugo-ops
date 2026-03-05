@@ -24,7 +24,14 @@ const PUBLIC_PATHS = new Set([
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
+  if (pathname.startsWith("/quote/")) return true;
+  if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
+  if (pathname.startsWith("/api/contracts/")) return true;
+  if (pathname.startsWith("/api/quotes/")) return true;
+  if (pathname.startsWith("/api/payments/")) return true;
+  if (pathname.startsWith("/api/tips/")) return true;
+  if (pathname.startsWith("/api/track/")) return true;
   if (pathname.startsWith("/api/tracking/stream/")) return true;
   if (pathname.startsWith("/api/tracking/checkpoint")) return true;
   if (pathname.startsWith("/api/tracking/location")) return true;

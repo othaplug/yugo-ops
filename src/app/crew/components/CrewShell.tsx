@@ -9,16 +9,11 @@ import { Icons } from "@/app/admin/components/SidebarIcons";
 import YugoLogo from "@/components/YugoLogo";
 import CrewSettingsDropdown from "./CrewSettingsDropdown";
 
-const CREW_PAGE_TITLES: Record<string, { title: string; subtitle: string; hideHeaderTitle?: boolean }> = {
-  "/crew/dashboard": { title: "Dashboard", subtitle: "", hideHeaderTitle: true },
-  "/crew/expense": { title: "Expenses", subtitle: "", hideHeaderTitle: true },
-  "/crew/end-of-day": { title: "End of Day", subtitle: "", hideHeaderTitle: true },
-};
-function getCrewPageTitle(pathname: string): { title: string; subtitle: string; hideHeaderTitle?: boolean } {
-  if (CREW_PAGE_TITLES[pathname]) return CREW_PAGE_TITLES[pathname];
-  if (pathname.startsWith("/crew/dashboard/job/")) return { title: "Job", subtitle: "", hideHeaderTitle: true };
-  return { title: "Crew Portal", subtitle: "", hideHeaderTitle: true };
-}
+const NAV_ITEMS = [
+  { href: "/crew/dashboard", label: "Dashboard", icon: "target" as const },
+  { href: "/crew/expense", label: "Expenses", icon: "dollarSign" as const },
+  { href: "/crew/end-of-day", label: "End of Day", icon: "fileText" as const },
+];
 
 const SIDEBAR_WIDTH = 220;
 
@@ -26,10 +21,10 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [crewMember, setCrewMember] = useState<{ name: string } | null>(null);
+  const [crewMember, setCrewMember] = useState<{ name: string; teamName?: string } | null>(null);
 
-  const { title, subtitle, hideHeaderTitle } = getCrewPageTitle(pathname);
-  const isActive = (href: string) => href === "/crew/dashboard" ? pathname === "/crew/dashboard" : pathname.startsWith(href);
+  const isActive = (href: string) => href === "/crew/dashboard" ? pathname === "/crew/dashboard" || pathname.startsWith("/crew/dashboard/job/") : pathname.startsWith(href);
+  const isJobPage = pathname.startsWith("/crew/dashboard/job/");
 
   useEffect(() => {
     fetch("/api/crew/dashboard")
@@ -41,10 +36,17 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
         return r.json();
       })
       .then((d) => {
-        if (d?.crewMember) setCrewMember({ name: d.crewMember.name });
+        if (d?.crewMember) setCrewMember({ name: d.crewMember.name, teamName: d.crewMember.teamName });
       })
       .catch(() => {});
   }, [router]);
+
+  const initials = (crewMember?.name || "C")
+    .split(/\s+/)
+    .map((s) => s[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <ThemeProvider>
@@ -58,7 +60,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           </a>
           {sidebarOpen && (
             <div
-              className="fixed inset-0 z-40 md:hidden bg-black/35"
+              className="fixed inset-0 z-40 md:hidden bg-black/40 backdrop-blur-[2px]"
               style={{ left: SIDEBAR_WIDTH }}
               onClick={() => setSidebarOpen(false)}
               aria-hidden="true"
@@ -71,12 +73,14 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               glass-sidebar border-r border-[var(--brd)]
               transition-all duration-300 ease-out
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-              w-[220px]
+              w-[${SIDEBAR_WIDTH}px]
             `}
           >
-            <div className="h-14 px-4 flex items-center justify-between shrink-0 bg-transparent">
-              <div className="flex items-center gap-1.5">
+            {/* Logo area */}
+            <div className="h-16 px-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
                 <YugoLogo size={18} variant="gold" />
+                <span className="text-[9px] font-bold tracking-[2px] uppercase text-[var(--gold)]/60 ml-1">Crew</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -90,67 +94,57 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
 
-            <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide">
-              <div className="mb-4">
-                <div className="text-[9px] font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 font-hero">
-                  Crew
-                </div>
-                <div className="space-y-0.5">
-                  <Link
-                    href="/crew/dashboard"
-                    onClick={() => setSidebarOpen(false)}
-                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
-                      isActive("/crew/dashboard")
-                        ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
-                    }`}
-                  >
-                    <span className={pathname === "/crew/dashboard" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                      <Icons.target />
-                    </span>
-                    <span>Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/crew/expense"
-                    onClick={() => setSidebarOpen(false)}
-                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
-                      isActive("/crew/expense")
-                        ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
-                    }`}
-                  >
-                    <span className={pathname === "/crew/expense" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                      <Icons.dollarSign />
-                    </span>
-                    <span>Expenses</span>
-                  </Link>
-                  <Link
-                    href="/crew/end-of-day"
-                    onClick={() => setSidebarOpen(false)}
-                    className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
-                      isActive("/crew/end-of-day")
-                        ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-                        : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
-                    }`}
-                  >
-                    <span className={pathname === "/crew/end-of-day" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                      <Icons.fileText />
-                    </span>
-                    <span>End of Day</span>
-                  </Link>
-                </div>
+            {/* Navigation */}
+            <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide">
+              <div className="px-3 space-y-1">
+                {NAV_ITEMS.map((item) => {
+                  const active = isActive(item.href);
+                  const IconComp = Icons[item.icon];
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
+                        active
+                          ? "bg-[var(--gold)]/10 text-[var(--gold)] font-semibold shadow-sm"
+                          : "text-[var(--tx2)] hover:bg-[var(--card)] hover:text-[var(--tx)]"
+                      }`}
+                    >
+                      <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                        <IconComp />
+                      </span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </nav>
 
-            <div className="shrink-0 px-4 py-3 border-t border-[var(--brd)]">
-              {crewMember?.name && (
-                <div className="text-[11px] font-semibold text-[var(--tx)] truncate mb-2">{crewMember.name}</div>
-              )}
+            {/* User area */}
+            <div className="shrink-0 px-3 py-3 border-t border-[var(--brd)]">
+              <div className="flex items-center gap-3 px-2 mb-3">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                  style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {crewMember?.name && (
+                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{crewMember.name}</div>
+                  )}
+                  {crewMember?.teamName && (
+                    <div className="text-[10px] text-[var(--tx3)] truncate">{crewMember.teamName}</div>
+                  )}
+                </div>
+              </div>
               <form action="/api/crew/logout" method="POST" className="w-full">
                 <button
                   type="submit"
-                  className="sidebar-nav-lift w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] border border-[var(--brd)]"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)] border border-[var(--brd)] transition-colors"
                 >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                   Sign out
                 </button>
               </form>
@@ -160,13 +154,14 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           <div className="hidden md:block shrink-0 w-[220px]" />
 
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
+            {/* Top bar */}
             <div
-              className="fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] safe-area-top left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"
+              className="fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/60 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] safe-area-top left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="md:hidden size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5"
+                  className="md:hidden size-10 flex items-center justify-center rounded-xl hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0"
                   aria-label="Open menu"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -175,13 +170,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                     <line x1="3" y1="18" x2="21" y2="18" />
                   </svg>
                 </button>
-                {!hideHeaderTitle && (
-                  <div className="min-w-0 flex-1 py-0.5">
-                    <h2 className="font-hero text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
-                    {subtitle && (
-                      <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">{subtitle}</div>
-                    )}
-                  </div>
+                {isJobPage && (
+                  <span className="text-[11px] font-semibold text-[var(--gold)] uppercase tracking-[1.5px]">Active Job</span>
                 )}
               </div>
               <div className="flex-shrink-0">

@@ -4,6 +4,7 @@ import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
 import { isFeatureEnabled } from "@/lib/platform-settings";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 export async function POST(req: NextRequest) {
   if (!(await isFeatureEnabled("tipping_enabled"))) {
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No card on file. Please contact us." }, { status: 400 });
     }
 
+    const { locationId } = await getSquarePaymentConfig();
+    if (!locationId) {
+      return NextResponse.json({ error: "Payment configuration unavailable" }, { status: 503 });
+    }
+
     const paymentRes = await squareClient.payments.create({
       sourceId: move.square_card_id,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
       referenceId: `TIP-${moveId}`,
       note: `Tip for crew — Move ${move.move_code || moveId}`,
       idempotencyKey: `tip-${moveId}-${Date.now()}`,
-      locationId: process.env.SQUARE_LOCATION_ID!,
+      locationId,
     });
 
     const paymentId = paymentRes.payment?.id;

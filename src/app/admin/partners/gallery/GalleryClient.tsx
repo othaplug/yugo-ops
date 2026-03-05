@@ -92,8 +92,9 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
   return (
     <>
       {/* Projects - consolidated exhibitions & transports */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
-        <div className="p-4 space-y-2">
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
+        <div className="space-y-0 divide-y divide-[var(--brd)]/30">
           {allProjects.length === 0 ? (
             <div className="py-8 text-center text-[12px] text-[var(--tx3)]">
               No projects yet
@@ -109,7 +110,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               ? `${ex.gallery || "—"} • ${ex.location || "—"} • ${dates}`
               : `${ex.gallery || "—"} • ${ex.address || ex.location || "—"} • ${ex.insurance_value || "—"}`;
             return (
-              <div key={ex.id} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden hover:border-[var(--gold)] transition-all">
+              <div key={ex.id} className="py-3 first:pt-0">
                 <button type="button" onClick={toggle} className="w-full flex items-center gap-3 px-4 py-3 text-left">
                   {!isExhibition && (
                     <div className="w-10 h-10 rounded-lg bg-[var(--gdim)] flex items-center justify-center text-[var(--gold)] shrink-0">
@@ -132,7 +133,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                   </svg>
                 </button>
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]">
+                  <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]/30">
                     <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{ex.details || "—"}</div>
                     <button type="button" onClick={() => openDetail(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline mr-3">View details →</button>
                     <button type="button" onClick={() => openEdit(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--tx2)] hover:underline">Edit project</button>
@@ -155,7 +156,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             </div>
             <div className="space-y-3 text-[12px]">
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Name</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Name</div>
                 <div className="text-[var(--tx)] font-semibold">{projectDetail.name}</div>
               </div>
               <div>
@@ -171,7 +172,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--tx)]">{projectDetail.address || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Location</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
                 <div className="text-[var(--tx)]">{projectDetail.location || "—"}</div>
               </div>
               <div>
@@ -183,7 +184,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
                 <Badge status={projectDetail.status} />
               </div>
               {(projectDetail.white_glove || projectDetail.crating_required || projectDetail.climate_controlled) && (
@@ -195,7 +196,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 </div>
               )}
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Details</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
               </div>
             </div>

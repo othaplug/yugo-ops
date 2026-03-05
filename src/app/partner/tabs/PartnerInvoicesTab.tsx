@@ -65,7 +65,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
 
   if (invoices.length === 0) {
     return (
-      <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
+      <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
         <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#F5F3F0] flex items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
@@ -76,20 +76,23 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="bg-[#FAF8F5] rounded-xl p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888]">Total Invoices</div>
-          <div className="text-[20px] font-bold text-[#1A1A1A] mt-0.5">{invoices.length}</div>
-        </div>
-        <div className="bg-[#FAF8F5] rounded-xl p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888]">Outstanding</div>
-          <div className="text-[20px] font-bold text-[#D14343] mt-0.5">{formatCurrency(totalOutstanding)}</div>
-        </div>
-        <div className="bg-[#FAF8F5] rounded-xl p-3 hidden sm:block">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888]">Total Paid</div>
-          <div className="text-[20px] font-bold text-[#2D9F5A] mt-0.5">{formatCurrency(totalPaid)}</div>
+    <div>
+      {/* Summary stats */}
+      <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
+            <div className="text-[20px] font-bold text-[#1A1A1A] mt-0.5">{invoices.length}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+            <div className="text-[20px] font-bold text-[#D14343] mt-0.5">{formatCurrency(totalOutstanding)}</div>
+          </div>
+          <div className="hidden sm:block">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
+            <div className="text-[20px] font-bold text-[#2D9F5A] mt-0.5">{formatCurrency(totalPaid)}</div>
+          </div>
         </div>
       </div>
 
@@ -125,11 +128,12 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#E8E4DF] rounded-xl overflow-hidden">
+      <div className="border-t border-[var(--brd)]/30 pt-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E8E4DF]">
+              <tr className="border-b border-[var(--brd)]/30">
                 <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Invoice</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888] hidden sm:table-cell">Date</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Due</th>
@@ -141,7 +145,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
               {filtered.map((inv) => {
                 const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
                 return (
-                  <tr key={inv.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAF8F5] transition-colors">
+                  <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[#FAF8F5]/50 transition-colors">
                     <td className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">
                       {inv.invoice_number || `INV-${inv.id.slice(0, 6)}`}
                     </td>

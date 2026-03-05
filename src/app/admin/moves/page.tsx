@@ -24,10 +24,10 @@ export default async function AllMovesPage() {
   if (contactIds.length > 0) {
     const { data: contacts } = await db
       .from("contacts")
-      .select("id, full_name")
+      .select("id, name")
       .in("id", contactIds);
     if (contacts) {
-      contactMap = Object.fromEntries(contacts.map((c) => [c.id, c.full_name || ""]));
+      contactMap = Object.fromEntries(contacts.map((c) => [c.id, c.name || ""]));
     }
   }
 

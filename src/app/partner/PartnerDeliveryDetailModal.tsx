@@ -267,26 +267,26 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
         <div className="flex-1 overflow-y-auto p-5">
           {activeSection === "details" && (
             <div className="space-y-4">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-1">Status</div>
+              <div className="border-b border-[var(--brd)]/30 pb-4">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Status</div>
                 <span className="text-[13px] font-semibold text-[#1A1A1A]">
                   {liveStage ? (CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : toTitleCase(d.status || "")}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-3 border-b border-[var(--brd)]/30 pb-4">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-0.5">Delivery to</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
                   <div className="text-[13px] text-[#1A1A1A]">{d.delivery_address || "—"}</div>
                 </div>
                 {d.pickup_address && (
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-0.5">Pickup from</div>
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
                     <div className="text-[13px] text-[#1A1A1A]">{d.pickup_address}</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-0.5">Date & time</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Date & time</div>
                   <div className="text-[13px] font-semibold text-[#1A1A1A]">
                     {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "—"}
                     {d.time_slot && ` · ${d.time_slot}`}
@@ -296,7 +296,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
               {itemsDisplay.length > 0 && (
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-1.5">Items</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Items</div>
                   <ul className="text-[13px] text-[#1A1A1A] space-y-0.5">
                     {itemsDisplay.map((item, i) => (
                       <li key={i} className="flex items-center gap-2">
@@ -311,8 +311,8 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           )}
 
           {activeSection === "tracking" && d.crew_id && (
-            <div className="space-y-3">
-              <div className="rounded-xl bg-[#FAF8F5] border border-[#E8E4DF] p-4 flex items-center gap-3">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 pb-4 border-b border-[var(--brd)]/30">
                 <div className="w-10 h-10 rounded-xl bg-[#C9A962]/15 flex items-center justify-center flex-shrink-0">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                 </div>
@@ -333,7 +333,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               </div>
 
               {mapData ? (
-                <div className="rounded-xl overflow-hidden border border-[#E8E4DF] h-[280px] bg-[#1A1A1A]">
+                <div className="overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
                   <DeliveryTrackMap
                     center={mapData.center}
                     crew={mapData.crew}
@@ -343,7 +343,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   />
                 </div>
               ) : crewPosition ? (
-                <div className="rounded-xl overflow-hidden border border-[#E8E4DF] h-[240px] bg-[#F5F3F0]">
+                <div className="overflow-hidden h-[240px] bg-[#F5F3F0] rounded-lg">
                   <iframe
                     title="Crew location"
                     width="100%"
@@ -354,7 +354,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   />
                 </div>
               ) : (
-                <div className="rounded-xl bg-[#FAF8F5] border border-[#E8E4DF] p-8 text-center">
+                <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#F5F3F0] flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </div>
@@ -363,13 +363,13 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-[#FAF8F5] border border-[#E8E4DF] p-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-0.5">Destination</div>
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--brd)]/30">
+                <div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
                   <div className="text-[12px] text-[#1A1A1A] truncate">{d.delivery_address || "—"}</div>
                 </div>
-                <div className="rounded-lg bg-[#FAF8F5] border border-[#E8E4DF] p-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-0.5">Progress</div>
+                <div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
                   <div className="text-[12px] font-semibold text-[#1A1A1A]">{Math.round(progressPercent)}%</div>
                 </div>
               </div>
@@ -381,8 +381,8 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               {notes.length === 0 && (
                 <p className="text-[13px] text-[#888] text-center py-4">No messages yet. Add a note below.</p>
               )}
-              {notes.map((n) => (
-                <div key={n.id} className="rounded-lg bg-[#FAF8F5] border border-[#E8E4DF] p-3">
+              {notes.map((n, i) => (
+                <div key={n.id} className={`py-3 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[11px] font-semibold text-[#1A1A1A]">{n.author_name}</span>
                     <span className="text-[10px] text-[#888]">
@@ -417,7 +417,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               {photosLoading ? (
                 <p className="text-[12px] text-[#888] text-center py-4">Loading…</p>
               ) : photos.length === 0 ? (
-                <div className="text-center py-6">
+                <div className="text-center py-12 border-t border-[var(--brd)]/30 pt-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#F5F3F0] flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   </div>
@@ -432,7 +432,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                       href={p.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block aspect-square rounded-lg overflow-hidden border border-[#E8E4DF] hover:border-[#C9A962]/50 transition-colors"
+                      className="block aspect-square rounded-lg overflow-hidden bg-[var(--brd)]/10 hover:opacity-90 transition-opacity"
                     >
                       <img src={p.url} alt={p.checkpoint || p.category || "Photo"} className="w-full h-full object-cover" />
                     </a>

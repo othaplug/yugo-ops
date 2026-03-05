@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { Trash2 } from "lucide-react";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 interface Quote {
   id: string;
@@ -54,14 +55,23 @@ function serviceLabel(st: string): string {
   return map[st] || st;
 }
 
-function quoteAmount(q: Quote): string {
-  if (q.custom_price) return formatCurrency(q.custom_price);
+function quoteAmountRaw(q: Quote): number | null {
+  if (q.custom_price) return q.custom_price;
   if (q.tiers && typeof q.tiers === "object") {
     const tiers = q.tiers as Record<string, { total?: number }>;
     const first = Object.values(tiers).find((t) => t?.total);
-    if (first?.total) return formatCurrency(first.total);
+    if (first?.total) return first.total;
   }
-  return "—";
+  return null;
+}
+
+function quoteAmount(q: Quote): string {
+  const raw = quoteAmountRaw(q);
+  return raw != null ? formatCurrency(raw) : "—";
+}
+
+function hstLabel(amount: number): string {
+  return `+${formatCurrency(Math.round(amount * 0.13))} HST`;
 }
 
 function relTime(iso: string | null): string {
@@ -114,6 +124,136 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
     }
   }, [router]);
 
+  const columns: ColumnDef<Quote>[] = useMemo(
+    () => [
+      {
+        id: "quote_id",
+        label: "Quote ID",
+        accessor: (q) => q.quote_id,
+        searchable: true,
+        exportAccessor: (q) => q.quote_id ?? "",
+      },
+      {
+        id: "client",
+        label: "Client",
+        accessor: (q) => q.client_name,
+        searchable: true,
+        render: (q) => (
+          <span className="font-bold text-[var(--tx)] truncate block">
+            {q.client_name || "Unnamed Client"}
+          </span>
+        ),
+        exportAccessor: (q) => q.client_name ?? "",
+      },
+      {
+        id: "service",
+        label: "Service",
+        accessor: (q) => q.service_type,
+        render: (q) => serviceLabel(q.service_type),
+        exportAccessor: (q) => serviceLabel(q.service_type),
+      },
+      {
+        id: "status",
+        label: "Status",
+        accessor: (q) => q.status,
+        render: (q) => {
+          const expiry = expiryInfo(q.expires_at, q.status);
+          return (
+            <span className="inline-flex items-center gap-1.5 flex-wrap">
+              <span
+                className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
+              >
+                {toTitleCase(q.status)}
+              </span>
+              {expiry && (
+                <span className={`text-[9px] font-semibold ${expiry.className}`}>
+                  {expiry.label}
+                </span>
+              )}
+            </span>
+          );
+        },
+        exportAccessor: (q) => toTitleCase(q.status),
+      },
+      {
+        id: "sent_created",
+        label: "Sent/Created",
+        accessor: (q) => q.sent_at || q.created_at,
+        render: (q) => relTime(q.sent_at || q.created_at),
+        exportAccessor: (q) => relTime(q.sent_at || q.created_at),
+      },
+      {
+        id: "amount",
+        label: "Amount (+HST)",
+        accessor: (q) => quoteAmount(q),
+        align: "right",
+        render: (q) => {
+          const raw = quoteAmountRaw(q);
+          return (
+            <span>
+              <span className="font-bold text-[var(--gold)] font-heading">
+                {quoteAmount(q)}
+              </span>
+              {raw != null && (
+                <span className="text-[8px] text-[var(--tx3)] ml-0.5">{hstLabel(raw)}</span>
+              )}
+            </span>
+          );
+        },
+        exportAccessor: (q) => quoteAmount(q),
+      },
+      {
+        id: "actions",
+        label: "Actions",
+        accessor: () => "",
+        sortable: false,
+        searchable: false,
+        align: "right",
+        minWidth: "80px",
+        render: (q) => {
+          const isDraft = q.status === "draft";
+          if (!isDraft) return null;
+          return (
+            <div
+              className="flex items-center justify-end gap-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {confirmId === q.id ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(q.id)}
+                    disabled={deleting === q.id}
+                    className="px-2 py-1 rounded text-[9px] font-bold bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
+                  >
+                    {deleting === q.id ? "…" : "Delete"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmId(null)}
+                    className="px-2 py-1 rounded text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmId(q.id)}
+                  title="Delete draft"
+                  className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [confirmId, deleting, handleDelete],
+  );
+
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <div className="flex items-center justify-between gap-3 mb-5">
@@ -129,7 +269,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-5">
+      <div className="flex flex-wrap gap-1.5 mb-6">
         {STATUS_OPTIONS.map((o) => (
           <button
             key={o.value}
@@ -146,81 +286,20 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         ))}
       </div>
 
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="divide-y divide-[var(--brd)]/50">
-          {filtered.length === 0 ? (
-            <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-              No quotes yet
-            </div>
-          ) : (
-            filtered.map((q) => {
-              const expiry = expiryInfo(q.expires_at, q.status);
-              const isDraft = q.status === "draft";
-              return (
-                <div
-                  key={q.id}
-                  className="flex items-center gap-0 hover:bg-[var(--bg)]/30 transition-colors"
-                >
-                  <Link
-                    href={`/admin/quotes/${q.quote_id || q.id}`}
-                    className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3.5"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}>
-                          {toTitleCase(q.status)}
-                        </span>
-                        {expiry && (
-                          <span className={`text-[9px] font-semibold ${expiry.className}`}>{expiry.label}</span>
-                        )}
-                      </div>
-                      <div className="text-[13px] font-bold text-[var(--tx)] mt-0.5 truncate">{q.client_name || "—"}</div>
-                      <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                        {serviceLabel(q.service_type)} · {relTime(q.sent_at || q.created_at)}
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="text-[14px] font-bold text-[var(--gold)] font-heading">{quoteAmount(q)}</div>
-                    </div>
-                  </Link>
-                  {isDraft && (
-                    <div className="shrink-0 pr-3">
-                      {confirmId === q.id ? (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(q.id)}
-                            disabled={deleting === q.id}
-                            className="px-2 py-1 rounded text-[9px] font-bold bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
-                          >
-                            {deleting === q.id ? "…" : "Delete"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmId(null)}
-                            className="px-2 py-1 rounded text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmId(q.id)}
-                          title="Delete draft"
-                          className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+      <div className="border-t border-[var(--brd)]/30 pt-5">
+        <DataTable<Quote>
+          data={filtered}
+          columns={columns}
+          keyField="id"
+          tableId="quotes-list"
+          searchable
+          pagination
+          exportable
+          exportFilename="yugo-quotes"
+          columnToggle
+          onRowClick={(q) => router.push(`/admin/quotes/${q.quote_id || q.id}`)}
+          emptyMessage="No quotes yet"
+        />
       </div>
     </div>
   );

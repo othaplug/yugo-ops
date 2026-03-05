@@ -13,6 +13,8 @@ const SERVICE_TO_TEMPLATE: Record<string, string> = {
   single_item: "quote-singleitem",
   white_glove: "quote-whiteglove",
   specialty: "quote-specialty",
+  b2b_oneoff: "quote-specialty",
+  b2b_delivery: "quote-specialty",
 };
 
 const SERVICE_SUBJECTS: Record<string, (name: string, extra?: string) => string> = {
@@ -22,6 +24,8 @@ const SERVICE_SUBJECTS: Record<string, (name: string, extra?: string) => string>
   single_item: (_name, item) => `Your Delivery Quote — ${item || "Your Item"}`,
   white_glove: (name) => `Your White Glove Service Quote — ${name}`,
   specialty: (name) => `Your Specialty Service Proposal — ${name}`,
+  b2b_oneoff: (name) => `Your Delivery Quote — ${name}`,
+  b2b_delivery: (name) => `Your Delivery Quote — ${name}`,
 };
 
 export async function POST(req: NextRequest) {

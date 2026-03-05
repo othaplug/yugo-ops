@@ -348,7 +348,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               <Link
                 key={ev.id}
                 href={ev.href}
-                className="flex gap-3 py-3 px-1 hover:bg-[var(--card)] rounded-xl transition-colors group"
+                className="flex gap-3 py-3 px-1 hover:bg-[var(--bg)]/50 transition-colors group"
               >
                 {/* Time column */}
                 <div className="w-14 shrink-0 flex flex-col items-end pt-0.5">
@@ -362,7 +362,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-[var(--tx3)] mb-0.5">
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                     {ev.type === "delivery" ? "Delivery" : ev.moveType === "office" ? "Office Move" : "Move"}
                   </div>
                   <div className="text-[15px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors truncate">
@@ -451,9 +451,9 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
   // ── Month Grid (desktop) ──
   const MonthGrid = (
     <div className="px-6 pb-6">
-      <div className="grid grid-cols-7 gap-px bg-[var(--brd)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-[var(--brd)] overflow-hidden">
         {DAY_NAMES_SHORT.map((d) => (
-          <div key={d} className="bg-[var(--bg)] py-2.5 text-center text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">
+          <div key={d} className="bg-[var(--bg)] py-2.5 text-center text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
             {d}
           </div>
         ))}
@@ -502,11 +502,11 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
   // ── Week Grid (desktop) ──
   const WeekGrid = (
     <div className="px-6 pb-6">
-      <div className="grid grid-cols-7 gap-px bg-[var(--brd)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-[var(--brd)] overflow-hidden">
         {weekDays.map(({ date, key }) => {
           const isToday = key === todayKey;
           return (
-            <div key={key} className={`bg-[var(--bg)] py-2 text-center text-[10px] font-semibold tracking-wider uppercase ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+            <div key={key} className={`bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-[0.14em] uppercase ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
               {fmtDayOfWeek(date)} {date.getDate()}
               {isToday && <span className="ml-1 text-[8px] bg-[var(--gold)]/20 text-[var(--gold)] px-1 py-px rounded">Today</span>}
             </div>
@@ -552,7 +552,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
   const DayDetail = (
     <div className="px-6 pb-6 max-w-[800px]">
       {selectedEvents.length === 0 ? (
-        <div className="text-center py-16 bg-[var(--card)] border border-[var(--brd)] rounded-xl">
+        <div className="text-center py-16">
           <div className="text-[var(--tx3)] text-[13px] mb-4">No events on this day</div>
           <Link
             href={`/admin/deliveries/new?date=${selectedDate}`}
@@ -562,7 +562,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
           </Link>
         </div>
       ) : (
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl divide-y divide-[var(--brd)]">
+        <div className="divide-y divide-[var(--brd)]">
           {selectedEvents.map((ev) => (
             <Link
               key={ev.id}
@@ -574,7 +574,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               </div>
               <div className="w-[3px] rounded-full shrink-0 self-stretch" style={{ backgroundColor: ev.color }} />
               <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-[var(--tx3)] mb-0.5">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                   {ev.type === "delivery" ? "Delivery" : ev.moveType === "office" ? "Office Move" : "Move"}
                 </div>
                 <div className="text-[15px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate">{ev.name}</div>

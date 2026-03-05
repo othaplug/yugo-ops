@@ -473,7 +473,7 @@ export default function QuotePageClient({
      RENDER
      ══════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen" style={{ backgroundColor: CREAM }}>
+    <div className="min-h-screen" style={{ backgroundColor: CREAM }} data-theme="light">
       {expiringSoon && (
         <div
           className="sticky top-0 z-50 px-4 py-2.5 text-center text-[13px] font-medium"
@@ -571,13 +571,10 @@ export default function QuotePageClient({
           </div>
         </div>
 
-        {/* ═══ MOVE DETAILS CARD (Residential only) ═══ */}
+        {/* ═══ MOVE DETAILS (Residential only) ═══ */}
         {isResidential && (
-          <section className="-mt-6 relative z-10 bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7 mb-10">
-            <h2
-              className="font-heading text-[13px] font-bold tracking-wider uppercase mb-4"
-              style={{ color: FOREST }}
-            >
+          <section className="-mt-6 relative z-10 pt-6 border-t border-[var(--brd)]/30 mb-10">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
               Move Details
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -702,11 +699,8 @@ export default function QuotePageClient({
         )}
 
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
-        <section className="mb-10">
-          <div
-            className="rounded-2xl p-5 md:p-6"
-            style={{ backgroundColor: `${FOREST}08`, border: `1px solid ${FOREST}15` }}
-          >
+        <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
+          <div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <Star className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
@@ -736,10 +730,7 @@ export default function QuotePageClient({
                 </p>
               </div>
             </div>
-            <div
-              className="mt-4 pt-3 text-center border-t"
-              style={{ borderColor: `${FOREST}12` }}
-            >
+            <div className="mt-4 pt-3 text-center border-t border-[var(--brd)]/30">
               <p className="text-[11px] font-medium" style={{ color: `${FOREST}60` }}>
                 Trusted by leading Toronto businesses &amp; homeowners
               </p>
@@ -749,10 +740,10 @@ export default function QuotePageClient({
 
         {/* ═══ DATE AVAILABILITY ═══ */}
         {slotsRemaining != null && slotsRemaining <= 2 && slotsRemaining > 0 && quote.move_date && !booked && (
-          <section className="mb-6">
+          <section className="mb-6 pt-6 border-t border-[var(--brd)]/30">
             <div
-              className="rounded-xl px-5 py-3 flex items-center gap-2.5"
-              style={{ backgroundColor: "#FFF8E1", border: `1px solid ${GOLD}30` }}
+              className="px-5 py-3 flex items-center gap-2.5"
+              style={{ backgroundColor: "#FFF8E1" }}
             >
               <Zap className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
               <p className="text-[12px] font-medium" style={{ color: "#8B6914" }}>
@@ -768,7 +759,7 @@ export default function QuotePageClient({
 
         {/* ═══ CONTRACT / E-SIGN ═══ */}
         {isConfirmed && !booked && (
-          <section ref={contractRef} className="mb-10 scroll-mt-6">
+          <section ref={contractRef} className="mb-10 pt-6 border-t border-[var(--brd)]/30 scroll-mt-6">
             <ContractSign
               quoteData={contractData}
               onSigned={(data) => {
@@ -888,7 +879,7 @@ export default function QuotePageClient({
         )}
 
         {/* ═══ FOOTER ═══ */}
-        <footer className="py-10 text-center border-t" style={{ borderColor: "#E2DDD5" }}>
+        <footer className="py-10 text-center border-t border-[var(--brd)]/30">
           <div className="flex justify-center mb-2">
             <YugoLogo size={20} variant="gold" onLightBackground />
           </div>
@@ -950,12 +941,9 @@ const InclusionsShowcase = React.forwardRef<
   const showUpgradeHint = isResidential && tier === "essentials" && !selectedTier;
 
   return (
-    <section ref={ref} className="mb-10">
+    <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
-        <h2
-          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-1.5"
-          style={{ color: GOLD }}
-        >
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
           Your Move Includes
         </h2>
         <p className="font-serif text-[15px] italic" style={{ color: `${FOREST}60` }}>
@@ -1072,26 +1060,16 @@ function ValuationProtectionCard({
   const dispUpgrade = upgradeTarget ? (VALUATION_DISPLAY[upgradeTarget] ?? null) : null;
 
   return (
-    <section className="mb-10">
-      <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}18`, backgroundColor: "#FFFFFF" }}>
-        {/* Header */}
-        <div className="px-5 py-4 border-b" style={{ borderColor: `${FOREST}10`, backgroundColor: `${FOREST}04` }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${GOLD}12` }}>
-              <Shield className="w-[18px] h-[18px]" style={{ color: GOLD }} />
-            </div>
-            <div>
-              <h2 className="font-heading text-[13px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>
-                Your Protection
-              </h2>
-              <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}55` }}>
-                {dispActive.label} &mdash; {upgradeSelected ? "Upgraded" : "Included"}
-              </p>
-            </div>
-          </div>
-        </div>
+    <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
+      <div>
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          Your Protection
+        </h2>
+        <p className="text-[11px] mb-4" style={{ color: `${FOREST}55` }}>
+          {dispActive.label} &mdash; {upgradeSelected ? "Upgraded" : "Included"}
+        </p>
 
-        <div className="px-5 py-5 space-y-5">
+        <div className="space-y-5">
           {/* Description */}
           <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}85` }}>
             {tierData.damage_process}
@@ -1405,9 +1383,9 @@ function AddOnsSection({
   updateTierIdx: (id: string, idx: number) => void;
 }) {
   return (
-    <section className="mb-10">
+    <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
-        <h2 className="font-hero text-[20px] md:text-[24px] mb-2" style={{ color: WINE }}>
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">
           Customize Your Move
         </h2>
         <p className="text-[13px]" style={{ color: `${FOREST}80` }}>
@@ -1444,11 +1422,7 @@ function AddOnsSection({
           return (
             <div
               key={addon.id}
-              className={`rounded-xl border p-4 transition-all ${isOn ? "border-2 shadow-sm" : "bg-white"}`}
-              style={{
-                borderColor: isOn ? GOLD : "#E2DDD5",
-                backgroundColor: isOn ? "#FFFDF8" : "#FFFFFF",
-              }}
+              className={`p-4 transition-all border-b border-[var(--brd)]/30 last:border-b-0 ${isOn ? "bg-[#FFFDF8]" : ""}`}
             >
               <div className="flex items-start gap-3">
                 <button

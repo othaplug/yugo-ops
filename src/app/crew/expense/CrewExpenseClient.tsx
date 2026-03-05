@@ -140,9 +140,9 @@ export default function CrewExpenseClient() {
       <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-2">Log Expense</h1>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Category</label>
+      <form onSubmit={handleSubmit} className="mt-6">
+        <div className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Category</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -158,8 +158,8 @@ export default function CrewExpenseClient() {
             ))}
           </div>
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Amount</label>
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Amount</label>
           <input
             type="number"
             step="0.01"
@@ -170,8 +170,8 @@ export default function CrewExpenseClient() {
             className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[16px]"
           />
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Description</label>
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Description</label>
           <input
             type="text"
             value={description}
@@ -180,8 +180,8 @@ export default function CrewExpenseClient() {
             className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
           />
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Link to job (optional)</label>
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Link to job (optional)</label>
           <select
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
@@ -193,8 +193,8 @@ export default function CrewExpenseClient() {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Receipt photo (optional)</label>
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Receipt photo (optional)</label>
           <div className="flex items-center gap-3">
             <input
               ref={fileInputRef}
@@ -219,24 +219,26 @@ export default function CrewExpenseClient() {
             )}
           </div>
         </div>
-        {error && <p className="text-[12px] text-[var(--red)]">{error}</p>}
-        <button
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          {error && <p className="text-[12px] text-[var(--red)] mb-3">{error}</p>}
+          <button
           type="submit"
           disabled={submitting}
           className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? "Submitting…" : "Submit Expense"}
         </button>
+        </div>
       </form>
 
-      <div className="mt-8">
-        <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Expense history</h2>
+      <div className="mt-8 pt-8 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Expense history</h2>
         {expenses.length === 0 ? (
           <p className="text-[13px] text-[var(--tx3)]">No expenses yet.</p>
         ) : (
-          <ul className="space-y-2">
-            {expenses.map((e) => (
-              <li key={e.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
+          <ul className="space-y-0">
+            {expenses.map((e, i) => (
+              <li key={e.id} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
                 <div>
                   <p className="text-[13px] font-medium text-[var(--tx)]">${(e.amount_cents / 100).toFixed(2)} · {toTitleCase(e.category)}</p>
                   <p className="text-[11px] text-[var(--tx3)]">{e.description}</p>

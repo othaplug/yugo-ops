@@ -16,6 +16,7 @@ import {
   Monitor,
   Smartphone,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -110,6 +111,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [engagementExpanded, setEngagementExpanded] = useState(false);
   const contact = Array.isArray(quote.contacts) ? quote.contacts[0] : quote.contacts;
 
   async function handleDeleteDraft() {
@@ -236,10 +238,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left: Quote Details */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Summary Card */}
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-4">
-            <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+        <div className="lg:col-span-2 space-y-0">
+          {/* Quote Summary */}
+          <div className="pb-6">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
               Quote Summary
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -286,20 +288,41 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                   Amount
                 </span>
-                <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
-                  {quote.tiers
-                    ? (() => {
-                        const t = quote.tiers as Record<string, any>;
-                        const prices = Object.values(t).map((v: any) => v.price as number);
-                        return `${fmtCurrency(Math.min(...prices))}–${fmtCurrency(Math.max(...prices))}`;
-                      })()
-                    : fmtCurrency(quote.custom_price ?? 0)}
-                </p>
+                {(() => {
+                  const HST = 0.13;
+                  if (quote.tiers) {
+                    const t = quote.tiers as Record<string, any>;
+                    const prices = Object.values(t).map((v: any) => v.price as number);
+                    const lo = Math.min(...prices);
+                    const hi = Math.max(...prices);
+                    return (
+                      <>
+                        <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
+                          {fmtCurrency(lo)}–{fmtCurrency(hi)}
+                        </p>
+                        <span className="text-[9px] text-[var(--tx3)]">
+                          +{fmtCurrency(Math.round(lo * HST))}–{fmtCurrency(Math.round(hi * HST))} HST (13%)
+                        </span>
+                      </>
+                    );
+                  }
+                  const base = quote.custom_price ?? 0;
+                  return (
+                    <>
+                      <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
+                        {fmtCurrency(base)}
+                      </p>
+                      <span className="text-[9px] text-[var(--tx3)]">
+                        +{fmtCurrency(Math.round(base * HST))} HST (13%)
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
             {/* Truck + Crew */}
             {(quote.truck_primary || factors?.est_crew_size || quote.est_crew_size) && (
-              <div className="border-t border-[var(--brd)] pt-3 flex flex-wrap gap-4">
+              <div className="border-t border-[var(--brd)]/30 pt-3 flex flex-wrap gap-4">
                 {quote.truck_primary && (
                   <div>
                     <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
@@ -335,10 +358,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             )}
           </div>
 
-          {/* Engagement Signal */}
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+          {/* Client Engagement */}
+          <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                 Client Engagement
               </h2>
               <span className={`text-[10px] font-bold ${signal.color}`}>{signal.label}</span>
@@ -348,83 +371,106 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               <p className="text-[11px] text-[var(--tx3)] italic">
                 No engagement recorded yet. The client has not opened this quote.
               </p>
-            ) : (
-              <div className="space-y-0">
-                {allEvents.map((ev, i) => {
-                  const cfg = EVENT_CONFIG[ev.type] ?? {
-                    icon: Eye,
-                    label: toTitleCase(ev.type),
-                    color: "text-[var(--tx3)]",
-                  };
-                  const Icon = cfg.icon;
-                  const detail = ev.data
-                    ? Object.entries(ev.data)
-                        .filter(([, v]) => v != null && v !== "")
-                        .map(([k, v]) => `${k}: ${v}`)
-                        .join(", ")
-                    : "";
+            ) : (() => {
+              const COLLAPSED_LIMIT = 4;
+              const visibleEvents = engagementExpanded ? allEvents : allEvents.slice(0, COLLAPSED_LIMIT);
+              const hasMore = allEvents.length > COLLAPSED_LIMIT;
 
-                  return (
-                    <div key={ev.id} className="flex items-start gap-3 py-2">
-                      <div className="relative flex flex-col items-center">
-                        <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${cfg.color} bg-[var(--bg)]`}
-                        >
-                          <Icon className="w-3 h-3" />
-                        </div>
-                        {i < allEvents.length - 1 && (
-                          <div className="w-px flex-1 min-h-[16px] bg-[var(--brd)]/50" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 -mt-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-medium text-[var(--tx)]">
-                            {cfg.label}
-                          </span>
-                          {detail && (
-                            <span className="text-[10px] text-[var(--tx3)]">
-                              ({detail})
-                            </span>
+              return (
+                <div className="space-y-0">
+                  {visibleEvents.map((ev, i) => {
+                    const cfg = EVENT_CONFIG[ev.type] ?? {
+                      icon: Eye,
+                      label: toTitleCase(ev.type),
+                      color: "text-[var(--tx3)]",
+                    };
+                    const Icon = cfg.icon;
+                    const detail = ev.data
+                      ? Object.entries(ev.data)
+                          .filter(([, v]) => v != null && v !== "")
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(", ")
+                      : "";
+
+                    return (
+                      <div key={ev.id} className="flex items-start gap-3 py-2">
+                        <div className="relative flex flex-col items-center">
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${cfg.color} bg-[var(--bg)]`}
+                          >
+                            <Icon className="w-3 h-3" />
+                          </div>
+                          {i < visibleEvents.length - 1 && (
+                            <div className="w-px flex-1 min-h-[16px] bg-[var(--brd)]/50" />
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[9px] text-[var(--tx3)]/60">
-                            {timeAgo(ev.at)}
-                          </span>
-                          {ev.duration != null && (
+                        <div className="flex-1 min-w-0 -mt-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
+                              {cfg.label}
+                            </span>
+                            {detail && (
+                              <span className="text-[10px] text-[var(--tx3)]">
+                                ({detail})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[9px] text-[var(--tx3)]/60">
-                              · {fmtDuration(ev.duration)} on page
+                              {timeAgo(ev.at)}
                             </span>
-                          )}
-                          {ev.device && (
-                            <span className="text-[var(--tx3)]/40">
-                              {ev.device === "mobile" ? (
-                                <Smartphone className="w-2.5 h-2.5 inline" />
-                              ) : (
-                                <Monitor className="w-2.5 h-2.5 inline" />
-                              )}
-                            </span>
-                          )}
+                            {ev.duration != null && (
+                              <span className="text-[9px] text-[var(--tx3)]/60">
+                                · {fmtDuration(ev.duration)} on page
+                              </span>
+                            )}
+                            {ev.device && (
+                              <span className="text-[var(--tx3)]/40">
+                                {ev.device === "mobile" ? (
+                                  <Smartphone className="w-2.5 h-2.5 inline" />
+                                ) : (
+                                  <Monitor className="w-2.5 h-2.5 inline" />
+                                )}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+
+                  {hasMore && (
+                    <button
+                      type="button"
+                      onClick={() => setEngagementExpanded((prev) => !prev)}
+                      className="flex items-center gap-1.5 mt-2 py-1.5 px-2.5 rounded-lg text-[10px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                    >
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform ${engagementExpanded ? "rotate-180" : ""}`}
+                      />
+                      {engagementExpanded
+                        ? "Show less"
+                        : `View all ${allEvents.length} events`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
         {/* Right: Quick Stats */}
-        <div className="space-y-5">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-            <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+        <div className="space-y-0">
+          {/* Timeline — card treatment for prominence */}
+          <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] p-4 mb-5">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">
               Timeline
             </h2>
-            <div className="space-y-2 text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-[var(--tx3)]">Created</span>
-                <span className="text-[var(--tx)]">
+            <div className="space-y-2.5 text-[11px]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--tx3)]" />
+                <span className="text-[var(--tx3)] flex-1">Created</span>
+                <span className="text-[var(--tx)] font-medium">
                   {new Date(quote.created_at).toLocaleDateString("en-CA", {
                     month: "short",
                     day: "numeric",
@@ -434,9 +480,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </span>
               </div>
               {quote.sent_at && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Sent</span>
-                  <span className="text-[var(--tx)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+                  <span className="text-[var(--tx3)] flex-1">Sent</span>
+                  <span className="text-[var(--tx)] font-medium">
                     {new Date(quote.sent_at).toLocaleDateString("en-CA", {
                       month: "short",
                       day: "numeric",
@@ -447,9 +494,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </div>
               )}
               {quote.viewed_at && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">First Viewed</span>
-                  <span className="text-blue-400">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span className="text-[var(--tx3)] flex-1">First Viewed</span>
+                  <span className="text-blue-400 font-medium">
                     {new Date(quote.viewed_at).toLocaleDateString("en-CA", {
                       month: "short",
                       day: "numeric",
@@ -460,9 +508,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </div>
               )}
               {quote.accepted_at && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Accepted</span>
-                  <span className="text-green-400">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="text-[var(--tx3)] flex-1">Accepted</span>
+                  <span className="text-green-400 font-medium">
                     {new Date(quote.accepted_at).toLocaleDateString("en-CA", {
                       month: "short",
                       day: "numeric",
@@ -473,14 +522,11 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </div>
               )}
               {quote.expires_at && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Expires</span>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${new Date(quote.expires_at) < new Date() ? "bg-red-400" : "bg-[var(--tx3)]"}`} />
+                  <span className="text-[var(--tx3)] flex-1">Expires</span>
                   <span
-                    className={
-                      new Date(quote.expires_at) < new Date()
-                        ? "text-red-400"
-                        : "text-[var(--tx)]"
-                    }
+                    className={`font-medium ${new Date(quote.expires_at) < new Date() ? "text-red-400" : "text-[var(--tx)]"}`}
                   >
                     {new Date(quote.expires_at).toLocaleDateString("en-CA", {
                       month: "short",
@@ -492,10 +538,57 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             </div>
           </div>
 
+          {/* Move Details */}
+          <div className="pb-5">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h2>
+            <div className="space-y-2 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-[var(--tx3)]">Service</span>
+                <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.service_type?.replace(/_/g, " "))}</span>
+              </div>
+              {quote.move_size && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Size</span>
+                  <span className="text-[var(--tx)] font-medium">{quote.move_size}</span>
+                </div>
+              )}
+              {quote.truck_primary && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Vehicle</span>
+                  <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.truck_primary)}</span>
+                </div>
+              )}
+              {(quote.est_crew_size ?? (factors as any)?.est_crew_size) && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Crew</span>
+                  <span className="text-[var(--tx)] font-medium">{quote.est_crew_size ?? (factors as any)?.est_crew_size} movers</span>
+                </div>
+              )}
+              {quote.est_hours && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Est. Hours</span>
+                  <span className="text-[var(--tx)] font-medium">{quote.est_hours}h</span>
+                </div>
+              )}
+              {quote.distance_km && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Distance</span>
+                  <span className="text-[var(--tx)] font-medium">{quote.distance_km} km</span>
+                </div>
+              )}
+              {quote.move_id && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Move</span>
+                  <a href={`/admin/moves/${quote.move_id}`} className="text-[var(--gold)] font-medium hover:underline">View Move</a>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Engagement Stats */}
           {engagement.length > 0 && (
-            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+            <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
                 Engagement Stats
               </h2>
               <div className="space-y-2 text-[11px]">

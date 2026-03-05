@@ -99,6 +99,7 @@ export default function PartnerMapMapbox({
 
       {deliveries.map((d) => {
         if (d.crew_lat == null || d.crew_lng == null) return null;
+        const initial = (d.crew_name || "C").replace("Team ", "").charAt(0).toUpperCase();
         return (
           <Marker
             key={`crew-${d.id}`}
@@ -107,8 +108,15 @@ export default function PartnerMapMapbox({
             anchor="center"
             onClick={() => onSelect(d)}
           >
-            <div className="cursor-pointer" style={{ width: 40, height: 40 }}>
-              <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)]" />
+            <div className="cursor-pointer relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
+              <span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }} />
+              <span className="absolute inset-[3px] rounded-full opacity-20 animate-pulse" style={{ background: "#C9A962" }} />
+              <span
+                className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)", boxShadow: "0 2px 10px rgba(201,169,98,0.45)" }}
+              >
+                {initial}
+              </span>
             </div>
           </Marker>
         );

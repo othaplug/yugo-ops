@@ -252,14 +252,14 @@ export default function AdminPageClient({
         {/* ── LEFT: Schedule ── */}
         <div className="min-w-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[13px] font-bold tracking-wider uppercase text-[var(--tx3)]">{scheduleLabel}</h2>
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{scheduleLabel}</h2>
             <Link href="/admin/calendar" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">
               Calendar &rarr;
             </Link>
           </div>
 
           {hasJobs ? (
-            <div className="space-y-1">
+            <div className="divide-y divide-[var(--brd)]/30">
               {displayJobs.map((job) => {
                 const lineColor = getJobLineColor(job);
                 const statusStyle = getJobStatusStyle(job);
@@ -271,7 +271,7 @@ export default function AdminPageClient({
                   <Link
                     key={`${job.type}-${job.id}`}
                     href={getJobHref(job)}
-                    className="group flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
+                    className="group flex items-start gap-3 py-3.5 px-1 hover:bg-[var(--card)]/40 transition-colors"
                   >
                     {/* Time / Date column */}
                     <div className="shrink-0 w-[52px] pt-0.5 text-right">
@@ -320,17 +320,17 @@ export default function AdminPageClient({
 
           {/* Upcoming preview (when showing today) */}
           {todayJobs.length > 0 && upcomingJobs.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-[var(--brd)]/40">
+            <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Coming up</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Coming up</h3>
                 <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">All &rarr;</Link>
               </div>
-              <div className="space-y-0.5">
+              <div className="divide-y divide-[var(--brd)]/30">
                 {upcomingJobs.slice(0, 3).map((job) => (
                   <Link
                     key={`up-${job.type}-${job.id}`}
                     href={getJobHref(job)}
-                    className="flex items-center gap-3 py-2 px-3 -mx-1 rounded-lg hover:bg-[var(--card)]/40 transition-colors"
+                    className="flex items-center gap-3 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
                   >
                     <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{formatMoveDate(job.date)}</span>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
@@ -344,15 +344,15 @@ export default function AdminPageClient({
         </div>
 
         {/* ── RIGHT: Intelligence Column ── */}
-        <div className="space-y-6 min-w-0">
+        <div className="min-w-0 space-y-0">
 
           {/* Revenue */}
-          <div>
+          <div className="pb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Revenue</h2>
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Revenue</h2>
               <Link href="/admin/revenue" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Details &rarr;</Link>
             </div>
-            <div className="flex items-baseline gap-2 mb-3">
+            <div className="flex items-baseline gap-2 mb-1">
               <span className="text-[24px] font-bold font-heading text-[var(--tx)] tabular-nums">
                 {currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}
               </span>
@@ -362,6 +362,7 @@ export default function AdminPageClient({
                 </span>
               )}
             </div>
+            {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mb-3">Before HST (13%)</div>}
             <div className="flex items-end gap-[3px] h-[56px]">
               {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", v: 0 }]).map((d, i) => {
                 const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.v));
@@ -387,24 +388,26 @@ export default function AdminPageClient({
             </div>
           </div>
 
-          {/* Overdue (conditional) */}
+          {/* Overdue (conditional) — keep as alert banner */}
           {overdueAmount > 0 && (
-            <Link href="/admin/invoices" className="flex items-center justify-between py-3 px-4 -mx-1 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/8 transition-colors">
-              <div>
-                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--red)]/80">Overdue</div>
-                <div className="text-[18px] font-bold text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</div>
-              </div>
-              <div className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</div>
-            </Link>
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <Link href="/admin/invoices" className="flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/8 transition-colors">
+                <div>
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--red)]/80">Overdue</div>
+                  <div className="text-[18px] font-bold text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</div>
+                </div>
+                <div className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</div>
+              </Link>
+            </div>
           )}
 
           {/* Activity */}
-          <div>
+          <div className="pt-6 border-t border-[var(--brd)]/30">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Activity</h2>
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Activity</h2>
             </div>
             {activityEvents.length > 0 ? (
-              <div className="space-y-0.5">
+              <div className="divide-y divide-[var(--brd)]/30">
                 {activityEvents
                   .filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)
                   .slice(0, 8)
@@ -412,9 +415,9 @@ export default function AdminPageClient({
                     <Link
                       key={`${e.id}-${idx}`}
                       href={getActivityHref(e)}
-                      className="flex items-start gap-2.5 py-2 px-2 -mx-1 rounded-lg hover:bg-[var(--card)]/50 transition-colors"
+                      className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
                     >
-                      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5 bg-[var(--card)] border border-[var(--brd)]/40">
+                      <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
                         <Icon name={getActivityIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -432,20 +435,20 @@ export default function AdminPageClient({
           </div>
 
           {/* Quick links */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--brd)]/30">
-            <Link href="/admin/quotes/new" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+          <div className="grid grid-cols-2 gap-2 pt-6 border-t border-[var(--brd)]/30">
+            <Link href="/admin/quotes/new" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
               <Icon name="fileText" className="w-3.5 h-3.5 text-[var(--tx3)]" />
               <span className="text-[11px] font-medium text-[var(--tx2)]">New quote</span>
             </Link>
-            <Link href="/admin/moves/new" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+            <Link href="/admin/moves/new" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
               <Icon name="package" className="w-3.5 h-3.5 text-[var(--tx3)]" />
               <span className="text-[11px] font-medium text-[var(--tx2)]">New move</span>
             </Link>
-            <Link href="/admin/deliveries" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+            <Link href="/admin/deliveries" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
               <Icon name="truck" className="w-3.5 h-3.5 text-[var(--tx3)]" />
               <span className="text-[11px] font-medium text-[var(--tx2)]">Deliveries</span>
             </Link>
-            <Link href="/admin/reports" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+            <Link href="/admin/reports" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
               <Icon name="target" className="w-3.5 h-3.5 text-[var(--tx3)]" />
               <span className="text-[11px] font-medium text-[var(--tx2)]">Reports</span>
             </Link>

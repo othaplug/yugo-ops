@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 export async function PATCH(
   req: NextRequest,
@@ -110,6 +111,11 @@ export async function PATCH(
       const amountCents = Math.round(ccBalance * 100);
 
       try {
+        const { locationId } = await getSquarePaymentConfig();
+        if (!locationId) {
+          return NextResponse.json({ error: "Square location not configured" }, { status: 503 });
+        }
+
         const paymentRes = await squareClient.payments.create({
           sourceId: move.square_card_id,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
@@ -117,7 +123,7 @@ export async function PATCH(
           referenceId: move.move_code || id,
           note: `Balance + processing fee — manual charge by admin`,
           idempotencyKey: `bal-manual-${id}-${Date.now()}`,
-          locationId: process.env.SQUARE_LOCATION_ID!,
+          locationId,
         });
 
         const paymentId = paymentRes.payment?.id;

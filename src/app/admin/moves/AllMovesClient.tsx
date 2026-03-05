@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { StatPctChange } from "../components/StatPctChange";
 import MoveNotifyButton from "./MoveNotifyButton";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
@@ -157,14 +158,23 @@ function relativeTime(iso: string | null): string {
   return `${d}d ago`;
 }
 
-function quoteAmount(q: Quote): string {
-  if (q.custom_price) return formatCurrency(q.custom_price);
+function quoteAmountRaw(q: Quote): number | null {
+  if (q.custom_price) return q.custom_price;
   if (q.tiers && typeof q.tiers === "object") {
     const tiers = q.tiers as Record<string, { total?: number }>;
     const first = Object.values(tiers).find((t) => t?.total);
-    if (first?.total) return formatCurrency(first.total);
+    if (first?.total) return first.total;
   }
-  return "—";
+  return null;
+}
+
+function quoteAmount(q: Quote): string {
+  const raw = quoteAmountRaw(q);
+  return raw != null ? formatCurrency(raw) : "—";
+}
+
+function hstAmount(n: number): string {
+  return formatCurrency(Math.round(n * 0.13));
 }
 
 function truncAddr(from?: string, to?: string, max = 50): string {
@@ -176,6 +186,101 @@ function truncAddr(from?: string, to?: string, max = 50): string {
 }
 
 const today = new Date().toISOString().slice(0, 10);
+
+type MoveWithType = Move & { _type: string };
+
+function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[] {
+  return [
+    {
+      id: "date",
+      label: "Date",
+      accessor: (m) => m.scheduled_date || "",
+      render: (m) => (
+        <span className="text-[11px] font-semibold text-[var(--tx)] tabular-nums whitespace-nowrap">
+          {formatMoveDate(m.scheduled_date)}
+        </span>
+      ),
+      minWidth: "70px",
+    },
+    {
+      id: "client",
+      label: "Client",
+      accessor: (m) => m.client_name || "",
+      render: (m) => (
+        <div className="min-w-0">
+          <span className="text-[12px] font-bold text-[var(--tx)] truncate block">{m.client_name || "—"}</span>
+          <span className="text-[10px] text-[var(--tx3)] truncate block mt-0.5">{truncAddr(m.from_address, m.to_address, 40)}</span>
+        </div>
+      ),
+      minWidth: "180px",
+    },
+    {
+      id: "status",
+      label: "Status",
+      accessor: (m) => m.status || "",
+      render: (m) => (
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadgeStyle(m.status || "")}`}>
+          {getStatusLabel(m.status ?? null)}
+        </span>
+      ),
+    },
+    {
+      id: "type",
+      label: "Type",
+      accessor: (m) => m._type || "",
+      render: (m) => (
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-medium bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
+            {typeLabel(m._type)}
+          </span>
+          {m._type === "residential" && m.tier_selected && (
+            <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
+              {toTitleCase(m.tier_selected)}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "crew",
+      label: "Crew",
+      accessor: (m) => (m.crew_id ? crewMap[m.crew_id] || "" : ""),
+      render: (m) => (
+        <span className="text-[11px] text-[var(--tx3)]">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
+      ),
+      defaultHidden: false,
+    },
+    {
+      id: "estimate",
+      label: "Estimate",
+      accessor: (m) => m.estimate ?? 0,
+      render: (m) => {
+        const est = Number(m.estimate ?? 0);
+        return (
+          <span className="inline-flex items-baseline gap-1">
+            <span className="text-[12px] font-bold text-[var(--gold)] font-heading">{formatCurrency(est)}</span>
+            {est > 0 && <span className="text-[8px] text-[var(--tx3)]">+{hstAmount(est)} HST</span>}
+          </span>
+        );
+      },
+      align: "right",
+      exportAccessor: (m) => m.estimate ?? 0,
+    },
+    {
+      id: "actions",
+      label: "",
+      accessor: () => "",
+      sortable: false,
+      searchable: false,
+      render: (m) => (
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <MoveNotifyButton move={m} />
+        </div>
+      ),
+      align: "right",
+    },
+  ];
+}
 
 /* ── Component ── */
 
@@ -314,9 +419,9 @@ export default function AllMovesClient({
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Total Moves
           </div>
           <div className="flex items-baseline gap-2">
@@ -324,8 +429,8 @@ export default function AllMovesClient({
             <StatPctChange current={totalMovesThisMonth} previous={totalMovesPrev} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Upcoming
           </div>
           <div className="flex items-baseline gap-2">
@@ -335,8 +440,8 @@ export default function AllMovesClient({
             <StatPctChange current={upcomingMoves} previous={upcomingPrev} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Total Revenue
           </div>
           <div className="flex items-baseline gap-2">
@@ -346,8 +451,8 @@ export default function AllMovesClient({
             <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Avg $/Move
           </div>
           <div className="flex items-baseline gap-2">
@@ -359,140 +464,82 @@ export default function AllMovesClient({
         </div>
       </div>
 
-      {/* Type filter pills */}
-      <div className="flex flex-wrap gap-1.5 mb-2">
-        {TYPE_FILTERS.map((f) => {
-          const isActive = activeType === f.value;
-          const count = f.value ? typeCounts[f.value] || 0 : moves.length;
-          return (
-            <button
-              key={f.value}
-              type="button"
-              onClick={() => setFilter("type", f.value)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${
-                isActive
-                  ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
-                  : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)] hover:text-[var(--tx2)]"
-              }`}
-            >
-              {f.label}
-              <span className={`tabular-nums ${isActive ? "text-[var(--gold)]" : "text-[var(--tx3)]/60"}`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="border-t border-[var(--brd)]/30 pt-5 mb-5">
+        {/* Type filter pills */}
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {TYPE_FILTERS.map((f) => {
+            const isActive = activeType === f.value;
+            const count = f.value ? typeCounts[f.value] || 0 : moves.length;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setFilter("type", f.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${
+                  isActive
+                    ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)] hover:text-[var(--tx2)]"
+                }`}
+              >
+                {f.label}
+                <span className={`tabular-nums ${isActive ? "text-[var(--gold)]" : "text-[var(--tx3)]/60"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Status filter pills */}
-      <div className="flex flex-wrap gap-1.5 mb-5">
-        {STATUS_FILTERS.map((f) => {
-          const isActive = activeStatus === f.value;
-          const count = f.value ? statusCounts[f.value] || 0 : afterTypeFilter.length;
-          return (
-            <button
-              key={f.value}
-              type="button"
-              onClick={() => setFilter("status", f.value)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${
-                isActive
-                  ? "border-[var(--tx3)] bg-[var(--bg2)] text-[var(--tx)]"
-                  : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
-              }`}
-            >
-              {f.label}
-              {f.value && count > 0 && (
-                <span className="text-[var(--tx3)]/50 tabular-nums">{count}</span>
-              )}
-            </button>
-          );
-        })}
+        {/* Status filter pills */}
+        <div className="flex flex-wrap gap-1.5 mb-0">
+          {STATUS_FILTERS.map((f) => {
+            const isActive = activeStatus === f.value;
+            const count = f.value ? statusCounts[f.value] || 0 : afterTypeFilter.length;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setFilter("status", f.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${
+                  isActive
+                    ? "border-[var(--tx3)] bg-[var(--bg2)] text-[var(--tx)]"
+                    : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
+                }`}
+              >
+                {f.label}
+                {f.value && count > 0 && (
+                  <span className="text-[var(--tx3)]/50 tabular-nums">{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Moves table */}
-      <div className="glass rounded-xl overflow-hidden mb-8">
-        <div className="divide-y divide-[var(--brd)]/50">
-          {filtered.length === 0 ? (
-            <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-              No moves match the current filters
-            </div>
-          ) : (
-            filtered.map((m) => {
-              const status = getStatusLabel(m.status ?? null);
-              const mType = m._type;
-              const crewName = m.crew_id ? crewMap[m.crew_id] || "" : "";
-              return (
-                <div
-                  key={m.id}
-                  className="flex items-center gap-0 hover:bg-[var(--bg)]/30 transition-colors"
-                >
-                  {/* Status bar */}
-                  <div
-                    className={`w-[3px] self-stretch shrink-0 rounded-l ${statusBarColor(m.status || "")}`}
-                  />
-                  {/* Content */}
-                  <Link
-                    href={getMoveDetailPath(m)}
-                    className="flex-1 min-w-0 flex items-center gap-3 py-3.5 px-4"
-                  >
-                    {/* Date */}
-                    <div className="shrink-0 w-12 text-center">
-                      <div className="text-[11px] font-semibold text-[var(--tx)]">
-                        {formatMoveDate(m.scheduled_date)}
-                      </div>
-                    </div>
-                    {/* Main info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[13px] font-bold text-[var(--tx)] truncate">
-                          {m.client_name || "—"}
-                        </span>
-                        <span
-                          className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadgeStyle(m.status || "")}`}
-                        >
-                          {status}
-                        </span>
-                        {mType === "residential" && m.tier_selected && (
-                          <span
-                            className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}
-                          >
-                            {toTitleCase(m.tier_selected)}
-                          </span>
-                        )}
-                        <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-medium bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
-                          {typeLabel(mType)}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                        {truncAddr(m.from_address, m.to_address)}
-                      </div>
-                    </div>
-                    {/* Right side */}
-                    <div className="shrink-0 text-right flex flex-col items-end gap-0.5">
-                      <span className="text-[13px] font-bold text-[var(--gold)] font-heading">
-                        {formatCurrency(m.estimate ?? 0)}
-                      </span>
-                      <span className="text-[10px] text-[var(--tx3)]">
-                        {crewName || "—"}
-                      </span>
-                    </div>
-                  </Link>
-                  {/* Notify */}
-                  <div className="shrink-0 pr-3">
-                    <MoveNotifyButton move={m} />
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+      <div className="border-t border-[var(--brd)]/30 pt-5 mb-8">
+        <DataTable
+          data={filtered}
+          keyField="id"
+          tableId="all-moves"
+          searchable
+          searchPlaceholder="Search by client, address, code…"
+          pagination
+          defaultPerPage={50}
+          exportable
+          exportFilename="yugo-moves"
+          columnToggle
+          emptyMessage="No moves match the current filters"
+          onRowClick={(m) => router.push(getMoveDetailPath(m))}
+          columns={moveColumns(crewMap)}
+        />
       </div>
 
       {/* Recent Quotes — horizontal scroll strip */}
       {recentQuotes.length > 0 && (
-        <div className="mb-6">
+        <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[13px] font-bold text-[var(--tx)]">Recent Quotes</h2>
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Recent Quotes</h2>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[var(--brd)] scrollbar-track-transparent">
             {recentQuotes.map((q) => {
@@ -501,7 +548,7 @@ export default function AllMovesClient({
                 <Link
                   key={q.id}
                   href={`/admin/quotes/${q.quote_id || q.id}/edit`}
-                  className="shrink-0 w-[220px] bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3.5 hover:border-[var(--gold)]/50 transition-colors block"
+                  className="shrink-0 w-[220px] p-3.5 rounded-xl border border-transparent hover:border-[var(--brd)]/40 hover:bg-[var(--card)] active:scale-[0.97] transition-all duration-150 block cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
@@ -517,16 +564,21 @@ export default function AllMovesClient({
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                     {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
                   </div>
-                  <div className="text-[14px] font-bold text-[var(--gold)] font-heading mt-1.5">
-                    {quoteAmount(q)}
+                  <div className="mt-1.5">
+                    <span className="text-[14px] font-bold text-[var(--gold)] font-heading">
+                      {quoteAmount(q)}
+                    </span>
+                    {quoteAmountRaw(q) != null && (
+                      <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{hstAmount(quoteAmountRaw(q)!)} HST</span>
+                    )}
                   </div>
                 </Link>
               );
             })}
-            {/* View All card at the end */}
+            {/* View All at the end */}
             <Link
               href="/admin/quotes"
-              className="shrink-0 w-[140px] bg-[var(--card)] border border-[var(--brd)] rounded-lg flex flex-col items-center justify-center gap-1.5 hover:border-[var(--gold)]/50 transition-colors"
+              className="shrink-0 w-[140px] rounded-lg flex flex-col items-center justify-center gap-1.5 hover:bg-[var(--bg)]/30 transition-colors p-3.5"
             >
               <span className="text-[20px] text-[var(--gold)]">→</span>
               <span className="text-[11px] font-semibold text-[var(--gold)]">View All</span>

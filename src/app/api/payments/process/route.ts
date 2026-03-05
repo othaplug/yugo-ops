@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       success: true,
       payment_id: squarePaymentId,
       move_id: moveId,
-      tracking_url: moveId ? `/track/delivery/${moveId}` : null,
+      tracking_url: moveCode ? `/track/move/${moveCode}` : null,
     });
   } catch (e) {
     console.error("[payments/process] unexpected error:", e);

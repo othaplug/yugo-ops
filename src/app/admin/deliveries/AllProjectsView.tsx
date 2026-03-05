@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
-import { getStatusLabel, normalizeStatus, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR, MOVE_STATUS_COLORS_ADMIN } from "@/lib/move-status";
+import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 
 const PARTNER_TYPES = ["all", "retail", "designer", "hospitality", "gallery"] as const;
@@ -60,6 +62,129 @@ const DELIVERY_STATUS_STYLE: Record<string, string> = {
   cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
 };
 
+const deliveryColumns: ColumnDef<Delivery>[] = [
+  {
+    id: "date",
+    label: "Date",
+    accessor: (d) => d.scheduled_date,
+    render: (d) => (
+      <div className="tabular-nums">
+        <div className="text-[12px] font-semibold text-[var(--tx2)]">{formatMoveDate(d.scheduled_date)}</div>
+        <div className="text-[10px] text-[var(--tx3)]">{d.time_slot || ""}</div>
+      </div>
+    ),
+    sortable: true,
+    searchable: true,
+    exportAccessor: (d) => `${formatMoveDate(d.scheduled_date)} ${d.time_slot || ""}`,
+  },
+  {
+    id: "status",
+    label: "Status",
+    accessor: (d) => d.status,
+    render: (d) => {
+      const s = (d.status || "").toLowerCase();
+      const style = DELIVERY_STATUS_STYLE[s] || "text-[var(--tx3)] bg-[var(--gdim)]";
+      return (
+        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
+          {toTitleCase(d.status || "")}
+        </span>
+      );
+    },
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "category",
+    label: "Category",
+    accessor: (d) => d.category || "Delivery",
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "customer",
+    label: "Customer",
+    accessor: (d) => d.customer_name || d.client_name,
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "items",
+    label: "Items",
+    accessor: (d) => d.items?.length ?? 0,
+    render: (d) => (d.items?.length ?? 0) > 0 ? `${d.items.length} item${d.items.length > 1 ? "s" : ""}` : "—",
+    sortable: true,
+    align: "right",
+  },
+];
+
+const moveColumns: ColumnDef<Move>[] = [
+  {
+    id: "date",
+    label: "Date",
+    accessor: (m) => m.scheduled_date,
+    render: (m) => (
+      <span className="tabular-nums text-[12px] font-semibold text-[var(--tx2)]">{formatMoveDate(m.scheduled_date)}</span>
+    ),
+    sortable: true,
+    searchable: true,
+    exportAccessor: (m) => formatMoveDate(m.scheduled_date),
+  },
+  {
+    id: "status",
+    label: "Status",
+    accessor: (m) => m.status,
+    render: (m) => {
+      const s = (m.status || "").toLowerCase();
+      const n = normalizeStatus(s) || "";
+      const style = MOVE_STATUS_COLORS_ADMIN[s] || MOVE_STATUS_COLORS_ADMIN[n] || "text-[var(--tx3)] bg-[var(--gdim)]";
+      return (
+        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
+          {getStatusLabel(m.status)}
+        </span>
+      );
+    },
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "client",
+    label: "Client",
+    accessor: (m) => m.client_name,
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "route",
+    label: "Route",
+    accessor: (m) => [m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" → "),
+    render: (m) => {
+      const addr = [m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" → ");
+      return addr ? <span className="truncate max-w-[200px] block">{addr}</span> : "—";
+    },
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "estimate",
+    label: "Estimate",
+    accessor: (m) => m.estimate,
+    render: (m) => {
+      const est = Number(m.estimate ?? 0);
+      return est > 0 ? (
+        <span className="inline-flex items-baseline gap-1">
+          <span className="text-[11px] font-bold text-[var(--gold)]">{formatCurrency(est)}</span>
+          <span className="text-[8px] text-[var(--tx3)]">+{formatCurrency(Math.round(est * 0.13))} HST</span>
+        </span>
+      ) : (
+        "—"
+      );
+    },
+    sortable: true,
+    align: "right",
+    exportAccessor: (m) => m.estimate != null ? formatCurrency(m.estimate) : "",
+  },
+];
+
 export default function AllProjectsView({
   deliveries,
   moves,
@@ -69,6 +194,7 @@ export default function AllProjectsView({
   moves: Move[];
   today: string;
 }) {
+  const router = useRouter();
   const [mainTab, setMainTab] = useState<"partners" | "move">("partners");
   const [partnerType, setPartnerType] = useState<(typeof PARTNER_TYPES)[number]>("all");
   const [statusFilter, setStatusFilter] = useState("");
@@ -131,7 +257,7 @@ export default function AllProjectsView({
 
       {/* Pending approval strip */}
       {pendingApproval.length > 0 && (
-        <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center justify-between gap-3">
+        <div className="mb-5 border-t border-amber-500/30 bg-amber-500/5 pt-4 pb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             <span className="text-[12px] font-semibold text-amber-300">
@@ -149,7 +275,7 @@ export default function AllProjectsView({
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-5">
+      <div className="border-t border-[var(--brd)]/30 pt-5 flex items-center gap-1 mb-5">
         {([
           { key: "partners" as const, label: "Partners", count: filteredDeliveries.length },
           { key: "move" as const, label: "Moves", count: filteredMoves.length },
@@ -195,11 +321,13 @@ export default function AllProjectsView({
       )}
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="border-t border-[var(--brd)]/30 pt-5 flex flex-col gap-3 mb-5">
+        <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
+        <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => setFilterOpen(!filterOpen)}
-          className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)] bg-[var(--card)]"
+          className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filters
@@ -218,13 +346,14 @@ export default function AllProjectsView({
             <button type="button" onClick={clearFilters} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear</button>
           )}
         </div>
+        </div>
       </div>
 
       {/* Mobile filter drawer */}
       {filterOpen && (
-        <div className="md:hidden border border-[var(--brd)] rounded-xl bg-[var(--card)] px-4 py-4 space-y-3 mb-5">
+        <div className="md:hidden border-t border-[var(--brd)]/30 pt-4 pb-4 space-y-3 mb-5">
           <div className="flex justify-between items-center">
-            <span className="text-[11px] font-semibold text-[var(--tx3)]">Filters</span>
+            <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
             <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
@@ -237,96 +366,37 @@ export default function AllProjectsView({
 
       {/* ── Partners list ── */}
       {mainTab === "partners" && (
-        <div>
-          {filteredDeliveries.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-[13px] text-[var(--tx3)]">No deliveries {statusFilter ? `with status "${statusFilter}"` : "found"}</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredDeliveries.map((d) => {
-                const s = (d.status || "").toLowerCase();
-                const lineColor = DELIVERY_STATUS_LINE_COLOR[s] || "var(--gold)";
-                const statusStyle = DELIVERY_STATUS_STYLE[s] || "text-[var(--tx3)] bg-[var(--gdim)]";
-                return (
-                  <Link
-                    key={d.id}
-                    href={getDeliveryDetailPath(d)}
-                    className="group flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
-                  >
-                    <div className="shrink-0 w-[56px] pt-0.5 text-right">
-                      <div className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{formatMoveDate(d.scheduled_date)}</div>
-                      <div className="text-[10px] text-[var(--tx3)]">{d.time_slot || ""}</div>
-                    </div>
-                    <div className="w-[3px] rounded-full shrink-0 self-stretch min-h-[44px]" style={{ backgroundColor: lineColor }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}>
-                          {toTitleCase(d.status || "")}
-                        </span>
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--tx3)]">{d.category || "Delivery"}</span>
-                      </div>
-                      <div className="text-[14px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
-                        {d.customer_name || d.client_name}
-                      </div>
-                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                        {d.client_name}{d.items?.length ? ` \u00b7 ${d.items.length} item${d.items.length > 1 ? "s" : ""}` : ""}
-                      </div>
-                    </div>
-                    <svg className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+        <div className="border-t border-[var(--brd)]/30 pt-5">
+          <DataTable<Delivery>
+            data={filteredDeliveries}
+            columns={deliveryColumns}
+            keyField="id"
+            tableId="projects-deliveries"
+            searchable
+            pagination
+            exportable
+            columnToggle
+            onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
+            emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}
+          />
         </div>
       )}
 
       {/* ── Moves list ── */}
       {mainTab === "move" && (
-        <div>
-          {filteredMoves.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-[13px] text-[var(--tx3)]">No moves {statusFilter ? `with status "${statusFilter}"` : "found"}</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredMoves.map((m) => {
-                const s = (m.status || "").toLowerCase();
-                const n = normalizeStatus(s) || "";
-                const lineColor = MOVE_STATUS_LINE_COLOR[s] || MOVE_STATUS_LINE_COLOR[n] || "var(--gold)";
-                const statusStyle = MOVE_STATUS_COLORS_ADMIN[s] || MOVE_STATUS_COLORS_ADMIN[n] || "text-[var(--tx3)] bg-[var(--gdim)]";
-                const addr = [m.from_address, m.to_address || m.delivery_address].filter(Boolean).join(" \u2192 ");
-                return (
-                  <Link
-                    key={m.id}
-                    href={getMoveDetailPath(m)}
-                    className="group flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
-                  >
-                    <div className="shrink-0 w-[56px] pt-0.5 text-right">
-                      <div className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{formatMoveDate(m.scheduled_date)}</div>
-                    </div>
-                    <div className="w-[3px] rounded-full shrink-0 self-stretch min-h-[44px]" style={{ backgroundColor: lineColor }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}>
-                          {getStatusLabel(m.status)}
-                        </span>
-                        {m.estimate != null && Number(m.estimate) > 0 && (
-                          <span className="text-[11px] font-bold text-[var(--gold)]">{formatCurrency(m.estimate)}</span>
-                        )}
-                      </div>
-                      <div className="text-[14px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
-                        {m.client_name}
-                      </div>
-                      {addr && <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{addr}</div>}
-                    </div>
-                    <svg className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+        <div className="border-t border-[var(--brd)]/30 pt-5">
+          <DataTable<Move>
+            data={filteredMoves}
+            columns={moveColumns}
+            keyField="id"
+            tableId="projects-moves"
+            searchable
+            pagination
+            exportable
+            columnToggle
+            onRowClick={(m) => router.push(getMoveDetailPath(m))}
+            emptyMessage={statusFilter ? `No moves with status "${statusFilter}"` : "No moves found"}
+          />
         </div>
       )}
     </>

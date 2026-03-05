@@ -3,72 +3,130 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Pencil, Copy, Send, MapPin, Truck, Clock, Package, Users, FileText, DollarSign, AlertTriangle } from "lucide-react";
+import {
+  Copy, Send, MapPin, Truck, Clock, Layers, Users, FileText,
+  DollarSign, AlertTriangle, Pencil, Trash2, ChevronDown, Phone,
+  Mail, Calendar, Shield, ExternalLink, Hash,
+} from "lucide-react";
 import BackButton from "../../components/BackButton";
 import EditDeliveryModal from "./EditDeliveryModal";
 import NotifyClientButton from "./NotifyClientButton";
 import DownloadPDFButton from "./DownloadPDFButton";
+import GenerateInvoiceButton from "./GenerateInvoiceButton";
 import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
-import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 
-const PROGRESS_STEPS = ["pending", "confirmed", "in-transit", "delivered"] as const;
-const PROGRESS_LABELS: Record<string, string> = {
+/* ═══════════════════════════════════════════════════
+   Constants
+   ═══════════════════════════════════════════════════ */
+
+const STATUS_FLOW = ["pending", "confirmed", "in-transit", "delivered"] as const;
+const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
-  pending_approval: "Pending approval",
+  pending_approval: "Awaiting Approval",
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   "in-transit": "In Transit",
   delivered: "Completed",
+  completed: "Completed",
   cancelled: "Cancelled",
 };
 
-const STAGE_OPTIONS = [
-  { value: "quote", label: "Quote" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In progress" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; label: string; border: string }> = {
-  retail: { bg: "bg-[var(--gold)]/10", text: "text-[var(--gold)]", label: "Retail", border: "border-l-[var(--gold)]" },
-  designer: { bg: "bg-[#B8860B]/10", text: "text-[#B8860B]", label: "Designer", border: "border-l-[#B8860B]" },
-  hospitality: { bg: "bg-[#D48A29]/10", text: "text-[#D48A29]", label: "Hospitality", border: "border-l-[#D48A29]" },
-  gallery: { bg: "bg-[#4A7CE5]/10", text: "text-[#4A7CE5]", label: "Gallery", border: "border-l-[#4A7CE5]" },
-  b2c: { bg: "bg-[#2D9F5A]/10", text: "text-[#2D9F5A]", label: "B2C", border: "border-l-[#2D9F5A]" },
+const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
+  pending:          { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-600" },
+  pending_approval: { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-600" },
+  scheduled:        { dot: "bg-blue-500",    bg: "bg-blue-500/10",    text: "text-blue-600" },
+  confirmed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
+  "in-transit":     { dot: "bg-[var(--gold)]", bg: "bg-[var(--gdim)]", text: "text-[var(--gold)]" },
+  delivered:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
+  completed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
+  cancelled:        { dot: "bg-red-500",     bg: "bg-red-500/10",     text: "text-red-500" },
 };
 
-interface Crew { id: string; name: string; members?: string[] }
+const CATEGORY_BADGE: Record<string, { bg: string; text: string; label: string; accent: string }> = {
+  retail:      { bg: "bg-[var(--gold)]/10", text: "text-[var(--gold)]", label: "Retail", accent: "var(--gold)" },
+  designer:    { bg: "bg-[#B8860B]/10",     text: "text-[#B8860B]",     label: "Designer", accent: "#B8860B" },
+  hospitality: { bg: "bg-[#D48A29]/10",     text: "text-[#D48A29]",     label: "Hospitality", accent: "#D48A29" },
+  gallery:     { bg: "bg-[#4A7CE5]/10",     text: "text-[#4A7CE5]",     label: "Gallery", accent: "#4A7CE5" },
+  b2c:         { bg: "bg-[#2D9F5A]/10",     text: "text-[#2D9F5A]",     label: "B2C", accent: "#2D9F5A" },
+};
+
+/* ═══════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════ */
 
 function isDone(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase();
   return s === "delivered" || s === "completed" || s === "cancelled";
 }
 
-function InfoRow({ icon: Icon, label, children, onEdit }: { icon: React.ElementType; label: string; children: React.ReactNode; onEdit?: () => void }) {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "Not set";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+
+/* ═══════════════════════════════════════════════════
+   Micro Components
+   ═══════════════════════════════════════════════════ */
+
+function StatusDot({ status }: { status: string }) {
+  const c = STATUS_COLORS[status] || STATUS_COLORS.pending;
+  return <span className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`} />;
+}
+
+function ProgressBar({ status }: { status: string }) {
+  const idx = STATUS_FLOW.indexOf(status as typeof STATUS_FLOW[number]);
+  const pct = idx < 0 ? 0 : Math.round(((idx + 1) / STATUS_FLOW.length) * 100);
   return (
-    <div className="group/row flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--bg)]/60 transition-colors -mx-1">
-      <Icon className="w-3.5 h-3.5 text-[var(--tx3)] mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70 block">{label}</span>
-        <div className="text-[12px] text-[var(--tx)] mt-0.5">{children}</div>
-      </div>
-      {onEdit && (
-        <button type="button" onClick={onEdit} className="opacity-0 group-hover/row:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity shrink-0" aria-label={`Edit ${label}`}>
-          <Pencil className="w-[10px] h-[10px]" />
-        </button>
-      )}
+    <div className="flex gap-1 h-1.5 w-full mt-3">
+      {STATUS_FLOW.map((step, i) => {
+        const filled = i <= idx;
+        const isCurrent = i === idx;
+        return (
+          <div
+            key={step}
+            className="flex-1 rounded-full transition-all duration-300"
+            style={{
+              background: filled
+                ? isCurrent && status !== "delivered"
+                  ? "var(--gold)"
+                  : "var(--grn)"
+                : "rgba(255,255,255,0.08)",
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
+
+function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementType; label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${accent ? "bg-[var(--gold)]/10" : "bg-[var(--bg)]"}`}>
+        <Icon className={`w-3.5 h-3.5 ${accent ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
+        <div className={`text-[12px] font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   Main Component
+   ═══════════════════════════════════════════════════ */
+
+interface Crew { id: string; name: string; members?: string[] }
 
 export default function DeliveryDetailClient({
   delivery: initialDelivery,
@@ -88,30 +146,25 @@ export default function DeliveryDetailClient({
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [editingStatus, setEditingStatus] = useState(false);
   const [approveDeclineLoading, setApproveDeclineLoading] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
   const [copyingLink, setCopyingLink] = useState(false);
+  const [adjustedPrice, setAdjustedPrice] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
 
   useEffect(() => setDelivery(initialDelivery), [initialDelivery]);
 
   const selectedCrew = crews.find((c) => c.id === delivery.crew_id);
   const completed = isDone(delivery.status);
-  const cat = CATEGORY_STYLES[delivery.category] || CATEGORY_STYLES.retail;
+  const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
+  const sc = STATUS_COLORS[delivery.status] || STATUS_COLORS.pending;
+  const price = delivery.quoted_price || delivery.total_price || delivery.admin_adjusted_price || 0;
 
-  const statusColorMap: Record<string, string> = {
-    pending: "text-amber-600 bg-amber-500/10",
-    pending_approval: "text-amber-600 bg-amber-500/10",
-    scheduled: "text-blue-600 bg-blue-500/10",
-    confirmed: "text-emerald-600 bg-emerald-500/10",
-    "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-    delivered: "text-emerald-600 bg-emerald-500/10",
-    completed: "text-emerald-600 bg-emerald-500/10",
-    cancelled: "text-red-500 bg-red-500/10",
-  };
-  const statusColor = statusColorMap[delivery.status] || "bg-[var(--gdim)] text-[var(--gold)]";
-  const currentStepIdx = PROGRESS_STEPS.indexOf(delivery.status as typeof PROGRESS_STEPS[number]);
-
+  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel(`delivery-${delivery.id}`)
@@ -136,8 +189,20 @@ export default function DeliveryDetailClient({
     setCopyingLink(true);
     const url = await fetchTrackingLink();
     if (url) {
-      await navigator.clipboard.writeText(url);
-      toast("Tracking link copied", "check");
+      try {
+        await navigator.clipboard.writeText(url);
+        toast("Tracking link copied", "check");
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("Tracking link copied", "check");
+      }
     } else {
       toast("Could not generate tracking link", "alertTriangle");
     }
@@ -146,21 +211,35 @@ export default function DeliveryDetailClient({
 
   const assignCrew = async (crewId: string | null) => {
     const crew = crewId ? crews.find((c) => c.id === crewId) : null;
-    const { data, error } = await supabase
-      .from("deliveries")
-      .update({ crew_id: crewId, updated_at: new Date().toISOString() })
-      .eq("id", delivery.id)
-      .select()
-      .single();
-    if (error) { toast(error.message || "Failed to assign crew", "alertTriangle"); return; }
-    if (data) setDelivery(data);
+    try {
+      const res = await fetch(`/api/admin/deliveries/${delivery.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crew_id: crewId, updated_at: new Date().toISOString() }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast(result.error || "Failed to assign crew", "alertTriangle"); return; }
+      if (result.delivery) setDelivery((prev: any) => ({ ...prev, ...result.delivery }));
+    } catch { toast("Failed to assign crew", "alertTriangle"); return; }
     router.refresh();
     toast(crewId ? `Assigned to ${crew?.name}` : "Crew unassigned", "check");
   };
 
-  const [adjustedPrice, setAdjustedPrice] = useState<string>("");
-  const [rejectReason, setRejectReason] = useState("");
-  const [showRejectForm, setShowRejectForm] = useState(false);
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      const res = await fetch(`/api/admin/deliveries/${delivery.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast(result.error || "Failed", "alertTriangle"); return; }
+      if (result.delivery) setDelivery((prev: any) => ({ ...prev, ...result.delivery }));
+    } catch { toast("Failed to update status", "alertTriangle"); return; }
+    setEditingStatus(false);
+    router.refresh();
+    toast("Status updated", "check");
+  };
 
   const handleApprove = async () => {
     setApproveDeclineLoading(true);
@@ -177,7 +256,7 @@ export default function DeliveryDetailClient({
         toast(d.error || "Failed to approve", "alertTriangle");
       } else {
         router.refresh();
-        toast("Delivery approved and confirmed", "check");
+        toast("Delivery approved", "check");
       }
     } catch { toast("Failed to approve", "alertTriangle"); }
     setApproveDeclineLoading(false);
@@ -203,366 +282,453 @@ export default function DeliveryDetailClient({
     setShowRejectForm(false);
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/deliveries/${delivery.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Failed to delete", "alertTriangle");
+        setDeleting(false);
+        return;
+      }
+      toast("Delivery deleted", "check");
+      router.push("/admin/deliveries");
+      router.refresh();
+    } catch {
+      toast("Failed to delete", "alertTriangle");
+      setDeleting(false);
+    }
+  };
+
   const items = Array.isArray(delivery.items) ? delivery.items : [];
   const itemsDisplay = items.map((i: any) => {
     if (typeof i === "string") return { name: i, qty: 1 };
     return { name: i?.name || String(i), qty: i?.qty ?? 1 };
   });
+  const totalItems = itemsDisplay.reduce((sum: number, i: any) => sum + (i.qty || 1), 0);
+  const isPartnerRequest = delivery.created_by_source === "partner_portal";
+  const needsApproval = (delivery.status === "pending_approval" || delivery.status === "pending") && isPartnerRequest;
 
   return (
-    <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
       <BackButton label="Back" />
 
-      {completed && (
-        <div className="mt-3 rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
-          This delivery is {toTitleCase(delivery.status)}. Some fields are locked.
-        </div>
-      )}
-
-      {(delivery.status === "pending_approval" || delivery.status === "pending") && delivery.created_by_source === "partner_portal" && (
-        <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
-          <div className="flex items-center gap-2">
+      {/* ─── APPROVAL BANNER ─── */}
+      {needsApproval && (
+        <div className="mt-3 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent p-4 md:p-5">
+          <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-200">
-              Partner Delivery Request — Awaiting Approval
-            </p>
+            <span className="text-[13px] font-bold text-amber-700 dark:text-amber-300">
+              Partner Request — Awaiting Your Approval
+            </span>
           </div>
 
           {delivery.total_price > 0 && (
-            <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-1.5">
-              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Rate Card Pricing</div>
+            <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
               {delivery.booking_type && (
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[var(--tx3)]">Type</span>
-                  <span className="font-semibold text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"} {delivery.vehicle_type ? `— ${delivery.vehicle_type.toUpperCase()}` : ""}</span>
+                <div>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Type</span>
+                  <span className="font-medium text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"}</span>
                 </div>
               )}
               {delivery.base_price > 0 && (
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[var(--tx3)]">Base</span>
-                  <span className="text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
+                <div>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Base</span>
+                  <span className="font-medium text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
                 </div>
               )}
-              {delivery.overage_price > 0 && (
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[var(--tx3)]">Overages</span>
-                  <span className="text-[var(--tx)]">{formatCurrency(delivery.overage_price)}</span>
+              {(delivery.services_price > 0 || delivery.overage_price > 0) && (
+                <div>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Add-ons</span>
+                  <span className="font-medium text-[var(--tx)]">{formatCurrency((delivery.services_price || 0) + (delivery.overage_price || 0))}</span>
                 </div>
               )}
-              {delivery.services_price > 0 && (
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[var(--tx3)]">Services</span>
-                  <span className="text-[var(--tx)]">{formatCurrency(delivery.services_price)}</span>
-                </div>
-              )}
-              {delivery.zone_surcharge > 0 && (
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[var(--tx3)]">Zone Surcharge</span>
-                  <span className="text-[var(--tx)]">{formatCurrency(delivery.zone_surcharge)}</span>
-                </div>
-              )}
-              <div className="border-t border-[var(--brd)] pt-1.5 flex justify-between text-[13px]">
-                <span className="font-bold text-[var(--tx)]">Total</span>
+              <div>
+                <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Total</span>
                 <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
               </div>
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="block text-[10px] font-semibold text-[var(--tx3)]">Adjust Price (optional)</label>
-            <input
-              type="number"
-              step="0.01"
-              placeholder={delivery.total_price ? String(delivery.total_price) : "Enter adjusted price"}
-              value={adjustedPrice}
-              onChange={(e) => setAdjustedPrice(e.target.value)}
-              className="w-48 text-[13px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-            />
-          </div>
-
-          {showRejectForm ? (
-            <div className="space-y-2">
-              <textarea
-                placeholder="Reason for declining…"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                rows={2}
-                className="w-full text-[13px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-y"
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Adjust price (optional)</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder={delivery.total_price ? String(delivery.total_price) : "Enter price"}
+                value={adjustedPrice}
+                onChange={(e) => setAdjustedPrice(e.target.value)}
+                className="w-full max-w-[200px] text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-                  {approveDeclineLoading ? "…" : "Confirm Decline"}
-                </button>
-                <button type="button" onClick={() => setShowRejectForm(false)} className="px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</button>
+            </div>
+            {showRejectForm ? (
+              <div className="flex-1 space-y-2">
+                <textarea
+                  placeholder="Reason for declining…"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={2}
+                  className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-none"
+                />
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+                    {approveDeclineLoading ? "…" : "Confirm Decline"}
+                  </button>
+                  <button type="button" onClick={() => setShowRejectForm(false)} className="text-[11px] text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                {approveDeclineLoading ? "…" : "Approve"}
-              </button>
-              <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
-                Decline
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                  {approveDeclineLoading ? "…" : "Approve & Confirm"}
+                </button>
+                <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
+                  Decline
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ─── HERO ─── */}
-      <div className={`mt-3 glass rounded-xl border-l-4 ${cat.border} overflow-hidden`}>
+      {/* ─── HEADER ─── */}
+      <div className="mt-3 glass rounded-xl overflow-hidden" style={{ borderLeft: `3px solid ${cat.accent}` }}>
         <div className="p-4 sm:p-5">
-          {/* Top row: name + actions */}
+          {/* Top: Name + badges + actions */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="min-w-0">
-              <button type="button" onClick={() => setContactModalOpen(true)} className="font-heading text-[18px] md:text-[20px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left truncate max-w-full block">
-                {delivery.customer_name || delivery.delivery_number}
-              </button>
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">{delivery.delivery_number}</span>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(true)}
+                  className="font-heading text-[18px] md:text-[20px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors truncate"
+                >
+                  {delivery.customer_name || delivery.delivery_number}
+                </button>
+                {price > 0 && (
+                  <span className="inline-flex items-baseline gap-1.5">
+                    <span className="text-[16px] font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">+{formatCurrency(Math.round(price * 0.13))} HST</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+                  <Hash className="w-2.5 h-2.5" />{delivery.delivery_number}
+                </span>
+                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
                 {delivery.special_handling && (
-                  <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/15 text-amber-600 border border-amber-500/40 flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5" /> Special</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                    <AlertTriangle className="w-2.5 h-2.5" /> Special Handling
+                  </span>
+                )}
+                {isPartnerRequest && (
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">Partner Portal</span>
                 )}
               </div>
             </div>
+
+            {/* Actions */}
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30 hover:bg-[var(--gold)]/20 transition-all disabled:opacity-50">
-                <Copy className="w-3 h-3" /> {copyingLink ? "Copying…" : "Copy Tracking Link"}
+              <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
+                <Pencil className="w-3 h-3" /> Edit
+              </button>
+              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-all disabled:opacity-50">
+                <Copy className="w-3 h-3" /> {copyingLink ? "…" : "Tracking Link"}
               </button>
               <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
               <DownloadPDFButton delivery={delivery} />
+              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
+                <Trash2 className="w-3 h-3" /> Delete
+              </button>
             </div>
           </div>
 
           {/* Status row */}
-          <div className="mt-4 pt-3 border-t border-[var(--brd)]/30 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">Status</span>
-              {editingStatus ? (
-                <select
-                  autoFocus
-                  defaultValue={delivery.status}
-                  onBlur={() => setEditingStatus(false)}
-                  className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
-                  onChange={async (e) => {
-                    const v = e.target.value;
-                    const { data, error } = await supabase.from("deliveries").update({ status: v, updated_at: new Date().toISOString() }).eq("id", delivery.id).select().single();
-                    if (error) { toast(error.message || "Failed", "alertTriangle"); return; }
-                    if (data) setDelivery(data);
-                    setEditingStatus(false);
-                    router.refresh();
-                    toast("Status updated", "check");
-                  }}
-                >
-                  {Object.entries(PROGRESS_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                </select>
-              ) : (
-                <button type="button" onClick={() => setEditingStatus(true)} className="inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
-                  <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${statusColor}`}>{PROGRESS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[var(--tx3)] opacity-50"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
+          <div className="mt-4 pt-3 border-t border-[var(--brd)]/30">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <StatusDot status={delivery.status} />
+                {editingStatus ? (
+                  <select
+                    autoFocus
+                    defaultValue={delivery.status}
+                    onBlur={() => setEditingStatus(false)}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  >
+                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <button type="button" onClick={() => setEditingStatus(true)} className="group inline-flex items-center gap-1">
+                    <span className={`text-[12px] font-bold ${sc.text}`}>{STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
+                    <ChevronDown className="w-3 h-3 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                )}
+              </div>
+              {delivery.client_name && (
+                <MetricPill icon={Users} label="Client" value={delivery.client_name} />
+              )}
+              {delivery.scheduled_date && (
+                <MetricPill icon={Calendar} label="Date" value={formatDate(delivery.scheduled_date)} />
+              )}
+              {selectedCrew && (
+                <MetricPill icon={Truck} label="Crew" value={selectedCrew.name} />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">Stage</span>
-              <span className="text-[11px] font-medium text-[var(--tx)]">{STAGE_OPTIONS.find((o) => o.value === delivery.stage)?.label ?? delivery.stage ?? "—"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">Client</span>
-              <span className="text-[11px] font-medium text-[var(--tx)]">{delivery.client_name || "—"}</span>
-            </div>
-            {delivery.quoted_price > 0 && (
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-[15px] font-bold font-heading text-[var(--gold)]">{formatCurrency(delivery.quoted_price)}</span>
-              </div>
-            )}
-          </div>
 
-          {delivery.status !== "cancelled" && (
-            <div className="mt-4">
-              <SegmentedProgressBar
-                label=""
-                steps={PROGRESS_STEPS.map((s) => ({ key: s, label: PROGRESS_LABELS[s] }))}
-                currentIndex={Math.max(0, currentStepIdx)}
-              />
-            </div>
-          )}
+            {delivery.status !== "cancelled" && <ProgressBar status={delivery.status} />}
+          </div>
         </div>
       </div>
 
-      {/* ─── MAIN CONTENT: 2 columns on large screens ─── */}
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
-        {/* LEFT COLUMN */}
-        <div className="space-y-3">
-          {/* Live Tracking */}
-          <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]/30">
-              <div className="flex items-center gap-2">
-                <h3 className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</h3>
+      {completed && (
+        <div className="mt-2 rounded-lg bg-[var(--gdim)]/30 border border-[var(--brd)]/40 px-4 py-2 text-[10px] text-[var(--tx3)]">
+          This delivery is {toTitleCase(delivery.status)}. Some fields are locked.
+        </div>
+      )}
+
+      {/* ─── MAIN CONTENT ─── */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
+        {/* LEFT */}
+        <div>
+          {/* Live Tracking / Completion Status — stays as card (hero) */}
+          {completed ? (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
+              <div className="px-5 py-5 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
+                  <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {delivery.status === "cancelled" ? "Cancelled" : "Delivery Complete"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--tx3)]">
+                  {selectedCrew ? `Completed by ${selectedCrew.name}` : ""}
+                  {delivery.updated_at ? ` · ${new Date(delivery.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${new Date(delivery.updated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
+                </p>
               </div>
-              {delivery.crew_id ? (
-                <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
-              ) : !completed ? (
-                <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                  Assign Crew to Enable
-                </button>
-              ) : null}
             </div>
-            {delivery.crew_id ? (
-              <LiveTrackingMap crewId={delivery.crew_id} crewName={selectedCrew?.name} deliveryId={delivery.id} />
-            ) : (
-              <div className="px-6 py-10 text-center">
-                <Truck className="w-8 h-8 text-[var(--tx3)]/30 mx-auto mb-3" />
-                <p className="text-[12px] font-medium text-[var(--tx3)]">No crew assigned yet</p>
-                <p className="text-[10px] text-[var(--tx3)]/60 mt-1 mb-4">Assign a crew to enable live GPS tracking</p>
-                {!completed && (
-                  <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          ) : (
+            <div className="rounded-xl border border-[var(--brd)]/50 overflow-hidden bg-[var(--card)]">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--brd)]/30">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</span>
+                </div>
+                {delivery.crew_id ? (
+                  <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
+                ) : (
+                  <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
                     Assign Crew
                   </button>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Items */}
-          {itemsDisplay.length > 0 && (
-            <CollapsibleSection title={`Items (${itemsDisplay.length})`} defaultCollapsed={false}>
-              <div className="space-y-0.5">
-                {itemsDisplay.map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-[var(--bg)] transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-[var(--gold)] w-5 text-center">{idx + 1}</span>
-                      <span className="text-[11px] text-[var(--tx)]">{item.name}</span>
-                    </div>
-                    {item.qty > 1 && <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[var(--gdim)]/80 text-[var(--gold)]">x{item.qty}</span>}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
+              {delivery.crew_id ? (
+                <LiveTrackingMap crewId={delivery.crew_id} crewName={selectedCrew?.name} deliveryId={delivery.id} />
+              ) : (
+                <div className="px-6 py-10 text-center">
+                  <Truck className="w-5 h-5 text-[var(--tx3)]/30 mx-auto mb-2" />
+                  <p className="text-[12px] font-medium text-[var(--tx2)]">No crew assigned</p>
+                  <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
+                  <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                    Assign Crew
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Incidents */}
-          <IncidentsSection jobId={delivery.id} jobType="delivery" />
+          {/* ─── Seamless sections below map ─── */}
+          <div className="mt-6 space-y-0">
 
-          {/* Instructions */}
-          <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4 hover:border-[var(--gold)]/30 transition-all">
-            {!completed && (
-              <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditModalOpen(true)}>
-                <Pencil className="w-[10px] h-[10px]" />
-              </button>
-            )}
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-3.5 h-3.5 text-[var(--tx3)]" />
-              <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">Instructions & Notes</h3>
+            {/* Route */}
+            <div className="pb-5">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Route</div>
+              <div className="space-y-0">
+                {/* Pickup */}
+                <div className="flex items-start gap-3.5">
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-3 h-3 rounded-full border-2 border-emerald-500 bg-emerald-500/20" />
+                    <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
+                  </div>
+                  <div className="flex-1 min-w-0 pb-4">
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">Pickup</div>
+                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.pickup_address || "Not set"}</div>
+                    {delivery.pickup_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
+                  </div>
+                </div>
+                {/* Drop-off */}
+                <div className="flex items-start gap-3.5">
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
+                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
+                    {delivery.delivery_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">{delivery.instructions || "No instructions yet."}</p>
-          </div>
-        </div>
 
-        {/* RIGHT COLUMN — sidebar details */}
-        <div className="space-y-3">
-          {/* Schedule */}
-          <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4 hover:border-[var(--gold)]/30 transition-all">
-            {!completed && (
-              <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditModalOpen(true)}>
-                <Pencil className="w-[10px] h-[10px]" />
-              </button>
-            )}
-            <InfoRow icon={Clock} label="Date">
-              <span className="font-medium">{delivery.scheduled_date ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Not scheduled"}</span>
-            </InfoRow>
-            <InfoRow icon={Clock} label="Time Slot">
-              {delivery.time_slot || "—"}
-            </InfoRow>
-            <InfoRow icon={Clock} label="Window">
-              {delivery.delivery_window || "—"}
-            </InfoRow>
-          </div>
-
-          {/* Addresses */}
-          <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4 hover:border-[var(--gold)]/30 transition-all">
-            {!completed && (
-              <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditModalOpen(true)}>
-                <Pencil className="w-[10px] h-[10px]" />
-              </button>
-            )}
-            <InfoRow icon={MapPin} label="Pickup">
-              {delivery.pickup_address || "—"}
-            </InfoRow>
-            <InfoRow icon={MapPin} label="Delivery To">
-              <span className="font-medium">{delivery.delivery_address || "—"}</span>
-            </InfoRow>
-          </div>
-
-          {/* Crew */}
-          <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4 hover:border-[var(--gold)]/30 transition-all">
-            {!completed && (
-              <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)}>
-                <Pencil className="w-[10px] h-[10px]" />
-              </button>
-            )}
-            <InfoRow icon={Users} label="Assigned Team">
-              {selectedCrew ? (
-                <span className="font-medium">{selectedCrew.name}</span>
-              ) : (
-                <button type="button" onClick={() => !completed && setCrewModalOpen(true)} className="text-[var(--gold)] font-medium hover:underline">
-                  {completed ? "No crew" : "+ Assign crew"}
-                </button>
-              )}
-            </InfoRow>
-            {selectedCrew?.members && selectedCrew.members.length > 0 && (
-              <div className="px-3 pb-1">
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {selectedCrew.members.map((m) => (
-                    <span key={m} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--bg)] border border-[var(--brd)]/50 text-[10px] text-[var(--tx2)]">
-                      <span className="w-4 h-4 rounded-full bg-[var(--gold)]/15 flex items-center justify-center text-[8px] font-bold text-[var(--gold)]">{m.charAt(0).toUpperCase()}</span>
-                      {m}
-                    </span>
+            {/* Items — seamless */}
+            {itemsDisplay.length > 0 && (
+              <div className="border-t border-[var(--brd)]/30 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
+                  <span className="text-[10px] font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="space-y-1.5">
+                  {itemsDisplay.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[9px] font-bold text-[var(--tx3)]/40 w-4 text-right shrink-0">{idx + 1}</span>
+                        <span className="text-[12px] text-[var(--tx)] truncate">{item.name}</span>
+                      </div>
+                      {item.qty > 1 && (
+                        <span className="text-[10px] font-semibold text-[var(--gold)] shrink-0">×{item.qty}</span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Customer Contact */}
-          <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4 hover:border-[var(--gold)]/30 transition-all">
-            {!completed && (
-              <button type="button" className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setEditModalOpen(true)}>
-                <Pencil className="w-[10px] h-[10px]" />
-              </button>
-            )}
-            <button type="button" onClick={() => setContactModalOpen(true)} className="w-full text-left">
-              <InfoRow icon={Users} label="Customer">
-                <span className="font-medium text-[var(--gold)]">{delivery.customer_name || "—"}</span>
-              </InfoRow>
-            </button>
-            {delivery.customer_email && (
-              <div className="px-3 text-[10px] text-[var(--tx3)]">{delivery.customer_email}</div>
-            )}
-            {delivery.customer_phone && (
-              <div className="px-3 mt-0.5 text-[10px] text-[var(--tx3)]">{formatPhone(delivery.customer_phone)}</div>
-            )}
+            {/* Incidents — seamless */}
+            <div className="border-t border-[var(--brd)]/30 pt-5">
+              <IncidentsSection jobId={delivery.id} jobType="delivery" />
+            </div>
 
-            {/* Customer tracking actions */}
-            <div className="mt-3 px-3 flex flex-wrap gap-1.5">
-              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[9px] font-semibold bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all disabled:opacity-50">
-                <Copy className="w-2.5 h-2.5" /> {copyingLink ? "…" : "Copy Link"}
-              </button>
-              <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
+            {/* Instructions — seamless */}
+            <div className="border-t border-[var(--brd)]/30 py-5">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
+              <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
+                {delivery.instructions || delivery.notes || "No instructions added."}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Price highlight */}
-          {delivery.quoted_price > 0 && (
-            <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/12 to-[var(--gold)]/4 border border-[var(--gold)]/30 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-3.5 h-3.5 text-[var(--gold)]" />
-                <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/80">Quoted Price</span>
+        {/* RIGHT — single seamless panel + pricing card */}
+        <div>
+          {/* Info panel — seamless sections with dividers */}
+          <div className="space-y-0">
+
+            {/* Schedule */}
+            <div className="pb-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
+              <div className="space-y-1.5 text-[12px]">
+                <div className="flex justify-between">
+                  <span className="text-[var(--tx3)] text-[11px]">Date</span>
+                  <span className="font-semibold text-[var(--tx)]">{formatDate(delivery.scheduled_date)}</span>
+                </div>
+                {delivery.time_slot && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)] text-[11px]">Time</span>
+                    <span className="font-medium text-[var(--tx)]">{delivery.time_slot}</span>
+                  </div>
+                )}
+                {delivery.delivery_window && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)] text-[11px]">Window</span>
+                    <span className="font-medium text-[var(--tx)]">{delivery.delivery_window}</span>
+                  </div>
+                )}
               </div>
-              <div className="text-[22px] font-bold font-heading text-[var(--gold)] mt-1">{formatCurrency(delivery.quoted_price)}</div>
             </div>
-          )}
+
+            {/* Crew */}
+            <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
+                <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
+                  {selectedCrew ? "Change" : "Assign"}
+                </button>
+              </div>
+              {selectedCrew ? (
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)]">
+                      {selectedCrew.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[13px] font-semibold text-[var(--tx)]">{selectedCrew.name}</span>
+                  </div>
+                  {selectedCrew.members && selectedCrew.members.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2 pl-9">
+                      {selectedCrew.members.map((m) => (
+                        <span key={m} className="text-[10px] text-[var(--tx3)]">{m}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-[var(--tx3)]">No crew assigned</p>
+              )}
+            </div>
+
+            {/* Customer */}
+            <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
+                <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
+              </div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "—"}</div>
+              {delivery.customer_email && (
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-1">
+                  <Mail className="w-3 h-3" />
+                  <span className="truncate">{delivery.customer_email}</span>
+                </div>
+              )}
+              {delivery.customer_phone && (
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-0.5">
+                  <Phone className="w-3 h-3" />
+                  <span>{formatPhone(delivery.customer_phone)}</span>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[9px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors disabled:opacity-50">
+                  <ExternalLink className="w-2.5 h-2.5" /> {copyingLink ? "…" : "Share Link"}
+                </button>
+                <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing — keeps card treatment (hero/actionable) */}
+          <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
+              {delivery.quoted_price ? "Quoted Price" : "Pricing"}
+            </div>
+            {price > 0 ? (
+              <>
+                <div className="text-[24px] font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</div>
+                <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                  +{formatCurrency(calcHST(price))} HST &middot; Total {formatCurrency(price + calcHST(price))}
+                </div>
+                {delivery.admin_adjusted_price && delivery.admin_adjusted_price !== price && (
+                  <div className="text-[10px] text-[var(--tx3)] mt-1">
+                    Adjusted from {formatCurrency(delivery.total_price || delivery.quoted_price)}
+                  </div>
+                )}
+                <div className="mt-3 pt-3 border-t border-[var(--gold)]/15">
+                  <GenerateInvoiceButton delivery={delivery} />
+                </div>
+              </>
+            ) : (
+              <div>
+                <div className="text-[13px] text-[var(--tx3)]">No price set</div>
+                <button type="button" onClick={() => setEditModalOpen(true)} className="mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                  Add quoted price
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -570,48 +736,62 @@ export default function DeliveryDetailClient({
 
       {/* Crew Picker */}
       <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
-        <div className="p-5 space-y-4">
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
-          <div className="space-y-1.5">
+        <div className="p-5 space-y-2">
+          <button
+            type="button"
+            onClick={() => { assignCrew(null); setCrewModalOpen(false); }}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${!delivery.crew_id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-[var(--bg)] flex items-center justify-center text-[var(--tx3)]">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <div className="text-[12px] font-medium text-[var(--tx)]">Unassigned</div>
+              <div className="text-[10px] text-[var(--tx3)]">Remove crew assignment</div>
+            </div>
+          </button>
+          {crews.map((c) => (
             <button
+              key={c.id}
               type="button"
-              onClick={() => { assignCrew(null); setCrewModalOpen(false); }}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${!delivery.crew_id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+              onClick={() => { assignCrew(c.id); setCrewModalOpen(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
             >
-              <div className="w-8 h-8 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--tx3)]">
-                <Users className="w-3.5 h-3.5" />
+              <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
+                {c.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="text-[12px] font-medium text-[var(--tx)]">No crew</div>
-                <div className="text-[10px] text-[var(--tx3)]">Remove crew assignment</div>
-              </div>
-            </button>
-            {crews.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { assignCrew(c.id); setCrewModalOpen(false); }}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)]">
-                  {c.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-[var(--tx)]">{c.name}</div>
-                  {c.members && c.members.length > 0 && (
-                    <div className="text-[10px] text-[var(--tx3)] truncate">{c.members.join(", ")}</div>
-                  )}
-                </div>
-                {delivery.crew_id === c.id && (
-                  <span className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-500/10">Active</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] font-medium text-[var(--tx)]">{c.name}</div>
+                {c.members && c.members.length > 0 && (
+                  <div className="text-[10px] text-[var(--tx3)] truncate">{c.members.join(", ")}</div>
                 )}
-              </button>
-            ))}
+              </div>
+              {delivery.crew_id === c.id && (
+                <span className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-500/10">Active</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </ModalOverlay>
+
+      {/* Delete Confirmation */}
+      <ModalOverlay open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Delivery" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <p className="text-[12px] text-[var(--tx2)]">
+            Are you sure you want to delete <strong>{delivery.delivery_number}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex items-center gap-2 justify-end">
+            <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]">
+              Cancel
+            </button>
+            <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+              {deleting ? "Deleting…" : "Delete Delivery"}
+            </button>
           </div>
         </div>
       </ModalOverlay>
 
-      <EditDeliveryModal delivery={delivery} organizations={organizations} crews={crews} open={editModalOpen} onOpenChange={setEditModalOpen} />
+      <EditDeliveryModal delivery={delivery} organizations={organizations} crews={crews} open={editModalOpen} onOpenChange={setEditModalOpen} onSaved={(d) => setDelivery((prev: any) => ({ ...prev, ...d }))} />
 
       <ContactDetailsModal
         open={contactModalOpen}

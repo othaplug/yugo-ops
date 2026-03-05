@@ -99,17 +99,17 @@ function ReadinessChecklistSection() {
     setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, label } : x)));
   };
 
-  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading…</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading…</p></div>;
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="clipboard" className="w-[16px] h-[16px]" /> Readiness Checklist
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="clipboard" className="w-[14px] h-[14px]" /> Readiness Checklist
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Configure items for crew pre-trip readiness check</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Configure items for crew pre-trip readiness check</p>
       </div>
-      <div className="px-5 py-5 space-y-4">
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="space-y-2">
           {items.map((item, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -155,7 +155,7 @@ function ReadinessChecklistSection() {
           {saving ? "Saving…" : "Save checklist"}
         </button>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -222,16 +222,16 @@ function AuditLogSection() {
   });
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="clipboard" className="w-[16px] h-[16px]" /> Audit Log
+    <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="clipboard" className="w-[14px] h-[14px]" /> Audit Log
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform activity and access history</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Platform activity and access history</p>
       </div>
 
       {/* Filter bar */}
-      <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-wrap items-center gap-3">
+      <div className="py-3 border-b border-[var(--brd)]/30 flex flex-wrap items-center gap-3">
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Action</label>
           <select
@@ -256,7 +256,7 @@ function AuditLogSection() {
         </div>
       </div>
 
-      <div className="px-5 py-4">
+      <div className="py-4">
         {loading ? (
           <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading audit log…</div>
         ) : filtered.length === 0 ? (
@@ -314,7 +314,7 @@ function AuditLogSection() {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -386,7 +386,7 @@ function BusinessInfoSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const fields = [
     { key: "company_name", label: "Company Name", placeholder: "YUGO" },
@@ -400,14 +400,14 @@ function BusinessInfoSection() {
   ];
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="building" className="w-[16px] h-[16px]" /> Business Information
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="building" className="w-[14px] h-[14px]" /> Business Information
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Company details used across quotes, invoices, and emails</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, and emails</p>
       </div>
-      <div className="px-5 py-5 space-y-4">
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => (
             <div key={f.key}>
@@ -426,7 +426,7 @@ function BusinessInfoSection() {
           {saving ? "Saving..." : "Save Business Info"}
         </button>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -465,17 +465,17 @@ function QuotingDefaultsSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="fileText" className="w-[16px] h-[16px]" /> Quoting Defaults
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Default settings for quote generation</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Default settings for quote generation</p>
       </div>
-      <div className="px-5 py-5 space-y-4">
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
@@ -510,7 +510,7 @@ function QuotingDefaultsSection() {
           {saving ? "Saving..." : "Save Quoting Defaults"}
         </button>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -543,7 +543,7 @@ function FeatureTogglesSection() {
 
   const [embedCopied, setEmbedCopied] = useState(false);
 
-  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const features = [
     { key: "tipping_enabled", label: "Tipping System", desc: "Allow clients to tip crew after move completion" },
@@ -587,13 +587,14 @@ function FeatureTogglesSection() {
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="toggleRight" className="w-[16px] h-[16px]" /> Feature Toggles
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Enable or disable platform features</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Enable or disable platform features</p>
       </div>
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
       <div className="px-5 py-5 space-y-0">
         {features.map((f) => {
           const isOn = config[f.key] === "true";
@@ -658,7 +659,8 @@ function FeatureTogglesSection() {
           );
         })}
       </div>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -707,20 +709,20 @@ function EmailTemplatesSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const previewTpl = templates.find((t) => t.template_slug === previewSlug);
 
   return (
     <>
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-          <Icon name="mail" className="w-[16px] h-[16px]" /> Email Templates
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
       </div>
-      <div className="px-5 py-5 space-y-2">
+      <div className="space-y-2">
         {templates.length === 0 ? (
           <p className="text-[12px] text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
         ) : templates.map((tpl) => (
@@ -736,7 +738,7 @@ function EmailTemplatesSection() {
           </div>
         ))}
       </div>
-    </div>
+    </section>
 
     {/* Edit Template Modal */}
     {editing && (
@@ -1120,20 +1122,19 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* Teams tab — reorganized: Staff Roster first, Teams second, Portal Access third */}
       {activeTab === "crews" && (
-      <div id="crews" className="space-y-6">
-
+      <div id="crews" className="space-y-0">
         {/* ═══ SECTION 1: STAFF ROSTER ═══ */}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 scroll-mt-4">
+          <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
-              <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-                <Icon name="users" className="w-[16px] h-[16px]" /> Staff Roster
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+                <Icon name="users" className="w-[14px] h-[14px]" /> Staff Roster
               </h2>
             </div>
             <p className="text-[11px] text-[var(--tx3)] ml-7">Everyone who works at Yugo. Add new hires here first, then assign them to teams below.</p>
           </div>
-          <div className="px-5 py-4 space-y-4">
+          <div className="space-y-4">
             {/* Add new staff */}
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[140px]">
@@ -1266,15 +1267,15 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         {/* ═══ SECTION 2: TEAMS ═══ */}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <section className="pt-6 border-t border-[var(--brd)]/30">
+          <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
-                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">Teams</h2>
+                <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Teams</h2>
               </div>
               <div className="flex flex-nowrap items-center gap-2 sm:ml-auto">
                 <button
@@ -1293,7 +1294,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
             <p className="text-[11px] text-[var(--tx3)] mt-2 ml-7">Group staff into moving crews. Click a team to add/remove members, set leads, or delete.</p>
           </div>
-          <div className="px-5 py-5 space-y-3">
+          <div className="space-y-3">
             {teams.length === 0 ? (
               <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
             ) : null}
@@ -1480,15 +1481,15 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
           ))}
         </div>
-        </div>
+        </section>
 
         {/* ═══ SECTION 3: CREW PORTAL ACCESS ═══ */}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-wrap items-start justify-between gap-3">
+        <section className="pt-6 border-t border-[var(--brd)]/30">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
-                <h3 className="font-heading text-[16px] font-bold text-[var(--tx)]">Crew Portal Access</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew Portal Access</h3>
               </div>
               <p className="text-[11px] text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
             </div>
@@ -1569,7 +1570,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </ul>
             )}
           </div>
-        </div>
+        </section>
       </div>
       )}
 
@@ -1584,14 +1585,15 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
       {activeTab === "app" && (
-      <>
-      <div id="app" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="settings" className="w-[16px] h-[16px]" /> App
+      <div id="app" className="space-y-0 scroll-mt-4">
+      <section className="pt-0 first:pt-0">
+        <div className="mb-4">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+            <Icon name="settings" className="w-[14px] h-[14px]" /> App
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform-wide settings</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Platform-wide settings</p>
         </div>
+        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-5 space-y-4">
           {[
             { label: "Crew GPS Tracking", desc: "Enable real-time crew location tracking", state: crewTracking, set: setCrewTracking },
@@ -1653,7 +1655,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             );
           })}
         </div>
-      </div>
+        </div>
+      </section>
 
       {/* Business Information */}
       <BusinessInfoSection />
@@ -1671,14 +1674,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <ReadinessChecklistSection />
 
       {/* Danger Zone - in App Settings */}
-      <div className="bg-[var(--card)] border border-[var(--red)]/20 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--red)]/10 bg-[rgba(209,67,67,0.04)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--red)] flex items-center gap-2">
-            <Icon name="alertTriangle" className="w-[16px] h-[16px] text-[var(--red)]" /> Danger Zone
+      <section className="pt-6 border-t border-[var(--brd)]/30">
+        <div className="mb-4">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+            <Icon name="alertTriangle" className="w-[14px] h-[14px] text-[var(--red)]" /> Danger Zone
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Irreversible platform actions</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Irreversible platform actions</p>
         </div>
-        <div className="px-5 py-5 space-y-3">
+        <div className="rounded-xl border border-[var(--red)]/20 bg-[rgba(209,67,67,0.04)] p-5 space-y-3">
           <div className="flex items-center justify-between py-3">
             <div>
               <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
@@ -1689,8 +1692,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </button>
           </div>
         </div>
+      </section>
       </div>
-      </>
       )}
 
       {/* Partners Management */}
@@ -1700,13 +1703,13 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* User Management - Superadmin only */}
       {activeTab === "users" && isSuperAdmin && (
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <h2 className="text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="lock" className="w-[16px] h-[16px]" /> User Management
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+              <Icon name="lock" className="w-[14px] h-[14px]" /> User Management
             </h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Roles, permissions, and access control</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Roles, permissions, and access control</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Link
@@ -1723,7 +1726,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </button>
           </div>
         </div>
-        <div className="px-5 py-5">
+        <div>
           {usersLoading ? (
             <div className="py-8 text-center text-[13px] text-[var(--tx3)]">Loading users…</div>
           ) : users.length === 0 ? (
@@ -1771,7 +1774,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
           )}
         </div>
-      </div>
+      </section>
       )}
 
       {/* Audit Log */}

@@ -1,36 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const IDLE_INTERVAL_MS = 30_000; // 30s when idle (not on a job page)
+const IDLE_INTERVAL_MS = 30_000;
 
 /**
- * Business hours: 7 AM – 8 PM Toronto time.
- * Outside this window, idle tracking stops to save battery.
+ * Sends crew/tablet location to the API 24/7 when not on a job detail page
+ * so admin tracking always shows position.
+ * Renders a small live indicator visible to the crew.
  */
-function isBusinessHours(): boolean {
-  try {
-    const hour = parseInt(
-      new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/Toronto",
-        hour: "numeric",
-        hour12: false,
-      }).format(new Date()),
-      10,
-    );
-    return hour >= 7 && hour < 20;
-  } catch {
-    return true; // default to tracking if timezone API fails
-  }
-}
-
-/** Sends crew location to the API when not on a job detail page so the admin tracking page always shows position. */
 export default function CrewAlwaysOnLocation() {
   const pathname = usePathname();
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef(0);
-  const businessHoursRef = useRef(true);
+  const [status, setStatus] = useState<"live" | "off" | "unavailable" | "denied">("off");
 
   const isOnJobPage = pathname?.startsWith("/crew/dashboard/job/") ?? false;
   const isPublicPage = pathname === "/crew/login" || pathname === "/crew/setup" || !pathname;
@@ -42,20 +26,19 @@ export default function CrewAlwaysOnLocation() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isOnJobPage || isPublicPage || !("geolocation" in navigator)) return;
+  const startTracking = useCallback(() => {
+    if (isOnJobPage || isPublicPage || !("geolocation" in navigator)) {
+      if (!("geolocation" in navigator)) setStatus("unavailable");
+      return;
+    }
 
-    const checkBusinessHours = () => {
-      businessHoursRef.current = isBusinessHours();
-    };
-    checkBusinessHours();
-    const bhInterval = setInterval(checkBusinessHours, 60_000);
+    stopWatch();
 
     const sendPosition = (coords: GeolocationCoordinates) => {
-      if (!businessHoursRef.current) return;
       const now = Date.now();
       if (now - lastSentRef.current < IDLE_INTERVAL_MS) return;
       lastSentRef.current = now;
+      setStatus("live");
 
       fetch("/api/tracking/location", {
         method: "POST",
@@ -72,16 +55,57 @@ export default function CrewAlwaysOnLocation() {
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => sendPosition(pos.coords),
-      () => {},
+      (pos) => {
+        setStatus("live");
+        sendPosition(pos.coords);
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) setStatus("denied");
+        else setStatus("off");
+      },
       { enableHighAccuracy: false, maximumAge: 30_000, timeout: 15_000 },
     );
-
-    return () => {
-      stopWatch();
-      clearInterval(bhInterval);
-    };
   }, [isOnJobPage, isPublicPage, stopWatch]);
 
-  return null;
+  useEffect(() => {
+    startTracking();
+    return () => stopWatch();
+  }, [startTracking, stopWatch]);
+
+  // On job pages, the job page handles its own GPS — hide this indicator
+  if (isOnJobPage || isPublicPage) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 z-40 md:left-[232px]">
+      {status === "live" ? (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[var(--brd)] shadow-lg text-[11px] font-medium text-[var(--tx2)]">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
+          </span>
+          <span className="text-[#22C55E] font-semibold">Location Live</span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            if (status === "denied") {
+              alert("Location permission was denied. Please enable location access in your browser settings and reload the page.");
+            } else {
+              startTracking();
+            }
+          }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[#F59E0B]/40 shadow-lg text-[11px] font-medium hover:border-[#F59E0B] transition-colors"
+        >
+          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+          <span className="text-[#F59E0B] font-semibold">
+            {status === "denied" ? "Location Denied" : status === "unavailable" ? "GPS Unavailable" : "Location Off"}
+          </span>
+          {status !== "denied" && status !== "unavailable" && (
+            <span className="text-[var(--tx3)] ml-0.5">· Tap to reconnect</span>
+          )}
+        </button>
+      )}
+    </div>
+  );
 }

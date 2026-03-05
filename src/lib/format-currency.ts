@@ -34,3 +34,26 @@ export function parseNumberInput(s: string | null | undefined): number {
   const n = parseFloat(String(s).replace(/,/g, ""));
   return Number.isNaN(n) ? 0 : n;
 }
+
+const HST_RATE = 0.13;
+
+/** Calculate HST amount from a pre-tax value */
+export function calcHST(preTax: number | string | null | undefined): number {
+  const n = typeof preTax === "string" ? parseFloat(preTax) : Number(preTax);
+  if (Number.isNaN(n) || n <= 0) return 0;
+  return Math.round(n * HST_RATE * 100) / 100;
+}
+
+/** Format price + HST line: "$1,234 + $160 HST" */
+export function formatWithHST(preTax: number | string | null | undefined): string {
+  const n = typeof preTax === "string" ? parseFloat(preTax) : Number(preTax);
+  if (Number.isNaN(n) || n <= 0) return "$0";
+  return `${formatCurrency(n)} + ${formatCurrency(calcHST(n))} HST`;
+}
+
+/** Format just the total with HST included: "$1,394" */
+export function formatTotalWithHST(preTax: number | string | null | undefined): string {
+  const n = typeof preTax === "string" ? parseFloat(preTax) : Number(preTax);
+  if (Number.isNaN(n) || n <= 0) return "$0";
+  return formatCurrency(n + calcHST(n));
+}

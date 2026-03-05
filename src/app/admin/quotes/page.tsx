@@ -12,9 +12,9 @@ export default async function QuotesPage() {
   const contactIds = (quotes || []).map((q) => q.contact_id).filter(Boolean);
   let contactMap: Record<string, string> = {};
   if (contactIds.length > 0) {
-    const { data: contacts } = await db.from("contacts").select("id, full_name").in("id", contactIds);
+    const { data: contacts } = await db.from("contacts").select("id, name").in("id", contactIds);
     if (contacts) {
-      contactMap = Object.fromEntries(contacts.map((c) => [c.id, c.full_name || ""]));
+      contactMap = Object.fromEntries(contacts.map((c) => [c.id, c.name || ""]));
     }
   }
 

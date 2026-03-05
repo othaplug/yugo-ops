@@ -403,8 +403,8 @@ function CrewPopup({
 
       {/* Current job */}
       {(clientName || currentMove) && (
-        <div className="bg-[var(--bg)] rounded-lg p-3 mb-3 border border-[var(--brd)]/50">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current Job</div>
+        <div className="pt-3 mt-3 border-t border-[var(--brd)]/30">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
           <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "—"}</div>
           {fromAddr && toAddr && (
             <div className="text-[11px] text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
@@ -413,26 +413,26 @@ function CrewPopup({
       )}
 
       {/* Stats grid */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Speed</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
           <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">ETA</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
           <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Last GPS</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
           <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">{formatRelative(crewLocation?.updated_at || crew.updated_at || new Date().toISOString())}</div>
         </div>
       </div>
 
       {/* Team members */}
-      <div className="mb-3">
-        <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Team</div>
+      <div className="mb-3 pt-3 border-t border-[var(--brd)]/30">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
         <div className="flex flex-wrap gap-1.5">
           {(crew.members || []).map((m) => (
             <span key={m} className="px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">{m}</span>
@@ -627,12 +627,13 @@ export default function UnifiedTrackingView({
 
         try {
           const from = `${crew.current_lng},${crew.current_lat}`;
-          // Use to_address geocoding or move coordinates
-          // For simplicity use move coords if available
-          const moveData = todayMoves.find((m) => m.crew_id === s.teamId && m.to_address);
-          if (!moveData) continue;
+          const geoRes = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(destAddr)}&limit=1`);
+          const geoData = await geoRes.json();
+          const feature = geoData?.features?.[0];
+          const coords = feature?.geometry?.coordinates;
+          if (!coords || coords.length < 2) continue;
 
-          const res = await fetch(`/api/mapbox/directions?from=${from}&to=${crew.current_lng! + 0.01},${crew.current_lat! + 0.01}`);
+          const res = await fetch(`/api/mapbox/directions?from=${from}&to=${coords[0]},${coords[1]}`);
           const data = await res.json();
           if (data?.coordinates) {
             newRoutes.set(s.teamId, data.coordinates);
@@ -694,72 +695,213 @@ export default function UnifiedTrackingView({
         </div>
 
         {/* Bottom-left panel: Active Jobs + Teams */}
-        <div className="absolute bottom-3 left-3 z-10 w-[340px] max-h-[50vh] bg-[var(--card)]/95 border border-[var(--brd)] rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col">
+        <div className="absolute bottom-3 left-3 z-10 w-[360px] max-h-[55vh] bg-[var(--card)]/95 border border-[var(--brd)] rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col">
           {/* Panel tabs */}
           <div className="flex border-b border-[var(--brd)]">
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
-              Active Jobs ({activeSessions.length})
+              {(() => {
+                const STALE_TAB_MS = 90 * 60 * 1000;
+                const freshCount = activeSessions.filter((s) => !s.updatedAt || Date.now() - new Date(s.updatedAt).getTime() <= STALE_TAB_MS).length;
+                if (freshCount > 0) return `Live (${freshCount})`;
+                if (activeSessions.length > 0) return `Recent (${activeSessions.length})`;
+                if (todayMoves.length + todayDeliveries.length > 0) return `Today (${todayMoves.length + todayDeliveries.length})`;
+                return "Jobs";
+              })()}
             </button>
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>
           </div>
 
           {/* Panel content */}
-          <div className="overflow-y-auto max-h-[40vh]">
+          <div className="overflow-y-auto max-h-[45vh]">
             {activePanel === "jobs" && (
-              activeSessions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No active jobs right now</div>
-              ) : (
-                activeSessions.map((s) => {
-                  const loc = crewLocations.get(s.teamId);
-                  const statusLabel = getStatusLabel(loc?.status || s.status);
+              <>
+                {/* Live sessions */}
+                {activeSessions.length > 0 && (() => {
+                  const STALE_HEADER_MS = 90 * 60 * 1000;
+                  const allStale = activeSessions.every((s) => s.updatedAt && Date.now() - new Date(s.updatedAt).getTime() > STALE_HEADER_MS);
                   return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSelectedCrew(s.teamId)}
-                      className="w-full text-left block px-4 py-3 border-b border-[var(--brd)]/50 last:border-0 hover:bg-[var(--bg)]/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_RING[loc?.status || "idle"] || "#C9A962" }} />
-                        <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{s.teamName}</span>
-                      </div>
-                      {loc?.current_client_name && (
-                        <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{loc.current_client_name} — {loc.current_from_address || "?"} → {loc.current_to_address || "?"}</div>
+                  <>
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-1.5">
+                      {!allStale ? (
+                        <>
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+                          </span>
+                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]">Active Now</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="relative flex h-2 w-2">
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--tx3)]/40" />
+                          </span>
+                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">Recent Sessions</span>
+                        </>
                       )}
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-[var(--tx3)]">{statusLabel}</span>
-                        <span className="text-[10px] text-[var(--tx3)]">·</span>
-                        <span className="text-[10px] text-[var(--tx3)]">{formatRelative(s.updatedAt)}</span>
-                      </div>
-                      {/* Mini progress bar */}
-                      <div className="flex gap-0.5 mt-2">
-                        {["pickup", "transit", "delivery", "complete"].map((step, i) => {
-                          const stageOrder: Record<string, number> = { en_route_pickup: 0, at_pickup: 0, loading: 1, en_route_delivery: 1, at_delivery: 2, unloading: 2, idle: -1, returning: 3 };
-                          const current = stageOrder[loc?.status || "idle"] ?? -1;
-                          return (
-                            <div key={step} className={`h-1 flex-1 rounded-full ${i <= current ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`} />
-                          );
-                        })}
-                      </div>
-                    </button>
+                    </div>
+                    {activeSessions.map((s) => {
+                      const loc = crewLocations.get(s.teamId);
+                      const effectiveStatus = loc?.status || s.status || "idle";
+                      const statusLabel = getStatusLabel(effectiveStatus);
+                      const ringColor = STATUS_RING[effectiveStatus] || "#C9A962";
+
+                      const STAGE_ORDER: Record<string, number> = {
+                        en_route_pickup: 0, at_pickup: 1, loading: 1,
+                        en_route_delivery: 2, at_delivery: 3, unloading: 3,
+                        returning: 4, completed: 4, delivered: 4,
+                      };
+                      const stageIdx = STAGE_ORDER[effectiveStatus] ?? -1;
+                      const STAGE_LABELS = ["En route", "Pickup", "Transit", "Delivery", "Done"];
+
+                      const clientName = loc?.current_client_name || s.jobName || null;
+                      const fromAddr = loc?.current_from_address || null;
+                      const toAddr = loc?.current_to_address || null;
+
+                      const STALE_CLIENT_MS = 90 * 60 * 1000; // 1.5 hours
+                      const updatedMs = s.updatedAt ? Date.now() - new Date(s.updatedAt).getTime() : 0;
+                      const isStale = updatedMs > STALE_CLIENT_MS;
+
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setSelectedCrew(s.teamId)}
+                          className={`w-full text-left px-4 py-3 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors ${isStale ? "opacity-50" : ""}`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                style={{ background: `linear-gradient(135deg, ${ringColor}CC, ${ringColor}80)` }}
+                              >
+                                {(s.teamName || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-[12px] font-bold text-[var(--tx)] truncate">{s.teamName}</div>
+                                <div className="text-[10px] text-[var(--tx3)] truncate">
+                                  {clientName || "Job in progress"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ backgroundColor: `${ringColor}15`, color: ringColor }}>
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ringColor }} />
+                                {statusLabel}
+                              </span>
+                              <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatRelative(s.updatedAt)}</div>
+                            </div>
+                          </div>
+
+                          {(fromAddr || toAddr) && (
+                            <div className="mt-1.5 text-[10px] text-[var(--tx3)] truncate pl-9">
+                              {fromAddr && toAddr ? `${fromAddr} → ${toAddr}` : toAddr || fromAddr}
+                            </div>
+                          )}
+
+                          {/* Progress bar */}
+                          <div className="flex gap-0.5 mt-2 pl-9">
+                            {STAGE_LABELS.map((label, i) => (
+                              <div key={label} className="flex-1 group/seg relative">
+                                <div
+                                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                                    i <= stageIdx
+                                      ? i === stageIdx ? "animate-pulse" : ""
+                                      : ""
+                                  }`}
+                                  style={{
+                                    backgroundColor: i <= stageIdx ? ringColor : "rgba(255,255,255,0.06)",
+                                    boxShadow: i === stageIdx ? `0 0 6px ${ringColor}60` : undefined,
+                                  }}
+                                />
+                                <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[7px] text-[var(--tx3)] whitespace-nowrap opacity-0 group-hover/seg:opacity-100 transition-opacity">
+                                  {label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </>
                   );
-                })
-              )
+                })()}
+
+                {/* Today's scheduled jobs when no live sessions */}
+                {activeSessions.length === 0 && (todayMoves.length > 0 || todayDeliveries.length > 0) && (
+                  <>
+                    <div className="px-4 pt-3 pb-1">
+                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
+                    </div>
+                    {todayMoves.map((m) => {
+                      const crew = crews.find((c) => c.id === m.crew_id);
+                      return (
+                        <Link
+                          key={m.id}
+                          href={`/admin/moves/${m.move_code || m.id}`}
+                          className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
+                            <span className="text-[8px] font-bold text-[#3B82F6]">M</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{m.client_name || m.move_code}</div>
+                            <div className="text-[9px] text-[var(--tx3)] truncate">{m.from_address ?? "—"} → {m.to_address ?? "—"}</div>
+                          </div>
+                          {crew && <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
+                        </Link>
+                      );
+                    })}
+                    {todayDeliveries.map((d) => {
+                      const crew = crews.find((c) => c.id === d.crew_id);
+                      return (
+                        <Link
+                          key={d.id}
+                          href={`/admin/deliveries/${d.delivery_number || d.id}`}
+                          className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                            <span className="text-[8px] font-bold text-[var(--gold)]">D</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{d.delivery_number}</div>
+                            <div className="text-[9px] text-[var(--tx3)] truncate">{d.pickup_address} → {d.delivery_address}</div>
+                          </div>
+                          {crew && <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
+                        </Link>
+                      );
+                    })}
+                  </>
+                )}
+
+                {activeSessions.length === 0 && todayMoves.length === 0 && todayDeliveries.length === 0 && (
+                  <div className="px-4 py-10 text-center">
+                    <div className="text-[24px] mb-2 opacity-30">📍</div>
+                    <div className="text-[12px] font-medium text-[var(--tx3)]">No jobs today</div>
+                    <div className="text-[10px] text-[var(--tx3)]/60 mt-1">Active jobs and crew tracking will appear here</div>
+                  </div>
+                )}
+              </>
             )}
 
             {activePanel === "teams" && (
               crews.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No teams yet</div>
+                <div className="px-4 py-10 text-center">
+                  <div className="text-[24px] mb-2 opacity-30">👥</div>
+                  <div className="text-[12px] font-medium text-[var(--tx3)]">No teams configured</div>
+                  <div className="text-[10px] text-[var(--tx3)]/60 mt-1">
+                    <Link href="/admin/platform?tab=teams" className="text-[var(--gold)] hover:underline">Add teams in settings</Link>
+                  </div>
+                </div>
               ) : (
                 crews.map((c) => {
                   const loc = crewLocations.get(c.id);
@@ -767,20 +909,18 @@ export default function UnifiedTrackingView({
                   const isNearOffice = c.current_lat != null && c.current_lng != null && haversineM(c.current_lat, c.current_lng, office.lat, office.lng) < office.radiusM;
                   const status = loc?.status || (c.status === "en-route" ? "en_route_pickup" : "idle");
                   const isOff = offMin >= 30;
+                  const hasActiveSession = activeSessions.some((s) => s.teamId === c.id);
 
-                  let locationLabel = "Unknown";
-                  if (isNearOffice) locationLabel = "Parked at office";
+                  let locationLabel = "No GPS";
+                  if (isNearOffice) locationLabel = "At office";
                   else if (c.current_lat && c.current_lng) locationLabel = isOff ? `Last seen ${formatRelative(loc?.updated_at || c.updated_at || "")}` : getStatusLabel(status);
-                  else locationLabel = "No GPS data";
 
                   return (
                     <button
                       key={c.id}
                       type="button"
-                      onClick={() => {
-                        setSelectedCrew(c.id);
-                      }}
-                      className="w-full text-left flex items-center gap-3 px-4 py-3 border-b border-[var(--brd)]/50 last:border-0 hover:bg-[var(--bg)]/50 transition-colors"
+                      onClick={() => setSelectedCrew(c.id)}
+                      className="w-full text-left flex items-center gap-3 px-4 py-3 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                     >
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
@@ -789,17 +929,25 @@ export default function UnifiedTrackingView({
                         {(c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] font-bold text-[var(--tx)] truncate">{c.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-bold text-[var(--tx)] truncate">{c.name}</span>
+                          {hasActiveSession && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[var(--gold)] bg-[var(--gold)]/10">LIVE</span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                           {c.current_job ? `${c.current_job} · ` : ""}{locationLabel}
                         </div>
+                        {c.members && c.members.length > 0 && (
+                          <div className="text-[9px] text-[var(--tx3)]/60 mt-0.5 truncate">{c.members.join(", ")}</div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isOff && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                         )}
                         <div
-                          className={`w-2.5 h-2.5 rounded-full ${isOff ? "bg-[var(--red)]" : isOnJob(status) ? "bg-[var(--gold)] animate-pulse" : "bg-[var(--grn)]"}`}
+                          className={`w-2.5 h-2.5 rounded-full ${isOff ? "bg-[var(--red)]" : hasActiveSession ? "bg-[var(--gold)] animate-pulse" : isOnJob(status) ? "bg-[var(--gold)]" : "bg-[var(--grn)]"}`}
                         />
                       </div>
                     </button>

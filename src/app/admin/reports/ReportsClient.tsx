@@ -233,7 +233,7 @@ export default function ReportsClient({
             <button
               type="button"
               onClick={() => setFilterOpen((o) => !o)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] font-medium text-[var(--tx)] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/30 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--gdim)]/30 transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -249,10 +249,10 @@ export default function ReportsClient({
               </svg>
             </button>
             {filterOpen && (
-              <div className="absolute top-full right-0 mt-1.5 w-[280px] rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-xl z-50 overflow-hidden">
+              <div className="absolute top-full right-0 mt-1.5 w-[280px] rounded-lg bg-[var(--card)] shadow-xl z-50 overflow-hidden">
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Date & filters</span>
+                    <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Date & filters</span>
                     <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-semibold hover:underline">Done</button>
                   </div>
                   <div className="space-y-3">
@@ -324,7 +324,7 @@ export default function ReportsClient({
             type="button"
             onClick={exportCSV}
             disabled={filteredReports.length === 0}
-            className="px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[var(--tx)] font-semibold text-[12px] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-2 rounded-lg text-[var(--tx)] font-semibold text-[12px] hover:bg-[var(--gdim)]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             CSV
           </button>
@@ -340,19 +340,19 @@ export default function ReportsClient({
       </div>
 
       {filteredReports.length === 0 ? (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-12 text-center">
+        <div className="border-t border-[var(--brd)]/30 pt-12 pb-12 text-center">
           <p className="text-[14px] text-[var(--tx3)]">
             No end-of-day reports{from !== to ? ` for ${from} to ${to}` : ` for ${date}`}{filterJobType !== "all" || filterTeamId !== "all" ? " with current filters" : ""}.
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-0">
           {filteredReports.map((r) => (
             <div
               key={r.id}
-              className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden shadow-sm"
+              className="border-t border-[var(--brd)]/30 pt-6 pb-6 first:border-t-0 first:pt-0 first:mt-0"
             >
-              <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <h2 className="font-heading text-[17px] font-semibold text-[var(--tx)]">
                   {(r.crews as { name?: string })?.name || "Team"}
                 </h2>
@@ -360,47 +360,47 @@ export default function ReportsClient({
                   {r.generated_at ? new Date(r.generated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}
                 </span>
               </div>
-              <div className="p-5 space-y-5">
+              <div className="space-y-5">
                 {r.summary && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]/50">
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Jobs</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">{String(r.summary.jobsCompleted ?? 0)}</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Jobs</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.jobsCompleted ?? 0)}</div>
                     </div>
-                    <div className={`px-4 py-3 rounded-lg border ${(r.jobs?.filter((j) => j.hasDamage).length ?? 0) > 0 ? "bg-[var(--ordim)]/30 border-[var(--org)]/50" : "bg-[var(--bg)] border-[var(--brd)]/50"}`}>
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Damage</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">{r.jobs?.filter((j) => j.hasDamage).length ?? 0}</div>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage</div>
+                      <div className={`text-[16px] font-bold font-heading mt-0.5 ${(r.jobs?.filter((j) => j.hasDamage).length ?? 0) > 0 ? "text-[var(--org)]" : "text-[var(--tx)]"}`}>{r.jobs?.filter((j) => j.hasDamage).length ?? 0}</div>
                     </div>
-                    <div className="px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]/50">
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Total time</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total time</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">
                         {Math.floor((Number(r.summary.totalJobTime) || 0) / 60)}h {(Number(r.summary.totalJobTime) || 0) % 60}m
                       </div>
                     </div>
-                    <div className="px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]/50">
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Sign-offs</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">{String(r.summary.clientSignOffs ?? 0)}</div>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Sign-offs</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.clientSignOffs ?? 0)}</div>
                     </div>
-                    <div className="px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]/50">
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Expenses</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">${((Number(r.summary.expensesTotal) || 0) / 100).toFixed(2)}</div>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Expenses</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">${((Number(r.summary.expensesTotal) || 0) / 100).toFixed(2)}</div>
                     </div>
-                    <div className="px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]/50">
-                      <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Avg rating</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)]">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "—"}</div>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Avg rating</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "—"}</div>
                     </div>
                   </div>
                 )}
                 {r.jobs && r.jobs.length > 0 && (
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Jobs</div>
+                  <div className="border-t border-[var(--brd)]/30 pt-5">
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Jobs</div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {r.jobs.map((j, i) => (
                         <button
                           key={`${j.jobId}-${i}`}
                           type="button"
                           onClick={() => openDetail(r, j)}
-                          className="text-left px-4 py-3 rounded-xl border border-[var(--brd)] bg-[var(--bg)] hover:border-[var(--gold)]/50 hover:bg-[var(--gold)]/5 transition-colors group"
+                          className="text-left px-4 py-3 rounded-lg hover:bg-[var(--gold)]/5 transition-colors group"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="min-w-0">
@@ -421,14 +421,14 @@ export default function ReportsClient({
                   </div>
                 )}
                 {r.crew_note && (
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">Crew note</div>
+                  <div className="border-t border-[var(--brd)]/30 pt-5">
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Crew note</div>
                     <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap font-heading">{r.crew_note}</p>
                   </div>
                 )}
                 {r.readiness && !r.readiness.passed && r.readiness.flaggedItems?.length ? (
-                  <div className="px-4 py-3 rounded-lg bg-[var(--ordim)] border border-[var(--org)]/30">
-                    <div className="text-[10px] font-bold uppercase text-[var(--org)] mb-1">Readiness flagged</div>
+                  <div className="border-t border-[var(--brd)]/30 pt-5">
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--org)] mb-1">Readiness flagged</div>
                     <p className="text-[12px] text-[var(--tx2)]">{r.readiness.flaggedItems.join(", ")}</p>
                   </div>
                 ) : null}
@@ -440,7 +440,7 @@ export default function ReportsClient({
 
       {detailModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setDetailModal(null)}>
-          <div className="bg-[var(--card)] rounded-2xl border border-[var(--brd)] shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
               <h3 className="font-heading text-[18px] font-bold text-[var(--tx)]">Job details</h3>
               <button type="button" onClick={() => setDetailModal(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] font-semibold text-[16px] leading-none" aria-label="Close">×</button>
@@ -451,7 +451,7 @@ export default function ReportsClient({
               ) : detailData?.job ? (
                 <>
                   {detailData.error && (
-                    <div className="rounded-lg bg-[var(--ordim)] border border-[var(--org)]/40 px-3 py-2.5 flex items-center justify-between gap-2">
+                    <div className="bg-[var(--ordim)]/30 px-3 py-2.5 flex items-center justify-between gap-2">
                       <span className="text-[12px] text-[var(--org)]">{detailData.error}</span>
                       {detailModal && (
                         <button type="button" onClick={() => openDetail(detailModal.report, detailModal.job)} className="shrink-0 text-[11px] font-semibold text-[var(--gold)] hover:underline">Retry</button>

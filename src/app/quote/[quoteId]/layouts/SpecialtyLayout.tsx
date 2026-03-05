@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Check, Wrench, Clock, Shield, Package, type LucideIcon } from "lucide-react";
+import { MapPin, Calendar, Check, Wrench, Clock, Shield, Sparkles, type LucideIcon } from "lucide-react";
 import {
   type Quote,
   WINE,
@@ -50,7 +50,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
   });
   if (f?.custom_crating) {
     requirements.push({
-      icon: Package,
+      icon: Sparkles,
       title: "Custom Crating",
       desc: `${(f?.custom_crating_count as number) ?? 1} piece${((f?.custom_crating_count as number) ?? 1) > 1 ? "s" : ""} requiring custom-built crates`,
     });
@@ -90,7 +90,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
   return (
     <section className="mb-10 space-y-8">
       {/* Project overview */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
+      <div>
         <div className="flex items-start gap-4 mb-4">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
@@ -111,37 +111,28 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: `${WINE}05` }}>
+        <div className="grid sm:grid-cols-2 gap-3 pt-4 border-t border-[var(--brd)]/30">
+          <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                Location
-              </p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Location</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
           {quote.to_address !== quote.from_address && (
-            <div
-              className="flex items-start gap-2 p-3 rounded-xl"
-              style={{ backgroundColor: `${FOREST}05` }}
-            >
+            <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                  Destination
-                </p>
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Destination</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
               </div>
             </div>
           )}
           {quote.move_date && (
-            <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: `${GOLD}08` }}>
+            <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
               <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                  Target Date
-                </p>
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Target Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                   {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                     month: "long",
@@ -155,27 +146,19 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
         </div>
       </div>
 
-      {/* Special Requirements (2x2 grid) */}
+      {/* Special Requirements */}
       {requirements.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-          <div
-            className="px-5 py-4 border-b border-[#E2DDD5]"
-            style={{ backgroundColor: `${FOREST}04` }}
-          >
-            <h2
-              className="font-heading text-[13px] font-bold tracking-wider uppercase"
-              style={{ color: FOREST }}
-            >
-              Special Requirements
-            </h2>
-          </div>
-          <div className="p-5 md:p-6">
-            <div className="grid sm:grid-cols-2 gap-3">
-              {requirements.map((req, i) => {
-                const Icon = req.icon;
-                return (
-                  <div key={i} className="p-4 rounded-xl border border-[#E2DDD5]">
-                    <Icon className="w-5 h-5 mb-2" style={{ color: WINE }} />
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            Special Requirements
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {requirements.map((req, i) => {
+              const Icon = req.icon;
+              return (
+                <div key={i} className="flex items-start gap-3">
+                  <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: WINE }} />
+                  <div>
                     <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
                       {req.title}
                     </p>
@@ -183,19 +166,16 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
                       {req.desc}
                     </p>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Service Includes */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
-        <h2
-          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-4"
-          style={{ color: FOREST }}
-        >
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2.5">

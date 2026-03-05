@@ -40,7 +40,7 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
 }
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, calcHST } from "@/lib/format-currency";
 
 const VEHICLE_LABELS: Record<string, string> = {
   sprinter: "Sprinter Van",
@@ -473,113 +473,118 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </ModalOverlay>
 
-      {/* Time Intelligence - editable */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        {!isCompleted && (
-          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
-            <Pencil className="w-[11px] h-[11px]" />
-          </button>
-        )}
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Time & Intelligence</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
-        </div>
-      </div>
+      {/* ─── Seamless info sections ─── */}
+      <div className="mt-1 space-y-0">
 
-      {/* Addresses - same grid pattern as other cards */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        {!isCompleted && (
-          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
-            <Pencil className="w-[11px] h-[11px]" />
-          </button>
-        )}
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Addresses</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-          <div>
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
-            <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
-            {move.from_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
-          </div>
-          <div>
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
-            <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
-            {move.to_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
-          </div>
-        </div>
-      </div>
-
-      {/* Crew - same structure as other cards */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        {!isCompleted && (
-          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
-            <Pencil className="w-[11px] h-[11px]" />
-          </button>
-        )}
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Crew</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
-          {isCompleted ? (
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
-          ) : (
-            <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+        {/* Time Intelligence */}
+        <div className="group/s relative py-4">
+          {!isCompleted && (
+            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+              <Pencil className="w-[11px] h-[11px]" />
+            </button>
           )}
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
+          </div>
         </div>
-      </div>
 
-      {/* Vehicle */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        {!isCompleted && (
-          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
-            <Pencil className="w-[11px] h-[11px]" />
-          </button>
-        )}
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Vehicle</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
-          {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
-        </div>
-      </div>
-
-      {/* Valuation Protection */}
-      {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
-        <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
-          <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Valuation Protection</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+        {/* Addresses */}
+        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+          {!isCompleted && (
+            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
+              <Pencil className="w-[11px] h-[11px]" />
+            </button>
+          )}
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
-              <div className="text-[11px] font-medium text-[var(--tx)]">
-                {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
-              </div>
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
+              <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
+              {move.from_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
             </div>
-            {(move.valuation_upgrade_cost ?? 0) > 0 && (
-              <div>
-                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
-                <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
-              </div>
-            )}
-            {(move.declaration_total ?? 0) > 0 && (
-              <div>
-                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
-                <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
-              </div>
+            <div>
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
+              <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
+              {move.to_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* Crew */}
+        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+          {!isCompleted && (
+            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
+              <Pencil className="w-[11px] h-[11px]" />
+            </button>
+          )}
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
+            {isCompleted ? (
+              <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+            ) : (
+              <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
-      )}
 
-      {/* Financial Snapshot */}
-      <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Financial Snapshot</h3>
+        {/* Vehicle */}
+        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+          {!isCompleted && (
+            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
+              <Pencil className="w-[11px] h-[11px]" />
+            </button>
+          )}
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
+            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+          </div>
+        </div>
+
+        {/* Valuation Protection */}
+        {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
+          <div className="border-t border-[var(--brd)]/30 py-4">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+              <div>
+                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
+                <div className="text-[11px] font-medium text-[var(--tx)]">
+                  {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
+                </div>
+              </div>
+              {(move.valuation_upgrade_cost ?? 0) > 0 && (
+                <div>
+                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
+                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
+                </div>
+              )}
+              {(move.declaration_total ?? 0) > 0 && (
+                <div>
+                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
+                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Financial Snapshot — keeps card (hero pricing) */}
+      <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/5 to-transparent border border-[var(--gold)]/15 p-4">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">Financial Snapshot</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
           <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/15 to-[var(--gold)]/5 border-2 border-[var(--gold)]/40 px-4 py-3 shadow-sm">
             <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
             <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
+            {estimate > 0 && <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(calcHST(estimate))} HST &middot; {formatCurrency(estimate + calcHST(estimate))}</div>}
           </div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
           <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(isPaid ? 0 : balanceDue)}</div></div>
@@ -622,12 +627,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Profitability — Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}
 
-      {/* Complexity Indicators */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
+      {/* Complexity Indicators — seamless */}
+      <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+        <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Complexity Indicators</h3>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
         <div className="flex flex-wrap gap-1">
           {(Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).length > 0 ? (
             (Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).map((tag: string) => (
@@ -657,12 +662,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />
 
-      {/* Internal Notes - admin-only, at bottom */}
-      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
-        <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
+      {/* Internal Notes — seamless */}
+      <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+        <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Internal Notes</h3>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
@@ -787,9 +792,9 @@ function MoveProfitCard({ move }: { move: any }) {
   const marginColor = costs.grossMargin >= target ? "text-emerald-400" : costs.grossMargin >= target - 5 ? "text-[var(--gold)]" : "text-red-400";
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
+    <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">Profitability</h3>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
         <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">

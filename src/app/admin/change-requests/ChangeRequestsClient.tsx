@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -31,6 +32,11 @@ const STATUS_FILTERS = [
   { value: "rejected", label: "Rejected" },
 ] as const;
 
+function getMoveData(r: { moves?: unknown; move?: unknown }) {
+  const move = r.moves ?? r.move;
+  return Array.isArray(move) ? move[0] : move;
+}
+
 export default function ChangeRequestsClient({
   all,
   pending,
@@ -46,7 +52,6 @@ export default function ChangeRequestsClient({
   const [approveModal, setApproveModal] = useState<{ id: string } | null>(null);
   const [approveFeeDollars, setApproveFeeDollars] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"list" | "card">("list");
 
   const approved = reviewed.filter((r: any) => r.status === "approved");
   const rejected = reviewed.filter((r: any) => r.status === "rejected");
@@ -85,64 +90,118 @@ export default function ChangeRequestsClient({
     setApproveFeeDollars("");
   };
 
-  const confirmApproveWithFee = () => {
-    if (!approveModal) return;
-    const dollars = parseFloat(approveFeeDollars);
-    const feeCents = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
-    handleReview(approveModal.id, "approved", feeCents);
-  };
-
-  const getMoveData = (r: any) => {
-    const move = r.moves ?? r.move;
-    return Array.isArray(move) ? move[0] : move;
-  };
-
-  const renderItem = (r: any) => {
-    const moveData = getMoveData(r);
-    const clientName = moveData?.client_name ?? "—";
-    const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
-    const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
-
-    return (
-      <div
-        key={r.id}
-        className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-3 hover:border-[var(--gold)]/40 hover:bg-[var(--bg2)]/50 transition-all"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
-                className="text-[13px] font-semibold text-[var(--gold)] hover:underline"
-              >
-                {clientName}
-              </Link>
-              <span className="text-[11px] font-mono text-[var(--tx2)]">{moveCode}</span>
-              <span
-                className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                  r.urgency === "urgent" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
-                }`}
-              >
-                {r.urgency}
-              </span>
-              {r.status !== "pending" && (
-                <span
-                  className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                    r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
-                  }`}
-                >
-                  {toTitleCase(r.status)}
-                </span>
-              )}
-            </div>
-            <div className="mt-1 text-[11px] font-medium text-[var(--tx2)]">{toTitleCase(r.type)}</div>
-            <p className="mt-2 text-[12px] text-[var(--tx)]">{r.description}</p>
-            <div className="mt-2 text-[10px] text-[var(--tx3)]">
-              {r.status === "pending" ? formatRelative(r.created_at) : new Date(r.created_at).toLocaleString()}
-            </div>
-          </div>
-          {r.status === "pending" && (
-            <div className="flex gap-2 shrink-0">
+  const columns: ColumnDef<any>[] = useMemo(
+    () => [
+      {
+        id: "client",
+        label: "Client",
+        accessor: (r) => {
+          const moveData = getMoveData(r);
+          return moveData?.client_name ?? "—";
+        },
+        render: (r) => {
+          const moveData = getMoveData(r);
+          const clientName = moveData?.client_name ?? "—";
+          return (
+            <Link
+              href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
+              className="text-[13px] font-semibold text-[var(--gold)] hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {clientName}
+            </Link>
+          );
+        },
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "moveCode",
+        label: "Move Code",
+        accessor: (r) => {
+          const moveData = getMoveData(r);
+          const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
+          return rawCode ? formatJobId(rawCode, "move") : "—";
+        },
+        render: (r) => {
+          const moveData = getMoveData(r);
+          const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
+          const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
+          return <span className="text-[11px] font-mono text-[var(--tx2)]">{moveCode}</span>;
+        },
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "urgency",
+        label: "Urgency",
+        accessor: (r) => r.urgency,
+        render: (r) => (
+          <span
+            className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
+              r.urgency === "urgent" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
+            }`}
+          >
+            {r.urgency}
+          </span>
+        ),
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "status",
+        label: "Status",
+        accessor: (r) => r.status,
+        render: (r) =>
+          r.status !== "pending" ? (
+            <span
+              className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
+                r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
+              }`}
+            >
+              {toTitleCase(r.status)}
+            </span>
+          ) : (
+            "—"
+          ),
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "type",
+        label: "Type",
+        accessor: (r) => r.type,
+        render: (r) => <span className="text-[11px] font-medium text-[var(--tx2)]">{toTitleCase(r.type)}</span>,
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "description",
+        label: "Description",
+        accessor: (r) => r.description,
+        render: (r) => <span className="text-[12px] text-[var(--tx)] line-clamp-2 max-w-[200px]">{r.description}</span>,
+        sortable: true,
+        searchable: true,
+      },
+      {
+        id: "time",
+        label: "Time",
+        accessor: (r) => r.created_at,
+        render: (r) => (
+          <span className="text-[10px] text-[var(--tx3)]">
+            {r.status === "pending" ? formatRelative(r.created_at) : new Date(r.created_at).toLocaleString()}
+          </span>
+        ),
+        sortable: true,
+        exportAccessor: (r) => new Date(r.created_at).toISOString(),
+      },
+      {
+        id: "actions",
+        label: "Actions",
+        accessor: () => "",
+        render: (r) =>
+          r.status === "pending" ? (
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => openApproveModal(r.id)}
@@ -160,104 +219,50 @@ export default function ChangeRequestsClient({
                 {loadingId === r.id ? "…" : "Reject"}
               </button>
             </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+          ) : (
+            "—"
+          ),
+        sortable: false,
+      },
+    ],
+    [loadingId],
+  );
 
-  const renderCard = (r: any) => {
-    const moveData = getMoveData(r);
-    const clientName = moveData?.client_name ?? "—";
-    const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
-    const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
-
-    return (
-      <div
-        key={r.id}
-        className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 hover:border-[var(--gold)]/40 transition-all"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="font-semibold text-[13px] text-[var(--tx)] truncate">{clientName}</div>
-            <div className="text-[11px] font-mono text-[var(--tx2)] mt-0.5">{moveCode}</div>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span
-                className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                  r.urgency === "urgent" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
-                }`}
-              >
-                {r.urgency}
-              </span>
-              {r.status !== "pending" && (
-                <span
-                  className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                    r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
-                  }`}
-                >
-                  {toTitleCase(r.status)}
-                </span>
-              )}
-            </div>
-            <div className="text-[10px] text-[var(--tx3)] mt-2">{toTitleCase(r.type)}</div>
-            <div className="text-[10px] text-[var(--tx3)] mt-0.5">{formatRelative(r.created_at)}</div>
-          </div>
-          {r.status === "pending" && (
-            <div className="flex flex-col gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => openApproveModal(r.id)}
-                disabled={loadingId === r.id}
-                className="px-2.5 py-1 rounded-lg text-[9px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
-              >
-                {loadingId === r.id ? "…" : "Approve"}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleReview(r.id, "rejected")}
-                disabled={loadingId === r.id}
-                className="px-2.5 py-1 rounded-lg text-[9px] font-semibold bg-[var(--red)] text-white hover:bg-[var(--red)]/90 disabled:opacity-50"
-              >
-                {loadingId === r.id ? "…" : "Reject"}
-              </button>
-            </div>
-          )}
-        </div>
-        <p className="mt-3 text-[11px] text-[var(--tx2)] line-clamp-2">{r.description}</p>
-        <Link
-          href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
-          className="mt-2 inline-block text-[10px] font-semibold text-[var(--gold)] hover:underline"
-        >
-          View move →
-        </Link>
-      </div>
-    );
+  const confirmApproveWithFee = () => {
+    if (!approveModal) return;
+    const dollars = parseFloat(approveFeeDollars);
+    const feeCents = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
+    handleReview(approveModal.id, "approved", feeCents);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--gold)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Pending</div>
-          <div className="text-xl font-bold font-heading text-[var(--tx)]">{pending.length}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--grn)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Approved today</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">{approvedToday.length}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--red)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Rejected</div>
-          <div className="text-xl font-bold font-heading text-[var(--red)]">{rejected.length}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--blue)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Total approved</div>
-          <div className="text-xl font-bold font-heading text-[var(--blue)]">{approved.length}</div>
+      <div className="border-t border-[var(--brd)]/30 pt-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--brd)]/30">
+          <div className="px-4 py-2 first:pl-0">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pending</div>
+            <div className="text-xl font-bold font-heading text-[var(--tx)]">{pending.length}</div>
+          </div>
+          <div className="px-4 py-2">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Approved today</div>
+            <div className="text-xl font-bold font-heading text-[var(--grn)]">{approvedToday.length}</div>
+          </div>
+          <div className="px-4 py-2">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Rejected</div>
+            <div className="text-xl font-bold font-heading text-[var(--red)]">{rejected.length}</div>
+          </div>
+          <div className="px-4 py-2">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total approved</div>
+            <div className="text-xl font-bold font-heading text-[var(--blue)]">{approved.length}</div>
+          </div>
         </div>
       </div>
 
-      {/* Filter bar + view toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Filter bar */}
+      <div className="border-t border-[var(--brd)]/30 pt-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -274,41 +279,24 @@ export default function ChangeRequestsClient({
             </button>
           ))}
         </div>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("list")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-              viewMode === "list" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
-            }`}
-          >
-            List
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("card")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-              viewMode === "card" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
-            }`}
-          >
-            Cards
-          </button>
-        </div>
       </div>
 
       {/* Content */}
-      {filtered.length > 0 ? (
-        viewMode === "list" ? (
-          <div>{filtered.map(renderItem)}</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{filtered.map(renderCard)}</div>
-        )
-      ) : (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-12 text-center">
-          <p className="text-[13px] text-[var(--tx3)]">No change requests yet.</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1">Clients submit requests from their move portal.</p>
-        </div>
-      )}
+      <div className="border-t border-[var(--brd)]/30 pt-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
+        <DataTable
+          data={filtered}
+          columns={columns}
+          keyField="id"
+          tableId="change-requests"
+          searchable
+          pagination
+          exportable
+          columnToggle
+          emptyMessage="No change requests yet."
+          emptySubtext="Clients submit requests from their move portal."
+        />
+      </div>
 
       {approveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">

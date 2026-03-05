@@ -1,10 +1,9 @@
-import { MapPin, ArrowRight, Package, Check, Truck } from "lucide-react";
+import { MapPin, ArrowRight, Check, Truck } from "lucide-react";
 import {
   type Quote,
   WINE,
   FOREST,
   GOLD,
-  CREAM,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -26,43 +25,38 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
 
   return (
     <section className="mb-10 space-y-6">
-      {/* Item & Route card */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="p-5 md:p-7">
-          <div className="flex items-start gap-4 mb-5">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${FOREST}08` }}
-            >
-              <Truck className="w-6 h-6" style={{ color: FOREST }} />
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
-                {(f?.item_description as string) ?? "Delivery Service"}
-              </p>
-              {f?.item_category ? (
-                <span
-                  className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
-                >
-                  {toTitleCase(String(f.item_category))}
-                </span>
-              ) : null}
-            </div>
+      {/* Item & Route */}
+      <div>
+        <div className="flex items-start gap-4 mb-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${FOREST}08` }}
+          >
+            <Truck className="w-6 h-6" style={{ color: FOREST }} />
           </div>
+          <div>
+            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+              {(f?.item_description as string) ?? "Delivery Service"}
+            </p>
+            {f?.item_category ? (
+              <span
+                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+              >
+                {toTitleCase(String(f.item_category))}
+              </span>
+            ) : null}
+          </div>
+        </div>
 
-          {/* Route */}
-          <div className="flex items-center gap-3 p-4 rounded-xl" style={{ backgroundColor: CREAM }}>
+        {/* Route */}
+        <div className="pt-4 border-t border-[var(--brd)]/30">
+          <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                 <div>
-                  <p
-                    className="text-[10px] font-semibold tracking-wider uppercase"
-                    style={{ color: `${FOREST}80` }}
-                  >
-                    Pickup
-                  </p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
@@ -73,12 +67,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
                 <div>
-                  <p
-                    className="text-[10px] font-semibold tracking-wider uppercase"
-                    style={{ color: `${FOREST}80` }}
-                  >
-                    Delivery
-                  </p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>
@@ -95,8 +84,8 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           )}
         </div>
 
-        {/* Includes strip */}
-        <div className="px-5 md:px-7 py-4 border-t border-[#E2DDD5]" style={{ backgroundColor: `${FOREST}03` }}>
+        {/* Includes */}
+        <div className="pt-4 mt-4 border-t border-[var(--brd)]/30">
           <div className="flex flex-wrap gap-x-5 gap-y-1.5">
             {["Professional handling", "Protective wrapping", "Careful delivery"].map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">

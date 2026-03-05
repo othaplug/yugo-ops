@@ -101,19 +101,19 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-[var(--brd)] rounded-xl overflow-hidden bg-[var(--card)]">
+    <div className="border-t border-[var(--brd)]/30 pt-5">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--bg2)]/50 transition-colors text-left"
+        className="w-full flex items-center justify-between py-3 hover:bg-[var(--bg2)]/30 transition-colors text-left"
       >
         <div>
-          <h3 className="text-[13px] font-bold text-[var(--tx)]">{title}</h3>
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{title}</h3>
           {subtitle && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{subtitle}</p>}
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-[var(--tx3)] transition-transform ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
       </button>
-      {open && <div className="px-5 pb-5 border-t border-[var(--brd)]">{children}</div>}
+      {open && <div className="pt-4 pb-5">{children}</div>}
     </div>
   );
 }
@@ -443,7 +443,7 @@ function DateFactorsSection() {
 
   const renderGroup = (title: string, type: string) => (
     <div>
-      <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">{title}</h4>
+      <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
       <table className={tbl}>
         <thead><tr><th className={th}>Condition</th><th className={th}>Multiplier</th></tr></thead>
         <tbody>
@@ -459,11 +459,11 @@ function DateFactorsSection() {
   );
 
   return (
-    <div className="pt-4 space-y-5">
+    <div className="pt-4 space-y-6">
       {renderGroup("Day of Week", "day_of_week")}
-      {renderGroup("Seasonal", "season")}
-      {renderGroup("Special Conditions", "month_period")}
-      {renderGroup("Urgency", "urgency")}
+      <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Seasonal", "season")}</div>
+      <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Special Conditions", "month_period")}</div>
+      <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Urgency", "urgency")}</div>
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
   );
@@ -1080,7 +1080,7 @@ function InventoryVolumeSection() {
     <div className="space-y-6">
       {/* ── Volume Benchmarks ── */}
       <div>
-        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Volume Benchmarks by Move Size</h4>
+        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">
           These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
         </p>
@@ -1088,10 +1088,10 @@ function InventoryVolumeSection() {
           <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+            <div className="overflow-x-auto">
               <table className={tbl}>
                 <thead>
-                  <tr className="bg-[var(--bg)]">
+                  <tr>
                     <th className={th}>Move Size</th>
                     <th className={th}>Std Items</th>
                     <th className={th}>Item Score</th>
@@ -1142,9 +1142,9 @@ function InventoryVolumeSection() {
       </div>
 
       {/* ── Item Weight Scores ── */}
-      <div>
+      <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[11px] font-bold text-[var(--tx)]">Item Weight Scores</h4>
+          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
@@ -1257,7 +1257,7 @@ function FleetVehiclesSection() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[11px] font-bold text-[var(--tx)]">Vehicle Types</h4>
+          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
           <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
         </div>
         {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
@@ -1297,14 +1297,14 @@ function FleetVehiclesSection() {
         )}
       </div>
 
-      <div>
-        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Allocation Rules</h4>
+      <div className="border-t border-[var(--brd)]/30 pt-6">
+        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
         {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+            <div className="overflow-x-auto">
               <table className={tbl}>
-                <thead><tr className="bg-[var(--bg)]">
+                <thead><tr>
                   <th className={th}>Move Size</th>
                   <th className={th}>Inventory</th>
                   <th className={th}>Primary</th>

@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { rateLimit } from "@/lib/rate-limit";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -68,6 +69,11 @@ export async function POST(req: Request) {
 
     const paymentSourceId = cardId ?? sourceId;
 
+    const { locationId } = await getSquarePaymentConfig();
+    if (!locationId) {
+      return NextResponse.json({ error: "Payment configuration unavailable" }, { status: 503 });
+    }
+
     const paymentRes = await squareClient.payments.create({
       sourceId: paymentSourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
@@ -75,7 +81,7 @@ export async function POST(req: Request) {
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee — client payment",
       idempotencyKey: `bal-pay-${moveId}-${Date.now()}`,
-      locationId: process.env.SQUARE_LOCATION_ID!,
+      locationId,
     });
 
     const paymentId = paymentRes.payment?.id;

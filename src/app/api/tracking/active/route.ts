@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
 
 /** GET all active tracking sessions. Staff only. */
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user.id).single();
-  if (!platformUser) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
 
   const admin = createAdminClient();
   const { data: sessions } = await admin
@@ -48,28 +45,33 @@ export async function GET(req: NextRequest) {
   const moveMap = new Map((moves || []).map((m) => [m.id, m]));
   const deliveryMap = new Map((deliveries || []).map((d) => [d.id, d]));
 
-  const result = sessions.map((s) => {
-    const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
-    const jobName = job
-      ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`)
-      : "—";
-    const jobId = job
-      ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number)
-      : s.job_id;
-    const loc = s.last_location as { lat?: number; lng?: number; timestamp?: string } | null;
-    return {
-      id: s.id,
-      jobId,
-      jobType: s.job_type,
-      jobName,
-      status: s.status,
-      teamName: teamMap.get(s.team_id) || "—",
-      crewLeadName: crewMap.get(s.crew_lead_id) || "—",
-      lastLocation: loc,
-      updatedAt: s.updated_at,
-      toAddress: job ? (s.job_type === "move" ? (job as any).to_address : (job as any).delivery_address) : null,
-    };
-  });
+  const result = sessions
+    .filter((s) => {
+      const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
+      return !!job;
+    })
+    .map((s) => {
+      const job = (s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id))!;
+      const jobName = s.job_type === "move"
+        ? (job as any).client_name
+        : `${(job as any).customer_name} (${(job as any).client_name})`;
+      const jobId = s.job_type === "move"
+        ? (job as any).move_code || s.job_id
+        : (job as any).delivery_number || s.job_id;
+      const loc = s.last_location as { lat?: number; lng?: number; timestamp?: string } | null;
+      return {
+        id: s.id,
+        jobId,
+        jobType: s.job_type,
+        jobName,
+        status: s.status,
+        teamName: teamMap.get(s.team_id) || "—",
+        crewLeadName: crewMap.get(s.crew_lead_id) || "—",
+        lastLocation: loc,
+        updatedAt: s.updated_at,
+        toAddress: s.job_type === "move" ? (job as any).to_address : (job as any).delivery_address,
+      };
+    });
 
   return NextResponse.json({ sessions: result });
 }

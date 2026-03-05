@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import Link from "next/link";
 import Badge from "../components/Badge";
 import { formatCurrency } from "@/lib/format-currency";
-
-type SortKey = "date" | "amount" | "client" | "status";
-
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "date", label: "Date" },
-  { value: "amount", label: "Amount" },
-  { value: "client", label: "Client" },
-  { value: "status", label: "Status" },
-];
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 export default function InvoicesTable({
   invoices,
@@ -21,92 +12,77 @@ export default function InvoicesTable({
   invoices: any[];
   onRowClick?: (invoice: any) => void;
 }) {
-  const [sortBy, setSortBy] = useState<SortKey>("date");
-  const [asc, setAsc] = useState(false);
-
-  const sorted = useMemo(() => {
-    const list = [...(invoices || [])];
-    list.sort((a, b) => {
-      let cmp = 0;
-      if (sortBy === "date") {
-        const da = new Date(a.created_at || a.due_date || 0).getTime();
-        const db = new Date(b.created_at || b.due_date || 0).getTime();
-        cmp = da - db;
-      } else if (sortBy === "amount") {
-        cmp = Number(a.amount) - Number(b.amount);
-      } else if (sortBy === "client") {
-        cmp = (a.client_name || "").localeCompare(b.client_name || "");
-      } else {
-        cmp = (a.status || "").localeCompare(b.status || "");
-      }
-      return asc ? cmp : -cmp;
-    });
-    return list;
-  }, [invoices, sortBy, asc]);
+  const columns: ColumnDef<any>[] = [
+    {
+      id: "invoice_number",
+      label: "Invoice",
+      accessor: (r) => r.invoice_number,
+      render: (r) => (
+        <span className="font-mono font-semibold">{r.invoice_number}</span>
+      ),
+      searchable: true,
+    },
+    {
+      id: "client_name",
+      label: "Client",
+      accessor: (r) => r.client_name,
+      render: (r) => (
+        <Link
+          href="/admin/clients"
+          onClick={(e) => e.stopPropagation()}
+          className="hover:text-[var(--gold)] transition-colors"
+        >
+          {r.client_name}
+        </Link>
+      ),
+      searchable: true,
+    },
+    {
+      id: "amount",
+      label: "Amount",
+      accessor: (r) => Number(r.amount),
+      render: (r) => {
+        const amt = Number(r.amount);
+        return (
+          <>
+            <span className="font-bold">{formatCurrency(r.amount)}</span>
+            {amt > 0 && (
+              <span className="text-[8px] text-[var(--tx3)] ml-1">+{formatCurrency(Math.round(amt * 0.13))} HST</span>
+            )}
+          </>
+        );
+      },
+      sortable: true,
+      align: "right",
+      exportAccessor: (r) => formatCurrency(r.amount),
+    },
+    {
+      id: "due_date",
+      label: "Due Date",
+      accessor: (r) => r.due_date,
+      sortable: true,
+    },
+    {
+      id: "status",
+      label: "Status",
+      accessor: (r) => r.status,
+      render: (r) => <Badge status={r.status} />,
+      sortable: true,
+    },
+  ];
 
   return (
-    <>
-      <div className="px-4 py-2 border-b border-[var(--brd)] flex items-center justify-end gap-2">
-        <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Sort by</span>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortKey)}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)]"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => setAsc((a) => !a)}
-          className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-        >
-          {asc ? "↑ Asc" : "↓ Desc"}
-        </button>
-      </div>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Invoice</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Client</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Amount</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Due</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]">Status</th>
-            <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-3 border-b border-[var(--brd)]"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((inv) => (
-            <tr
-              key={inv.id}
-              onClick={() => onRowClick?.(inv)}
-              className="hover:bg-[var(--bg2)] transition-colors cursor-pointer"
-            >
-              <td className="px-4 py-3 text-[11px] font-semibold font-mono border-b border-[var(--brd)]">
-                {inv.invoice_number}
-              </td>
-              <td className="px-4 py-3 text-[11px] border-b border-[var(--brd)]">
-                <Link href="/admin/clients" onClick={(e) => e.stopPropagation()} className="hover:text-[var(--gold)] transition-colors">
-                  {inv.client_name}
-                </Link>
-              </td>
-              <td className="px-4 py-3 text-[11px] font-bold border-b border-[var(--brd)]">
-                {formatCurrency(inv.amount)}
-              </td>
-              <td className="px-4 py-3 text-[11px] border-b border-[var(--brd)]">
-                {inv.due_date}
-              </td>
-              <td className="px-4 py-3 border-b border-[var(--brd)]">
-                <Badge status={inv.status} />
-              </td>
-              <td className="px-4 py-3 text-[10px] text-[var(--tx3)] border-b border-[var(--brd)]">
-                Click to edit
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+    <DataTable
+      data={invoices || []}
+      columns={columns}
+      keyField="id"
+      tableId="invoices"
+      searchable
+      pagination
+      exportable
+      exportFilename="yugo-invoices"
+      columnToggle
+      onRowClick={onRowClick}
+    />
   );
 }

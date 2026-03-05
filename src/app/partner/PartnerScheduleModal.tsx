@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone } from "@/lib/phone";
-import { Plus, Trash2, Truck, Package, Calendar, DollarSign } from "lucide-react";
+import { Plus, Trash2, Truck, Send, Calendar, DollarSign } from "lucide-react";
 
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Office", "Other"];
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
@@ -311,7 +311,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   onClick={() => { setBookingType("per_delivery"); setStep("config"); }}
                   className="p-5 rounded-xl border-2 border-[#E8E4DF] hover:border-[#C9A962] transition-all text-left group"
                 >
-                  <Package className="w-7 h-7 text-[#C9A962] mb-2.5" />
+                  <Send className="w-7 h-7 text-[#C9A962] mb-2.5" />
                   <div className="text-[15px] font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Per Delivery</div>
                   <p className="text-[11px] text-[#888] mt-1">Individual delivery priced per service. Best for 1-3 stops.</p>
                 </button>

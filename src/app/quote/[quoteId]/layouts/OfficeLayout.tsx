@@ -77,65 +77,49 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Scope of Work */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${FOREST}04` }}>
-          <h2
-            className="font-heading text-[13px] font-bold tracking-wider uppercase"
-            style={{ color: FOREST }}
-          >
-            Scope of Work
-          </h2>
-        </div>
-        <div className="p-5 md:p-6">
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: `${WINE}06` }}>
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
-              <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                  From
-                </p>
-                <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: `${FOREST}06` }}>
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
-              <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                  To
-                </p>
-                <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
-              </div>
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          Scope of Work
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+            <div>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">From</p>
+              <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
-
-          {scopeItems.length > 0 && (
-            <div className="mt-4 border-t border-[#E2DDD5] pt-4">
-              <table className="w-full text-[12px]">
-                <tbody>
-                  {scopeItems.map((item, i) => (
-                    <tr key={i} className={i > 0 ? "border-t border-[#E2DDD5]" : ""}>
-                      <td className="py-2 font-medium" style={{ color: FOREST }}>{item.label}</td>
-                      <td className="py-2 text-right" style={{ color: `${FOREST}80` }}>{item.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="flex items-start gap-3">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+            <div>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">To</p>
+              <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
             </div>
-          )}
+          </div>
         </div>
+
+        {scopeItems.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
+            <table className="w-full text-[12px]">
+              <tbody>
+                {scopeItems.map((item, i) => (
+                  <tr key={i} className={i > 0 ? "border-t border-[var(--brd)]/30" : ""}>
+                    <td className="py-2 font-medium" style={{ color: FOREST }}>{item.label}</td>
+                    <td className="py-2 text-right" style={{ color: `${FOREST}80` }}>{item.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Timeline & Phasing */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${FOREST}04` }}>
-          <h2
-            className="font-heading text-[13px] font-bold tracking-wider uppercase"
-            style={{ color: FOREST }}
-          >
-            Timeline &amp; Phasing
-          </h2>
-        </div>
-        <div className="p-5 md:p-6 space-y-4">
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          Timeline &amp; Phasing
+        </h2>
+        <div className="space-y-4">
           {timelineItems.map((item, i) => (
             <div key={i} className="flex items-start gap-4">
               <div
@@ -156,29 +140,26 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Crew & Equipment */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
-        <h2
-          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-4"
-          style={{ color: FOREST }}
-        >
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
           Crew &amp; Equipment
         </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 rounded-xl" style={{ backgroundColor: `${WINE}06` }}>
+          <div>
             <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: WINE }} />
             <p className="text-[13px] font-bold" style={{ color: FOREST }}>
               {(f?.min_crew as number) ?? 4}+ Movers
             </p>
             <p className="text-[10px]" style={{ color: `${FOREST}60` }}>Commercial crew</p>
           </div>
-          <div className="p-3 rounded-xl" style={{ backgroundColor: `${GOLD}08` }}>
+          <div>
             <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
             <p className="text-[13px] font-bold" style={{ color: FOREST }}>
               {(f?.estimated_hours as string) ?? "Full"} Day
             </p>
             <p className="text-[10px]" style={{ color: `${FOREST}60` }}>Timeline estimate</p>
           </div>
-          <div className="p-3 rounded-xl" style={{ backgroundColor: `${FOREST}06` }}>
+          <div>
             <Calendar className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
             <p className="text-[13px] font-bold" style={{ color: FOREST }}>
               {quote.move_date
@@ -194,11 +175,8 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Service Includes */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
-        <h2
-          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-4"
-          style={{ color: FOREST }}
-        >
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2.5">

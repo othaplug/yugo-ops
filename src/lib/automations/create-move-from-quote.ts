@@ -262,6 +262,6 @@ export async function createMoveFromQuote(
   return {
     moveId: move.id,
     moveCode: move.move_code ?? `MV${move.id.slice(-4)}`,
-    trackingUrl: `/track/delivery/${move.id}`,
+    trackingUrl: `/track/move/${move.move_code ?? move.id}`,
   };
 }

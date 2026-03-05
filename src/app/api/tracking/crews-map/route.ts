@@ -117,30 +117,58 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const completedStatuses = ["completed", "delivered", "done"];
+  const inactiveStatuses = ["completed", "delivered", "done", "not_started", "cancelled"];
+  const STALE_MS = 90 * 60 * 1000; // 90 minutes — sessions not updated in this window are stale
+  const now = Date.now();
+
+  // Auto-close stale sessions in the database so they don't keep appearing
+  const staleIds = (sessions || [])
+    .filter((s) => {
+      if (!s.updated_at) return true;
+      const status = (s.status || "").toLowerCase();
+      return inactiveStatuses.includes(status) || now - new Date(s.updated_at).getTime() > STALE_MS;
+    })
+    .map((s) => s.id);
+  if (staleIds.length > 0) {
+    admin.from("tracking_sessions").update({ is_active: false }).in("id", staleIds).then(() => {});
+  }
+
   const activeSessions = (sessions || [])
-    .filter((s) => !completedStatuses.includes((s.status || "").toLowerCase()))
+    .filter((s) => {
+      const status = (s.status || "").toLowerCase();
+      if (inactiveStatuses.includes(status)) return false;
+      if (!s.updated_at || now - new Date(s.updated_at).getTime() > STALE_MS) return false;
+      return true;
+    })
     .map((s) => {
       const job = s.job_type === "move"
         ? (moves || []).find((m) => m.id === s.job_id)
         : (deliveries || []).find((d) => d.id === s.job_id);
-      const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
+      if (!job) return null;
+      const jobId = s.job_type === "move" ? (job as any).move_code || s.job_id : (job as any).delivery_number || s.job_id;
+      const jobName = s.job_type === "move" ? (job as any).client_name : ((job as any).customer_name || (job as any).client_name || "Delivery");
       const crew = crews?.find((c) => c.id === s.team_id);
       const members = membersByTeam.get(s.team_id) || [];
       const teamName = (crew?.name && crew.name.trim()) || members[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
       const loc = s.last_location as { lat?: number; lng?: number } | null;
+      const toAddress = s.job_type === "move" ? null : (job as any).delivery_address;
       return {
         id: s.id,
         jobId,
+        job_type: s.job_type,
         jobType: s.job_type,
         status: s.status,
         teamName,
+        team_id: s.team_id,
         teamId: s.team_id,
         lastLocation: loc,
         updatedAt: s.updated_at,
         detailHref: s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`,
+        jobName,
+        toAddress,
       };
-    });
+    })
+    .filter(Boolean);
 
   return NextResponse.json(
     { crews: crewsOut, activeSessions },

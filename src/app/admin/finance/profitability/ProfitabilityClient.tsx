@@ -324,7 +324,7 @@ export default function ProfitabilityClient() {
 
   /* ════════════ render ════════════ */
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6 animate-fade-up">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -358,22 +358,22 @@ export default function ProfitabilityClient() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 border-t border-[var(--brd)]/30 pt-5">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-[var(--card)] border border-[var(--brd)] rounded-xl animate-pulse" />
+            <div key={i} className="h-24 animate-pulse" />
           ))}
         </div>
       ) : (
         <>
           {/* ──── Top Stats ──── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 border-t border-[var(--brd)]/30 pt-5">
             <StatCard
               label="Gross Margin"
               value={pct(summary?.avgGrossMargin ?? 0)}
               sub={getRange(preset).label}
               className={marginColor(summary?.avgGrossMargin ?? 0, target)}
               bgClass={marginBg(summary?.avgGrossMargin ?? 0, target)}
-              icon={summary?.avgGrossMargin ?? 0 >= target ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              icon={(summary?.avgGrossMargin ?? 0) >= target ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             />
             <StatCard
               label="Net Margin"
@@ -381,7 +381,7 @@ export default function ProfitabilityClient() {
               sub="After Overhead"
               className={marginColor(summary?.avgNetMargin ?? 0, target - 10)}
               bgClass={marginBg(summary?.avgNetMargin ?? 0, target - 10)}
-              icon={summary?.avgNetMargin ?? 0 >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              icon={(summary?.avgNetMargin ?? 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             />
             <StatCard
               label="Avg Profit Per Move"
@@ -402,19 +402,19 @@ export default function ProfitabilityClient() {
 
           {/* ──── Revenue Split: Residential vs B2B ──── */}
           {(revenueSplit.b2b.count > 0 || revenueSplit.residential.count > 0) && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-[var(--card)] border border-emerald-500/15 rounded-xl p-4 space-y-1">
-                <div className="text-[9px] font-bold tracking-wider uppercase text-emerald-400">Residential Moves</div>
+            <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-5">
+              <div className="py-3 space-y-1">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Moves</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.residential.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.residential.count} moves · {pct(revenueSplit.residential.margin)} margin</div>
               </div>
-              <div className="bg-[var(--card)] border border-[var(--gold)]/15 rounded-xl p-4 space-y-1">
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]">B2B Deliveries</div>
+              <div className="py-3 space-y-1">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B Deliveries</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.b2b.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.b2b.count} deliveries · {pct(revenueSplit.b2b.margin)} margin</div>
               </div>
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-1">
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Combined</div>
+              <div className="py-3 space-y-1">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Combined</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.combined.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.combined.count} total · {pct(revenueSplit.combined.margin)} blended</div>
               </div>
@@ -425,7 +425,7 @@ export default function ProfitabilityClient() {
           {tierBreakdown.length > 0 && (
             <Section title="Profit by Tier">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="h-56">
+                <div className="h-56 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={tierBreakdown} barCategoryGap="30%">
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--brd)" />
@@ -477,7 +477,7 @@ export default function ProfitabilityClient() {
           {typeBreakdown.length > 0 && (
             <Section title="Profit by Move Type">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="h-56">
+                <div className="h-56 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={typeBreakdown} barCategoryGap="20%">
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--brd)" />
@@ -554,7 +554,7 @@ export default function ProfitabilityClient() {
           {/* ──── Monthly Trend ──── */}
           {monthlyTrend.length > 1 && (
             <Section title="Monthly Trend">
-              <div className="h-64">
+              <div className="h-64 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--brd)" />
@@ -657,19 +657,19 @@ export default function ProfitabilityClient() {
 
           {/* ──── Overhead Summary ──── */}
           {overhead && (
-            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+            <div className="border-t border-[var(--brd)]/30 pt-5">
               <button
                 onClick={() => setShowOverhead(!showOverhead)}
-                className="w-full flex items-center justify-between px-5 py-3 hover:bg-[var(--bg2)]/50 transition-colors text-left"
+                className="w-full flex items-center justify-between py-3 hover:bg-[var(--bg2)]/30 transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-bold text-[var(--tx)]">Monthly Overhead</span>
+                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Monthly Overhead</span>
                   <span className="text-[11px] text-[var(--tx3)]">{formatCurrency(overhead.total)}</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-[var(--tx3)] transition-transform ${showOverhead ? "rotate-180" : ""}`} />
               </button>
               {showOverhead && (
-                <div className="px-5 pb-4 border-t border-[var(--brd)] space-y-2 text-[11px]">
+                <div className="pt-4 pb-2 space-y-2 text-[11px] border-t border-[var(--brd)]/30">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-1.5 py-3">
                     <div className="flex justify-between"><span className="text-[var(--tx3)]">Software</span><span className="text-[var(--tx)]">{formatCurrency(overhead.items.software)}</span></div>
                     <div className="flex justify-between"><span className="text-[var(--tx3)]">Auto Insurance</span><span className="text-[var(--tx)]">{formatCurrency(overhead.items.autoInsurance)}</span></div>
@@ -709,9 +709,9 @@ function StatCard({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className={`border rounded-xl p-4 ${bgClass}`}>
+    <div className="py-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</span>
+        <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{label}</span>
         {icon && <span className={className}>{icon}</span>}
       </div>
       <div className={`text-2xl font-heading font-bold ${className}`}>{value}</div>

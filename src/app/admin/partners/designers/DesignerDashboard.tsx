@@ -75,30 +75,30 @@ export default function DesignerDashboard({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Projects</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Projects</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{allProjects.length}</span>
             <StatPctChange current={allProjects.length} previous={3} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Active</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{activeProjects.length}</span>
             <StatPctChange current={activeProjects.length} previous={2} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Delayed</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delayed</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--red)]">{delayedCount}</span>
             <StatPctChange current={delayedCount} previous={1} />
           </div>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--grn)]">${(revenue / 1000).toFixed(1)}K</span>
             <StatPctChange current={revenue} previous={revenuePrev} />
@@ -136,10 +136,11 @@ export default function DesignerDashboard({
       </div>
 
       {/* Tab content */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-4 border-b border-[var(--brd)]">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deliveries…" className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors" />
@@ -149,7 +150,7 @@ export default function DesignerDashboard({
                 {orgs.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="divide-y divide-[var(--brd)]/50">
+            <div className="divide-y divide-[var(--brd)]/30">
               {filteredDeliveries.length === 0 ? (
                 <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
@@ -184,10 +185,11 @@ export default function DesignerDashboard({
 
         {activeTab === "projects" && (
           <div>
-            <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-end">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
+              <span>Projects</span>
               <Link href="/admin/partners/designers/projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
             </div>
-            <div className="divide-y divide-[var(--brd)]/50">
+            <div className="divide-y divide-[var(--brd)]/30">
               {allProjects.length === 0 ? (
                 <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">No projects yet.</div>
               ) : allProjects.map((project) => {
@@ -220,7 +222,9 @@ export default function DesignerDashboard({
         )}
 
         {activeTab === "partners" && (
-          <div className="divide-y divide-[var(--brd)]/50">
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="divide-y divide-[var(--brd)]/30">
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No designer partners yet.</p>
@@ -245,6 +249,7 @@ export default function DesignerDashboard({
                 </Link>
               );
             })}
+            </div>
           </div>
         )}
       </div>

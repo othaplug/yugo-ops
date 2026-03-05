@@ -388,7 +388,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       <main className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Returning user welcome-back banner */}
         {isReturning && loginInfo?.lastLoginAt && (
-          <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[#E8E4DF] shadow-sm" style={{ animation: "fadeSlideUp 0.4s ease" }}>
+          <div className="mb-5 flex items-center gap-3 px-4 py-3 border-t border-[var(--brd)]/30 pt-5" style={{ animation: "fadeSlideUp 0.4s ease" }}>
             <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
             <div className="w-9 h-9 rounded-xl bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
@@ -459,11 +459,11 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           )}
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Stats */}
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
             {[1,2,3,4].map((i) => (
-              <div key={i} className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 animate-pulse h-[100px] shadow-sm" />
+              <div key={i} className="animate-pulse h-[80px]" />
             ))}
           </div>
         ) : features.showReferrals ? (
@@ -473,8 +473,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         )}
 
         {/* Tabs — fixed min-widths so counts (e.g. Today (0)) don't cause layout shift */}
-        <div className="bg-white rounded-2xl border border-[#E8E4DF] shadow-sm overflow-hidden mb-4">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[#E8E4DF] px-2 sm:px-4">
+        <div className="overflow-hidden mb-4">
+          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
             {tabs.map((t) => {
               const hasCount = /\(\d+\)$/.test(t.label);
               return (
@@ -496,7 +496,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           </div>
 
         {/* Tab Content */}
-        <div className="p-4 sm:p-6 bg-white rounded-b-2xl min-h-[320px]">
+        <div className="p-4 sm:p-6 min-h-[320px]">
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
               projects={(data.projects || []).map((p) => {
@@ -642,27 +642,27 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
 function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   return (
-    <div>
-      <div className="text-[10px] font-bold tracking-wider uppercase text-[#888] mb-3">Performance</div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">This Month</div>
+    <div className="border-t border-[var(--brd)]/30 pt-6">
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Performance</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
           <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
           <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">On-Time Rate</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
           <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Damage Claims</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Claims</div>
           <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
           <div className="text-[11px] text-[#888] mt-0.5">Lifetime</div>
         </div>
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Outstanding</div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
           <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (
             <div className="text-[11px] text-[#888] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
@@ -675,15 +675,15 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
 
 function RealtorKPIs({ data }: { data: DashboardData | null }) {
   return (
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-white border border-[#E8E4DF] rounded-xl p-6 flex flex-col items-center justify-center min-h-[180px]">
-        <div className="text-[10px] font-semibold tracking-wider uppercase text-[#C9A962]">Total Earned</div>
+    <div className="border-t border-[var(--brd)]/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="flex flex-col justify-center">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Earned</div>
         <div className="text-[42px] font-bold text-[#2D9F5A] mt-2 font-hero">{formatCurrency(data?.totalEarned ?? 0)}</div>
         <div className="text-[12px] text-[#2D9F5A] mt-1 font-medium">
           {data?.completedReferrals ?? 0} completed move{(data?.completedReferrals ?? 0) !== 1 ? "s" : ""}
         </div>
       </div>
-      <div className="bg-white border border-[#E8E4DF] rounded-xl p-6">
+      <div className="rounded-xl border border-[var(--brd)] p-6 bg-[var(--card)]">
         <ReferralForm />
       </div>
     </div>
@@ -716,7 +716,7 @@ function ReferralForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888] mb-3">Submit New Referral</div>
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Submit New Referral</div>
       <div className="space-y-2">
         <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="Client full name" required className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <input value={form.client_email} onChange={(e) => setForm((f) => ({ ...f, client_email: e.target.value }))} placeholder="Client email" type="email" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
@@ -807,24 +807,26 @@ function MaterialsTab() {
   ];
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-[16px] font-bold text-[#1A1A1A] font-hero">Marketing Materials</h3>
-      {materials.map((m) => (
-        <div key={m.name} className="bg-white border border-[#E8E4DF] rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#F5F3F0] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <div>
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Marketing Materials</div>
+      <div className="space-y-0">
+        {materials.map((m, i) => (
+          <div key={m.name} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#F5F3F0] flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div>
+                <div className="text-[14px] font-semibold text-[#1A1A1A]">{m.name}</div>
+                <div className="text-[12px] text-[#888]">{m.desc}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-[14px] font-semibold text-[#1A1A1A]">{m.name}</div>
-              <div className="text-[12px] text-[#888]">{m.desc}</div>
-            </div>
+            <button className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
           </div>
-          <button className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </button>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

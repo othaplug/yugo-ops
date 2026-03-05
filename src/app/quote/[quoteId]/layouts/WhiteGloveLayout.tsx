@@ -1,4 +1,4 @@
-import { Shield, Camera, Check, Package, Truck, Eye } from "lucide-react";
+import { Shield, Camera, Check, Diamond, Truck, Eye } from "lucide-react";
 import {
   type Quote,
   WINE,
@@ -18,7 +18,7 @@ const PROTOCOL_STEPS = [
       "Thorough assessment and photographic documentation of your item\u2019s current condition before any handling begins.",
   },
   {
-    icon: Package,
+    icon: Diamond,
     title: "Custom Protective Wrapping",
     description:
       "Multi-layer protection using acid-free tissue, custom foam padding, and furniture blankets tailored to your item.",
@@ -59,56 +59,52 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
   return (
     <section className="mb-10 space-y-8">
       {/* Item details */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="p-5 md:p-7">
-          <div className="flex items-start gap-4">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${WINE}10` }}
-            >
-              <Package className="w-7 h-7" style={{ color: WINE }} />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-[14px] font-semibold" style={{ color: FOREST }}>
-                {(f?.item_description as string) ?? "White Glove Item"}
-              </h3>
-              <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>
-                {toTitleCase((f?.item_category as string) ?? "premium item")}
-              </p>
-              <div className="flex items-center gap-3 mt-3 flex-wrap">
-                {declaredValue != null && (
-                  <span
-                    className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
-                    style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
-                  >
-                    Declared Value: {fmtPrice(declaredValue)}
-                  </span>
-                )}
-                {f?.enhanced_insurance ? (
-                  <span
-                    className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
-                    style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
-                  >
-                    Enhanced Insurance
-                  </span>
-                ) : null}
-              </div>
+      <div>
+        <div className="flex items-start gap-4">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${WINE}10` }}
+          >
+            <Diamond className="w-7 h-7" style={{ color: WINE }} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-[14px] font-semibold" style={{ color: FOREST }}>
+              {(f?.item_description as string) ?? "White Glove Item"}
+            </h3>
+            <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>
+              {toTitleCase((f?.item_category as string) ?? "premium item")}
+            </p>
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              {declaredValue != null && (
+                <span
+                  className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
+                  style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+                >
+                  Declared Value: {fmtPrice(declaredValue)}
+                </span>
+              )}
+              {f?.enhanced_insurance ? (
+                <span
+                  className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
+                  style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
+                >
+                  Enhanced Insurance
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
       {/* 5-Step Handling Protocol */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${WINE}04` }}>
-          <h2 className="font-hero text-[16px]" style={{ color: WINE }}>
-            Our 5-Step Handling Protocol
-          </h2>
-          <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>
-            Every white glove delivery follows our meticulous care process
-          </p>
-        </div>
-        <div className="p-5 md:p-7 space-y-6">
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          Our 5-Step Handling Protocol
+        </h2>
+        <p className="text-[11px] mb-4" style={{ color: `${FOREST}60` }}>
+          Every white glove delivery follows our meticulous care process
+        </p>
+        <div className="space-y-6">
           {PROTOCOL_STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
@@ -147,10 +143,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
       </div>
 
       {/* Photo documentation */}
-      <div
-        className="rounded-2xl p-5 md:p-6 text-center"
-        style={{ backgroundColor: `${FOREST}06`, border: `1px solid ${FOREST}12` }}
-      >
+      <div className="pt-6 border-t border-[var(--brd)]/30 text-center">
         <Camera className="w-6 h-6 mx-auto mb-2" style={{ color: FOREST }} />
         <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
           Photo Documentation Included

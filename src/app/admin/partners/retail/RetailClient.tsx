@@ -116,11 +116,12 @@ export default function RetailClient({
       </div>
 
       {/* Tab content */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             {/* Filter bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-4 border-b border-[var(--brd)]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input
@@ -194,7 +195,9 @@ export default function RetailClient({
         )}
 
         {activeTab === "partners" && (
-          <div className="divide-y divide-[var(--brd)]/50">
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No retail partners yet.</p>
@@ -233,6 +236,7 @@ export default function RetailClient({
                 );
               })
             )}
+            </div>
           </div>
         )}
       </div>

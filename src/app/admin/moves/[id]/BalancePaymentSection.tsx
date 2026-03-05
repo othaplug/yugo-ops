@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { useToast } from "../../components/Toast";
 
 interface BalancePaymentSectionProps {
@@ -87,6 +87,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
         <div>
           <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
           <div className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(balanceAmount)}</div>
+          {balanceAmount > 0 && <div className="text-[9px] text-[var(--tx3)]">+{formatCurrency(calcHST(balanceAmount))} HST</div>}
         </div>
         <div>
           <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>

@@ -3,6 +3,24 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 
+const MAPBOX_TOKEN =
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  if (!MAPBOX_TOKEN || !address?.trim()) return null;
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address.trim())}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=address,place`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    const data = await res.json();
+    const feat = data?.features?.[0];
+    if (feat?.center) return { lat: feat.center[1], lng: feat.center[0] };
+  } catch {}
+  return null;
+}
+
 export async function GET() {
   const { orgId, error } = await requirePartner();
   if (error) return error;
@@ -30,13 +48,31 @@ export async function GET() {
       .select("id, name, current_lat, current_lng")
       .in("id", crewIds);
 
+    // Also check crew_locations for fresher GPS data
+    const { data: crewLocs } = await admin
+      .from("crew_locations")
+      .select("crew_id, lat, lng, crew_name")
+      .in("crew_id", crewIds);
+
+    const locMap: Record<string, { lat: number; lng: number; name: string | null }> = {};
+    (crewLocs || []).forEach((cl) => {
+      if (cl.lat != null && cl.lng != null) {
+        locMap[cl.crew_id] = { lat: cl.lat, lng: cl.lng, name: cl.crew_name };
+      }
+    });
+
     (crews || []).forEach((c) => {
-      crewMap[c.id] = { name: c.name, current_lat: c.current_lat, current_lng: c.current_lng };
+      const freshLoc = locMap[c.id];
+      crewMap[c.id] = {
+        name: c.name,
+        current_lat: freshLoc?.lat ?? c.current_lat,
+        current_lng: freshLoc?.lng ?? c.current_lng,
+      };
     });
   }
 
   const deliveryIds = deliveries.map((d) => d.id);
-  let sessionMap: Record<string, { live_stage: string | null; dest_lat: number | null; dest_lng: number | null }> = {};
+  let sessionMap: Record<string, { live_stage: string | null }> = {};
   if (deliveryIds.length > 0) {
     const { data: sessions } = await admin
       .from("tracking_sessions")
@@ -46,13 +82,23 @@ export async function GET() {
       .eq("is_active", true);
 
     (sessions || []).forEach((s) => {
-      sessionMap[s.job_id] = { live_stage: s.status, dest_lat: null, dest_lng: null };
+      sessionMap[s.job_id] = { live_stage: s.status };
     });
   }
 
-  const enriched = deliveries.map((d) => {
+  // Geocode delivery addresses in parallel for destination markers
+  const geocodePromises = deliveries.map(async (d) => {
+    if (d.delivery_address) {
+      return geocodeAddress(d.delivery_address);
+    }
+    return null;
+  });
+  const geocoded = await Promise.all(geocodePromises);
+
+  const enriched = deliveries.map((d, i) => {
     const crew = d.crew_id ? crewMap[d.crew_id] : null;
     const session = sessionMap[d.id];
+    const destCoords = geocoded[i];
     return {
       id: d.id,
       delivery_number: d.delivery_number,
@@ -63,8 +109,8 @@ export async function GET() {
       crew_name: crew?.name || null,
       crew_lat: crew?.current_lat || null,
       crew_lng: crew?.current_lng || null,
-      dest_lat: session?.dest_lat || null,
-      dest_lng: session?.dest_lng || null,
+      dest_lat: destCoords?.lat || null,
+      dest_lng: destCoords?.lng || null,
       live_stage: session?.live_stage || null,
     };
   });

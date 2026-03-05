@@ -244,7 +244,7 @@ export default function BalancePaymentClient({
           <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Payment Breakdown</div>
           <div className="space-y-2 text-[12px]">
             <div className="flex justify-between">
-              <span className="text-[#666]">Move balance</span>
+              <span className="text-[#666]">Move balance (incl. HST)</span>
               <span className="text-[#E8E5E0]">{fmtPrice(balanceAmount)}</span>
             </div>
             <div className="flex justify-between">

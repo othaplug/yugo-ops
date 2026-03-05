@@ -1,5 +1,24 @@
-import { emailLayout } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+
+function quoteEmailLayout(innerHtml: string): string {
+  const base = getEmailBaseUrl();
+  const logoUrl = `${base}/images/yugo-logo-gold.png`;
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#FAF7F2;color:#2C2C2C;padding:40px 36px;border-radius:14px;border:1px solid rgba(92,26,51,0.08)">
+      <div style="text-align:center;margin-bottom:32px">
+        <img src="${logoUrl}" alt="YUGO" width="100" height="28" style="display:inline-block;max-width:100px;height:auto;border:0" />
+      </div>
+      ${innerHtml}
+      <div style="font-size:10px;color:#8A8580;text-align:center;margin-top:32px;padding-top:20px;border-top:1px solid rgba(92,26,51,0.08)">
+        <span style="font-family:'Instrument Serif',Georgia,serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#5C1A33">YUGO</span>
+        <span style="color:#AAA;margin:0 6px">&middot;</span>
+        Premium Moving Services
+        <div style="margin-top:6px;font-size:9px;color:#AAA">Toronto &amp; GTA</div>
+      </div>
+    </div>
+  `;
+}
 
 export interface QuoteTier {
   label: string;
@@ -43,42 +62,41 @@ function expiryNote(expiresAt: string | null | undefined): string {
   const d = new Date(expiresAt);
   const formatted = d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
   return `
-    <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.25);border-radius:8px;padding:10px 14px;margin:0 0 20px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:14px">&#9200;</span>
-      <span style="font-size:12px;color:#D48A29;font-weight:600">This quote expires ${formatted} &mdash; book now to lock in your rate.</span>
+    <div style="background:rgba(92,26,51,0.06);border:1px solid rgba(92,26,51,0.15);border-radius:8px;padding:12px 16px;margin:0 0 24px">
+      <span style="font-size:12px;color:#5C1A33;font-weight:600">This quote is valid until ${formatted}. Book now to secure your rate.</span>
     </div>
   `;
 }
 
 function ctaButton(url: string, label: string): string {
   return `
-    <a href="${url}" style="display:block;background:linear-gradient(135deg,#C9A962 0%,#D4B56C 100%);color:#0D0D0D;padding:18px 28px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;text-align:center;margin:28px 0 12px;letter-spacing:0.3px;box-shadow:0 4px 16px rgba(201,169,98,0.25)">
-      ${label} &rarr;
+    <a href="${url}" style="display:block;background:#5C1A33;color:#FAF7F2;padding:18px 28px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;text-align:center;margin:28px 0 12px;letter-spacing:0.5px">
+      ${label}
     </a>
-    <p style="font-size:10px;color:#666;text-align:center;margin:0 0 20px">Takes less than 2 minutes</p>
+    <p style="font-size:10px;color:#888;text-align:center;margin:0 0 20px">Takes less than 2 minutes</p>
   `;
 }
 
 function whyYugoBlock(): string {
   return `
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin:20px 0">
-      <div style="font-size:10px;font-weight:700;color:#C9A962;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Why Yugo</div>
+    <div style="border-top:1px solid rgba(92,26,51,0.12);margin:24px 0;padding-top:20px">
+      <div style="font-size:9px;font-weight:700;color:#5C1A33;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px">The Yugo Difference</div>
       <table style="width:100%;border-collapse:collapse">
         <tr>
-          <td style="padding:6px 0;font-size:12px;color:#E8E5E0;vertical-align:top;width:20px">&#10003;</td>
-          <td style="padding:6px 0;font-size:12px;color:#B8B5B0"><strong style="color:#E8E5E0">Flat-rate guarantee</strong> &mdash; no hidden fees, no surprises on move day</td>
+          <td style="padding:6px 0;font-size:12px;color:#5C1A33;vertical-align:top;width:20px">&#10003;</td>
+          <td style="padding:6px 0;font-size:12px;color:#4A4540"><strong style="color:#2C2C2C">Flat-rate guarantee</strong> &mdash; no hidden fees, no surprises</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;font-size:12px;color:#E8E5E0;vertical-align:top">&#10003;</td>
-          <td style="padding:6px 0;font-size:12px;color:#B8B5B0"><strong style="color:#E8E5E0">Real-time tracking</strong> &mdash; follow your crew live from your phone</td>
+          <td style="padding:6px 0;font-size:12px;color:#5C1A33;vertical-align:top">&#10003;</td>
+          <td style="padding:6px 0;font-size:12px;color:#4A4540"><strong style="color:#2C2C2C">Real-time tracking</strong> &mdash; follow your crew live from your phone</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;font-size:12px;color:#E8E5E0;vertical-align:top">&#10003;</td>
-          <td style="padding:6px 0;font-size:12px;color:#B8B5B0"><strong style="color:#E8E5E0">Only $100 deposit</strong> &mdash; balance due 48 hours before your move</td>
+          <td style="padding:6px 0;font-size:12px;color:#5C1A33;vertical-align:top">&#10003;</td>
+          <td style="padding:6px 0;font-size:12px;color:#4A4540"><strong style="color:#2C2C2C">Only $100 deposit</strong> &mdash; balance due before your move</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;font-size:12px;color:#E8E5E0;vertical-align:top">&#10003;</td>
-          <td style="padding:6px 0;font-size:12px;color:#B8B5B0"><strong style="color:#E8E5E0">Full protection</strong> &mdash; insured and licensed, your belongings are safe</td>
+          <td style="padding:6px 0;font-size:12px;color:#5C1A33;vertical-align:top">&#10003;</td>
+          <td style="padding:6px 0;font-size:12px;color:#4A4540"><strong style="color:#2C2C2C">Fully insured</strong> &mdash; $2M commercial liability coverage</td>
         </tr>
       </table>
     </div>
@@ -90,21 +108,21 @@ function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: str
     ? `Reach out to ${coordinatorName}${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or reply to this email.`
     : "Simply reply to this email &mdash; we typically respond within a few hours.";
   return `
-    <div style="border-top:1px solid #2A2A2A;padding-top:16px;margin-top:24px">
-      <div style="font-size:12px;color:#999;line-height:1.6">
-        <strong style="color:#B8B5B0">Have questions?</strong> ${contact}
+    <div style="border-top:1px solid rgba(92,26,51,0.10);padding-top:16px;margin-top:24px">
+      <div style="font-size:12px;color:#6B6560;line-height:1.6">
+        <strong style="color:#2C2C2C">Have questions?</strong> ${contact}
       </div>
     </div>
   `;
 }
 
 function detailRow(label: string, value: string): string {
-  return `<tr><td style="color:#666;padding:4px 0;font-size:12px">${label}:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right;font-size:12px">${value}</td></tr>`;
+  return `<tr><td style="color:#8A8580;padding:5px 0;font-size:12px;vertical-align:top">${label}</td><td style="color:#2C2C2C;font-weight:600;padding:5px 0;text-align:right;font-size:12px">${value}</td></tr>`;
 }
 
 function detailsCard(rows: [string, string][]): string {
   return `
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+    <div style="border:1px solid rgba(92,26,51,0.10);border-radius:10px;padding:20px;margin-bottom:20px;background:rgba(92,26,51,0.02)">
       <table style="width:100%;border-collapse:collapse">
         ${rows.map(([l, v]) => detailRow(l, v)).join("")}
       </table>
@@ -115,12 +133,17 @@ function detailsCard(rows: [string, string][]): string {
 function tierCards(tiers: Record<string, QuoteTier>): string {
   const order = ["essentials", "premier", "estate"];
   const highlights: Record<string, string> = {
-    essentials: "rgba(232,229,224,0.08)",
-    premier: "rgba(201,169,98,0.12)",
-    estate: "rgba(201,169,98,0.20)",
+    essentials: "#FFFFFF",
+    premier: "rgba(92,26,51,0.04)",
+    estate: "rgba(92,26,51,0.08)",
+  };
+  const borders: Record<string, string> = {
+    essentials: "rgba(0,0,0,0.08)",
+    premier: "rgba(92,26,51,0.20)",
+    estate: "rgba(92,26,51,0.30)",
   };
   const badges: Record<string, string> = {
-    premier: '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;background:#C9A962;color:#0D0D0D;margin-left:6px">POPULAR</span>',
+    premier: '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:700;background:#5C1A33;color:#FAF7F2;margin-left:6px;letter-spacing:0.5px">POPULAR</span>',
   };
 
   return order
@@ -128,12 +151,12 @@ function tierCards(tiers: Record<string, QuoteTier>): string {
     .map((key) => {
       const t = tiers[key];
       return `
-        <div style="background:${highlights[key] ?? "#1E1E1E"};border:1px solid ${key === "premier" ? "rgba(201,169,98,0.4)" : "#2A2A2A"};border-radius:10px;padding:16px;margin-bottom:12px">
-          <div style="font-size:11px;font-weight:700;color:#C9A962;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">
+        <div style="background:${highlights[key] ?? "#FFF"};border:1px solid ${borders[key] ?? "rgba(0,0,0,0.08)"};border-radius:10px;padding:18px;margin-bottom:12px">
+          <div style="font-size:10px;font-weight:700;color:#5C1A33;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px">
             ${t.label}${badges[key] ?? ""}
           </div>
-          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:24px;font-weight:700;color:#F5F5F3;margin-bottom:10px">${formatCurrency(t.price)}</div>
-          <div style="font-size:11px;color:#999;line-height:1.6">
+          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;color:#2C2C2C;margin-bottom:10px">${formatCurrency(t.price)}</div>
+          <div style="font-size:11px;color:#6B6560;line-height:1.7">
             ${t.includes.filter(Boolean).map((i) => `&#10003; ${i}`).join("<br/>")}
           </div>
         </div>
@@ -145,10 +168,10 @@ function tierCards(tiers: Record<string, QuoteTier>): string {
 function coordinatorBlock(name?: string | null, phone?: string | null): string {
   if (!name) return "";
   return `
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
-      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Your Coordinator</div>
-      <div style="font-size:13px;color:#E8E5E0;font-weight:600">${name}</div>
-      ${phone ? `<div style="font-size:12px;color:#999;margin-top:2px">${phone}</div>` : ""}
+    <div style="border-top:1px solid rgba(92,26,51,0.10);padding-top:16px;margin:16px 0 20px">
+      <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Your Coordinator</div>
+      <div style="font-size:13px;color:#2C2C2C;font-weight:600">${name}</div>
+      ${phone ? `<div style="font-size:12px;color:#6B6560;margin-top:2px">${phone}</div>` : ""}
     </div>
   `;
 }
@@ -161,11 +184,11 @@ function residentialTemplate(d: QuoteTemplateData): string {
   if (d.toAddress) rows.push(["To", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Moving Quote</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We&apos;ve prepared your personalized moving quote with three flat-rate packages. Choose the level of service that fits your needs &mdash; every option includes professional movers, a dedicated truck, and full protection.
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Moving Quote</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
+      We have prepared your personalized moving quote with three flat-rate packages. Choose the level of service that fits your needs &mdash; every option includes professional movers, a dedicated truck, and full protection.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
@@ -188,19 +211,19 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
 
   const price = d.customPrice ?? d.tiers?.essentials?.price;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Long Distance Quote</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your long distance moving quote is ready. We&apos;ve calculated a flat rate based on your route and inventory &mdash; no surprises on arrival day.
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Long Distance Quote</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
+      Your long distance moving quote is ready. We have calculated a flat rate based on your route and inventory &mdash; no surprises on arrival day.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? `
-      <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:9px;color:#999;text-transform:uppercase;font-weight:700;margin-bottom:6px">Flat Rate</div>
-        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(price)}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">+ HST &middot; No hidden fees</div>
+      <div style="background:rgba(92,26,51,0.04);border:1px solid rgba(92,26,51,0.12);border-radius:10px;padding:22px;text-align:center;margin-bottom:20px">
+        <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Flat Rate</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;color:#5C1A33">${formatCurrency(price)}</div>
+        <div style="font-size:11px;color:#8A8580;margin-top:4px">+ HST &middot; No hidden fees</div>
       </div>
     ` : ""}
     ${d.tiers ? tierCards(d.tiers) : ""}
@@ -221,19 +244,19 @@ function officeTemplate(d: QuoteTemplateData): string {
 
   const price = d.customPrice;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Relocation Proposal</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Thank you for considering YUGO for your office relocation. We&apos;ve prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Relocation Proposal</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
+      Thank you for considering YUGO for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? `
-      <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:9px;color:#999;text-transform:uppercase;font-weight:700;margin-bottom:6px">Project Estimate</div>
-        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(price)}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">+ HST &middot; Flat-rate guarantee</div>
+      <div style="background:rgba(92,26,51,0.04);border:1px solid rgba(92,26,51,0.12);border-radius:10px;padding:22px;text-align:center;margin-bottom:20px">
+        <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Project Estimate</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;color:#5C1A33">${formatCurrency(price)}</div>
+        <div style="font-size:11px;color:#8A8580;margin-top:4px">+ HST &middot; Flat-rate guarantee</div>
       </div>
     ` : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -253,19 +276,19 @@ function singleItemTemplate(d: QuoteTemplateData): string {
 
   const price = d.customPrice ?? d.tiers?.essentials?.price;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Delivery Quote</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your delivery quote is ready. We&apos;ll handle your item with care from pickup to placement &mdash; fully insured, flat-rate, no surprises.
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Delivery Quote</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
+      Your delivery quote is ready. We will handle your item with care from pickup to placement &mdash; fully insured, flat-rate, no surprises.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? `
-      <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:9px;color:#999;text-transform:uppercase;font-weight:700;margin-bottom:6px">Flat Price</div>
-        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(price)}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">+ HST &middot; All-inclusive</div>
+      <div style="background:rgba(92,26,51,0.04);border:1px solid rgba(92,26,51,0.12);border-radius:10px;padding:22px;text-align:center;margin-bottom:20px">
+        <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Flat Price</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;color:#5C1A33">${formatCurrency(price)}</div>
+        <div style="font-size:11px;color:#8A8580;margin-top:4px">+ HST &middot; All-inclusive</div>
       </div>
     ` : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -284,19 +307,19 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
 
   const price = d.customPrice ?? d.tiers?.essentials?.price;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">White Glove Service Quote</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">White Glove Service Quote</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
       Your white glove service quote is ready. Premium handling with custom crating, climate control, and enhanced insurance &mdash; your valuables deserve the best.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? `
-      <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:9px;color:#999;text-transform:uppercase;font-weight:700;margin-bottom:6px">Premium Service Rate</div>
-        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(price)}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">+ HST &middot; Enhanced insurance included</div>
+      <div style="background:rgba(92,26,51,0.04);border:1px solid rgba(92,26,51,0.12);border-radius:10px;padding:22px;text-align:center;margin-bottom:20px">
+        <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Premium Service Rate</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;color:#5C1A33">${formatCurrency(price)}</div>
+        <div style="font-size:11px;color:#8A8580;margin-top:4px">+ HST &middot; Enhanced insurance included</div>
       </div>
     ` : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -315,19 +338,19 @@ function specialtyTemplate(d: QuoteTemplateData): string {
 
   const price = d.customPrice;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Specialty Service Proposal</div>
-    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Thank you for reaching out about your specialty project. We&apos;ve put together a custom proposal with all specialized equipment and handling included.
+  return quoteEmailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Specialty Service Proposal</div>
+    <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;margin:0 0 10px;color:#2C2C2C">Hi${d.clientName ? ` ${d.clientName}` : ""},</h1>
+    <p style="font-size:14px;color:#6B6560;line-height:1.7;margin:0 0 28px">
+      Thank you for reaching out about your specialty project. We have put together a custom proposal with all specialized equipment and handling included.
     </p>
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? `
-      <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:9px;color:#999;text-transform:uppercase;font-weight:700;margin-bottom:6px">Custom Quote</div>
-        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:700;color:#C9A962">${formatCurrency(price)}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">+ HST &middot; Includes all specialized equipment</div>
+      <div style="background:rgba(92,26,51,0.04);border:1px solid rgba(92,26,51,0.12);border-radius:10px;padding:22px;text-align:center;margin-bottom:20px">
+        <div style="font-size:9px;color:#8A8580;text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px">Custom Quote</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;color:#5C1A33">${formatCurrency(price)}</div>
+        <div style="font-size:11px;color:#8A8580;margin-top:4px">+ HST &middot; Includes all specialized equipment</div>
       </div>
     ` : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}

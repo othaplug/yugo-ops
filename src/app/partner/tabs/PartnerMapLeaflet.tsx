@@ -45,12 +45,19 @@ interface ActiveDelivery {
   live_stage: string | null;
 }
 
-const crewIcon = new L.Icon({
-  iconUrl: "/crew-car.png",
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20],
-});
+function makeCrewIcon(name?: string | null) {
+  const initial = (name || "C").replace("Team ", "").charAt(0).toUpperCase();
+  return new L.DivIcon({
+    className: "",
+    html: `<div style="width:44px;height:44px;position:relative;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,#C9A962,#8B7332);opacity:0.25;animation:pulse 2s infinite"></span>
+      <span style="position:relative;z-index:1;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#C9A962,#8B7332);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;box-shadow:0 2px 10px rgba(201,169,98,0.45)">${initial}</span>
+    </div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
+  });
+}
 
 const destIcon = new L.DivIcon({
   className: "",
@@ -104,7 +111,7 @@ export default function PartnerMapLeaflet({
         if (d.crew_lat == null || d.crew_lng == null) return null;
         return (
           <div key={d.id}>
-            <Marker position={[d.crew_lat, d.crew_lng]} icon={crewIcon} eventHandlers={{ click: () => onSelect(d) }}>
+            <Marker position={[d.crew_lat, d.crew_lng]} icon={makeCrewIcon(d.crew_name)} eventHandlers={{ click: () => onSelect(d) }}>
               <Popup>
                 <strong>{d.customer_name || d.delivery_number}</strong>
                 <br />

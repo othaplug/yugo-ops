@@ -112,7 +112,7 @@ export default function PartnerDeliveriesTab({
       )}
 
       {deliveries.length === 0 ? (
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
+        <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
           <p className="text-[14px] text-[#888]">
             {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : "No deliveries found."}
           </p>
@@ -127,19 +127,20 @@ export default function PartnerDeliveriesTab({
           )}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
+        <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
           <p className="text-[14px] text-[#888]">No deliveries match your search.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((d) => (
-            <DeliveryCard
-              key={d.id}
-              delivery={d}
-              onShare={() => onShare(d)}
-              onDetailClick={onDetailClick ? () => onDetailClick(d) : undefined}
-              onEditClick={onEditClick ? () => onEditClick(d) : undefined}
-            />
+        <div className="space-y-0">
+          {filtered.map((d, i) => (
+            <div key={d.id} className={i > 0 ? "border-t border-[var(--brd)]/30 pt-4" : ""}>
+              <DeliveryCard
+                delivery={d}
+                onShare={() => onShare(d)}
+                onDetailClick={onDetailClick ? () => onDetailClick(d) : undefined}
+                onEditClick={onEditClick ? () => onEditClick(d) : undefined}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -204,7 +205,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       tabIndex={onDetailClick ? 0 : undefined}
       onClick={onDetailClick}
       onKeyDown={onDetailClick ? (e) => e.key === "Enter" && onDetailClick() : undefined}
-      className={`bg-white border border-[#E8E4DF] rounded-xl p-5 hover:border-[#C9A962]/40 transition-colors ${onDetailClick ? "cursor-pointer" : ""}`}
+      className={`py-4 transition-colors ${onDetailClick ? "cursor-pointer hover:opacity-90" : ""}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">

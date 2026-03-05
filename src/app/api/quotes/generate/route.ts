@@ -420,13 +420,24 @@ function roundTo(amount: number, nearest: number): number {
 // Tier includes definitions
 // ═══════════════════════════════════════════════
 
-function residentialIncludes(minCrew: number, estHours: number): {
+const DEFAULT_TRUCK_BY_SIZE: Record<string, string> = {
+  studio: "16-ft truck",
+  "1br": "16-ft truck",
+  "2br": "20-ft truck",
+  "3br": "20-ft truck",
+  "4br": "26-ft truck",
+  "5br_plus": "26-ft truck",
+  office: "26-ft truck",
+};
+
+function residentialIncludes(minCrew: number, estHours: number, moveSize?: string): {
   essentials: string[];
   premier: string[];
   estate: string[];
 } {
+  const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
   const essentials = [
-    "26-ft truck",
+    truckLabel,
     `${minCrew} professional movers`,
     `${estHours}-hour window`,
     "Moving blankets",
@@ -539,7 +550,8 @@ function estimateLabour(
 
   let truckSize = "16ft";
   if (inventoryScore > 25) truckSize = "20ft";
-  if (inventoryScore > 50) truckSize = "26ft";
+  if (inventoryScore > 50) truckSize = "24ft";
+  if (inventoryScore > 75) truckSize = "26ft";
   if (inventoryScore > 90) truckSize = "26ft + trailer or 2 trucks";
 
   const lo = Math.max(2, totalHours - 0.5);
@@ -688,7 +700,7 @@ async function calcResidential(
   const premDep = await calculateDeposit(sb, "residential", premPrice);
   const estDep = await calculateDeposit(sb, "residential", estPrice);
 
-  const inc = residentialIncludes(minCrew, estHours);
+  const inc = residentialIncludes(minCrew, estHours, input.move_size);
 
   const tiers = {
     essentials: {
@@ -1416,7 +1428,7 @@ export async function POST(req: NextRequest) {
     response.tiers = tiers;
   } else {
     response.custom_price = custom_price;
-    response.deposit_amount = primaryPrice;
+    response.deposit_amount = custom_price?.deposit ?? primaryPrice;
   }
 
   response.valuation = {

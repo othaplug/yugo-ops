@@ -7,7 +7,7 @@ import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone } from "@/lib/phone";
 import { toTitleCase } from "@/lib/format-text";
-import { Home, Building2, Package, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Search, Plus, Minus, Users, Clock, Truck } from "lucide-react";
+import { Home, Building2, ArrowUpRight, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Search, Plus, Minus, Users, Clock, Truck } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────
 
@@ -89,7 +89,7 @@ interface InventoryEntry {
 const SERVICE_TYPES = [
   { value: "local_move", Icon: Home, label: "Residential", desc: "Local or long distance home move" },
   { value: "office_move", Icon: Building2, label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-  { value: "single_item", Icon: Package, label: "Single Item", desc: "One item or small batch delivery" },
+  { value: "single_item", Icon: ArrowUpRight, label: "Single Item", desc: "One item or small batch delivery" },
   { value: "white_glove", Icon: Gem, label: "White Glove", desc: "Premium handling, assembly, placement" },
   { value: "specialty", Icon: Star, label: "Specialty / Event", desc: "Art, piano, trade show, staging, estate" },
   { value: "b2b_delivery", Icon: Truck, label: "B2B One-Off", desc: "One-off delivery from a business source" },
@@ -693,8 +693,8 @@ export default function QuoteFormClient({
 
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
-              <div className="mb-5">
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Service Type</label>
+              <div>
+                <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
@@ -728,11 +728,11 @@ export default function QuoteFormClient({
                 </div>
               </div>
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 2. Client ── */}
-              <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Client</h3>
+              <div className="space-y-3">
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
                 <Field label="Select to auto fill">
                   <div ref={contactDropdownRef} className="relative">
                     <input
@@ -796,11 +796,11 @@ export default function QuoteFormClient({
                 </div>
               </div>
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 3. Addresses ── */}
-              <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Addresses</h3>
+              <div className="space-y-3">
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
                 <div className="flex flex-col sm:flex-row gap-3 items-end">
                   <div className="flex-1 min-w-0 w-full">
                     <AddressAutocomplete
@@ -843,11 +843,11 @@ export default function QuoteFormClient({
                 </div>
               </div>
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 4. Move details ── */}
-              <div className="mb-5">
-                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Move Details</h3>
+              <div>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <Field label="Move Date *">
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
@@ -873,12 +873,12 @@ export default function QuoteFormClient({
                 </div>
               </div>
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
-                <div className="mb-5 space-y-2 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Specialty Items</h3>
+                <div className="space-y-2">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {SPECIALTY_ITEM_TYPES.map((type) => {
                       const active = specialtyItems.some((i) => i.type === type);
@@ -920,9 +920,11 @@ export default function QuoteFormClient({
 
               {/* ── 5b. Inventory (Residential / Long distance / Office) ── */}
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                <>
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Client Inventory</h3>
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client Inventory</h3>
                     {inventoryItems.length > 0 && (
                       <span className="text-[10px] text-[var(--tx3)]">
                         {inventoryTotalItems} items · Score {inventoryScore.toFixed(1)}
@@ -1022,14 +1024,15 @@ export default function QuoteFormClient({
                     <p className="text-[10px] text-[var(--tx3)] italic">No inventory added — standard volume assumed for pricing.</p>
                   )}
                 </div>
+                </>
               )}
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Office Details</h3>
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Square Footage">
                       <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={fieldInput} />
@@ -1069,8 +1072,8 @@ export default function QuoteFormClient({
 
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Item Details</h3>
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Category">
                       <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
@@ -1110,8 +1113,8 @@ export default function QuoteFormClient({
 
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">White Glove Details</h3>
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Item Category">
                       <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
@@ -1146,8 +1149,8 @@ export default function QuoteFormClient({
 
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Specialty Details</h3>
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Project Type">
                       <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
@@ -1172,12 +1175,12 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              <div className="border-t border-[var(--brd)] my-5" />
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && (
-                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
-                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h3>
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
                   <div className="space-y-2">
                     {popularAddons.map((addon) => {
                       const sel = selectedAddons.get(addon.id);

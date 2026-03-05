@@ -4,6 +4,7 @@ import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
     const amountCents = Math.round(ccBalance * 100);
 
     try {
+      const { locationId } = await getSquarePaymentConfig();
+      if (!locationId) throw new Error("Square location not configured");
+
       const paymentRes = await squareClient.payments.create({
         sourceId: move.square_card_id,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
@@ -61,7 +65,7 @@ export async function GET(req: NextRequest) {
         referenceId: move.move_code || move.id,
         note: "Balance + processing fee — auto-charge",
         idempotencyKey: `bal-auto-${move.id}-${Date.now()}`,
-        locationId: process.env.SQUARE_LOCATION_ID!,
+        locationId,
       });
 
       const paymentId = paymentRes.payment?.id;

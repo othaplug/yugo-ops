@@ -1,10 +1,9 @@
-import { MapPin, ArrowRight, Package, Check } from "lucide-react";
+import { MapPin, ArrowRight, Diamond, Check } from "lucide-react";
 import {
   type Quote,
   WINE,
   FOREST,
   GOLD,
-  CREAM,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -35,61 +34,55 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
   return (
     <section className="mb-10 space-y-6">
-      {/* Item card */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-        <div className="p-5 md:p-7">
-          <div className="flex items-start gap-4">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${WINE}10` }}
-            >
-              <Package className="w-7 h-7" style={{ color: WINE }} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
+      {/* Item details */}
+      <div>
+        <div className="flex items-start gap-4">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${WINE}10` }}
+          >
+            <Diamond className="w-7 h-7" style={{ color: WINE }} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span
+                className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+              >
+                {category}
+              </span>
+              {weight && (
                 <span
                   className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                  style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
                 >
-                  {category}
+                  {weight}
                 </span>
-                {weight && (
-                  <span
-                    className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
-                  >
-                    {weight}
-                  </span>
-                )}
-              </div>
-              <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
-                {(f?.item_description as string) ?? "Single Item Delivery"}
-              </p>
-              {f?.assembly_surcharge != null && (
-                <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-                  Assembly / disassembly included
-                </p>
               )}
             </div>
+            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+              {(f?.item_description as string) ?? "Single Item Delivery"}
+            </p>
+            {f?.assembly_surcharge != null && (
+              <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+                Assembly / disassembly included
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Route strip */}
-        <div className="px-5 md:px-7 py-4 border-t border-[#E2DDD5]" style={{ backgroundColor: CREAM }}>
+        {/* Route */}
+        <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                Pickup
-              </p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.from_address}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
-                Delivery
-              </p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.to_address}
               </p>
@@ -104,11 +97,8 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       </div>
 
       {/* Service includes */}
-      <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
-        <h2
-          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-3"
-          style={{ color: FOREST }}
-        >
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
           Service Includes
         </h2>
         <div className="space-y-2">

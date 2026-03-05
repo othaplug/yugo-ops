@@ -218,6 +218,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
         <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{currentMonthLabel} Revenue</div>
           <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
+          {currentMonthRevenue > 0 && <div className="text-[8px] text-[var(--tx3)] mt-0.5">Before HST</div>}
           {pctChange !== 0 && (
             <div className={`text-[10px] font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
               {pctChange >= 0 ? "↑" : "↓"}{Math.abs(pctChange)}% vs last month

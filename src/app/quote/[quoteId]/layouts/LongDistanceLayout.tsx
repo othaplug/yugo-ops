@@ -13,7 +13,7 @@ import {
 
 const DEFAULT_INCLUDES = [
   "Full packing & wrapping service",
-  "Climate-controlled 26-ft truck",
+  "Climate-controlled dedicated truck",
   "Dedicated 3-person moving crew",
   "Furniture disassembly & reassembly",
   "Floor & wall protection",

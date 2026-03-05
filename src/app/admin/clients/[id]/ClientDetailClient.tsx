@@ -206,60 +206,67 @@ export default function ClientDetailClient({
       {!isClient && isAdmin && <PortalAccessSection orgId={client.id} orgName={client.name || ""} />}
 
       {/* Overview + since */}
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        {partnerSince && (
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{personaLabel} since</div>
-            <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
-              {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-              {partnerDuration && (
-                <span className="text-[11px] font-normal text-[var(--tx3)] ml-2">({partnerDuration})</span>
-              )}
+      <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Overview</div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {partnerSince && (
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
+              <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
+                {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                {partnerDuration && (
+                  <span className="text-[11px] font-normal text-[var(--tx3)] ml-2">({partnerDuration})</span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{isClient ? "Type" : "Partner type"}</div>
-          <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "—")}</div>
-          {client.address && (
-            <>
-              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mt-2 mb-1">Address</div>
-              <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
-            </>
           )}
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
+            <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "—")}</div>
+            {client.address && (
+              <>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
+                <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* High-level metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{isClient ? "Moves" : "Projects"}</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">AVG DEL</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "—"}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Total paid</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 hover:border-[var(--gold)]/50 transition-colors">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
-            {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
+      <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
           </div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 col-span-2 sm:col-span-1">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Invoices</div>
-          <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+            <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+              {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
+            </div>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
+          </div>
         </div>
       </div>
 
       {/* Recent moves (B2C) or Recent projects (partners) */}
-      <h3 className="text-[13px] font-bold mb-2">{isClient ? "Recent moves" : "Recent projects"}</h3>
-      <div className="divide-y divide-[var(--brd)]/50 -mx-2 mb-4">
-        {isClient ? (
+      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
+        <div className="divide-y divide-[var(--brd)]/30 -mx-2">
+          {isClient ? (
           moves.length === 0 ? (
             <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
           ) : (
@@ -293,18 +300,19 @@ export default function ClientDetailClient({
             )}
           </>
         )}
+        </div>
       </div>
 
       {/* Change requests (client-submitted) */}
       {changeRequests.length > 0 && (
-        <>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[13px] font-bold">Change requests</h3>
+        <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Change requests</h3>
             <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
               View all
             </Link>
           </div>
-          <div className="flex flex-col gap-1 mb-4">
+          <div className="divide-y divide-[var(--brd)]/30">
             {changeRequests.slice(0, 5).map((cr) => {
               const moveData = Array.isArray(cr.moves) ? cr.moves[0] : cr.moves;
               const moveCode = moveData?.move_code ? formatJobId(moveData.move_code, "move") : "—";
@@ -312,7 +320,7 @@ export default function ClientDetailClient({
                 <Link
                   key={cr.id}
                   href={getMoveDetailPath({ move_code: moveData?.move_code, id: cr.move_id })}
-                  className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
+                  className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] font-semibold text-[var(--tx)]">{cr.type}</div>
@@ -328,37 +336,39 @@ export default function ClientDetailClient({
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
       {/* Invoices - click opens detail popup */}
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[13px] font-bold">Invoices</h3>
-        {outstandingTotal > 0 && (
-          <div className="text-[11px] font-semibold text-[var(--org)]">
-            Outstanding: {formatCompactCurrency(outstandingTotal)}
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col gap-1">
-        {allInvoices.map((inv) => (
-          <button
-            key={inv.id}
-            type="button"
-            onClick={() => setSummaryInvoice(inv)}
-            className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg hover:border-[var(--gold)] transition-all text-left w-full"
-          >
-            <div className="flex-1">
-              <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
-              <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
+      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Invoices</h3>
+          {outstandingTotal > 0 && (
+            <div className="text-[11px] font-semibold text-[var(--org)]">
+              Outstanding: {formatCompactCurrency(outstandingTotal)}
             </div>
-            <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}</div>
-            <Badge status={inv.status} />
-          </button>
-        ))}
-        {allInvoices.length === 0 && (
-          <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No invoices yet</div>
-        )}
+          )}
+        </div>
+        <div className="divide-y divide-[var(--brd)]/30">
+          {allInvoices.map((inv) => (
+            <button
+              key={inv.id}
+              type="button"
+              onClick={() => setSummaryInvoice(inv)}
+              className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
+            >
+              <div className="flex-1">
+                <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
+                <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
+              </div>
+              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
+              <Badge status={inv.status} />
+            </button>
+          ))}
+          {allInvoices.length === 0 && (
+            <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No invoices yet</div>
+          )}
+        </div>
       </div>
 
       <DeliverySummaryModal open={!!summaryDelivery} onClose={() => setSummaryDelivery(null)} delivery={summaryDelivery} />

@@ -29,6 +29,14 @@ interface DashboardData {
   isCrewLead?: boolean;
 }
 
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  in_progress: { label: "In Progress", color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+  completed: { label: "Completed", color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
+  delivered: { label: "Delivered", color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
+  done: { label: "Done", color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
+  cancelled: { label: "Cancelled", color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
+};
+
 export default function CrewDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +75,10 @@ export default function CrewDashboardPage() {
     return (
       <PageContent>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-[14px] text-[var(--tx3)]">Loading…</p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+            <p className="text-[13px] text-[var(--tx3)]">Loading your jobs...</p>
+          </div>
         </div>
       </PageContent>
     );
@@ -77,6 +88,9 @@ export default function CrewDashboardPage() {
     return (
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--red)]/10 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
           <p className="text-[14px] text-[var(--red)] mb-4">{error || "Unable to load"}</p>
           <Link href="/crew/login" className="text-[13px] text-[var(--gold)] hover:underline">
             Back to login
@@ -98,7 +112,10 @@ export default function CrewDashboardPage() {
     }
     return (
       <PageContent>
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center max-w-[420px] mx-auto">
+        <div className="max-w-[420px] mx-auto pt-8 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+          </div>
           <h2 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
           <p className="text-[13px] text-[var(--tx3)]">The crew lead must complete the pre-trip readiness check before jobs are available.</p>
         </div>
@@ -114,99 +131,193 @@ export default function CrewDashboardPage() {
     .join("")
     .toUpperCase();
 
+  const completedCount = jobs.filter(isCompleted).length;
+  const totalCount = jobs.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
+
   return (
     <PageContent>
-      <section>
-        <div className="flex items-start justify-between gap-4 mb-6">
+      <section className="max-w-[520px] mx-auto">
+        {/* Hero greeting */}
+        <div className="flex items-start justify-between gap-4 mb-2">
           <div>
-            <h1 className="font-hero text-[22px] font-bold text-[var(--tx)]">Hello, {firstName}</h1>
-            <p className="text-[13px] text-[var(--tx3)] mt-0.5">
-              {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })} · {data.crewMember?.teamName || "Team"}
+            <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--gold)] mb-1">
+              {data.crewMember?.teamName || "Team"}
+            </p>
+            <h1 className="font-hero text-[24px] font-bold text-[var(--tx)] leading-tight">{greeting}, {firstName}</h1>
+            <p className="text-[13px] text-[var(--tx3)] mt-1">
+              {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold bg-[var(--gold)]/20 text-[var(--gold)] shrink-0">
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0 shadow-md"
+            style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+          >
             {initials}
           </div>
         </div>
 
-        <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">
-          Today&apos;s Jobs ({jobs.length})
+        {/* Day progress */}
+        {totalCount > 0 && (
+          <div className="pt-6 mt-6 border-t border-[var(--brd)]/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Day Progress</span>
+              <span className="text-[12px] font-bold text-[var(--tx)]">{completedCount}/{totalCount}</span>
+            </div>
+            <div className="h-2 rounded-full bg-[var(--brd)]/50 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: progressPercent === 100
+                    ? "linear-gradient(90deg, #22C55E, #16A34A)"
+                    : "linear-gradient(90deg, #C9A962, #D4B56C)",
+                }}
+              />
+            </div>
+            {progressPercent === 100 && (
+              <p className="text-[11px] text-[#22C55E] font-semibold mt-2">All jobs complete — great work today!</p>
+            )}
+          </div>
+        )}
+
+        {/* Jobs list */}
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 pt-6 mt-6 border-t border-[var(--brd)]/30 mb-4">
+          Today&apos;s Jobs
         </h2>
 
-        <div className="space-y-3">
+        <div className="space-y-0">
           {jobs.length === 0 ? (
-            <div className="rounded-xl border border-[var(--brd)] p-6 text-center text-[13px] text-[var(--tx3)] bg-[var(--card)]">
-              No jobs scheduled for today
+            <div className="pt-8 pb-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <p className="text-[14px] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
+              <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off — check back tomorrow.</p>
             </div>
           ) : (
             jobs.map((job, index) => {
               const completed = isCompleted(job);
+              const inProgress = isInProgress(job);
               const canStart = canStartJob(index);
+              const statusInfo = STATUS_MAP[(job.status || "").toLowerCase()];
+
               return (
                 <div
                   key={job.id}
-                  className="rounded-xl border overflow-hidden bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/50 transition-all"
-                  style={{
-                    borderColor: completed ? "rgba(45,159,90,0.35)" : undefined,
-                  }}
+                  className={`pt-6 pb-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 transition-all ${
+                    completed
+                      ? ""
+                      : inProgress
+                        ? ""
+                        : canStart
+                          ? ""
+                          : "opacity-75"
+                  }`}
                 >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
+                  <div>
+                    {/* Header row */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <span
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--gdim)] text-[var(--gold)]"
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
                           style={{
-                            background: completed ? "rgba(45,159,90,0.2)" : "var(--gdim)",
-                            color: completed ? "var(--grn)" : "var(--gold)",
+                            background: completed ? "rgba(34,197,94,0.15)" : inProgress ? "rgba(245,158,11,0.15)" : "var(--gdim)",
+                            color: completed ? "#22C55E" : inProgress ? "#F59E0B" : "var(--gold)",
                           }}
                         >
-                          {index + 1}
+                          {completed ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          ) : (
+                            index + 1
+                          )}
                         </span>
-                        <span className="text-[14px] font-semibold text-[var(--tx)] truncate">
-                          {job.clientName}
-                        </span>
-                        {completed && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40">
-                            Completed
+                        <div className="min-w-0">
+                          <span className="text-[14px] font-semibold text-[var(--tx)] truncate block leading-tight">
+                            {job.clientName}
+                          </span>
+                          <span className="text-[10px] text-[var(--tx3)] font-mono">{job.jobId}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {statusInfo && (
+                          <span
+                            className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                            style={{ background: statusInfo.bg, color: statusInfo.color }}
+                          >
+                            {statusInfo.label}
                           </span>
                         )}
+                        <span className="text-[11px] font-medium text-[var(--tx3)]">
+                          {job.scheduledTime}
+                        </span>
                       </div>
-                      <span className="text-[11px] font-medium text-[var(--tx3)] shrink-0">
-                        {job.scheduledTime}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-[var(--tx2)] space-y-0.5 ml-8">
-                      <div className="truncate"><span className="text-[var(--tx3)]">FROM</span> {job.fromAddress}</div>
-                      <div className="truncate"><span className="text-[var(--tx3)]">TO</span> {job.toAddress}</div>
-                      <div className="text-[10px] text-[var(--tx3)]">{job.jobTypeLabel}</div>
                     </div>
 
-                    {completed ? (
-                      <div className="mt-3 ml-8">
+                    {/* Addresses */}
+                    <div className="ml-[38px] space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/40 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+                        </div>
+                        <span className="text-[12px] text-[var(--tx2)] truncate">{job.fromAddress}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/40 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                        </div>
+                        <span className="text-[12px] text-[var(--tx2)] truncate">{job.toAddress}</span>
+                      </div>
+                    </div>
+
+                    {/* Type + items */}
+                    <div className="ml-[38px] mt-2 flex items-center gap-3 text-[10px] text-[var(--tx3)]">
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--bg)] font-medium">{job.jobTypeLabel}</span>
+                      {job.itemCount != null && job.itemCount > 0 && (
+                        <span>{job.itemCount} items</span>
+                      )}
+                    </div>
+
+                    {/* Action area */}
+                    <div className="mt-3 ml-[38px]">
+                      {completed ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="inline-flex items-center justify-center py-2 px-4 rounded-lg font-semibold text-[12px] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                          className="inline-flex items-center justify-center py-2 px-5 rounded-xl font-semibold text-[12px] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
                         >
-                          VIEW DETAILS
+                          View Summary
                         </Link>
-                      </div>
-                    ) : canStart ? (
-                      <div className="mt-3 ml-8">
-                        <p className="text-[10px] text-[var(--grn)] font-medium mb-1.5">
-                          {isInProgress(job) ? "In progress" : "Next — ready to start"}
-                        </p>
+                      ) : canStart ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="flex items-center justify-center py-2.5 rounded-lg font-semibold text-[12px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] transition-all"
+                          className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[13px] text-[var(--btn-text-on-accent)] transition-all shadow-sm"
+                          style={{
+                            background: inProgress
+                              ? "linear-gradient(135deg, #F59E0B, #D97706)"
+                              : "linear-gradient(135deg, #C9A962, #8B7332)",
+                          }}
                         >
-                          {isInProgress(job) ? "RETURN TO JOB" : "START JOB"}
+                          {inProgress ? (
+                            <>
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                              </span>
+                              Return to Job
+                            </>
+                          ) : (
+                            "Start Job"
+                          )}
                         </Link>
-                      </div>
-                    ) : (
-                      <div className="mt-3 ml-8">
-                        <p className="text-[10px] text-[var(--tx3)]">Complete previous job first</p>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--tx3)]">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          Complete previous job first
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -214,12 +325,25 @@ export default function CrewDashboardPage() {
           )}
         </div>
 
-        <Link
-          href="/crew/end-of-day"
-          className="mt-4 flex items-center justify-center py-3.5 rounded-xl font-semibold text-[13px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] transition-colors"
-        >
-          End Day
-        </Link>
+        {/* End day button */}
+        {jobs.length > 0 && completedCount === totalCount && (
+          <Link
+            href="/crew/end-of-day"
+            className="mt-6 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[14px] text-white transition-all shadow-lg"
+            style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Complete Your Day
+          </Link>
+        )}
+        {jobs.length > 0 && completedCount < totalCount && (
+          <Link
+            href="/crew/end-of-day"
+            className="mt-6 flex items-center justify-center py-3 rounded-xl font-medium text-[12px] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-colors"
+          >
+            End Day Report
+          </Link>
+        )}
       </section>
     </PageContent>
   );

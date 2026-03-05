@@ -84,7 +84,23 @@ export async function GET(
       };
       liveStage = ts.status || liveStage;
       lastLocationAt = loc.timestamp || null;
-    } else if (move.crew_id) {
+    }
+
+    // Fallback: check crew_locations table (gets freshest GPS data from watchPosition)
+    if (!crew && move.crew_id) {
+      const { data: cl } = await admin
+        .from("crew_locations")
+        .select("lat, lng, updated_at, crew_name, status")
+        .eq("crew_id", move.crew_id)
+        .maybeSingle();
+      if (cl && cl.lat != null && cl.lng != null) {
+        crew = { current_lat: cl.lat, current_lng: cl.lng, name: cl.crew_name || "Crew" };
+        lastLocationAt = cl.updated_at || null;
+      }
+    }
+
+    // Final fallback: crews table
+    if (!crew && move.crew_id) {
       const { data: c } = await admin
         .from("crews")
         .select("current_lat, current_lng, name")

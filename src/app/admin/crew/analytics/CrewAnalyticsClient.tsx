@@ -247,21 +247,26 @@ export default function CrewAnalyticsClient({
       </div>
 
       {/* Summary strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crew${sorted.length !== 1 ? "s" : ""}`} />
         <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
         <SummaryCell label="Sign-off Rate" value={`${avgSignOff}%`} />
         <SummaryCell label="Top Performer" value={bestCrew?.name || "\u2014"} sub={bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""} accent />
+        </div>
       </div>
 
       {/* Crew list */}
       {sorted.length === 0 && !loading ? (
-        <div className="py-16 text-center">
+        <div className="border-t border-[var(--brd)]/30 pt-6 mt-6 py-16 text-center">
           <p className="text-[13px] text-[var(--tx3)]">No crew activity in this period</p>
           <p className="text-[11px] text-[var(--tx3)] mt-1">Try a different date range.</p>
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Crew Rankings</div>
+          <div>
           {sorted.map((a, rank) => {
             const barW = maxJobs > 0 ? (a.jobsCompleted / maxJobs) * 100 : 0;
             const satColor = a.avgSatisfaction != null
@@ -273,7 +278,7 @@ export default function CrewAnalyticsClient({
                 key={a.id}
                 type="button"
                 onClick={() => setSelectedTeam(a)}
-                className="group w-full text-left flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
+                className={`group w-full text-left flex items-start gap-3 py-3.5 px-4 -mx-1 transition-all hover:bg-[var(--brd)]/5 ${rank > 0 ? "border-t border-[var(--brd)]/30" : ""}`}
               >
                 {/* Rank */}
                 <div className="shrink-0 w-7 h-7 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)] mt-0.5">
@@ -312,6 +317,7 @@ export default function CrewAnalyticsClient({
               </button>
             );
           })}
+          </div>
         </div>
       )}
 
@@ -336,10 +342,10 @@ export default function CrewAnalyticsClient({
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-0">
               {selectedTeam.members.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Team Members</div>
+                <div className="pb-4">
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Team Members</div>
                   <div className="flex flex-wrap gap-2">
                     {selectedTeam.members.map((m) => (
                       <span key={m} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg)] text-[12px] font-medium text-[var(--tx)]">
@@ -353,7 +359,7 @@ export default function CrewAnalyticsClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid grid-cols-2 gap-3 ${selectedTeam.members.length > 0 ? "pt-4 border-t border-[var(--brd)]/30" : ""}`}>
                 <StatCard label="Jobs completed" value={String(selectedTeam.jobsCompleted)} />
                 <StatCard label="Sign-off rate" value={`${selectedTeam.signOffRate}%`} accent={selectedTeam.signOffRate >= 80} />
                 <StatCard label="Avg satisfaction" value={selectedTeam.avgSatisfaction != null ? `${selectedTeam.avgSatisfaction}/5` : "\u2014"} accent={selectedTeam.avgSatisfaction != null && selectedTeam.avgSatisfaction >= 4} />
@@ -361,14 +367,14 @@ export default function CrewAnalyticsClient({
               </div>
 
               {/* Performance bars */}
-              <div className="space-y-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Performance</div>
+              <div className="space-y-2.5 pt-4 border-t border-[var(--brd)]/30">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Performance</div>
                 <MetricBar label="Satisfaction" value={selectedTeam.avgSatisfaction != null ? (selectedTeam.avgSatisfaction / 5) * 100 : 0} color="var(--grn)" />
                 <MetricBar label="Sign-offs" value={selectedTeam.signOffRate} color="var(--gold)" />
                 <MetricBar label="Efficiency" value={selectedTeam.avgDuration > 0 ? Math.min(100, Math.max(0, 100 - (selectedTeam.avgDuration - 30))) : 50} color="#3B82F6" />
               </div>
 
-              <p className="text-[12px] text-[var(--tx3)]">
+              <p className="text-[12px] text-[var(--tx3)] pt-4 border-t border-[var(--brd)]/30">
                 {selectedTeam.signOffs} of {selectedTeam.jobsCompleted} job{selectedTeam.jobsCompleted !== 1 ? "s" : ""} received client sign-off.
               </p>
             </div>
@@ -382,7 +388,7 @@ export default function CrewAnalyticsClient({
 function SummaryCell({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className="py-3">
-      <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">{label}</div>
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
       <div className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
         {value}
         {sub && <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">{sub}</span>}
@@ -393,8 +399,8 @@ function SummaryCell({ label, value, sub, accent }: { label: string; value: stri
 
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="p-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">{label}</div>
+    <div className="py-3">
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
       <div className={`text-[20px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
     </div>
   );
