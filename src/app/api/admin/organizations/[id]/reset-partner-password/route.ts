@@ -62,7 +62,7 @@ export async function POST(
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
 
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-    const loginUrl = `${getEmailBaseUrl()}/login`;
+    const loginUrl = `${getEmailBaseUrl()}/partner/login`;
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
       from: "YUGO <notifications@opsplus.co>",

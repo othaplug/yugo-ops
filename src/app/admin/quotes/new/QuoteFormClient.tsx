@@ -268,6 +268,7 @@ export default function QuoteFormClient({
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [dissolving, setDissolving] = useState(false);
   const [hubspotLoaded, setHubspotLoaded] = useState(false);
   const [hubspotBanner, setHubspotBanner] = useState("");
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -408,6 +409,15 @@ export default function QuoteFormClient({
   const popularAddons = useMemo(() => applicableAddons.filter((a) => a.is_popular), [applicableAddons]);
   const otherAddons = useMemo(() => applicableAddons.filter((a) => !a.is_popular), [applicableAddons]);
   const [showAllAddons, setShowAllAddons] = useState(false);
+
+  // After quote is sent: slow dissolve then navigate to quote detail
+  useEffect(() => {
+    if (!dissolving || !quoteId) return;
+    const t = setTimeout(() => {
+      router.push(`/admin/quotes/${quoteId}`);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [dissolving, quoteId, router]);
 
   // When service type changes, clear add-ons that no longer apply
   useEffect(() => {
@@ -645,6 +655,7 @@ export default function QuoteFormClient({
 
       setSendSuccess(true);
       toast(`Quote ${quoteId} sent to ${email}`, "mail");
+      setDissolving(true);
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to send", "x");
     } finally {
@@ -654,7 +665,10 @@ export default function QuoteFormClient({
 
   // ── Render ────────────────────────────────
   return (
-    <>
+    <div
+      className="transition-opacity duration-700 ease-out"
+      style={{ opacity: dissolving ? 0 : 1 }}
+    >
       <div className="mb-4">
         <BackButton label="Back" />
       </div>
@@ -1556,7 +1570,7 @@ export default function QuoteFormClient({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -51,11 +51,22 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
     e.preventDefault();
     setResetLoading(true);
     setError("");
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
-    });
-    if (resetError) { setError(resetError.message); setResetLoading(false); return; }
-    setMode("sent");
+    try {
+      const res = await fetch("/api/partner/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        setResetLoading(false);
+        return;
+      }
+      setMode("sent");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
     setResetLoading(false);
   };
 
@@ -180,7 +191,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
             <>
               <div style={{ marginBottom: 28 }}>
                 <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1A1714", marginBottom: 6 }}>Reset your password</h1>
-                <p style={{ fontSize: 14, color: "#888" }}>Enter your email and we&apos;ll send you a secure reset link</p>
+                <p style={{ fontSize: 14, color: "#888" }}>Enter your email and we&apos;ll send you a temporary password and login link</p>
               </div>
               {error && (
                 <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20 }}>
@@ -193,7 +204,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
                   <input className="ptr-input" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
                 </div>
                 <button type="submit" className="ptr-btn" disabled={resetLoading}>
-                  {resetLoading ? "Sending..." : "Send Reset Link"}
+                  {resetLoading ? "Sending..." : "Email reset"}
                 </button>
               </form>
               <div style={{ marginTop: 16 }}>
@@ -216,7 +227,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginF
                   </svg>
                 </div>
                 <h2 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#1A1714", marginBottom: 6 }}>Check your email</h2>
-                <p style={{ fontSize: 13, color: "#888" }}>We sent a password reset link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
+                <p style={{ fontSize: 13, color: "#888" }}>If that email is on file, we sent a temporary password and login link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
               </div>
               <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, textAlign: "center" }}>
                 Check your inbox and spam folder

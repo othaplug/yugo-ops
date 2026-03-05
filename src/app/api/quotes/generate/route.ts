@@ -1244,6 +1244,12 @@ export async function POST(req: NextRequest) {
     "26ft": "26ft maximum-capacity truck",
   };
 
+  // Resolve truck line: from allocation when available, else from labour estimate so tier copy matches actual size
+  const labourTruckKey = labour?.truckSize?.replace(/ \+ .*$/i, "")?.toLowerCase() ?? null;
+  const fallbackTruckLine = labourTruckKey && TRUCK_DISPLAY[labourTruckKey]
+    ? TRUCK_DISPLAY[labourTruckKey]
+    : labour?.truckSize ?? "Dedicated moving truck";
+
   if (truckResult.primary && tiers) {
     const truckLine = truckResult.isMultiVehicle && truckResult.secondary
       ? `${TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name} + support van`
@@ -1254,12 +1260,24 @@ export async function POST(req: NextRequest) {
       if (idx >= 0) t.includes[idx] = truckLine;
       else t.includes.unshift(truckLine);
     }
+  } else if (tiers && fallbackTruckLine) {
+    for (const tierName of Object.keys(tiers)) {
+      const t = tiers[tierName];
+      const idx = t.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter"));
+      if (idx >= 0) t.includes[idx] = fallbackTruckLine;
+      else t.includes.unshift(fallbackTruckLine);
+    }
   }
+
   if (truckResult.primary && custom_price) {
     const truckLine = TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name;
     const idx = custom_price.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter") || s.toLowerCase().includes("transport"));
     if (idx >= 0) custom_price.includes[idx] = truckLine;
     else custom_price.includes.unshift(truckLine);
+  } else if (custom_price && fallbackTruckLine) {
+    const idx = custom_price.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter") || s.toLowerCase().includes("transport"));
+    if (idx >= 0) custom_price.includes[idx] = fallbackTruckLine;
+    else custom_price.includes.unshift(fallbackTruckLine);
   }
 
   // ── Valuation upgrades lookup ──
@@ -1355,7 +1373,7 @@ export async function POST(req: NextRequest) {
     est_crew_size: labour?.crewSize ?? null,
     est_hours: labour?.estimatedHours ?? null,
     est_truck_size: labour?.truckSize ?? null,
-    truck_primary: truckResult.primary?.vehicle_type ?? null,
+    truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
     truck_secondary: truckResult.secondary?.vehicle_type ?? null,
   });
 

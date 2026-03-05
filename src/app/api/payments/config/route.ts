@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 /**
  * Returns Square client config (app ID, location ID) for the payment form.
- * Server reads env at runtime so this works even when NEXT_PUBLIC_* aren't
- * inlined on the client (e.g. added after build or wrong prefix in .env).
+ * Uses getSquarePaymentConfig (env then platform_config).
  */
 export async function GET() {
-  const appId = (
-    process.env.NEXT_PUBLIC_SQUARE_APP_ID ??
-    process.env.SQUARE_APP_ID ??
-    ""
-  ).trim();
-  const locationId = (
-    process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ??
-    process.env.SQUARE_LOCATION_ID ??
-    ""
-  ).trim();
+  const { appId, locationId } = await getSquarePaymentConfig();
   const useSandbox =
     process.env.NEXT_PUBLIC_SQUARE_USE_SANDBOX === "true" ||
     process.env.SQUARE_USE_SANDBOX === "true";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { squareClient } from "@/lib/square";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
@@ -106,6 +107,13 @@ export async function POST(req: Request) {
     }
 
     // ── 4. Create Payment ──
+    const { locationId } = await getSquarePaymentConfig();
+    if (!locationId) {
+      return NextResponse.json(
+        { error: "Payment is not configured. Please contact support." },
+        { status: 503 }
+      );
+    }
     const paymentSourceId = squareCardId ?? sourceId;
     let squarePaymentId: string | undefined;
 
@@ -117,7 +125,7 @@ export async function POST(req: Request) {
         referenceId: quoteId,
         note: `Yugo deposit — ${quoteId}`,
         idempotencyKey: `pay-${quoteId}-${Date.now()}`,
-        locationId: process.env.SQUARE_LOCATION_ID!,
+        locationId,
       });
       squarePaymentId = paymentRes.payment?.id;
 

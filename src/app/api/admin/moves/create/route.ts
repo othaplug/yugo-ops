@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
         to_lat: toLat,
         to_lng: toLng,
         amount: estimate,
+        estimate,
         status: "confirmed",
         stage: "quote",
         scheduled_date: (body.scheduled_date as string)?.trim() || null,
