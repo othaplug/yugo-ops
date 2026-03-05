@@ -401,8 +401,15 @@ input[type="time"] {
   z-index: 9999 !important;
   height: 100dvh !important;
   width: 100vw !important;
+  max-width: none !important;
   border-radius: 0 !important;
   border: none !important;
+}
+.map-fullscreen .track-live-map-fill {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 .map-fullscreen-btn {
   position: absolute;
@@ -630,6 +637,16 @@ input[type="time"] {
   0% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0.5); }
   70% { box-shadow: 0 0 0 15px rgba(201, 169, 78, 0); }
   100% { box-shadow: 0 0 0 0 rgba(201, 169, 78, 0); }
+}
+
+/* Elegant crew marker (partner + delivery track): dot glow + expanding ring */
+@keyframes crew-dot-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+@keyframes crew-ring {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
 
 /* Truck marker - Uber-style animated moving vehicle */

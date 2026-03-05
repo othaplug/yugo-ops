@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getFirstStatus } from "@/lib/crew-tracking-status";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
 
 export async function POST(req: NextRequest) {
   const toggles = await getPlatformToggles();
@@ -82,6 +83,30 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Set move/delivery to in_progress and stage so client track page shows live map and progress
+  const table = jobType === "move" ? "moves" : "deliveries";
+  await admin.from(table).update({ status: "in_progress", stage: firstStatus, updated_at: now }).eq("id", entityId);
+
+  // Notify client when crew starts job (en route to pickup) — email at start, not at arrive at pickup
+  let teamName = "";
+  let jobName = "";
+  let fromAddress: string | undefined;
+  let toAddress: string | undefined;
+  const { data: crew } = await admin.from("crews").select("name").eq("id", payload.teamId).single();
+  teamName = crew?.name || "Crew";
+  if (jobType === "move") {
+    const { data: m } = await admin.from("moves").select("client_name, from_address, to_address").eq("id", entityId).single();
+    jobName = m?.client_name || entityId;
+    fromAddress = m?.from_address;
+    toAddress = m?.to_address;
+  } else {
+    const { data: d } = await admin.from("deliveries").select("customer_name, client_name, pickup_address, delivery_address").eq("id", entityId).single();
+    jobName = d ? `${d.customer_name || ""} (${d.client_name || ""})` : entityId;
+    fromAddress = d?.pickup_address;
+    toAddress = d?.delivery_address;
+  }
+  notifyOnCheckpoint(firstStatus as Parameters<typeof notifyOnCheckpoint>[0], entityId, jobType, teamName, jobName, fromAddress, toAddress).catch(() => {});
 
   return NextResponse.json({ sessionId: session.id });
 }

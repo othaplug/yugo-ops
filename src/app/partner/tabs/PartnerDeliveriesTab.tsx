@@ -54,6 +54,7 @@ export default function PartnerDeliveriesTab({
   onShare,
   onDetailClick,
   onEditClick,
+  onScheduleDelivery,
   orgType,
 }: {
   deliveries: Delivery[];
@@ -61,6 +62,7 @@ export default function PartnerDeliveriesTab({
   onShare: (d: Delivery) => void;
   onDetailClick?: (d: Delivery) => void;
   onEditClick?: (d: Delivery) => void;
+  onScheduleDelivery?: () => void;
   orgType: string;
 }) {
   const [search, setSearch] = useState("");
@@ -114,6 +116,15 @@ export default function PartnerDeliveriesTab({
           <p className="text-[14px] text-[#888]">
             {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : "No deliveries found."}
           </p>
+          {label === "today" && onScheduleDelivery && (
+            <button
+              type="button"
+              onClick={onScheduleDelivery}
+              className="mt-4 px-4 py-2 rounded-lg text-[13px] font-medium border border-[#C9A962]/50 text-[#B8962E] hover:bg-[#C9A962]/8 transition-colors"
+            >
+              Schedule delivery
+            </button>
+          )}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">

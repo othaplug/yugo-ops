@@ -21,12 +21,14 @@ export async function GET(req: NextRequest) {
     { data: crewMembers },
     { data: deliveries },
     { data: moves },
+    { data: locations },
   ] = await Promise.all([
     admin.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
     admin.from("tracking_sessions").select("id, team_id, job_id, job_type, status, last_location, updated_at").eq("is_active", true),
     admin.from("crew_members").select("id, name, team_id").eq("is_active", true),
     admin.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("scheduled_date"),
     admin.from("moves").select("id, move_code, crew_id, stage"),
+    admin.from("crew_locations").select("crew_id, lat, lng, status, updated_at, current_move_id, current_client_name, current_from_address, current_to_address"),
   ]);
 
   type SessionRow = NonNullable<typeof sessions>[number];
@@ -65,14 +67,28 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const locationByCrew = new Map<string, { lat: number; lng: number; status?: string; updated_at?: string }>();
+  for (const loc of locations || []) {
+    if (loc.crew_id && loc.lat != null && loc.lng != null) {
+      locationByCrew.set(loc.crew_id, {
+        lat: Number(loc.lat),
+        lng: Number(loc.lng),
+        status: loc.status ?? undefined,
+        updated_at: loc.updated_at ?? undefined,
+      });
+    }
+  }
+
   const crewsOut = (crews || []).map((c) => {
     const session = sessionByTeam.get(c.id);
     const sessionLoc = session?.last_location as { lat?: number; lng?: number } | null;
     const hasSessionPos = sessionLoc?.lat != null && sessionLoc?.lng != null;
     const hasCrewPos = c.current_lat != null && c.current_lng != null;
-    // Full-time tracking: show crew on map whenever we have a position — from active session (preferred) or from crew row (updated by location API at all times).
-    const lat = hasSessionPos ? sessionLoc!.lat! : (hasCrewPos ? c.current_lat! : null);
-    const lng = hasSessionPos ? sessionLoc!.lng! : (hasCrewPos ? c.current_lng! : null);
+    const locRow = locationByCrew.get(c.id);
+    const hasLocPos = locRow?.lat != null && locRow?.lng != null;
+    // Full-time tracking: show crew on map whenever we have a position — session (preferred) > crew row > crew_locations.
+    const lat = hasSessionPos ? sessionLoc!.lat! : (hasCrewPos ? c.current_lat! : (hasLocPos ? locRow!.lat : null));
+    const lng = hasSessionPos ? sessionLoc!.lng! : (hasCrewPos ? c.current_lng! : (hasLocPos ? locRow!.lng : null));
 
     const pendingDeliveries = (deliveryByCrew.get(c.id) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
     const pendingMoves = (moveByCrew.get(c.id) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));

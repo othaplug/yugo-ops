@@ -29,12 +29,16 @@ const dropoffIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
+/** Elegant animated crew marker: dot + expanding ring (no truck icon). */
 function crewIcon() {
   return L.divIcon({
-    className: "crew-marker",
-    html: `<div style="width:18px;height:18px;background:${GOLD};border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 0 rgba(201,169,78,.4);animation:leaflet-crew-pulse 2s infinite"></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    className: "crew-marker crew-marker-elegant",
+    html: `<div class="crew-marker-inner" style="position:relative;width:20px;height:20px">
+      <span style="position:absolute;inset:0;border-radius:50%;background:${GOLD};box-shadow:0 2px 8px rgba(0,0,0,.25);animation:crew-dot-glow 2s ease-in-out infinite"></span>
+      <span style="position:absolute;inset:-4px;border:2px solid ${GOLD};border-radius:50%;opacity:0.4;animation:crew-ring 2s ease-out infinite"></span>
+    </div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   });
 }
 

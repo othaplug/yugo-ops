@@ -52,8 +52,47 @@ export async function GET(
     }
   }
 
+  const crew_lat = crew?.current_lat ?? null;
+  const crew_lng = crew?.current_lng ?? null;
+
+  let pickup: { lat: number; lng: number } | null = null;
+  let dropoff: { lat: number; lng: number } | null = null;
+  const { data: addr } = await admin
+    .from("deliveries")
+    .select("pickup_address, delivery_address")
+    .eq("id", delivery.id)
+    .single();
+  if (addr?.pickup_address || addr?.delivery_address) {
+    const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+    if (MAPBOX_TOKEN && addr.pickup_address) {
+      try {
+        const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr.pickup_address)}.json?access_token=${MAPBOX_TOKEN}&limit=1`);
+        const j = await r.json();
+        const c = j?.features?.[0]?.center;
+        if (c) pickup = { lng: c[0], lat: c[1] };
+      } catch {}
+    }
+    if (MAPBOX_TOKEN && addr.delivery_address) {
+      try {
+        const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr.delivery_address)}.json?access_token=${MAPBOX_TOKEN}&limit=1`);
+        const j = await r.json();
+        const c = j?.features?.[0]?.center;
+        if (c) dropoff = { lng: c[0], lat: c[1] };
+      } catch {}
+    }
+  }
+
   return NextResponse.json(
-    { crew, liveStage, hasActiveTracking: !!ts?.is_active },
+    {
+      crew,
+      crew_lat: crew_lat ?? undefined,
+      crew_lng: crew_lng ?? undefined,
+      liveStage,
+      hasActiveTracking: !!ts?.is_active,
+      pickup: pickup ?? undefined,
+      dropoff: dropoff ?? undefined,
+      center: pickup ? { lat: pickup.lat, lng: pickup.lng } : dropoff ? { lat: dropoff.lat, lng: dropoff.lng } : { lat: 43.665, lng: -79.385 },
+    },
     { headers: { "Cache-Control": "no-store, max-age=0" } }
   );
 }

@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
+
+const DeliveryTrackMap = dynamic(
+  () => import("@/app/track/delivery/[id]/DeliveryTrackMap").then((m) => m.default),
+  { ssr: false, loading: () => <div className="h-full min-h-[240px] bg-[#F5F3F0] animate-pulse rounded-xl" /> }
+);
 
 const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
 const STAGE_LABELS: Record<string, string> = {
@@ -63,6 +69,13 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState<"details" | "tracking" | "messages" | "photos">("details");
   const [crewPosition, setCrewPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapData, setMapData] = useState<{
+    center: { lat: number; lng: number };
+    crew: { current_lat: number; current_lng: number; name?: string } | null;
+    pickup: { lat: number; lng: number } | null;
+    dropoff: { lat: number; lng: number } | null;
+    liveStage: string | null;
+  } | null>(null);
   const notesEndRef = useRef<HTMLDivElement>(null);
 
   const isInProgress = ["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase().replace(/-/g, "_"));
@@ -121,6 +134,16 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           const data = await res.json();
           if (data?.crew_lat != null && data?.crew_lng != null) {
             setCrewPosition({ lat: data.crew_lat, lng: data.crew_lng });
+          }
+          if (data?.liveStage != null) setLiveStage(data.liveStage);
+          if (data?.center) {
+            setMapData({
+              center: data.center,
+              crew: data.crew ?? null,
+              pickup: data.pickup ?? null,
+              dropoff: data.dropoff ?? null,
+              liveStage: data.liveStage ?? null,
+            });
           }
         }
       } catch {}
@@ -309,7 +332,17 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 )}
               </div>
 
-              {crewPosition ? (
+              {mapData ? (
+                <div className="rounded-xl overflow-hidden border border-[#E8E4DF] h-[280px] bg-[#1A1A1A]">
+                  <DeliveryTrackMap
+                    center={mapData.center}
+                    crew={mapData.crew}
+                    pickup={mapData.pickup}
+                    dropoff={mapData.dropoff}
+                    liveStage={mapData.liveStage}
+                  />
+                </div>
+              ) : crewPosition ? (
                 <div className="rounded-xl overflow-hidden border border-[#E8E4DF] h-[240px] bg-[#F5F3F0]">
                   <iframe
                     title="Crew location"

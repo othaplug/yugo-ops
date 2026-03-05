@@ -89,10 +89,23 @@ export default function TrackMoveClient({
   const { toast } = useToast();
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
+  const [dashboardInventory, setDashboardInventory] = useState<{ items: { id: string; room?: string; item_name?: string }[]; extraItems: { id: string; description?: string }[] } | null>(null);
 
   useEffect(() => {
     setLiveStage(move.stage || null);
   }, [move.stage]);
+
+  useEffect(() => {
+    if (activeTab !== "dash") return;
+    let cancelled = false;
+    fetch(`/api/track/moves/${move.id}/inventory?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.items) setDashboardInventory({ items: data.items || [], extraItems: data.extraItems || [] });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeTab, move.id, token]);
 
   // Auto-hide "your move status was recently updated" card after 5s when arriving from notify email
   useEffect(() => {
@@ -308,7 +321,11 @@ export default function TrackMoveClient({
     try {
       const res = await fetch(
         `/api/track/moves/${move.id}/payment-link?token=${encodeURIComponent(token)}`,
-        { method: "POST" }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        }
       );
       const data = (await res.json().catch(() => ({}))) as { url?: string; paymentUrl?: string; error?: string; code?: string };
       if (!res.ok) {
@@ -762,6 +779,35 @@ export default function TrackMoveClient({
                 You have additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved change requests and extra items. Pay below.
               </div>
             )}
+
+            {/* Inventory summary on dashboard */}
+            <div className="bg-white border rounded-xl p-5" style={{ borderColor: `${FOREST}20` }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider opacity-80" style={{ color: FOREST }}>Inventory</h3>
+                {(dashboardInventory?.items?.length ?? 0) > 0 || (dashboardInventory?.extraItems?.length ?? 0) > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("inv")}
+                    className="text-[12px] font-semibold hover:opacity-80 transition-opacity"
+                    style={{ color: GOLD }}
+                  >
+                    View all
+                  </button>
+                ) : null}
+              </div>
+              {dashboardInventory === null ? (
+                <p className="text-[12px] opacity-60" style={{ color: FOREST }}>Loading…</p>
+              ) : (dashboardInventory?.items?.length ?? 0) === 0 && (dashboardInventory?.extraItems?.length ?? 0) === 0 ? (
+                <p className="text-[12px] opacity-80" style={{ color: FOREST }}>No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-[13px]" style={{ color: FOREST }}>
+                    {(dashboardInventory?.items?.length ?? 0) + (dashboardInventory?.extraItems?.length ?? 0)} item(s) on file
+                  </p>
+                  <p className="text-[11px] opacity-80" style={{ color: FOREST }}>See the Inventory tab to view or add items.</p>
+                </div>
+              )}
+            </div>
 
             {/* Move Details + Your Crew grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

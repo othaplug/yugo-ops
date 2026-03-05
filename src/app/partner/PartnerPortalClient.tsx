@@ -536,6 +536,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               onShare={(d) => setShareTarget(d)}
               onDetailClick={(d) => setDetailTarget(d)}
               onEditClick={(d) => setEditTarget(d)}
+              onScheduleDelivery={() => setScheduleOpen(true)}
               orgType={orgType}
             />
           )}

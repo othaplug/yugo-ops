@@ -24,7 +24,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     clientMessage: "Your Yugo crew is on the way!",
   },
   arrived_at_pickup: {
-    notifyClient: true,
+    notifyClient: false,
     notifyAdmin: true,
     notifyPartner: false,
     clientMessage: "Your crew has arrived at the pickup location.",
