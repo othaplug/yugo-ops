@@ -3,6 +3,7 @@
 import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatTime, formatDate } from "@/lib/client-timezone";
 import {
   MOVE_STATUS_FLOW,
   DELIVERY_STATUS_FLOW,
@@ -141,7 +142,7 @@ export default function CrewJobPage({
   }, [fetchJob, fetchSession]);
 
   useEffect(() => {
-    const interval = setInterval(fetchSession, 15000);
+    const interval = setInterval(fetchSession, 5000);
     return () => clearInterval(interval);
   }, [fetchSession]);
 
@@ -238,29 +239,32 @@ export default function CrewJobPage({
     }
   };
 
-  const watchIdRef = { current: null as number | null };
-  const lastSentRef = { current: 0 };
-  const SEND_INTERVAL = 15000; // 15s — send location every 10–30s while job is active
+  const watchIdRef = useRef<number | null>(null);
+  const lastSentRef = useRef(0);
+  const ACTIVE_INTERVAL = 5000; // 5s on active job
+  const IDLE_INTERVAL = 30000; // 30s when viewing job but no active session
 
-  const stopGpsTracking = () => {
+  const stopGpsTracking = useCallback(() => {
     if (watchIdRef.current != null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-  };
+  }, []);
 
-  // GPS always on while on job page — with or without active session, so team location stays visible on tracking page
+  // GPS always on while on job page — frequency depends on active session state
   useEffect(() => {
     if (!("geolocation" in navigator)) {
       setGpsStatus("unavailable");
       return;
     }
     setGpsStatus("on");
-    const sessionId = session?.isActive && session?.id ? session.id : undefined;
+    const activeSessionId = session?.isActive && session?.id ? session.id : undefined;
+    const interval = activeSessionId ? ACTIVE_INTERVAL : IDLE_INTERVAL;
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const now = Date.now();
-        if (now - lastSentRef.current < SEND_INTERVAL) return;
+        if (now - lastSentRef.current < interval) return;
         lastSentRef.current = now;
         const body: Record<string, unknown> = {
           lat: pos.coords.latitude,
@@ -270,18 +274,24 @@ export default function CrewJobPage({
           heading: pos.coords.heading,
           timestamp: new Date().toISOString(),
         };
-        if (sessionId) body.sessionId = sessionId;
+        if (activeSessionId) body.sessionId = activeSessionId;
         fetch("/api/tracking/location", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-        }).catch(() => {});
+        })
+          .then(async (res) => {
+            if (!res.ok) return;
+            const data = await res.json().catch(() => null);
+            if (data?.autoAdvanced) fetchSession();
+          })
+          .catch(() => {});
       },
       () => setGpsStatus("unavailable"),
-      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
     );
     return () => stopGpsTracking();
-  }, [session?.id, session?.isActive]);
+  }, [session?.id, session?.isActive, fetchSession, stopGpsTracking]);
 
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
@@ -505,7 +515,7 @@ export default function CrewJobPage({
                     </div>
                     <div className="text-[11px] text-[var(--tx3)] mt-0.5 flex items-center justify-between gap-2">
                       {cp?.timestamp ? (
-                        <span className="tabular-nums">{new Date(cp.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                        <span className="tabular-nums">{formatTime(cp.timestamp, { hour: "numeric", minute: "2-digit" })}</span>
                       ) : (
                         <span>{state === "done" ? "Done" : state === "act" ? "In progress" : "Upcoming"}</span>
                       )}
@@ -563,7 +573,7 @@ export default function CrewJobPage({
               <h3 className="font-hero text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Schedule</h3>
               {job.scheduledDate && (
                 <p className="text-[14px] font-semibold text-[var(--tx)]">
-                  {new Date(job.scheduledDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+                  {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}
               {job.arrivalWindow && <p className="text-[12px] text-[var(--tx3)] mt-1">Window: {job.arrivalWindow}</p>}

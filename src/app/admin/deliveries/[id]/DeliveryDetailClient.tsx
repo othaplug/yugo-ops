@@ -17,6 +17,7 @@ import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
+import { toTitleCase } from "@/lib/format-text";
 
 const PROGRESS_STEPS = ["pending", "confirmed", "in-transit", "delivered"] as const;
 const PROGRESS_LABELS: Record<string, string> = {
@@ -157,22 +158,49 @@ export default function DeliveryDetailClient({
     toast(crewId ? `Assigned to ${crew?.name}` : "Crew unassigned", "check");
   };
 
-  const handleApproveDecline = async (newStatus: "scheduled" | "cancelled") => {
+  const [adjustedPrice, setAdjustedPrice] = useState<string>("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
+
+  const handleApprove = async () => {
     setApproveDeclineLoading(true);
-    const { data, error } = await supabase
-      .from("deliveries")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", delivery.id)
-      .select()
-      .single();
+    try {
+      const body: Record<string, unknown> = {};
+      if (adjustedPrice) body.adjusted_price = parseFloat(adjustedPrice);
+      const res = await fetch(`/api/admin/deliveries/${delivery.id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast(d.error || "Failed to approve", "alertTriangle");
+      } else {
+        router.refresh();
+        toast("Delivery approved and confirmed", "check");
+      }
+    } catch { toast("Failed to approve", "alertTriangle"); }
     setApproveDeclineLoading(false);
-    if (error) {
-      toast(error.message || "Failed to update", "alertTriangle");
-      return;
-    }
-    if (data) setDelivery(data);
-    router.refresh();
-    toast(newStatus === "scheduled" ? "Delivery approved" : "Delivery declined", "check");
+  };
+
+  const handleReject = async () => {
+    setApproveDeclineLoading(true);
+    try {
+      const res = await fetch(`/api/admin/deliveries/${delivery.id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: rejectReason }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast(d.error || "Failed to decline", "alertTriangle");
+      } else {
+        router.refresh();
+        toast("Delivery declined", "check");
+      }
+    } catch { toast("Failed to decline", "alertTriangle"); }
+    setApproveDeclineLoading(false);
+    setShowRejectForm(false);
   };
 
   const items = Array.isArray(delivery.items) ? delivery.items : [];
@@ -187,33 +215,97 @@ export default function DeliveryDetailClient({
 
       {completed && (
         <div className="mt-3 rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
-          This delivery is {delivery.status}. Some fields are locked.
+          This delivery is {toTitleCase(delivery.status)}. Some fields are locked.
         </div>
       )}
 
-      {delivery.status === "pending_approval" && (
-        <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[12px] font-medium text-amber-800 dark:text-amber-200">
-            Partner requested this delivery. Approve to confirm or decline to cancel.
-          </p>
+      {(delivery.status === "pending_approval" || delivery.status === "pending") && delivery.created_by_source === "partner_portal" && (
+        <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleApproveDecline("scheduled")}
-              disabled={approveDeclineLoading}
-              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-            >
-              {approveDeclineLoading ? "…" : "Approve"}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleApproveDecline("cancelled")}
-              disabled={approveDeclineLoading}
-              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-            >
-              Decline
-            </button>
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-200">
+              Partner Delivery Request — Awaiting Approval
+            </p>
           </div>
+
+          {delivery.total_price > 0 && (
+            <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-1.5">
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Rate Card Pricing</div>
+              {delivery.booking_type && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--tx3)]">Type</span>
+                  <span className="font-semibold text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"} {delivery.vehicle_type ? `— ${delivery.vehicle_type.toUpperCase()}` : ""}</span>
+                </div>
+              )}
+              {delivery.base_price > 0 && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--tx3)]">Base</span>
+                  <span className="text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
+                </div>
+              )}
+              {delivery.overage_price > 0 && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--tx3)]">Overages</span>
+                  <span className="text-[var(--tx)]">{formatCurrency(delivery.overage_price)}</span>
+                </div>
+              )}
+              {delivery.services_price > 0 && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--tx3)]">Services</span>
+                  <span className="text-[var(--tx)]">{formatCurrency(delivery.services_price)}</span>
+                </div>
+              )}
+              {delivery.zone_surcharge > 0 && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--tx3)]">Zone Surcharge</span>
+                  <span className="text-[var(--tx)]">{formatCurrency(delivery.zone_surcharge)}</span>
+                </div>
+              )}
+              <div className="border-t border-[var(--brd)] pt-1.5 flex justify-between text-[13px]">
+                <span className="font-bold text-[var(--tx)]">Total</span>
+                <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-semibold text-[var(--tx3)]">Adjust Price (optional)</label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder={delivery.total_price ? String(delivery.total_price) : "Enter adjusted price"}
+              value={adjustedPrice}
+              onChange={(e) => setAdjustedPrice(e.target.value)}
+              className="w-48 text-[13px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            />
+          </div>
+
+          {showRejectForm ? (
+            <div className="space-y-2">
+              <textarea
+                placeholder="Reason for declining…"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={2}
+                className="w-full text-[13px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-y"
+              />
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                  {approveDeclineLoading ? "…" : "Confirm Decline"}
+                </button>
+                <button type="button" onClick={() => setShowRejectForm(false)} className="px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                {approveDeclineLoading ? "…" : "Approve"}
+              </button>
+              <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
+                Decline
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -267,7 +359,7 @@ export default function DeliveryDetailClient({
                 </select>
               ) : (
                 <button type="button" onClick={() => setEditingStatus(true)} className="inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
-                  <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${statusColor}`}>{PROGRESS_LABELS[delivery.status] || delivery.status}</span>
+                  <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${statusColor}`}>{PROGRESS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[var(--tx3)] opacity-50"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
               )}

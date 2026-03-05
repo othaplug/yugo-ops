@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import RealtorsTable from "./RealtorsTable";
 import RealtorsMetrics from "./RealtorsMetrics";
 
 export default async function RealtorsPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const [refRes, orgRes, realtorsRes, movesRes] = await Promise.all([
-    supabase.from("referrals").select("*").order("created_at", { ascending: false }),
-    supabase.from("organizations").select("id, name"),
-    supabase.from("realtors").select("id, agent_name, email, brokerage, created_at").order("agent_name"),
-    supabase.from("moves").select("id, client_name"),
+    db.from("referrals").select("*").order("created_at", { ascending: false }),
+    db.from("organizations").select("id, name"),
+    db.from("realtors").select("id, agent_name, email, brokerage, created_at").order("agent_name"),
+    db.from("moves").select("id, client_name"),
   ]);
   const referrals = refRes.data ?? [];
   const orgs = orgRes.data ?? [];

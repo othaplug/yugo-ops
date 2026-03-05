@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateEODReportPDF } from "@/lib/pdf";
+import { toTitleCase } from "@/lib/format-text";
 
 function formatDateShort(d: string) {
   const [y, m, day] = d.split("-");
@@ -546,7 +547,7 @@ export default function ReportsClient({
                       <ul className="space-y-2">
                         {detailData.incidents.map((inc) => (
                           <li key={inc.id} className="text-[12px] text-[var(--tx2)]">
-                            <span className="font-semibold capitalize">{inc.issue_type?.replace(/_/g, " ")}</span>
+                            <span className="font-semibold capitalize">{toTitleCase(inc.issue_type)}</span>
                             {inc.description && <span className="block text-[11px] text-[var(--tx3)] mt-0.5">{inc.description}</span>}
                           </li>
                         ))}

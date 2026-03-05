@@ -1,10 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString } from "@/lib/business-timezone";
 import AdminPageClient from "./AdminPageClient";
 
 export default async function AdminPage() {
-  const supabase = await createClient();
   const admin = createAdminClient();
   const today = getTodayString();
 
@@ -13,50 +11,111 @@ export default async function AdminPage() {
     { data: moves },
     { data: invoices },
     activityResult,
-    { data: eodReports },
-    { data: crews },
+    { data: quotes },
   ] = await Promise.all([
-    supabase.from("deliveries").select("*").order("scheduled_date", { ascending: true }),
-    supabase.from("moves").select("*"),
-    supabase.from("invoices").select("*"),
+    admin.from("deliveries").select("id, customer_name, client_name, items, time_slot, status, category, scheduled_date, delivery_number, from_address, to_address").order("scheduled_date", { ascending: true }),
+    admin.from("moves").select("id, client_name, from_address, to_address, scheduled_date, status, move_type, service_type, move_code, time_slot").order("scheduled_date", { ascending: true }),
+    admin.from("invoices").select("id, status, amount, updated_at, created_at"),
     (async () => {
       try {
-        const r = await supabase
+        return await admin
           .from("status_events")
           .select("id, entity_type, entity_id, event_type, description, icon, created_at")
           .order("created_at", { ascending: false })
-          .limit(15);
-        return r;
+          .limit(12);
       } catch {
         return { data: [] };
       }
     })(),
-    admin.from("end_of_day_reports").select("team_id, summary, generated_at").eq("report_date", today),
-    admin.from("crews").select("id, name").order("name"),
+    admin.from("quotes").select("id", { count: "exact", head: true }).in("status", ["sent", "viewed"]),
   ]);
 
   const allDeliveries = deliveries || [];
   const allMoves = moves || [];
   const allInvoices = invoices || [];
   const activity = activityResult?.data ?? [];
-  const eodSubmitted = new Set((eodReports || []).map((r: { team_id: string }) => r.team_id));
-  const eodSummary = {
-    submitted: (eodReports || []).map((r: { team_id: string; summary?: Record<string, unknown>; generated_at?: string }) => ({
-      teamId: r.team_id,
-      teamName: (crews || []).find((c: { id: string }) => c.id === r.team_id)?.name || "Team",
-      summary: r.summary,
-      generatedAt: r.generated_at,
-    })),
-    pending: (crews || []).filter((c: { id: string }) => !eodSubmitted.has(c.id)).map((c: { id: string; name?: string }) => ({ teamId: c.id, teamName: c.name ?? "Team" })),
-    totalTeams: (crews || []).length,
-    submittedCount: (eodReports || []).length,
-  };
+  const activeQuotesCount = quotes?.length ?? 0;
 
   const todayDeliveries = allDeliveries.filter((d) => d.scheduled_date === today);
-  const overdueAmount = allInvoices
-    .filter((i) => i.status === "overdue")
-    .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-  const b2cUpcoming = allMoves.filter((m) => m.status === "confirmed" || m.status === "scheduled");
+  const todayMoves = allMoves.filter((m) => m.scheduled_date === today);
+
+  type Job = {
+    id: string;
+    type: "delivery" | "move";
+    name: string;
+    subtitle: string;
+    time: string;
+    status: string;
+    date: string;
+    tag: string;
+    delivery_number?: string | null;
+    move_code?: string | null;
+  };
+
+  const todayJobs: Job[] = [
+    ...todayDeliveries.map((d) => ({
+      id: d.id,
+      type: "delivery" as const,
+      name: d.customer_name || d.client_name || "Delivery",
+      subtitle: d.from_address ? `${d.from_address}` : (d.category || "Delivery"),
+      time: d.time_slot || "TBD",
+      status: (d.status || "pending").toLowerCase(),
+      date: d.scheduled_date || today,
+      tag: d.category || "Delivery",
+      delivery_number: d.delivery_number,
+    })),
+    ...todayMoves.map((m) => ({
+      id: m.id,
+      type: "move" as const,
+      name: m.client_name || "Move",
+      subtitle: m.from_address && m.to_address ? `${m.from_address} → ${m.to_address}` : (m.from_address || ""),
+      time: m.time_slot || "TBD",
+      status: (m.status || "confirmed").toLowerCase(),
+      date: m.scheduled_date || today,
+      tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
+      move_code: m.move_code,
+    })),
+  ].sort((a, b) => {
+    const ta = a.time.replace(/[^0-9:]/g, "");
+    const tb = b.time.replace(/[^0-9:]/g, "");
+    return ta.localeCompare(tb);
+  });
+
+  const upcomingJobs: Job[] = [
+    ...allDeliveries
+      .filter((d) => d.scheduled_date && d.scheduled_date > today && d.status !== "delivered" && d.status !== "cancelled")
+      .slice(0, 10)
+      .map((d) => ({
+        id: d.id,
+        type: "delivery" as const,
+        name: d.customer_name || d.client_name || "Delivery",
+        subtitle: d.category || "Delivery",
+        time: d.time_slot || "",
+        status: (d.status || "pending").toLowerCase(),
+        date: d.scheduled_date || "",
+        tag: d.category || "Delivery",
+        delivery_number: d.delivery_number,
+      })),
+    ...allMoves
+      .filter((m) => m.scheduled_date && m.scheduled_date > today && m.status !== "completed" && m.status !== "cancelled")
+      .slice(0, 10)
+      .map((m) => ({
+        id: m.id,
+        type: "move" as const,
+        name: m.client_name || "Move",
+        subtitle: m.from_address && m.to_address ? `${m.from_address} → ${m.to_address}` : "",
+        time: m.time_slot || "",
+        status: (m.status || "confirmed").toLowerCase(),
+        date: m.scheduled_date || "",
+        tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
+        move_code: m.move_code,
+      })),
+  ]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  const overdueInvoices = allInvoices.filter((i) => i.status === "overdue");
+  const overdueAmount = overdueInvoices.reduce((s, i) => s + Number(i.amount || 0), 0);
 
   const now = new Date();
   const thisYear = now.getFullYear();
@@ -67,10 +126,7 @@ export default async function AdminPage() {
     return ts ? new Date(ts) : new Date(0);
   };
   const currentMonthRevenue = paidInvoices
-    .filter((i) => {
-      const d = getRevenueDate(i);
-      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
-    })
+    .filter((i) => { const d = getRevenueDate(i); return d.getFullYear() === thisYear && d.getMonth() === thisMonth; })
     .reduce((s, i) => s + Number(i.amount || 0), 0);
   const prevMonthRevenue = paidInvoices
     .filter((i) => {
@@ -82,6 +138,7 @@ export default async function AdminPage() {
     .reduce((s, i) => s + Number(i.amount || 0), 0);
   const revenuePctChange =
     prevMonthRevenue > 0 ? Math.round(((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100) : (currentMonthRevenue > 0 ? 100 : 0);
+
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthlyRevenue: { m: string; v: number }[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -89,40 +146,23 @@ export default async function AdminPage() {
     const y = m < 0 ? thisYear - 1 : thisYear;
     const monthIdx = ((m % 12) + 12) % 12;
     const sum = paidInvoices
-      .filter((inv) => {
-        const d = getRevenueDate(inv);
-        return d.getFullYear() === y && d.getMonth() === monthIdx;
-      })
+      .filter((inv) => { const d = getRevenueDate(inv); return d.getFullYear() === y && d.getMonth() === monthIdx; })
       .reduce((s, inv) => s + Number(inv.amount || 0), 0);
     monthlyRevenue.push({ m: monthLabels[monthIdx], v: sum / 1000 });
   }
 
-  const categoryIcons: Record<string, string> = {
-    retail: "sofa",
-    designer: "palette",
-    hospitality: "hotel",
-    gallery: "image",
-  };
-  const categoryBgs: Record<string, string> = {
-    retail: "var(--gdim)",
-    designer: "var(--prdim)",
-    hospitality: "var(--ordim)",
-    gallery: "var(--bldim)",
-  };
-
   return (
     <AdminPageClient
-      todayDeliveries={todayDeliveries}
-      allDeliveries={allDeliveries}
-      b2cUpcoming={b2cUpcoming}
+      todayJobs={todayJobs}
+      upcomingJobs={upcomingJobs}
+      todayJobCount={todayJobs.length}
       overdueAmount={overdueAmount}
+      overdueCount={overdueInvoices.length}
       currentMonthRevenue={currentMonthRevenue}
       revenuePctChange={revenuePctChange}
       monthlyRevenue={monthlyRevenue}
-      categoryBgs={categoryBgs}
-      categoryIcons={categoryIcons}
       activityEvents={activity}
-      eodSummary={eodSummary}
+      activeQuotesCount={activeQuotesCount}
     />
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -35,15 +36,14 @@ export async function GET(req: NextRequest) {
   const { user, error: authError } = await requireAuth();
   if (authError) return authError;
 
-  const { createClient } = await import("@/lib/supabase/server");
-  const supabase = await createClient();
-  const { data: platformUser } = await supabase
+  const db = createAdminClient();
+  const { data: platformUser } = await db
     .from("platform_users")
     .select("id")
     .eq("user_id", user!.id)
     .single();
 
-  const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+  const isSuperAdmin = isSuperAdminEmail(user!.email);
   if (!platformUser && !isSuperAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

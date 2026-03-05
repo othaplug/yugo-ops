@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function POST(req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { orgId, userId, error } = await requirePartner();
   if (error) return error;
 
   try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { data: org } = await admin
       .from("organizations")
-      .select("name, type")
+      .select("name, type, pricing_tier")
       .eq("id", orgId!)
       .single();
 
@@ -24,12 +25,14 @@ export async function POST(req: NextRequest) {
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
-    const deliveryNumber = `PJ${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
+    const deliveryNumber = `DLV-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
     const items = Array.isArray(body.items)
       ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())
       : typeof body.items === "string"
         ? body.items.split("\n").map((i: string) => i.trim()).filter(Boolean)
         : [];
+
+    const rateCardId = await getActiveRateCard(orgId!);
 
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
@@ -48,6 +51,26 @@ export async function POST(req: NextRequest) {
       special_handling: !!body.special_handling,
       status: "pending_approval",
       category: org?.type || "retail",
+      created_by_source: "partner_portal",
+      created_by_user: userId || null,
+      // Pricing fields
+      booking_type: body.booking_type || null,
+      rate_card_id: rateCardId,
+      vehicle_type: body.vehicle_type || null,
+      day_type: body.day_type || null,
+      num_stops: body.num_stops || null,
+      delivery_type: body.delivery_type || null,
+      zone: body.zone || null,
+      base_price: body.base_price || 0,
+      overage_price: body.overage_price || 0,
+      services_price: body.services_price || 0,
+      zone_surcharge: body.zone_surcharge || 0,
+      after_hours_surcharge: body.after_hours_surcharge || 0,
+      total_price: body.total_price || 0,
+      services_selected: body.services_selected || [],
+      end_customer_name: (body.end_customer_name || customerName).trim() || null,
+      end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,
+      end_customer_email: (body.end_customer_email || body.customer_email || "").trim() || null,
     };
 
     const { data: created, error: dbError } = await admin
@@ -58,11 +81,27 @@ export async function POST(req: NextRequest) {
 
     if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
 
+    // If day-rate with stops, insert stop details
+    if (body.booking_type === "day_rate" && Array.isArray(body.stops) && created) {
+      const stopRows = body.stops.map((s: Record<string, unknown>, i: number) => ({
+        delivery_id: created.id,
+        stop_number: i + 1,
+        address: s.address || "",
+        customer_name: s.customer_name || null,
+        customer_phone: s.customer_phone || null,
+        items_description: s.items_description || null,
+        services_selected: s.services_selected || [],
+        special_instructions: s.special_instructions || null,
+        zone: s.zone || null,
+      }));
+      await admin.from("delivery_stops").insert(stopRows);
+    }
+
     return NextResponse.json({ ok: true, delivery: created });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create delivery" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

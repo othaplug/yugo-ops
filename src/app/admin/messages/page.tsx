@@ -1,13 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import MessagesClient from "./MessagesClient";
 import { SAMPLE_MESSAGES } from "./sampleMessages";
 
 export default async function MessagesPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   let all: { id: string; thread_id: string; sender_name: string; sender_type: string; content: string; is_read: boolean; created_at: string }[] = [];
 
   try {
-    const { data: messages } = await supabase
+    const { data: messages } = await db
       .from("messages")
       .select("*")
       .order("created_at", { ascending: true });
@@ -23,9 +23,9 @@ export default async function MessagesPage() {
         is_read,
         created_at,
       }));
-      const { error } = await supabase.from("messages").insert(toInsert);
+      const { error } = await db.from("messages").insert(toInsert);
       if (!error) {
-        const { data: seeded } = await supabase
+        const { data: seeded } = await db
           .from("messages")
           .select("*")
           .order("created_at", { ascending: true });

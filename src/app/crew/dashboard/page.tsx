@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
+import { formatDate } from "@/lib/client-timezone";
 
 interface Job {
   id: string;
@@ -33,23 +34,27 @@ export default function CrewDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchData = useCallback(async (isInitial = false) => {
+    try {
+      const r = await fetch("/api/crew/dashboard");
+      if (r.status === 401) { router.replace("/crew/login"); return; }
+      const d = await r.json();
+      if (d) setData(d);
+      else if (isInitial) setError("Session expired");
+    } catch {
+      if (isInitial) setError("Failed to load jobs");
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
-    fetch("/api/crew/dashboard")
-      .then((r) => {
-        if (r.status === 401) {
-          router.replace("/crew/login");
-          return null;
-        }
-        return r.json();
-      })
-      .then((d) => {
-        if (d) setData(d);
-        else setError("Session expired");
-      })
-      .catch(() => setError("Failed to load jobs"))
-      .finally(() => setLoading(false));
-  }, [router]);
+    fetchData(true);
+    intervalRef.current = setInterval(() => fetchData(false), 15_000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [fetchData]);
 
   const completedStatuses = ["delivered", "completed", "done", "cancelled"];
   const isCompleted = (j: Job) => completedStatuses.includes((j.status || "").toLowerCase());
@@ -116,7 +121,7 @@ export default function CrewDashboardPage() {
           <div>
             <h1 className="font-hero text-[22px] font-bold text-[var(--tx)]">Hello, {firstName}</h1>
             <p className="text-[13px] text-[var(--tx3)] mt-0.5">
-              {data.crewMember?.dateStr || new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })} · {data.crewMember?.teamName || "Team"}
+              {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })} · {data.crewMember?.teamName || "Team"}
             </p>
           </div>
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold bg-[var(--gold)]/20 text-[var(--gold)] shrink-0">
@@ -180,9 +185,9 @@ export default function CrewDashboardPage() {
                       <div className="mt-3 ml-8">
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="text-[11px] text-[var(--tx3)] hover:text-[var(--gold)]"
+                          className="inline-flex items-center justify-center py-2 px-4 rounded-lg font-semibold text-[12px] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
                         >
-                          View details
+                          VIEW DETAILS
                         </Link>
                       </div>
                     ) : canStart ? (

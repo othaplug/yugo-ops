@@ -20,6 +20,7 @@ import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import DistanceLogistics from "./DistanceLogistics";
+import BalancePaymentSection from "./BalancePaymentSection";
 import ModalOverlay from "../../components/ModalOverlay";
 import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
@@ -29,6 +30,7 @@ interface MoveDetailClientProps {
   move: any;
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
+  userRole?: string;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 
@@ -40,7 +42,16 @@ import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 
-export default function MoveDetailClient({ move: initialMove, crews = [], isOffice }: MoveDetailClientProps) {
+const VEHICLE_LABELS: Record<string, string> = {
+  sprinter: "Sprinter Van",
+  "16ft": "16ft Box Truck",
+  "20ft": "20ft Box Truck",
+  "24ft": "24ft Box Truck",
+  "26ft": "26ft Box Truck",
+};
+const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
+
+export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer" }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -49,6 +60,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
@@ -69,7 +81,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       setAssignedMembers(new Set());
     }
   }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
-  const estimate = Number(move.estimate || 0);
+  const estimate = Number(move.estimate ?? move.amount ?? 0);
   const depositPaid = Math.round(estimate * 0.25);
   const balanceDue = estimate - depositPaid;
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
@@ -400,6 +412,67 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </ModalOverlay>
 
+      <ModalOverlay open={vehicleModalOpen} onClose={() => setVehicleModalOpen(false)} title="Assign Vehicle" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Primary Vehicle</label>
+            <select
+              value={move.truck_primary || ""}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                const isOverride = v !== move.truck_primary;
+                const { data } = await supabase.from("moves").update({ truck_primary: v, truck_override: isOverride, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                if (data) setMove(data);
+                router.refresh();
+              }}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            >
+              <option value="">No vehicle assigned</option>
+              {VEHICLE_OPTIONS.map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
+            <select
+              value={move.truck_secondary || ""}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                const { data } = await supabase.from("moves").update({ truck_secondary: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                if (data) setMove(data);
+                router.refresh();
+              }}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            >
+              <option value="">None</option>
+              {VEHICLE_OPTIONS.map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Notes</label>
+            <textarea
+              defaultValue={move.truck_notes || ""}
+              onBlur={async (e) => {
+                const v = e.target.value.trim() || null;
+                if (v !== (move.truck_notes || null)) {
+                  const { data } = await supabase.from("moves").update({ truck_notes: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  if (data) setMove(data);
+                }
+              }}
+              placeholder="e.g. Use truck #3 (newer lift gate)"
+              rows={2}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-none"
+            />
+          </div>
+          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+            Done
+          </button>
+        </div>
+      </ModalOverlay>
+
       {/* Time Intelligence - editable */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
         {!isCompleted && (
@@ -458,6 +531,48 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       </div>
 
+      {/* Vehicle */}
+      <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
+        {!isCompleted && (
+          <button type="button" className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
+            <Pencil className="w-[11px] h-[11px]" />
+          </button>
+        )}
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Vehicle</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
+          {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+        </div>
+      </div>
+
+      {/* Valuation Protection */}
+      {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
+        <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
+          <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">Valuation Protection</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+            <div>
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
+              <div className="text-[11px] font-medium text-[var(--tx)]">
+                {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
+              </div>
+            </div>
+            {(move.valuation_upgrade_cost ?? 0) > 0 && (
+              <div>
+                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
+                <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
+              </div>
+            )}
+            {(move.declaration_total ?? 0) > 0 && (
+              <div>
+                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
+                <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Financial Snapshot */}
       <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Financial Snapshot</h3>
@@ -500,6 +615,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           )}
         </div>
       </div>
+
+      {/* Balance Payment */}
+      <BalancePaymentSection move={move} onUpdate={(m) => { setMove(m); router.refresh(); }} />
+
+      {/* Profitability — Owner Only */}
+      {userRole === "owner" && <MoveProfitCard move={move} />}
 
       {/* Complexity Indicators */}
       <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
@@ -614,6 +735,83 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </div>
           </div>
         </ModalOverlay>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Profitability Breakdown (Owner-Only)
+   ════════════════════════════════════════ */
+function MoveProfitCard({ move }: { move: any }) {
+  const [costs, setCosts] = useState<{
+    labour: number; fuel: number; truck: number; supplies: number;
+    processing: number; totalDirect: number; allocatedOverhead: number;
+    grossProfit: number; netProfit: number; grossMargin: number; netMargin: number;
+  } | null>(null);
+  const [target, setTarget] = useState(40);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const now = new Date();
+        const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        const to = now.toISOString().slice(0, 10);
+        const res = await fetch(`/api/admin/profitability?from=${from}&to=${to}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setTarget(data.summary?.targetMargin ?? 40);
+        const match = (data.rows ?? []).find((r: { id: string }) => r.id === move.id);
+        if (match) {
+          setCosts({
+            labour: match.labour,
+            fuel: match.fuel,
+            truck: match.truck,
+            supplies: match.supplies,
+            processing: match.processing,
+            totalDirect: match.totalDirect,
+            allocatedOverhead: match.allocatedOverhead,
+            grossProfit: match.grossProfit,
+            netProfit: match.netProfit,
+            grossMargin: match.grossMargin,
+            netMargin: match.netMargin,
+          });
+        }
+      } catch { /* silent */ }
+    })();
+  }, [move.id]);
+
+  if (!costs) return null;
+
+  const revenue = move.final_amount ?? move.estimate ?? move.amount ?? 0;
+  const marginColor = costs.grossMargin >= target ? "text-emerald-400" : costs.grossMargin >= target - 5 ? "text-[var(--gold)]" : "text-red-400";
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">Profitability</h3>
+        <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
+      </div>
+      <div className="space-y-1.5 text-[11px]">
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Revenue</span><span className="text-[var(--tx)] font-medium">{formatCurrency(revenue)}</span></div>
+        <div className="border-t border-[var(--brd)]/30 my-1" />
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Labour</span><span className="text-red-400/80">-{formatCurrency(costs.labour)}</span></div>
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Fuel</span><span className="text-red-400/80">-{formatCurrency(costs.fuel)}</span></div>
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Truck</span><span className="text-red-400/80">-{formatCurrency(costs.truck)}</span></div>
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Supplies</span><span className="text-red-400/80">-{formatCurrency(costs.supplies)}</span></div>
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Processing</span><span className="text-red-400/80">-{formatCurrency(costs.processing)}</span></div>
+        <div className="border-t border-[var(--brd)]/30 my-1" />
+        <div className="flex justify-between font-medium"><span className="text-[var(--tx3)]">Direct Cost</span><span className="text-red-400">-{formatCurrency(costs.totalDirect)}</span></div>
+        <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Gross Profit</span><span className={marginColor}>{formatCurrency(costs.grossProfit)} ({costs.grossMargin}%)</span></div>
+        <div className="border-t border-[var(--brd)]/30 my-1" />
+        <div className="flex justify-between"><span className="text-[var(--tx3)]">Overhead Allocation</span><span className="text-[var(--tx3)]">-{formatCurrency(costs.allocatedOverhead)}</span></div>
+        <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Net Profit</span><span className={costs.netMargin >= 0 ? "text-emerald-400" : "text-red-400"}>{formatCurrency(costs.netProfit)} ({costs.netMargin}%)</span></div>
+      </div>
+      {costs.grossMargin < target && (
+        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+          <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          Below Target Margin ({target}%)
+        </div>
       )}
     </div>
   );

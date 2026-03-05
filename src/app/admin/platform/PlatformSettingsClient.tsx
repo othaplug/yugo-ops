@@ -10,11 +10,13 @@ import AddTeamMemberModal from "./AddTeamMemberModal";
 import AddPortalAccessModal from "./AddPortalAccessModal";
 import DeviceSetupCodes from "./DeviceSetupCodes";
 import TruckAssignments from "./TruckAssignments";
+import FleetVehiclesManager from "./FleetVehiclesManager";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
 import PricingControlPanel from "./PricingControlPanel";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
   { id: "pricing", label: "Pricing" },
@@ -23,10 +25,11 @@ const TABS = [
   { id: "app", label: "App Settings" },
   { id: "partners", label: "Partners" },
   { id: "users", label: "Users" },
+  { id: "audit", label: "Audit Log" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
+interface StaffMember { id: string; name: string; role: string; phone?: string; email?: string; is_active: boolean; deactivated_at?: string | null; hourly_rate?: number; specialties?: string[]; hire_date?: string | null; }
 
 function formatLastActive(iso: string): string {
   const d = new Date(iso);
@@ -156,6 +159,165 @@ function ReadinessChecklistSection() {
   );
 }
 
+const ROLE_BADGE: Record<string, string> = {
+  owner: "bg-[var(--gdim)] text-[var(--gold)]",
+  admin: "bg-blue-500/15 text-blue-400",
+  coordinator: "bg-green-500/15 text-green-400",
+};
+const ACTION_BADGE: Record<string, string> = {
+  edit_pricing: "bg-amber-500/15 text-amber-400",
+  access_denied: "bg-red-500/15 text-red-400",
+  login: "bg-green-500/15 text-green-400",
+  send_quote: "bg-blue-500/15 text-blue-400",
+};
+
+const ACTION_OPTIONS = [
+  "login",
+  "edit_pricing",
+  "send_quote",
+  "access_denied",
+  "create_move",
+  "update_move",
+  "create_quote",
+  "update_quote",
+  "invite_user",
+  "update_role",
+];
+
+function formatAuditTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+    ", " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function AuditLogSection() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ action: "", search: "" });
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        setLogs(data ?? []);
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = logs.filter((log) => {
+    if (filters.action && log.action !== filters.action) return false;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      const email = (log.user_email || "").toLowerCase();
+      const resource = (log.resource_id || "").toLowerCase();
+      if (!email.includes(q) && !resource.includes(q)) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="clipboard" className="w-[16px] h-[16px]" /> Audit Log
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform activity and access history</p>
+      </div>
+
+      {/* Filter bar */}
+      <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-wrap items-center gap-3">
+        <div>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Action</label>
+          <select
+            value={filters.action}
+            onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value }))}
+            className="px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+          >
+            <option value="">All</option>
+            {ACTION_OPTIONS.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1 min-w-[160px]">
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Search</label>
+          <input
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Filter by email or resource..."
+            className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]"
+          />
+        </div>
+      </div>
+
+      <div className="px-5 py-4">
+        {loading ? (
+          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading audit log…</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">No entries found</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[var(--brd)]">
+                  {["Time", "User", "Role", "Action", "Resource", "Details"].map((h) => (
+                    <th key={h} className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] pb-2 pr-4 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((log) => {
+                  const roleCls = ROLE_BADGE[log.role] || "bg-[var(--brd)] text-[var(--tx3)]";
+                  const actionCls = ACTION_BADGE[log.action] || "bg-[var(--brd)] text-[var(--tx3)]";
+                  const isExpanded = expandedRow === log.id;
+                  const hasDetails = log.details && Object.keys(log.details).length > 0;
+                  return (
+                    <tr key={log.id} className="border-b border-[var(--brd)] last:border-0">
+                      <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
+                      <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
+                      <td className="py-2.5 pr-4">
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{log.role}</span>
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{log.action}</span>
+                      </td>
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "—"}</td>
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5">
+                        {hasDetails ? (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRow(isExpanded ? null : log.id)}
+                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                          >
+                            {isExpanded ? "Hide" : "View"}
+                          </button>
+                        ) : (
+                          "—"
+                        )}
+                        {isExpanded && hasDetails && (
+                          <pre className="mt-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] whitespace-pre-wrap break-all max-w-[320px] overflow-auto max-h-[160px]">
+                            {JSON.stringify(log.details, null, 2)}
+                          </pre>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface Team {
   id: string;
   label: string;
@@ -187,6 +349,445 @@ interface PlatformSettingsClientProps {
 
 const DEFAULT_TOGGLES: AppToggles = { crewTracking: true, partnerPortal: false, autoInvoicing: true };
 
+function BusinessInfoSection() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/admin/business-config")
+      .then((r) => r.json())
+      .then((d) => { if (d && typeof d === "object" && !d.error) setConfig(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/business-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company_name: config.company_name,
+          company_legal_name: config.company_legal_name,
+          company_phone: config.company_phone,
+          company_email: config.company_email,
+          company_address: config.company_address,
+          company_hst_number: config.company_hst_number,
+          business_hours: config.business_hours,
+          after_hours_contact: config.after_hours_contact,
+        }),
+      });
+      if (!res.ok) { toast("Failed to save", "x"); return; }
+      toast("Business info saved", "check");
+    } catch { toast("Failed to save", "x"); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+
+  const fields = [
+    { key: "company_name", label: "Company Name", placeholder: "YUGO" },
+    { key: "company_legal_name", label: "Legal Name", placeholder: "OHELLO Inc." },
+    { key: "company_phone", label: "Phone", placeholder: "(647) 370-4525" },
+    { key: "company_email", label: "Email", placeholder: "info@helloyugo.com" },
+    { key: "company_address", label: "Address", placeholder: "50 Carroll St, Toronto" },
+    { key: "company_hst_number", label: "HST Number", placeholder: "" },
+    { key: "business_hours", label: "Business Hours", placeholder: "Mon-Sat 7:00 AM - 8:00 PM" },
+    { key: "after_hours_contact", label: "After-Hours Contact", placeholder: "" },
+  ];
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="building" className="w-[16px] h-[16px]" /> Business Information
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Company details used across quotes, invoices, and emails</p>
+      </div>
+      <div className="px-5 py-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {fields.map((f) => (
+            <div key={f.key}>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{f.label}</label>
+              <input
+                type="text"
+                value={config[f.key] || ""}
+                onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+          ))}
+        </div>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+          {saving ? "Saving..." : "Save Business Info"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function QuotingDefaultsSection() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/admin/business-config")
+      .then((r) => r.json())
+      .then((d) => { if (d && typeof d === "object" && !d.error) setConfig(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/business-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quote_expiry_days: config.quote_expiry_days,
+          default_deposit_pct: config.default_deposit_pct,
+          minimum_deposit: config.minimum_deposit,
+          quote_id_prefix: config.quote_id_prefix,
+          auto_followup_enabled: config.auto_followup_enabled,
+          followup_max_attempts: config.followup_max_attempts,
+        }),
+      });
+      if (!res.ok) { toast("Failed to save", "x"); return; }
+      toast("Quoting defaults saved", "check");
+    } catch { toast("Failed to save", "x"); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="fileText" className="w-[16px] h-[16px]" /> Quoting Defaults
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Default settings for quote generation</p>
+      </div>
+      <div className="px-5 py-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
+            <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Default Deposit %</label>
+            <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
+            <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
+            <input type="text" value={config.quote_id_prefix || "YGO-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
+            <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div className="flex items-end">
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
+              <input type="checkbox" checked={config.auto_followup_enabled === "true"} onChange={(e) => setConfig((p) => ({ ...p, auto_followup_enabled: e.target.checked ? "true" : "false" }))} className="accent-[var(--gold)]" />
+              Auto-send follow-up
+            </label>
+          </div>
+        </div>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+          {saving ? "Saving..." : "Save Quoting Defaults"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FeatureTogglesSection() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/admin/business-config")
+      .then((r) => r.json())
+      .then((d) => { if (d && typeof d === "object" && !d.error) setConfig(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggleFeature = async (key: string) => {
+    const current = config[key] === "true";
+    const next = !current;
+    setConfig((prev) => ({ ...prev, [key]: next ? "true" : "false" }));
+    try {
+      const res = await fetch("/api/admin/business-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: next ? "true" : "false" }),
+      });
+      if (!res.ok) { toast("Failed to save", "x"); setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" })); return; }
+    } catch { setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" })); toast("Failed to save", "x"); }
+  };
+
+  const [embedCopied, setEmbedCopied] = useState(false);
+
+  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+
+  const features = [
+    { key: "tipping_enabled", label: "Tipping System", desc: "Allow clients to tip crew after move completion" },
+    { key: "quote_engagement_tracking", label: "Quote Engagement Tracking", desc: "Track client behaviour on the quote page" },
+    { key: "instant_quote_widget", label: "Instant Quote Widget", desc: "Enable public quote calculator on website" },
+    { key: "valuation_upgrades", label: "Valuation Upgrades", desc: "Show protection upgrade options on client quotes" },
+  ];
+
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const widgetEnabled = config["instant_quote_widget"] === "true";
+
+  const embedCode = `<!-- YUGO Instant Quote Widget -->
+<div id="yugo-quote-widget"></div>
+<script>
+(function() {
+  var d = document, s = d.createElement('script');
+  s.src = '${appUrl}/widget/quote.js';
+  s.async = true;
+  s.setAttribute('data-origin', '${appUrl}');
+  d.getElementById('yugo-quote-widget').appendChild(s);
+})();
+</script>
+<!-- End YUGO Widget -->`;
+
+  const iframeCode = `<!-- YUGO Instant Quote (iframe) -->
+<iframe
+  src="${appUrl}/widget/quote"
+  width="100%"
+  height="680"
+  frameborder="0"
+  style="border:none;border-radius:12px;max-width:480px;"
+  title="Get a Quote - YUGO"
+></iframe>`;
+
+  const copyEmbed = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      setEmbedCopied(true);
+      toast("Copied to clipboard", "✓");
+      setTimeout(() => setEmbedCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="toggleRight" className="w-[16px] h-[16px]" /> Feature Toggles
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Enable or disable platform features</p>
+      </div>
+      <div className="px-5 py-5 space-y-0">
+        {features.map((f) => {
+          const isOn = config[f.key] === "true";
+          return (
+            <div key={f.key}>
+              <div className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
+                <div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{f.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{f.desc}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleFeature(f.key)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${isOn ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOn ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+
+              {/* Embed code panel for Instant Quote Widget */}
+              {f.key === "instant_quote_widget" && isOn && (
+                <div className="py-4 px-1 border-b border-[var(--brd)] space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (JavaScript)</div>
+                      <button type="button" onClick={() => copyEmbed(embedCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                        {embedCopied ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[var(--tx3)] mb-2">
+                      Paste this into your website HTML where you want the quote calculator to appear. It loads asynchronously and matches your brand styling.
+                    </p>
+                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
+                      {embedCode}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (iframe)</div>
+                      <button type="button" onClick={() => copyEmbed(iframeCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-[var(--tx3)] mb-2">
+                      Simpler option — embeds the quote form in an iframe. No JavaScript required.
+                    </p>
+                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
+                      {iframeCode}
+                    </pre>
+                  </div>
+
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                    <div className="text-[10px] font-semibold text-amber-400 mb-0.5">Note</div>
+                    <div className="text-[10px] text-[var(--tx3)] leading-relaxed">
+                      The widget page at <span className="font-mono text-[var(--tx2)]">/widget/quote</span> needs to be built for this to work. The embed codes above will render a YUGO-branded quote calculator that submits directly to your quoting system.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EmailTemplatesSection() {
+  const { toast } = useToast();
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/email-templates")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setTemplates(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const SLUG_LABELS: Record<string, string> = {
+    quote_email: "Quote Email",
+    booking_confirmation: "Booking Confirmation",
+    follow_up_reminder: "Follow-Up Reminder",
+    move_day_details: "Move Day Details",
+    completion_review: "Completion + Review",
+    invoice: "Invoice",
+  };
+
+  const handleSave = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/email-templates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editing.id, subject: editSubject, body_html: editBody }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || "Failed", "x"); return; }
+      setTemplates((prev) => prev.map((t) => (t.id === editing.id ? data : t)));
+      setEditing(null);
+      toast("Template saved", "check");
+    } catch { toast("Failed to save", "x"); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+
+  const previewTpl = templates.find((t) => t.template_slug === previewSlug);
+
+  return (
+    <>
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+        <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <Icon name="mail" className="w-[16px] h-[16px]" /> Email Templates
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
+      </div>
+      <div className="px-5 py-5 space-y-2">
+        {templates.length === 0 ? (
+          <p className="text-[12px] text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
+        ) : templates.map((tpl) => (
+          <div key={tpl.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/30 transition-colors">
+            <div>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{SLUG_LABELS[tpl.template_slug] || tpl.template_slug}</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate max-w-[300px]">{tpl.subject}</div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]">Preview</button>
+              <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10">Edit</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Edit Template Modal */}
+    {editing && (
+      <ModalOverlay open onClose={() => setEditing(null)} title={`Edit: ${SLUG_LABELS[editing.template_slug] || editing.template_slug}`} maxWidth="md">
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject Line</label>
+            <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body (HTML)</label>
+            <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] font-mono focus:border-[var(--gold)] outline-none resize-y" />
+          </div>
+          {editing.merge_variables?.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
+              <div className="flex flex-wrap gap-1.5">
+                {editing.merge_variables.map((v: string) => (
+                  <span key={v} className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[var(--gold)] font-mono">{`{{${v}}}`}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Cancel</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">{saving ? "Saving..." : "Save Template"}</button>
+          </div>
+        </div>
+      </ModalOverlay>
+    )}
+
+    {/* Preview Template Modal */}
+    {previewTpl && (
+      <ModalOverlay open onClose={() => setPreviewSlug(null)} title={`Preview: ${SLUG_LABELS[previewTpl.template_slug] || previewTpl.template_slug}`} maxWidth="md">
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
+            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
+            <div className="px-4 py-3 bg-white rounded-lg text-[13px] text-gray-800" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
+          </div>
+          <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
+        </div>
+      </ModalOverlay>
+    )}
+    </>
+  );
+}
+
 export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -217,6 +818,20 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [deletingTeamId, setDeletingTeamId] = useState<string | null>(null);
   const [confirmPartnerPortalOff, setConfirmPartnerPortalOff] = useState(false);
   const [confirmCrewTrackingOff, setConfirmCrewTrackingOff] = useState(false);
+  const [staffRoster, setStaffRoster] = useState<StaffMember[]>([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [showInactiveStaff, setShowInactiveStaff] = useState(false);
+  const [addStaffName, setAddStaffName] = useState("");
+  const [addStaffRole, setAddStaffRole] = useState("mover");
+  const [addStaffSaving, setAddStaffSaving] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editStaffName, setEditStaffName] = useState("");
+  const [editStaffRole, setEditStaffRole] = useState("");
+  const [editStaffPhone, setEditStaffPhone] = useState("");
+  const [editStaffEmail, setEditStaffEmail] = useState("");
+  const [editStaffSaving, setEditStaffSaving] = useState(false);
+  const [confirmDeleteStaff, setConfirmDeleteStaff] = useState<StaffMember | null>(null);
+  const [deleteStaffSaving, setDeleteStaffSaving] = useState(false);
 
   useEffect(() => {
     setTeams(initialTeams);
@@ -226,15 +841,144 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
     if (activeTab !== "crews") return;
     let cancelled = false;
     setCrewPortalLoading(true);
-    fetch("/api/admin/crew-members")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data)) setCrewPortalMembers(data);
-      })
-      .catch(() => { if (!cancelled) setCrewPortalMembers([]); })
-      .finally(() => { if (!cancelled) setCrewPortalLoading(false); });
+    setStaffLoading(true);
+    Promise.all([
+      fetch("/api/admin/crew-members").then((r) => r.json()),
+      fetch("/api/admin/staff-roster").then((r) => r.json()),
+    ]).then(([crewData, staffData]) => {
+      if (cancelled) return;
+      if (Array.isArray(crewData)) setCrewPortalMembers(crewData);
+      if (Array.isArray(staffData)) setStaffRoster(staffData);
+    }).catch(() => {
+      if (!cancelled) { setCrewPortalMembers([]); setStaffRoster([]); }
+    }).finally(() => {
+      if (!cancelled) { setCrewPortalLoading(false); setStaffLoading(false); }
+    });
     return () => { cancelled = true; };
   }, [activeTab]);
+
+  const activeStaffNames = staffRoster.filter((s) => s.is_active).map((s) => s.name);
+  const inactiveStaff = staffRoster.filter((s) => !s.is_active);
+
+  const handleAddStaff = async () => {
+    const name = addStaffName.trim();
+    if (!name) return;
+    setAddStaffSaving(true);
+    try {
+      const res = await fetch("/api/admin/staff-roster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, role: addStaffRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || "Failed to add", "x"); return; }
+      setStaffRoster((prev) => [...prev, data]);
+      setAddStaffName("");
+      setAddStaffRole("mover");
+      toast(`${name} added to staff roster`, "check");
+    } catch { toast("Failed to add", "x"); }
+    finally { setAddStaffSaving(false); }
+  };
+
+  const handleDeactivateStaff = async (staff: StaffMember) => {
+    if (!window.confirm(`Remove ${staff.name} from the active roster? They will be moved to the inactive list and removed from all teams.`)) return;
+    try {
+      const res = await fetch("/api/admin/staff-roster", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: staff.id, is_active: false }),
+      });
+      if (!res.ok) { toast("Failed to deactivate", "x"); return; }
+      setStaffRoster((prev) => prev.map((s) => s.id === staff.id ? { ...s, is_active: false, deactivated_at: new Date().toISOString() } : s));
+      for (let i = 0; i < teams.length; i++) {
+        const norm = (s: string) => s.trim().toLowerCase();
+        if (teams[i].memberIds.some((id) => norm(id) === norm(staff.name))) {
+          const newMembers = teams[i].memberIds.filter((id) => norm(id) !== norm(staff.name));
+          setTeams((prev) => { const n = [...prev]; n[i] = { ...n[i], memberIds: newMembers }; return n; });
+          fetch("/api/crews/update-members", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ crewId: teams[i].id, members: newMembers }) });
+        }
+      }
+      toast(`${staff.name} removed from active roster`, "check");
+    } catch { toast("Failed to deactivate", "x"); }
+  };
+
+  const handleEditStaff = async () => {
+    if (!editingStaff) return;
+    const name = editStaffName.trim();
+    if (!name) { toast("Name is required", "x"); return; }
+    setEditStaffSaving(true);
+    try {
+      const res = await fetch("/api/admin/staff-roster", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingStaff.id,
+          name,
+          role: editStaffRole,
+          phone: editStaffPhone || null,
+          email: editStaffEmail || null,
+          hourly_rate: editingStaff.hourly_rate ?? 25,
+          specialties: editingStaff.specialties ?? [],
+        }),
+      });
+      if (!res.ok) { toast("Failed to update", "x"); return; }
+      const data = await res.json();
+      const oldName = editingStaff.name;
+      setStaffRoster((prev) => prev.map((s) => s.id === editingStaff.id ? data : s));
+      if (oldName !== name) {
+        setTeams((prev) => prev.map((t) => ({
+          ...t,
+          memberIds: t.memberIds.map((id) => id.trim().toLowerCase() === oldName.trim().toLowerCase() ? name : id),
+        })));
+      }
+      toast(`${name} updated`, "check");
+      setEditingStaff(null);
+    } catch { toast("Failed to update", "x"); }
+    finally { setEditStaffSaving(false); }
+  };
+
+  const handlePermanentDeleteStaff = async (staff: StaffMember) => {
+    setDeleteStaffSaving(true);
+    try {
+      const res = await fetch("/api/admin/staff-roster", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: staff.id }),
+      });
+      if (!res.ok) { toast("Failed to delete", "x"); return; }
+      setStaffRoster((prev) => prev.filter((s) => s.id !== staff.id));
+      toast(`${staff.name} permanently removed`, "check");
+      setConfirmDeleteStaff(null);
+    } catch { toast("Failed to delete", "x"); }
+    finally { setDeleteStaffSaving(false); }
+  };
+
+  const handleReactivateStaff = async (staff: StaffMember) => {
+    try {
+      const res = await fetch("/api/admin/staff-roster", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: staff.id, is_active: true }),
+      });
+      if (!res.ok) { toast("Failed to reactivate", "x"); return; }
+      setStaffRoster((prev) => prev.map((s) => s.id === staff.id ? { ...s, is_active: true, deactivated_at: null } : s));
+      toast(`${staff.name} reactivated`, "check");
+    } catch { toast("Failed to reactivate", "x"); }
+  };
+
+  const handleRemoveFromTeam = async (teamIdx: number, memberName: string) => {
+    const team = teams[teamIdx];
+    const norm = (s: string) => s.trim().toLowerCase();
+    const newMembers = team.memberIds.filter((id) => norm(id) !== norm(memberName));
+    setTeams((prev) => { const n = [...prev]; n[teamIdx] = { ...n[teamIdx], memberIds: newMembers }; return n; });
+    const res = await fetch("/api/crews/update-members", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ crewId: team.id, members: newMembers }) });
+    if (!res.ok) {
+      toast("Failed to remove", "x");
+      setTeams((prev) => { const n = [...prev]; n[teamIdx] = { ...n[teamIdx], memberIds: team.memberIds }; return n; });
+    } else {
+      toast(`${memberName} removed from ${team.label}`, "check");
+    }
+  };
 
   const persistToggles = async (next: AppToggles) => {
     setTogglesSaving(true);
@@ -350,7 +1094,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
     router.refresh();
   };
 
-  const visibleTabs = TABS.filter((t) => t.id !== "users" || isSuperAdmin);
+  const visibleTabs = TABS.filter((t) => (t.id !== "users" && t.id !== "audit") || isSuperAdmin);
 
   return (
     <div className="space-y-6">
@@ -374,32 +1118,185 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Pricing Control Panel */}
       {activeTab === "pricing" && <PricingControlPanel />}
 
-      {/* Teams - view & edit members */}
+      {/* Teams tab — reorganized: Staff Roster first, Teams second, Portal Access third */}
       {activeTab === "crews" && (
-      <div id="crews" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-              <Icon name="users" className="w-[16px] h-[16px]" /> Teams
-            </h2>
-            <div className="flex flex-nowrap items-center gap-2">
+      <div id="crews" className="space-y-6">
+
+        {/* ═══ SECTION 1: STAFF ROSTER ═══ */}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
+              <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+                <Icon name="users" className="w-[16px] h-[16px]" /> Staff Roster
+              </h2>
+            </div>
+            <p className="text-[11px] text-[var(--tx3)] ml-7">Everyone who works at Yugo. Add new hires here first, then assign them to teams below.</p>
+          </div>
+          <div className="px-5 py-4 space-y-4">
+            {/* Add new staff */}
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={addStaffName}
+                  onChange={(e) => setAddStaffName(e.target.value)}
+                  placeholder="e.g. Marcus Johnson"
+                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddStaff(); }}
+                />
+              </div>
+              <div className="min-w-[100px]">
+                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Role</label>
+                <select
+                  value={addStaffRole}
+                  onChange={(e) => setAddStaffRole(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] outline-none focus:border-[var(--gold)]/50"
+                >
+                  <option value="mover">Mover</option>
+                  <option value="driver">Driver</option>
+                  <option value="lead">Lead</option>
+                  <option value="specialist">Specialist</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
               <button
-                onClick={() => setAddTeamModalOpen(true)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                type="button"
+                onClick={handleAddStaff}
+                disabled={!addStaffName.trim() || addStaffSaving}
+                className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
-                + Add Team
-              </button>
-              <button
-                onClick={() => setAddTeamMemberOpen(true)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
-              >
-                + Add to roster
+                {addStaffSaving ? "Adding..." : "+ Add Employee"}
               </button>
             </div>
+
+            {/* Active staff list */}
+            {staffLoading ? (
+              <p className="text-[12px] text-[var(--tx3)]">Loading staff roster...</p>
+            ) : staffRoster.filter((s) => s.is_active).length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-[13px] text-[var(--tx3)]">No staff yet. Add your first employee above.</p>
+              </div>
+            ) : (
+              <>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees ({staffRoster.filter((s) => s.is_active).length})</div>
+                <div className="space-y-1.5">
+                  {staffRoster.filter((s) => s.is_active).map((s) => {
+                    const memberOfTeams = teams.filter((t) => t.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <span className="text-[12px] font-semibold text-[var(--tx)]">{s.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold capitalize shrink-0">{s.role}</span>
+                          {s.hourly_rate != null && <span className="text-[9px] text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
+                          {memberOfTeams.length > 0 ? (
+                            <span className="text-[9px] text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
+                          ) : (
+                            <span className="text-[9px] text-[var(--tx3)] italic shrink-0">Not on a team</span>
+                          )}
+                          {s.specialties && s.specialties.length > 0 && (
+                            <span className="flex items-center gap-1 flex-wrap">
+                              {s.specialties.map((sp) => (
+                                <span key={sp} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium capitalize shrink-0">{sp.replace(/_/g, " ")}</span>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingStaff(s);
+                              setEditStaffName(s.name);
+                              setEditStaffRole(s.role);
+                              setEditStaffPhone(s.phone || "");
+                              setEditStaffEmail(s.email || "");
+                            }}
+                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)] transition-all"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeactivateStaff(s)}
+                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400 transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Inactive / former staff */}
+            {inactiveStaff.length > 0 && (
+              <div className="border-t border-[var(--brd)]/50 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInactiveStaff(!showInactiveStaff)}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                >
+                  <svg className={`w-3 h-3 transition-transform ${showInactiveStaff ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+                  Former / Inactive ({inactiveStaff.length})
+                </button>
+                {showInactiveStaff && (
+                  <div className="space-y-1.5 mt-2">
+                    {inactiveStaff.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] opacity-70">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[12px] text-[var(--tx3)] line-through">{s.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 font-semibold">Inactive</span>
+                          {s.deactivated_at && (
+                            <span className="text-[9px] text-[var(--tx3)]">since {new Date(s.deactivated_at).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button type="button" onClick={() => handleReactivateStaff(s)} className="px-2 py-1 rounded text-[10px] font-semibold text-[var(--gold)] hover:bg-[var(--gdim)] transition-all">Rehire</button>
+                          <button type="button" onClick={() => setConfirmDeleteStaff(s)} className="px-2 py-1 rounded text-[10px] font-semibold text-red-400 hover:bg-red-500/10 transition-all">Delete forever</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <p className="text-[11px] text-[var(--tx3)] mt-2">Click a team to edit roster, set lead, or delete. Add names to the team roster; add portal access so they can log in on the tablet.</p>
         </div>
-        <div className="px-5 py-5 space-y-3">
+
+        {/* ═══ SECTION 2: TEAMS ═══ */}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
+                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)]">Teams</h2>
+              </div>
+              <div className="flex flex-nowrap items-center gap-2 sm:ml-auto">
+                <button
+                  onClick={() => setAddTeamModalOpen(true)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                >
+                  + Create Team
+                </button>
+                <button
+                  onClick={() => setAddTeamMemberOpen(true)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                >
+                  + Assign to Team
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-[var(--tx3)] mt-2 ml-7">Group staff into moving crews. Click a team to add/remove members, set leads, or delete.</p>
+          </div>
+          <div className="px-5 py-5 space-y-3">
+            {teams.length === 0 ? (
+              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
+            ) : null}
           {teams.map((team, i) => (
             <div key={team.id} className="border border-[var(--brd)] rounded-lg overflow-hidden">
               <div
@@ -408,7 +1305,20 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               >
                 <div>
                   <div className="text-[13px] font-semibold text-[var(--tx)]">{team.label}</div>
-                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{team.memberIds.join(", ") || "No members"}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+                    {team.memberIds.length > 0 ? team.memberIds.join(", ") : "No members — click to add"}
+                    {(() => {
+                      const memberStaff = staffRoster.filter((s) => s.is_active && team.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
+                      if (memberStaff.length > 0) {
+                        const rates = memberStaff.filter((s) => s.hourly_rate != null).map((s) => s.hourly_rate!);
+                        if (rates.length > 0) {
+                          const avg = rates.reduce((a, b) => a + b, 0) / rates.length;
+                          return <span className="ml-2 text-[9px] text-[var(--gold)]">Avg ${avg.toFixed(2)}/hr</span>;
+                        }
+                      }
+                      return null;
+                    })()}
+                  </div>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2 shrink-0">
                   <span className={`text-[9px] font-semibold px-2 py-0.5 rounded shrink-0 ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
@@ -456,33 +1366,56 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-4">
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team roster (who’s on this team)</div>
-                    <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-1">
-                      {ALL_CREW.map((m) => {
-                        const norm = (s: string) => String(s).trim().toLowerCase();
-                        const nM = norm(m);
-                        const isChecked = (team.memberIds ?? []).some((id) => {
-                          const nId = norm(id);
-                          return nId === nM || nId.startsWith(nM + " ") || nM.startsWith(nId + " ");
-                        });
-                        return (
-                          <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleMember(i, m)}
-                              className="checkbox-elegant"
-                            />
-                            <span className="text-[12px] text-[var(--tx)]">{m}</span>
-                          </label>
-                        );
-                      })}
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Current Members</div>
+                    {(team.memberIds ?? []).length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {(team.memberIds ?? []).map((member) => (
+                          <span key={member} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)]">
+                            {member}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleRemoveFromTeam(i, member); }}
+                              className="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-red-500/20 text-[var(--tx3)] hover:text-red-400 transition-colors"
+                              title={`Remove ${member} from team`}
+                            >
+                              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M18 6 6 18M6 6l12 12" /></svg>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-[var(--tx3)] mb-3">No members assigned.</p>
+                    )}
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Available Staff (click to add)</div>
+                    <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto p-1">
+                      {activeStaffNames.filter((m) => {
+                        const norm = (s: string) => s.trim().toLowerCase();
+                        return !(team.memberIds ?? []).some((id) => norm(id) === norm(m));
+                      }).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => toggleMember(i, m)}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+                        >
+                          + {m}
+                        </button>
+                      ))}
+                      {activeStaffNames.length === 0 && (
+                        <p className="text-[10px] text-[var(--tx3)]">No staff in roster yet. Add employees in the Staff Roster section above first.</p>
+                      )}
+                      {activeStaffNames.length > 0 && activeStaffNames.filter((m) => {
+                        const norm = (s: string) => s.trim().toLowerCase();
+                        return !(team.memberIds ?? []).some((id) => norm(id) === norm(m));
+                      }).length === 0 && (
+                        <p className="text-[10px] text-[var(--tx3)]">All active staff are assigned to this team.</p>
+                      )}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal access (who can log in on tablet)</div>
                     {crewPortalMembers.filter((m) => m.team_id === team.id && m.is_active).length === 0 ? (
-                      <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add portal access” above.</p>
+                      <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add Portal Access” above.</p>
                     ) : (
                       <ul className="space-y-1.5">
                         {crewPortalMembers
@@ -547,13 +1480,17 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
           ))}
         </div>
+        </div>
 
-        {/* Crew Portal members — login, Reset PIN, Revoke, Set lead */}
-        <div className="mt-6 bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+        {/* ═══ SECTION 3: CREW PORTAL ACCESS ═══ */}
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="font-heading text-[14px] font-bold text-[var(--tx)]">Crew Portal access</h3>
-              <p className="text-[11px] text-[var(--tx3)] mt-0.5">People who can log in on the tablet (each has their own PIN). You can have more than one per team (e.g. lead + backup). If you see two entries with the same name, revoke the one that shouldn’t have access.</p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
+                <h3 className="font-heading text-[16px] font-bold text-[var(--tx)]">Crew Portal Access</h3>
+              </div>
+              <p className="text-[11px] text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
             </div>
             <button
               onClick={() => setAddPortalOpen(true)}
@@ -565,8 +1502,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <div className="px-5 py-4">
             {crewPortalLoading ? (
               <p className="text-[12px] text-[var(--tx3)]">Loading…</p>
-            ) : crewPortalMembers.length === 0 ? (
-              <p className="text-[12px] text-[var(--tx3)]">No portal access yet. Click “+ Add portal access” above to add someone (name, phone, 6-digit PIN, team).</p>
+            ) : crewPortalMembers.filter((m) => m.is_active).length === 0 ? (
+              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No portal access set up yet.</p><p className="text-[11px] text-[var(--tx3)] mt-1">Click &quot;+ Add Portal Access&quot; to give someone a PIN.</p></div>
             ) : (
               <ul className="space-y-2">
                 {crewPortalMembers
@@ -623,7 +1560,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                             }}
                             className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10"
                           >
-                            Revoke access
+                            Revoke
                           </button>
                         </div>
                       </li>
@@ -636,9 +1573,10 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
       )}
 
-      {/* iPad Setup Codes + Truck Assignments */}
+      {/* Devices: Fleet Vehicles, iPad Setup Codes, Truck Assignments */}
       {activeTab === "devices" && (
         <div className="space-y-6">
+          <FleetVehiclesManager />
           <DeviceSetupCodes />
           <TruckAssignments />
         </div>
@@ -716,6 +1654,18 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           })}
         </div>
       </div>
+
+      {/* Business Information */}
+      <BusinessInfoSection />
+
+      {/* Quoting Defaults */}
+      <QuotingDefaultsSection />
+
+      {/* Feature Toggles */}
+      <FeatureTogglesSection />
+
+      {/* Email Templates */}
+      <EmailTemplatesSection />
 
       {/* Readiness Checklist - configurable items for crew pre-trip check */}
       <ReadinessChecklistSection />
@@ -824,6 +1774,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
       )}
 
+      {/* Audit Log */}
+      {activeTab === "audit" && <AuditLogSection />}
+
       {/* Add Team Modal - uses GlobalModal via ModalOverlay */}
       <ModalOverlay open={addTeamModalOpen} onClose={() => setAddTeamModalOpen(false)} title="Add Team" maxWidth="md">
         <div className="p-5 space-y-5">
@@ -839,7 +1792,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
             <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
-              {ALL_CREW.map((m) => (
+              {activeStaffNames.map((m) => (
                 <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
                   <input
                     type="checkbox"
@@ -881,6 +1834,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         onClose={() => setAddTeamMemberOpen(false)}
         teams={teams}
         onTeamsChange={setTeams}
+        staffNames={activeStaffNames}
       />
       <AddPortalAccessModal
         open={addPortalOpen}
@@ -962,6 +1916,161 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </button>
           </div>
         </div>
+      </ModalOverlay>
+
+      {/* Edit Staff Modal */}
+      <ModalOverlay
+        open={!!editingStaff}
+        onClose={() => setEditingStaff(null)}
+        title={`Edit ${editingStaff?.name ?? "Staff Member"}`}
+        maxWidth="sm"
+      >
+        {editingStaff && (
+          <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleEditStaff(); }}>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+              <input
+                type="text"
+                value={editStaffName}
+                onChange={(e) => setEditStaffName(e.target.value)}
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+              <select
+                value={editStaffRole}
+                onChange={(e) => setEditStaffRole(e.target.value)}
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              >
+                <option value="mover">Mover</option>
+                <option value="driver">Driver</option>
+                <option value="lead">Lead</option>
+                <option value="specialist">Specialist</option>
+                <option value="coordinator">Coordinator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+              <input
+                type="tel"
+                value={editStaffPhone}
+                onChange={(e) => setEditStaffPhone(e.target.value)}
+                placeholder="Optional"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+              <input
+                type="email"
+                value={editStaffEmail}
+                onChange={(e) => setEditStaffEmail(e.target.value)}
+                placeholder="Optional"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
+              <input
+                type="number"
+                step="0.50"
+                value={editingStaff?.hourly_rate ?? 25}
+                onChange={(e) => {
+                  if (editingStaff) setEditingStaff({ ...editingStaff, hourly_rate: parseFloat(e.target.value) || 0 });
+                }}
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specialties</label>
+              <div className="flex flex-wrap gap-1.5">
+                {["Piano", "Art Handling", "Heavy Lift", "Fragile Items", "Electronics", "Disassembly", "Packing", "Office Moves"].map((sp) => {
+                  const slug = sp.toLowerCase().replace(/\s+/g, "_");
+                  const selected = (editingStaff?.specialties || []).includes(slug);
+                  return (
+                    <button
+                      key={slug}
+                      type="button"
+                      onClick={() => {
+                        if (!editingStaff) return;
+                        const current = editingStaff.specialties || [];
+                        const next = selected ? current.filter((s) => s !== slug) : [...current, slug];
+                        setEditingStaff({ ...editingStaff, specialties: next });
+                      }}
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium transition-all ${
+                        selected
+                          ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]"
+                          : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                      }`}
+                    >
+                      {sp}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingStaff(null)}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!editStaffName.trim() || editStaffSaving}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              >
+                {editStaffSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+            <div className="pt-2 border-t border-[var(--brd)]">
+              <button
+                type="button"
+                onClick={() => { setEditingStaff(null); handleDeactivateStaff(editingStaff); }}
+                className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+              >
+                Remove from Active Roster
+              </button>
+            </div>
+          </form>
+        )}
+      </ModalOverlay>
+
+      {/* Confirm Permanent Delete */}
+      <ModalOverlay
+        open={!!confirmDeleteStaff}
+        onClose={() => setConfirmDeleteStaff(null)}
+        title="Permanently Delete Staff Member?"
+        maxWidth="sm"
+      >
+        {confirmDeleteStaff && (
+          <div className="p-5 space-y-4">
+            <p className="text-[13px] text-[var(--tx2)]">
+              This will permanently remove <strong>{confirmDeleteStaff.name}</strong> from the system. This cannot be undone. All historical data will remain, but they will no longer appear in any roster or reports.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteStaff(null)}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteStaffSaving}
+                onClick={() => handlePermanentDeleteStaff(confirmDeleteStaff)}
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+              >
+                {deleteStaffSaving ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        )}
       </ModalOverlay>
 
       <ModalOverlay

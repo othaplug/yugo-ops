@@ -1,22 +1,22 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
 import GalleryClient from "./GalleryClient";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 
 export default async function GalleryPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const [
     { data: orgs },
     { data: projects },
     { data: invoices },
     { data: deliveries },
   ] = await Promise.all([
-    supabase.from("organizations").select("id, name, contact_name, email, created_at").eq("type", "gallery").order("name"),
-    supabase.from("gallery_projects").select("id, created_at"),
-    supabase.from("invoices").select("client_name, amount, status, created_at"),
-    supabase.from("deliveries").select("*").eq("category", "gallery").order("scheduled_date", { ascending: false }),
+    db.from("organizations").select("id, name, contact_name, email, created_at").eq("type", "gallery").order("name"),
+    db.from("gallery_projects").select("id, created_at"),
+    db.from("invoices").select("client_name, amount, status, created_at"),
+    db.from("deliveries").select("*").eq("category", "gallery").order("scheduled_date", { ascending: false }),
   ]);
 
   const galleryPartners = orgs || [];

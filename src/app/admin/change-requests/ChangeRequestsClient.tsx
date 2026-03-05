@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
+import { toTitleCase } from "@/lib/format-text";
 
 function formatRelative(iso: string): string {
   const d = new Date(iso);
@@ -130,11 +131,11 @@ export default function ChangeRequestsClient({
                     r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
                   }`}
                 >
-                  {r.status}
+                  {toTitleCase(r.status)}
                 </span>
               )}
             </div>
-            <div className="mt-1 text-[11px] font-medium text-[var(--tx2)]">{r.type}</div>
+            <div className="mt-1 text-[11px] font-medium text-[var(--tx2)]">{toTitleCase(r.type)}</div>
             <p className="mt-2 text-[12px] text-[var(--tx)]">{r.description}</p>
             <div className="mt-2 text-[10px] text-[var(--tx3)]">
               {r.status === "pending" ? formatRelative(r.created_at) : new Date(r.created_at).toLocaleString()}
@@ -194,11 +195,11 @@ export default function ChangeRequestsClient({
                     r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
                   }`}
                 >
-                  {r.status}
+                  {toTitleCase(r.status)}
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-[var(--tx3)] mt-2">{r.type}</div>
+            <div className="text-[10px] text-[var(--tx3)] mt-2">{toTitleCase(r.type)}</div>
             <div className="text-[10px] text-[var(--tx3)] mt-0.5">{formatRelative(r.created_at)}</div>
           </div>
           {r.status === "pending" && (

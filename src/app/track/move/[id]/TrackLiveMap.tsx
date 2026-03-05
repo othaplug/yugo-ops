@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 
 type Center = { lat: number; lng: number };
 type Crew = { current_lat: number; current_lng: number; name?: string } | null;
@@ -29,14 +31,12 @@ const HAS_MAPBOX =
   MAPBOX_TOKEN !== "pk.your-mapbox-token";
 
 const MapboxMap = dynamic(
-  () =>
-    import("./TrackLiveMapMapbox").then((mod) => mod.TrackLiveMapMapbox),
+  () => import("./TrackLiveMapMapbox").then((mod) => mod.TrackLiveMapMapbox),
   { ssr: false, loading: () => <MapLoading /> }
 );
 
 const LeafletMap = dynamic(
-  () =>
-    import("./TrackLiveMapLeaflet").then((mod) => mod.TrackLiveMapLeaflet),
+  () => import("./TrackLiveMapLeaflet").then((mod) => mod.TrackLiveMapLeaflet),
   { ssr: false, loading: () => <MapLoading /> }
 );
 
@@ -51,10 +51,36 @@ function MapLoading() {
 function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
   const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (sec < 60) return "just now";
+  if (sec < 5) return "just now";
+  if (sec < 60) return `${sec} seconds ago`;
   if (sec < 120) return "1 minute ago";
   if (sec < 3600) return `${Math.floor(sec / 60)} minutes ago`;
   return `${Math.floor(sec / 3600)} hours ago`;
+}
+
+/* Status progression stages */
+const PROGRESSION = [
+  { key: "confirmed", label: "Confirmed" },
+  { key: "dispatched", label: "Dispatched" },
+  { key: "en_route", label: "En Route" },
+  { key: "loading", label: "Loading" },
+  { key: "in_transit", label: "In Transit" },
+  { key: "arriving", label: "Arriving" },
+  { key: "completed", label: "Complete" },
+];
+
+function getProgressionIndex(stage: string | null): number {
+  if (!stage) return 0;
+  const map: Record<string, number> = {
+    en_route_to_pickup: 2,
+    arrived_at_pickup: 2,
+    loading: 3,
+    en_route_to_destination: 4,
+    arrived_at_destination: 5,
+    unloading: 5,
+    completed: 6,
+  };
+  return map[stage] ?? 0;
 }
 
 export default function TrackLiveMap({
@@ -66,7 +92,7 @@ export default function TrackLiveMap({
 }: {
   moveId: string;
   token: string;
-  move?: { scheduled_date?: string | null; arrival_window?: string | null };
+  move?: { scheduled_date?: string | null; arrival_window?: string | null; crew_id?: string | null };
   crew?: { name: string; members?: string[] } | null;
   onLiveStageChange?: (stage: string | null) => void;
 }) {
@@ -80,12 +106,31 @@ export default function TrackLiveMap({
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [crewSpeed, setCrewSpeed] = useState<number | null>(null);
 
-  const loadInitial = async () => {
+  // Client geolocation
+  const [clientLat, setClientLat] = useState<number | null>(null);
+  const [clientLng, setClientLng] = useState<number | null>(null);
+
+  const supabase = useMemo(() => createClient(), []);
+
+  // Request client geolocation
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setClientLat(pos.coords.latitude);
+        setClientLng(pos.coords.longitude);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  const loadInitial = useCallback(async () => {
     try {
-      const res = await fetch(
-        `/api/track/moves/${moveId}/crew-status?token=${encodeURIComponent(token)}`
-      );
+      const res = await fetch(`/api/track/moves/${moveId}/crew-status?token=${encodeURIComponent(token)}`);
       const data = await res.json();
       if (data.crew) setCrewLoc(data.crew);
       else setCrewLoc(null);
@@ -93,19 +138,11 @@ export default function TrackLiveMap({
       setLastLocationAt(data.lastLocationAt ?? null);
       setHasActiveTracking(!!data.hasActiveTracking);
       onLiveStageChange?.(data.liveStage ?? null);
-      if (data.center?.lat != null && data.center?.lng != null) {
-        setCenter({ lat: data.center.lat, lng: data.center.lng });
-      }
-      if (data.pickup?.lat != null && data.pickup?.lng != null) {
-        setPickup({ lat: data.pickup.lat, lng: data.pickup.lng });
-      } else {
-        setPickup(null);
-      }
-      if (data.dropoff?.lat != null && data.dropoff?.lng != null) {
-        setDropoff({ lat: data.dropoff.lat, lng: data.dropoff.lng });
-      } else {
-        setDropoff(null);
-      }
+      if (data.center?.lat != null && data.center?.lng != null) setCenter({ lat: data.center.lat, lng: data.center.lng });
+      if (data.pickup?.lat != null && data.pickup?.lng != null) setPickup({ lat: data.pickup.lat, lng: data.pickup.lng });
+      else setPickup(null);
+      if (data.dropoff?.lat != null && data.dropoff?.lng != null) setDropoff({ lat: data.dropoff.lat, lng: data.dropoff.lng });
+      else setDropoff(null);
       setEtaMinutes(data.etaMinutes ?? null);
       return data.hasActiveTracking;
     } catch {
@@ -114,8 +151,59 @@ export default function TrackLiveMap({
     } finally {
       setLoading(false);
     }
-  };
+  }, [moveId, token, onLiveStageChange]);
 
+  // Supabase Realtime for live crew position updates
+  useEffect(() => {
+    if (!move?.crew_id) return;
+
+    const channel = supabase
+      .channel(`client-tracking-${moveId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "crew_locations",
+          filter: `current_move_id=eq.${moveId}`,
+        },
+        (payload) => {
+          const loc = payload.new as {
+            lat: number;
+            lng: number;
+            speed: number | null;
+            heading: number | null;
+            status: string;
+            updated_at: string;
+          };
+          if (loc?.lat != null && loc?.lng != null) {
+            setCrewLoc({ current_lat: Number(loc.lat), current_lng: Number(loc.lng), name: crew?.name || "Crew" });
+            setLastLocationAt(loc.updated_at || new Date().toISOString());
+            if (loc.speed != null) setCrewSpeed(Number(loc.speed));
+
+            // Map crew_locations status back to tracking stage
+            const statusMap: Record<string, string> = {
+              en_route_pickup: "en_route_to_pickup",
+              at_pickup: "arrived_at_pickup",
+              loading: "loading",
+              en_route_delivery: "en_route_to_destination",
+              at_delivery: "arrived_at_destination",
+              unloading: "unloading",
+            };
+            if (loc.status && statusMap[loc.status]) {
+              setLiveStage(statusMap[loc.status]);
+              onLiveStageChange?.(statusMap[loc.status]);
+            }
+            setHasActiveTracking(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, moveId, move?.crew_id, crew?.name, onLiveStageChange]);
+
+  // Initial load + EventSource + polling fallback
   useEffect(() => {
     let cancelled = false;
     let es: EventSource | null = null;
@@ -132,8 +220,9 @@ export default function TrackLiveMap({
             if (loc?.lat != null && loc?.lng != null) {
               setCrewLoc({ current_lat: loc.lat, current_lng: loc.lng, name: "Crew" });
               setLastLocationAt(loc.timestamp || new Date().toISOString());
+              if (loc.speed != null) setCrewSpeed(Number(loc.speed));
             }
-          } catch {}
+          } catch {} // eslint-disable-line no-empty
         });
         es.addEventListener("checkpoint", (e) => {
           try {
@@ -142,7 +231,7 @@ export default function TrackLiveMap({
               setLiveStage(d.status);
               onLiveStageChange?.(d.status);
             }
-          } catch {}
+          } catch {} // eslint-disable-line no-empty
         });
         es.onerror = () => {
           es?.close();
@@ -159,14 +248,14 @@ export default function TrackLiveMap({
       es?.close();
       clearInterval(pollId);
     };
-  }, [moveId, token, onLiveStageChange]);
+  }, [moveId, token, loadInitial, onLiveStageChange]);
 
   const mapCenter = { latitude: center.lat, longitude: center.lng };
   const scheduledStr = move?.scheduled_date
     ? new Date(move.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
     : null;
 
-  // Compute ETA client-side when we have crew position + destination (updates with location stream)
+  // Compute ETA
   const computedEtaMinutes =
     crewLoc && liveStage && ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"].includes(liveStage)
       ? (() => {
@@ -177,11 +266,47 @@ export default function TrackLiveMap({
         })()
       : null;
   const displayEta = etaMinutes ?? computedEtaMinutes;
+
+  // Distance from crew to client
+  const distToClient = crewLoc && clientLat && clientLng
+    ? haversineKm(crewLoc.current_lat, crewLoc.current_lng, clientLat, clientLng)
+    : null;
+
   const crewMembers = crew?.members?.length ? crew.members.join(", ") : crew?.name || "";
   const showPlaceholder = !loading && !hasActiveTracking;
+  const progressionIdx = getProgressionIndex(liveStage);
 
   return (
     <div className="space-y-4">
+      {/* Status progression bar */}
+      {hasActiveTracking && (
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-1">
+          {PROGRESSION.map((step, i) => {
+            const isActive = i === progressionIdx;
+            const isDone = i < progressionIdx;
+            return (
+              <div key={step.key} className="flex items-center gap-1 shrink-0">
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-semibold whitespace-nowrap transition-all ${isDone ? "bg-[#22C55E]/15 text-[#22C55E]" : isActive ? "bg-[#C9A962]/20 text-[#C9A962]" : "bg-[#E7E5E4] text-[#999]"}`}>
+                  {isDone && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                  {isActive && (
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A962] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#C9A962]" />
+                    </span>
+                  )}
+                  {step.label}
+                </div>
+                {i < PROGRESSION.length - 1 && (
+                  <div className={`w-3 h-0.5 rounded-full ${isDone ? "bg-[#22C55E]" : "bg-[#E7E5E4]"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {hasActiveTracking && (
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
@@ -191,28 +316,35 @@ export default function TrackLiveMap({
           <span className="text-[12px] font-semibold text-[#22C55E]">LIVE</span>
         </div>
       )}
+
       {showPlaceholder ? (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
-          <p className="text-[14px] text-[#1A1A1A] mb-2">
-            Your move is scheduled for {scheduledStr || "—"}.
-          </p>
-          <p className="text-[13px] text-[#666] mb-4">
-            Live tracking will activate when your crew begins.
-          </p>
-          {move?.arrival_window && (
-            <p className="text-[12px] text-[#666] mb-1">
-              Crew arrives between: {move.arrival_window}
-            </p>
-          )}
-          {crewMembers && (
-            <p className="text-[12px] text-[#666]">
-              Your crew: {crewMembers}
-            </p>
+          <p className="text-[14px] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
+          <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
+          {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
+          {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
+          {crewMembers && <p className="text-[12px] text-[#666]">Your crew: {crewMembers}</p>}
+          {/* Static map with pickup/delivery preview */}
+          {(pickup || dropoff) && (
+            <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4]">
+              {HAS_MAPBOX && MAPBOX_TOKEN ? (
+                <MapboxMap
+                  mapboxAccessToken={MAPBOX_TOKEN}
+                  center={mapCenter}
+                  crew={null}
+                  pickup={pickup}
+                  dropoff={dropoff}
+                  liveStage={null}
+                />
+              ) : (
+                <LeafletMap center={center} crew={null} pickup={pickup} dropoff={dropoff} liveStage={null} />
+              )}
+            </div>
           )}
         </div>
       ) : !loading && hasActiveTracking ? (
         <>
-          <div className={`track-live-map-container relative rounded-xl overflow-hidden ${isFullscreen ? "map-fullscreen" : "h-[320px]"} bg-[#FAFAF8] border border-[#E7E5E4]`}>
+          <div className={`track-live-map-container relative rounded-xl overflow-hidden ${isFullscreen ? "map-fullscreen" : "h-[50vh] min-h-[320px]"} bg-[#FAFAF8] border border-[#E7E5E4]`}>
             {/* Fullscreen toggle */}
             <button
               type="button"
@@ -227,74 +359,100 @@ export default function TrackLiveMap({
               )}
             </button>
 
-            {/* Recenter button */}
+            {/* Recenter on client */}
             <button
               type="button"
               onClick={() => {
-                if ("geolocation" in navigator) {
+                if (clientLat && clientLng) setCenter({ lat: clientLat, lng: clientLng });
+                else if ("geolocation" in navigator) {
                   navigator.geolocation.getCurrentPosition(
                     (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
                     () => {}
                   );
                 }
               }}
-              className="map-fullscreen-btn bottom-3 left-3"
+              className="map-fullscreen-btn bottom-24 left-3"
               title="My location"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
             </button>
 
-            {/* Live stage card - top-left overlay on map (screenshot style) */}
-            {liveStage && (
-              <div className="absolute top-3 left-3 z-10 rounded-lg border border-[#E7E5E4] bg-white px-4 py-3 shadow-md flex items-center gap-3">
-                <span className="relative flex h-3 w-3 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
-                </span>
-                <div>
-                  <div className="text-[13px] font-bold text-[#1A1A1A]">
-                    {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
-                  </div>
-                  <div className="text-[11px] text-[#666]">
-                    {liveStage === "loading"
-                      ? "Crew is loading your items"
-                      : liveStage === "unloading"
-                        ? "Crew is unloading your items"
-                        : liveStage === "completed"
-                          ? "Your move is complete"
-                          : displayEta != null
-                            ? `Arriving in ~${displayEta} min`
-                            : "Your crew is on the way"}
-                  </div>
-                </div>
-              </div>
-            )}
             {HAS_MAPBOX && MAPBOX_TOKEN ? (
               <MapboxMap
                 mapboxAccessToken={MAPBOX_TOKEN}
                 center={mapCenter}
                 crew={crewLoc}
-                crewName={crewLoc?.name}
+                crewName={crewLoc?.name || crew?.name}
                 pickup={pickup}
                 dropoff={dropoff}
                 liveStage={liveStage}
+                clientLat={clientLat}
+                clientLng={clientLng}
+                speed={crewSpeed}
               />
             ) : (
               <LeafletMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
             )}
+
+            {/* Bottom info card (mobile-friendly bottom sheet style) */}
+            {crewLoc && (
+              <div className="absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-2xl border-t border-[#E7E5E4] shadow-lg px-4 py-4 safe-area-bottom">
+                <div className="w-10 h-1 rounded-full bg-[#E0E0E0] mx-auto mb-3" />
+                <div className="flex items-center gap-3">
+                  {/* Crew avatar */}
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-[14px] font-bold text-white shadow-md shrink-0"
+                    style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                  >
+                    {(crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
+                      {crew?.members && <span className="text-[11px] text-[#666]">· {crew.members.length} movers</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
+                        <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" /></span>
+                        {CREW_STATUS_TO_LABEL[liveStage || ""] || toTitleCase(liveStage || "") || "Live"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#F0F0F0]">
+                  {displayEta != null && (
+                    <div className="text-center flex-1">
+                      <div className="text-[18px] font-bold text-[#C9A962]">~{displayEta}</div>
+                      <div className="text-[9px] text-[#999] uppercase tracking-wider">min</div>
+                    </div>
+                  )}
+                  {distToClient != null && (
+                    <div className="text-center flex-1">
+                      <div className="text-[18px] font-bold text-[#1A1A1A]">{distToClient.toFixed(1)}</div>
+                      <div className="text-[9px] text-[#999] uppercase tracking-wider">km away</div>
+                    </div>
+                  )}
+                  {lastLocationAt && (
+                    <div className="text-center flex-1">
+                      <div className="text-[11px] font-semibold text-[#666]">{formatRelativeTime(lastLocationAt)}</div>
+                      <div className="text-[9px] text-[#999] uppercase tracking-wider">last update</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Call crew button */}
+                <a
+                  href="tel:+14165551234"
+                  className="mt-3 flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  Call Crew
+                </a>
+              </div>
+            )}
           </div>
-          {hasActiveTracking && crewLoc && (
-            <div className="flex gap-3 mt-3">
-              <a href="tel:+14165551234" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-medium text-[#1A1A1A] hover:border-[#C9A962]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                Call Crew
-              </a>
-              <a href="sms:+14165551234" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-medium text-[#1A1A1A] hover:border-[#C9A962]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Text Crew
-              </a>
-            </div>
-          )}
         </>
       ) : loading ? (
         <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-[12px]">

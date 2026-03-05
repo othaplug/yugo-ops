@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
 import { expandItemRow as expandItemRowFromName } from "@/lib/inventory-parse";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
+import { toTitleCase } from "@/lib/format-text";
 
 type InventoryItem = {
   id: string;
@@ -388,7 +389,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                         )}
                         {!pending && (
                           <span className={`ml-2 text-[10px] font-medium ${e.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
-                            {e.status}
+                            {toTitleCase(e.status)}
                           </span>
                         )}
                       </div>

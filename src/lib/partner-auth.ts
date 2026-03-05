@@ -8,7 +8,7 @@ export async function requirePartner() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return { orgId: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return { orgId: null, userId: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
   const { data: partnerUser } = await supabase
@@ -18,8 +18,8 @@ export async function requirePartner() {
     .single();
 
   if (!partnerUser) {
-    return { orgId: null, error: NextResponse.json({ error: "Not a partner" }, { status: 403 }) };
+    return { orgId: null, userId: null, error: NextResponse.json({ error: "Not a partner" }, { status: 403 }) };
   }
 
-  return { orgId: partnerUser.org_id, error: null };
+  return { orgId: partnerUser.org_id, userId: user.id, error: null };
 }

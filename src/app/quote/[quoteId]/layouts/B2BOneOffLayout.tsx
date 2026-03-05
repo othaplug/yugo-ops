@@ -9,6 +9,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Props {
   quote: Quote;
@@ -44,7 +45,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
                   className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                   style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
                 >
-                  {(String(f.item_category)).replace(/_/g, " ")}
+                  {toTitleCase(String(f.item_category))}
                 </span>
               ) : null}
             </div>

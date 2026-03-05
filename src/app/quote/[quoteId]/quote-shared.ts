@@ -58,6 +58,47 @@ export interface Quote {
   created_at: string;
   distance_km: number | null;
   drive_time_min: number | null;
+  truck_primary: string | null;
+  truck_secondary: string | null;
+  est_crew_size: number | null;
+  contact_id: string | null;
+  valuation_tier: string | null;
+  valuation_upgraded: boolean | null;
+  valuation_upgrade_cost: number | null;
+  declaration_total: number | null;
+}
+
+export interface ValuationTier {
+  id: string;
+  tier_slug: string;
+  display_name: string;
+  rate_description: string;
+  rate_per_pound: number | null;
+  max_per_item: number | null;
+  max_per_shipment: number | null;
+  deductible: number;
+  included_in_package: string;
+  damage_process: string;
+  covers: string[];
+  excludes: string[];
+}
+
+export interface ValuationUpgrade {
+  id: string;
+  move_size: string;
+  from_package: string;
+  to_tier: string;
+  price: number;
+  assumed_shipment_value: number;
+}
+
+export interface HighValueDeclaration {
+  id?: string;
+  item_name: string;
+  description?: string;
+  declared_value: number;
+  weight_lbs?: number;
+  fee: number;
 }
 
 /* ─── Constants ──────────────────────────────── */

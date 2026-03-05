@@ -6,6 +6,12 @@ import { requireAuth } from "@/lib/api-auth";
 // Types
 // ═══════════════════════════════════════════════
 
+interface InventoryItem {
+  slug: string;
+  name?: string;
+  quantity: number;
+}
+
 interface QuoteInput {
   service_type: string;
   from_address: string;
@@ -18,6 +24,8 @@ interface QuoteInput {
   selected_addons?: AddonSelection[];
   hubspot_deal_id?: string;
   contact_id?: string;
+  inventory_items?: InventoryItem[];
+  client_box_count?: number;
   // Office
   square_footage?: number;
   workstation_count?: number;
@@ -42,6 +50,10 @@ interface QuoteInput {
   special_equipment?: string[];
   // B2B
   delivery_type?: string;
+  // Client info (used to look up / create a contact)
+  client_name?: string;
+  client_email?: string;
+  client_phone?: string;
 }
 
 interface AddonSelection {
@@ -440,6 +452,170 @@ function residentialIncludes(minCrew: number, estHours: number): {
 }
 
 // ═══════════════════════════════════════════════
+// Inventory volume modifier
+// ═══════════════════════════════════════════════
+
+async function getItemWeight(sb: SupabaseAdmin, slugOrName: string): Promise<number> {
+  const { data } = await sb
+    .from("item_weights")
+    .select("weight_score")
+    .eq("slug", slugOrName)
+    .single();
+  if (data) return Number(data.weight_score);
+
+  const { data: byName } = await sb
+    .from("item_weights")
+    .select("weight_score")
+    .ilike("item_name", `%${slugOrName}%`)
+    .limit(1)
+    .single();
+  if (byName) return Number(byName.weight_score);
+
+  return 1.0;
+}
+
+async function calcInventoryModifier(
+  sb: SupabaseAdmin,
+  moveSize: string,
+  inventoryItems: InventoryItem[],
+  clientBoxCount?: number,
+): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number }> {
+  const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0 };
+  if (!inventoryItems || inventoryItems.length === 0) return noAdj;
+
+  const { data: bm } = await sb
+    .from("volume_benchmarks")
+    .select("*")
+    .eq("move_size", moveSize)
+    .single();
+  if (!bm) return noAdj;
+
+  let itemScore = 0;
+  let totalItems = 0;
+  for (const item of inventoryItems) {
+    const weight = await getItemWeight(sb, item.slug || item.name || "");
+    const qty = item.quantity || 1;
+    itemScore += weight * qty;
+    totalItems += qty;
+  }
+
+  const boxCount = clientBoxCount ?? Number(bm.assumed_boxes);
+  const boxScore = boxCount * 0.3;
+  const inventoryScore = itemScore + boxScore;
+  const benchmarkScore = Number(bm.benchmark_score);
+
+  if (totalItems < Number(bm.min_items_for_adjustment)) {
+    return { modifier: 1.0, inventoryScore, benchmarkScore, totalItems };
+  }
+
+  let modifier = inventoryScore / benchmarkScore;
+  modifier = Math.max(Number(bm.min_modifier), Math.min(Number(bm.max_modifier), modifier));
+  modifier = Math.round(modifier * 100) / 100;
+
+  return { modifier, inventoryScore, benchmarkScore, totalItems };
+}
+
+function estimateLabour(
+  inventoryScore: number,
+  distanceKm: number,
+  fromAccess?: string,
+  toAccess?: string,
+): { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } {
+  let crewSize = 2;
+  if (inventoryScore > 30) crewSize = 3;
+  if (inventoryScore > 70) crewSize = 4;
+  if (inventoryScore > 110) crewSize = 5;
+
+  const hardAccess = ["walk_up_3", "walk_up_4_plus", "walk_up_4plus"];
+  if (fromAccess && hardAccess.includes(fromAccess)) crewSize += 1;
+  if (toAccess && hardAccess.includes(toAccess)) crewSize += 1;
+  crewSize = Math.min(crewSize, 6);
+
+  const loadHours = inventoryScore / 15;
+  const driveHours = distanceKm / 40;
+  const unloadHours = loadHours * 0.8;
+  let totalHours = loadHours + driveHours + unloadHours;
+  totalHours = Math.max(2, Math.round(totalHours * 2) / 2);
+
+  let truckSize = "16ft";
+  if (inventoryScore > 25) truckSize = "20ft";
+  if (inventoryScore > 50) truckSize = "26ft";
+  if (inventoryScore > 90) truckSize = "26ft + trailer or 2 trucks";
+
+  const lo = Math.max(2, totalHours - 0.5);
+  const hi = totalHours + 1;
+
+  return {
+    crewSize,
+    estimatedHours: totalHours,
+    hoursRange: `${lo}–${hi} hours`,
+    truckSize,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// Truck allocation
+// ═══════════════════════════════════════════════
+
+interface TruckAllocation {
+  primary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
+  secondary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
+  isMultiVehicle: boolean;
+  notes: string | null;
+  range: string;
+}
+
+function inventoryRange(modifier: number): string {
+  if (modifier === 1.0) return "no_inventory";
+  if (modifier <= 0.90) return "light";
+  if (modifier <= 1.10) return "standard";
+  return "heavy";
+}
+
+async function allocateTruck(
+  sb: SupabaseAdmin,
+  moveSize: string,
+  invModifier: number,
+): Promise<TruckAllocation> {
+  const range = inventoryRange(invModifier);
+
+  const { data: rule } = await sb
+    .from("truck_allocation_rules")
+    .select("primary_vehicle, secondary_vehicle, notes")
+    .eq("move_size", moveSize)
+    .eq("inventory_range", range)
+    .maybeSingle();
+
+  if (!rule) {
+    return { primary: null, secondary: null, isMultiVehicle: false, notes: null, range };
+  }
+
+  const { data: primary } = await sb
+    .from("fleet_vehicles")
+    .select("vehicle_type, display_name, cargo_cubic_ft")
+    .eq("vehicle_type", rule.primary_vehicle)
+    .single();
+
+  let secondary = null;
+  if (rule.secondary_vehicle) {
+    const { data: sec } = await sb
+      .from("fleet_vehicles")
+      .select("vehicle_type, display_name, cargo_cubic_ft")
+      .eq("vehicle_type", rule.secondary_vehicle)
+      .single();
+    secondary = sec;
+  }
+
+  return {
+    primary: primary ?? null,
+    secondary,
+    isMultiVehicle: !!secondary,
+    notes: rule.notes,
+    range,
+  };
+}
+
+// ═══════════════════════════════════════════════
 // RESIDENTIAL — tiered pricing
 // ═══════════════════════════════════════════════
 
@@ -451,6 +627,7 @@ async function calcResidential(
   neighbourhood: { tier: string | null; multiplier: number },
   dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+  invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
 ) {
   const { data: br } = await sb
     .from("base_rates")
@@ -476,6 +653,7 @@ async function calcResidential(
   const specialtySurcharge = await getSpecialtySurcharge(sb, input.specialty_items ?? []);
 
   let subtotal = baseRate + distanceSurcharge + accessSurcharge + specialtySurcharge;
+  subtotal = Math.round(subtotal * invResult.modifier);
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
 
@@ -546,6 +724,10 @@ async function calcResidential(
       specialty_surcharge: specialtySurcharge,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
+      inventory_modifier: invResult.modifier,
+      inventory_score: invResult.inventoryScore,
+      inventory_benchmark: invResult.benchmarkScore,
+      inventory_items_count: invResult.totalItems,
     },
   };
 }
@@ -983,6 +1165,16 @@ export async function POST(req: NextRequest) {
 
   const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
 
+  // Inventory volume modifier (residential / long distance only)
+  const invResult = (input.service_type === "local_move" || input.service_type === "long_distance")
+    ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count)
+    : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0 };
+
+  // Labour estimate (informational for coordinators)
+  const labour = invResult.inventoryScore > 0
+    ? estimateLabour(invResult.inventoryScore, distInfo?.distance_km ?? 0, input.from_access, input.to_access)
+    : null;
+
   type FactorsObj = Record<string, unknown>;
   let tiers: Record<string, TierResult> | undefined;
   let custom_price: TierResult | undefined;
@@ -990,9 +1182,15 @@ export async function POST(req: NextRequest) {
 
   const svcType = input.service_type;
 
+  // Truck allocation
+  const truckMoveSize = (svcType === "single_item" || svcType === "white_glove")
+    ? svcType
+    : (input.move_size ?? "2br");
+  const truckResult = await allocateTruck(sb, truckMoveSize, invResult.modifier);
+
   switch (svcType) {
     case "local_move": {
-      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
+      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult);
       tiers = res.tiers;
       factors = res.factors;
       break;
@@ -1038,15 +1236,101 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
   }
 
+  const TRUCK_DISPLAY: Record<string, string> = {
+    sprinter: "Extended Sprinter van",
+    "16ft": "16ft climate-protected truck",
+    "20ft": "20ft dedicated moving truck",
+    "24ft": "24ft full-size moving truck",
+    "26ft": "26ft maximum-capacity truck",
+  };
+
+  if (truckResult.primary && tiers) {
+    const truckLine = truckResult.isMultiVehicle && truckResult.secondary
+      ? `${TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name} + support van`
+      : TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name;
+    for (const tierName of Object.keys(tiers)) {
+      const t = tiers[tierName];
+      const idx = t.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter"));
+      if (idx >= 0) t.includes[idx] = truckLine;
+      else t.includes.unshift(truckLine);
+    }
+  }
+  if (truckResult.primary && custom_price) {
+    const truckLine = TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name;
+    const idx = custom_price.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter") || s.toLowerCase().includes("transport"));
+    if (idx >= 0) custom_price.includes[idx] = truckLine;
+    else custom_price.includes.unshift(truckLine);
+  }
+
+  // ── Valuation upgrades lookup ──
+  const INCLUDED_VALUATION: Record<string, string> = {
+    essentials: "released",
+    premier: "enhanced",
+    estate: "full_replacement",
+  };
+  const UPGRADE_PATHS: Record<string, string | null> = {
+    essentials: "enhanced",
+    premier: "full_replacement",
+    estate: null,
+  };
+  const moveSize = input.move_size ?? "2br";
+  const valuationUpgrades: Record<string, { price: number; to_tier: string; assumed_shipment_value: number } | null> = {};
+  for (const pkg of ["essentials", "premier", "estate"]) {
+    const target = UPGRADE_PATHS[pkg];
+    if (!target) { valuationUpgrades[pkg] = null; continue; }
+    const { data: vu } = await sb
+      .from("valuation_upgrades")
+      .select("price, to_tier, assumed_shipment_value")
+      .eq("move_size", moveSize)
+      .eq("from_package", pkg)
+      .eq("to_tier", target)
+      .eq("active", true)
+      .maybeSingle();
+    valuationUpgrades[pkg] = vu ?? null;
+  }
+
+  const { data: valTiers } = await sb
+    .from("valuation_tiers")
+    .select("tier_slug, display_name, rate_description, rate_per_pound, max_per_item, max_per_shipment, deductible, damage_process, covers, excludes, included_in_package")
+    .eq("active", true)
+    .order("tier_slug");
+
   const quoteId = await generateQuoteId(sb, input.hubspot_deal_id);
 
   const primaryPrice = tiers ? tiers.essentials.price : custom_price!.price;
   const depositAmount = tiers ? tiers.essentials.deposit : custom_price!.deposit;
 
+  // Resolve contact: use provided contact_id, or look up / create from client info
+  let contactId = input.contact_id || null;
+  if (!contactId && input.client_email) {
+    const { data: existing } = await sb
+      .from("contacts")
+      .select("id")
+      .eq("email", input.client_email.trim().toLowerCase())
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      contactId = existing.id;
+    } else {
+      const { data: created } = await sb
+        .from("contacts")
+        .insert({
+          name: input.client_name?.trim() || null,
+          email: input.client_email.trim().toLowerCase(),
+          phone: input.client_phone?.trim() || null,
+        })
+        .select("id")
+        .single();
+      if (created) contactId = created.id;
+    }
+  }
+
+  const expiryDays = cfgNum(config, "quote_expiry_days", 7);
+
   const { error: insertErr } = await sb.from("quotes").insert({
     quote_id: quoteId,
     hubspot_deal_id: input.hubspot_deal_id || null,
-    contact_id: input.contact_id || null,
+    contact_id: contactId,
     service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType,
     status: "draft",
     from_address: input.from_address,
@@ -1064,24 +1348,49 @@ export async function POST(req: NextRequest) {
     deposit_amount: depositAmount,
     factors_applied: factors,
     selected_addons: addonResult.breakdown,
-    expires_at: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+    expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
+    inventory_items: input.inventory_items ?? [],
+    inventory_score: invResult.inventoryScore || null,
+    inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
+    est_crew_size: labour?.crewSize ?? null,
+    est_hours: labour?.estimatedHours ?? null,
+    est_truck_size: labour?.truckSize ?? null,
+    truck_primary: truckResult.primary?.vehicle_type ?? null,
+    truck_secondary: truckResult.secondary?.vehicle_type ?? null,
   });
 
   if (insertErr) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
 
+  const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
+
   const response: Record<string, unknown> = {
     quote_id: quoteId,
-    quoteId, // camelCase alias for clients
+    quoteId,
     service_type: svcType,
     distance_km: distInfo?.distance_km ?? null,
     drive_time_min: distInfo?.drive_time_min ?? null,
     move_date: input.move_date,
+    expires_at: expiresAtStr,
     factors,
     addons: {
       items: addonResult.breakdown,
       total: addonResult.total,
+    },
+    inventory: {
+      modifier: invResult.modifier,
+      score: invResult.inventoryScore,
+      benchmark: invResult.benchmarkScore,
+      totalItems: invResult.totalItems,
+    },
+    labour: labour ?? null,
+    truck: {
+      primary: truckResult.primary,
+      secondary: truckResult.secondary,
+      isMultiVehicle: truckResult.isMultiVehicle,
+      notes: truckResult.notes,
+      range: truckResult.range,
     },
   };
 
@@ -1091,6 +1400,12 @@ export async function POST(req: NextRequest) {
     response.custom_price = custom_price;
     response.deposit_amount = primaryPrice;
   }
+
+  response.valuation = {
+    included: INCLUDED_VALUATION,
+    upgrades: valuationUpgrades,
+    tiers: valTiers ?? [],
+  };
 
   return NextResponse.json(response);
 }

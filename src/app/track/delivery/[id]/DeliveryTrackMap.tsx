@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -38,6 +38,34 @@ function crewIcon() {
   });
 }
 
+function useAnimatedCrewPos(target: CrewPos, ms = 2000): CrewPos {
+  const [pos, setPos] = useState(target);
+  const prevRef = useRef(target);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!target) { setPos(null); prevRef.current = null; return; }
+    const prev = prevRef.current;
+    prevRef.current = target;
+    if (!prev) { setPos(target); return; }
+    if (prev.current_lat === target.current_lat && prev.current_lng === target.current_lng) { setPos(target); return; }
+
+    const sLat = prev.current_lat, sLng = prev.current_lng;
+    const dLat = target.current_lat - sLat, dLng = target.current_lng - sLng;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = Math.min((now - t0) / ms, 1);
+      const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      setPos({ current_lat: sLat + dLat * e, current_lng: sLng + dLng * e, name: target.name });
+      if (t < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target?.current_lat, target?.current_lng, ms]); // eslint-disable-line react-hooks/exhaustive-deps
+  return pos;
+}
+
 function MapController({ center, pickup, dropoff, crew }: { center: Coord; pickup: Coord | null; dropoff: Coord | null; crew: CrewPos }) {
   const map = useMap();
   useEffect(() => {
@@ -62,21 +90,28 @@ export default function DeliveryTrackMap({
   crew,
   pickup,
   dropoff,
+  liveStage,
 }: {
   center: Coord;
   crew: CrewPos;
   pickup?: Coord | null;
   dropoff?: Coord | null;
+  liveStage?: string | null;
 }) {
+  const animCrew = useAnimatedCrewPos(crew);
+
   const routePositions: [number, number][] = useMemo(() => {
     if (!pickup || !dropoff) return [];
     return [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]];
   }, [pickup, dropoff]);
 
+  const isPrePickup = liveStage === "en_route" || !liveStage;
+  const trackingDestination = isPrePickup && pickup ? pickup : dropoff;
+
   const trackingLine: [number, number][] = useMemo(() => {
-    if (!crew || !dropoff) return [];
-    return [[crew.current_lat, crew.current_lng], [dropoff.lat, dropoff.lng]];
-  }, [crew, dropoff]);
+    if (!animCrew || !trackingDestination) return [];
+    return [[animCrew.current_lat, animCrew.current_lng], [trackingDestination.lat, trackingDestination.lng]];
+  }, [animCrew, trackingDestination]);
 
   return (
     <MapContainer
@@ -113,9 +148,9 @@ export default function DeliveryTrackMap({
           <Popup>Destination</Popup>
         </Marker>
       )}
-      {crew && (
-        <Marker position={[crew.current_lat, crew.current_lng]} icon={crewIcon()}>
-          <Popup>{crew.name || "Crew"}</Popup>
+      {animCrew && (
+        <Marker position={[animCrew.current_lat, animCrew.current_lng]} icon={crewIcon()}>
+          <Popup>{animCrew.name || "Crew"}</Popup>
         </Marker>
       )}
     </MapContainer>

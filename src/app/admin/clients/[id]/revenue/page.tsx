@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
@@ -7,14 +7,14 @@ import { getMoveDetailPath } from "@/lib/move-code";
 
 export default async function ClientRevenuePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: orgId } = await params;
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  const { data: org } = await supabase.from("organizations").select("id, name").eq("id", orgId).single();
+  const { data: org } = await db.from("organizations").select("id, name").eq("id", orgId).single();
   if (!org) notFound();
 
   const [byOrg, byName] = await Promise.all([
-    supabase.from("invoices").select("*").eq("organization_id", orgId).order("created_at", { ascending: false }),
-    org.name ? supabase.from("invoices").select("*").ilike("client_name", org.name).is("organization_id", null).order("created_at", { ascending: false }) : { data: [] },
+    db.from("invoices").select("*").eq("organization_id", orgId).order("created_at", { ascending: false }),
+    org.name ? db.from("invoices").select("*").ilike("client_name", org.name).is("organization_id", null).order("created_at", { ascending: false }) : { data: [] },
   ]);
   const seen = new Set<string>();
   const invoices = [...(byOrg.data || []), ...(byName.data || [])].filter((i) => {

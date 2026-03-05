@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDate, formatDateTime } from "@/lib/client-timezone";
 import PartnerDeliveriesTab from "./tabs/PartnerDeliveriesTab";
 import PartnerCalendarTab from "./tabs/PartnerCalendarTab";
 import PartnerInvoicesTab from "./tabs/PartnerInvoicesTab";
@@ -167,7 +168,10 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         if (res.ok) {
           const info = await res.json();
           setLoginInfo(info);
-          if (info.isFirstLogin || info.loginCount <= 1) setShowWelcome(true);
+          const welcomeSeen = typeof window !== "undefined" && localStorage.getItem("yugo-welcome-seen");
+          if (!welcomeSeen && (info.isFirstLogin || info.loginCount <= 1)) {
+            setShowWelcome(true);
+          }
         }
       } catch { /* graceful fail */ }
     };
@@ -190,7 +194,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   useEffect(() => { loadData(); }, [loadData]);
 
   const today = new Date();
-  const dayStr = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const dayStr = formatDate(today, { weekday: "long", month: "long", day: "numeric" });
   const isReturning = loginInfo && !loginInfo.isFirstLogin && loginInfo.loginCount > 1;
 
   const tabs = features.showReferrals
@@ -370,7 +374,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowWelcome(false)}
+                  onClick={() => { setShowWelcome(false); try { localStorage.setItem("yugo-welcome-seen", "1"); } catch {} }}
                   className="w-full py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
                 >
                   Go to Dashboard
@@ -392,7 +396,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <div className="flex-1 min-w-0">
               <span className="text-[14px] font-semibold text-[#1A1714]">Welcome back, {contactName}</span>
               <span className="text-[12px] text-[#888] ml-2">
-                Last visit: {new Date(loginInfo.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                Last visit: {formatDateTime(loginInfo.lastLoginAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
             </div>
           </div>

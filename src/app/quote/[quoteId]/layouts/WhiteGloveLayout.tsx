@@ -8,6 +8,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { toTitleCase } from "@/lib/format-text";
 
 const PROTOCOL_STEPS = [
   {
@@ -72,7 +73,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
                 {(f?.item_description as string) ?? "White Glove Item"}
               </h3>
               <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>
-                {((f?.item_category as string) ?? "premium item").replace(/_/g, " ")}
+                {toTitleCase((f?.item_category as string) ?? "premium item")}
               </p>
               <div className="flex items-center gap-3 mt-3 flex-wrap">
                 {declaredValue != null && (

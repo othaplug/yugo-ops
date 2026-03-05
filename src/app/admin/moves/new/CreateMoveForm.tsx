@@ -134,6 +134,7 @@ export default function CreateMoveForm({
   const [preferredContact, setPreferredContact] = useState("email");
   const [coordinatorName, setCoordinatorName] = useState("");
   const [crewId, setCrewId] = useState("");
+  const [truckPrimary, setTruckPrimary] = useState("");
   const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
   const [newRoom, setNewRoom] = useState("");
   const [newItemName, setNewItemName] = useState("");
@@ -330,8 +331,14 @@ export default function CreateMoveForm({
       alert("Please fill in client name.");
       return;
     }
-    if (!fromAddress.trim()) return;
-    if (!toAddress.trim()) return;
+    if (!fromAddress.trim()) {
+      alert("Please fill in the pickup (from) address.");
+      return;
+    }
+    if (!toAddress.trim()) {
+      alert("Please fill in the delivery (to) address.");
+      return;
+    }
 
     // If no client selected, check for duplicate before creating
     if (!organizationId) {
@@ -382,6 +389,7 @@ export default function CreateMoveForm({
       formData.append("coordinator_name", coordinatorName.trim());
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
+      formData.append("truck_primary", truckPrimary || "");
       formData.append("inventory", JSON.stringify(inventory));
       // Residential fields
       if (moveType === "residential") {
@@ -1331,6 +1339,21 @@ export default function CreateMoveForm({
                     {c.name}
                   </option>
                 ))}
+              </select>
+            </Field>
+            <Field label="Vehicle">
+              <select
+                name="truck_primary"
+                value={truckPrimary}
+                onChange={(e) => setTruckPrimary(e.target.value)}
+                className={fieldInput}
+              >
+                <option value="">Auto-assign…</option>
+                <option value="sprinter">Sprinter Van</option>
+                <option value="16ft">16ft Box Truck</option>
+                <option value="20ft">20ft Box Truck</option>
+                <option value="24ft">24ft Box Truck</option>
+                <option value="26ft">26ft Box Truck</option>
               </select>
             </Field>
             <Field label="Team Members">

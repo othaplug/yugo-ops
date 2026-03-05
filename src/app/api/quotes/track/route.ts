@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
+import { getFeatureConfig } from "@/lib/platform-settings";
 
-const VALID_EVENTS = new Set([
+const LEGACY_EVENTS = new Set([
   "quote_viewed",
   "tier_selected",
   "addon_toggled",
@@ -11,30 +13,76 @@ const VALID_EVENTS = new Set([
   "quote_abandoned",
 ]);
 
+const ENGAGEMENT_EVENTS = new Set([
+  "page_view",
+  "tier_clicked",
+  "tier_hovered",
+  "addon_toggled",
+  "contract_viewed",
+  "payment_started",
+  "payment_abandoned",
+  "comparison_viewed",
+  "call_crew_clicked",
+  "page_exit",
+]);
+
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`qt:${ip}`, 60, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
-    const { quote_id, event_type, metadata } = body as {
+    const {
+      quote_id,
+      event_type,
+      metadata,
+      event_data,
+      session_duration_seconds,
+      device_type,
+    } = body as {
       quote_id?: string;
       event_type?: string;
       metadata?: Record<string, unknown>;
+      event_data?: Record<string, unknown>;
+      session_duration_seconds?: number;
+      device_type?: string;
     };
 
-    if (!quote_id || !event_type || !VALID_EVENTS.has(event_type)) {
+    if (!quote_id || !event_type) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
+    const cfg = await getFeatureConfig(["quote_engagement_tracking"]);
+    const trackingEnabled = cfg.quote_engagement_tracking === "true";
 
-    const { error } = await supabase.from("quote_events").insert({
-      quote_id,
-      event_type,
-      metadata: metadata ?? {},
-    });
+    if (LEGACY_EVENTS.has(event_type)) {
+      await supabase.from("quote_events").insert({
+        quote_id,
+        event_type,
+        metadata: metadata ?? event_data ?? {},
+      });
+    }
 
-    if (error) {
-      console.error("[quote_events] insert failed:", error.message);
-      return NextResponse.json({ error: "Failed to store event" }, { status: 500 });
+    if (trackingEnabled && ENGAGEMENT_EVENTS.has(event_type)) {
+      const { data: quoteRow } = await supabase
+        .from("quotes")
+        .select("id")
+        .eq("quote_id", quote_id)
+        .single();
+
+      if (quoteRow) {
+        await supabase.from("quote_engagement").insert({
+          quote_id: quoteRow.id,
+          event_type,
+          event_data: event_data ?? metadata ?? {},
+          session_duration_seconds: session_duration_seconds ?? null,
+          device_type: device_type ?? null,
+        });
+      }
     }
 
     return NextResponse.json({ ok: true });

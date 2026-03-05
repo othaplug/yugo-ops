@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import NewDeliveryForm from "./NewDeliveryForm";
 
 export default async function NewDeliveryPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const [{ data: orgs }, { data: crews }] = await Promise.all([
-    supabase.from("organizations").select("id, name, type, email, contact_name, phone").order("name"),
-    supabase.from("crews").select("id, name, members").order("name"),
+    db.from("organizations").select("id, name, type, email, contact_name, phone").order("name"),
+    db.from("crews").select("id, name, members").order("name"),
   ]);
 
   return (

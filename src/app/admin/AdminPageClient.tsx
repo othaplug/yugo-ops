@@ -1,69 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
-import FilterBar from "./components/FilterBar";
-import LiveOperationsCard from "./components/LiveOperationsCard";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
-import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
+import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 
-const BADGE_MAP: Record<string, string> = {
-  pending: "b-go",
-  scheduled: "b-bl",
-  confirmed: "b-bl",
-  dispatched: "b-or",
-  "in-transit": "b-or",
-  delivered: "b-gr",
-  cancelled: "b-rd",
-};
+/* ── Types ── */
 
-function getBadgeClass(status: string) {
-  return `bdg ${BADGE_MAP[status] || "b-go"}`;
-}
-
-const DELIVERY_STATUS_OPTIONS = [
-  { value: "", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "dispatched", label: "Dispatched" },
-  { value: "in-transit", label: "In Transit" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
-const MOVE_STATUS_OPTIONS = [
-  { value: "", label: "All" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
-type Delivery = {
+type Job = {
   id: string;
-  customer_name?: string;
-  client_name?: string;
-  items?: unknown[];
-  time_slot?: string;
-  status?: string;
-  category?: string;
-  scheduled_date?: string;
-};
-
-type Move = {
-  id: string;
-  client_name?: string;
-  from_address?: string;
-  to_address?: string;
-  scheduled_date?: string;
-  status?: string;
-  move_type?: string;
+  type: "delivery" | "move";
+  name: string;
+  subtitle: string;
+  time: string;
+  status: string;
+  date: string;
+  tag: string;
+  delivery_number?: string | null;
+  move_code?: string | null;
 };
 
 type ActivityEvent = {
@@ -76,27 +33,81 @@ type ActivityEvent = {
   created_at: string;
 };
 
-interface EodSummary {
-  submitted: { teamId: string; teamName: string; summary?: Record<string, unknown>; generatedAt?: string }[];
-  pending: { teamId: string; teamName: string }[];
-  totalTeams: number;
-  submittedCount: number;
+interface LiveSession {
+  id: string;
+  jobId: string;
+  jobType: string;
+  jobName: string;
+  status: string;
+  teamName: string;
+  crewLeadName: string;
+  updatedAt: string;
+  toAddress: string | null;
 }
 
-interface AdminPageClientProps {
-  todayDeliveries: Delivery[];
-  yesterdayDeliveriesCount?: number;
-  allDeliveries: Delivery[];
-  b2cUpcoming: Move[];
+interface Props {
+  todayJobs: Job[];
+  upcomingJobs: Job[];
+  todayJobCount: number;
   overdueAmount: number;
-  overdueInvoicesCount?: number;
+  overdueCount: number;
   currentMonthRevenue: number;
   revenuePctChange: number;
   monthlyRevenue: { m: string; v: number }[];
-  categoryBgs: Record<string, string>;
-  categoryIcons: Record<string, string>;
-  activityEvents?: ActivityEvent[];
-  eodSummary?: EodSummary;
+  activityEvents: ActivityEvent[];
+  activeQuotesCount: number;
+}
+
+/* ── Helpers ── */
+
+function getJobHref(job: Job): string {
+  if (job.type === "delivery") {
+    const slug = job.delivery_number || job.id;
+    return `/admin/deliveries/${encodeURIComponent(slug)}`;
+  }
+  const slug = job.move_code?.trim().replace(/^#/, "").toUpperCase() || job.id;
+  return `/admin/moves/${slug}`;
+}
+
+function getJobLineColor(job: Job): string {
+  if (job.type === "delivery") return DELIVERY_STATUS_LINE_COLOR[job.status] || "var(--gold)";
+  const n = normalizeStatus(job.status) || "";
+  return MOVE_STATUS_LINE_COLOR[job.status] || MOVE_STATUS_LINE_COLOR[n] || "var(--gold)";
+}
+
+function getJobStatusStyle(job: Job): string {
+  if (job.type === "delivery") {
+    const map: Record<string, string> = {
+      pending: "text-[var(--gold)] bg-[var(--gdim)]",
+      scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
+      confirmed: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
+      dispatched: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
+      "in-transit": "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
+      delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
+      cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+    };
+    return map[job.status] || "text-[var(--tx3)] bg-[var(--gdim)]";
+  }
+  const n = normalizeStatus(job.status) || "";
+  return MOVE_STATUS_COLORS_ADMIN[job.status] || MOVE_STATUS_COLORS_ADMIN[n] || "text-[var(--tx3)] bg-[var(--gdim)]";
+}
+
+function getJobStatusLabel(job: Job): string {
+  if (job.type === "delivery") {
+    return job.status.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+  return getStatusLabel(job.status);
+}
+
+function formatActivityTime(createdAt: string): string {
+  const d = new Date(createdAt);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 function getActivityHref(e: ActivityEvent): string {
@@ -104,33 +115,6 @@ function getActivityHref(e: ActivityEvent): string {
   if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
   return "/admin";
-}
-
-function formatActivityTime(createdAt: string): string {
-  const d = new Date(createdAt);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMins / 60);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-
-function formatActivityDescription(desc: string, eventType?: string): string {
-  const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
-  if (match) {
-    const [, name, status] = match;
-    const statusLabel = getStatusLabel(status || null);
-    return `${name} · ${statusLabel}`;
-  }
-  if (desc.toLowerCase().includes("final payment") || desc.toLowerCase().includes("payment received")) {
-    const nameMatch = desc.match(/(.+?)\s*·|(.+?)\s*—/);
-    const name = nameMatch ? (nameMatch[1] || nameMatch[2] || "").trim() : desc.split(/[·—]/)[0]?.trim() || desc;
-    return `${name} · Paid`;
-  }
-  return desc;
 }
 
 function getActivityIcon(eventType: string, description: string | null): string {
@@ -143,395 +127,331 @@ function getActivityIcon(eventType: string, description: string | null): string 
   return "bell";
 }
 
-const GROUP_WINDOW_MS = 30 * 60 * 1000; // 30 min
-
-function groupActivityEvents(events: ActivityEvent[]): { id: string; events: ActivityEvent[]; count: number }[] {
-  const groups: { id: string; events: ActivityEvent[]; count: number }[] = [];
-  for (const e of events) {
-    const key = `${e.entity_type}:${e.entity_id}`;
-    const last = groups[groups.length - 1];
-    const lastTime = last ? new Date(last.events[0].created_at).getTime() : 0;
-    const thisTime = new Date(e.created_at).getTime();
-    if (last && last.id === key && thisTime - lastTime < GROUP_WINDOW_MS) {
-      last.events.unshift(e);
-      last.count = last.events.length;
-    } else {
-      groups.push({ id: key, events: [e], count: 1 });
-    }
+function formatActivityDesc(desc: string): string {
+  const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
+  if (match) return `${match[1]} · ${getStatusLabel(match[2] || null)}`;
+  if (desc.toLowerCase().includes("payment")) {
+    const nameMatch = desc.match(/(.+?)\s*[·—]/);
+    return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc;
   }
-  return groups;
+  return desc.length > 60 ? desc.slice(0, 57) + "..." : desc;
 }
 
-const ICON_BG: Record<string, string> = {
-  mail: "var(--bldim)",
-  check: "var(--grdim)",
-  dollar: "var(--grdim)",
-  truck: "var(--gdim)",
-  package: "var(--gdim)",
-  party: "var(--gdim)",
-  clipboard: "var(--bldim)",
-  home: "var(--gdim)",
-  bell: "var(--gdim)",
-  target: "var(--bldim)",
-  messageSquare: "var(--bldim)",
-  calendar: "var(--grdim)",
+function formatRelative(iso: string): string {
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  return `${Math.floor(sec / 3600)}h ago`;
+}
+
+const TAG_COLORS: Record<string, string> = {
+  Retail: "text-[var(--gold)]/80",
+  Move: "text-[#3B82F6]/80",
+  Delivery: "text-[var(--org)]/80",
+  Office: "text-[var(--pur)]/80",
+  "Single Item": "text-[var(--grn)]/80",
+  Gallery: "text-[#3B82F6]/80",
+  Hospitality: "text-[var(--org)]/80",
+  Designer: "text-[var(--pur)]/80",
 };
 
+/* ── Component ── */
+
 export default function AdminPageClient({
-  todayDeliveries,
-  allDeliveries,
-  b2cUpcoming,
+  todayJobs,
+  upcomingJobs,
+  todayJobCount,
   overdueAmount,
+  overdueCount,
   currentMonthRevenue,
   revenuePctChange,
   monthlyRevenue,
-  categoryBgs,
-  categoryIcons,
-  activityEvents = [],
-  eodSummary,
-}: AdminPageClientProps) {
-  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("");
-  const [moveStatusFilter, setMoveStatusFilter] = useState("");
-  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  activityEvents,
+  activeQuotesCount,
+}: Props) {
+  const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
 
   useEffect(() => {
-    if (!activityModalOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
+    const load = () => {
+      fetch("/api/tracking/active")
+        .then((r) => r.json())
+        .then((d) => setLiveSessions(d.sessions || []))
+        .catch(() => {});
     };
-  }, [activityModalOpen]);
-
-  const filteredDeliveries = deliveryStatusFilter
-    ? (todayDeliveries.length > 0 ? todayDeliveries : allDeliveries.slice(0, 5)).filter(
-        (d) => (d.status || "").toLowerCase() === deliveryStatusFilter.toLowerCase()
-      )
-    : todayDeliveries.length > 0 ? todayDeliveries : allDeliveries.slice(0, 5);
-
-  const filteredMoves = moveStatusFilter
-    ? b2cUpcoming.filter((m) => (m.status || "").toLowerCase() === moveStatusFilter.toLowerCase())
-    : b2cUpcoming;
+    load();
+    const id = setInterval(load, 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+
+  const summaryParts: string[] = [];
+  if (todayJobCount > 0) summaryParts.push(`${todayJobCount} job${todayJobCount > 1 ? "s" : ""} today`);
+  if (liveSessions.length > 0) summaryParts.push(`${liveSessions.length} crew${liveSessions.length > 1 ? "s" : ""} active`);
+  if (currentMonthRevenue > 0) summaryParts.push(`${formatCompactCurrency(currentMonthRevenue)} this month`);
+  if (activeQuotesCount > 0) summaryParts.push(`${activeQuotesCount} open quote${activeQuotesCount > 1 ? "s" : ""}`);
+
+  const hasJobs = todayJobs.length > 0 || upcomingJobs.length > 0;
+  const displayJobs = todayJobs.length > 0 ? todayJobs : upcomingJobs;
+  const scheduleLabel = todayJobs.length > 0 ? "Today\u2019s Schedule" : "Upcoming";
 
   return (
-    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      {/* Welcome */}
-      <div className="mb-6">
-        <h1 className="font-heading text-[28px] sm:text-[32px] md:text-[36px] font-bold text-[var(--tx)] tracking-tight">
-          {greeting}
-        </h1>
-        <p className="text-[14px] text-[var(--tx2)] mt-1">
-          You have {todayDeliveries.length} jobs scheduled today
-        </p>
+    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up min-w-0">
+
+      {/* ── Header ── */}
+      <div className="mb-8">
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="font-heading text-[26px] sm:text-[30px] md:text-[34px] font-bold text-[var(--tx)] tracking-tight leading-tight">
+            {greeting}
+          </h1>
+          <span className="text-[12px] text-[var(--tx3)] font-medium hidden sm:block">{dateStr}</span>
+        </div>
+        {summaryParts.length > 0 && (
+          <p className="text-[13px] text-[var(--tx3)] mt-1.5 font-medium">
+            {summaryParts.join(" \u00b7 ")}
+          </p>
+        )}
       </div>
 
-      {/* Metrics — horizontal scroll on mobile, grid on desktop */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)]/50 p-4 mb-6 -mx-3 sm:mx-0">
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-1 pl-1 pr-3 scrollbar-hide md:overflow-visible md:grid md:grid-cols-3 lg:grid-cols-6 md:snap-none md:pl-0 md:pr-0" style={{ WebkitOverflowScrolling: "touch" }}>
-          <Link href="/admin/deliveries" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Today&apos;s Deliveries</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{todayDeliveries.length}</span>
-            <span className="text-[10px] text-[var(--tx3)]">Scheduled today</span>
-          </Link>
-          <Link href="/admin/deliveries?filter=pending" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Pending</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--org)] tabular-nums">{allDeliveries.filter((d) => d.status === "pending").length}</span>
-            <span className="text-[10px] text-[var(--tx3)]">Awaiting schedule</span>
-          </Link>
-          <Link href="/admin/moves/residential" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">B2C Moves</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{b2cUpcoming.length}</span>
-            <span className="text-[10px] text-[var(--tx3)]">Upcoming residential</span>
-          </Link>
-          <Link href="/admin/revenue" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Revenue</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
-              {currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}
+      {/* ── Live Crew Banner (only when active) ── */}
+      {liveSessions.length > 0 && (
+        <div className="mb-6 flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
             </span>
-            <span className={`text-[10px] ${revenuePctChange >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
-              {currentMonthRevenue > 0 || revenuePctChange !== 0
-                ? `${revenuePctChange >= 0 ? "↑" : "↓"} ${Math.abs(revenuePctChange)}% vs last month`
-                : "This month"}
-            </span>
-          </Link>
-          <Link href="/admin/invoices" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">Overdue</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</span>
-            <span className="text-[10px] text-[var(--tx3)]">Past due</span>
-          </Link>
-          <Link href="/admin/reports" className="embossed-hover group flex flex-col gap-1 p-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)]/40 hover:border-[var(--gold)] hover:bg-[var(--gdim)] transition-all min-w-[140px] shrink-0 snap-start md:min-w-0 md:shrink">
-            <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--tx3)]">EOD Reports</span>
-            <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">{eodSummary?.submittedCount ?? 0}/{eodSummary?.totalTeams ?? 0}</span>
-            <span className="text-[10px] text-[var(--tx3)]">{eodSummary?.pending?.length ? `${eodSummary.pending.length} pending` : "All submitted"}</span>
-          </Link>
-        </div>
-      </div>
-
-      <LiveOperationsCard />
-
-      {/* Today's B2B Deliveries - schedule layout */}
-      <div className="glass rounded-xl overflow-hidden mt-6 sm:mt-8">
-        <div className="sh px-4 pt-4">
-          <div className="sh-t">Your schedule for today</div>
-          <Link href="/admin/deliveries" className="sh-l">All →</Link>
-        </div>
-        <FilterBar
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              value: deliveryStatusFilter,
-              options: DELIVERY_STATUS_OPTIONS,
-              onChange: setDeliveryStatusFilter,
-            },
-          ]}
-          hasActiveFilters={!!deliveryStatusFilter}
-          onClear={() => setDeliveryStatusFilter("")}
-        />
-        <div className="divide-y divide-[var(--brd)]/50 px-6 pb-4">
-        {filteredDeliveries.slice(0, 5).map((d) => {
-          const statusKey = (d.status || "").toLowerCase();
-          const lineColor = DELIVERY_STATUS_LINE_COLOR[statusKey] || "var(--gold)";
-          return (
-          <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
-            <div className="flex flex-col items-start shrink-0 w-14">
-              <span className="text-[12px] font-semibold text-[var(--tx)]">{d.time_slot || "—"}</span>
-              <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
-                {d.items?.length || 0} items
-              </span>
-            </div>
-            <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: lineColor }} aria-hidden />
-            <div className="flex-1 min-w-0">
-              <div className={`inline-flex px-2.5 py-1 rounded-md text-[9px] font-bold mb-1.5 ${getBadgeClass(statusKey)}`}>{(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—"}</div>
-              <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{d.customer_name} ({d.client_name})</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5">{(d.category || "Delivery")} • {d.client_name}</div>
-            </div>
-          </Link>
-          );
-        })}
-        </div>
-      </div>
-
-      {/* B2C Moves - schedule layout */}
-      <div className="glass rounded-xl overflow-hidden mt-4">
-        <div className="sh px-4 pt-4">
-          <div className="sh-t">Starting soon</div>
-          <Link href="/admin/moves/residential" className="sh-l">All →</Link>
-        </div>
-        <FilterBar
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              value: moveStatusFilter,
-              options: MOVE_STATUS_OPTIONS,
-              onChange: setMoveStatusFilter,
-            },
-          ]}
-          hasActiveFilters={!!moveStatusFilter}
-          onClear={() => setMoveStatusFilter("")}
-        />
-        <div className="divide-y divide-[var(--brd)]/50 px-6 pb-4">
-        {filteredMoves.slice(0, 5).map((m, idx) => {
-          const statusKey = (m.status || "").toLowerCase();
-          const normalized = normalizeStatus(m.status ?? null) || "";
-          const lineColor = MOVE_STATUS_LINE_COLOR[statusKey] || MOVE_STATUS_LINE_COLOR[normalized] || "var(--gold)";
-          const statusStyle = MOVE_STATUS_COLORS_ADMIN[statusKey] || MOVE_STATUS_COLORS_ADMIN[normalized] || "text-[var(--tx3)] bg-[var(--gdim)]";
-          return (
-          <Link key={m.id} href={getMoveDetailPath(m)} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
-            <div className="flex flex-col items-start shrink-0 w-14">
-              <span className="text-[10px] text-[var(--tx3)]">{String(idx + 1).padStart(2, "0")}</span>
-              <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{formatMoveDate(m.scheduled_date)}</span>
-            </div>
-            <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: lineColor }} aria-hidden />
-            <div className="flex-1 min-w-0">
-              <div className={`inline-flex px-2.5 py-1 rounded-md text-[9px] font-bold mb-1.5 ${statusStyle}`}>{getStatusLabel(m.status ?? null)}</div>
-              <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{m.client_name}</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{m.from_address} → {m.to_address}</div>
-            </div>
-          </Link>
-          );
-        })}
-        </div>
-      </div>
-
-      {/* g2 - Monthly Revenue + Activity: horizontal scroll on mobile, grid on desktop */}
-      <div className="relative mt-4">
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" }}>
-          {/* Monthly Revenue card - glass */}
-          <div className="glass min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden">
-            <div className="sh shrink-0">
-              <div className="sh-t">Monthly Revenue</div>
-              <Link href="/admin/revenue" className="sh-l">Details →</Link>
-            </div>
-            <div className="flex items-end gap-2 h-[130px] pt-1 shrink-0">
-            {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "—", v: 0 }]).map((d, i) => {
-              const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.v));
-              const pct = Math.round((d.v / maxV) * 100);
-              const isNow = monthlyRevenue.length > 0 && i === monthlyRevenue.length - 1;
-              const valLabel = d.v >= 1 ? `$${d.v.toFixed(1)}K` : formatCurrency(d.v * 1000);
-              return (
-                <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-1 h-full min-w-0">
-                  <span className={`text-[10px] font-semibold tabular-nums ${isNow ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}>
-                    {valLabel}
-                  </span>
-                  <div className="flex-1 w-full flex items-end min-h-[48px]">
-                    <div
-                      className="w-full rounded-t-md min-h-[4px] transition-all duration-300"
-                      style={{
-                        height: `${Math.max(pct, 8)}%`,
-                        background: isNow
-                          ? "linear-gradient(180deg, var(--gold) 0%, var(--gold2) 100%)"
-                          : "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
-                        boxShadow: isNow ? "0 -2px 12px rgba(201,169,98,0.25)" : "none",
-                      }}
-                    />
-                  </div>
-                  <span className={`text-[9px] font-medium ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>{d.m}</span>
-                </div>
-              );
-            })}
-            </div>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--gold)]">Live</span>
           </div>
-
-          {/* Activity card - glass, relative for right-edge fade */}
-          <div className="glass relative min-w-[85vw] max-w-[90vw] md:min-w-0 md:max-w-none flex-shrink-0 snap-start rounded-[20px] p-5 flex flex-col min-h-0 transition-transform duration-200 active:scale-[0.98] md:active:scale-100 overflow-hidden" style={{ minHeight: 200 }}>
-            <div className="sh shrink-0">
-              <div className="sh-t">Activity</div>
-            <button
-              type="button"
-              onClick={() => setActivityModalOpen(true)}
-              className="sh-l bg-transparent border-none cursor-pointer p-0 font-inherit text-inherit"
+          {liveSessions.map((s) => (
+            <Link
+              key={s.id}
+              href={s.jobType === "move" ? `/admin/moves/${s.jobId}` : `/admin/deliveries/${s.jobId}`}
+              className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--gold)]/20 bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition-colors"
             >
-              View all activity →
-            </button>
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+              <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
+                {s.teamName}
+              </span>
+              <span className="text-[10px] text-[var(--tx3)] whitespace-nowrap">
+                {CREW_STATUS_TO_LABEL[s.status] || s.status} · {formatRelative(s.updatedAt)}
+              </span>
+            </Link>
+          ))}
+          <Link href="/admin/crew" className="shrink-0 text-[10px] font-bold text-[var(--gold)] hover:underline whitespace-nowrap">
+            View map &rarr;
+          </Link>
+        </div>
+      )}
+
+      {/* ── Two Column Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
+
+        {/* ── LEFT: Schedule ── */}
+        <div className="min-w-0">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[13px] font-bold tracking-wider uppercase text-[var(--tx3)]">{scheduleLabel}</h2>
+            <Link href="/admin/calendar" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">
+              Calendar &rarr;
+            </Link>
           </div>
-          {activityEvents.length > 0 ? (
-            (() => {
-              const deduped = activityEvents.filter((a, i) => {
-                if (i === 0) return true;
-                return activityEvents[i - 1].description !== a.description;
-              });
-              const grouped = groupActivityEvents(deduped);
-              return (
-                <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 220 }}>
-                  {grouped.slice(0, 8).map((item, idx) => (
-                    item.count > 1 ? (
-                      <Link
-                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
-                        href={getActivityHref(item.events[0])}
-                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
-                      >
-                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                        </div>
-                        <div className="act-body min-w-0">
-                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
-                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                        </div>
-                      </Link>
-                    ) : (
-                      <Link key={`${item.id}-${item.events[0].created_at}-${idx}`} href={getActivityHref(item.events[0])} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
-                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                        </div>
-                        <div className="act-body min-w-0">
-                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
-                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                        </div>
-                      </Link>
-                    )
-                  ))}
-                </div>
-              );
-            })()
+
+          {hasJobs ? (
+            <div className="space-y-1">
+              {displayJobs.map((job) => {
+                const lineColor = getJobLineColor(job);
+                const statusStyle = getJobStatusStyle(job);
+                const statusLabel = getJobStatusLabel(job);
+                const tagColor = TAG_COLORS[job.tag] || "text-[var(--tx3)]";
+                const showDate = todayJobs.length === 0;
+
+                return (
+                  <Link
+                    key={`${job.type}-${job.id}`}
+                    href={getJobHref(job)}
+                    className="group flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
+                  >
+                    {/* Time / Date column */}
+                    <div className="shrink-0 w-[52px] pt-0.5 text-right">
+                      {showDate ? (
+                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{formatMoveDate(job.date)}</span>
+                      ) : (
+                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{job.time}</span>
+                      )}
+                    </div>
+
+                    {/* Status line */}
+                    <div className="w-[3px] rounded-full shrink-0 self-stretch min-h-[44px]" style={{ backgroundColor: lineColor }} />
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}>
+                          {statusLabel}
+                        </span>
+                        <span className={`text-[9px] font-semibold uppercase tracking-wide ${tagColor}`}>
+                          {job.tag}
+                        </span>
+                      </div>
+                      <div className="text-[14px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
+                        {job.name}
+                      </div>
+                      {job.subtitle && (
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{job.subtitle}</div>
+                      )}
+                    </div>
+
+                    {/* Arrow */}
+                    <svg className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </Link>
+                );
+              })}
+            </div>
           ) : (
-            <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 220 }}>
-              {[
-                { ic: "package", bg: "var(--gdim)", t: "Delivery in transit", tm: "9:12 AM", href: "/admin/deliveries" },
-                { ic: "check", bg: "var(--grdim)", t: "Invoice paid", tm: "8:45 AM", href: "/admin/invoices" },
-                { ic: "home", bg: "var(--gdim)", t: "Move materials delivered", tm: "8:30 AM", href: "/admin/moves/residential" },
-                { ic: "clipboard", bg: "var(--bldim)", t: "New referral: Williams", tm: "8:15 AM", href: "/admin/partners/realtors" },
-              ].map((a) => (
-                <Link key={a.t} href={a.href} className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0">
-                  <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: a.bg }}>
-                    <Icon name={a.ic} className="w-[14px] h-[14px]" />
-                  </div>
-                  <div className="act-body">
-                    <div className="act-t">{a.t}</div>
-                    <div className="act-tm">{a.tm}</div>
-                  </div>
-                </Link>
-              ))}
+            <div className="py-12 text-center">
+              <div className="text-[13px] text-[var(--tx3)] mb-3">No jobs scheduled</div>
+              <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D]">
+                Create a quote
+              </Link>
             </div>
           )}
-            {/* Subtle right-edge fade on Activity card (mobile) - indicates more content */}
-            <div className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none bg-gradient-to-l from-[var(--card)]/90 to-transparent md:hidden rounded-r-[20px]" aria-hidden="true" />
-          </div>
-        </div>
-        {/* Right edge fade on scroll container - mobile only */}
-        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-[var(--bg)] to-transparent md:hidden" aria-hidden="true" />
-      </div>
 
-      {activityModalOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div className="fixed inset-0 z-[99999] flex min-h-dvh min-h-screen items-center justify-center p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="activity-modal-title">
-            <div className="fixed inset-0 bg-black/50" onClick={() => setActivityModalOpen(false)} aria-hidden="true" />
-            <div className="relative w-full max-w-md max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden my-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)] shrink-0">
-                <h3 id="activity-modal-title" className="font-heading text-[15px] font-bold text-[var(--tx)]">All Activity</h3>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Mark all read</button>
-                  <button type="button" onClick={() => setActivityModalOpen(false)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none" aria-label="Close">&times;</button>
-                </div>
+          {/* Upcoming preview (when showing today) */}
+          {todayJobs.length > 0 && upcomingJobs.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-[var(--brd)]/40">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Coming up</h3>
+                <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">All &rarr;</Link>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0 p-2">
-                {activityEvents.length > 0 ? (
-                  groupActivityEvents(activityEvents.filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)).map((item, idx) =>
-                    item.count > 1 ? (
-                      <Link
-                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
-                        href={getActivityHref(item.events[0])}
-                        onClick={() => setActivityModalOpen(false)}
-                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
-                      >
-                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                        </div>
-                        <div className="act-body min-w-0">
-                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[0]} — {item.count} updates (latest: {formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type).split(" · ")[1] || "—"})</div>
-                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                        </div>
-                      </Link>
-                    ) : (
-                      <Link
-                        key={`${item.id}-${item.events[0].created_at}-${idx}`}
-                        href={getActivityHref(item.events[0])}
-                        onClick={() => setActivityModalOpen(false)}
-                        className="act-item block rounded-lg px-2 py-2.5 -mx-2 hover:bg-[var(--bg)]/40 transition-colors border-b border-[var(--brd)]/30 last:border-0"
-                      >
-                        <div className="act-dot flex items-center justify-center text-[var(--tx2)]" style={{ background: ICON_BG[getActivityIcon(item.events[0].event_type, item.events[0].description)] || "var(--gdim)" }}>
-                          <Icon name={getActivityIcon(item.events[0].event_type, item.events[0].description)} className="w-[14px] h-[14px]" />
-                        </div>
-                        <div className="act-body min-w-0">
-                          <div className="act-t">{formatActivityDescription(item.events[0].description || item.events[0].event_type, item.events[0].event_type)}</div>
-                          <div className="act-tm">{formatActivityTime(item.events[0].created_at)}</div>
-                        </div>
-                      </Link>
-                    )
-                  )
-                ) : (
-                  <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">No activity yet</div>
-                )}
+              <div className="space-y-0.5">
+                {upcomingJobs.slice(0, 3).map((job) => (
+                  <Link
+                    key={`up-${job.type}-${job.id}`}
+                    href={getJobHref(job)}
+                    className="flex items-center gap-3 py-2 px-3 -mx-1 rounded-lg hover:bg-[var(--card)]/40 transition-colors"
+                  >
+                    <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{formatMoveDate(job.date)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
+                    <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
+                    <span className="text-[9px] font-semibold uppercase text-[var(--tx3)]">{job.tag}</span>
+                  </Link>
+                ))}
               </div>
             </div>
-          </div>,
-          document.body
-        )}
+          )}
+        </div>
+
+        {/* ── RIGHT: Intelligence Column ── */}
+        <div className="space-y-6 min-w-0">
+
+          {/* Revenue */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Revenue</h2>
+              <Link href="/admin/revenue" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Details &rarr;</Link>
+            </div>
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-[24px] font-bold font-heading text-[var(--tx)] tabular-nums">
+                {currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}
+              </span>
+              {(currentMonthRevenue > 0 || revenuePctChange !== 0) && (
+                <span className={`text-[11px] font-semibold ${revenuePctChange >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+                  {revenuePctChange >= 0 ? "\u2191" : "\u2193"}{Math.abs(revenuePctChange)}%
+                </span>
+              )}
+            </div>
+            <div className="flex items-end gap-[3px] h-[56px]">
+              {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", v: 0 }]).map((d, i) => {
+                const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.v));
+                const pct = Math.round((d.v / maxV) * 100);
+                const isNow = monthlyRevenue.length > 0 && i === monthlyRevenue.length - 1;
+                return (
+                  <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-0.5 h-full">
+                    <div className="flex-1 w-full flex items-end">
+                      <div
+                        className="w-full rounded-t min-h-[2px] transition-all duration-300"
+                        style={{
+                          height: `${Math.max(pct, 6)}%`,
+                          background: isNow
+                            ? "linear-gradient(180deg, var(--gold) 0%, var(--gold2) 100%)"
+                            : "rgba(255,255,255,0.06)",
+                        }}
+                      />
+                    </div>
+                    <span className={`text-[8px] font-medium ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>{d.m}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Overdue (conditional) */}
+          {overdueAmount > 0 && (
+            <Link href="/admin/invoices" className="flex items-center justify-between py-3 px-4 -mx-1 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/8 transition-colors">
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--red)]/80">Overdue</div>
+                <div className="text-[18px] font-bold text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</div>
+              </div>
+              <div className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</div>
+            </Link>
+          )}
+
+          {/* Activity */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Activity</h2>
+            </div>
+            {activityEvents.length > 0 ? (
+              <div className="space-y-0.5">
+                {activityEvents
+                  .filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)
+                  .slice(0, 8)
+                  .map((e, idx) => (
+                    <Link
+                      key={`${e.id}-${idx}`}
+                      href={getActivityHref(e)}
+                      className="flex items-start gap-2.5 py-2 px-2 -mx-1 rounded-lg hover:bg-[var(--card)]/50 transition-colors"
+                    >
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5 bg-[var(--card)] border border-[var(--brd)]/40">
+                        <Icon name={getActivityIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] text-[var(--tx)] leading-snug truncate">
+                          {formatActivityDesc(e.description || e.event_type)}
+                        </div>
+                        <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatActivityTime(e.created_at)}</div>
+                      </div>
+                    </Link>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[var(--tx3)] py-3">No recent activity</p>
+            )}
+          </div>
+
+          {/* Quick links */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--brd)]/30">
+            <Link href="/admin/quotes/new" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+              <Icon name="fileText" className="w-3.5 h-3.5 text-[var(--tx3)]" />
+              <span className="text-[11px] font-medium text-[var(--tx2)]">New quote</span>
+            </Link>
+            <Link href="/admin/moves/new" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+              <Icon name="package" className="w-3.5 h-3.5 text-[var(--tx3)]" />
+              <span className="text-[11px] font-medium text-[var(--tx2)]">New move</span>
+            </Link>
+            <Link href="/admin/deliveries" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+              <Icon name="truck" className="w-3.5 h-3.5 text-[var(--tx3)]" />
+              <span className="text-[11px] font-medium text-[var(--tx2)]">Deliveries</span>
+            </Link>
+            <Link href="/admin/reports" className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors">
+              <Icon name="target" className="w-3.5 h-3.5 text-[var(--tx3)]" />
+              <span className="text-[11px] font-medium text-[var(--tx2)]">Reports</span>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

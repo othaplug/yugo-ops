@@ -9,6 +9,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Props {
   quote: Quote;
@@ -23,7 +24,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
   const deposit = calculateDeposit("single_item", price);
   const isFullPayment = price < 500;
 
-  const category = ((f?.item_category as string) ?? "item").replace(/_/g, " ");
+  const category = toTitleCase((f?.item_category as string) ?? "item");
   const weight = f?.weight_class as string | undefined;
   const includes = (f?.includes as string[] | undefined) ?? [
     "Professional handling & transport",

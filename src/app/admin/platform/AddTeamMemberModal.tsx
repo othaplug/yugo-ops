@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 
-const ALL_CREW = ["Marcus", "Devon", "James", "Olu", "Ryan", "Chris", "Specialist", "Michael T.", "Alex", "Jordan", "Sam", "Taylor"];
-
 interface Team {
   id: string;
   label: string;
@@ -18,17 +16,18 @@ interface AddTeamMemberModalProps {
   onClose: () => void;
   teams: Team[];
   onTeamsChange: (teams: Team[]) => void;
+  staffNames?: string[];
 }
 
-export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange }: AddTeamMemberModalProps) {
+export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange, staffNames = [] }: AddTeamMemberModalProps) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
 
   const filteredCrew = search.trim()
-    ? ALL_CREW.filter((m) => m.toLowerCase().includes(search.toLowerCase()))
-    : ALL_CREW;
+    ? staffNames.filter((m) => m.toLowerCase().includes(search.toLowerCase()))
+    : staffNames;
 
   const [saving, setSaving] = useState(false);
 

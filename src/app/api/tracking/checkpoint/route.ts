@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
     toAddress
   ).catch(() => {});
 
-  // Auto-invoice when move completes (if no invoice linked yet)
-  if (isCompleted && session.job_type === "move") {
+  // Auto-invoice when move completes (respects auto_invoicing toggle)
+  if (isCompleted && session.job_type === "move" && toggles.auto_invoicing) {
     try {
       const { data: existingInv } = await admin
         .from("invoices")

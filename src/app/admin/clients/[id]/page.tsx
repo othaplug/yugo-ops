@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import ClientDetailClient from "./ClientDetailClient";
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function ClientDetailPage({
   params,
@@ -15,8 +16,9 @@ export default async function ClientDetailPage({
   const { from } = await searchParams;
   const backHref = from === "retail" ? "/admin/partners/retail" : from === "designers" ? "/admin/partners/designers" : from === "hospitality" ? "/admin/partners/hospitality" : from === "gallery" ? "/admin/partners/gallery" : from === "realtors" ? "/admin/partners/realtors" : "/admin/clients";
   const supabase = await createClient();
+  const db = createAdminClient();
 
-  const { data: client } = await supabase
+  const { data: client } = await db
     .from("organizations")
     .select("*")
     .eq("id", id)
@@ -25,14 +27,14 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
   const { data: platformUser } = user
-    ? await supabase.from("platform_users").select("role").eq("user_id", user.id).single()
+    ? await db.from("platform_users").select("role").eq("user_id", user.id).single()
     : { data: null };
-  const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
+  const isAdmin = isSuperAdmin || ["owner", "admin", "manager"].includes(platformUser?.role || "");
 
   const isB2C = client.type === "b2c";
-  const { data: deliveries } = await supabase
+  const { data: deliveries } = await db
     .from("deliveries")
     .select("*")
     .eq("client_name", client.name)
@@ -40,7 +42,7 @@ export default async function ClientDetailPage({
     .limit(10);
 
   const { data: moves } = isB2C
-    ? await supabase
+    ? await db
         .from("moves")
         .select("id, move_number, client_name, status, stage, scheduled_date, created_at")
         .eq("organization_id", client.id)
@@ -50,14 +52,14 @@ export default async function ClientDetailPage({
 
   const moveIds = (moves || []).map((m: { id: string }) => m.id);
   const { data: changeRequests } = moveIds.length > 0
-    ? await supabase
+    ? await db
         .from("move_change_requests")
         .select("id, move_id, type, description, status, urgency, created_at, moves(move_code, client_name)")
         .in("move_id", moveIds)
         .order("created_at", { ascending: false })
     : { data: [] };
 
-  const { data: invoices } = await supabase
+  const { data: invoices } = await db
     .from("invoices")
     .select("*")
     .eq("client_name", client.name)

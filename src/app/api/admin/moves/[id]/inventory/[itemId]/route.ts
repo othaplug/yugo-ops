@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
-
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
 export async function PATCH(
   req: NextRequest,
@@ -14,17 +12,15 @@ export async function PATCH(
 
   try {
     const { id: moveId, itemId } = await params;
-    const supabase = await createClient();
-    const { data: platformUser } = await supabase
+    const db = createAdminClient();
+    const { data: platformUser } = await db
       .from("platform_users")
       .select("id")
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+    const isSuperAdmin = isSuperAdminEmail(user!.email);
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const db = isSuperAdmin ? createAdminClient() : supabase;
     const body = await req.json();
     const updates: Record<string, unknown> = {};
     if (body.room !== undefined) updates.room = (body.room || "").trim() || "Other";
@@ -63,17 +59,16 @@ export async function DELETE(
 
   try {
     const { id: moveId, itemId } = await params;
-    const supabase = await createClient();
-    const { data: platformUser } = await supabase
+    const db = createAdminClient();
+    const { data: platformUser } = await db
       .from("platform_users")
       .select("id")
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+    const isSuperAdmin = isSuperAdminEmail(user!.email);
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const db = isSuperAdmin ? createAdminClient() : supabase;
     const { error } = await db
       .from("move_inventory")
       .delete()

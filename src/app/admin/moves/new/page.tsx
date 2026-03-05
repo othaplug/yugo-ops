@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import CreateMoveForm from "./CreateMoveForm";
 
 export default async function NewMovePage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const [{ data: orgs }, { data: crews }] = await Promise.all([
-    supabase.from("organizations").select("id, name, type, email, contact_name, phone, address").eq("type", "b2c").order("name"),
-    supabase.from("crews").select("id, name, members").order("name"),
+    db.from("organizations").select("id, name, type, email, contact_name, phone, address").eq("type", "b2c").order("name"),
+    db.from("crews").select("id, name, members").order("name"),
   ]);
 
   return (

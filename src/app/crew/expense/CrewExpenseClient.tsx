@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import PageContent from "@/app/admin/components/PageContent";
+import { toTitleCase } from "@/lib/format-text";
 
 const CATEGORIES = [
   { id: "parking", label: "Parking" },
@@ -237,10 +238,10 @@ export default function CrewExpenseClient() {
             {expenses.map((e) => (
               <li key={e.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
                 <div>
-                  <p className="text-[13px] font-medium text-[var(--tx)]">${(e.amount_cents / 100).toFixed(2)} · {e.category}</p>
+                  <p className="text-[13px] font-medium text-[var(--tx)]">${(e.amount_cents / 100).toFixed(2)} · {toTitleCase(e.category)}</p>
                   <p className="text-[11px] text-[var(--tx3)]">{e.description}</p>
                   <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-                    {new Date(e.submitted_at).toLocaleDateString()} · {e.status}
+                    {new Date(e.submitted_at).toLocaleDateString()} · {toTitleCase(e.status)}
                   </p>
                 </div>
                 {e.receipt_storage_path && (

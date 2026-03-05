@@ -24,6 +24,7 @@ import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
+import TipScreen from "@/components/tracking/TipScreen";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 
 const CHANGE_TYPES = [
@@ -62,6 +63,7 @@ export default function TrackMoveClient({
   additionalFeesCents = 0,
   changeRequestFeesCents = 0,
   extraItemFeesCents = 0,
+  tippingEnabled = true,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -72,6 +74,7 @@ export default function TrackMoveClient({
   additionalFeesCents?: number;
   changeRequestFeesCents?: number;
   extraItemFeesCents?: number;
+  tippingEnabled?: boolean;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
@@ -103,6 +106,50 @@ export default function TrackMoveClient({
   const [tipPreset, setTipPreset] = useState<number | null>(20);
   const [tipCustomDollars, setTipCustomDollars] = useState("");
   const [tipSubmitting, setTipSubmitting] = useState(false);
+
+  // Full-screen tip system (auto-show on completion)
+  const [showTipScreen, setShowTipScreen] = useState(false);
+  const [showTipBanner, setShowTipBanner] = useState(false);
+
+  // Determine if tip screen should show (respects tipping_enabled toggle)
+  useEffect(() => {
+    if (!tippingEnabled) return;
+    const isComplete = move.status === "completed" || move.status === "delivered";
+    const alreadyTipped = !!move.tip_charged_at;
+    const alreadySkipped = !!move.tip_skipped_at;
+    const hasCard = !!move.square_card_id;
+    const tipPromptShown = !!move.tip_prompt_shown_at;
+
+    if (!isComplete || alreadyTipped || !hasCard) return;
+
+    if (alreadySkipped) {
+      const skipDate = new Date(move.tip_skipped_at).getTime();
+      const daysSinceSkip = (Date.now() - skipDate) / (1000 * 60 * 60 * 24);
+      if (daysSinceSkip <= 7) setShowTipBanner(true);
+      return;
+    }
+
+    if (!tipPromptShown) {
+      setShowTipScreen(true);
+      fetch(`/api/tips/skip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moveId: move.id, token, action: "prompt_shown" }),
+      }).catch(() => {});
+    }
+  }, [tippingEnabled, move.status, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id, move.id, token]);
+
+  // Also trigger tip screen when liveStage transitions to completed
+  useEffect(() => {
+    if (!tippingEnabled) return;
+    if (liveStage !== "completed") return;
+    const alreadyTipped = !!move.tip_charged_at;
+    const alreadySkipped = !!move.tip_skipped_at;
+    const hasCard = !!move.square_card_id;
+    if (!alreadyTipped && !alreadySkipped && hasCard) {
+      setTimeout(() => setShowTipScreen(true), 2000);
+    }
+  }, [tippingEnabled, liveStage, move.tip_charged_at, move.tip_skipped_at, move.square_card_id]);
 
   // Record payment and add receipt to documents when landing from Square redirect
   useEffect(() => {
@@ -289,6 +336,25 @@ export default function TrackMoveClient({
     { key: "msg", label: "Messages" },
   ];
 
+  const moveTotal = Number(move.amount || move.estimate || 0);
+
+  if (tippingEnabled && showTipScreen) {
+    return (
+      <TipScreen
+        moveId={move.id}
+        token={token}
+        clientName={move.client_name || ""}
+        crewName={crew?.name || "Your Crew"}
+        crewMembers={Array.isArray(move.assigned_members) ? move.assigned_members : crew?.members}
+        moveTotal={moveTotal}
+        hoursWorked={move.estimated_hours ? Number(move.estimated_hours) : undefined}
+        cardLast4={move.card_last4 || null}
+        onComplete={() => { setShowTipScreen(false); router.refresh(); }}
+        onSkip={() => { setShowTipScreen(false); }}
+      />
+    );
+  }
+
   if (linkExpired) {
     return (
       <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: CREAM, color: FOREST }}>
@@ -373,6 +439,23 @@ export default function TrackMoveClient({
                 <div className="text-[11px] mt-0.5 opacity-80" style={{ color: FOREST }}>View the details below to see what changed.</div>
               </div>
             </div>
+          </div>
+        )}
+        {/* Tip banner (revisit within 7 days after skipping) */}
+        {tippingEnabled && showTipBanner && !move.tip_charged_at && (
+          <div className="mb-5 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ borderColor: `${GOLD}40`, backgroundColor: `${GOLD}12` }}>
+            <div>
+              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>Leave a tip for your crew?</div>
+              <div className="text-[11px] mt-0.5 opacity-70" style={{ color: FOREST }}>100% goes directly to your movers.</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setShowTipBanner(false); setShowTipScreen(true); }}
+              className="shrink-0 rounded-lg font-semibold text-[12px] py-2 px-4 transition-colors hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            >
+              Leave Tip
+            </button>
           </div>
         )}
         {/* Client + status header (exact design: name left, tag right) */}

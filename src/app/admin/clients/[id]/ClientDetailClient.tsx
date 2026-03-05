@@ -16,6 +16,7 @@ import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
 
 interface MoveRow {
@@ -282,7 +283,7 @@ export default function ClientDetailClient({
                 onClick={() => setSummaryDelivery(d)}
                 timeSlot={d.time_slot || "—"}
                 pill={`${d.items?.length || 0} items`}
-                status={(d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                status={toTitleCase(d.status || "")}
                 title={d.customer_name}
                 subtitle={`${d.delivery_number} • ${d.client_name}`}
               />
@@ -321,7 +322,7 @@ export default function ClientDetailClient({
                   <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold shrink-0 ${
                     cr.status === "pending" ? "bg-[var(--gdim)] text-[var(--gold)]" : cr.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
                   }`}>
-                    {cr.status}
+                    {toTitleCase(cr.status)}
                   </span>
                 </Link>
               );

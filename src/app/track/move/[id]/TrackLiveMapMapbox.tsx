@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Map from "react-map-gl/mapbox";
 import { Marker, NavigationControl, Source, Layer, useMap } from "react-map-gl/mapbox";
@@ -9,7 +9,52 @@ type Center = { latitude: number; longitude: number };
 type CenterLatLng = { lat: number; lng: number };
 type Crew = { current_lat: number; current_lng: number; name?: string } | null;
 
+/**
+ * Smooth position interpolation for the crew marker.
+ * Animates from old → new position over ANIM_MS milliseconds.
+ */
+function useAnimatedPosition(target: { lat: number; lng: number } | null, durationMs = 2000) {
+  const [pos, setPos] = useState(target);
+  const prevRef = useRef(target);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!target) { setPos(null); prevRef.current = null; return; }
+
+    const prev = prevRef.current;
+    prevRef.current = target;
+
+    if (!prev || (prev.lat === target.lat && prev.lng === target.lng)) {
+      setPos(target);
+      return;
+    }
+
+    const startLat = prev.lat;
+    const startLng = prev.lng;
+    const dLat = target.lat - startLat;
+    const dLng = target.lng - startLng;
+    const start = performance.now();
+
+    const animate = (now: number) => {
+      const t = Math.min((now - start) / durationMs, 1);
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease in-out quad
+      setPos({ lat: startLat + dLat * ease, lng: startLng + dLng * ease });
+      if (t < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target?.lat, target?.lng, durationMs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return pos;
+}
+
 const YUGO_GOLD = "#C9A962";
+const YUGO_PURPLE = "#8B5CF6";
+
+const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup"];
 
 function FitBoundsController({
   crew,
@@ -32,15 +77,9 @@ function FitBoundsController({
     if (!map) return;
 
     const points: [number, number][] = [];
-    if (hasCrew && crew) {
-      points.push([crew.current_lng, crew.current_lat]);
-    }
-    if (hasDropoff && dropoff) {
-      points.push([dropoff.lng, dropoff.lat]);
-    }
-    if (hasPickup && pickup) {
-      points.push([pickup.lng, pickup.lat]);
-    }
+    if (hasCrew && crew) points.push([crew.current_lng, crew.current_lat]);
+    if (hasDropoff && dropoff) points.push([dropoff.lng, dropoff.lat]);
+    if (hasPickup && pickup) points.push([pickup.lng, pickup.lat]);
 
     if (points.length === 0) {
       map.flyTo({ center: [center.longitude, center.latitude], zoom: 10, duration: 0 });
@@ -51,14 +90,11 @@ function FitBoundsController({
     const lats = points.map((p) => p[1]);
     const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
     const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
-    map.fitBounds([sw, ne], { padding: 80, maxZoom: 14, duration: 0 });
+    map.fitBounds([sw, ne], { padding: 80, maxZoom: 15, duration: 500 });
   }, [mapRef, crew?.current_lat, crew?.current_lng, dropoff?.lat, dropoff?.lng, pickup?.lat, pickup?.lng, hasCrew, hasDropoff, hasPickup, center.latitude, center.longitude]);
 
   return null;
 }
-
-/** Stages where crew is heading to pickup; otherwise heading to dropoff */
-const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup"];
 
 export function TrackLiveMapMapbox({
   mapboxAccessToken,
@@ -68,6 +104,9 @@ export function TrackLiveMapMapbox({
   pickup,
   dropoff,
   liveStage,
+  clientLat,
+  clientLng,
+  speed,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -75,104 +114,205 @@ export function TrackLiveMapMapbox({
   crewName?: string;
   pickup?: CenterLatLng | null;
   dropoff?: CenterLatLng | null;
-  /** Current stage: line is drawn from vehicle to the address they're heading to */
   liveStage?: string | null;
+  clientLat?: number | null;
+  clientLng?: number | null;
+  speed?: number | null;
 }) {
   const hasPosition = crew != null;
+  const animatedCrew = useAnimatedPosition(
+    crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
+  );
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
+  const [completedCoords, setCompletedCoords] = useState<[number, number][] | null>(null);
+  const [remainingCoords, setRemainingCoords] = useState<[number, number][] | null>(null);
 
-  /** Full journey line (pickup → dropoff), subtle */
-  const fullRouteGeoJson = useMemo(() => {
-    if (!pickup || !dropoff) return null;
+  // Fetch real driving route from Mapbox Directions API
+  const fetchRoute = useCallback(async () => {
+    if (!pickup || !dropoff) return;
+    try {
+      const from = `${pickup.lng},${pickup.lat}`;
+      const to = `${dropoff.lng},${dropoff.lat}`;
+      const res = await fetch(`/api/mapbox/directions?from=${from}&to=${to}`);
+      const data = await res.json();
+      if (data?.coordinates && Array.isArray(data.coordinates)) {
+        setRouteCoords(data.coordinates);
+      }
+    } catch {
+      // Fall back to straight line
+    }
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { fetchRoute(); }, [fetchRoute]);
+
+  // Split route into completed and remaining based on animated crew position
+  useEffect(() => {
+    if (!routeCoords || !animatedCrew) {
+      setCompletedCoords(null);
+      setRemainingCoords(routeCoords);
+      return;
+    }
+
+    let minDist = Infinity;
+    let splitIdx = 0;
+    for (let i = 0; i < routeCoords.length; i++) {
+      const [lng, lat] = routeCoords[i];
+      const dist = Math.sqrt((lng - animatedCrew.lng) ** 2 + (lat - animatedCrew.lat) ** 2);
+      if (dist < minDist) {
+        minDist = dist;
+        splitIdx = i;
+      }
+    }
+
+    setCompletedCoords(routeCoords.slice(0, splitIdx + 1));
+    setRemainingCoords(routeCoords.slice(splitIdx));
+  }, [routeCoords, animatedCrew?.lat, animatedCrew?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Completed portion GeoJSON (solid gold line)
+  const completedGeoJson = useMemo(() => {
+    if (!completedCoords || completedCoords.length < 2) return null;
+    return {
+      type: "Feature" as const,
+      properties: {},
+      geometry: { type: "LineString" as const, coordinates: completedCoords },
+    };
+  }, [completedCoords]);
+
+  // Remaining portion GeoJSON (dashed gold line)
+  const remainingGeoJson = useMemo(() => {
+    if (!remainingCoords || remainingCoords.length < 2) return null;
+    return {
+      type: "Feature" as const,
+      properties: {},
+      geometry: { type: "LineString" as const, coordinates: remainingCoords },
+    };
+  }, [remainingCoords]);
+
+  // Fallback straight-line route when no directions data
+  const fallbackGeoJson = useMemo(() => {
+    if (routeCoords || !pickup || !dropoff) return null;
     return {
       type: "Feature" as const,
       properties: {},
       geometry: {
         type: "LineString" as const,
-        coordinates: [
-          [pickup.lng, pickup.lat],
-          [dropoff.lng, dropoff.lat],
-        ],
+        coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]],
       },
     };
-  }, [pickup, dropoff]);
-
-  /** Tracking line: vehicle → address they're going to right now (design inspiration: bold black line to destination) */
-  const trackingLineGeoJson = useMemo(() => {
-    if (!crew || !pickup || !dropoff) return null;
-    const currentDestination = PICKUP_STAGES.includes(liveStage || "") ? pickup : dropoff;
-    return {
-      type: "Feature" as const,
-      properties: {},
-      geometry: {
-        type: "LineString" as const,
-        coordinates: [
-          [crew.current_lng, crew.current_lat],
-          [currentDestination.lng, currentDestination.lat],
-        ],
-      },
-    };
-  }, [crew, pickup, dropoff, liveStage]);
+  }, [routeCoords, pickup, dropoff]);
 
   return (
     <Map
       mapboxAccessToken={mapboxAccessToken}
-      initialViewState={{
-        ...center,
-        zoom: hasPosition ? 14 : 10,
-      }}
+      initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/light-v11"
     >
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
-      {fullRouteGeoJson && (
-        <Source id="route-full" type="geojson" data={fullRouteGeoJson}>
+
+      {/* Completed route: solid gold */}
+      {completedGeoJson && (
+        <Source id="route-completed" type="geojson" data={completedGeoJson}>
           <Layer
-            id="route-full-layer"
+            id="route-completed-layer"
             type="line"
             paint={{
               "line-color": YUGO_GOLD,
-              "line-width": 2,
+              "line-width": 5,
+              "line-opacity": 0.9,
+            }}
+          />
+        </Source>
+      )}
+
+      {/* Remaining route: animated dashed gold */}
+      {remainingGeoJson && (
+        <Source id="route-remaining" type="geojson" data={remainingGeoJson}>
+          <Layer
+            id="route-remaining-layer"
+            type="line"
+            paint={{
+              "line-color": YUGO_GOLD,
+              "line-width": 4,
+              "line-opacity": 0.6,
+              "line-dasharray": [2, 2],
+            }}
+          />
+        </Source>
+      )}
+
+      {/* Fallback route */}
+      {fallbackGeoJson && (
+        <Source id="route-fallback" type="geojson" data={fallbackGeoJson}>
+          <Layer
+            id="route-fallback-layer"
+            type="line"
+            paint={{
+              "line-color": YUGO_GOLD,
+              "line-width": 3,
               "line-opacity": 0.4,
               "line-dasharray": [2, 2],
             }}
           />
         </Source>
       )}
-      {trackingLineGeoJson && (
-        <Source id="route-tracking" type="geojson" data={trackingLineGeoJson}>
-          <Layer
-            id="route-tracking-layer"
-            type="line"
-            paint={{
-              "line-color": "#8B5CF6",
-              "line-width": 5,
-              "line-opacity": 1,
-            }}
-          />
-        </Source>
-      )}
+
+      {/* Pickup pin (A - green) */}
       {pickup && (
-        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
-          <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#C9A962]" />
-        </Marker>
-      )}
-      {dropoff && (
-        <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="center">
-          <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
-        </Marker>
-      )}
-      {hasPosition && crew && (
-        <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-[14px] font-bold text-white shadow-lg border-2 border-white"
-            style={{
-              background: "linear-gradient(135deg, #C9A962, #8B7332)",
-            }}
-          >
-            {(crewName || crew?.name || "?").replace("Team ", "").slice(0, 1).toUpperCase()}
+        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="bottom">
+          <div className="flex flex-col items-center">
+            <div className="w-7 h-7 rounded-full bg-[#22C55E] border-2 border-white shadow-lg flex items-center justify-center text-[11px] font-bold text-white">A</div>
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#22C55E] -mt-0.5" />
           </div>
         </Marker>
       )}
+
+      {/* Delivery pin (B - red/gold) */}
+      {dropoff && (
+        <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
+          <div className="flex flex-col items-center">
+            <div className="w-7 h-7 rounded-full bg-[#EF4444] border-2 border-white shadow-lg flex items-center justify-center text-[11px] font-bold text-white">B</div>
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#EF4444] -mt-0.5" />
+          </div>
+        </Marker>
+      )}
+
+      {/* Client position (blue dot) */}
+      {clientLat != null && clientLng != null && (
+        <Marker longitude={clientLng} latitude={clientLat} anchor="center">
+          <div className="relative">
+            <div className="w-4 h-4 rounded-full bg-[#3B82F6] border-2 border-white shadow-md" />
+            <div className="absolute inset-0 rounded-full bg-[#3B82F6] opacity-30 animate-ping" />
+          </div>
+        </Marker>
+      )}
+
+      {/* Crew truck marker (smoothly animated, pulsing gold with Yugo branding) */}
+      {hasPosition && animatedCrew && (
+        <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
+          <div className="relative" style={{ transition: "transform 0.1s linear" }}>
+            {/* Pulsing ring */}
+            <div className="absolute -inset-3 rounded-full bg-[#C9A962] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
+            {/* Outer ring */}
+            <div className="w-14 h-14 rounded-full flex items-center justify-center border-3 border-[#C9A962] shadow-lg" style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.2), rgba(201,169,98,0.1))" }}>
+              {/* Truck icon + initial */}
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold text-white shadow-inner"
+                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+              >
+                {(crewName || crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
+              </div>
+            </div>
+            {/* Speed indicator */}
+            {speed != null && speed > 0 && (
+              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                {Math.round(speed)} km/h
+              </div>
+            )}
+          </div>
+        </Marker>
+      )}
+
       <NavigationControl position="bottom-right" showCompass showZoom />
     </Map>
   );

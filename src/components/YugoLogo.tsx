@@ -7,24 +7,22 @@ import { ThemeContext } from "@/app/admin/components/ThemeContext";
 export type LogoVariant = "gold" | "cream" | "black" | "auto";
 
 interface YugoLogoProps {
-  /** Height in pixels. Matches original text logo (e.g. 18). */
   size?: number;
   className?: string;
-  /** Logo variant. "auto" = dark theme → gold, light → black. */
   variant?: LogoVariant;
-  /** Use image logo (default true). Set false to render text fallback. */
   useImage?: boolean;
-  /** Set true when logo is on a light background so blend mode is not applied (gold/cream stay visible). */
   onLightBackground?: boolean;
 }
 
+const LOGO_VERSION = "v2";
+
 const LOGO_SRC: Record<Exclude<LogoVariant, "auto">, string> = {
-  gold: "/images/yugo-logo-gold.png",
-  cream: "/images/yugo-logo-cream.png",
-  black: "/images/yugo-logo-black.png",
+  gold: `/images/yugo-logo-gold.png?${LOGO_VERSION}`,
+  cream: `/images/yugo-logo-cream.png?${LOGO_VERSION}`,
+  black: `/images/yugo-logo-black.png?${LOGO_VERSION}`,
 };
 
-/** YUGO logo — image (or text fallback) with theme-aware variant */
+/** YUGO logo — uses gold image on dark, gold text on light (most reliable) */
 export default function YugoLogo({
   size = 18,
   className = "",
@@ -34,42 +32,43 @@ export default function YugoLogo({
 }: YugoLogoProps) {
   const themeContext = useContext(ThemeContext);
   const theme = themeContext?.theme ?? "dark";
-  const resolvedVariant: Exclude<LogoVariant, "auto"> =
-    variant === "auto" ? (theme === "dark" ? "gold" : "black") : variant;
-  const src = LOGO_SRC[resolvedVariant];
-  const isDarkBgLogo = (resolvedVariant === "gold" || resolvedVariant === "cream") && !onLightBackground;
 
-  // On light backgrounds use gold text logo (no image) so it's always gold with no black background
-  if (onLightBackground) {
+  const isLight = theme === "light" || onLightBackground;
+
+  // On light backgrounds with auto variant, use styled text (cache-proof)
+  if (isLight && variant === "auto") {
     return (
       <span
-        className={`font-hero font-semibold select-none leading-none ${className}`}
-        style={{ fontSize: size, letterSpacing: size >= 18 ? 4 : 3, color: "#B8962E" }}
+        className={`font-hero font-bold select-none leading-none ${className}`}
+        style={{
+          fontSize: size,
+          letterSpacing: size >= 18 ? 4 : 3,
+          color: "#B8962E",
+        }}
       >
         YUGO
       </span>
     );
   }
 
+  const resolvedVariant: Exclude<LogoVariant, "auto"> =
+    variant === "auto" ? (isLight ? "black" : "gold") : variant;
+
+  const src = LOGO_SRC[resolvedVariant];
+
   if (useImage && src) {
-    const blendMode = isDarkBgLogo ? "lighten" : undefined;
     return (
       <span
         className={className.trim()}
-        style={{ background: "transparent", display: "inline-block" }}
+        style={{ display: "inline-block" }}
       >
         <Image
           src={src}
           alt="YUGO"
           height={size}
           width={size * 4}
-          className="select-none object-contain yugo-logo-no-bg"
-          style={{
-            height: size,
-            width: "auto",
-            background: "transparent",
-            ...(blendMode && { mixBlendMode: blendMode }),
-          }}
+          className="select-none object-contain"
+          style={{ height: size, width: "auto" }}
           unoptimized
           priority
         />
@@ -79,8 +78,12 @@ export default function YugoLogo({
 
   return (
     <span
-      className={`font-hero font-semibold text-[var(--gold)] select-none leading-none ${className}`}
-      style={{ fontSize: size, letterSpacing: size >= 18 ? 4 : 3 }}
+      className={`font-hero font-bold select-none leading-none ${className}`}
+      style={{
+        fontSize: size,
+        letterSpacing: size >= 18 ? 4 : 3,
+        color: "var(--gold)",
+      }}
     >
       YUGO
     </span>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
+import { logAudit } from "@/lib/audit";
 
 const TABLE_MAP: Record<string, string> = {
   "base-rates": "base_rates",
@@ -12,10 +13,16 @@ const TABLE_MAP: Record<string, string> = {
   "single-item": "single_item_rates",
   "deposit-rules": "deposit_rules",
   "office-rates": "office_rates",
+  "item-weights": "item_weights",
+  "volume-benchmarks": "volume_benchmarks",
+  "fleet-vehicles": "fleet_vehicles",
+  "truck-rules": "truck_allocation_rules",
+  "valuation-tiers": "valuation_tiers",
+  "valuation-upgrades": "valuation_upgrades",
 };
 
 export async function GET(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const section = req.nextUrl.searchParams.get("section");
@@ -35,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { user, role, error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -54,6 +61,16 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    logAudit({
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: role,
+      action: "edit_pricing",
+      resourceType: "pricing",
+      resourceId: section,
+      details: { table: section },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
@@ -61,7 +78,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -82,7 +99,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {

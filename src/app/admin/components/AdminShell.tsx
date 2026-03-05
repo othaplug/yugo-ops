@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ToastProvider } from "./Toast";
@@ -10,101 +10,77 @@ import { ThemeProvider } from "./ThemeContext";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 import SearchBox from "./SearchBox";
-import ClientDate from "./ClientDate";
 import RealtimeListener from "./RealtimeListener";
+import SessionTimeout from "./SessionTimeout";
 import { Icons } from "./SidebarIcons";
 import YugoLogo, { BetaBadge } from "@/components/YugoLogo";
+import { createClient } from "@/lib/supabase/client";
+import { Shield } from "lucide-react";
 
-const SIDEBAR_SECTIONS_FULL = [
-    {
+const ROLE_LEVEL: Record<string, number> = {
+  owner: 100, admin: 80, manager: 60, dispatcher: 50, coordinator: 40, viewer: 30, crew: 20, partner: 10,
+};
+
+interface SidebarItem {
+  href: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  minRole?: string;
+  badgeKey?: "quotes";
+}
+
+const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
+  {
     label: "Dashboard",
     items: [
-      { href: "/admin", label: "Command Center", Icon: Icons.target, adminOnly: true },
-      { href: "/admin/deliveries", label: "All Projects", Icon: Icons.projects, adminOnly: false },
-      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, adminOnly: false },
-      { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin, adminOnly: false },
-      { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, adminOnly: true },
+      { href: "/admin", label: "Command Center", Icon: Icons.home, minRole: "coordinator" },
+      { href: "/admin/deliveries", label: "All Projects", Icon: Icons.projects },
+      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar },
+      { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin },
+      { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
     ],
   },
   {
     label: "B2B Partners",
     items: [
-      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, adminOnly: true },
-      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, adminOnly: true },
-      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, adminOnly: true },
-      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image, adminOnly: true },
-      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake, adminOnly: true },
+      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },
+      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, minRole: "admin" },
+      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, minRole: "admin" },
+      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image, minRole: "admin" },
+      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake, minRole: "admin" },
     ],
   },
   {
     label: "Moves",
     items: [
-      { href: "/admin/moves/residential", label: "Residential", Icon: Icons.home, adminOnly: false },
-      { href: "/admin/moves/office", label: "Office / Commercial", Icon: Icons.building, adminOnly: false },
+      { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes" },
+      { href: "/admin/moves", label: "All Moves", Icon: Icons.truck },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText, adminOnly: true },
-      { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign, adminOnly: true },
+      { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText, minRole: "admin" },
+      { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign, minRole: "admin" },
+      { href: "/admin/tips", label: "Tips", Icon: Icons.creditCard, minRole: "admin" },
+      { href: "/admin/finance/profitability", label: "Profitability", Icon: Icons.trendingUp, minRole: "owner" },
     ],
   },
   {
     label: "CRM",
     items: [
-      { href: "/admin/clients", label: "Contacts", Icon: Icons.users, adminOnly: true },
-      { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, adminOnly: true },
-      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, adminOnly: true },
+      { href: "/admin/clients", label: "Contacts", Icon: Icons.users, minRole: "admin" },
+      { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, minRole: "admin" },
+      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, minRole: "admin" },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "admin" },
     ],
   },
 ];
-
-const PAGE_TITLES: Record<string, { title: string; subtitle: string; useClientDate?: boolean }> = {
-  "/admin": { title: "Command Center", subtitle: "", useClientDate: true },
-  "/admin/dispatch": { title: "Dispatch", subtitle: "Today's jobs & crew", useClientDate: true },
-  "/admin/deliveries": { title: "All Projects", subtitle: "Scheduling & tracking" },
-  "/admin/calendar": { title: "Calendar", subtitle: "Feb 10-14, 2026" },
-  "/admin/crew": { title: "Tracking", subtitle: "Live GPS positions" },
-  "/admin/crew/analytics": { title: "Crew Analytics", subtitle: "Performance by crew" },
-  "/admin/partners/retail": { title: "Retail Partners", subtitle: "White-glove delivery" },
-  "/admin/partners/designers": { title: "Designers", subtitle: "" },
-  "/admin/partners/hospitality": { title: "Hospitality", subtitle: "FF&E & seasonal" },
-  "/admin/partners/gallery": { title: "Art Gallery", subtitle: "Transport & exhibitions" },
-  "/admin/partners/realtors": { title: "Realtor Partners", subtitle: "Referrals" },
-  "/admin/moves/residential": { title: "Residential Moves", subtitle: "Client tracking" },
-  "/admin/moves/office": { title: "Office Moves", subtitle: "Commercial logistics" },
-  "/admin/invoices": { title: "Invoices", subtitle: "Billing" },
-  "/admin/revenue": { title: "Revenue", subtitle: "Financial overview" },
-  "/admin/clients": { title: "Contacts", subtitle: "Partners & move clients" },
-  "/admin/change-requests": { title: "Change Requests", subtitle: "Client requests to review" },
-  "/admin/reports": { title: "EOD", subtitle: "End-of-Day Reports" },
-  "/admin/messages": { title: "Messages", subtitle: "Communications" },
-  "/admin/settings": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/settings/personal": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/settings/security": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/settings/appearance": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/settings/notifications": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/settings/integrations": { title: "Profile Settings", subtitle: "Account, security & preferences" },
-  "/admin/platform": { title: "Platform Settings", subtitle: "Pricing, crews & partners" },
-  "/admin/users": { title: "All Users", subtitle: "User management" },
-};
-
-function getPageTitle(pathname: string): { title: string; subtitle: string; useClientDate?: boolean } {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  if (pathname.startsWith("/admin/settings/")) return { title: "Profile Settings", subtitle: "Account, security & preferences", useClientDate: false };
-  if (pathname.startsWith("/admin/deliveries/")) return { title: "Project Details", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/partners/designers/projects")) return { title: "All Projects", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/partners/designers/") && pathname !== "/admin/partners/designers") return { title: "Project", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/clients/")) return { title: "Client Detail", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/deliveries/new")) return { title: "New Project", subtitle: "", useClientDate: false };
-  if (pathname.match(/^\/admin\/moves\/(?!residential|office|new$)[^/]+$/)) return { title: "Move Detail", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/quotes/new")) return { title: "Generate Quote", subtitle: "", useClientDate: false };
-  if (pathname.startsWith("/admin/quotes/")) return { title: "Quote Detail", subtitle: "", useClientDate: false };
-  return { title: "Dashboard", subtitle: "", useClientDate: false };
-}
-
-const SIDEBAR_WIDTH = 220;
 
 function SidebarNavItem({
   href,
@@ -112,6 +88,7 @@ function SidebarNavItem({
   ItemIcon,
   label,
   showChangeRequestDot,
+  badgeCount,
   onNavigate,
 }: {
   href: string;
@@ -119,10 +96,13 @@ function SidebarNavItem({
   ItemIcon: React.ComponentType<{ className?: string }>;
   label: string;
   showChangeRequestDot: boolean;
+  badgeCount?: number;
   onNavigate: () => void;
 }) {
   const { pendingCount } = usePendingChangeRequests();
-  const showBadge = showChangeRequestDot && pendingCount > 0;
+  const crBadge = showChangeRequestDot && pendingCount > 0;
+  const count = crBadge ? pendingCount : badgeCount && badgeCount > 0 ? badgeCount : 0;
+  const showBadge = count > 0;
   return (
     <Link
       href={href}
@@ -142,8 +122,8 @@ function SidebarNavItem({
       <span className={`min-w-0 flex-1 flex items-center justify-between gap-2 ${active ? "font-bold" : ""}`}>
         <span className="truncate">{label}</span>
         {showBadge && (
-          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center" aria-label={`${pendingCount} new request${pendingCount !== 1 ? "s" : ""}`}>
-            {pendingCount > 99 ? "99+" : pendingCount}
+          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center">
+            {count > 99 ? "99+" : count}
           </span>
         )}
       </span>
@@ -151,18 +131,30 @@ function SidebarNavItem({
   );
 }
 
-export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; children: React.ReactNode }) {
+export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", twoFactorEnabled = false, children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; twoFactorEnabled?: boolean; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [quoteBadge, setQuoteBadge] = useState(0);
   const pathname = usePathname();
-  const { title, subtitle, useClientDate } = getPageTitle(pathname);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("quotes")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["sent", "viewed"])
+      .then(({ count }) => { if (typeof count === "number") setQuoteBadge(count); });
+  }, [pathname]);
+
+  const userLevel = ROLE_LEVEL[role] ?? 0;
 
   const sidebarSections = SIDEBAR_SECTIONS_FULL.map((section) => ({
     ...section,
-    items: section.items.filter((item: { adminOnly?: boolean; superAdminOnly?: boolean }) =>
-      (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin)
-    ),
+    items: section.items.filter((item) => {
+      const needed = ROLE_LEVEL[item.minRole ?? "viewer"] ?? 0;
+      return userLevel >= needed || isSuperAdmin;
+    }),
   })).filter((s) => s.items.length > 0);
 
   const isActive = (href: string) => {
@@ -178,6 +170,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
         <PendingChangeRequestsProvider>
           <ToastProvider>
             <RealtimeListener />
+            <SessionTimeout />
           <div className="flex min-h-screen bg-[var(--bg)]">
             {/* Skip to main content for keyboard users */}
             <a
@@ -260,6 +253,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                             const active = isActive(item.href);
                             const ItemIcon = item.Icon;
                             const showChangeRequestDot = item.href === "/admin/change-requests";
+                            const itemBadge = "badgeKey" in item && (item as { badgeKey?: string }).badgeKey === "quotes" ? quoteBadge : undefined;
                             return (
                               <SidebarNavItem
                                 key={item.href}
@@ -268,6 +262,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                                 ItemIcon={ItemIcon}
                                 label={item.label}
                                 showChangeRequestDot={showChangeRequestDot}
+                                badgeCount={itemBadge}
                                 onNavigate={() => setSidebarOpen(false)}
                               />
                             );
@@ -289,36 +284,35 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               <div
                 className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-2 pr-3 sm:pl-3 sm:pr-4 md:pl-3 md:pr-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <button
-                    onClick={() => (sidebarCollapsed ? setSidebarCollapsed(false) : setSidebarOpen(true))}
-                    className={`size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "md:flex" : "md:hidden"}`}
-                    aria-label={sidebarCollapsed ? "Open sidebar" : "Open menu"}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                      <line x1="3" y1="12" x2="21" y2="12" />
-                      <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                  </button>
-                  <div className="min-w-0 flex-1 py-0.5">
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-heading text-[15px] font-semibold text-[var(--tx)] truncate leading-tight">{title}</h2>
-                    </div>
-                    {(subtitle || useClientDate) && (
-                      <div className="text-[11px] text-[var(--tx3)] truncate mt-0.5 leading-tight">
-                        {useClientDate ? <ClientDate /> : subtitle}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <button
+                  onClick={() => (sidebarCollapsed ? setSidebarCollapsed(false) : setSidebarOpen(true))}
+                  className={`size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "md:flex" : "md:hidden"}`}
+                  aria-label={sidebarCollapsed ? "Open sidebar" : "Open menu"}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <SearchBox />
+                <SearchBox />
+
+                <div className="flex items-center gap-1.5 shrink-0">
                   <NotificationDropdown />
                   <ProfileDropdown user={user} />
                 </div>
               </div>
+
+              {role === "owner" && !twoFactorEnabled && (
+                <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
+                  <Shield className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
+                  Two-factor authentication is required for owner accounts.{" "}
+                  <Link href="/admin/platform?tab=users" className="underline font-bold hover:text-amber-300">
+                    Enable 2FA
+                  </Link>
+                </div>
+              )}
 
               {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
               <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto animate-fade-in min-h-0">

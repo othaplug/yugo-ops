@@ -8,6 +8,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Props {
   quote: Quote;
@@ -35,8 +36,8 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
     f?.workstation_count && { label: "Workstations", value: `${f.workstation_count} workstations` },
     f?.it_equipment_surcharge && { label: "IT Equipment", value: "Included" },
     f?.conference_room_surcharge && { label: "Conference Rooms", value: "Included" },
-    quote.from_access && { label: "Origin Access", value: quote.from_access.replace(/_/g, " ") },
-    quote.to_access && { label: "Destination Access", value: quote.to_access.replace(/_/g, " ") },
+    quote.from_access && { label: "Origin Access", value: toTitleCase(quote.from_access) },
+    quote.to_access && { label: "Destination Access", value: toTitleCase(quote.to_access) },
   ] as (false | null | undefined | { label: string; value: string })[]).filter(
     (x): x is { label: string; value: string } => !!x,
   );

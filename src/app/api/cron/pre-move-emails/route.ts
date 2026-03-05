@@ -6,7 +6,8 @@ import { signTrackToken } from "@/lib/track-token";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
- * Sends T-72hr checklist emails and T-24hr crew detail emails.
+ * Sends T-72hr checklist + balance reminder, T-48hr balance payment email,
+ * and T-24hr crew detail emails.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -25,14 +26,15 @@ export async function GET(req: NextRequest) {
   };
 
   const threeDaysOut = toDateStr(3);
+  const twoDaysOut = toDateStr(2);
   const oneDayOut = toDateStr(1);
 
-  const results = { sent72hr: 0, sent24hr: 0, errors: [] as string[] };
+  const results = { sent72hr: 0, sentBalance72hr: 0, sentBalance48hr: 0, sent24hr: 0, errors: [] as string[] };
 
   /* ── T-72 Hour Emails ── */
   const { data: moves72 } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, client_email, scheduled_date, from_address, to_address, from_access, to_access")
+    .select("id, move_code, client_name, client_email, scheduled_date, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at")
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
     .is("pre_move_72hr_sent", null);
@@ -72,6 +74,90 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         results.errors.push(`72hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      // T-72hr Balance Reminder (piggy-backs on same date window)
+      const bal = Number(move.balance_amount || 0);
+      if (bal > 0 && !move.balance_paid_at && move.deposit_paid_at) {
+        try {
+          const balResult = await sendEmail({
+            to: move.client_email,
+            subject: `Your balance of $${bal.toFixed(2)} is due — ${move.move_code || "Payment"}`,
+            template: "balance-reminder-72hr",
+            data: {
+              clientName: move.client_name || "",
+              moveCode: move.move_code || move.id,
+              moveDate: move.scheduled_date,
+              balanceAmount: bal,
+              trackingUrl,
+            },
+          });
+          if (balResult.success) {
+            await supabase
+              .from("moves")
+              .update({ balance_reminder_72hr_sent: new Date().toISOString() })
+              .eq("id", move.id);
+            results.sentBalance72hr++;
+          } else {
+            results.errors.push(`bal72:${move.move_code}:${balResult.error}`);
+          }
+        } catch (err) {
+          results.errors.push(`bal72:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+  }
+
+  /* ── T-48 Hour Balance Payment Email ── */
+  const { data: moves48 } = await supabase
+    .from("moves")
+    .select("id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at")
+    .in("status", ["confirmed", "scheduled"])
+    .eq("scheduled_date", twoDaysOut)
+    .is("balance_reminder_48hr_sent", null)
+    .is("balance_paid_at", null)
+    .not("deposit_paid_at", "is", null);
+
+  if (moves48 && moves48.length > 0) {
+    for (const move of moves48) {
+      if (!move.client_email) continue;
+      const bal = Number(move.balance_amount || 0);
+      if (bal <= 0) continue;
+
+      const ccTotal = bal * 1.033 + 0.15;
+      const autoChargeDate = toDateStr(1);
+      const trackToken = signTrackToken("move", move.id);
+      const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+      const paymentPageUrl = `${baseUrl}/pay/${move.id}`;
+
+      try {
+        const result = await sendEmail({
+          to: move.client_email,
+          subject: `Your balance of $${bal.toFixed(2)} is due — choose how to pay`,
+          template: "balance-reminder-48hr",
+          data: {
+            clientName: move.client_name || "",
+            moveCode: move.move_code || move.id,
+            moveDate: move.scheduled_date,
+            balanceAmount: bal,
+            ccTotal,
+            autoChargeDate,
+            paymentPageUrl,
+            trackingUrl,
+          },
+        });
+
+        if (result.success) {
+          await supabase
+            .from("moves")
+            .update({ balance_reminder_48hr_sent: new Date().toISOString() })
+            .eq("id", move.id);
+          results.sentBalance48hr++;
+        } else {
+          results.errors.push(`bal48:${move.move_code}:${result.error}`);
+        }
+      } catch (err) {
+        results.errors.push(`bal48:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
@@ -158,6 +244,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     sent72hr: results.sent72hr,
+    sentBalance72hr: results.sentBalance72hr,
+    sentBalance48hr: results.sentBalance48hr,
     sent24hr: results.sent24hr,
     errors: results.errors.length,
   });

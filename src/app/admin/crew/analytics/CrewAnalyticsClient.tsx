@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
-import BackButton from "../../components/BackButton";
 
 export interface CrewAnalyticsItem {
   id: string;
@@ -16,10 +15,10 @@ export interface CrewAnalyticsItem {
 }
 
 const RANGE_PRESETS = [
-  { label: "7 days", days: 7 },
-  { label: "14 days", days: 14 },
-  { label: "30 days", days: 30 },
-  { label: "90 days", days: 90 },
+  { label: "7d", days: 7 },
+  { label: "14d", days: 14 },
+  { label: "30d", days: 30 },
+  { label: "90d", days: 90 },
 ] as const;
 
 function fmtDate(d: Date) {
@@ -132,33 +131,36 @@ export default function CrewAnalyticsClient({
     return dateKey >= a && dateKey <= b;
   };
 
+  const summaryParts = [
+    `${totalJobs} jobs`,
+    `${sorted.length} crew${sorted.length !== 1 ? "s" : ""}`,
+    avgSatAll !== "—" ? `${avgSatAll}/5 avg satisfaction` : null,
+    `${avgSignOff}% sign-off rate`,
+  ].filter(Boolean);
+
   return (
-    <div className="max-w-[960px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      {/* Top nav */}
-      <div className="mb-4 flex items-center justify-between">
-        <BackButton label="Back" />
-        <Link href="/admin/crew" className="text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
+    <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">Crew Performance</h1>
+        <Link href="/admin/crew" className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
           Live Tracking
         </Link>
       </div>
-
-      <h1 className="font-hero text-[24px] font-bold text-[var(--tx)] mb-1">Crew Performance</h1>
-      <p className="text-[13px] text-[var(--tx3)] mb-5">
-        Satisfaction, sign-off rate, and average job duration by crew.
-      </p>
+      <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 
       {/* Date filter bar */}
-      <div className="mb-6 relative">
-        <div className="flex flex-wrap items-center gap-2 p-1 bg-[var(--bg)] border border-[var(--brd)] rounded-xl">
+      <div className="mb-5 relative">
+        <div className="flex flex-wrap items-center gap-1.5">
           {RANGE_PRESETS.map((p) => (
             <button
               key={p.days}
               type="button"
               onClick={() => applyPreset(p.days)}
-              className={`px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
                 currentPreset?.days === p.days
-                  ? "bg-[var(--gold)] text-white shadow-sm"
-                  : "text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)]"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
+                  : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
               }`}
             >
               {p.label}
@@ -167,26 +169,25 @@ export default function CrewAnalyticsClient({
           <button
             type="button"
             onClick={() => setCalOpen(!calOpen)}
-            className={`px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1.5 ${
               calOpen || !currentPreset
-                ? "bg-[var(--gold)] text-white shadow-sm"
-                : "text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)]"
+                ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
+                : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
             }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            {!currentPreset ? `${fmtLabel(from)} — ${fmtLabel(to)}` : "Custom"}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {!currentPreset ? `${fmtLabel(from)} \u2014 ${fmtLabel(to)}` : "Custom"}
           </button>
           {loading && (
-            <div className="ml-auto flex items-center gap-1.5 text-[11px] text-[var(--tx3)]">
+            <div className="ml-auto flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
               <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] border-t-transparent animate-spin" />
-              Loading…
             </div>
           )}
         </div>
 
         {/* Calendar dropdown */}
         {calOpen && (
-          <div className="absolute left-0 top-full mt-2 z-40 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl p-4 w-[340px]">
+          <div className="absolute left-0 top-full mt-2 z-40 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl p-4 w-[300px] sm:w-[340px]">
             <div className="flex items-center justify-between mb-3">
               <button type="button" onClick={() => setCalMonth(new Date(calYear, calMo - 1, 1))} className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -230,7 +231,7 @@ export default function CrewAnalyticsClient({
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--brd)]">
               <div className="text-[11px] text-[var(--tx3)]">
-                {rangeStart ? fmtLabel(rangeStart) : "Start"} → {rangeEnd ? fmtLabel(rangeEnd) : "End"}
+                {rangeStart ? fmtLabel(rangeStart) : "Start"} \u2192 {rangeEnd ? fmtLabel(rangeEnd) : "End"}
               </div>
               <button
                 type="button"
@@ -245,114 +246,91 @@ export default function CrewAnalyticsClient({
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-1">Total Jobs</div>
-          <div className="text-[26px] font-bold text-[var(--tx)] font-hero">{totalJobs}</div>
-          <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sorted.length} crew{sorted.length !== 1 ? "s" : ""} active</div>
-        </div>
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-1">Avg Satisfaction</div>
-          <div className="text-[26px] font-bold text-[var(--tx)] font-hero">{avgSatAll}<span className="text-[14px] text-[var(--tx3)]">/5</span></div>
-        </div>
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-1">Avg Sign-off</div>
-          <div className="text-[26px] font-bold text-[var(--tx)] font-hero">{avgSignOff}%</div>
-        </div>
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-1">Top Performer</div>
-          <div className="text-[16px] font-bold text-[var(--gold)] font-hero truncate">{bestCrew?.name || "—"}</div>
-          <div className="text-[10px] text-[var(--tx3)] mt-0.5">{bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""}</div>
-        </div>
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crew${sorted.length !== 1 ? "s" : ""}`} />
+        <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
+        <SummaryCell label="Sign-off Rate" value={`${avgSignOff}%`} />
+        <SummaryCell label="Top Performer" value={bestCrew?.name || "\u2014"} sub={bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""} accent />
       </div>
 
-      {/* Crew cards */}
-      <div className="space-y-3">
-        {sorted.map((a, rank) => {
-          const barW = maxJobs > 0 ? (a.jobsCompleted / maxJobs) * 100 : 0;
-          const satColor = a.avgSatisfaction != null
-            ? a.avgSatisfaction >= 4.5 ? "#2D9F5A" : a.avgSatisfaction >= 3.5 ? "#C9A962" : "#D14343"
-            : "#888";
+      {/* Crew list */}
+      {sorted.length === 0 && !loading ? (
+        <div className="py-16 text-center">
+          <p className="text-[13px] text-[var(--tx3)]">No crew activity in this period</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Try a different date range.</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {sorted.map((a, rank) => {
+            const barW = maxJobs > 0 ? (a.jobsCompleted / maxJobs) * 100 : 0;
+            const satColor = a.avgSatisfaction != null
+              ? a.avgSatisfaction >= 4.5 ? "var(--grn)" : a.avgSatisfaction >= 3.5 ? "var(--gold)" : "var(--red)"
+              : "var(--tx3)";
 
-          return (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => setSelectedTeam(a)}
-              className="w-full text-left rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 hover:border-[var(--gold)]/50 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40 group"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
-                    #{rank + 1}
-                  </div>
-                  <div>
-                    <h2 className="font-hero text-[15px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{a.name}</h2>
+            return (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setSelectedTeam(a)}
+                className="group w-full text-left flex items-start gap-3 py-3.5 px-4 -mx-1 rounded-xl hover:bg-[var(--card)]/60 transition-all"
+              >
+                {/* Rank */}
+                <div className="shrink-0 w-7 h-7 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)] mt-0.5">
+                  #{rank + 1}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[14px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{a.name}</span>
                     {a.members.length > 0 && (
-                      <p className="text-[11px] text-[var(--tx3)] mt-0.5">{a.members.join(", ")}</p>
+                      <span className="text-[10px] text-[var(--tx3)] truncate hidden sm:inline">{a.members.join(", ")}</span>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-1 text-[var(--tx3)] group-hover:text-[var(--gold)] transition-colors">
-                  <span className="text-[11px] font-medium">Details</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-              </div>
 
-              {/* Job count bar */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-1">
-                  <span>Jobs completed</span>
-                  <span className="text-[var(--tx)]">{a.jobsCompleted}</span>
-                </div>
-                <div className="h-2 rounded-full bg-[var(--bg)] overflow-hidden">
-                  <div className="h-full rounded-full bg-[var(--gold)] transition-all duration-500" style={{ width: `${barW}%` }} />
-                </div>
-              </div>
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-[var(--bg)] overflow-hidden">
+                      <div className="h-full rounded-full bg-[var(--gold)] transition-all duration-500" style={{ width: `${barW}%` }} />
+                    </div>
+                    <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums shrink-0">{a.jobsCompleted} jobs</span>
+                  </div>
 
-              <div className="grid grid-cols-3 gap-4 text-[12px]">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Satisfaction</div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: satColor }} />
-                    <span className="text-[15px] font-bold text-[var(--tx)]">
-                      {a.avgSatisfaction != null ? `${a.avgSatisfaction}` : "—"}
+                  {/* Stats row */}
+                  <div className="flex items-center gap-4 text-[11px]">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: satColor }} />
+                      <span className="text-[var(--tx2)]">{a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "\u2014"}</span>
                     </span>
+                    <span className="text-[var(--tx3)]">{a.signOffRate}% sign-off</span>
+                    <span className="text-[var(--tx3)]">{a.avgDuration > 0 ? `${a.avgDuration}m avg` : "\u2014"}</span>
                   </div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Sign-off</div>
-                  <span className="text-[15px] font-bold text-[var(--tx)]">{a.signOffRate}%</span>
-                </div>
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Avg time</div>
-                  <span className="text-[15px] font-bold text-[var(--tx)]">{a.avgDuration > 0 ? `${a.avgDuration}m` : "—"}</span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
 
-      {sorted.length === 0 && !loading && (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-10 text-center">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 15h8"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
-          </div>
-          <p className="text-[14px] font-semibold text-[var(--tx)]">No crew activity</p>
-          <p className="text-[12px] text-[var(--tx3)] mt-1">Try a different date range to see performance data.</p>
+                <svg className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* Team detail modal */}
       {selectedTeam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setSelectedTeam(null)} role="dialog" aria-modal="true">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4" onClick={() => setSelectedTeam(null)} role="dialog" aria-modal="true">
+          <div
+            className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md overflow-hidden max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle for mobile sheet */}
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-[var(--brd)]" />
+            </div>
+
             <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between">
               <div>
-                <h2 className="font-hero text-[18px] font-bold text-[var(--tx)]">{selectedTeam.name}</h2>
-                <p className="text-[11px] text-[var(--tx3)] mt-0.5">{fmtLabel(from)} — {fmtLabel(to)}</p>
+                <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">{selectedTeam.name}</h2>
+                <p className="text-[11px] text-[var(--tx3)] mt-0.5">{fmtLabel(from)} \u2014 {fmtLabel(to)}</p>
               </div>
               <button type="button" onClick={() => setSelectedTeam(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]" aria-label="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -378,18 +356,16 @@ export default function CrewAnalyticsClient({
               <div className="grid grid-cols-2 gap-3">
                 <StatCard label="Jobs completed" value={String(selectedTeam.jobsCompleted)} />
                 <StatCard label="Sign-off rate" value={`${selectedTeam.signOffRate}%`} accent={selectedTeam.signOffRate >= 80} />
-                <StatCard label="Avg satisfaction" value={selectedTeam.avgSatisfaction != null ? `${selectedTeam.avgSatisfaction}/5` : "—"} accent={selectedTeam.avgSatisfaction != null && selectedTeam.avgSatisfaction >= 4} />
-                <StatCard label="Avg job time" value={selectedTeam.avgDuration > 0 ? `${selectedTeam.avgDuration} min` : "—"} />
+                <StatCard label="Avg satisfaction" value={selectedTeam.avgSatisfaction != null ? `${selectedTeam.avgSatisfaction}/5` : "\u2014"} accent={selectedTeam.avgSatisfaction != null && selectedTeam.avgSatisfaction >= 4} />
+                <StatCard label="Avg job time" value={selectedTeam.avgDuration > 0 ? `${selectedTeam.avgDuration} min` : "\u2014"} />
               </div>
 
-              {/* Performance indicators */}
-              <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Performance</div>
-                <div className="space-y-2">
-                  <MetricBar label="Satisfaction" value={selectedTeam.avgSatisfaction != null ? (selectedTeam.avgSatisfaction / 5) * 100 : 0} color="#2D9F5A" />
-                  <MetricBar label="Sign-offs" value={selectedTeam.signOffRate} color="#C9A962" />
-                  <MetricBar label="Efficiency" value={selectedTeam.avgDuration > 0 ? Math.min(100, Math.max(0, 100 - (selectedTeam.avgDuration - 30))) : 50} color="#3B82F6" />
-                </div>
+              {/* Performance bars */}
+              <div className="space-y-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Performance</div>
+                <MetricBar label="Satisfaction" value={selectedTeam.avgSatisfaction != null ? (selectedTeam.avgSatisfaction / 5) * 100 : 0} color="var(--grn)" />
+                <MetricBar label="Sign-offs" value={selectedTeam.signOffRate} color="var(--gold)" />
+                <MetricBar label="Efficiency" value={selectedTeam.avgDuration > 0 ? Math.min(100, Math.max(0, 100 - (selectedTeam.avgDuration - 30))) : 50} color="#3B82F6" />
               </div>
 
               <p className="text-[12px] text-[var(--tx3)]">
@@ -399,6 +375,18 @@ export default function CrewAnalyticsClient({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryCell({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+  return (
+    <div className="py-3">
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-0.5">{label}</div>
+      <div className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
+        {value}
+        {sub && <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">{sub}</span>}
+      </div>
     </div>
   );
 }
@@ -415,11 +403,11 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
 function MetricBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[11px] text-[var(--tx3)] w-20 flex-shrink-0">{label}</span>
+      <span className="text-[11px] text-[var(--tx3)] w-20 shrink-0">{label}</span>
       <div className="flex-1 h-1.5 rounded-full bg-[var(--brd)] overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[11px] font-semibold text-[var(--tx)] w-10 text-right">{Math.round(value)}%</span>
+      <span className="text-[11px] font-semibold text-[var(--tx)] w-10 text-right tabular-nums">{Math.round(value)}%</span>
     </div>
   );
 }

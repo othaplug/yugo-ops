@@ -14,7 +14,13 @@ function emailFooter(loginUrl?: string) {
   `;
 }
 
-/** YUGO logo centered at top — used for all emails */
+/** Official YUGO logo URL for emails (gold version on dark background). */
+function getEmailLogoUrl(): string {
+  const base = getEmailBaseUrl();
+  return `${base}/images/yugo-logo-gold.png`;
+}
+
+/** YUGO logo centered at top — used for all emails. Uses official logo image. */
 function emailLogo() {
   return notifyEmailLogo();
 }
@@ -30,11 +36,12 @@ export function emailLayout(innerHtml: string, footerLoginUrl?: string): string 
   `;
 }
 
-/** YUGO oval badge only (matches notify/track email screenshot) */
+/** Official YUGO logo image (gold on dark). Fallback alt text for clients that block images. */
 function notifyEmailLogo() {
+  const logoUrl = getEmailLogoUrl();
   return `
     <div style="text-align:center;margin-bottom:28px">
-      <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</div>
+      <img src="${logoUrl}" alt="YUGO" width="120" height="32" style="display:inline-block;max-width:120px;height:auto;border:0" />
     </div>
   `;
 }
@@ -675,7 +682,7 @@ export function bookingConfirmationEmail(params: {
       <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Summary</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:3px 0">Total (incl. HST):</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(totalWithTax)}</td></tr>
-        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&check; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(depositPaid)}</td></tr>
+        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&#10003; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(depositPaid)}</td></tr>
         <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
         <tr><td style="color:#666;padding:3px 0">Balance remaining:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(balanceRemaining)}</td></tr>
       </table>

@@ -1058,6 +1058,289 @@ function AddOnsSection() {
   );
 }
 
+/* ────────── 12. INVENTORY & VOLUME ────────── */
+
+function InventoryVolumeSection() {
+  const bm = useSection("volume-benchmarks");
+  const iw = useSection("item-weights");
+  const [itemSearch, setItemSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+
+  const WEIGHT_OPTS = [0.5, 1.0, 2.0, 3.0];
+  const CATEGORY_OPTS = ["furniture", "appliance", "electronics", "decor", "other"];
+
+  const filteredItems = iw.rows.filter((r) => {
+    if (!showInactive && !r.active) return false;
+    if (!itemSearch) return true;
+    const q = itemSearch.toLowerCase();
+    return String(r.item_name).toLowerCase().includes(q) || String(r.slug).includes(q) || String(r.category).toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* ── Volume Benchmarks ── */}
+      <div>
+        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Volume Benchmarks by Move Size</h4>
+        <p className="text-[9px] text-[var(--tx3)] mb-3">
+          These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
+        </p>
+        {bm.loading ? (
+          <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead>
+                  <tr className="bg-[var(--bg)]">
+                    <th className={th}>Move Size</th>
+                    <th className={th}>Std Items</th>
+                    <th className={th}>Item Score</th>
+                    <th className={th}>Boxes</th>
+                    <th className={th}>Box Score</th>
+                    <th className={th}>Benchmark</th>
+                    <th className={th}>Min Mod</th>
+                    <th className={th}>Max Mod</th>
+                    <th className={th}>Min Items</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bm.rows.map((r) => (
+                    <tr key={String(r.id)}>
+                      <td className={`${td} font-medium text-[var(--tx)]`}>{String(r.move_size)}</td>
+                      <td className={td}>
+                        <EditCell value={Number(r.std_major_items)} onChange={(v) => bm.updateRow(String(r.id), "std_major_items", Number(v))} type="number" className="w-12" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.std_item_score)} onChange={(v) => bm.updateRow(String(r.id), "std_item_score", Number(v))} type="number" className="w-14" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.assumed_boxes)} onChange={(v) => bm.updateRow(String(r.id), "assumed_boxes", Number(v))} type="number" className="w-12" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.box_score)} onChange={(v) => bm.updateRow(String(r.id), "box_score", Number(v))} type="number" className="w-14" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.benchmark_score)} onChange={(v) => bm.updateRow(String(r.id), "benchmark_score", Number(v))} type="number" className="w-14 font-bold text-[var(--gold)]" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.min_modifier)} onChange={(v) => bm.updateRow(String(r.id), "min_modifier", Number(v))} type="number" className="w-14" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.max_modifier)} onChange={(v) => bm.updateRow(String(r.id), "max_modifier", Number(v))} type="number" className="w-14" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.min_items_for_adjustment)} onChange={(v) => bm.updateRow(String(r.id), "min_items_for_adjustment", Number(v))} type="number" className="w-12" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <SaveBar onSave={() => bm.save()} onUndo={bm.undo} />
+          </>
+        )}
+      </div>
+
+      {/* ── Item Weight Scores ── */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-[11px] font-bold text-[var(--tx)]">Item Weight Scores</h4>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
+              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
+              Show inactive
+            </label>
+            <button
+              type="button"
+              onClick={() => iw.add({ item_name: "New Item", slug: `custom-${Date.now()}`, weight_score: 1.0, category: "furniture", is_common: false, active: true, display_order: 999 })}
+              className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5"
+            >
+              + Add Item
+            </button>
+          </div>
+        </div>
+
+        <input
+          type="text"
+          value={itemSearch}
+          onChange={(e) => setItemSearch(e.target.value)}
+          placeholder="Search items…"
+          className="w-full mb-3 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
+        />
+
+        {iw.loading ? (
+          <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead>
+                  <tr className="bg-[var(--bg)]">
+                    <th className={th}>Item Name</th>
+                    <th className={th}>Slug</th>
+                    <th className={th}>Weight</th>
+                    <th className={th}>Category</th>
+                    <th className={`${th} text-center`}>Common</th>
+                    <th className={`${th} text-center`}>Active</th>
+                    <th className={th} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((r) => (
+                    <tr key={String(r.id)} className={!r.active ? "opacity-40" : ""}>
+                      <td className={td}>
+                        <EditCell value={String(r.item_name)} onChange={(v) => iw.updateRow(String(r.id), "item_name", v)} className="font-medium text-[var(--tx)]" />
+                      </td>
+                      <td className={td}>
+                        <span className="text-[10px] font-mono text-[var(--tx3)]">{String(r.slug)}</span>
+                      </td>
+                      <td className={td}>
+                        <select
+                          value={Number(r.weight_score)}
+                          onChange={(e) => iw.updateRow(String(r.id), "weight_score", Number(e.target.value))}
+                          className={`bg-transparent text-[11px] outline-none border-none cursor-pointer font-bold ${
+                            Number(r.weight_score) >= 2 ? "text-orange-400" : Number(r.weight_score) <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--gold)]"
+                          }`}
+                        >
+                          {WEIGHT_OPTS.map((w) => (
+                            <option key={w} value={w}>×{w}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className={td}>
+                        <select
+                          value={String(r.category)}
+                          onChange={(e) => iw.updateRow(String(r.id), "category", e.target.value)}
+                          className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
+                        >
+                          {CATEGORY_OPTS.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className={`${td} text-center`}>
+                        <button type="button" role="switch" aria-checked={!!r.is_common} onClick={() => iw.updateRow(String(r.id), "is_common", !r.is_common)} className={`relative w-8 h-4 rounded-full transition-colors ${r.is_common ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.is_common ? "translate-x-4" : ""}`} />
+                        </button>
+                      </td>
+                      <td className={`${td} text-center`}>
+                        <button type="button" role="switch" aria-checked={!!r.active} onClick={() => iw.updateRow(String(r.id), "active", !r.active)} className={`relative w-8 h-4 rounded-full transition-colors ${r.active ? "bg-green-500" : "bg-[var(--brd)]"}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.active ? "translate-x-4" : ""}`} />
+                        </button>
+                      </td>
+                      <td className={td}>
+                        <button type="button" onClick={() => iw.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]" title="Delete">×</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-[9px] text-[var(--tx3)] mt-1">{filteredItems.length} items shown</div>
+            <SaveBar onSave={() => iw.save()} onUndo={iw.undo} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ────────── 13. FLEET & VEHICLES ────────── */
+
+function FleetVehiclesSection() {
+  const fleet = useSection("fleet-vehicles");
+  const rules = useSection("truck-rules");
+
+  const VEHICLE_TYPES = ["sprinter", "16ft", "20ft", "24ft", "26ft"];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-[11px] font-bold text-[var(--tx)]">Vehicle Types</h4>
+          <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
+        </div>
+        {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead><tr className="bg-[var(--bg)]">
+                  <th className={th}>Type</th>
+                  <th className={th}>Display Name</th>
+                  <th className={th}>Cargo (cu ft)</th>
+                  <th className={th}>Capacity (lbs)</th>
+                  <th className={th}>Plate</th>
+                  <th className={`${th} text-center`}>Available</th>
+                  <th className={th} />
+                </tr></thead>
+                <tbody>
+                  {fleet.rows.map((r) => (
+                    <tr key={String(r.id)} className={!r.is_available ? "opacity-40" : ""}>
+                      <td className={`${td} font-mono text-[10px] text-[var(--gold)]`}>{String(r.vehicle_type)}</td>
+                      <td className={td}><EditCell value={String(r.display_name)} onChange={(v) => fleet.updateRow(String(r.id), "display_name", v)} className="font-medium text-[var(--tx)]" /></td>
+                      <td className={td}><EditCell value={Number(r.cargo_cubic_ft)} onChange={(v) => fleet.updateRow(String(r.id), "cargo_cubic_ft", Number(v))} type="number" className="w-16" /></td>
+                      <td className={td}><EditCell value={Number(r.capacity_lbs)} onChange={(v) => fleet.updateRow(String(r.id), "capacity_lbs", Number(v))} type="number" className="w-16" /></td>
+                      <td className={td}><EditCell value={String(r.license_plate || "—")} onChange={(v) => fleet.updateRow(String(r.id), "license_plate", v === "—" ? "" : v)} className="text-[var(--tx3)] font-mono" /></td>
+                      <td className={`${td} text-center`}>
+                        <button type="button" role="switch" aria-checked={!!r.is_available} onClick={() => fleet.updateRow(String(r.id), "is_available", !r.is_available)} className={`relative w-8 h-4 rounded-full transition-colors ${r.is_available ? "bg-green-500" : "bg-[var(--brd)]"}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.is_available ? "translate-x-4" : ""}`} />
+                        </button>
+                      </td>
+                      <td className={td}><button type="button" onClick={() => fleet.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <SaveBar onSave={() => fleet.save()} onUndo={fleet.undo} />
+          </>
+        )}
+      </div>
+
+      <div>
+        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Allocation Rules</h4>
+        <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
+        {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead><tr className="bg-[var(--bg)]">
+                  <th className={th}>Move Size</th>
+                  <th className={th}>Inventory</th>
+                  <th className={th}>Primary</th>
+                  <th className={th}>Secondary</th>
+                  <th className={th}>Notes</th>
+                </tr></thead>
+                <tbody>
+                  {rules.rows.map((r) => (
+                    <tr key={String(r.id)}>
+                      <td className={`${td} font-medium text-[var(--tx)]`}>{String(r.move_size)}</td>
+                      <td className={`${td} text-[var(--tx3)]`}>{String(r.inventory_range)}</td>
+                      <td className={td}>
+                        <select value={String(r.primary_vehicle)} onChange={(e) => rules.updateRow(String(r.id), "primary_vehicle", e.target.value)} className="bg-transparent text-[11px] text-[var(--gold)] font-bold outline-none border-none cursor-pointer">
+                          {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </td>
+                      <td className={td}>
+                        <select value={String(r.secondary_vehicle || "")} onChange={(e) => rules.updateRow(String(r.id), "secondary_vehicle", e.target.value || "")} className="bg-transparent text-[11px] text-[var(--tx3)] outline-none border-none cursor-pointer">
+                          <option value="">None</option>
+                          {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </td>
+                      <td className={td}><EditCell value={String(r.notes || "—")} onChange={(v) => rules.updateRow(String(r.id), "notes", v === "—" ? "" : v)} className="text-[var(--tx3)]" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <SaveBar onSave={() => rules.save()} onUndo={rules.undo} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
@@ -1104,6 +1387,10 @@ export default function PricingControlPanel() {
 
       <Accordion title="Add-Ons" subtitle="Optional services, tiered & per-unit pricing">
         <AddOnsSection />
+      </Accordion>
+
+      <Accordion title="Inventory & Volume" subtitle="Item weight scores and volume benchmarks per move size">
+        <InventoryVolumeSection />
       </Accordion>
     </div>
   );

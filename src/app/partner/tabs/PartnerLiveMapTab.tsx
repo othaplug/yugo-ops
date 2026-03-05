@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 
 const PartnerMapLeaflet = dynamic(() => import("./PartnerMapLeaflet"), { ssr: false });
 const PartnerMapMapbox = dynamic(() => import("./PartnerMapMapbox"), { ssr: false });
@@ -103,7 +104,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2D9F5A]" />
               </span>
               <span className="text-[13px] font-bold text-[#1A1A1A]">
-                {CREW_STATUS_TO_LABEL[selected.live_stage || ""] || (selected.live_stage || "").replace(/_/g, " ") || "Active"}
+                {CREW_STATUS_TO_LABEL[selected.live_stage || ""] || toTitleCase(selected.live_stage || "") || "Active"}
               </span>
             </div>
             <div className="text-[12px] text-[#1A1A1A] font-semibold">{selected.customer_name || selected.delivery_number}</div>

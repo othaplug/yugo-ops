@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
 export async function requireAuth() {
   const supabase = await createClient();
@@ -14,32 +15,37 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const { user, error } = await requireAuth();
   if (error) return { user: null, admin: null, error };
-  const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
-  const supabase = await createClient();
-  const { data: platformUser } = await supabase
+  const superAdmin = isSuperAdminEmail(user!.email);
+  if (superAdmin) {
+    return { user, admin: { isSuperAdmin: true, role: "owner" }, error: null };
+  }
+  const db = createAdminClient();
+  const { data: platformUser } = await db
     .from("platform_users")
     .select("role")
     .eq("user_id", user!.id)
     .single();
-  const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
+  const isAdmin = platformUser?.role === "admin" || platformUser?.role === "manager" || platformUser?.role === "owner";
   if (!isAdmin) {
     return { user, admin: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
-  return { user, admin: { isSuperAdmin, role: platformUser?.role }, error: null };
+  return { user, admin: { isSuperAdmin: false, role: platformUser?.role }, error: null };
 }
 
 /** Admin, manager, dispatcher, or superadmin — for staff actions like sending tracking links */
 export async function requireStaff() {
   const { user, error } = await requireAuth();
   if (error) return { user: null, error };
-  const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
-  const supabase = await createClient();
-  const { data: platformUser } = await supabase
+  if (isSuperAdminEmail(user!.email)) {
+    return { user, error: null };
+  }
+  const db = createAdminClient();
+  const { data: platformUser } = await db
     .from("platform_users")
     .select("role")
     .eq("user_id", user!.id)
     .single();
-  const isStaff = isSuperAdmin || ["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser?.role || "");
+  const isStaff = ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser?.role || "");
   if (!isStaff) {
     return { user: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

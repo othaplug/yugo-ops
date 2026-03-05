@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { getDeliveryTimelineIndex, DELIVERY_TIMELINE_STEPS } from "@/lib/partner-type";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
+import { toTitleCase } from "@/lib/format-text";
 
 const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
 const STAGE_LABELS: Record<string, string> = {
@@ -12,7 +13,7 @@ const STAGE_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
-const IN_PROGRESS_STATUSES = ["dispatched", "in-transit", "in_transit", "in_transit_to_destination"];
+const IN_PROGRESS_STATUSES = ["dispatched", "in-transit", "in_transit", "in_transit_to_destination", "in_progress"];
 
 interface Delivery {
   id: string;
@@ -37,13 +38,15 @@ const STATUS_BADGE: Record<string, string> = {
   dispatched: "bg-amber-50 text-amber-600",
   "in-transit": "bg-amber-50 text-amber-700",
   in_transit: "bg-amber-50 text-amber-700",
+  in_progress: "bg-amber-50 text-amber-700",
   delivered: "bg-green-50 text-green-700",
   completed: "bg-green-50 text-green-700",
   pending: "bg-orange-50 text-orange-600",
+  pending_approval: "bg-orange-50 text-orange-600",
   cancelled: "bg-red-50 text-red-600",
 };
 
-const STATUS_OPTIONS = ["all", "scheduled", "confirmed", "dispatched", "in-transit", "delivered", "completed", "cancelled"];
+const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "dispatched", "in_progress", "in-transit", "delivered", "completed", "cancelled"];
 
 export default function PartnerDeliveriesTab({
   deliveries,
@@ -152,7 +155,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       } catch {}
     };
     poll();
-    const id = setInterval(poll, 10000);
+    const id = setInterval(poll, 5000);
     return () => clearInterval(id);
   }, [d.id, isInProgress, isCompleted]);
 
@@ -166,7 +169,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
     ? items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean).join(", ")
     : null;
 
-  const statusLabel = (d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const statusLabel = toTitleCase(d.status || "");
   const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase().replace(/ /g, "_")] || "bg-gray-50 text-gray-600";
 
   const copyTrackingLink = async () => {

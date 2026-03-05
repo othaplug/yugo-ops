@@ -1,25 +1,23 @@
-/**
- * Super admin email — must be set via env in production.
- * Returns empty string if not set (page still loads; no one is super admin).
- */
-const DEV_FALLBACK = "othaplug@gmail.com";
+const SUPER_ADMIN_EMAILS = [
+  "othaplug@gmail.com",
+  "oche@helloyugo.com",
+];
+
+export function getSuperAdminEmails(): string[] {
+  const envEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const emails = new Set(SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()));
+  if (envEmail && envEmail.length >= 3) emails.add(envEmail);
+  return [...emails];
+}
 
 export function getSuperAdminEmail(): string {
-  const email = process.env.SUPER_ADMIN_EMAIL?.trim();
-  if (process.env.NODE_ENV === "production") {
-    if (!email || email.length < 3) {
-      console.warn("SUPER_ADMIN_EMAIL not set in production — set it in your env for super admin access");
-      return "";
-    }
-    return email.toLowerCase();
-  }
-  return (email || DEV_FALLBACK).toLowerCase();
+  const envEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  if (envEmail && envEmail.length >= 3) return envEmail;
+  return SUPER_ADMIN_EMAILS[0].toLowerCase();
 }
 
 export function isSuperAdminEmail(email: string | null | undefined): boolean {
-  try {
-    return (email || "").toLowerCase() === getSuperAdminEmail();
-  } catch {
-    return false;
-  }
+  if (!email) return false;
+  const normalized = email.toLowerCase();
+  return getSuperAdminEmails().includes(normalized);
 }

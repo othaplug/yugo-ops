@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
 import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Client {
   id: string;
@@ -149,7 +150,7 @@ export default function HospitalityClient({
                 </div>
               ) : (
                 filteredDeliveries.slice(0, 25).map((d) => {
-                  const statusLabel = (d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+                  const statusLabel = toTitleCase(d.status || "");
                   const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
                   return (
                     <Link

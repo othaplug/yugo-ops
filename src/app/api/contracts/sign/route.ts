@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 import jsPDF from "jspdf";
 
 interface ContractAddonData {
@@ -285,6 +286,12 @@ function generateContractPdf(
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`contract:${ip}`, 10, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = (await req.json()) as Partial<ContractSignPayload>;
     const { quote_id, typed_name, agreement_version, user_agent, contract_data } = body;
 

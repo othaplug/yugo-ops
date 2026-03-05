@@ -1,30 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { moveNotificationEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await requireAuth();
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
-    const { data: platformUser } = await supabase
+    const db = createAdminClient();
+    const { data: platformUser } = await db
       .from("platform_users")
       .select("id")
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+    const isSuperAdmin = isSuperAdminEmail(user!.email);
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    // Super admins may not be in platform_users; use admin client to bypass RLS for DB operations
-    const db = isSuperAdmin ? createAdminClient() : supabase;
 
     const contentType = req.headers.get("content-type") ?? "";
     let body: Record<string, unknown> = {};
@@ -115,7 +111,7 @@ export async function POST(req: NextRequest) {
         from_lng: fromLng,
         to_lat: toLat,
         to_lng: toLng,
-        estimate,
+        amount: estimate,
         status: "confirmed",
         stage: "quote",
         scheduled_date: (body.scheduled_date as string)?.trim() || null,

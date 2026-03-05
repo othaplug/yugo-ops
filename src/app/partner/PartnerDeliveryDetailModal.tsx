@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 
 const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
 const STAGE_LABELS: Record<string, string> = {
@@ -246,7 +247,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888] mb-1">Status</div>
                 <span className="text-[13px] font-semibold text-[#1A1A1A]">
-                  {liveStage ? (CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")) : (d.status || "").replace(/_/g, " ")}
+                  {liveStage ? (CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : toTitleCase(d.status || "")}
                 </span>
               </div>
 
@@ -294,7 +295,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 </div>
                 <div>
                   <div className="text-[13px] font-semibold text-[#1A1A1A]">
-                    {liveStage ? (STAGE_LABELS[liveStage] || CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")) : "Crew assigned"}
+                    {liveStage ? (STAGE_LABELS[liveStage] || CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : "Crew assigned"}
                   </div>
                   <div className="text-[11px] text-[#888]">
                     {crewPosition ? "Live GPS tracking active" : "Waiting for crew location…"}

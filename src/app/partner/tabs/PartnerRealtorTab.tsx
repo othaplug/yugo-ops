@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/format-currency";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Referral {
   id: string;
@@ -54,7 +55,7 @@ export default function PartnerRealtorTab({
     <div className="space-y-3">
       {referrals.map((r) => {
         const badgeClass = STATUS_BADGE[(r.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
-        const statusLabel = (r.status || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        const statusLabel = toTitleCase(r.status || "");
         const tierLabel = TIER_LABEL[r.tier || "standard"] || r.tier || "Standard";
 
         return (

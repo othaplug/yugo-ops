@@ -6,7 +6,8 @@ import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone } from "@/lib/phone";
-import { Home, Building2, Package, Gem, Star, Truck, ChevronDown, Check, Send, Eye, Loader2, ChevronRight } from "lucide-react";
+import { toTitleCase } from "@/lib/format-text";
+import { Home, Building2, Package, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Search, Plus, Minus, Users, Clock, Truck } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────
 
@@ -49,8 +50,38 @@ interface QuoteResult {
   distance_km: number | null;
   drive_time_min: number | null;
   move_date: string;
+  expires_at?: string;
   factors: Record<string, unknown>;
   addons: { items: { name: string; subtotal: number }[]; total: number };
+  inventory?: { modifier: number; score: number; benchmark: number; totalItems: number };
+  labour?: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null;
+  truck?: {
+    primary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
+    secondary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
+    isMultiVehicle: boolean;
+    notes: string | null;
+    range: string;
+  } | null;
+  valuation?: {
+    included: Record<string, string>;
+    upgrades: Record<string, { price: number; to_tier: string; assumed_shipment_value: number } | null>;
+    tiers: unknown[];
+  };
+}
+
+interface ItemWeight {
+  slug: string;
+  item_name: string;
+  weight_score: number;
+  category: string;
+  is_common: boolean;
+}
+
+interface InventoryEntry {
+  slug: string;
+  name: string;
+  quantity: number;
+  weight_score: number;
 }
 
 // ─── Constants ──────────────────────────────────
@@ -166,9 +197,13 @@ function fmtPrice(n: number) {
 export default function QuoteFormClient({
   addons: allAddons,
   config,
+  itemWeights = [],
+  userRole = "coordinator",
 }: {
   addons: Addon[];
   config: Record<string, string>;
+  itemWeights?: ItemWeight[];
+  userRole?: string;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -186,6 +221,8 @@ export default function QuoteFormClient({
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
   const [moveDate, setMoveDate] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
+  const [arrivalWindow, setArrivalWindow] = useState("morning");
   const [moveSize, setMoveSize] = useState("2br");
 
   // Specialty items
@@ -219,6 +256,12 @@ export default function QuoteFormClient({
   // Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
 
+  // Inventory
+  const [inventoryItems, setInventoryItems] = useState<InventoryEntry[]>([]);
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
+  const inventorySearchRef = useRef<HTMLDivElement>(null);
+
   // Quote result (set only after successful generate; required for Send)
   const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -227,6 +270,7 @@ export default function QuoteFormClient({
   const [sendSuccess, setSendSuccess] = useState(false);
   const [hubspotLoaded, setHubspotLoaded] = useState(false);
   const [hubspotBanner, setHubspotBanner] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(true);
   const prefillDone = useRef(false);
 
   // Contact search for auto-fill (same as Create Move)
@@ -267,6 +311,61 @@ export default function QuoteFormClient({
       if (contactSearchTimerRef.current) clearTimeout(contactSearchTimerRef.current);
     };
   }, [contactSearch]);
+
+  // ── Inventory helpers ─────────────────────
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (inventorySearchRef.current && !inventorySearchRef.current.contains(e.target as Node)) {
+        setShowInventoryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const commonItems = useMemo(() => itemWeights.filter((w) => w.is_common), [itemWeights]);
+
+  const filteredItemWeights = useMemo(() => {
+    if (!inventorySearch || inventorySearch.length < 1) return commonItems;
+    const q = inventorySearch.toLowerCase();
+    return itemWeights.filter(
+      (w) => w.item_name.toLowerCase().includes(q) || w.slug.includes(q) || w.category.toLowerCase().includes(q),
+    );
+  }, [inventorySearch, itemWeights, commonItems]);
+
+  const addInventoryItem = useCallback((w: ItemWeight) => {
+    setInventoryItems((prev) => {
+      const existing = prev.find((i) => i.slug === w.slug);
+      if (existing) return prev.map((i) => (i.slug === w.slug ? { ...i, quantity: i.quantity + 1 } : i));
+      return [...prev, { slug: w.slug, name: w.item_name, quantity: 1, weight_score: w.weight_score }];
+    });
+    setInventorySearch("");
+    setShowInventoryDropdown(false);
+  }, []);
+
+  const removeInventoryItem = useCallback((slug: string) => {
+    setInventoryItems((prev) => prev.filter((i) => i.slug !== slug));
+  }, []);
+
+  const updateInventoryQty = useCallback((slug: string, qty: number) => {
+    if (qty < 1) return;
+    setInventoryItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, quantity: qty } : i)));
+  }, []);
+
+  const inventoryScore = useMemo(() => {
+    return inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
+  }, [inventoryItems]);
+
+  const inventoryTotalItems = useMemo(() => {
+    return inventoryItems.reduce((sum, i) => sum + i.quantity, 0);
+  }, [inventoryItems]);
+
+  const QUICK_ADD_SLUGS = ["bed-queen", "sofa", "dresser", "dining-table", "accent-chair", "tv-large"];
+  const quickAddItems = useMemo(
+    () => QUICK_ADD_SLUGS.map((s) => itemWeights.find((w) => w.slug === s)).filter(Boolean) as ItemWeight[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itemWeights],
+  );
 
   // ── HubSpot pre-fill ──────────────────────
   useEffect(() => {
@@ -402,6 +501,7 @@ export default function QuoteFormClient({
 
   // ── Build API payload ─────────────────────
   const buildPayload = useCallback(() => {
+    const clientName = [firstName, lastName].filter(Boolean).join(" ");
     const base: Record<string, unknown> = {
       service_type: serviceType,
       from_address: fromAddress,
@@ -409,13 +509,21 @@ export default function QuoteFormClient({
       from_access: fromAccess || undefined,
       to_access: toAccess || undefined,
       move_date: moveDate,
+      preferred_time: preferredTime || undefined,
+      arrival_window: arrivalWindow || undefined,
       hubspot_deal_id: hubspotDealId || undefined,
       selected_addons: Array.from(selectedAddons.values()),
+      client_name: clientName || undefined,
+      client_email: email || undefined,
+      client_phone: phone || undefined,
     };
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
       base.move_size = moveSize;
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
+      if (inventoryItems.length > 0) {
+        base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+      }
     }
     if (serviceType === "office_move") {
       base.square_footage = Number(sqft) || undefined;
@@ -424,6 +532,9 @@ export default function QuoteFormClient({
       base.has_conference_room = hasConf;
       base.has_reception_area = hasReception;
       base.timing_preference = timingPref || undefined;
+      if (inventoryItems.length > 0) {
+        base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+      }
     }
     if (serviceType === "single_item") {
       base.item_category = itemCategory;
@@ -448,10 +559,11 @@ export default function QuoteFormClient({
     }
     return base;
   }, [
-    serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, hubspotDealId,
-    selectedAddons, moveSize, specialtyItems, sqft, wsCount, hasIt, hasConf, hasReception,
-    timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights, numItems,
-    declaredValue, projectType, timelineHours, cratingPieces, climateControl,
+    serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
+    selectedAddons, moveSize, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
+    hasReception, timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
+    numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
+    firstName, lastName, email, phone,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
@@ -554,10 +666,10 @@ export default function QuoteFormClient({
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-5">
+      <div className="flex flex-col lg:flex-row gap-5 relative">
         {/* ═══ LEFT PANEL — Form ═══ */}
-        <div className="lg:w-[60%] flex flex-col gap-4">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+        <div className={`flex flex-col transition-all duration-300 ${previewOpen ? "lg:w-[60%]" : "lg:w-full"}`}>
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[var(--brd)]">
               <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
               <p className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -726,6 +838,17 @@ export default function QuoteFormClient({
                   <Field label="Move Date *">
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
                   </Field>
+                  <Field label="Preferred Time">
+                    <input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput} />
+                  </Field>
+                  <Field label="Arrival Window">
+                    <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
+                      <option value="morning">Morning (7 AM – 12 PM)</option>
+                      <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
+                      <option value="full_day">Full Day (7 AM – 5 PM)</option>
+                      <option value="evening">Evening (5 PM – 9 PM)</option>
+                    </select>
+                  </Field>
                   {(serviceType === "local_move" || serviceType === "long_distance") && (
                     <Field label="Move Size">
                       <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
@@ -756,7 +879,7 @@ export default function QuoteFormClient({
                               : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
                           }`}
                         >
-                          {type.replace(/_/g, " ")}
+                          {toTitleCase(type)}
                         </button>
                       );
                     })}
@@ -765,7 +888,7 @@ export default function QuoteFormClient({
                     <div className="space-y-1 mt-2">
                       {specialtyItems.map((item) => (
                         <div key={item.type} className="flex items-center gap-2">
-                          <span className="text-[11px] text-[var(--tx)] flex-1">{item.type.replace(/_/g, " ")}</span>
+                          <span className="text-[11px] text-[var(--tx)] flex-1">{toTitleCase(item.type)}</span>
                           <input
                             type="number"
                             min={1}
@@ -780,6 +903,114 @@ export default function QuoteFormClient({
                   )}
                 </div>
               )}
+
+              {/* ── 5b. Inventory (Residential / Long distance / Office) ── */}
+              {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
+                <div className="mb-5 space-y-3 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/50">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Client Inventory</h3>
+                    {inventoryItems.length > 0 && (
+                      <span className="text-[10px] text-[var(--tx3)]">
+                        {inventoryTotalItems} items · Score {inventoryScore.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick-add buttons */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickAddItems.map((w) => {
+                      const existing = inventoryItems.find((i) => i.slug === w.slug);
+                      return (
+                        <button
+                          key={w.slug}
+                          type="button"
+                          onClick={() => addInventoryItem(w)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                            existing
+                              ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
+                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                          }`}
+                        >
+                          <Plus className="w-2.5 h-2.5" />
+                          {w.item_name.split(" / ")[0].split(" (")[0]}
+                          {existing && <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Search input */}
+                  <div ref={inventorySearchRef} className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
+                      <input
+                        type="text"
+                        value={inventorySearch}
+                        onChange={(e) => { setInventorySearch(e.target.value); setShowInventoryDropdown(true); }}
+                        onFocus={() => setShowInventoryDropdown(true)}
+                        placeholder="Search items (sofa, bed, TV, fridge…)"
+                        className={`${fieldInput} pl-8`}
+                      />
+                    </div>
+                    {showInventoryDropdown && filteredItemWeights.length > 0 && (
+                      <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                        {filteredItemWeights.map((w) => (
+                          <button
+                            key={w.slug}
+                            type="button"
+                            onClick={() => addInventoryItem(w)}
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
+                          >
+                            <span>{w.item_name}</span>
+                            <span className={`text-[9px] font-mono tabular-nums ${
+                              w.weight_score >= 2 ? "text-orange-400 font-bold" : w.weight_score <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--tx2)]"
+                            }`}>
+                              ×{w.weight_score}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Inventory list */}
+                  {inventoryItems.length > 0 && (
+                    <div className="space-y-1">
+                      {inventoryItems.map((item) => (
+                        <div key={item.slug} className="flex items-center gap-2 py-1 group">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            item.weight_score >= 2 ? "bg-orange-400" : item.weight_score <= 0.5 ? "bg-[var(--tx3)]" : "bg-[var(--gold)]"
+                          }`} />
+                          <span className="text-[11px] text-[var(--tx)] flex-1 truncate">{item.name}</span>
+                          <span className="text-[9px] text-[var(--tx3)] font-mono tabular-nums">×{item.weight_score}</span>
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity - 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-[11px] font-medium text-[var(--tx)] w-5 text-center tabular-nums">{item.quantity}</span>
+                            <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity + 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <button type="button" onClick={() => removeInventoryItem(item.slug)} className="text-[var(--tx3)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] ml-1">
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
+                        <span className="text-[var(--tx3)]">Item score: {inventoryScore.toFixed(1)}</span>
+                        <span className="text-[var(--tx3)]">{inventoryTotalItems} items</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {inventoryItems.length === 0 && (
+                    <p className="text-[10px] text-[var(--tx3)] italic">No inventory added — standard volume assumed for pricing.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="border-t border-[var(--brd)] my-5" />
 
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
@@ -1072,13 +1303,12 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* Spacer so sticky button bar doesn't cover last section */}
-              <div className="h-24" />
+              <div className="h-4" />
             </div>
           </div>
 
           {/* ── Sticky bottom button bar ── */}
-          <div className="sticky bottom-0 z-10 py-4 px-6 bg-[var(--bg)] border-t border-[var(--brd)] rounded-b-xl">
+          <div className="sticky bottom-0 z-10 py-3 px-5 bg-[var(--card)] border border-[var(--brd)] border-t-[var(--brd)] rounded-b-xl">
             <div className="flex gap-3">
               <button
                 type="button"
@@ -1113,16 +1343,40 @@ export default function QuoteFormClient({
         </div>
 
         {/* ═══ RIGHT PANEL — Live Quote Preview ═══ */}
-        <div className="lg:w-[40%]">
+
+        {/* Collapsed toggle tab */}
+        {!previewOpen && (
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            title="Show preview"
+          >
+            <PanelRightOpen className="w-4 h-4" />
+            <span className="text-[9px] font-bold tracking-wider uppercase [writing-mode:vertical-lr]">Preview</span>
+          </button>
+        )}
+
+        <div className={`transition-all duration-300 ${previewOpen ? "lg:w-[40%]" : "lg:w-0 lg:overflow-hidden lg:opacity-0 lg:pointer-events-none hidden lg:block"}`}>
           <div className="sticky top-6 space-y-4">
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--brd)]">
-                <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
-                  {quoteResult ? `Quote ${quoteResult.quote_id}` : "Live Quote Preview"}
-                </h2>
-                {!quoteResult && (
-                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">Updates as you fill in the form</p>
-                )}
+              <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
+                <div>
+                  <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+                    {quoteResult ? `Quote ${quoteResult.quote_id}` : "Live Quote Preview"}
+                  </h2>
+                  {!quoteResult && (
+                    <p className="text-[10px] text-[var(--tx3)] mt-0.5">Updates as you fill in the form</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(false)}
+                  className="hidden lg:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                  title="Collapse preview"
+                >
+                  <PanelRightClose className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="p-5 space-y-4">
@@ -1132,7 +1386,7 @@ export default function QuoteFormClient({
                     {quoteResult.tiers ? (
                       <TiersDisplay tiers={quoteResult.tiers} />
                     ) : quoteResult.custom_price ? (
-                      <SinglePriceDisplay price={quoteResult.custom_price} label={serviceType.replace(/_/g, " ")} />
+                      <SinglePriceDisplay price={quoteResult.custom_price} label={toTitleCase(serviceType)} />
                     ) : null}
 
                     {quoteResult.addons && quoteResult.addons.items.length > 0 && (
@@ -1147,7 +1401,7 @@ export default function QuoteFormClient({
                       </div>
                     )}
 
-                    <FactorsDisplayCollapsible factors={quoteResult.factors} distance={quoteResult.distance_km} time={quoteResult.drive_time_min} />
+                    <FactorsDisplayCollapsible factors={quoteResult.factors} distance={quoteResult.distance_km} time={quoteResult.drive_time_min} showMultipliers={userRole === "owner" || userRole === "admin"} />
                   </>
                 ) : (
                   /* ── Optimistic live preview ── */
@@ -1182,6 +1436,10 @@ export default function QuoteFormClient({
                   <span className="font-mono font-bold text-[var(--tx)]">{quoteResult.quote_id}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-[var(--tx3)]">Expires</span>
+                  <ExpiryLabel expiresAt={quoteResult.expires_at} />
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Distance</span>
                   <span className="text-[var(--tx)]">{quoteResult.distance_km ? `${quoteResult.distance_km} km` : "—"}</span>
                 </div>
@@ -1199,6 +1457,100 @@ export default function QuoteFormClient({
                     <span className="font-mono text-[var(--tx)]">#{hubspotDealId}</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── Labour estimate (coordinator-only) ── */}
+            {quoteResult?.labour && (
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Labour Estimate</h4>
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-[var(--gold)]" />
+                  <span className="text-[var(--tx)]">{quoteResult.labour.crewSize} movers <span className="text-[var(--tx3)]">(recommended)</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-[var(--gold)]" />
+                  <span className="text-[var(--tx)]">{quoteResult.labour.hoursRange}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
+                  <span className="text-[var(--tx)]">1 × {quoteResult.labour.truckSize}</span>
+                </div>
+                {quoteResult.inventory && quoteResult.inventory.modifier !== 1.0 && (
+                  <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
+                    <span className="text-[var(--tx3)]">
+                      Inventory volume
+                      <span className="ml-1 text-[var(--tx)]">
+                        ({quoteResult.inventory.totalItems} items, {quoteResult.inventory.modifier < 1 ? "below" : "above"} standard)
+                      </span>
+                    </span>
+                    <span className={`font-mono font-bold ${quoteResult.inventory.modifier < 1 ? "text-emerald-400" : "text-orange-400"}`}>
+                      ×{quoteResult.inventory.modifier.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Fleet allocation (after generate) ── */}
+            {quoteResult?.truck?.primary && (
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Fleet Allocation</h4>
+                <div className="flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
+                  <div>
+                    <span className="text-[var(--tx)] font-medium">{quoteResult.truck.primary.display_name}</span>
+                    <span className="text-[var(--tx3)] ml-1.5">{quoteResult.truck.primary.cargo_cubic_ft.toLocaleString()} cu ft</span>
+                  </div>
+                </div>
+                {quoteResult.truck.secondary && (
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-3.5 h-3.5 text-[var(--gold)]" />
+                    <div>
+                      <span className="text-[var(--tx)] font-medium">{quoteResult.truck.secondary.display_name}</span>
+                      <span className="text-[var(--tx3)] ml-1"> (support)</span>
+                    </div>
+                  </div>
+                )}
+                {quoteResult.truck.notes && (
+                  <p className="text-[10px] text-[var(--tx3)] italic">{quoteResult.truck.notes}</p>
+                )}
+              </div>
+            )}
+
+            {/* ── Valuation protection (after generate) ── */}
+            {quoteResult?.valuation && (
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
+                {["essentials", "premier", "estate"].map((pkg) => {
+                  const included = { essentials: "Released Value", premier: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
+                  const upgrade = quoteResult.valuation?.upgrades?.[pkg];
+                  return (
+                    <div key={pkg} className="flex items-center justify-between">
+                      <span className="text-[var(--tx3)] capitalize">{pkg}</span>
+                      <span className="text-[var(--tx)]">
+                        {included}
+                        {upgrade ? <span className="text-[var(--gold)] ml-1">(+{fmtPrice(upgrade.price)} upgrade)</span> : null}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Live inventory score (before generate) ── */}
+            {!quoteResult && inventoryItems.length > 0 && (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && (
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory Summary</h4>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--tx3)]">Items</span>
+                  <span className="text-[var(--tx)] font-medium">{inventoryTotalItems}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--tx3)]">Item score</span>
+                  <span className="text-[var(--tx)] font-medium tabular-nums">{inventoryScore.toFixed(1)}</span>
+                </div>
+                <p className="text-[9px] text-[var(--tx3)] italic">Generate quote to see volume modifier and labour estimate.</p>
               </div>
             )}
           </div>
@@ -1337,10 +1689,12 @@ function FactorsDisplay({
   factors,
   distance,
   time,
+  showMultipliers = true,
 }: {
   factors: Record<string, unknown>;
   distance: number | null;
   time: number | null;
+  showMultipliers?: boolean;
 }) {
   const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
   if (entries.length === 0 && distance == null) return null;
@@ -1355,13 +1709,19 @@ function FactorsDisplay({
       )}
       {entries.map(([key, val]) => (
         <div key={key} className="flex items-center justify-between text-[10px]">
-          <span className="text-[var(--tx3)]">{key.replace(/_/g, " ")}</span>
+          <span className="text-[var(--tx3)]">{toTitleCase(key)}</span>
           <span className="text-[var(--tx)] font-medium">
-            {typeof val === "number"
-              ? val >= 10
-                ? fmtPrice(val)
-                : `×${val}`
-              : String(val)}
+            {showMultipliers
+              ? typeof val === "number"
+                ? val >= 10
+                  ? fmtPrice(val)
+                  : `×${val}`
+                : String(val)
+              : typeof val === "number" && val < 10
+                ? "Applied"
+                : typeof val === "number"
+                  ? fmtPrice(val)
+                  : String(val)}
           </span>
         </div>
       ))}
@@ -1373,10 +1733,12 @@ function FactorsDisplayCollapsible({
   factors,
   distance,
   time,
+  showMultipliers = true,
 }: {
   factors: Record<string, unknown>;
   distance: number | null;
   time: number | null;
+  showMultipliers?: boolean;
 }) {
   const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
   const hasContent = entries.length > 0 || distance != null;
@@ -1386,11 +1748,21 @@ function FactorsDisplayCollapsible({
     <details className="pt-3 border-t border-[var(--brd)] group" defaultValue={undefined}>
       <summary className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
         <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
-        Factors applied ▾
+        Factors applied
       </summary>
       <div className="mt-2">
-        <FactorsDisplay factors={factors} distance={distance} time={time} />
+        <FactorsDisplay factors={factors} distance={distance} time={time} showMultipliers={showMultipliers} />
       </div>
     </details>
   );
+}
+
+function ExpiryLabel({ expiresAt }: { expiresAt?: string | null }) {
+  if (!expiresAt) return <span className="text-[var(--tx)]">—</span>;
+  const exp = new Date(expiresAt);
+  const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86_400_000);
+  const dateStr = exp.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  if (daysLeft <= 0) return <span className="text-[var(--red)] font-semibold">Expired</span>;
+  if (daysLeft <= 2) return <span className="text-[var(--red)] font-semibold">Expires {dateStr}</span>;
+  return <span className="text-[var(--tx)]">Expires in {daysLeft} days</span>;
 }

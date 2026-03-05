@@ -3,9 +3,16 @@ import { squareClient } from "@/lib/square";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`pay:${ip}`, 5, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
     const {
       sourceId,

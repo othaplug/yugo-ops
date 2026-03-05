@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { requireStaff } from "@/lib/api-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -24,6 +26,14 @@ const SERVICE_SUBJECTS: Record<string, (name: string, extra?: string) => string>
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await requireStaff();
+    if (authError) return authError;
+
+    const rl = rateLimit(`quote-send:${user!.id}`, 20, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = (await req.json()) as Record<string, unknown>;
     const quoteId = (body.quoteId ?? body.quote_id) as string | undefined;
     const hubspotDealId = body.hubspot_deal_id ?? body.hubspotDealId;
@@ -76,6 +86,15 @@ export async function POST(req: NextRequest) {
 
     const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
 
+    const { data: coordConfig } = await supabase
+      .from("platform_config")
+      .select("key, value")
+      .in("key", ["coordinator_name", "coordinator_phone", "quote_expiry_days"]);
+
+    const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
+    const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
+    const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
+
     const subjectFn = SERVICE_SUBJECTS[serviceType] ?? ((n: string) => `Your Yugo Quote — ${n}`);
     const extraSubject =
       serviceType === "office_move"
@@ -107,6 +126,8 @@ export async function POST(req: NextRequest) {
         distance: factors.distance_km ? `${factors.distance_km} km` : null,
         tiers: quote.tiers ?? null,
         customPrice: quote.custom_price ? Number(quote.custom_price) : null,
+        coordinatorName,
+        coordinatorPhone,
       },
     });
 
@@ -117,12 +138,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const now = new Date();
     await supabase
       .from("quotes")
       .update({
         status: "sent",
-        sent_at: new Date().toISOString(),
+        sent_at: now.toISOString(),
         quote_url: quoteUrl,
+        expires_at: new Date(now.getTime() + expiryDays * 86_400_000).toISOString(),
       })
       .eq("quote_id", quoteId);
 

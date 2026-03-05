@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import ResidentialMovesClient from "./ResidentialMovesClient";
 
 export default async function ResidentialMovesPage() {
-  const supabase = await createClient();
-  const { data: moves } = await supabase
+  const db = createAdminClient();
+  const { data: moves } = await db
     .from("moves")
     .select("*")
     .eq("move_type", "residential")

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Badge from "../../components/Badge";
 import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
+import { toTitleCase } from "@/lib/format-text";
 
 interface GalleryPartner {
   id: string;
@@ -163,7 +164,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Type</div>
-                <div className="text-[var(--tx)]">{(projectDetail.project_type || "—").replace(/_/g, " ")}</div>
+                <div className="text-[var(--tx)]">{toTitleCase(projectDetail.project_type || "—")}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Address</div>

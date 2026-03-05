@@ -369,3 +369,414 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     </p>
   `);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Quote Follow-Up Email Templates
+   ═══════════════════════════════════════════════════════════ */
+
+export interface QuoteFollowup1Data {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+}
+
+export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Quote Is Ready</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We sent your ${d.serviceLabel.toLowerCase()} quote yesterday but noticed you haven&apos;t had a chance to review it yet.
+    </p>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your personalized quote is waiting for you &mdash; it includes flat-rate pricing with no hidden fees, multiple package options, and everything you need to book with confidence.
+    </p>
+
+    ${ctaButton(d.quoteUrl, "View Your Quote")}
+
+    <p style="font-size:11px;color:#666;text-align:center">
+      Have questions? Simply reply to this email and your coordinator will get back to you right away.
+    </p>
+  `);
+}
+
+export interface QuoteFollowup2Data {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+  moveDate: string | null;
+  expiresAt: string | null;
+}
+
+export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
+  const moveDateStr = dateDisplay(d.moveDate);
+  let urgencyLine = "";
+  if (d.expiresAt) {
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    );
+    urgencyLine = daysLeft <= 1
+      ? "Your quote expires tomorrow."
+      : `Your quote expires in ${daysLeft} days.`;
+  }
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Don&apos;t Miss Out</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We noticed you reviewed your ${d.serviceLabel.toLowerCase()} quote but haven&apos;t booked yet. We wanted to let you know that availability for <strong style="color:#E8E5E0">${moveDateStr}</strong> is limited.
+    </p>
+
+    ${urgencyLine ? `
+      <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.25);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
+        <div style="font-size:13px;color:#D48A29;font-weight:600">${urgencyLine}</div>
+      </div>
+    ` : ""}
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Why Book Now</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
+        <div>&#10003; Lock in your flat-rate price &mdash; no surprises</div>
+        <div>&#10003; Secure your preferred date before it&apos;s taken</div>
+        <div>&#10003; Only a $100 deposit to reserve &mdash; balance due later</div>
+        <div>&#10003; Full refund if you cancel within the policy window</div>
+      </div>
+    </div>
+
+    ${ctaButton(d.quoteUrl, "Secure Your Date")}
+
+    <p style="font-size:11px;color:#666;text-align:center">
+      Need to adjust anything? Reply to this email and we&apos;ll update your quote.
+    </p>
+  `);
+}
+
+export interface QuoteFollowup3Data {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+  expiresAt: string | null;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Cancellation Confirmation Email
+   ═══════════════════════════════════════════════════════════ */
+
+export interface CancellationConfirmData {
+  clientName: string;
+  moveCode: string;
+  fromAddress: string;
+  toAddress: string;
+  moveDate: string | null;
+  cancellationReason: string;
+  refundAmount: number | null;
+  trackingUrl: string;
+}
+
+export function cancellationConfirmEmail(d: CancellationConfirmData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Cancellation Confirmed</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move has been cancelled${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We&apos;re sorry to see you go. Your move <strong style="color:#E8E5E0">${d.moveCode}</strong> has been cancelled.
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Cancelled Move</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:3px 0">Reference:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${d.moveCode}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.fromAddress}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.toAddress}</td></tr>
+        ${d.moveDate ? `<tr><td style="color:#666;padding:3px 0">Date:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${dateDisplay(d.moveDate)}</td></tr>` : ""}
+        <tr><td style="color:#666;padding:3px 0">Reason:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.cancellationReason}</td></tr>
+      </table>
+    </div>
+
+    ${d.refundAmount && d.refundAmount > 0 ? `
+      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:10px;padding:20px;margin-bottom:20px">
+        <div style="font-size:9px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Refund Issued</div>
+        <div style="font-family:serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
+        <div style="font-size:12px;color:#B8B5B0">
+          Your refund has been submitted and will appear on your statement within 3&ndash;5 business days. Depending on your bank, it may take up to 7 business days.
+        </div>
+      </div>
+    ` : `
+      <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-size:12px;color:#D48A29">
+          Based on our cancellation policy, no refund is applicable for this cancellation. If you have questions, please reply to this email.
+        </div>
+      </div>
+    `}
+
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      If you need to rebook in the future, we&apos;d love to help. Just reply to this email or visit our website anytime.
+    </p>
+
+    ${ctaButton(d.trackingUrl, "View Cancellation Details")}
+  `);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Updated Quote Email
+   ═══════════════════════════════════════════════════════════ */
+
+export interface QuoteUpdatedData {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+  changesSummary: string;
+}
+
+export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quote Updated</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your updated quote is ready${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We&apos;ve updated your ${d.serviceLabel.toLowerCase()} quote based on the changes discussed. Please review the updated pricing below.
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What Changed</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.7">${d.changesSummary}</div>
+    </div>
+
+    ${ctaButton(d.quoteUrl, "View Updated Quote")}
+
+    <p style="font-size:11px;color:#666;text-align:center">
+      This replaces your previous quote. The previous link will redirect here.
+    </p>
+  `);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Balance Reminder & Auto-Charge Email Templates
+   ═══════════════════════════════════════════════════════════ */
+
+export interface BalanceReminder72hrData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  balanceAmount: number;
+  trackingUrl: string;
+}
+
+export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your remaining balance is due${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your remaining balance of <strong style="color:#C9A962">${formatCurrency(d.balanceAmount)}</strong> is due before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Options</div>
+
+      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;color:#2D9F5A;font-weight:700;margin-bottom:6px">Option 1: E-Transfer — No fee</div>
+        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
+          Send <strong style="color:#E8E5E0">${formatCurrency(d.balanceAmount)}</strong> via e-transfer to:<br/>
+          <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
+          Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
+        </div>
+      </div>
+
+      <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
+        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Option 2: Credit Card — Charged 24 hours before your move</div>
+        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
+          We&apos;ll charge your card on file 24 hours before your move.<br/>
+          Credit card payments include a <strong style="color:#E8E5E0">3.3% processing fee</strong>.
+        </div>
+      </div>
+    </div>
+
+    ${ctaButton(d.trackingUrl, "View Move Details")}
+    <p style="font-size:11px;color:#666;text-align:center">
+      Questions? Reply to this email or call your coordinator.
+    </p>
+  `);
+}
+
+export interface BalanceReminder48hrData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  balanceAmount: number;
+  ccTotal: number;
+  autoChargeDate: string | null;
+  paymentPageUrl: string;
+  trackingUrl: string;
+}
+
+export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your balance of ${formatCurrency(d.balanceAmount)} is due${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Choose how to pay your remaining balance before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
+    </p>
+
+    <div style="margin-bottom:20px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 10px">
+        <tr>
+          <td style="background:rgba(45,159,90,0.1);border:1px solid rgba(45,159,90,0.3);border-radius:10px;padding:20px;text-align:center">
+            <div style="font-size:11px;color:#2D9F5A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">E-Transfer — $0 fee</div>
+            <div style="font-family:serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
+            <div style="font-size:12px;color:#B8B5B0;line-height:1.6;margin-bottom:14px">
+              Send to <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
+              Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
+            <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card — Includes processing fee</div>
+            <div style="font-family:serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
+            <a href="${d.paymentPageUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:12px 28px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-top:4px">
+              Pay by Credit Card &rarr;
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.2);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
+      <div style="font-size:12px;color:#D48A29;line-height:1.6">
+        If no payment is received, your card on file will be automatically charged <strong style="color:#E8E5E0">${formatCurrency(d.ccTotal)}</strong> on <strong style="color:#E8E5E0">${dateDisplay(d.autoChargeDate)}</strong>.
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:#666;text-align:center">
+      Questions? Reply to this email or call your coordinator.
+    </p>
+  `);
+}
+
+export interface BalanceAutoChargeReceiptData {
+  clientName: string;
+  moveCode: string;
+  baseBalance: number;
+  processingFee: number;
+  transactionFee: number;
+  totalCharged: number;
+  trackingUrl: string;
+}
+
+export function balanceAutoChargeReceiptEmail(d: BalanceAutoChargeReceiptData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Charged</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance payment received${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your card on file has been charged for the remaining balance on move <strong style="color:#C9A962">${d.moveCode}</strong>.
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Breakdown</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:4px 0">Base balance:</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.baseBalance)}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Processing fee (3.3%):</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.processingFee)}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Transaction fee:</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.transactionFee)}</td></tr>
+        <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
+        <tr><td style="color:#2D9F5A;font-weight:700;padding:4px 0">Total charged:</td><td style="color:#2D9F5A;font-weight:700;font-size:14px;padding:4px 0;text-align:right">${formatCurrency(d.totalCharged)}</td></tr>
+      </table>
+    </div>
+
+    <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
+      <div style="font-size:13px;color:#2D9F5A;font-weight:600">Your account is now paid in full.</div>
+    </div>
+
+    ${ctaButton(d.trackingUrl, "View Move Details")}
+  `);
+}
+
+export interface BalanceChargeFailedClientData {
+  clientName: string;
+  moveCode: string;
+  balanceAmount: number;
+}
+
+export function balanceChargeFailedClientEmail(d: BalanceChargeFailedClientData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Failed</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We couldn&apos;t process your payment${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We attempted to charge your card on file for the remaining balance of <strong style="color:#D14343">${formatCurrency(d.balanceAmount)}</strong> on move <strong style="color:#C9A962">${d.moveCode}</strong>, but the payment was declined.
+    </p>
+
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
+      <div style="font-size:13px;color:#D14343;font-weight:600;margin-bottom:8px">Please call us to resolve this before your move.</div>
+      <div style="font-size:14px;color:#E8E5E0;font-weight:700;margin-top:8px">1-833-333-YUGO (9846)</div>
+    </div>
+
+    <p style="font-size:12px;color:#B8B5B0;line-height:1.6;text-align:center">
+      You can also reply to this email and your coordinator will follow up.
+    </p>
+  `);
+}
+
+export interface BalanceChargeFailedAdminData {
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  moveCode: string;
+  moveDate: string | null;
+  balanceAmount: number;
+  errorMessage: string;
+}
+
+export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">URGENT: Payment Failed</div>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} &mdash; Balance charge failed</h1>
+
+    <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:#D14343;font-weight:600">Auto-charge for ${formatCurrency(d.balanceAmount)} failed</div>
+      <div style="font-size:11px;color:#B8B5B0;margin-top:4px">Error: ${d.errorMessage}</div>
+    </div>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone || "&mdash;"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "&mdash;"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Balance:</td><td style="color:#D14343;font-weight:600;padding:4px 0">${formatCurrency(d.balanceAmount)}</td></tr>
+      </table>
+    </div>
+
+    <div style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
+      <div style="font-size:11px;color:#C9A962;font-weight:600">Action Required</div>
+      <div style="font-size:12px;color:#B8B5B0;margin-top:4px">Contact client immediately. Move is tomorrow and balance is unpaid.</div>
+    </div>
+  `);
+}
+
+export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
+  const expiryDate = d.expiresAt
+    ? new Date(d.expiresAt).toLocaleDateString("en-CA", { month: "long", day: "numeric" })
+    : "soon";
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Final Reminder</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your ${d.serviceLabel.toLowerCase()} quote expires <strong style="color:#D14343">${expiryDate}</strong>. After that, we won&apos;t be able to guarantee the same pricing or availability.
+    </p>
+
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
+      <div style="font-size:11px;color:#D14343;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Quote Expiring</div>
+      <div style="font-size:14px;color:#B8B5B0">
+        Your flat-rate pricing and date availability will no longer be held after expiry.
+      </div>
+    </div>
+
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      If your plans have changed, no worries at all. But if you&apos;d still like to move forward, now is the time to lock it in.
+    </p>
+
+    ${ctaButton(d.quoteUrl, "Book Before It Expires")}
+
+    <p style="font-size:11px;color:#666;text-align:center">
+      Need more time? Reply and we can extend your quote or adjust the details.
+    </p>
+  `);
+}

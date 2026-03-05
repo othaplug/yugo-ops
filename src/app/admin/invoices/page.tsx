@@ -1,12 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
 import InvoicesPageClient from "./InvoicesPageClient";
 
 export default async function InvoicesPage() {
-  const supabase = await createClient();
-  const { data: invoices } = await supabase.from("invoices").select("*").order("created_at", { ascending: false });
+  const db = createAdminClient();
+  const { data: invoices } = await db.from("invoices").select("*").order("created_at", { ascending: false });
 
   const all = invoices || [];
   const paid = all.filter((i) => i.status === "paid");

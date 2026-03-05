@@ -1,4 +1,5 @@
 import { getStatusLabel, MOVE_STATUS_COLORS_ADMIN } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 
 const BADGE_COLORS: Record<string, string> = {
   // Project/vendor status (designer dashboard)
@@ -35,7 +36,7 @@ export default function Badge({ status }: { status: string }) {
   const moveStyle = MOVE_STATUS_COLORS_ADMIN[key];
   const colors = moveStyle ?? BADGE_COLORS[key] ?? BADGE_COLORS.pending;
   const moveLabel = getStatusLabel(status || null);
-  const label = moveLabel !== "—" ? moveLabel : (status ? status.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—");
+  const label = moveLabel !== "—" ? moveLabel : (status ? toTitleCase(status) : "—");
   return (
     <span className={`inline-flex items-center px-2.5 py-[3px] rounded-full text-[9px] font-bold ${colors}`}>
       {label}

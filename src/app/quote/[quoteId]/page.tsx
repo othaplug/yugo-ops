@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isFeatureEnabled } from "@/lib/platform-settings";
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
 
@@ -25,7 +26,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
 
   const isExpired = quote.expires_at && new Date(quote.expires_at) < new Date();
   if (isExpired && quote.status !== "accepted") {
-    return <QuoteExpired quoteId={quoteId} reason="expired" />;
+    return <QuoteExpired quoteId={quoteId} reason="expired" expiresAt={quote.expires_at} />;
   }
 
   // Mark as viewed + record event (server-side, fire-and-forget)
@@ -46,8 +47,8 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
     pushViewedNoteToHubSpot(quote.quote_id, quote.hubspot_deal_id);
   }
 
-  // Fetch contact + add-ons in parallel so the page loads faster
-  const [contactResult, addonsResult] = await Promise.all([
+  // Fetch contact, add-ons, crew count, move count, and valuation data in parallel
+  const [contactResult, addonsResult, crewCountResult, moveDateCountResult, valTiersResult, valUpgradesResult] = await Promise.all([
     quote.contact_id
       ? admin.from("contacts").select("email").eq("id", quote.contact_id).single()
       : Promise.resolve({ data: null }),
@@ -56,6 +57,16 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
       .eq("active", true)
       .order("display_order"),
+    admin.from("crews").select("id", { count: "exact", head: true }).eq("active", true),
+    quote.move_date
+      ? admin
+          .from("moves")
+          .select("id", { count: "exact", head: true })
+          .eq("scheduled_date", quote.move_date)
+          .in("status", ["confirmed", "scheduled", "in_progress"])
+      : Promise.resolve({ count: 0 }),
+    admin.from("valuation_tiers").select("*").eq("active", true).order("tier_slug"),
+    admin.from("valuation_upgrades").select("*").eq("active", true).eq("move_size", quote.move_size ?? "2br"),
   ]);
 
   const contactEmail = contactResult?.data?.email ?? null;
@@ -63,11 +74,20 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
     a.applicable_service_types?.includes(quote.service_type),
   );
 
+  const totalCrews = crewCountResult?.count ?? 4;
+  const movesOnDate = moveDateCountResult?.count ?? 0;
+  const slotsRemaining = Math.max(0, totalCrews - movesOnDate);
+
+  const valuationEnabled = await isFeatureEnabled("valuation_upgrades");
+
   return (
     <QuotePageClient
       quote={quote}
       addons={applicableAddons}
       contactEmail={contactEmail}
+      slotsRemaining={slotsRemaining}
+      valuationTiers={valuationEnabled ? (valTiersResult?.data ?? []) : []}
+      valuationUpgrades={valuationEnabled ? (valUpgradesResult?.data ?? []) : []}
     />
   );
 }

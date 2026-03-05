@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import YugoLogo from "@/components/YugoLogo";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { toTitleCase } from "@/lib/format-text";
 
 const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
   ssr: false,
@@ -75,7 +76,7 @@ export default function TrackDeliveryClient({
       if (!cancelled) setLoading(false);
     };
     poll();
-    const id = setInterval(poll, 10_000);
+    const id = setInterval(poll, 5_000);
     return () => { cancelled = true; clearInterval(id); };
   }, [delivery.id, token]);
 
@@ -87,16 +88,19 @@ export default function TrackDeliveryClient({
   const stageIdx = DELIVERY_STAGES.indexOf(liveStage || "");
   const progressPercent = isCompleted ? 100 : stageIdx >= 0 ? ((stageIdx + 1) / DELIVERY_STAGES.length) * 100 : 0;
 
+  const isPrePickup = liveStage === "en_route" || !liveStage;
+  const etaTarget = isPrePickup && pickup ? pickup : dropoff;
+
   const displayEta =
-    crewLoc && dropoff && isInProgress
-      ? Math.max(1, Math.round((haversineKm(crewLoc.current_lat, crewLoc.current_lng, dropoff.lat, dropoff.lng) / 30) * 60))
+    crewLoc && etaTarget && isInProgress
+      ? Math.max(1, Math.round((haversineKm(crewLoc.current_lat, crewLoc.current_lng, etaTarget.lat, etaTarget.lng) / 30) * 60))
       : null;
 
   const scheduledDate = delivery.scheduled_date
-    ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+    ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { timeZone: "America/Toronto", weekday: "long", month: "long", day: "numeric" })
     : null;
 
-  const showMap = !loading && (hasActiveTracking || crewLoc);
+  const showMap = !loading && (hasActiveTracking || crewLoc || (pickup && dropoff));
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: CREAM, color: FOREST }} data-theme="light">
@@ -112,7 +116,7 @@ export default function TrackDeliveryClient({
               </span>
               <div>
                 <div className="text-[13px] font-bold" style={{ color: FOREST }}>
-                  {STAGE_LABELS[liveStage] || liveStage.replace(/_/g, " ")}
+                  {STAGE_LABELS[liveStage] || toTitleCase(liveStage)}
                 </div>
                 <div className="text-[11px] opacity-80" style={{ color: FOREST }}>
                   {displayEta != null ? `~${displayEta} min away` : crewName ? `Crew: ${crewName}` : "Your crew is on the way"}
@@ -143,7 +147,7 @@ export default function TrackDeliveryClient({
             )}
           </button>
 
-          <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} />
+          <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
         </div>
       )}
 

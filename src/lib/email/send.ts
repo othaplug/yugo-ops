@@ -16,6 +16,26 @@ import {
   LowSatisfactionData,
   referralOfferEmail,
   ReferralOfferData,
+  quoteFollowup1Email,
+  QuoteFollowup1Data,
+  quoteFollowup2Email,
+  QuoteFollowup2Data,
+  quoteFollowup3Email,
+  QuoteFollowup3Data,
+  cancellationConfirmEmail,
+  CancellationConfirmData,
+  quoteUpdatedEmail,
+  QuoteUpdatedData,
+  balanceReminder72hrEmail,
+  BalanceReminder72hrData,
+  balanceReminder48hrEmail,
+  BalanceReminder48hrData,
+  balanceAutoChargeReceiptEmail,
+  BalanceAutoChargeReceiptData,
+  balanceChargeFailedClientEmail,
+  BalanceChargeFailedClientData,
+  balanceChargeFailedAdminEmail,
+  BalanceChargeFailedAdminData,
 } from "./lifecycle-templates";
 
 const FROM_ADDRESS = "YUGO <notifications@opsplus.co>";
@@ -35,7 +55,22 @@ export type TemplateName =
   | "move-complete"
   | "review-request"
   | "low-satisfaction"
-  | "referral-offer";
+  | "referral-offer"
+  | "quote-followup-1"
+  | "quote-followup-2"
+  | "quote-followup-2-warm"
+  | "quote-followup-2-essentials"
+  | "quote-followup-2-cold"
+  | "quote-followup-3"
+  | "quote-followup-3-hot"
+  | "quote-followup-3-unseen"
+  | "cancellation-confirm"
+  | "quote-updated"
+  | "balance-reminder-72hr"
+  | "balance-reminder-48hr"
+  | "balance-auto-charge-receipt"
+  | "balance-charge-failed-client"
+  | "balance-charge-failed-admin";
 
 type TemplateDataMap = {
   "quote-residential": QuoteTemplateData;
@@ -51,6 +86,21 @@ type TemplateDataMap = {
   "review-request": ReviewRequestData;
   "low-satisfaction": LowSatisfactionData;
   "referral-offer": ReferralOfferData;
+  "quote-followup-1": QuoteFollowup1Data;
+  "quote-followup-2": QuoteFollowup2Data;
+  "quote-followup-2-warm": QuoteFollowup2Data;
+  "quote-followup-2-essentials": QuoteFollowup2Data;
+  "quote-followup-2-cold": QuoteFollowup2Data;
+  "quote-followup-3": QuoteFollowup3Data;
+  "quote-followup-3-hot": QuoteFollowup3Data;
+  "quote-followup-3-unseen": QuoteFollowup3Data;
+  "cancellation-confirm": CancellationConfirmData;
+  "quote-updated": QuoteUpdatedData;
+  "balance-reminder-72hr": BalanceReminder72hrData;
+  "balance-reminder-48hr": BalanceReminder48hrData;
+  "balance-auto-charge-receipt": BalanceAutoChargeReceiptData;
+  "balance-charge-failed-client": BalanceChargeFailedClientData;
+  "balance-charge-failed-admin": BalanceChargeFailedAdminData;
 };
 
 interface SendEmailBaseOptions {
@@ -84,10 +134,6 @@ export interface SendEmailResult {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function renderTemplate(template: string, data: unknown): string {
-  if (template.startsWith("quote-")) {
-    return renderQuoteTemplate(template, data as QuoteTemplateData);
-  }
-
   const renderers: Record<string, (d: any) => string> = {
     "pre-move-72hr": preMove72hrEmail,
     "pre-move-24hr": preMove24hrEmail,
@@ -96,11 +142,31 @@ function renderTemplate(template: string, data: unknown): string {
     "review-request": reviewRequestEmail,
     "low-satisfaction": lowSatisfactionEmail,
     "referral-offer": referralOfferEmail,
+    "quote-followup-1": quoteFollowup1Email,
+    "quote-followup-2": quoteFollowup2Email,
+    "quote-followup-2-warm": quoteFollowup2Email,
+    "quote-followup-2-essentials": quoteFollowup2Email,
+    "quote-followup-2-cold": quoteFollowup2Email,
+    "quote-followup-3": quoteFollowup3Email,
+    "quote-followup-3-hot": quoteFollowup3Email,
+    "quote-followup-3-unseen": quoteFollowup3Email,
+    "cancellation-confirm": cancellationConfirmEmail,
+    "quote-updated": quoteUpdatedEmail,
+    "balance-reminder-72hr": balanceReminder72hrEmail,
+    "balance-reminder-48hr": balanceReminder48hrEmail,
+    "balance-auto-charge-receipt": balanceAutoChargeReceiptEmail,
+    "balance-charge-failed-client": balanceChargeFailedClientEmail,
+    "balance-charge-failed-admin": balanceChargeFailedAdminEmail,
   };
 
   const renderer = renderers[template];
-  if (!renderer) throw new Error(`Unknown email template: ${template}`);
-  return renderer(data);
+  if (renderer) return renderer(data);
+
+  if (template.startsWith("quote-")) {
+    return renderQuoteTemplate(template, data as QuoteTemplateData);
+  }
+
+  throw new Error(`Unknown email template: ${template}`);
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

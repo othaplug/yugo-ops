@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/format-currency";
+import { toTitleCase } from "@/lib/format-text";
 
 interface Invoice {
   id: string;
@@ -155,7 +156,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${badgeClass}`}>
-                        {inv.status}
+                        {toTitleCase(inv.status)}
                       </span>
                     </td>
                   </tr>

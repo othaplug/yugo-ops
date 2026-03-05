@@ -1,15 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import PlatformSettingsClient from "./PlatformSettingsClient";
-import { getSuperAdminEmail } from "@/lib/super-admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { getPlatformToggles } from "@/lib/platform-settings";
 
 export default async function PlatformPage() {
   const supabase = await createClient();
+  const db = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: platformUser } = await supabase.from("platform_users").select("role").eq("user_id", user?.id).single();
-  const isSuperAdmin = (user?.email || "").toLowerCase() === getSuperAdminEmail();
-  const isAdmin = isSuperAdmin || platformUser?.role === "admin" || platformUser?.role === "manager";
+  const { data: platformUser } = await db.from("platform_users").select("role").eq("user_id", user?.id).single();
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
+  const isAdmin = isSuperAdmin || ["owner", "admin", "manager"].includes(platformUser?.role || "");
   if (!isAdmin) redirect("/admin");
 
   const toggles = await getPlatformToggles();
@@ -19,9 +21,9 @@ export default async function PlatformPage() {
     autoInvoicing: toggles.auto_invoicing,
   };
 
-  let crewsResult = await supabase.from("crews").select("id, name, members, active").order("name");
+  let crewsResult = await db.from("crews").select("id, name, members, active").order("name");
   if (crewsResult.error && String(crewsResult.error.message).includes("active")) {
-    crewsResult = await supabase.from("crews").select("id, name, members").order("name") as typeof crewsResult;
+    crewsResult = await db.from("crews").select("id, name, members").order("name") as typeof crewsResult;
   }
   const crews = crewsResult.data || [];
   const initialTeams = crews.map((c: { id: string; name: string; members?: unknown[]; active?: boolean }) => ({

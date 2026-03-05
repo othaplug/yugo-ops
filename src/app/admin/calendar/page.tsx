@@ -1,21 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString, getAppTimezone } from "@/lib/business-timezone";
-import BackButton from "../components/BackButton";
 import CalendarView from "./CalendarView";
 
 export default async function CalendarPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const today = getTodayString();
   const appTimezone = getAppTimezone();
 
   const [{ data: deliveries }, { data: moves }] = await Promise.all([
-    supabase.from("deliveries").select("*").order("scheduled_date"),
-    supabase.from("moves").select("*"),
+    db.from("deliveries").select("*").order("scheduled_date"),
+    db.from("moves").select("*"),
   ]);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up overflow-x-hidden">
-      <div className="mb-4"><BackButton label="Back" /></div>
+    <div className="animate-fade-up min-h-0">
       <CalendarView
         deliveries={deliveries || []}
         moves={moves || []}

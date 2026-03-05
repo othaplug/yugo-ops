@@ -8,6 +8,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { toTitleCase } from "@/lib/format-text";
 
 const PROJECT_TYPE_LABELS: Record<string, string> = {
   art_installation: "Art Installation",
@@ -102,7 +103,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
               className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
               style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
             >
-              {PROJECT_TYPE_LABELS[projectType] ?? projectType.replace(/_/g, " ")}
+              {PROJECT_TYPE_LABELS[projectType] ?? toTitleCase(projectType)}
             </span>
             <h2 className="font-hero text-[18px] mt-2" style={{ color: WINE }}>
               Project Proposal

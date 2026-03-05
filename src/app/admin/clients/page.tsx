@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import ClientsPageClient from "./ClientsPageClient";
 
 export default async function ClientsPage() {
-  const supabase = await createClient();
-  const { data: clients } = await supabase
+  const db = createAdminClient();
+  const { data: clients } = await db
     .from("organizations")
     .select("*")
     .order("name");
 
   const b2cIds = (clients ?? []).filter((c) => c.type === "b2c").map((c) => c.id);
   const { data: moves } = b2cIds.length > 0
-    ? await supabase
+    ? await db
         .from("moves")
         .select("id, organization_id, move_type, scheduled_date, status, estimate")
         .in("organization_id", b2cIds)

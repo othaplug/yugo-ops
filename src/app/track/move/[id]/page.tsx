@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isMoveIdUuid } from "@/lib/move-code";
+import { isFeatureEnabled } from "@/lib/platform-settings";
 import TrackMoveClient from "./TrackMoveClient";
 
 export const metadata: Metadata = {
@@ -63,6 +64,7 @@ export default async function TrackMovePage({
   const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const additionalFeesCents = changeFeesCents + extraFeesCents;
+  const tippingEnabled = await isFeatureEnabled("tipping_enabled");
 
   return (
     <TrackMoveClient
@@ -75,6 +77,7 @@ export default async function TrackMovePage({
       additionalFeesCents={additionalFeesCents}
       changeRequestFeesCents={changeFeesCents}
       extraItemFeesCents={extraFeesCents}
+      tippingEnabled={tippingEnabled}
     />
   );
 }

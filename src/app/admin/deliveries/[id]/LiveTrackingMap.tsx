@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { useTheme } from "@/app/admin/components/ThemeContext";
+import { toTitleCase } from "@/lib/format-text";
 
 const LiveTrackingMapLeaflet = dynamic(
   () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
@@ -323,7 +324,7 @@ export default function LiveTrackingMap({
               </span>
               <div>
                 <div className="text-[13px] font-bold text-[var(--tx)]">
-                  {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                  {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
                 </div>
                 <div className="text-[11px] text-[var(--tx3)]">
                   {liveStage === "loading"
@@ -386,7 +387,7 @@ export default function LiveTrackingMap({
             </span>
             <div>
               <div className="text-[13px] font-bold text-[var(--tx)]">
-                {CREW_STATUS_TO_LABEL[liveStage] || liveStage.replace(/_/g, " ")}
+                {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
               </div>
               <div className="text-[11px] text-[var(--tx3)]">
                 {liveStage === "loading"

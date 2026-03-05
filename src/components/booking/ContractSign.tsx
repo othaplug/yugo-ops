@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Check, ChevronDown, ChevronUp, FileText, Shield } from "lucide-react";
+import { toTitleCase } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -258,9 +259,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         >
           <p>
             <b>Service:</b>{" "}
-            {q.serviceType
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+            {toTitleCase(q.serviceType)}{" "}
             &mdash; {q.packageLabel}
           </p>
           <p>

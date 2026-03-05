@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
@@ -7,12 +7,12 @@ import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import RetailClient from "./RetailClient";
 
 export default async function RetailPage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const [{ data: orgs }, { data: deliveries }, { data: invoices }] = await Promise.all([
-    supabase.from("organizations").select("*, created_at").eq("type", "retail").order("name"),
-    supabase.from("deliveries").select("*").eq("category", "retail").order("scheduled_date", { ascending: false }),
-    supabase.from("invoices").select("client_name, amount, status, created_at"),
+    db.from("organizations").select("*, created_at").eq("type", "retail").order("name"),
+    db.from("deliveries").select("*").eq("category", "retail").order("scheduled_date", { ascending: false }),
+    db.from("invoices").select("client_name, amount, status, created_at"),
   ]);
 
   const clients = orgs || [];

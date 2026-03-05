@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import RevenueClient from "./RevenueClient";
 
 export default async function RevenuePage() {
-  const supabase = await createClient();
+  const db = createAdminClient();
   const [
     { data: invoices },
     { data: orgs },
     { data: paidMoves },
   ] = await Promise.all([
-    supabase.from("invoices").select("id, client_name, organization_id, amount, status, created_at, updated_at, invoice_number"),
-    supabase.from("organizations").select("id, name, type"),
-    supabase
+    db.from("invoices").select("id, client_name, organization_id, amount, status, created_at, updated_at, invoice_number"),
+    db.from("organizations").select("id, name, type"),
+    db
       .from("moves")
       .select("id, move_code, client_name, estimate, payment_marked_paid_at")
       .eq("payment_marked_paid", true)

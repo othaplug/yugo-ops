@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { PROJECTS } from "./projectsData";
 import { mergeProjectsWithSavedState } from "./designerProjectsStorage";
 import BackButton from "../../components/BackButton";
+import { toTitleCase } from "@/lib/format-text";
 
 const STATUS_BADGE: Record<string, string> = {
   pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
@@ -154,7 +155,7 @@ export default function DesignerDashboard({
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
                 </div>
               ) : filteredDeliveries.slice(0, 25).map((d: any) => {
-                const statusLabel = (d.status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+                const statusLabel = toTitleCase(d.status || "");
                 const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
                 return (
                   <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">

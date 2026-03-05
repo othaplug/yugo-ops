@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
-import { getSuperAdminEmail } from "@/lib/super-admin";
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -13,17 +12,15 @@ export async function GET(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
-    const { data: platformUser } = await supabase
+    const db = createAdminClient();
+    const { data: platformUser } = await db
       .from("platform_users")
       .select("id")
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+    const isSuperAdmin = isSuperAdminEmail(user!.email);
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const db = isSuperAdmin ? createAdminClient() : supabase;
     const { data: items, error } = await db
       .from("move_inventory")
       .select("id, room, item_name, box_number, sort_order")
@@ -51,17 +48,15 @@ export async function POST(
 
   try {
     const { id: moveId } = await params;
-    const supabase = await createClient();
-    const { data: platformUser } = await supabase
+    const db = createAdminClient();
+    const { data: platformUser } = await db
       .from("platform_users")
       .select("id")
       .eq("user_id", user!.id)
       .single();
 
-    const isSuperAdmin = (user!.email || "").toLowerCase() === getSuperAdminEmail();
+    const isSuperAdmin = isSuperAdminEmail(user!.email);
     if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const db = isSuperAdmin ? createAdminClient() : supabase;
     const body = await req.json();
     const room = (body.room || "").trim() || "Other";
     const itemName = (body.item_name || "").trim();
