@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
-import { getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
+import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, userId, error } = await requirePartner();
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         ? body.items.split("\n").map((i: string) => i.trim()).filter(Boolean)
         : [];
 
-    const rateCardId = await getActiveRateCard(primaryOrgId);
+    const rateLookup = await getActiveRateCardLookup(primaryOrgId);
 
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       created_by_user: userId || null,
       // Pricing fields
       booking_type: body.booking_type || null,
-      rate_card_id: rateCardId,
+      rate_card_id: rateLookup.rateCardId || null,
       vehicle_type: body.vehicle_type || null,
       day_type: body.day_type || null,
       num_stops: body.num_stops || null,

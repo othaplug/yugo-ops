@@ -4,7 +4,7 @@ import NewDeliveryForm from "./NewDeliveryForm";
 export default async function NewDeliveryPage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: crews }] = await Promise.all([
-    db.from("organizations").select("id, name, type, email, contact_name, phone").order("name"),
+    db.from("organizations").select("id, name, type, email, contact_name, phone").not("name", "like", "\\_%").order("name"),
     db.from("crews").select("id, name, members").order("name"),
   ]);
 

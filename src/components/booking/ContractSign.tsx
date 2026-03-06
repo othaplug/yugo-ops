@@ -1,13 +1,23 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown, ChevronUp, FileText, Shield, Calendar } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Check, ChevronDown, ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "lucide-react";
 import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
 const GOLD = "#B8962E";
 const CREAM = "#FAF7F2";
+
+const MOVE_SIZE_LABELS: Record<string, string> = {
+  studio: "Studio",
+  "1br": "1 Bedroom",
+  "2br": "2 Bedroom",
+  "3br": "3 Bedroom",
+  "4br": "4 Bedroom",
+  "5br_plus": "5+ Bedroom",
+  partial: "Partial Move",
+};
 
 /* ── Types ── */
 
@@ -27,6 +37,8 @@ export interface ContractQuoteData {
   toAccess: string | null;
   moveDate: string | null;
   moveSize: string | null;
+  distanceKm: number | null;
+  driveTimeMin: number | null;
   basePrice: number;
   addons: ContractAddon[];
   addonTotal: number;
@@ -115,13 +127,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [summaryMounted, setSummaryMounted] = useState(false);
   const contractStartedRef = useRef(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setSummaryMounted(true), 50);
-    return () => clearTimeout(t);
-  }, []);
 
   const q = quoteData;
   const canSign = typedName.trim().length >= 2 && agreed && !signing && !signed;
@@ -258,38 +264,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
       </div>
 
       <div className="p-4 md:p-5 space-y-4">
-        {/* ── Keyframe animations ── */}
-        <style>{`
-          @keyframes qs-route-pulse {
-            0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
-            50% { transform: translateX(-50%) scale(1.6); opacity: 0.4; }
-          }
-          @keyframes qs-route-travel {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-          }
-          @keyframes qs-line-draw {
-            from { transform: scaleY(0); }
-            to   { transform: scaleY(1); }
-          }
-          @keyframes qs-fade-up {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes qs-total-glow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(92,26,51,0); }
-            50% { box-shadow: 0 0 20px 2px rgba(92,26,51,0.08); }
-          }
-          @keyframes qs-shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-          .qs-stagger { opacity: 0; animation: qs-fade-up 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
-        `}</style>
-
-        {/* ── Service & financial summary — elevated redesign ── */}
+        {/* ── Service & financial summary ── */}
         <div
           className="rounded-2xl overflow-hidden text-[12px]"
           style={{
@@ -314,138 +289,104 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p
-                    className={`text-[9px] font-bold tracking-[0.18em] uppercase mb-1 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                    style={{ color: `${GOLD}CC`, animationDelay: "0ms" }}
+                    className="text-[9px] font-bold tracking-[0.18em] uppercase mb-1"
+                    style={{ color: `${GOLD}CC` }}
                   >
                     Your Service
                   </p>
-                  <h3
-                    className={`font-hero text-[20px] md:text-[22px] text-white leading-tight ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                    style={{ animationDelay: "80ms" }}
-                  >
+                  <h3 className="font-hero text-[20px] md:text-[22px] text-white leading-tight">
                     {toTitleCase(q.serviceType)}
                   </h3>
                 </div>
-                <div
-                  className={`shrink-0 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                  style={{ animationDelay: "160ms" }}
+                <span
+                  className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase shrink-0"
+                  style={{
+                    color: GOLD,
+                    backgroundColor: "rgba(255,255,255,0.12)",
+                    border: `1px solid ${GOLD}40`,
+                  }}
                 >
-                  <span
-                    className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase backdrop-blur-sm"
-                    style={{
-                      color: GOLD,
-                      backgroundColor: "rgba(255,255,255,0.12)",
-                      border: `1px solid ${GOLD}40`,
-                    }}
-                  >
-                    {q.packageLabel}
-                  </span>
-                </div>
+                  {q.packageLabel}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* ─── Route / Addresses section ─── */}
-          <div style={{ backgroundColor: CREAM }}>
+          {/* ─── Move details section ─── */}
+          <div
+            className="rounded-b-2xl overflow-hidden"
+            style={{ backgroundColor: "#FFFFFF", border: `1px solid ${FOREST}08`, borderTop: "none" }}
+          >
             <div className="px-5 py-5 md:px-6 md:py-6">
+              <p
+                className="text-[9px] font-bold tracking-[0.16em] uppercase mb-5"
+                style={{ color: `${FOREST}50` }}
+              >
+                Your Move
+              </p>
+
               <div className="flex gap-4">
-                {/* Animated route line */}
-                <div
-                  className={`relative shrink-0 w-[3px] rounded-full ${summaryMounted ? "" : "opacity-0"}`}
-                  style={{
-                    minHeight: "6.5rem",
-                    ...(summaryMounted ? {
-                      animation: "qs-line-draw 0.6s cubic-bezier(0.22,1,0.36,1) 0.2s forwards",
-                      transformOrigin: "top",
-                    } : {}),
-                  }}
-                >
+                {/* Static route line */}
+                <div className="relative shrink-0 w-[3px] rounded-full" style={{ minHeight: "7rem" }}>
                   <div
                     className="absolute inset-0 rounded-full"
-                    style={{
-                      background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`,
-                      opacity: 0.25,
-                    }}
+                    style={{ background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`, opacity: 0.2 }}
                   />
-                  {/* Origin marker */}
                   <span
                     className="absolute left-1/2 -translate-x-1/2 top-0 w-[11px] h-[11px] rounded-full z-10"
                     style={{
                       backgroundColor: WINE,
-                      boxShadow: `0 0 0 3px ${CREAM}, 0 0 0 4px ${WINE}30`,
-                      animation: summaryMounted ? "qs-route-pulse 3s ease-in-out infinite" : "none",
+                      boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${WINE}25`,
                     }}
                   />
-                  {/* Travelling dot */}
-                  {summaryMounted && (
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full z-10"
-                      style={{
-                        backgroundColor: GOLD,
-                        boxShadow: `0 0 6px ${GOLD}80`,
-                        animation: "qs-route-travel 2.8s ease-in-out 0.8s infinite",
-                      }}
-                    />
-                  )}
-                  {/* Destination marker */}
                   <span
                     className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[11px] h-[11px] rounded-full z-10"
                     style={{
                       backgroundColor: GOLD,
-                      boxShadow: `0 0 0 3px ${CREAM}, 0 0 0 4px ${GOLD}30`,
+                      boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${GOLD}25`,
                     }}
                   />
                 </div>
 
                 {/* Address cards */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between gap-5">
-                  {/* FROM */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
                   <div
-                    className={`rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                    style={{
-                      animationDelay: "200ms",
-                      backgroundColor: "rgba(255,255,255,0.7)",
-                      border: `1px solid ${WINE}12`,
-                    }}
+                    className="rounded-xl px-4 py-3"
+                    style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}10` }}
                   >
                     <span
                       className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
                       style={{ color: WINE }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: WINE }} />
-                      Pickup
+                      <MapPin className="w-3 h-3" />
+                      From
                     </span>
                     <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
                       {q.fromAddress}
                     </p>
                     {formatAccessForDisplay(q.fromAccess) && (
-                      <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}55` }}>
+                      <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
                         {formatAccessForDisplay(q.fromAccess)}
                       </p>
                     )}
                   </div>
 
-                  {/* TO */}
                   <div
-                    className={`rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                    style={{
-                      animationDelay: "340ms",
-                      backgroundColor: "rgba(255,255,255,0.7)",
-                      border: `1px solid ${GOLD}15`,
-                    }}
+                    className="rounded-xl px-4 py-3"
+                    style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}12` }}
                   >
                     <span
                       className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
                       style={{ color: GOLD }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
-                      Destination
+                      <MapPin className="w-3 h-3" />
+                      To
                     </span>
                     <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
                       {q.toAddress}
                     </p>
                     {formatAccessForDisplay(q.toAccess) && (
-                      <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}55` }}>
+                      <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
                         {formatAccessForDisplay(q.toAccess)}
                       </p>
                     )}
@@ -453,26 +394,39 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 </div>
               </div>
 
-              {/* Date chip */}
-              {q.moveDate && (
-                <div
-                  className={`mt-5 inline-flex items-center gap-2.5 rounded-full px-4 py-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                  style={{
-                    animationDelay: "460ms",
-                    backgroundColor: "rgba(255,255,255,0.75)",
-                    border: `1px solid ${FOREST}10`,
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  <Calendar className="w-4 h-4 shrink-0" style={{ color: GOLD }} aria-hidden />
-                  <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
-                    {fmtDate(q.moveDate)}
-                  </span>
-                </div>
-              )}
+              {/* Bottom detail bar */}
+              <div
+                className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5 px-4 py-3 rounded-xl"
+                style={{ backgroundColor: CREAM, border: `1px solid ${FOREST}08` }}
+              >
+                {q.moveDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                      {fmtDate(q.moveDate)}
+                    </span>
+                  </div>
+                )}
+                {q.moveSize && (
+                  <div className="flex items-center gap-2">
+                    <Ruler className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    <span className="text-[12px] font-medium" style={{ color: FOREST }}>
+                      {MOVE_SIZE_LABELS[q.moveSize] ?? q.moveSize}
+                    </span>
+                  </div>
+                )}
+                {q.distanceKm != null && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    <span className="text-[12px] font-medium" style={{ color: FOREST }}>
+                      {q.distanceKm} km{q.driveTimeMin ? ` · ~${q.driveTimeMin} min` : ""}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Divider — decorative gold rule */}
+            {/* Divider */}
             <div className="flex items-center gap-3 px-5 md:px-6">
               <div className="flex-1 h-px" style={{ backgroundColor: `${FOREST}10` }} />
               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `${GOLD}50` }} />
@@ -482,17 +436,13 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             {/* ─── Pricing section ─── */}
             <div className="px-5 py-5 md:px-6 md:py-6">
               <p
-                className={`text-[9px] font-bold tracking-[0.18em] uppercase mb-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                style={{ color: `${FOREST}55`, animationDelay: "500ms" }}
+                className="text-[9px] font-bold tracking-[0.18em] uppercase mb-3"
+                style={{ color: `${FOREST}55` }}
               >
                 Investment Summary
               </p>
 
-              {/* Line items */}
-              <div
-                className={`space-y-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                style={{ animationDelay: "560ms" }}
-              >
+              <div className="space-y-2">
                 <div className="flex justify-between items-baseline">
                   <span className="text-[12px]" style={{ color: `${FOREST}80` }}>Base Rate</span>
                   <span className="text-[13px] font-semibold tabular-nums" style={{ color: FOREST }}>{fmtPrice(q.basePrice)}</span>
@@ -521,11 +471,8 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
 
               {/* Tax & totals */}
               <div
-                className={`mt-3 pt-3 space-y-1.5 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                style={{
-                  animationDelay: "640ms",
-                  borderTop: `1px solid ${FOREST}10`,
-                }}
+                className="mt-3 pt-3 space-y-1.5"
+                style={{ borderTop: `1px solid ${FOREST}10` }}
               >
                 <div className="flex justify-between items-baseline">
                   <span className="text-[12px]" style={{ color: `${FOREST}70` }}>Total before tax</span>
@@ -539,12 +486,10 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
 
               {/* Grand total card */}
               <div
-                className={`mt-4 rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                className="mt-4 rounded-xl px-4 py-3"
                 style={{
-                  animationDelay: "720ms",
                   background: `linear-gradient(135deg, ${WINE}08 0%, ${WINE}04 100%)`,
                   border: `1px solid ${WINE}18`,
-                  animation: summaryMounted ? "qs-total-glow 4s ease-in-out 1.5s infinite" : "none",
                 }}
               >
                 <div className="flex justify-between items-center">
@@ -554,10 +499,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               </div>
 
               {/* Deposit & balance */}
-              <div
-                className={`mt-3 flex flex-col gap-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
-                style={{ animationDelay: "800ms" }}
-              >
+              <div className="mt-3 flex flex-col gap-2">
                 <div
                   className="flex justify-between items-center rounded-lg px-4 py-2.5"
                   style={{

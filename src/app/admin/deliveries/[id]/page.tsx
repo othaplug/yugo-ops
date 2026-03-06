@@ -20,7 +20,7 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
   const [{ data: org }, { data: orgs }, { data: crews }] = await Promise.all([
     db.from("organizations").select("email").eq("name", delivery.client_name).limit(1).maybeSingle(),
-    db.from("organizations").select("id, name, type").order("name"),
+    db.from("organizations").select("id, name, type").not("name", "like", "\\_%").order("name"),
     db.from("crews").select("id, name, members").order("name"),
   ]);
 

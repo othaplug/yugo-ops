@@ -4,7 +4,7 @@ import CreateMoveForm from "./CreateMoveForm";
 export default async function NewMovePage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: crews }] = await Promise.all([
-    db.from("organizations").select("id, name, type, email, contact_name, phone, address").eq("type", "b2c").order("name"),
+    db.from("organizations").select("id, name, type, email, contact_name, phone, address").eq("type", "b2c").not("name", "like", "\\_%").order("name"),
     db.from("crews").select("id, name, members").order("name"),
   ]);
 
