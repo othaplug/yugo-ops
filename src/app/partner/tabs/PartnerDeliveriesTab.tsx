@@ -36,6 +36,7 @@ const STATUS_BADGE: Record<string, string> = {
   pending_approval: "bg-amber-50 text-amber-700 border border-amber-200",
   scheduled: "bg-blue-50 text-blue-600",
   confirmed: "bg-green-50 text-green-600",
+  approved: "bg-green-50 text-green-600",
   dispatched: "bg-amber-50 text-amber-600",
   "in-transit": "bg-amber-50 text-amber-700",
   in_transit: "bg-amber-50 text-amber-700",
@@ -50,7 +51,7 @@ const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   pending_approval: "Pending Acceptance",
 };
 
-const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "dispatched", "in_progress", "in-transit", "delivered", "completed", "cancelled"];
+const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "approved", "dispatched", "in_progress", "in-transit", "delivered", "completed", "cancelled"];
 
 export default function PartnerDeliveriesTab({
   deliveries,

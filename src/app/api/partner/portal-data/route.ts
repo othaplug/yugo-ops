@@ -57,24 +57,30 @@ export async function GET() {
 
   const DONE_STATUSES = new Set(["cancelled", "rejected", "delivered", "completed"]);
 
-  // Today: deliveries scheduled for today (include pending_approval so partner requests show)
+  /** Normalize to YYYY-MM-DD for comparison (handles ISO timestamps and date-only strings) */
+  const dateOnly = (d: string | null | undefined) =>
+    d ? String(d).slice(0, 10) : null;
+
+  // Approved/confirmed statuses: show in Today when date is today, always in Upcoming
+  const APPROVED_STATUSES = new Set(["confirmed", "accepted", "scheduled", "approved"]);
+
+  // Today: not done, and scheduled date is today (normalized)
   const todayDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
     if (DONE_STATUSES.has(s)) return false;
-    return d.scheduled_date?.slice(0, 10) === todayStr;
+    const dStr = dateOnly(d.scheduled_date);
+    return dStr === todayStr;
   });
 
-  // Upcoming: pending_approval + confirmed/accepted/scheduled (including with no date yet so they appear)
+  // Upcoming: pending_approval always; approved/confirmed/accepted/scheduled with any date or no date; others only if future date
   const upcomingDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
     if (DONE_STATUSES.has(s)) return false;
     if (s === "pending_approval") return true;
-    if (s === "confirmed" || s === "accepted" || s === "scheduled") {
-      if (!d.scheduled_date) return true; // show confirmed/accepted even without date (TBD)
-      return d.scheduled_date.slice(0, 10) > todayStr;
-    }
-    if (!d.scheduled_date) return false;
-    return d.scheduled_date.slice(0, 10) > todayStr;
+    if (APPROVED_STATUSES.has(s)) return true; // approved/confirmed/accepted/scheduled always show in Upcoming
+    const dStr = dateOnly(d.scheduled_date);
+    if (!dStr) return false;
+    return dStr > todayStr;
   });
 
   const completedThisMonth = dels.filter((d) => {

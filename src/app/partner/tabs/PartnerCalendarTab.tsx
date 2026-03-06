@@ -16,6 +16,7 @@ const STATUS_DOT: Record<string, string> = {
   scheduled: "#3B82F6",
   confirmed: "#2D9F5A",
   accepted: "#2D9F5A",
+  approved: "#2D9F5A",
   dispatched: "#D48A29",
   "in-transit": "#D48A29",
   in_transit: "#D48A29",

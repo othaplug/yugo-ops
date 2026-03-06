@@ -118,6 +118,7 @@ const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-50 text-blue-700 border-blue-200",
   confirmed: "bg-green-50 text-green-700 border-green-200",
   accepted: "bg-green-50 text-green-700 border-green-200",
+  approved: "bg-green-50 text-green-700 border-green-200",
   dispatched: "bg-amber-50 text-amber-700 border-amber-200",
   "in-transit": "bg-amber-50 text-amber-700 border-amber-200",
   in_transit: "bg-amber-50 text-amber-700 border-amber-200",

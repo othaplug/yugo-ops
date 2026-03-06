@@ -33,7 +33,7 @@ export async function GET() {
   //   1. Scheduled for TODAY (not days in the future)
   //   2. Confirmed, accepted, or already in progress — not still pending approval
   const todayStr = getTodayString();
-  const liveStatuses = ["confirmed", "accepted", "dispatched", "in-transit", "in_transit", "in_progress"];
+  const liveStatuses = ["confirmed", "accepted", "approved", "dispatched", "in-transit", "in_transit", "in_progress"];
 
   const { data: deliveries } = await supabase
     .from("deliveries")
