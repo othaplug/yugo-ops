@@ -21,15 +21,16 @@ export default function PartnerLoginPage() {
         const { role } = await res.json();
         if (role === "partner") router.replace("/partner");
         else if (role === "admin") router.replace("/admin");
-        else {
-          // Never send partner-login visitors to main app /login; stay or send to /partner (page will redirect to /partner/login if no org)
+        else if (!errorParam) {
+          // No error in URL: send to /partner; that page will redirect back to /partner/login?error=no_org if no org
           router.replace("/partner");
         }
+        // If errorParam is set (e.g. no_org), stay here so the user sees the error message instead of redirect loop
       }
       setChecking(false);
     };
     check();
-  }, [router]);
+  }, [router, errorParam]);
 
   if (checking) {
     return (
