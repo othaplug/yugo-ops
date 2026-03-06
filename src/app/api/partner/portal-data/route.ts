@@ -57,6 +57,10 @@ export async function GET() {
 
   const DONE_STATUSES = new Set(["cancelled", "rejected", "delivered", "completed"]);
 
+  /** Normalize status for comparison (handles "Pending Approval", "pending_approval", etc.) */
+  const normStatus = (status: string | null | undefined) =>
+    (status || "").toLowerCase().replace(/\s+/g, "_");
+
   /** Normalize to YYYY-MM-DD for comparison (handles ISO timestamps and date-only strings) */
   const dateOnly = (d: string | null | undefined) =>
     d ? String(d).slice(0, 10) : null;
@@ -66,17 +70,17 @@ export async function GET() {
 
   // Today: not done, and scheduled date is today (normalized)
   const todayDeliveries = dels.filter((d) => {
-    const s = (d.status || "").toLowerCase();
+    const s = normStatus(d.status);
     if (DONE_STATUSES.has(s)) return false;
     const dStr = dateOnly(d.scheduled_date);
     return dStr === todayStr;
   });
 
-  // Upcoming: pending_approval always; approved/confirmed/accepted/scheduled with any date or no date; others only if future date
+  // Upcoming: pending_approval and pending always; approved/confirmed/accepted/scheduled always; others only if future date
   const upcomingDeliveries = dels.filter((d) => {
-    const s = (d.status || "").toLowerCase();
+    const s = normStatus(d.status);
     if (DONE_STATUSES.has(s)) return false;
-    if (s === "pending_approval") return true;
+    if (s === "pending_approval" || s === "pending") return true;
     if (APPROVED_STATUSES.has(s)) return true; // approved/confirmed/accepted/scheduled always show in Upcoming
     const dStr = dateOnly(d.scheduled_date);
     if (!dStr) return false;
@@ -84,12 +88,12 @@ export async function GET() {
   });
 
   const completedThisMonth = dels.filter((d) => {
-    const s = (d.status || "").toLowerCase();
+    const s = normStatus(d.status);
     return (s === "delivered" || s === "completed") && d.scheduled_date && d.scheduled_date >= thisMonthStart;
   }).length;
 
   const totalDelivered = dels.filter((d) => {
-    const s = (d.status || "").toLowerCase();
+    const s = normStatus(d.status);
     return s === "delivered" || s === "completed";
   }).length;
   const onTimeRate = dels.length > 0 ? Math.round((totalDelivered / dels.length) * 100) : 100;

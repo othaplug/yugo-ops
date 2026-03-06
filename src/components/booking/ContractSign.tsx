@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown, ChevronUp, FileText, Shield, MapPin, Calendar, ArrowDown } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, FileText, Shield, MapPin, Calendar } from "lucide-react";
 import { toTitleCase } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
@@ -257,21 +257,21 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         </div>
       </div>
 
-      <div className="p-5 md:p-6 space-y-5">
+      <div className="p-4 md:p-5 space-y-4">
         {/* ── Service & financial summary (redesigned, elevated) ── */}
         <div
           className="rounded-2xl overflow-hidden text-[12px] transition-all duration-500 ease-out"
           style={{
             backgroundColor: CREAM,
             color: FOREST,
-            boxShadow: `0 1px 3px ${FOREST}08`,
-            border: `1px solid ${FOREST}12`,
+            boxShadow: `0 1px 2px ${FOREST}06, 0 4px 12px ${FOREST}04`,
+            border: `1px solid ${FOREST}15`,
           }}
         >
-          <div className="p-5 md:p-6">
+          <div className="p-4 md:p-5">
             {/* Service details */}
             <p
-              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4 opacity-0 translate-y-2 transition-all duration-300 ease-out"
+              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-1 opacity-0 translate-y-2 transition-all duration-300 ease-out"
               style={{
                 color: `${FOREST}70`,
                 ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
@@ -281,7 +281,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               Service details
             </p>
             <p
-              className="text-[15px] font-semibold mb-4 transition-all duration-300 ease-out opacity-0 translate-y-2"
+              className="text-[15px] font-semibold mb-2 transition-all duration-300 ease-out opacity-0 translate-y-2"
               style={{
                 color: WINE,
                 ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
@@ -291,56 +291,71 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               {toTitleCase(q.serviceType)} — {q.packageLabel}
             </p>
 
-            {/* Address block with staggered animation + hover refinement */}
-            <div className="space-y-2 mb-1">
+            {/* Address block: from → to with animated connector + access text */}
+            <div className="relative">
               <div
-                className="flex gap-3 rounded-xl py-3 px-3.5 transition-all duration-300 ease-out hover:bg-black/[0.03]"
+                className="flex gap-3 rounded-lg py-2 px-3 transition-all duration-300 ease-out hover:bg-black/[0.02]"
                 style={{
                   opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(8px)",
+                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
                   transitionDelay: "120ms",
                 }}
               >
-                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
-                <div>
-                  <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}60` }}>From</span>
+                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                <div className="min-w-0">
+                  <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>From</span>
                   <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.fromAddress}</p>
+                  {q.fromAccess && (
+                    <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}60` }}>Access: {q.fromAccess}</p>
+                  )}
                 </div>
               </div>
+              {/* Animated from-to connector */}
               <div
-                className="flex justify-center py-0.5"
+                className="flex justify-center py-0.5 relative"
                 style={{
                   opacity: summaryMounted ? 1 : 0,
                   transition: "opacity 300ms ease-out",
-                  transitionDelay: "180ms",
+                  transitionDelay: "160ms",
                 }}
               >
-                <ArrowDown className="w-4 h-4 shrink-0" style={{ color: `${GOLD}99` }} aria-hidden />
+                <div className="relative w-px min-h-[20px]" style={{ backgroundColor: `${FOREST}18` }}>
+                  <span
+                    className="contract-address-flow-dot absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: GOLD,
+                      boxShadow: `0 0 0 2px ${CREAM}`,
+                    }}
+                  />
+                </div>
               </div>
               <div
-                className="flex gap-3 rounded-xl py-3 px-3.5 transition-all duration-300 ease-out hover:bg-black/[0.03]"
+                className="flex gap-3 rounded-lg py-2 px-3 transition-all duration-300 ease-out hover:bg-black/[0.02]"
                 style={{
                   opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(8px)",
+                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
                   transitionDelay: "200ms",
                 }}
               >
-                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
-                <div>
-                  <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}60` }}>To</span>
+                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                <div className="min-w-0">
+                  <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>To</span>
                   <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.toAddress}</p>
+                  {q.toAccess && (
+                    <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}60` }}>Access: {q.toAccess}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {q.moveDate && (
               <div
-                className="flex items-center gap-2 mt-3 rounded-lg py-2 px-3"
+                className="flex items-center gap-2 mt-2 rounded-lg py-1.5 px-2.5"
                 style={{
                   opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
+                  transform: summaryMounted ? "translateY(0)" : "translateY(4px)",
                   transition: "opacity 300ms ease-out, transform 300ms ease-out",
-                  transitionDelay: "260ms",
+                  transitionDelay: "240ms",
                   color: `${FOREST}90`,
                 }}
               >
@@ -354,25 +369,25 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
           <div className="h-px" style={{ backgroundColor: `${FOREST}12` }} />
 
           {/* Pricing details */}
-          <div className="p-5 md:p-6">
+          <div className="p-4 md:p-5">
             <p
-              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4"
+              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-2"
               style={{
                 color: `${FOREST}70`,
                 opacity: summaryMounted ? 1 : 0,
                 transition: "opacity 300ms ease-out",
-                transitionDelay: "320ms",
+                transitionDelay: "280ms",
               }}
             >
               Pricing details
             </p>
 
             <div
-              className="space-y-2 mb-4"
+              className="space-y-1.5 mb-2"
               style={{
                 opacity: summaryMounted ? 1 : 0,
                 transition: "opacity 300ms ease-out",
-                transitionDelay: "360ms",
+                transitionDelay: "320ms",
               }}
             >
               <div className="flex justify-between items-baseline">
@@ -389,7 +404,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                       <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(a.price)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between items-baseline pt-1 text-[11px]">
+                  <div className="flex justify-between items-baseline pt-0.5 text-[11px]">
                     <span style={{ color: `${FOREST}60` }}>Add-on subtotal</span>
                     <span className="font-semibold" style={{ color: FOREST }}>{fmtPrice(q.addonTotal)}</span>
                   </div>
@@ -398,12 +413,12 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             </div>
 
             <div
-              className="space-y-2 pt-4 border-t"
+              className="space-y-1 pt-2 border-t"
               style={{
                 borderColor: `${FOREST}15`,
                 opacity: summaryMounted ? 1 : 0,
                 transition: "opacity 300ms ease-out",
-                transitionDelay: "400ms",
+                transitionDelay: "360ms",
               }}
             >
               <div className="flex justify-between items-baseline">
@@ -414,15 +429,15 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 <span style={{ color: `${FOREST}80` }}>HST (13%)</span>
                 <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.tax)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-2">
+              <div className="flex justify-between items-baseline pt-1.5">
                 <span className="font-bold text-[13px]" style={{ color: WINE }}>Total</span>
                 <span className="font-bold text-[15px]" style={{ color: WINE }}>{fmtPrice(q.grandTotal)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-3">
+              <div className="flex justify-between items-baseline pt-2">
                 <span className="font-semibold" style={{ color: FOREST }}>Deposit due now</span>
                 <span className="font-bold text-[14px]" style={{ color: GOLD }}>{fmtPrice(q.deposit)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-1">
+              <div className="flex justify-between items-baseline pt-0.5">
                 <span className="text-[11px]" style={{ color: `${FOREST}70` }}>Balance due {balanceDue}</span>
                 <span className="font-medium text-[11px]" style={{ color: FOREST }}>{fmtPrice(balance)}</span>
               </div>
