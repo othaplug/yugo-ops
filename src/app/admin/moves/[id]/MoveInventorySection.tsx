@@ -274,15 +274,15 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <h3 className="font-heading text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
+      <h3 className="font-heading text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
         Client inventory
       </h3>
       {loading ? (
-        <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
+        <p className="text-caption text-[var(--tx3)]">Loading…</p>
       ) : (
         <>
           {rooms.length === 0 && !adding ? (
-            <p className="text-[11px] text-[var(--tx3)] mb-4">No items yet. Add room-by-room items for the client portal.</p>
+            <p className="text-caption text-[var(--tx3)] mb-4">No items yet. Add room-by-room items for the client portal.</p>
           ) : (
             <div className="space-y-2 mb-4">
               {rooms.map((room) => {
@@ -295,9 +295,9 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                     onClick={() => toggleRoom(room)}
                     className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
                   >
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{room}</span>
+                    <span className="text-section font-bold tracking-wider uppercase text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{room}</span>
                     <span className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-medium text-[var(--tx3)]">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
+                      <span className="text-section font-medium text-[var(--tx3)]">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
                       <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
                     </span>
                   </button>
@@ -309,8 +309,8 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-[var(--brd)]/40">
-                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
-                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
+                            <th className="text-section font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
+                            <th className="text-section font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
                             <th className="w-16" aria-label="Actions" />
                           </tr>
                         </thead>
@@ -319,28 +319,28 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             const rows = expandItemRow(item);
                             return rows.map((r, ri) => (
                               <tr key={`${item.id}-${ri}`} className="border-b border-[var(--brd)]/30 last:border-0 group hover:bg-[var(--bg)]/20 transition-colors">
-                                <td className="px-3 py-2 text-[12px] font-medium text-[var(--tx)]">
+                                <td className="px-3 py-2 text-ui font-medium text-[var(--tx)]">
                                   {ri === 0 && editingId === item.id ? (
                                     <input
                                       type="text"
                                       value={editItemName}
                                       onChange={(e) => setEditItemName(e.target.value)}
                                       placeholder="Item name"
-                                      className="w-full min-w-[120px] text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                                      className="w-full min-w-[120px] text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                                       autoFocus
                                     />
                                   ) : (
                                     r.label
                                   )}
                                 </td>
-                                <td className="px-3 py-2 text-[12px] text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
+                                <td className="px-3 py-2 text-ui text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
                                 <td className="px-3 py-2 text-right">
                                   {ri === 0 && (
                                     <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100">
                                       {editingId === item.id ? (
                                         <>
-                                          <button type="button" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-[var(--grn)] hover:bg-[var(--grdim)]">Save</button>
-                                          <button type="button" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 rounded text-[10px] text-[var(--tx3)]">Cancel</button>
+                                          <button type="button" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 rounded text-label font-semibold text-[var(--grn)] hover:bg-[var(--grdim)]">Save</button>
+                                          <button type="button" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 rounded text-label text-[var(--tx3)]">Cancel</button>
                                         </>
                                       ) : (
                                         <>
@@ -367,7 +367,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
           {/* Pending extra items (crew/client requests) */}
           {!extraLoading && extraItems.length > 0 && (
             <div className="mb-4 pt-4 border-t border-[var(--brd)]/40">
-              <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Extra items</h4>
+              <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Extra items</h4>
               <ul className="space-y-2">
                 {extraItems.map((e) => {
                   const pending = e.status === "pending";
@@ -376,19 +376,19 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   return (
                     <li
                       key={e.id}
-                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-[11px] ${
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-caption ${
                         pending ? "bg-amber-500/10 border-amber-500/30" : "bg-[var(--bg)]/50 border-[var(--brd)]/30"
                       }`}
                     >
                       <div className="min-w-0 flex-1">
                         <span className="font-medium text-[var(--tx)]">{desc}</span>
                         {(e.room || by) && (
-                          <span className="ml-2 text-[10px] text-[var(--tx3)]">
+                          <span className="ml-2 text-label text-[var(--tx3)]">
                             {e.room ? `${e.room} · ` : ""}{by}
                           </span>
                         )}
                         {!pending && (
-                          <span className={`ml-2 text-[10px] font-medium ${e.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+                          <span className={`ml-2 text-label font-medium ${e.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
                             {toTitleCase(e.status)}
                           </span>
                         )}
@@ -399,7 +399,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             type="button"
                             onClick={() => { setApproveExtraModal({ itemId: e.id }); setApproveExtraFeeDollars(""); }}
                             disabled={extraActioning === e.id}
-                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--grn)] text-white hover:opacity-90 disabled:opacity-50"
+                            className="px-2 py-1 rounded-md text-label font-semibold bg-[var(--grn)] text-white hover:opacity-90 disabled:opacity-50"
                           >
                             Approve
                           </button>
@@ -407,7 +407,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             type="button"
                             onClick={() => handleExtraReject(e.id)}
                             disabled={extraActioning === e.id}
-                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
+                            className="px-2 py-1 rounded-md text-label font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
                           >
                             Reject
                           </button>
@@ -425,14 +425,14 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
               <button
                 type="button"
                 onClick={() => setBulkMode(false)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-label font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Single
               </button>
               <button
                 type="button"
                 onClick={() => setBulkMode(true)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-label font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Bulk add
               </button>
@@ -440,11 +440,11 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
             {bulkMode ? (
               <div className="flex flex-col gap-2">
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-micro font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   >
                     <option value="">Select Room</option>
                     {DEFAULT_ROOMS.map((r) => (
@@ -453,18 +453,18 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
+                  <label className="block text-micro font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
                   <textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
                     placeholder={"Table x1, Couch x2\nCoffee Table"}
                     rows={3}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-y"
+                    className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-y"
                   />
                 </div>
                 {parsedBulkItems.length > 0 && (
                   <div className="rounded-md border border-[var(--brd)] bg-[var(--bg)]/50 overflow-hidden">
-                    <div className="text-[8px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
+                    <div className="text-micro font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
                       List — check items to add
                     </div>
                     <ul className="divide-y divide-[var(--brd)]/30 max-h-[200px] overflow-y-auto">
@@ -477,7 +477,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             onChange={() => toggleBulkItem(i)}
                             className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
                           />
-                          <label htmlFor={`bulk-${i}`} className="text-[12px] font-medium text-[var(--tx)] cursor-pointer flex-1">
+                          <label htmlFor={`bulk-${i}`} className="text-ui font-medium text-[var(--tx)] cursor-pointer flex-1">
                             {item}
                           </label>
                         </li>
@@ -489,7 +489,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleBulkAdd}
                   disabled={adding || parsedBulkItems.length === 0 || !newRoom || bulkSelectedCount === 0}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add {bulkSelectedCount > 0 ? `${bulkSelectedCount} selected` : "all"}
                 </button>
@@ -497,11 +497,11 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
             ) : (
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-micro font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   >
                     <option value="">Select Room</option>
                     {DEFAULT_ROOMS.map((r) => (
@@ -510,32 +510,32 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   </select>
                 </div>
                 <div className="flex-1 min-w-[120px]">
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item</label>
+                  <label className="block text-micro font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item</label>
                   <input
                     type="text"
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                     placeholder="e.g. Couch x2"
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                    className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
                   />
                 </div>
                 <div className="w-14">
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Qty</label>
+                  <label className="block text-micro font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Qty</label>
                   <input
                     type="number"
                     min={1}
                     max={99}
                     value={newItemQty}
                     onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleAdd}
                   disabled={adding || !newItemName.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add
                 </button>
@@ -548,7 +548,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
       {deleteConfirm && (
         <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove item?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">
+            <p className="text-ui text-[var(--tx2)]">
               Are you sure you want to remove &quot;{deleteConfirm.item_name}&quot; from inventory? This cannot be undone.
             </p>
             <div className="flex gap-2">
@@ -556,7 +556,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -564,7 +564,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
               >
                 {deleting ? "Removing…" : "Remove"}
               </button>
@@ -576,8 +576,8 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
       {approveExtraModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-extra-modal-title">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
-            <h2 id="approve-extra-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve extra item</h2>
-            <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
+            <h2 id="approve-extra-modal-title" className="text-body font-bold text-[var(--tx)] mb-3">Approve extra item</h2>
+            <label className="block text-caption font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
             <input
               type="number"
               min="0"
@@ -585,13 +585,13 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
               placeholder="0"
               value={approveExtraFeeDollars}
               onChange={(e) => setApproveExtraFeeDollars(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => { setApproveExtraModal(null); setApproveExtraFeeDollars(""); }}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
+                className="px-3 py-1.5 rounded-lg text-label font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
               >
                 Cancel
               </button>
@@ -599,7 +599,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={confirmExtraApprove}
                 disabled={extraActioning === approveExtraModal.itemId}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
                 {extraActioning === approveExtraModal.itemId ? "…" : "Approve"}
               </button>

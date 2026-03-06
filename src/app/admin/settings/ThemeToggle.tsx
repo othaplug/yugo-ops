@@ -8,8 +8,8 @@ export default function ThemeToggle() {
   return (
     <div className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
       <div>
-        <div className="text-[13px] font-semibold text-[var(--tx)]">Theme</div>
-        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Light or dark mode</div>
+        <div className="text-body font-semibold text-[var(--tx)]">Theme</div>
+        <div className="text-caption text-[var(--tx3)] mt-0.5">Light or dark mode</div>
       </div>
       <button
         onClick={toggleTheme}

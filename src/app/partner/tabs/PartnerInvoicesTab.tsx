@@ -66,11 +66,11 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
   if (invoices.length === 0) {
     return (
       <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#F5F3F0] flex items-center justify-center">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
-        <p className="text-[14px] font-semibold text-[#1A1A1A]">No invoices yet</p>
-        <p className="text-[12px] text-[#888] mt-1">Invoices will appear here once they are generated.</p>
+        <p className="text-title font-semibold text-[var(--tx)]">No invoices yet</p>
+        <p className="text-ui text-[var(--tx3)] mt-1">Invoices will appear here once they are generated.</p>
       </div>
     );
   }
@@ -79,19 +79,19 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
     <div>
       {/* Summary stats */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
+        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
-            <div className="text-[20px] font-bold text-[#1A1A1A] mt-0.5">{invoices.length}</div>
+            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
+            <div className="text-h2-sm font-bold text-[var(--tx)] mt-0.5">{invoices.length}</div>
           </div>
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
-            <div className="text-[20px] font-bold text-[#D14343] mt-0.5">{formatCurrency(totalOutstanding)}</div>
+            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+            <div className="text-h2-sm font-bold text-[#D14343] mt-0.5">{formatCurrency(totalOutstanding)}</div>
           </div>
           <div className="hidden sm:block">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
-            <div className="text-[20px] font-bold text-[#2D9F5A] mt-0.5">{formatCurrency(totalPaid)}</div>
+            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
+            <div className="text-h2-sm font-bold text-[#2D9F5A] mt-0.5">{formatCurrency(totalPaid)}</div>
           </div>
         </div>
       </div>
@@ -104,13 +104,13 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoices…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] text-[#1A1A1A] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-ui text-[var(--tx)] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-[var(--card)]"
           />
         </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] font-semibold text-[#1A1A1A] bg-white focus:border-[#C9A962] focus:outline-none transition-colors"
+          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-ui font-semibold text-[var(--tx)] bg-[var(--card)] focus:border-[#C9A962] focus:outline-none transition-colors"
         >
           <option value="all">All</option>
           <option value="paid">Paid</option>
@@ -120,7 +120,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
         </select>
         <button
           onClick={downloadCSV}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-white border border-[#E8E4DF] text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-ui font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[#C9A962] transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download CSV
@@ -129,37 +129,37 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
 
       {/* Table */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
+        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--brd)]/30">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Invoice</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888] hidden sm:table-cell">Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Due</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Amount</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Status</th>
+                <th className="px-4 py-3 text-left text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Invoice</th>
+                <th className="px-4 py-3 text-left text-label font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-left text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Due</th>
+                <th className="px-4 py-3 text-right text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Amount</th>
+                <th className="px-4 py-3 text-right text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Status</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((inv) => {
                 const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
                 return (
-                  <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[#FAF8F5]/50 transition-colors">
-                    <td className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">
+                  <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/50 transition-colors">
+                    <td className="px-4 py-3 text-body font-semibold text-[var(--tx)]">
                       {inv.invoice_number || `INV-${inv.id.slice(0, 6)}`}
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-[#888] hidden sm:table-cell">
+                    <td className="px-4 py-3 text-ui text-[var(--tx3)] hidden sm:table-cell">
                       {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-[#888]">
+                    <td className="px-4 py-3 text-ui text-[var(--tx3)]">
                       {inv.due_date ? new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A] text-right">
+                    <td className="px-4 py-3 text-body font-semibold text-[var(--tx)] text-right">
                       {formatCurrency(inv.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${badgeClass}`}>
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-label font-semibold capitalize ${badgeClass}`}>
                         {toTitleCase(inv.status)}
                       </span>
                     </td>

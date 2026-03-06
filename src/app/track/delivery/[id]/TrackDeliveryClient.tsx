@@ -11,7 +11,7 @@ import { toTitleCase } from "@/lib/format-text";
 const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[300px] flex items-center justify-center bg-[#1A1A1A] text-[#555] text-[12px]">
+    <div className="w-full h-full min-h-[300px] flex items-center justify-center bg-[#1A1A1A] text-[#555] text-ui">
       Loading map…
     </div>
   ),
@@ -115,10 +115,10 @@ export default function TrackDeliveryClient({
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
               </span>
               <div>
-                <div className="text-[13px] font-bold" style={{ color: FOREST }}>
+                <div className="text-body font-bold" style={{ color: FOREST }}>
                   {STAGE_LABELS[liveStage] || toTitleCase(liveStage)}
                 </div>
-                <div className="text-[11px] opacity-80" style={{ color: FOREST }}>
+                <div className="text-caption opacity-80" style={{ color: FOREST }}>
                   {displayEta != null ? `~${displayEta} min away` : crewName ? `Crew: ${crewName}` : "Your crew is on the way"}
                 </div>
               </div>
@@ -128,8 +128,8 @@ export default function TrackDeliveryClient({
           {/* Overlay: ETA pill */}
           {displayEta != null && (
             <div className="absolute top-4 right-4 z-20 rounded-xl px-4 py-2.5 shadow-xl" style={{ backgroundColor: GOLD }}>
-              <div className="text-[20px] font-bold text-[#1A1A1A] leading-none">{displayEta}</div>
-              <div className="text-[9px] font-semibold text-[#1A1A1A]/70 uppercase tracking-wider">min</div>
+              <div className="text-h2-sm font-bold text-[#1A1A1A] leading-none">{displayEta}</div>
+              <div className="text-section font-semibold text-[#1A1A1A]/70 uppercase tracking-wider">min</div>
             </div>
           )}
 
@@ -170,11 +170,11 @@ export default function TrackDeliveryClient({
 
         {/* Header */}
         <div className="mb-5">
-          <div className="text-[9px] font-bold tracking-widest uppercase mb-1" style={{ color: WINE }}>Delivery Tracking</div>
-          <h1 className="text-[20px] md:text-[24px] font-bold leading-tight" style={{ color: FOREST }}>
+          <div className="text-section font-bold tracking-widest uppercase mb-1" style={{ color: WINE }}>Delivery Tracking</div>
+          <h1 className="text-h2-sm md:text-h1 font-bold leading-tight" style={{ color: FOREST }}>
             {delivery.customer_name || "Your Delivery"}
           </h1>
-          <p className="text-[13px] mt-0.5 font-mono opacity-75" style={{ color: FOREST }}>{delivery.delivery_number}</p>
+          <p className="text-body mt-0.5 font-mono opacity-75" style={{ color: FOREST }}>{delivery.delivery_number}</p>
         </div>
 
         {/* Progress */}
@@ -199,7 +199,7 @@ export default function TrackDeliveryClient({
                 <div key={s} className="flex items-center gap-0 flex-shrink-0">
                   <div className="flex flex-col items-center">
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all border"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-label font-bold transition-all border"
                       style={
                         isPast
                           ? { backgroundColor: "#22C55E", color: "white", borderColor: "transparent" }
@@ -215,7 +215,7 @@ export default function TrackDeliveryClient({
                       )}
                     </div>
                     <div
-                      className="text-[9px] mt-1.5 font-semibold whitespace-nowrap"
+                      className="text-section mt-1.5 font-semibold whitespace-nowrap"
                       style={{ color: isCurrent ? GOLD : isPast ? "#22C55E" : `${FOREST}60` }}
                     >
                       {STAGE_LABELS[s]}
@@ -238,10 +238,10 @@ export default function TrackDeliveryClient({
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
               <div>
-                <div className="text-[14px] font-semibold" style={{ color: FOREST }}>
+                <div className="text-title font-semibold" style={{ color: FOREST }}>
                   {scheduledDate ? `Scheduled for ${scheduledDate}` : "Delivery scheduled"}
                 </div>
-                <div className="text-[12px] opacity-75" style={{ color: FOREST }}>
+                <div className="text-ui opacity-75" style={{ color: FOREST }}>
                   {delivery.delivery_window || delivery.time_slot
                     ? `${delivery.delivery_window || delivery.time_slot}`
                     : "Live tracking activates when crew begins"}
@@ -253,7 +253,7 @@ export default function TrackDeliveryClient({
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${GOLD}15` }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
-                <span className="text-[12px] opacity-75" style={{ color: FOREST }}>Your crew: <span className="font-semibold opacity-100">{crewName}</span></span>
+                <span className="text-ui opacity-75" style={{ color: FOREST }}>Your crew: <span className="font-semibold opacity-100">{crewName}</span></span>
               </div>
             )}
           </div>
@@ -266,10 +266,10 @@ export default function TrackDeliveryClient({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold truncate" style={{ color: FOREST }}>{crewName}</div>
-              <div className="text-[11px] opacity-75" style={{ color: FOREST }}>Your delivery crew</div>
+              <div className="text-body font-semibold truncate" style={{ color: FOREST }}>{crewName}</div>
+              <div className="text-caption opacity-75" style={{ color: FOREST }}>Your delivery crew</div>
             </div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#22C55E]/15 text-[#22C55E]">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-label font-bold bg-[#22C55E]/15 text-[#22C55E]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
               LIVE
             </span>
@@ -278,34 +278,34 @@ export default function TrackDeliveryClient({
 
         {/* Details */}
         <div className="pt-6 border-t border-[var(--brd)]/30 space-y-4">
-          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Delivery Details</h3>
+          <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Delivery Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
-              <div className="text-[13px]" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
+              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
+              <div className="text-body" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
             </div>
             {delivery.pickup_address && (
               <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
-                <div className="text-[13px]" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
+                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
+                <div className="text-body" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
               </div>
             )}
             <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
-              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
+              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
+              <div className="text-body font-semibold" style={{ color: FOREST }}>
                 {delivery.scheduled_date || "—"} {(delivery.delivery_window || delivery.time_slot) ? `· ${delivery.delivery_window || delivery.time_slot}` : ""}
               </div>
             </div>
             <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
-              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
+              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
+              <div className="text-body font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
             </div>
           </div>
 
           {itemsCount > 0 && (
             <div className="pt-4 border-t border-[var(--brd)]/30">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
-              <ul className="text-[13px] space-y-1">
+              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
+              <ul className="text-body space-y-1">
                 {(delivery.items as string[]).map((item: string, i: number) => (
                   <li key={i} className="flex items-center gap-2" style={{ color: FOREST }}>
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
@@ -317,7 +317,7 @@ export default function TrackDeliveryClient({
           )}
         </div>
 
-        <p className="text-center text-[11px] mt-8 opacity-75" style={{ color: FOREST }}>
+        <p className="text-center text-caption mt-8 opacity-75" style={{ color: FOREST }}>
           <Link href="/tracking" className="hover:underline font-semibold" style={{ color: GOLD }}>Track another delivery</Link> · Powered by YUGO
         </p>
       </div>

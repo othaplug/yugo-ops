@@ -60,10 +60,10 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[16px] font-bold text-[#1A1A1A] font-hero">Live Delivery Tracking</h3>
+        <h3 className="text-h3 font-bold text-[#1A1A1A] font-hero">Live Delivery Tracking</h3>
         <div className="flex items-center gap-2">
           {hasAny && (
-            <span className="flex items-center gap-1.5 text-[11px] text-[#2D9F5A] font-medium">
+            <span className="flex items-center gap-1.5 text-caption text-[#2D9F5A] font-medium">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2D9F5A] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2D9F5A]" />
@@ -103,28 +103,28 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2D9F5A] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2D9F5A]" />
               </span>
-              <span className="text-[13px] font-bold text-[#1A1A1A]">
+              <span className="text-body font-bold text-[#1A1A1A]">
                 {CREW_STATUS_TO_LABEL[selected.live_stage || ""] || toTitleCase(selected.live_stage || "") || "Active"}
               </span>
             </div>
-            <div className="text-[12px] text-[#1A1A1A] font-semibold">{selected.customer_name || selected.delivery_number}</div>
-            <div className="text-[11px] text-[#888] mt-0.5">{selected.delivery_address || "—"}</div>
+            <div className="text-ui text-[#1A1A1A] font-semibold">{selected.customer_name || selected.delivery_number}</div>
+            <div className="text-caption text-[#888] mt-0.5">{selected.delivery_address || "—"}</div>
             {selected.crew_name && (
-              <div className="text-[11px] text-[#888] mt-1">Crew: {selected.crew_name}</div>
+              <div className="text-caption text-[#888] mt-1">Crew: {selected.crew_name}</div>
             )}
-            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] font-semibold hover:underline">
+            <button onClick={() => setSelected(null)} className="mt-2 text-label text-[#C9A962] font-semibold hover:underline">
               Close
             </button>
           </div>
         )}
 
         {loading ? (
-          <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888]">Loading map...</div>
+          <div className="w-full h-full flex items-center justify-center text-body text-[#888]">Loading map...</div>
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D4D0CB" strokeWidth="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7Z"/></svg>
-            <p className="text-[14px] text-[#888] mt-3">No active deliveries with live tracking right now.</p>
-            <p className="text-[12px] text-[#aaa] mt-1">When a crew is dispatched, their live position will appear here.</p>
+            <p className="text-title text-[#888] mt-3">No active deliveries with live tracking right now.</p>
+            <p className="text-ui text-[#aaa] mt-1">When a crew is dispatched, their live position will appear here.</p>
           </div>
         ) : HAS_MAPBOX ? (
           <PartnerMapMapbox
@@ -154,18 +154,18 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 className={`bg-white border border-[#E8E4DF] rounded-xl p-4 flex items-center justify-between ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40" : ""} transition-colors`}
               >
                 <div>
-                  <div className="text-[14px] font-semibold text-[#1A1A1A]">{d.customer_name || d.delivery_number}</div>
-                  <div className="text-[12px] text-[#888] mt-0.5">{d.delivery_address || "—"}</div>
+                  <div className="text-title font-semibold text-[#1A1A1A]">{d.customer_name || d.delivery_number}</div>
+                  <div className="text-ui text-[#888] mt-0.5">{d.delivery_address || "—"}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {d.crew_name && <span className="text-[11px] text-[#888]">{d.crew_name}</span>}
+                  {d.crew_name && <span className="text-caption text-[#888]">{d.crew_name}</span>}
                   {hasGPS ? (
-                    <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
+                    <span className="flex items-center gap-1 text-label text-[#2D9F5A] font-semibold">
                       <span className="w-2 h-2 rounded-full bg-[#2D9F5A]" />
                       Live
                     </span>
                   ) : (
-                    <span className="text-[10px] text-[#888]">Awaiting GPS</span>
+                    <span className="text-label text-[#888]">Awaiting GPS</span>
                   )}
                 </div>
               </div>

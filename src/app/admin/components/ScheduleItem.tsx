@@ -39,18 +39,18 @@ export function ScheduleDeliveryItem({
   return (
     <Link href={href} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
-        <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>
+        <span className="text-ui font-semibold text-[var(--tx)]">{timeSlot}</span>
         {pill && (
-          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
+          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-section font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
             {pill}
           </span>
         )}
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
-        <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>
-        <div className="text-[11px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
+        <div className={`text-label font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className="text-title font-bold font-heading text-[var(--tx)]">{title}</div>
+        <div className="text-caption text-[var(--tx3)] mt-0.5">{subtitle}</div>
       </div>
     </Link>
   );
@@ -77,16 +77,16 @@ export function ScheduleMoveItem({
   return (
     <Link href={href} className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
-        <span className="text-[10px] text-[var(--tx3)]">{leftPrimary}</span>
-        {leftSecondary && <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{leftSecondary}</span>}
+        <span className="text-label text-[var(--tx3)]">{leftPrimary}</span>
+        {leftSecondary && <span className="text-caption font-semibold text-[var(--tx)] mt-1">{leftSecondary}</span>}
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
-        <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>
+        <div className={`text-label font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className="text-title font-bold font-heading text-[var(--tx)]">{title}</div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {price && <span className="text-[13px] font-bold text-[var(--gold)]">{price}</span>}
-          <span className="text-[11px] text-[var(--tx3)] truncate">{subtitle}</span>
+          {price && <span className="text-body font-bold text-[var(--gold)]">{price}</span>}
+          <span className="text-caption text-[var(--tx3)] truncate">{subtitle}</span>
         </div>
       </div>
     </Link>
@@ -116,18 +116,18 @@ export function ScheduleDeliveryButton({
       className="flex gap-3 py-4 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg w-full text-left"
     >
       <div className="flex flex-col items-start shrink-0 w-14">
-        <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>
+        <span className="text-ui font-semibold text-[var(--tx)]">{timeSlot}</span>
         {pill && (
-          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
+          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-section font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
             {pill}
           </span>
         )}
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
-        <div className="text-[14px] font-bold font-heading text-[var(--tx)]">{title}</div>
-        <div className="text-[11px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
+        <div className={`text-label font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className="text-title font-bold font-heading text-[var(--tx)]">{title}</div>
+        <div className="text-caption text-[var(--tx3)] mt-0.5">{subtitle}</div>
       </div>
     </button>
   );

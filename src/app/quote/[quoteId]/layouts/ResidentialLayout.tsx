@@ -21,10 +21,10 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
-        <h2 className="font-hero text-[22px] md:text-[26px] mb-2" style={{ color: WINE }}>
+        <h2 className="font-hero text-h2 md:text-h1-lg mb-2" style={{ color: WINE }}>
           Choose Your Package
         </h2>
-        <p className="text-[13px] max-w-md mx-auto" style={{ color: `${FOREST}80` }}>
+        <p className="text-body max-w-md mx-auto" style={{ color: `${FOREST}80` }}>
           Every package includes a professional crew, truck, and blanket wrapping.
           Upgrade for more protection and convenience.
         </p>
@@ -49,7 +49,7 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
             >
               {meta.badge && (
                 <div
-                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white"
+                  className="text-center py-1.5 text-section font-bold tracking-[0.15em] uppercase text-white"
                   style={{ backgroundColor: GOLD }}
                 >
                   {meta.badge}
@@ -57,19 +57,19 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
               )}
 
               <div className="p-5 md:p-6">
-                <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
+                <h3 className="font-heading text-h3 font-bold" style={{ color: meta.accent }}>
                   {meta.label}
                 </h3>
-                <p className="text-[11px] mt-0.5 mb-4" style={{ color: `${FOREST}70` }}>
+                <p className="text-caption mt-0.5 mb-4" style={{ color: `${FOREST}70` }}>
                   {meta.tagline}
                 </p>
 
                 <div className="mb-1">
-                  <span className="font-hero text-[32px] font-normal" style={{ color: meta.accent }}>
+                  <span className="font-hero text-price-xs font-normal" style={{ color: meta.accent }}>
                     {fmtPrice(t.price)}
                   </span>
                 </div>
-                <p className="text-[11px] mb-5" style={{ color: `${FOREST}60` }}>
+                <p className="text-caption mb-5" style={{ color: `${FOREST}60` }}>
                   +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
                 </p>
 
@@ -77,7 +77,7 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
                   {t.includes.map((inc, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-                      <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{inc}</span>
+                      <span className="text-ui leading-snug" style={{ color: FOREST }}>{inc}</span>
                     </li>
                   ))}
                 </ul>
@@ -85,7 +85,7 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
                 <button
                   type="button"
                   onClick={() => onSelectTier(tierKey)}
-                  className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all ${
+                  className={`w-full py-3 rounded-xl text-ui font-bold tracking-wide transition-all ${
                     isSelected ? "text-white shadow-md" : "border-2 hover:shadow-sm"
                   }`}
                   style={
@@ -103,7 +103,7 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
                   )}
                 </button>
 
-                <p className="text-center text-[10px] mt-2.5" style={{ color: GOLD }}>
+                <p className="text-center text-label mt-2.5" style={{ color: GOLD }}>
                   {fmtPrice(t.deposit)} deposit to book
                 </p>
               </div>

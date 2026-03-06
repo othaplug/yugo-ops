@@ -32,6 +32,7 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/api/payments/")) return true;
   if (pathname.startsWith("/api/tips/")) return true;
   if (pathname.startsWith("/api/track/")) return true;
+  if (pathname.startsWith("/api/mapbox/")) return true;
   if (pathname.startsWith("/api/tracking/stream/")) return true;
   if (pathname.startsWith("/api/tracking/checkpoint")) return true;
   if (pathname.startsWith("/api/tracking/location")) return true;

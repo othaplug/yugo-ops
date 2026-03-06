@@ -143,17 +143,17 @@ export default function DispatchMapView() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Active Operations</h2>
+        <h2 className="font-heading text-h3-sm font-bold text-[var(--tx)]">Active Operations</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setView("map")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-label font-semibold ${view === "map" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             Map
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-lg text-label font-semibold ${view === "list" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             List
           </button>
@@ -168,7 +168,7 @@ export default function DispatchMapView() {
                 <MapboxMap markers={markers} center={center} />
               </div>
             ) : (
-              <div className="h-[400px] flex items-center justify-center text-[var(--tx3)] text-[12px]">
+              <div className="h-[400px] flex items-center justify-center text-[var(--tx3)] text-ui">
                 Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for map
               </div>
             )}
@@ -177,13 +177,13 @@ export default function DispatchMapView() {
         <div className={view === "map" ? "" : "lg:col-span-3"}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--brd)]">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+              <div className="text-label font-bold uppercase tracking-wider text-[var(--tx3)]">
                 Active Jobs ({sessions.length})
               </div>
             </div>
             <div className="max-h-[400px] overflow-y-auto">
               {sessions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+                <div className="px-4 py-8 text-center text-ui text-[var(--tx3)]">
                   No active tracking sessions
                 </div>
               ) : (
@@ -195,25 +195,25 @@ export default function DispatchMapView() {
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
-                      <span className="text-[12px] font-semibold text-[var(--tx)] truncate">
+                      <span className="text-ui font-semibold text-[var(--tx)] truncate">
                         {s.teamName}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">
+                    <div className="text-caption text-[var(--tx2)] mt-0.5 truncate">
                       {s.jobName} · {s.jobId}
                     </div>
-                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    <div className="text-label text-[var(--tx3)] mt-0.5">
                       {CREW_STATUS_TO_LABEL[s.status] || s.status}
                     </div>
                     {s.toAddress && (
-                      <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                      <div className="text-label text-[var(--tx3)] mt-0.5 truncate">
                         At: {s.toAddress}
                       </div>
                     )}
-                    <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                    <div className="text-section text-[var(--tx3)] mt-0.5">
                       Last update: {formatRelative(s.updatedAt)}
                     </div>
-                    <div className="text-[10px] text-[var(--gold)] mt-1">View Job Detail →</div>
+                    <div className="text-label text-[var(--gold)] mt-1">View Job Detail →</div>
                   </Link>
                 ))
               )}

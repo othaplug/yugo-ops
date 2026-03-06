@@ -32,14 +32,14 @@ export default function LoginHistoryPanel() {
   }, []);
 
   if (loading) {
-    return <div className="py-4 text-center text-[12px] text-[var(--tx3)]">Loading login history...</div>;
+    return <div className="py-4 text-center text-ui text-[var(--tx3)]">Loading login history...</div>;
   }
 
   if (entries.length === 0) {
     return (
       <div className="py-6 text-center">
-        <p className="text-[12px] text-[var(--tx3)]">No login history available.</p>
-        <p className="text-[10px] text-[var(--tx3)] mt-1">Login events will appear here once tracking is enabled.</p>
+        <p className="text-ui text-[var(--tx3)]">No login history available.</p>
+        <p className="text-label text-[var(--tx3)] mt-1">Login events will appear here once tracking is enabled.</p>
       </div>
     );
   }
@@ -47,9 +47,9 @@ export default function LoginHistoryPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Recent Sign-In Activity</div>
+        <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Recent Sign-In Activity</div>
         <div className="border border-[var(--brd)] rounded-lg overflow-hidden">
-          <div className="hidden sm:grid grid-cols-5 gap-2 px-3 py-2 bg-[var(--bg2)] text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+          <div className="hidden sm:grid grid-cols-5 gap-2 px-3 py-2 bg-[var(--bg2)] text-section font-bold tracking-wider uppercase text-[var(--tx3)]">
             <div>Date / Time</div>
             <div>Device</div>
             <div>IP Address</div>
@@ -57,16 +57,16 @@ export default function LoginHistoryPanel() {
             <div className="text-right">Status</div>
           </div>
           {entries.map((entry) => (
-            <div key={entry.id} className="grid grid-cols-1 sm:grid-cols-5 gap-1 sm:gap-2 px-3 py-2.5 border-t border-[var(--brd)] text-[11px]">
+            <div key={entry.id} className="grid grid-cols-1 sm:grid-cols-5 gap-1 sm:gap-2 px-3 py-2.5 border-t border-[var(--brd)] text-caption">
               <div className="text-[var(--tx)]">{formatDate(entry.created_at)}</div>
               <div className="text-[var(--tx3)]">{entry.device || "Unknown"}</div>
-              <div className="text-[var(--tx3)] font-mono text-[10px]">{entry.ip_address || "—"}</div>
+              <div className="text-[var(--tx3)] font-mono text-label">{entry.ip_address || "—"}</div>
               <div className="text-[var(--tx3)]">{entry.location || "—"}</div>
               <div className="text-right">
                 {entry.status === "success" ? (
-                  <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">Success</span>
+                  <span className="text-section font-semibold px-2 py-0.5 rounded bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">Success</span>
                 ) : (
-                  <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-red-500/12 text-[var(--red)]">Failed</span>
+                  <span className="text-section font-semibold px-2 py-0.5 rounded bg-red-500/12 text-[var(--red)]">Failed</span>
                 )}
               </div>
             </div>

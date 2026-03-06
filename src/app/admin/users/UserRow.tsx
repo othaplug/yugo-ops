@@ -73,14 +73,14 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
         className="hover:bg-[var(--gdim)] transition-colors cursor-pointer group"
       >
         <td className="px-3 py-2 border-b border-[var(--brd)]">
-          <div className="text-[9px]">{user.name || user.email}</div>
-          <div className="text-[9px] text-[var(--tx3)]">{user.email}</div>
+          <div className="text-section">{user.name || user.email}</div>
+          <div className="text-section text-[var(--tx3)]">{user.email}</div>
         </td>
         <td className="px-3 py-2 border-b border-[var(--brd)]">
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">{roleLabel}</span>
+          <span className="text-label font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">{roleLabel}</span>
         </td>
         <td className="px-3 py-2 border-b border-[var(--brd)]">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+          <span className={`text-label font-semibold px-2 py-0.5 rounded-full ${
             user.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" :
             user.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" :
             "bg-[var(--brd)] text-[var(--tx3)]"
@@ -88,7 +88,7 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
             {user.status === "activated" ? "Active" : user.status === "pending" ? "Pending" : "Inactive"}
           </span>
         </td>
-        <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : "—"}</td>
+        <td className="px-3 py-2 text-label border-b border-[var(--brd)]">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : "—"}</td>
         <td className="px-3 py-2 border-b border-[var(--brd)] w-10">
           <div className="relative" ref={menuRef} data-dots-menu>
             <button
@@ -103,10 +103,10 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
             </button>
             {menuOpen && (
               <div className="absolute right-0 bottom-full mb-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
-                <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">View</button>
-                {canEdit && <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">Edit</button>}
-                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">{canResendPortal ? "Resend tracking link" : "Resend invite"}</button>}
-                {canEdit && !isClient && <button type="button" onClick={() => { setMenuOpen(false); setDeleteConfirm(true); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--red)]/10">Delete</button>}
+                <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">View</button>
+                {canEdit && <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">Edit</button>}
+                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">{canResendPortal ? "Resend tracking link" : "Resend invite"}</button>}
+                {canEdit && !isClient && <button type="button" onClick={() => { setMenuOpen(false); setDeleteConfirm(true); }} className="w-full text-left px-3 py-2 text-label font-medium text-[var(--red)] hover:bg-[var(--red)]/10">Delete</button>}
               </div>
             )}
           </div>
@@ -116,9 +116,9 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
       {deleteConfirm && (
         <ModalOverlay open onClose={() => setDeleteConfirm(false)} title="Delete user?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">Are you sure you want to delete <strong>{user.name || user.email}</strong>? This cannot be undone.</p>
+            <p className="text-ui text-[var(--tx2)]">Are you sure you want to delete <strong>{user.name || user.email}</strong>? This cannot be undone.</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)]">Cancel</button>
+              <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 rounded-lg text-ui font-semibold border border-[var(--brd)]">Cancel</button>
               <button
                 onClick={async () => {
                   try {
@@ -130,7 +130,7 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
                     toast("Failed to delete", "x");
                   }
                 }}
-                className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--red)] text-white"
+                className="px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--red)] text-white"
               >
                 Delete
               </button>

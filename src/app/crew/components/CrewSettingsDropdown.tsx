@@ -72,26 +72,26 @@ export default function CrewSettingsDropdown() {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-2rem))] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up">
           <div className="px-4 py-3 border-b border-[var(--brd)]">
-            <h3 className="text-[12px] font-semibold text-[var(--tx)]">Settings</h3>
+            <h3 className="text-ui font-semibold text-[var(--tx)]">Settings</h3>
           </div>
 
           <div className="py-2">
             <div className="px-4 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Appearance</div>
+              <div className="text-label font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Appearance</div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[12px] text-[var(--tx2)]">Theme</span>
+                <span className="text-ui text-[var(--tx2)]">Theme</span>
                 <div className="flex rounded-lg border border-[var(--brd)] p-0.5">
                   <button
                     type="button"
                     onClick={() => setTheme("light")}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${theme === "light" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                    className={`px-2.5 py-1 rounded-md text-label font-semibold transition-colors ${theme === "light" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                   >
                     Light
                   </button>
                   <button
                     type="button"
                     onClick={() => setTheme("dark")}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${theme === "dark" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                    className={`px-2.5 py-1 rounded-md text-label font-semibold transition-colors ${theme === "dark" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                   >
                     Dark
                   </button>
@@ -100,9 +100,9 @@ export default function CrewSettingsDropdown() {
             </div>
 
             <div className="px-4 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Optimisation</div>
+              <div className="text-label font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Optimisation</div>
               <label className="flex items-center justify-between gap-3 cursor-pointer py-1">
-                <span className="text-[12px] text-[var(--tx2)]">Reduce motion</span>
+                <span className="text-ui text-[var(--tx2)]">Reduce motion</span>
                 <button
                   type="button"
                   role="switch"
@@ -114,7 +114,7 @@ export default function CrewSettingsDropdown() {
                 </button>
               </label>
               <label className="flex items-center justify-between gap-3 cursor-pointer py-1">
-                <span className="text-[12px] text-[var(--tx2)]">Low data mode</span>
+                <span className="text-ui text-[var(--tx2)]">Low data mode</span>
                 <button
                   type="button"
                   role="switch"
@@ -132,7 +132,7 @@ export default function CrewSettingsDropdown() {
             <form action="/api/crew/logout" method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-medium text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-caption font-medium text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

@@ -154,13 +154,13 @@ export default function JobInventory({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-hero text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+        <h2 className="font-hero text-caption font-bold uppercase tracking-wider text-[var(--tx3)]">
           {isPremierNoInventory ? "Room Confirmation" : isUnloading ? "Unloading Verification" : "Inventory"}
         </h2>
         {isPremierNoInventory ? (
-          <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
+          <span className="text-caption text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
         ) : verifiableCount > 0 ? (
-          <span className="text-[11px] text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
+          <span className="text-caption text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
         ) : null}
       </div>
       {isPremierNoInventory ? (
@@ -181,7 +181,7 @@ export default function JobInventory({
                   disabled={readOnly}
                   className="rounded border-[var(--brd)]"
                 />
-                <span className="text-[13px] text-[var(--tx)]">{room}</span>
+                <span className="text-body text-[var(--tx)]">{room}</span>
                 {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
               </label>
             );
@@ -193,7 +193,7 @@ export default function JobInventory({
                 const r = window.prompt("Add room name");
                 if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
               }}
-              className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
+              className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-ui text-[var(--tx3)] hover:border-[var(--gold)]"
             >
               + Add room
             </button>
@@ -216,9 +216,9 @@ export default function JobInventory({
             })}
             className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
           >
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
+            <span className="text-caption font-bold uppercase tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
             <span className="flex items-center gap-1.5">
-              <span className="text-[10px] font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+              <span className="text-label font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
               <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
             </span>
           </button>
@@ -252,8 +252,8 @@ export default function JobInventory({
                       ) : (
                         <span className="w-4" />
                       )}
-                      <span className="text-[13px] text-[var(--tx)] flex-1">{rawName}</span>
-                      <span className="text-[11px] text-[var(--tx3)] tabular-nums w-6 text-right">{qty}</span>
+                      <span className="text-body text-[var(--tx)] flex-1">{rawName}</span>
+                      <span className="text-caption text-[var(--tx3)] tabular-nums w-6 text-right">{qty}</span>
                       {verified && <span className="text-[var(--grn)]">&#10003;</span>}
                     </label>
                   );
@@ -266,9 +266,9 @@ export default function JobInventory({
       })}
       {extraItems.length > 0 && (
         <div className="mb-3">
-          <div className="text-[12px] font-semibold text-[var(--gold)] mb-1.5">Added on-site</div>
+          <div className="text-ui font-semibold text-[var(--gold)] mb-1.5">Added on-site</div>
           {extraItems.map((e) => (
-            <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[var(--gold)]/20 text-[12px]">
+            <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[var(--gold)]/20 text-ui">
               {e.description ?? "—"} {(e.quantity ?? 1) > 1 && `×${e.quantity}`} {e.room && `(${e.room})`}
             </div>
           ))}
@@ -277,7 +277,7 @@ export default function JobInventory({
       {!isPremierNoInventory && !readOnly && (
       <button
         onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--gold)]/50 text-ui font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
       >
         + Add Extra Item
       </button>
@@ -287,43 +287,43 @@ export default function JobInventory({
       {addExtraOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
-            <h3 className="font-hero text-[16px] font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
-            <p className="text-[11px] text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>
+            <h3 className="font-hero text-h3 font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
+            <p className="text-caption text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>
             <form onSubmit={handleAddExtra} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Description</label>
+                <label className="block text-label font-semibold text-[var(--tx3)] mb-1">Description</label>
                 <input
                   value={extraDesc}
                   onChange={(e) => setExtraDesc(e.target.value)}
                   placeholder="e.g. Extra boxes from garage"
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Quantity</label>
+                <label className="block text-label font-semibold text-[var(--tx3)] mb-1">Quantity</label>
                 <input
                   type="number"
                   min={1}
                   value={extraQty}
                   onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Room (optional)</label>
+                <label className="block text-label font-semibold text-[var(--tx3)] mb-1">Room (optional)</label>
                 <input
                   value={extraRoom}
                   onChange={(e) => setExtraRoom(e.target.value)}
                   placeholder="e.g. Garage"
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(false)}
-                  className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx)] text-body"
                 >
                   Cancel
                 </button>

@@ -181,11 +181,11 @@ export default function TipScreen({
             <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6" style={{ background: `linear-gradient(135deg, ${GOLD}, #A07F26)` }}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
-            <h2 className="font-hero text-[24px] sm:text-[28px] font-semibold" style={{ color: WINE }}>Thank you!</h2>
-            <p className="text-[15px] mt-3 leading-relaxed" style={{ color: FOREST }}>
+            <h2 className="font-hero text-h1 sm:text-hero font-semibold" style={{ color: WINE }}>Thank you!</h2>
+            <p className="text-h3-sm mt-3 leading-relaxed" style={{ color: FOREST }}>
               Your {formatCurrency(tipAmount)} tip has been sent to {crewName}.
             </p>
-            <p className="text-[13px] mt-2 opacity-70" style={{ color: FOREST }}>
+            <p className="text-body mt-2 opacity-70" style={{ color: FOREST }}>
               100% of your tip goes directly to your moving crew.
             </p>
 
@@ -194,7 +194,7 @@ export default function TipScreen({
                 href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-xl font-semibold text-[13px] py-3 px-6 transition-colors hover:opacity-90 shadow-sm"
+                className="inline-flex items-center justify-center rounded-xl font-semibold text-body py-3 px-6 transition-colors hover:opacity-90 shadow-sm"
                 style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
               >
                 Leave a Google Review
@@ -202,7 +202,7 @@ export default function TipScreen({
               <button
                 type="button"
                 onClick={onComplete}
-                className="inline-flex items-center justify-center rounded-xl font-semibold text-[13px] py-3 px-6 transition-colors hover:opacity-90 border-2"
+                className="inline-flex items-center justify-center rounded-xl font-semibold text-body py-3 px-6 transition-colors hover:opacity-90 border-2"
                 style={{ borderColor: `${FOREST}30`, color: FOREST }}
               >
                 Back to Summary
@@ -218,8 +218,8 @@ export default function TipScreen({
     return (
       <div className="fixed inset-0 z-[150] flex items-center justify-center p-6" style={{ backgroundColor: CREAM }}>
         <div className="max-w-md w-full text-center animate-fade-up">
-          <p className="text-[16px] font-semibold" style={{ color: FOREST }}>No problem!</p>
-          <p className="text-[14px] mt-2 opacity-80" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
+          <p className="text-h3 font-semibold" style={{ color: FOREST }}>No problem!</p>
+          <p className="text-title mt-2 opacity-80" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
         </div>
       </div>
     );
@@ -233,10 +233,10 @@ export default function TipScreen({
           <div className="flex items-center justify-center gap-2 mb-4">
             <YugoLogo size={20} variant="gold" onLightBackground />
           </div>
-          <h1 className="font-hero text-[26px] sm:text-[30px] font-semibold leading-tight" style={{ color: WINE }}>
+          <h1 className="font-hero text-h1-lg sm:text-hero-md font-semibold leading-tight" style={{ color: WINE }}>
             Move Complete!
           </h1>
-          <p className="text-[14px] mt-2 opacity-80" style={{ color: FOREST }}>
+          <p className="text-title mt-2 opacity-80" style={{ color: FOREST }}>
             Thank you for choosing Yugo, {firstName}.<br />
             We hope your experience was exceptional.
           </p>
@@ -246,19 +246,19 @@ export default function TipScreen({
         <div className="rounded-2xl border-2 p-5 mb-6 bg-white" style={{ borderColor: `${GOLD}30` }}>
           <div className="flex items-center gap-4">
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-[16px] font-bold text-white shadow-md shrink-0"
+              className="w-14 h-14 rounded-full flex items-center justify-center text-h3 font-bold text-white shadow-md shrink-0"
               style={{ background: `linear-gradient(135deg, ${GOLD}, #8B7332)` }}
             >
               {crewInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-[16px] font-bold truncate" style={{ color: FOREST }}>{crewName}</h3>
+              <h3 className="text-h3 font-bold truncate" style={{ color: FOREST }}>{crewName}</h3>
               <div className="flex items-center gap-1 mt-0.5">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={GOLD} stroke={GOLD} strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
                 ))}
               </div>
-              <div className="text-[12px] mt-1 opacity-70" style={{ color: FOREST }}>
+              <div className="text-ui mt-1 opacity-70" style={{ color: FOREST }}>
                 {crewMembers.length > 0 ? `${crewMembers.length} movers` : "Your crew"}
                 {hoursWorked ? ` · ${hoursWorked} hours` : ""}
               </div>
@@ -268,7 +268,7 @@ export default function TipScreen({
 
         {/* Tip prompt */}
         <div className="text-center mb-5">
-          <p className="text-[15px] font-semibold" style={{ color: FOREST }}>Would you like to leave a tip for your crew?</p>
+          <p className="text-h3-sm font-semibold" style={{ color: FOREST }}>Would you like to leave a tip for your crew?</p>
         </div>
 
         {/* Preset amounts */}
@@ -284,10 +284,10 @@ export default function TipScreen({
                 backgroundColor: selectedPreset === p.amount ? `${GOLD}15` : "white",
               }}
             >
-              <div className="text-[20px] font-bold" style={{ color: selectedPreset === p.amount ? WINE : FOREST }}>
+              <div className="text-h2-sm font-bold" style={{ color: selectedPreset === p.amount ? WINE : FOREST }}>
                 {formatCurrency(p.amount)}
               </div>
-              <div className="text-[11px] font-semibold mt-0.5 opacity-70" style={{ color: FOREST }}>
+              <div className="text-caption font-semibold mt-0.5 opacity-70" style={{ color: FOREST }}>
                 {p.label}
               </div>
             </button>
@@ -307,7 +307,7 @@ export default function TipScreen({
           >
             {selectedPreset === null ? (
               <div className="flex items-center px-4 py-3">
-                <span className="text-[16px] font-bold mr-2" style={{ color: FOREST }}>$</span>
+                <span className="text-h3 font-bold mr-2" style={{ color: FOREST }}>$</span>
                 <input
                   type="number"
                   min={5}
@@ -316,13 +316,13 @@ export default function TipScreen({
                   value={customDollars}
                   onChange={(e) => setCustomDollars(e.target.value.replace(/[^0-9.]/g, ""))}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex-1 bg-transparent text-[16px] font-bold outline-none min-w-0"
+                  className="flex-1 bg-transparent text-h3 font-bold outline-none min-w-0"
                   style={{ color: FOREST }}
                   autoFocus
                 />
               </div>
             ) : (
-              <div className="px-4 py-3 text-[13px] font-semibold text-center" style={{ color: FOREST }}>
+              <div className="px-4 py-3 text-body font-semibold text-center" style={{ color: FOREST }}>
                 Custom amount
               </div>
             )}
@@ -332,14 +332,14 @@ export default function TipScreen({
         {/* Card info */}
         {cardLast4 && (
           <div className="text-center mb-5">
-            <p className="text-[12px] opacity-60" style={{ color: FOREST }}>
+            <p className="text-ui opacity-60" style={{ color: FOREST }}>
               Charged to your card ending in <span className="font-bold">····{cardLast4}</span>
             </p>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 text-center">
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-body text-red-700 text-center">
             {error}
           </div>
         )}
@@ -349,7 +349,7 @@ export default function TipScreen({
           <button
             type="button"
             onClick={handleSkip}
-            className="flex-1 rounded-xl border-2 py-3.5 text-[14px] font-semibold transition-colors"
+            className="flex-1 rounded-xl border-2 py-3.5 text-title font-semibold transition-colors"
             style={{ borderColor: `${FOREST}25`, color: FOREST }}
           >
             Skip
@@ -358,7 +358,7 @@ export default function TipScreen({
             type="button"
             onClick={handleSubmit}
             disabled={phase === "processing" || currentAmount < 5}
-            className="flex-1 rounded-xl py-3.5 text-[14px] font-bold transition-colors disabled:opacity-50 hover:opacity-90 shadow-sm"
+            className="flex-1 rounded-xl py-3.5 text-title font-bold transition-colors disabled:opacity-50 hover:opacity-90 shadow-sm"
             style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
           >
             {phase === "processing" ? "Processing…" : currentAmount >= 5 ? `Leave ${formatCurrency(currentAmount)} Tip` : "Leave Tip"}
@@ -366,7 +366,7 @@ export default function TipScreen({
         </div>
 
         {/* Fine print */}
-        <p className="text-center text-[11px] opacity-50" style={{ color: FOREST }}>
+        <p className="text-center text-caption opacity-50" style={{ color: FOREST }}>
           100% of tips go directly to your moving crew.
         </p>
       </div>

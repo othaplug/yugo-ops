@@ -83,7 +83,7 @@ export default async function ClientDetailPage({
     : null;
 
   return (
-    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-4 py-6 animate-pulse text-[var(--tx3)] text-[12px]">Loading…</div>}>
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-4 py-6 animate-pulse text-[var(--tx3)] text-ui">Loading…</div>}>
       <ClientDetailClient
         client={client}
         deliveries={deliveries || []}

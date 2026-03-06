@@ -140,7 +140,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
             )}
-            <h2 className="text-[16px] font-bold text-[var(--tx,#1A1A1A)]">
+            <h2 className="text-h3 font-bold text-[var(--tx,#1A1A1A)]">
               {section === "main" ? "Settings" : section === "profile" ? "Edit Profile" : section === "notifications" ? "Notifications" : "Delivery Preferences"}
             </h2>
           </div>
@@ -154,27 +154,27 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             <div className="p-5 space-y-5">
               {/* Account */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Account</div>
+                <div className="text-section font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Account</div>
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] overflow-hidden">
                   <div className="px-4 py-3.5 flex items-center gap-3 bg-[var(--card,#fff)]">
-                    <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-body font-bold flex-shrink-0">
                       {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[14px] font-semibold text-[var(--tx,#1A1A1A)] truncate">{contactName}</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)] truncate">{userEmail}</div>
+                      <div className="text-title font-semibold text-[var(--tx,#1A1A1A)] truncate">{contactName}</div>
+                      <div className="text-caption text-[var(--tx3,#888)] truncate">{userEmail}</div>
                     </div>
                   </div>
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
-                    <span className="text-[11px] text-[var(--tx3,#888)]">{orgName}</span>
-                    <span className="text-[10px] font-semibold text-[#C9A962] uppercase tracking-wide">{orgType}</span>
+                    <span className="text-caption text-[var(--tx3,#888)]">{orgName}</span>
+                    <span className="text-label font-semibold text-[#C9A962] uppercase tracking-wide">{orgType}</span>
                   </div>
                 </div>
               </div>
 
               {/* Theme */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Theme</div>
+                <div className="text-section font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Theme</div>
                 <div className="flex gap-2">
                   {([
                     { key: "light" as Theme, label: "Light", icon: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" },
@@ -193,7 +193,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme === t.key ? "#C9A962" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--tx3,#888)]">
                         <path d={t.icon} />
                       </svg>
-                      <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#888)]"}`}>{t.label}</span>
+                      <span className={`text-caption font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#888)]"}`}>{t.label}</span>
                     </button>
                   ))}
                 </div>
@@ -201,7 +201,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Menu items */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Manage</div>
+                <div className="text-section font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Manage</div>
                 <div className="space-y-1">
                   {[
                     { key: "profile" as const, icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2", circle: true, label: "Edit Profile", desc: "Name, email, phone" },
@@ -221,8 +221,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{item.label}</div>
-                        <div className="text-[11px] text-[var(--tx3,#888)]">{item.desc}</div>
+                        <div className="text-body font-semibold text-[var(--tx,#1A1A1A)]">{item.label}</div>
+                        <div className="text-caption text-[var(--tx3,#888)]">{item.desc}</div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
                     </button>
@@ -232,7 +232,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Quick links */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Quick Links</div>
+                <div className="text-section font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Quick Links</div>
                 <div className="space-y-1">
                   <a
                     href="/update-password"
@@ -242,8 +242,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
                     </div>
                     <div className="flex-1">
-                      <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Change Password</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)]">Update your login credentials</div>
+                      <div className="text-body font-semibold text-[var(--tx,#1A1A1A)]">Change Password</div>
+                      <div className="text-caption text-[var(--tx3,#888)]">Update your login credentials</div>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
                   </a>
@@ -256,8 +256,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
                     </div>
                     <div className="flex-1">
-                      <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Public Tracking Page</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)]">Share with your customers</div>
+                      <div className="text-body font-semibold text-[var(--tx,#1A1A1A)]">Public Tracking Page</div>
+                      <div className="text-caption text-[var(--tx3,#888)]">Share with your customers</div>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                   </a>
@@ -273,7 +273,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
                   </div>
-                  <span className="text-[13px] font-semibold text-red-500">Sign Out</span>
+                  <span className="text-body font-semibold text-red-500">Sign Out</span>
                 </button>
               </div>
             </div>
@@ -283,42 +283,42 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {section === "profile" && (
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Contact Name</label>
+                <label className="text-caption font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Contact Name</label>
                 <input
                   value={profile.contact_name}
                   onChange={(e) => setProfile((p) => ({ ...p, contact_name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-title text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Business Email</label>
+                <label className="text-caption font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Business Email</label>
                 <input
                   value={profile.email}
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
                   type="email"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-title text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Phone</label>
+                <label className="text-caption font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Phone</label>
                 <input
                   value={profile.phone}
                   onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
                   type="tel"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-title text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div className="pt-2">
                 <div className="rounded-xl bg-[var(--hover,#F5F3F0)] border border-[var(--brd,#E8E4DF)] px-4 py-3">
-                  <div className="text-[10px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider mb-0.5">Organization</div>
-                  <div className="text-[14px] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
-                  <div className="text-[11px] text-[var(--tx3,#888)]">Type: {orgType} · Login: {userEmail}</div>
+                  <div className="text-label font-semibold text-[var(--tx3,#888)] uppercase tracking-wider mb-0.5">Organization</div>
+                  <div className="text-title font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
+                  <div className="text-caption text-[var(--tx3,#888)]">Type: {orgType} · Login: {userEmail}</div>
                 </div>
               </div>
               <button
                 onClick={saveProfile}
                 disabled={profileLoading}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
+                className="w-full py-3 rounded-xl text-body font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
               >
                 {profileLoading ? "Saving…" : profileSaved ? "Saved!" : "Save Changes"}
               </button>
@@ -328,7 +328,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {/* Notifications Section */}
           {section === "notifications" && (
             <div className="p-5 space-y-4">
-              <p className="text-[12px] text-[var(--tx3,#888)]">Control which email notifications you receive.</p>
+              <p className="text-ui text-[var(--tx3,#888)]">Control which email notifications you receive.</p>
               {[
                 { key: "email_delivery_updates" as const, label: "Delivery status updates", desc: "Get notified when deliveries change status" },
                 { key: "email_daily_summary" as const, label: "Daily summary", desc: "Receive a morning digest of today's deliveries" },
@@ -336,8 +336,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               ].map((pref) => (
                 <div key={pref.key} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
                   <div>
-                    <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{pref.label}</div>
-                    <div className="text-[11px] text-[var(--tx3,#888)]">{pref.desc}</div>
+                    <div className="text-body font-semibold text-[var(--tx,#1A1A1A)]">{pref.label}</div>
+                    <div className="text-caption text-[var(--tx3,#888)]">{pref.desc}</div>
                   </div>
                   <button
                     type="button"
@@ -352,7 +352,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               ))}
               <button
                 onClick={saveNotifPrefs}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
+                className="w-full py-3 rounded-xl text-body font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
               >
                 {prefsSaved ? "Saved!" : "Save Preferences"}
               </button>
@@ -362,13 +362,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {/* Delivery Preferences Section */}
           {section === "preferences" && (
             <div className="p-5 space-y-4">
-              <p className="text-[12px] text-[var(--tx3,#888)]">Set defaults used when scheduling new deliveries.</p>
+              <p className="text-ui text-[var(--tx3,#888)]">Set defaults used when scheduling new deliveries.</p>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Default Time Slot</label>
+                <label className="text-caption font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Default Time Slot</label>
                 <select
                   value={deliveryPrefs.default_time_slot}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_time_slot: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-title text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 >
                   <option value="morning">Morning (8 AM – 12 PM)</option>
                   <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
@@ -378,8 +378,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               </div>
               <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
                 <div>
-                  <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Auto-share tracking link</div>
-                  <div className="text-[11px] text-[var(--tx3,#888)]">Automatically email tracking link to customer on dispatch</div>
+                  <div className="text-body font-semibold text-[var(--tx,#1A1A1A)]">Auto-share tracking link</div>
+                  <div className="text-caption text-[var(--tx3,#888)]">Automatically email tracking link to customer on dispatch</div>
                 </div>
                 <button
                   type="button"
@@ -392,18 +392,18 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 </button>
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Default Special Handling Note</label>
+                <label className="text-caption font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Default Special Handling Note</label>
                 <textarea
                   value={deliveryPrefs.default_special_handling}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_special_handling: e.target.value }))}
                   placeholder="e.g. White glove service, assemble furniture"
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-title text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors resize-none"
                 />
               </div>
               <button
                 onClick={saveDeliveryPrefs}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
+                className="w-full py-3 rounded-xl text-body font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
               >
                 {prefsSaved ? "Saved!" : "Save Preferences"}
               </button>

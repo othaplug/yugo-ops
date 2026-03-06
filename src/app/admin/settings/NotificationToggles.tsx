@@ -115,18 +115,18 @@ export default function NotificationToggles() {
   })).filter((g) => g.items.length > 0);
 
   if (loading) {
-    return <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading notifications...</div>;
+    return <div className="py-8 text-center text-ui text-[var(--tx3)]">Loading notifications...</div>;
   }
 
   if (events.length === 0) {
-    return <div className="py-8 text-center text-[12px] text-[var(--tx3)]">No notification events configured.</div>;
+    return <div className="py-8 text-center text-ui text-[var(--tx3)]">No notification events configured.</div>;
   }
 
   return (
     <div className="space-y-5">
       {/* Master toggles */}
       <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-[var(--brd)]">
-        <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Master:</span>
+        <span className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Master:</span>
         {(["email", "sms", "push"] as const).map((ch) => {
           const on = masterState(ch);
           return (
@@ -134,7 +134,7 @@ export default function NotificationToggles() {
               key={ch}
               type="button"
               onClick={() => masterToggle(ch)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-caption font-semibold transition-all ${
                 on
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                   : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]"
@@ -150,22 +150,22 @@ export default function NotificationToggles() {
       {/* Category groups */}
       {grouped.map((group) => (
         <div key={group.category}>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{group.label}</div>
+          <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{group.label}</div>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden divide-y divide-[var(--brd)]">
             {group.items.map((event) => {
               const pref = getPref(event.event_slug);
               return (
                 <div key={event.event_slug} className="flex items-center justify-between px-4 py-3 gap-4">
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium text-[var(--tx)]">{event.event_name}</div>
-                    <div className="text-[11px] text-[var(--tx3)] mt-0.5">{event.description}</div>
+                    <div className="text-body font-medium text-[var(--tx)]">{event.event_name}</div>
+                    <div className="text-caption text-[var(--tx3)] mt-0.5">{event.description}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {event.supports_email && (
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "email")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-title transition-all ${
                           pref.email_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
@@ -179,7 +179,7 @@ export default function NotificationToggles() {
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "sms")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-title transition-all ${
                           pref.sms_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
@@ -193,7 +193,7 @@ export default function NotificationToggles() {
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "push")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-title transition-all ${
                           pref.push_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"

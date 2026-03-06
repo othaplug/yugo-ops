@@ -44,14 +44,14 @@ export default function UpcomingItem({ href, name, date, time, badgeType }: Upco
   return (
     <Link href={href} className="flex gap-3 py-3 pl-8 pr-5 hover:bg-[var(--bg)]/30 transition-colors rounded-lg">
       <div className="flex flex-col items-start shrink-0 w-14">
-        <span className="text-[10px] text-[var(--tx3)]">{dateFormatted}</span>
-        {timeFormatted && <span className="text-[11px] font-semibold text-[var(--tx)] mt-1">{timeFormatted}</span>}
+        <span className="text-label text-[var(--tx3)]">{dateFormatted}</span>
+        {timeFormatted && <span className="text-caption font-semibold text-[var(--tx)] mt-1">{timeFormatted}</span>}
       </div>
       <div className="w-1 rounded-full shrink-0 bg-[var(--gold)]/80 min-h-[40px]" aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className="text-[9px] font-semibold text-[var(--tx3)] mb-0.5">{STATUS_LABELS[badgeType]}</div>
-        <div className="text-[13px] font-bold font-heading text-[var(--tx)] truncate">{name}</div>
-        <div className="text-[10px] text-[var(--tx3)] mt-0.5">{secondary}</div>
+        <div className="text-section font-semibold text-[var(--tx3)] mb-0.5">{STATUS_LABELS[badgeType]}</div>
+        <div className="text-body font-bold font-heading text-[var(--tx)] truncate">{name}</div>
+        <div className="text-label text-[var(--tx3)] mt-0.5">{secondary}</div>
       </div>
     </Link>
   );

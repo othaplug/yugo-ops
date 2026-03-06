@@ -96,13 +96,13 @@ export default function PartnerDeliveriesTab({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, address, or delivery #..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-body text-[var(--tx)] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-[var(--card)]"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] font-semibold text-[#1A1A1A] bg-white focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
+            className="px-3 py-2 rounded-lg border border-[var(--brd)] text-ui font-semibold text-[var(--tx)] bg-[var(--card)] focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{s === "all" ? "All statuses" : s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
@@ -113,14 +113,14 @@ export default function PartnerDeliveriesTab({
 
       {deliveries.length === 0 ? (
         <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-          <p className="text-[14px] text-[#888]">
+          <p className="text-title text-[var(--tx3)]">
             {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : "No deliveries found."}
           </p>
           {label === "today" && onScheduleDelivery && (
             <button
               type="button"
               onClick={onScheduleDelivery}
-              className="mt-4 px-4 py-2 rounded-lg text-[13px] font-medium border border-[#C9A962]/50 text-[#B8962E] hover:bg-[#C9A962]/8 transition-colors"
+              className="mt-4 px-4 py-2 rounded-lg text-body font-medium border border-[#C9A962]/50 text-[#B8962E] hover:bg-[#C9A962]/8 transition-colors"
             >
               Schedule delivery
             </button>
@@ -128,7 +128,7 @@ export default function PartnerDeliveriesTab({
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-          <p className="text-[14px] text-[#888]">No deliveries match your search.</p>
+          <p className="text-title text-[var(--tx3)]">No deliveries match your search.</p>
         </div>
       ) : (
         <div className="space-y-0">
@@ -211,23 +211,23 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="flex items-start justify-between mb-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-[15px] font-bold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</h3>
-            <span className="text-[10px] text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
+            <h3 className="text-h3-sm font-bold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</h3>
+            <span className="text-label text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
           </div>
-          <p className="text-[12px] text-[#888] mt-0.5 truncate">
+          <p className="text-ui text-[var(--tx3)] mt-0.5 truncate">
             {d.delivery_address || "Address TBD"}
             {d.scheduled_date && ` — ${new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
             {d.time_slot && `, ${d.time_slot}`}
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${badgeClass}`}>
+          <span className={`px-2.5 py-1 rounded-full text-label font-semibold ${badgeClass}`}>
             {statusLabel}
           </span>
           {/* Copy tracking link */}
           <button
             onClick={(e) => { e.stopPropagation(); copyTrackingLink(); }}
-            className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors relative"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors relative"
             title="Copy tracking link"
           >
             {copied ? (
@@ -240,14 +240,14 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           {!isLocked && onEditClick && (
             <button
               onClick={(e) => { e.stopPropagation(); onEditClick(); }}
-              className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+              className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"
               title="Edit delivery"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           )}
           {/* Share */}
-          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors" title="Share tracking link">
+          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors" title="Share tracking link">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
         </div>
@@ -269,17 +269,17 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {!showProgressBar && <DeliveryTimeline currentIndex={timelineIdx} />}
 
       {/* Details */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[12px]">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-ui">
         {d.time_slot && (
           <div>
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Time</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5">{d.time_slot}</div>
+            <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Time</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5">{d.time_slot}</div>
           </div>
         )}
         {itemsDisplay && (
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Items</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5 truncate">{itemsDisplay}</div>
+            <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)]">Items</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5 truncate">{itemsDisplay}</div>
           </div>
         )}
       </div>
@@ -304,15 +304,15 @@ function DeliveryTimeline({ currentIndex }: { currentIndex: number }) {
                     ? "bg-[#2D9F5A] border-[#2D9F5A]"
                     : isCurrent
                       ? "bg-[#C9A962] border-[#C9A962]"
-                      : "bg-white border-[#D4D0CB]"
+                      : "bg-[var(--card)] border-[var(--brd)]"
                 }`}
               />
-              <span className={`text-[9px] mt-1.5 whitespace-nowrap ${isDone || isCurrent ? "text-[#1A1A1A] font-semibold" : "text-[#aaa]"}`}>
+              <span className={`text-section mt-1.5 whitespace-nowrap ${isDone || isCurrent ? "text-[var(--tx)] font-semibold" : "text-[#aaa]"}`}>
                 {step.label}
               </span>
             </div>
             {!isLast && (
-              <div className={`flex-1 h-0.5 mx-1 mt-[-14px] ${i < currentIndex ? "bg-[#2D9F5A]" : "bg-[#E8E4DF]"}`} />
+              <div className={`flex-1 h-0.5 mx-1 mt-[-14px] ${i < currentIndex ? "bg-[#2D9F5A]" : "bg-[var(--brd)]"}`} />
             )}
           </div>
         );

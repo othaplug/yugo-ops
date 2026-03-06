@@ -59,7 +59,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-[13px] text-[var(--tx3)]">Loading…</span>
+          <span className="text-body text-[var(--tx3)]">Loading…</span>
         </div>
       </div>
     );
@@ -73,17 +73,17 @@ export default function ChangePasswordGate({ children }: { children: React.React
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
               <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
-              <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to YUGO</h2>
-              <p className="text-[12px] text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
+              <h2 className="font-heading text-h2-sm font-bold text-[var(--tx)]">Welcome to YUGO</h2>
+              <p className="text-ui text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="px-3 py-2 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/30 text-[12px] text-[var(--red)]">
+                <div className="px-3 py-2 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/30 text-ui text-[var(--red)]">
                   {error}
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New password</label>
+                <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New password</label>
                 <input
                   type="password"
                   value={password}
@@ -91,24 +91,24 @@ export default function ChangePasswordGate({ children }: { children: React.React
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Confirm password</label>
+                <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Confirm password</label>
                 <input
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter password"
                   required
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 />
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-lg text-body font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {saving ? "Updating…" : "Update password"}
               </button>

@@ -107,7 +107,7 @@ function SidebarNavItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
+      className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-ui font-medium border-l-2 -ml-px ${
         active
           ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
           : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
@@ -122,7 +122,7 @@ function SidebarNavItem({
       <span className={`min-w-0 flex-1 flex items-center justify-between gap-2 ${active ? "font-bold" : ""}`}>
         <span className="truncate">{label}</span>
         {showBadge && (
-          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center">
+          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-label font-bold flex items-center justify-center">
             {count > 99 ? "99+" : count}
           </span>
         )}
@@ -240,7 +240,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       <button
                         type="button"
                         onClick={() => setCollapsedSections((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
-                        className="sidebar-nav-lift w-full flex items-center justify-between text-[9px] font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
+                        className="sidebar-nav-lift w-full flex items-center justify-between text-section font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
                       >
                         {section.label}
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>
@@ -305,7 +305,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               </div>
 
               {role === "owner" && !twoFactorEnabled && (
-                <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
+                <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-ui font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
                   <Shield className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
                   Two-factor authentication is required for owner accounts.{" "}
                   <Link href="/admin/platform?tab=users" className="underline font-bold hover:text-amber-300">

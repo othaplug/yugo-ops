@@ -144,7 +144,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         body: JSON.stringify({
           quote_id: q.quoteId,
           typed_name: typedName.trim(),
-          agreement_version: "1.0",
+          agreement_version: "1.1",
           user_agent: navigator.userAgent,
           contract_data: {
             service_type: q.serviceType,
@@ -200,10 +200,10 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             <Check className="w-5 h-5" style={{ color: FOREST }} />
           </div>
           <div>
-            <h2 className="font-heading text-[14px] font-bold" style={{ color: FOREST }}>
+            <h2 className="font-heading text-title font-bold" style={{ color: FOREST }}>
               Contract Signed
             </h2>
-            <p className="text-[12px]" style={{ color: `${FOREST}70` }}>
+            <p className="text-ui" style={{ color: `${FOREST}70` }}>
               Signed by <b>{typedName}</b>
               {signedAt && (
                 <>
@@ -239,12 +239,12 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
           <FileText className="w-[18px] h-[18px]" style={{ color: FOREST }} />
           <div>
             <h2
-              className="font-heading text-[14px] font-bold tracking-wider uppercase"
+              className="font-heading text-title font-bold tracking-wider uppercase"
               style={{ color: FOREST }}
             >
               Service Agreement
             </h2>
-            <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
+            <p className="text-caption mt-0.5" style={{ color: `${FOREST}70` }}>
               Review the agreement, then sign to proceed to payment
             </p>
           </div>
@@ -254,7 +254,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
       <div className="p-5 md:p-6 space-y-5">
         {/* ── Service & financial summary (always visible) ── */}
         <div
-          className="p-4 rounded-xl text-[12px] leading-relaxed space-y-2"
+          className="p-4 rounded-xl text-ui leading-relaxed space-y-2"
           style={{ backgroundColor: CREAM, color: FOREST }}
         >
           <p>
@@ -302,7 +302,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             <p>
               <b>HST (13%):</b> {fmtPrice(q.tax)}
             </p>
-            <p className="text-[13px] font-bold" style={{ color: WINE }}>
+            <p className="text-body font-bold" style={{ color: WINE }}>
               Total: {fmtPrice(q.grandTotal)}
             </p>
             <p>
@@ -319,7 +319,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 text-[12px] font-semibold transition-colors hover:opacity-80"
+          className="flex items-center gap-2 text-ui font-semibold transition-colors hover:opacity-80"
           style={{ color: GOLD }}
         >
           {expanded ? (
@@ -336,18 +336,18 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         {/* ── Full contract terms (collapsible) ── */}
         {expanded && (
           <div
-            className="p-4 rounded-xl text-[11px] leading-relaxed space-y-4 max-h-[50vh] overflow-y-auto"
+            className="p-4 rounded-xl text-caption leading-relaxed space-y-4 max-h-[50vh] overflow-y-auto"
             style={{ backgroundColor: CREAM, color: FOREST, border: `1px solid ${FOREST}12` }}
           >
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 1. Service Description
               </h3>
               <p>{serviceDesc}</p>
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 2. Flat-Rate Guarantee
               </h3>
               <p>
@@ -358,7 +358,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 3. Payment Terms
               </h3>
               <p>
@@ -369,7 +369,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 4. Card-on-File Authorization
               </h3>
               <p>
@@ -380,14 +380,14 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 5. Cancellation Policy
               </h3>
               <p>{cancellation}</p>
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 6. Liability &amp; Insurance
               </h3>
               <p>
@@ -398,7 +398,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             </div>
 
             <div>
-              <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
                 7. Scope Changes
               </h3>
               <p>
@@ -408,11 +408,61 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               </p>
             </div>
 
+            <div>
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
+                8. Claims &amp; Damage Reporting
+              </h3>
+              <p>
+                Any claims for loss or damage must be reported in writing within 48 hours of
+                delivery completion. Claims submitted after this window may not be eligible for
+                compensation. YUGO will investigate all claims promptly and resolve them in
+                accordance with the applicable liability coverage.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
+                9. Client Responsibilities
+              </h3>
+              <p>
+                The client is responsible for: (a) accurately disclosing all items to be moved,
+                including dimensions and special handling requirements; (b) declaring any items
+                valued above $500 individually; (c) ensuring building elevator bookings, parking
+                permits, and clear access at both locations; (d) removing or identifying hazardous
+                materials, perishables, and prohibited items (firearms, chemicals, flammables) which
+                YUGO cannot transport. Failure to disclose access restrictions or item details may
+                result in scope adjustments per Section 7.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-ui mb-1 uppercase tracking-wider">
+                10. Delays &amp; Force Majeure
+              </h3>
+              <p>
+                YUGO shall not be liable for delays caused by circumstances beyond its reasonable
+                control, including but not limited to severe weather, road closures, traffic
+                conditions, building elevator breakdowns, labour disruptions, or government-imposed
+                restrictions. In the event of a delay, YUGO will notify the client promptly and
+                reschedule at the earliest available date at no additional cost.
+              </p>
+            </div>
+
             <div className="pt-2 border-t" style={{ borderColor: `${FOREST}12` }}>
-              <p className="text-[10px]" style={{ color: `${FOREST}50` }}>
+              <p className="text-label" style={{ color: `${FOREST}50` }}>
                 This agreement is binding under the Ontario Electronic Commerce Act, 2000. A typed
                 signature with agreement checkbox, timestamp, and IP address constitutes a valid
-                electronic signature.
+                electronic signature. For our complete Terms of Service and Privacy Policy,
+                visit{" "}
+                <a
+                  href="https://yugo.ca/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:opacity-80 transition-opacity"
+                  style={{ color: GOLD }}
+                >
+                  yugo.ca/terms
+                </a>.
               </p>
             </div>
           </div>
@@ -425,12 +475,12 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" style={{ color: GOLD }} />
-            <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+            <p className="text-ui font-semibold" style={{ color: FOREST }}>
               Electronic Signature
             </p>
           </div>
 
-          <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
+          <p className="text-caption leading-relaxed" style={{ color: `${FOREST}80` }}>
             By signing below, I confirm that I have read the service agreement, understand the
             terms, and authorize YUGO to proceed with the service as described.
           </p>
@@ -438,7 +488,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
           {/* Typed name input */}
           <div>
             <label
-              className="block text-[11px] font-semibold tracking-wider uppercase mb-1.5"
+              className="block text-caption font-semibold tracking-wider uppercase mb-1.5"
               style={{ color: FOREST }}
             >
               Type Your Full Legal Name
@@ -448,7 +498,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               value={typedName}
               onChange={handleNameChange}
               placeholder="e.g. Harold Blackwood"
-              className="w-full px-4 py-3 rounded-xl border text-[14px] font-hero outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl border text-title font-hero outline-none transition-colors"
               style={{
                 borderColor: typedName.trim().length >= 2 ? GOLD : "#D5D0C8",
                 color: WINE,
@@ -469,17 +519,18 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               {agreed && <Check className="w-3.5 h-3.5 text-white" />}
             </div>
             <span
-              className="text-[12px] leading-snug"
+              className="text-ui leading-snug"
               style={{ color: FOREST }}
               onClick={() => setAgreed(!agreed)}
             >
               I have read and agree to the <b>Service Agreement</b> above, including the flat-rate
-              guarantee, payment terms, card-on-file authorization, and cancellation policy.
+              guarantee, payment terms, card-on-file authorization, cancellation policy, and all
+              other terms and conditions.
             </span>
           </label>
 
           {/* Auto-populated date */}
-          <p className="text-[11px]" style={{ color: `${FOREST}50` }}>
+          <p className="text-caption" style={{ color: `${FOREST}50` }}>
             Date:{" "}
             {new Date().toLocaleDateString("en-CA", {
               weekday: "long",
@@ -492,7 +543,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
           {/* Error */}
           {error && (
             <div
-              className="px-4 py-3 rounded-xl text-[12px] font-medium"
+              className="px-4 py-3 rounded-xl text-ui font-medium"
               style={{
                 backgroundColor: "#FEF2F2",
                 color: "#991B1B",
@@ -508,7 +559,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             type="button"
             onClick={handleSign}
             disabled={!canSign}
-            className="w-full py-4 rounded-xl text-[14px] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-xl text-title font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: canSign ? GOLD : `${GOLD}60` }}
           >
             {signing ? (
@@ -527,7 +578,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             )}
           </button>
 
-          <p className="text-center text-[10px]" style={{ color: `${FOREST}40` }}>
+          <p className="text-center text-label" style={{ color: `${FOREST}40` }}>
             Your electronic signature is legally binding under the Ontario Electronic Commerce
             Act, 2000
           </p>

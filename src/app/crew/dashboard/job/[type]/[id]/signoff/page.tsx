@@ -361,7 +361,7 @@ export default function ClientSignOffPage({
       <div className="max-w-[420px] mx-auto px-4 py-8">
         <Link
           href={`/crew/dashboard/job/${jobType}/${id}`}
-          className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-[13px] font-medium mb-4 border border-transparent hover:border-[#C9A962]/40 hover:bg-[#C9A962]/5 transition-colors"
+          className="inline-flex items-center gap-2 py-2.5 px-3 -ml-3 rounded-lg text-body font-medium mb-4 border border-transparent hover:border-[#C9A962]/40 hover:bg-[#C9A962]/5 transition-colors"
           style={{ color: mutedColor }}
         >
           <span aria-hidden>←</span> Back to Job
@@ -547,7 +547,7 @@ export default function ClientSignOffPage({
                   {NPS_LABELS[npsScore]}
                 </p>
               )}
-              <div className="flex justify-between text-[10px] mt-1 px-1" style={{ color: mutedColor }}>
+              <div className="flex justify-between text-label mt-1 px-1" style={{ color: mutedColor }}>
                 <span>Not likely</span>
                 <span>Extremely likely</span>
               </div>
@@ -674,7 +674,7 @@ export default function ClientSignOffPage({
 
             {/* Legal disclosure */}
             <div className="p-3 rounded-xl bg-[#E0DDD8]/30 mb-4">
-              <p className="text-[11px] leading-relaxed" style={{ color: mutedColor }}>
+              <p className="text-caption leading-relaxed" style={{ color: mutedColor }}>
                 By signing, I confirm all items listed were received as described. I understand I
                 have <strong>24 hours</strong> from this sign-off to report any concealed damage not
                 visible during the walkthrough. After this period, the condition of items is
@@ -768,7 +768,7 @@ export default function ClientSignOffPage({
             />
 
             {geoLat && (
-              <p className="text-[10px] mb-3" style={{ color: mutedColor }}>
+              <p className="text-label mb-3" style={{ color: mutedColor }}>
                 Location captured ({geoLat.toFixed(4)}, {geoLng?.toFixed(4)})
               </p>
             )}

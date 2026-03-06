@@ -89,12 +89,12 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
     <ModalOverlay open={open} onClose={onClose} title="Create Referral" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
           <select
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="">Select an agent</option>
             {realtors.map((r) => (
@@ -105,27 +105,27 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             ))}
           </select>
           {realtors.length === 0 && (
-            <p className="text-[10px] text-[var(--tx3)] mt-1">No realtors yet. Add one first from the Add Realtor button.</p>
+            <p className="text-label text-[var(--tx3)] mt-1">No realtors yet. Add one first from the Add Realtor button.</p>
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Name</label>
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Name</label>
           <input
             type="text"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="e.g. John Doe"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Email</label>
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Email</label>
           <input
             type="email"
             value={clientEmail}
             onChange={(e) => setClientEmail(e.target.value)}
             placeholder="client@example.com"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
@@ -135,15 +135,15 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             onChange={(r) => setAddress(r.fullAddress)}
             placeholder="e.g. 123 Main St"
             label="Property address"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Preferred Method of Communication</label>
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Preferred Method of Communication</label>
           <select
             value={preferredContact}
             onChange={(e) => setPreferredContact(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             {PREFERRED_CONTACT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -151,11 +151,11 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type of Move</label>
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type of Move</label>
           <select
             value={moveType}
             onChange={(e) => setMoveType(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             {MOVE_TYPE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -166,14 +166,14 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading || realtors.length === 0}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {loading ? "Creating…" : "Create Referral"}
           </button>

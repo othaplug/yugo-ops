@@ -51,8 +51,8 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Photos</h3>
-        <p className="text-[12px] text-[#666]">Loading...</p>
+        <h3 className="text-title font-bold text-[#1A1A1A] mb-4">Photos</h3>
+        <p className="text-ui text-[#666]">Loading...</p>
       </div>
     );
   }
@@ -60,8 +60,8 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   if (photos.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Photos</h3>
-        <p className="text-[12px] text-[#666]">No photos uploaded yet. Your coordinator may add photos from the pre-move survey.</p>
+        <h3 className="text-title font-bold text-[#1A1A1A] mb-4">Photos</h3>
+        <p className="text-ui text-[#666]">No photos uploaded yet. Your coordinator may add photos from the pre-move survey.</p>
       </div>
     );
   }
@@ -69,19 +69,19 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Photos ({photos.length})</h3>
+        <h3 className="text-title font-bold text-[#1A1A1A]">Photos ({photos.length})</h3>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleDownloadAll}
-            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+            className="rounded-lg px-3 py-1.5 text-caption font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
           >
             Download All
           </button>
           <button
             type="button"
             onClick={handleShare}
-            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+            className="rounded-lg px-3 py-1.5 text-caption font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
           >
             Share
           </button>
@@ -100,7 +100,7 @@ export default function TrackPhotos({ moveId, token }: { moveId: string; token: 
               className="block rounded-lg overflow-hidden border border-[#E7E5E4] bg-[#FAFAF8] aspect-[4/3] hover:border-[#C9A962] transition-colors relative group"
             >
               <img src={p.url} alt={label} className="w-full h-full object-cover" />
-              <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#666]">
+              <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 text-label font-bold uppercase tracking-wider text-[#666]">
                 {label} {dateStr && `• ${dateStr}`}
               </div>
             </a>

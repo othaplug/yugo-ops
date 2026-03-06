@@ -112,7 +112,7 @@ export default function PartnerMapMapbox({
               <span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }} />
               <span className="absolute inset-[3px] rounded-full opacity-20 animate-pulse" style={{ background: "#C9A962" }} />
               <span
-                className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shadow-lg"
+                className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-body font-bold text-white shadow-lg"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)", boxShadow: "0 2px 10px rgba(201,169,98,0.45)" }}
               >
                 {initial}

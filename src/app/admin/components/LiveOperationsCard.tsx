@@ -59,7 +59,7 @@ export default function LiveOperationsCard() {
       </div>
       <div className="px-4 pb-4 space-y-2">
         {sessions.length === 0 ? (
-          <p className="text-[12px] text-[var(--tx3)] py-4">No active tracking sessions</p>
+          <p className="text-ui text-[var(--tx3)] py-4">No active tracking sessions</p>
         ) : (
           sessions.map((s) => (
             <Link
@@ -69,11 +69,11 @@ export default function LiveOperationsCard() {
             >
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
-                <span className="text-[12px] font-semibold text-[var(--tx)] truncate">
+                <span className="text-ui font-semibold text-[var(--tx)] truncate">
                   {s.teamName} · {s.jobName} · {CREW_STATUS_TO_LABEL[s.status] || s.status}
                 </span>
               </div>
-              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+              <div className="text-label text-[var(--tx3)] mt-0.5">
                 Last update: {formatRelative(s.updatedAt)}
                 {s.toAddress && ` · ${s.toAddress}`}
               </div>

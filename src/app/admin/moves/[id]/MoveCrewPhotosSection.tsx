@@ -25,18 +25,18 @@ export default function MoveCrewPhotosSection({ moveId }: { moveId: string }) {
     return () => clearInterval(interval);
   }, [fetchPhotos]);
 
-  if (loading) return <p className="text-[11px] text-[var(--tx3)]">Loading crew photos…</p>;
+  if (loading) return <p className="text-caption text-[var(--tx3)]">Loading crew photos…</p>;
   if (groups.length === 0) return null;
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
         Crew photos (by checkpoint)
       </h3>
       <div className="space-y-4">
         {groups.map((g) => (
           <div key={g.checkpoint}>
-            <p className="text-[10px] font-semibold text-[var(--tx3)] mb-1.5">{g.label}</p>
+            <p className="text-label font-semibold text-[var(--tx3)] mb-1.5">{g.label}</p>
             <div className="flex flex-wrap gap-2">
               {g.photos.map((p) => (
                 <a

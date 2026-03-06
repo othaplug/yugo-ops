@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+@theme {
+  /* ── Display / Price hero sizes ── */
+  --font-size-display-xl: 72px;
+  --font-size-display-lg: 64px;
+  --font-size-display: 56px;
+  --font-size-display-sm: 48px;
+  --font-size-price-lg: 42px;
+  --font-size-price: 40px;
+  --font-size-price-sm: 36px;
+  --font-size-price-xs: 32px;
+  /* ── Heading scale ── */
+  --font-size-hero-lg: 34px;
+  --font-size-hero-md: 30px;
+  --font-size-hero: 28px;
+  --font-size-h1-lg: 26px;
+  --font-size-h1: 24px;
+  --font-size-h2: 22px;
+  --font-size-h2-sm: 20px;
+  --font-size-h3-xl: 19px;
+  --font-size-h3-lg: 18px;
+  --font-size-h3-md: 17px;
+  --font-size-h3: 16px;
+  --font-size-h3-sm: 15px;
+  /* ── Body scale ── */
+  --font-size-title: 14px;
+  --font-size-body: 13px;
+  --font-size-ui: 12px;
+  --font-size-caption: 11px;
+  --font-size-label: 10px;
+  --font-size-section: 9px;
+  --font-size-micro: 8px;
+  --font-size-nano: 7px;
+}
+
 :root {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -404,10 +438,15 @@ input[type="time"] {
   max-width: none !important;
   border-radius: 0 !important;
   border: none !important;
+  background: #000;
 }
 .map-fullscreen .track-live-map-fill {
   position: absolute !important;
   inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.map-fullscreen .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
 }

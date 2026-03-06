@@ -219,16 +219,16 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
           <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
-          <span className="text-[13px] text-[var(--tx3)] font-medium hidden sm:inline">{orgName}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-[8px] font-bold tracking-[2px] uppercase bg-[var(--gold)]/12 text-[var(--gold)] border border-[var(--gold)]/25">BETA</span>
+          <span className="text-body text-[var(--tx3)] font-medium hidden sm:inline">{orgName}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-micro font-bold tracking-[2px] uppercase bg-[var(--gold)]/12 text-[var(--gold)] border border-[var(--gold)]/25">BETA</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+              className="relative p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               {data && data.todayDeliveries.length > 0 && (
                 <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#C9A962]" />
               )}
@@ -244,15 +244,15 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           </div>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+            className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
             title="Settings"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
           </button>
-          <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer" onClick={() => setSettingsOpen(true)}>
+          <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-caption font-bold cursor-pointer" onClick={() => setSettingsOpen(true)}>
             {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase() || contactName.charAt(1)?.toUpperCase() || ""}
           </div>
         </div>
@@ -278,10 +278,10 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               {welcomeStep === 0 && (
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
-                    <span className="text-[28px]" role="img" aria-label="wave">&#128075;</span>
+                    <span className="text-hero" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-hero text-[28px] font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[380px] mx-auto">
+                  <h2 className="font-hero text-hero font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
+                  <p className="text-title text-[#888] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>
                 </div>
@@ -289,7 +289,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
               {welcomeStep === 1 && (
                 <div>
-                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
+                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
                       { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
@@ -305,8 +305,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                           </svg>
                         </div>
                         <div>
-                          <div className="text-[13px] font-semibold text-[#1A1714]">{item.title}</div>
-                          <div className="text-[12px] text-[#888]">{item.desc}</div>
+                          <div className="text-body font-semibold text-[#1A1714]">{item.title}</div>
+                          <div className="text-ui text-[#888]">{item.desc}</div>
                         </div>
                       </div>
                     ))}
@@ -319,20 +319,20 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
-                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-2">Secure your account</h3>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto mb-4">
+                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-2">Secure your account</h3>
+                  <p className="text-title text-[#888] leading-relaxed max-w-[360px] mx-auto mb-4">
                     For your security, we strongly recommend changing your password to something personal and memorable.
                   </p>
                   <a
                     href="/update-password"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[#E53E3E] text-white hover:bg-[#C53030] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-body font-semibold bg-[#E53E3E] text-white hover:bg-[#C53030] transition-colors"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     Change Password Now
                   </a>
                   <button
                     onClick={() => setWelcomeStep(3)}
-                    className="block mx-auto mt-3 text-[12px] text-[#999] hover:text-[#666] transition-colors"
+                    className="block mx-auto mt-3 text-ui text-[#999] hover:text-[#666] transition-colors"
                     style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
                   >
                     I&apos;ll do this later
@@ -345,8 +345,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h3 className="font-hero text-[22px] font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto">
+                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
+                  <p className="text-title text-[#888] leading-relaxed max-w-[360px] mx-auto">
                     Your portal is ready. If you need help at any time, reach out to your Yugo account manager.
                   </p>
                 </div>
@@ -360,14 +360,14 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   {welcomeStep > 0 && (
                     <button
                       onClick={() => setWelcomeStep(welcomeStep - 1)}
-                      className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
+                      className="flex-1 py-3 rounded-xl text-body font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
                     >
                       Back
                     </button>
                   )}
                   <button
                     onClick={() => setWelcomeStep(welcomeStep + 1)}
-                    className="flex-1 py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
+                    className="flex-1 py-3 rounded-xl text-body font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
                   >
                     {welcomeStep === 0 ? "Get Started" : "Next"}
                   </button>
@@ -375,7 +375,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               ) : (
                 <button
                   onClick={() => { setShowWelcome(false); try { localStorage.setItem("yugo-welcome-seen", "1"); } catch {} }}
-                  className="w-full py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
+                  className="w-full py-3 rounded-xl text-body font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
                 >
                   Go to Dashboard
                 </button>
@@ -385,7 +385,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         </div>
       )}
 
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Returning user welcome-back banner */}
         {isReturning && loginInfo?.lastLoginAt && (
           <div className="mb-5 flex items-center gap-3 px-4 py-3 border-t border-[var(--brd)]/30 pt-5" style={{ animation: "fadeSlideUp 0.4s ease" }}>
@@ -394,8 +394,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[14px] font-semibold text-[#1A1714]">Welcome back, {contactName}</span>
-              <span className="text-[12px] text-[#888] ml-2">
+              <span className="text-title font-semibold text-[var(--tx)]">Welcome back, {contactName}</span>
+              <span className="text-ui text-[#888] ml-2">
                 Last visit: {formatDateTime(loginInfo.lastLoginAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
             </div>
@@ -404,18 +404,18 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
         {/* Hero + Greeting */}
         <div className="mb-6">
-          <h1 className="font-hero text-[28px] sm:text-[32px] font-semibold text-[#1A1A1A] leading-tight tracking-tight">
+          <h1 className="font-hero text-hero sm:text-price-xs font-semibold text-[var(--tx)] leading-tight tracking-tight">
             {isReturning ? "Welcome back" : getPartnerGreeting()}, {contactName}
           </h1>
           {features.showReferrals ? (
-            <p className="text-[15px] text-[#666] mt-1.5">Your referral dashboard and commission tracking</p>
+            <p className="text-h3-sm text-[var(--tx3)] mt-1.5">Your referral dashboard and commission tracking</p>
           ) : features.showProjects ? (
-            <p className="text-[15px] text-[#666] mt-1.5">
+            <p className="text-h3-sm text-[var(--tx3)] mt-1.5">
               {data?.projects?.length ?? 0} active project{(data?.projects?.length ?? 0) !== 1 ? "s" : ""}
               {data && data.allDeliveries.some((d) => (d.status || "").toLowerCase() === "delayed") ? " · 1 vendor delay requiring attention" : ""}
             </p>
           ) : (
-            <p className="text-[15px] text-[#666] mt-1.5">{dayStr} — here are your deliveries</p>
+            <p className="text-h3-sm text-[var(--tx3)] mt-1.5">{dayStr} — here are your deliveries</p>
           )}
         </div>
 
@@ -424,7 +424,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           {features.canCreateDelivery && (
             <button
               onClick={() => setScheduleOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-ui font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Schedule Delivery
@@ -435,7 +435,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               {features.showProjects && data && data.allDeliveries.length > 0 && (
                 <button
                   onClick={() => setShareTarget(data.allDeliveries[0])}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-white text-[#1A1A1A] border border-[#E8E4DF] hover:border-[#C9A962] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                   Share with Client
@@ -443,14 +443,14 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               )}
               <button
                 onClick={() => setActiveTab("calendar")}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-white text-[#1A1A1A] border border-[#E8E4DF] hover:border-[#C9A962] transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Calendar
               </button>
               <button
                 onClick={() => setActiveTab("billing")}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-white text-[#1A1A1A] border border-[#E8E4DF] hover:border-[#C9A962] transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Monthly Report
@@ -481,12 +481,12 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                 <button
                   key={t.key}
                   onClick={() => setActiveTab(t.key)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
+                  className={`flex-shrink-0 px-4 py-3.5 text-ui font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
                     hasCount ? "min-w-[7rem]" : "min-w-[5rem]"
                   } ${
                     activeTab === t.key
-                      ? "border-[#C9A962] text-[#C9A962]"
-                      : "border-transparent text-[#888] hover:text-[#1A1A1A]"
+                      ? "border-[var(--gold)] text-[var(--gold)]"
+                      : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
                   }`}
                 >
                   {t.label}
@@ -496,7 +496,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           </div>
 
         {/* Tab Content */}
-        <div className="p-4 sm:p-6 min-h-[320px]">
+        <div className="p-4 sm:p-6">
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
               projects={(data.projects || []).map((p) => {
@@ -643,29 +643,29 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Performance</div>
+      <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Performance</div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
-          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
-          <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
+          <div className="text-hero sm:text-price-xs font-bold text-[var(--tx)] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
+          <div className="text-caption text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
-          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
+          <div className="text-hero sm:text-price-xs font-bold text-[var(--tx)] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
         </div>
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Claims</div>
-          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
-          <div className="text-[11px] text-[#888] mt-0.5">Lifetime</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Claims</div>
+          <div className="text-hero sm:text-price-xs font-bold text-[var(--tx)] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
+          <div className="text-caption text-[var(--tx3)] mt-0.5">Lifetime</div>
         </div>
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
-          <div className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+          <div className="text-hero sm:text-price-xs font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (
-            <div className="text-[11px] text-[#888] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+            <div className="text-caption text-[var(--tx3)] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
           )}
         </div>
       </div>
@@ -677,9 +677,9 @@ function RealtorKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
       <div className="flex flex-col justify-center">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Earned</div>
-        <div className="text-[42px] font-bold text-[#2D9F5A] mt-2 font-hero">{formatCurrency(data?.totalEarned ?? 0)}</div>
-        <div className="text-[12px] text-[#2D9F5A] mt-1 font-medium">
+        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Earned</div>
+        <div className="text-price-lg font-bold text-[#2D9F5A] mt-2 font-hero">{formatCurrency(data?.totalEarned ?? 0)}</div>
+        <div className="text-ui text-[#2D9F5A] mt-1 font-medium">
           {data?.completedReferrals ?? 0} completed move{(data?.completedReferrals ?? 0) !== 1 ? "s" : ""}
         </div>
       </div>
@@ -716,19 +716,19 @@ function ReferralForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Submit New Referral</div>
+      <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Submit New Referral</div>
       <div className="space-y-2">
-        <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="Client full name" required className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
-        <input value={form.client_email} onChange={(e) => setForm((f) => ({ ...f, client_email: e.target.value }))} placeholder="Client email" type="email" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
-        <input value={form.property} onChange={(e) => setForm((f) => ({ ...f, property: e.target.value }))} placeholder="Property address" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
-        <input value={form.move_date} onChange={(e) => setForm((f) => ({ ...f, move_date: e.target.value }))} placeholder="Target move date" type="date" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
-        <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white">
+        <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="Client full name" required className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-body text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
+        <input value={form.client_email} onChange={(e) => setForm((f) => ({ ...f, client_email: e.target.value }))} placeholder="Client email" type="email" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-body text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
+        <input value={form.property} onChange={(e) => setForm((f) => ({ ...f, property: e.target.value }))} placeholder="Property address" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-body text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
+        <input value={form.move_date} onChange={(e) => setForm((f) => ({ ...f, move_date: e.target.value }))} placeholder="Target move date" type="date" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-body text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
+        <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-body text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white">
           <option value="standard">Essentials</option>
           <option value="premium">Premier</option>
           <option value="luxury">Estate</option>
         </select>
       </div>
-      <button type="submit" disabled={submitting} className="w-full mt-3 px-4 py-2.5 rounded-lg text-[12px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50">
+      <button type="submit" disabled={submitting} className="w-full mt-3 px-4 py-2.5 rounded-lg text-ui font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50">
         {submitting ? "Submitting..." : success ? "Referral Submitted!" : "Submit Referral"}
       </button>
     </form>
@@ -756,39 +756,39 @@ function NotificationsDropdown({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full mt-2 z-50 w-[320px] bg-white border border-[#E8E4DF] rounded-xl shadow-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#E8E4DF]">
-          <h3 className="text-[13px] font-bold text-[#1A1A1A]">Notifications</h3>
+      <div className="absolute right-0 top-full mt-2 z-50 w-[320px] bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--brd)]">
+          <h3 className="text-body font-bold text-[var(--tx)]">Notifications</h3>
         </div>
         <div className="max-h-[320px] overflow-y-auto">
           {!hasItems && (
-            <div className="px-4 py-6 text-center text-[13px] text-[#888]">All caught up!</div>
+            <div className="px-4 py-6 text-center text-body text-[var(--tx3)]">All caught up!</div>
           )}
           {inProgress.map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+                <span className="text-ui font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
               </div>
-              <p className="text-[11px] text-[#888] mt-0.5 ml-4">Delivery in progress</p>
+              <p className="text-caption text-[var(--tx3)] mt-0.5 ml-4">Delivery in progress</p>
             </button>
           ))}
           {todayDeliveries.filter((d) => !inProgress.includes(d)).slice(0, 3).map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+                <span className="text-ui font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
               </div>
-              <p className="text-[11px] text-[#888] mt-0.5 ml-4">Scheduled today · {d.time_slot || "No time set"}</p>
+              <p className="text-caption text-[var(--tx3)] mt-0.5 ml-4">Scheduled today · {d.time_slot || "No time set"}</p>
             </button>
           ))}
           {upcoming3.map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[#FAF8F5] border-b border-[#E8E4DF] last:border-0 transition-colors">
+            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#C9A962] flex-shrink-0" />
-                <span className="text-[12px] font-semibold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</span>
+                <div className="w-2 h-2 rounded-full bg-[var(--gold)] flex-shrink-0" />
+                <span className="text-ui font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
               </div>
-              <p className="text-[11px] text-[#888] mt-0.5 ml-4">
+              <p className="text-caption text-[var(--tx3)] mt-0.5 ml-4">
                 Upcoming · {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}
               </p>
             </button>
@@ -808,21 +808,21 @@ function MaterialsTab() {
 
   return (
     <div>
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Marketing Materials</div>
+      <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Marketing Materials</div>
       <div className="space-y-0">
         {materials.map((m, i) => (
           <div key={m.name} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#F5F3F0] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div className="w-10 h-10 rounded-lg bg-[var(--bg)] flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </div>
               <div>
-                <div className="text-[14px] font-semibold text-[#1A1A1A]">{m.name}</div>
-                <div className="text-[12px] text-[#888]">{m.desc}</div>
+                <div className="text-title font-semibold text-[var(--tx)]">{m.name}</div>
+                <div className="text-ui text-[var(--tx3)]">{m.desc}</div>
               </div>
             </div>
-            <button className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </div>
         ))}

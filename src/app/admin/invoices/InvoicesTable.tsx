@@ -47,7 +47,7 @@ export default function InvoicesTable({
           <>
             <span className="font-bold">{formatCurrency(r.amount)}</span>
             {amt > 0 && (
-              <span className="text-[8px] text-[var(--tx3)] ml-1">+{formatCurrency(Math.round(amt * 0.13))} HST</span>
+              <span className="text-micro text-[var(--tx3)] ml-1">+{formatCurrency(Math.round(amt * 0.13))} HST</span>
             )}
           </>
         );

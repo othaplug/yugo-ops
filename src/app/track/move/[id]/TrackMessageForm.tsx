@@ -48,7 +48,7 @@ export default function TrackMessageForm({
 
   if (isComplete) {
     return (
-      <p className="text-[13px] text-[#666] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
+      <p className="text-body text-[#666] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
         This move is complete. For support, contact us at{" "}
         <a href="mailto:hello@yugo.com" className="text-[#C9A962] hover:underline">
           hello@yugo.com
@@ -67,17 +67,17 @@ export default function TrackMessageForm({
           placeholder="Type a message..."
           maxLength={2000}
           disabled={sending}
-          className="flex-1 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5 text-[13px] text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none disabled:opacity-50 transition-colors"
+          className="flex-1 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5 text-body text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none disabled:opacity-50 transition-colors"
         />
         <button
           type="submit"
           disabled={sending || !message.trim()}
-          className="rounded-lg px-5 py-2.5 text-[12px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg px-5 py-2.5 text-ui font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {sending ? "Sending…" : "Send"}
         </button>
       </div>
-      {error && <p className="text-[11px] text-[#D14343]">{error}</p>}
+      {error && <p className="text-caption text-[#D14343]">{error}</p>}
     </form>
   );
 }

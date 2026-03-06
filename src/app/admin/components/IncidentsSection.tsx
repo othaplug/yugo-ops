@@ -33,7 +33,7 @@ export default function IncidentsSection({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--org)]/30 rounded-xl p-5">
-      <h3 className="font-heading text-[13px] font-bold text-[var(--org)] mb-3 flex items-center gap-2">
+      <h3 className="font-heading text-body font-bold text-[var(--org)] mb-3 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-[var(--org)]" />
         Reported Issues ({incidents.length})
       </h3>
@@ -41,13 +41,13 @@ export default function IncidentsSection({
         {incidents.map((i) => (
           <div key={i.id} className="border border-[var(--brd)] rounded-lg p-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-semibold text-[var(--tx)]">{i.issueLabel}</span>
-              <span className="text-[10px] text-[var(--tx3)]">
+              <span className="text-caption font-semibold text-[var(--tx)]">{i.issueLabel}</span>
+              <span className="text-label text-[var(--tx3)]">
                 {new Date(i.created_at).toLocaleString()}
               </span>
             </div>
             {i.description && (
-              <p className="text-[12px] text-[var(--tx2)] mt-1">{i.description}</p>
+              <p className="text-ui text-[var(--tx2)] mt-1">{i.description}</p>
             )}
           </div>
         ))}

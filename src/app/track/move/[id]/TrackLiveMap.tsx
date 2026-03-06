@@ -42,7 +42,7 @@ const LeafletMap = dynamic(
 
 function MapLoading() {
   return (
-    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#666] text-[12px]">
+    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#666] text-ui">
       Loading map...
     </div>
   );
@@ -107,6 +107,8 @@ export default function TrackLiveMap({
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [crewSpeed, setCrewSpeed] = useState<number | null>(null);
+  const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const [mapResizeKey, setMapResizeKey] = useState(0);
 
   // Client geolocation
   const [clientLat, setClientLat] = useState<number | null>(null);
@@ -286,7 +288,7 @@ export default function TrackLiveMap({
             const isDone = i < progressionIdx;
             return (
               <div key={step.key} className="flex items-center gap-1 shrink-0">
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-semibold whitespace-nowrap transition-all ${isDone ? "bg-[#22C55E]/15 text-[#22C55E]" : isActive ? "bg-[#C9A962]/20 text-[#C9A962]" : "bg-[#E7E5E4] text-[#999]"}`}>
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-section font-semibold whitespace-nowrap transition-all ${isDone ? "bg-[#22C55E]/15 text-[#22C55E]" : isActive ? "bg-[#C9A962]/20 text-[#C9A962]" : "bg-[#E7E5E4] text-[#999]"}`}>
                   {isDone && (
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   )}
@@ -313,17 +315,17 @@ export default function TrackLiveMap({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
           </span>
-          <span className="text-[12px] font-semibold text-[#22C55E]">LIVE</span>
+          <span className="text-ui font-semibold text-[#22C55E]">LIVE</span>
         </div>
       )}
 
       {showPlaceholder ? (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
-          <p className="text-[14px] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
-          <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
-          {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
-          {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          {crewMembers && <p className="text-[12px] text-[#666]">Your crew: {crewMembers}</p>}
+          <p className="text-title text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
+          <p className="text-body text-[#666] mb-4">Live tracking activates when your crew begins.</p>
+          {scheduledStr && <p className="text-ui text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
+          {move?.arrival_window && <p className="text-ui text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
+          {crewMembers && <p className="text-ui text-[#666]">Your crew: {crewMembers}</p>}
           {/* Static map with pickup/delivery preview */}
           {(pickup || dropoff) && (
             <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4]">
@@ -344,9 +346,8 @@ export default function TrackLiveMap({
         </div>
       ) : !loading && hasActiveTracking ? (
         <>
-          <div className={`track-live-map-container relative rounded-xl overflow-hidden ${isFullscreen ? "map-fullscreen" : "h-[50vh] min-h-[320px]"} bg-[#FAFAF8] border border-[#E7E5E4]`}>
-            {/* Map fills container; fullscreen uses absolute inset-0 so map resizes */}
-            <div className="track-live-map-fill absolute inset-0 w-full h-full min-h-0">
+          <div className={`track-live-map-container relative overflow-hidden transition-all duration-300 ease-out ${isFullscreen ? "map-fullscreen" : "rounded-xl h-[50vh] min-h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]"}`}>
+            <div key={mapResizeKey} className="track-live-map-fill absolute inset-0 w-full h-full min-h-0">
             {HAS_MAPBOX && MAPBOX_TOKEN ? (
               <MapboxMap
                 mapboxAccessToken={MAPBOX_TOKEN}
@@ -365,10 +366,14 @@ export default function TrackLiveMap({
             )}
             </div>
 
-            {/* Fullscreen toggle – above map */}
+            {/* Fullscreen toggle */}
             <button
               type="button"
-              onClick={() => setIsFullscreen(!isFullscreen)}
+              onClick={() => {
+                setIsFullscreen((f) => !f);
+                setDrawerExpanded(false);
+                setTimeout(() => setMapResizeKey((k) => k + 1), 350);
+              }}
               className="map-fullscreen-btn top-3 right-3 z-20"
               title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
               aria-label={isFullscreen ? "Exit fullscreen" : "Expand map"}
@@ -392,54 +397,114 @@ export default function TrackLiveMap({
                   );
                 }
               }}
-              className="map-fullscreen-btn bottom-12 left-3 z-20"
+              className="map-fullscreen-btn bottom-3 left-3 z-20"
+              style={{ bottom: crewLoc ? (drawerExpanded ? "260px" : "72px") : "12px", transition: "bottom 0.3s ease" }}
               title="My location"
               aria-label="My location"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
             </button>
 
-            {/* Bottom info card – compact */}
+            {/* Bottom crew drawer */}
             {crewLoc && (
-              <div className="absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-xl border-t border-[#E7E5E4] shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-3 py-2.5 safe-area-bottom">
-                <div className="w-8 h-0.5 rounded-full bg-[#E0E0E0] mx-auto mb-2" />
-                <div className="flex items-center gap-2.5">
+              <div
+                className="absolute bottom-0 left-0 right-0 z-10 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-bottom transition-all duration-300 ease-out"
+                style={{ borderRadius: "16px 16px 0 0", maxHeight: drawerExpanded ? "280px" : "68px", overflow: "hidden" }}
+              >
+                {/* Tap handle */}
+                <button
+                  type="button"
+                  onClick={() => setDrawerExpanded((e) => !e)}
+                  className="w-full flex flex-col items-center pt-2 pb-1 cursor-pointer"
+                  aria-label={drawerExpanded ? "Collapse crew details" : "Expand crew details"}
+                >
+                  <div className="w-10 h-1 rounded-full bg-[#D4D4D4] transition-colors" />
+                </button>
+
+                {/* Compact row (always visible) */}
+                <div className="flex items-center gap-2.5 px-3 pb-2.5">
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-ui font-bold text-white shrink-0"
                     style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                   >
                     {(crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[13px] font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
-                      {crew?.members && <span className="text-[10px] text-[#666]">{crew.members.length} movers</span>}
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
+                      <span className="text-body font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
+                      {crew?.members && <span className="text-label text-[#666]">{crew.members.length} movers</span>}
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-section font-semibold bg-[#22C55E]/15 text-[#22C55E]">
                         <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-1 w-1 bg-[#22C55E]" /></span>
                         {CREW_STATUS_TO_LABEL[liveStage || ""] || toTitleCase(liveStage || "") || "Live"}
                       </span>
                     </div>
-                    {(displayEta != null || lastLocationAt) && (
-                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-[#666]">
-                        {displayEta != null && <span className="font-semibold text-[#C9A962]">~{displayEta} min</span>}
-                        {lastLocationAt && <span>{formatRelativeTime(lastLocationAt)}</span>}
-                      </div>
-                    )}
                   </div>
                   <a
                     href={`tel:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
-                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-caption font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     Call Crew
                   </a>
+                </div>
+
+                {/* Expanded details */}
+                <div className="px-3 pb-4 space-y-3 border-t border-[#F0EFED]" style={{ opacity: drawerExpanded ? 1 : 0, transition: "opacity 0.2s ease" }}>
+                  {/* ETA + last update */}
+                  {(displayEta != null || lastLocationAt) && (
+                    <div className="flex items-center gap-4 pt-3 text-caption text-[#666]">
+                      {displayEta != null && (
+                        <div className="flex items-center gap-1.5">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <span className="font-semibold text-[#C9A962]">~{displayEta} min ETA</span>
+                        </div>
+                      )}
+                      {lastLocationAt && <span>Updated {formatRelativeTime(lastLocationAt)}</span>}
+                      {distToClient != null && <span>{distToClient.toFixed(1)} km away</span>}
+                    </div>
+                  )}
+
+                  {/* Crew members */}
+                  {crew?.members && crew.members.length > 0 && (
+                    <div>
+                      <div className="text-section font-bold tracking-wider uppercase text-[#999] mb-2">Your Team</div>
+                      <div className="flex flex-wrap gap-2">
+                        {crew.members.map((name, i) => (
+                          <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]">
+                            <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-section font-bold text-white">
+                              {(name || "?").slice(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-caption font-medium text-[#1A1A1A]">{name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Call + Text buttons */}
+                  <div className="flex gap-2 pt-1">
+                    <a
+                      href={`tel:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-ui font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                      Call
+                    </a>
+                    <a
+                      href={`sms:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-ui font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Text
+                    </a>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </>
       ) : loading ? (
-        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-[12px]">
+        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-ui">
           Loading...
         </div>
       ) : null}

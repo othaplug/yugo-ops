@@ -129,28 +129,28 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 sm:mb-6">
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Moves</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Moves</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{totalMoves}</span>
             <StatPctChange current={totalMovesThisMonth} previous={totalMovesPrev} />
           </div>
         </Link>
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Upcoming Moves</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Upcoming Moves</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--grn)]">{upcomingMoves}</span>
             <StatPctChange current={upcomingMoves} previous={upcomingPrev} />
           </div>
         </Link>
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Revenue</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Revenue</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalRevenue)}</span>
             <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
           </div>
         </Link>
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg $/Move</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg $/Move</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(avgPerMove)}</span>
             <StatPctChange current={avgPerMove} previous={avgPerMovePrev} />
@@ -164,25 +164,25 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
             <button
               type="button"
               onClick={() => setFilterOpen(!filterOpen)}
-              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] font-semibold text-[var(--tx)] touch-manipulation"
+              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-caption font-semibold text-[var(--tx)] touch-manipulation"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
               Filter
               {activeFilterCount > 0 && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">
+                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-label font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
             </button>
             <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-2 flex-1">
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] font-medium text-[var(--tx3)] shrink-0">Status</label>
+                <label className="text-label font-medium text-[var(--tx3)] shrink-0">Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px] min-h-[36px]"
+                  className="text-caption bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px] min-h-[36px]"
                 >
                   {STATUS_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -191,13 +191,13 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
               </div>
               <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} />
               {hasActiveFilters && (
-                <button type="button" onClick={clearFilters} className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
+                <button type="button" onClick={clearFilters} className="text-label font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
                   Clear filters
                 </button>
               )}
             </div>
           </div>
-          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
+          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
             + New Move
           </Link>
         </div>
@@ -205,16 +205,16 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
         {filterOpen && (
           <div className="md:hidden border-b border-[var(--brd)] bg-[var(--bg)]/80 px-3 py-4 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase text-[var(--tx3)]">Filters</span>
-              <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[12px] font-semibold">Done</button>
+              <span className="text-caption font-bold uppercase text-[var(--tx3)]">Filters</span>
+              <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-ui font-semibold">Done</button>
             </div>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Status</label>
+                <label className="block text-label font-medium text-[var(--tx3)] mb-1">Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
+                  className="w-full text-caption bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
                 >
                   {STATUS_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -222,11 +222,11 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Move date</label>
+                <label className="block text-label font-medium text-[var(--tx3)] mb-1">Move date</label>
                 <select
                   value={moveDatePreset}
                   onChange={(e) => setMoveDatePreset(e.target.value)}
-                  className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
+                  className="w-full text-caption bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-h-[40px] touch-manipulation"
                 >
                   <option value="">All dates</option>
                   <optgroup label="Days">
@@ -257,7 +257,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
                 </select>
               </div>
               {hasActiveFilters && (
-                <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)]">
+                <button type="button" onClick={clearFilters} className="text-caption font-semibold text-[var(--tx3)] hover:text-[var(--gold)]">
                   Clear all filters
                 </button>
               )}
@@ -267,7 +267,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
 
         <div className="divide-y divide-[var(--brd)]/50 px-4 pb-4">
           {filtered.length === 0 ? (
-            <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">No office moves yet</div>
+            <div className="px-4 py-12 text-center text-ui text-[var(--tx3)]">No office moves yet</div>
           ) : filtered.map((m, idx) => (
             <div key={m.id} className="flex items-center gap-2">
               <div className="flex-1 min-w-0">

@@ -13,8 +13,8 @@ export default function PartnersHubPage() {
   return (
     <div className="max-w-[800px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
-      <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] mb-1">Partner Management</h1>
-      <p className="text-[13px] text-[var(--tx3)] mb-6">Manage all your B2B partner relationships.</p>
+      <h1 className="font-hero text-h2 font-bold text-[var(--tx)] mb-1">Partner Management</h1>
+      <p className="text-body text-[var(--tx3)] mb-6">Manage all your B2B partner relationships.</p>
       <div className="grid gap-3">
         {PARTNER_CATEGORIES.map((cat) => (
           <Link
@@ -24,10 +24,10 @@ export default function PartnersHubPage() {
           >
             <span className="text-2xl">{cat.icon}</span>
             <div className="flex-1">
-              <h2 className="text-[14px] font-bold text-[var(--tx)]">{cat.label}</h2>
-              <p className="text-[12px] text-[var(--tx3)]">{cat.description}</p>
+              <h2 className="text-title font-bold text-[var(--tx)]">{cat.label}</h2>
+              <p className="text-ui text-[var(--tx3)]">{cat.description}</p>
             </div>
-            <span className="text-[var(--tx3)] text-[12px]">Manage →</span>
+            <span className="text-[var(--tx3)] text-ui">Manage →</span>
           </Link>
         ))}
       </div>

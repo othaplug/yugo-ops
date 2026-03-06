@@ -312,7 +312,7 @@ export default function ProfitabilityClient() {
 
   const SortHeader = ({ label, field }: { label: string; field: string }) => (
     <th
-      className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 cursor-pointer hover:text-[var(--tx)] select-none whitespace-nowrap"
+      className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 cursor-pointer hover:text-[var(--tx)] select-none whitespace-nowrap"
       onClick={() => toggleSort(field)}
     >
       <span className="inline-flex items-center gap-0.5">
@@ -329,7 +329,7 @@ export default function ProfitabilityClient() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-lg font-heading font-bold text-[var(--tx)]">Profitability</h1>
-          <p className="text-[11px] text-[var(--tx3)]">Revenue, costs, and margin analysis — owner only</p>
+          <p className="text-caption text-[var(--tx3)]">Revenue, costs, and margin analysis — owner only</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2 py-1.5">
@@ -337,7 +337,7 @@ export default function ProfitabilityClient() {
               <button
                 key={p.id}
                 onClick={() => { setPreset(p.id); setVisibleCount(20); }}
-                className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors ${
+                className={`text-label px-2.5 py-1 rounded-md font-medium transition-colors ${
                   preset === p.id
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                     : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]"
@@ -349,7 +349,7 @@ export default function ProfitabilityClient() {
           </div>
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] border border-[var(--brd)] rounded-lg px-3 py-1.5 hover:bg-[var(--bg)] transition-colors"
+            className="flex items-center gap-1.5 text-label font-medium text-[var(--tx3)] hover:text-[var(--tx)] border border-[var(--brd)] rounded-lg px-3 py-1.5 hover:bg-[var(--bg)] transition-colors"
           >
             <Download className="w-3 h-3" />
             Export CSV
@@ -404,19 +404,19 @@ export default function ProfitabilityClient() {
           {(revenueSplit.b2b.count > 0 || revenueSplit.residential.count > 0) && (
             <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-5">
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Moves</div>
-                <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.residential.revenue)}</div>
-                <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.residential.count} moves · {pct(revenueSplit.residential.margin)} margin</div>
+                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Moves</div>
+                <div className="text-h3-lg font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.residential.revenue)}</div>
+                <div className="text-caption text-[var(--tx3)]">{revenueSplit.residential.count} moves · {pct(revenueSplit.residential.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B Deliveries</div>
-                <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.b2b.revenue)}</div>
-                <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.b2b.count} deliveries · {pct(revenueSplit.b2b.margin)} margin</div>
+                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B Deliveries</div>
+                <div className="text-h3-lg font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.b2b.revenue)}</div>
+                <div className="text-caption text-[var(--tx3)]">{revenueSplit.b2b.count} deliveries · {pct(revenueSplit.b2b.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Combined</div>
-                <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.combined.revenue)}</div>
-                <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.combined.count} total · {pct(revenueSplit.combined.margin)} blended</div>
+                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Combined</div>
+                <div className="text-h3-lg font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.combined.revenue)}</div>
+                <div className="text-caption text-[var(--tx3)]">{revenueSplit.combined.count} total · {pct(revenueSplit.combined.margin)} blended</div>
               </div>
             </div>
           )}
@@ -444,15 +444,15 @@ export default function ProfitabilityClient() {
                   </ResponsiveContainer>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-caption">
                     <thead>
                       <tr>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Tier</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Cost</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Profit</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Tier</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Cost</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Profit</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -492,15 +492,15 @@ export default function ProfitabilityClient() {
                   </ResponsiveContainer>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-caption">
                     <thead>
                       <tr>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Type</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Cost</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Profit</th>
-                        <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Type</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Cost</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Profit</th>
+                        <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -525,14 +525,14 @@ export default function ProfitabilityClient() {
           {neighbourhoodBreakdown.length > 0 && (
             <Section title="Profit by Neighbourhood">
               <div className="overflow-x-auto">
-                <table className="w-full text-[11px]">
+                <table className="w-full text-caption">
                   <thead>
                     <tr>
-                      <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Area (FSA)</th>
-                      <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
-                      <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
-                      <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Gross Profit</th>
-                      <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
+                      <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Area (FSA)</th>
+                      <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Moves</th>
+                      <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Revenue</th>
+                      <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Avg Gross Profit</th>
+                      <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Margin</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -569,7 +569,7 @@ export default function ProfitabilityClient() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex items-center gap-4 mt-2 text-[10px] text-[var(--tx3)]">
+              <div className="flex items-center gap-4 mt-2 text-label text-[var(--tx3)]">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#C9A962] rounded" />Gross Margin</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#2D6A4F] rounded" />Net Margin</span>
               </div>
@@ -586,20 +586,20 @@ export default function ProfitabilityClient() {
                   placeholder="Search by client or move ID..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
+                  className="w-full pl-8 pr-3 py-1.5 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
                 />
               </div>
-              <span className="text-[10px] text-[var(--tx3)]">{filteredRows.length} moves</span>
+              <span className="text-label text-[var(--tx3)]">{filteredRows.length} moves</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-caption">
                 <thead>
                   <tr>
                     <SortHeader label="Move" field="move_code" />
                     <SortHeader label="Date" field="date" />
-                    <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Client</th>
-                    <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Type</th>
-                    <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Tier</th>
+                    <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Client</th>
+                    <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Type</th>
+                    <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">Tier</th>
                     <SortHeader label="Revenue" field="revenue" />
                     <SortHeader label="Labour" field="labour" />
                     <SortHeader label="Fuel" field="fuel" />
@@ -624,7 +624,7 @@ export default function ProfitabilityClient() {
                             : ""
                       }`}
                     >
-                      <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)]">{r.move_code || r.id.slice(0, 8)}</td>
+                      <td className="py-1.5 px-2 font-mono text-label text-[var(--tx2)]">{r.move_code || r.id.slice(0, 8)}</td>
                       <td className="py-1.5 px-2 text-[var(--tx3)]">{r.date}</td>
                       <td className="py-1.5 px-2 font-medium text-[var(--tx)] max-w-[120px] truncate">{r.client}</td>
                       <td className="py-1.5 px-2 text-[var(--tx3)]">{TYPE_LABELS[r.type] || r.type}</td>
@@ -647,7 +647,7 @@ export default function ProfitabilityClient() {
               <div className="text-center pt-3">
                 <button
                   onClick={() => setVisibleCount((c) => c + 20)}
-                  className="text-[11px] font-medium text-[var(--gold)] hover:text-[var(--gold2)] transition-colors"
+                  className="text-caption font-medium text-[var(--gold)] hover:text-[var(--gold2)] transition-colors"
                 >
                   Load More ({filteredRows.length - visibleCount} remaining)
                 </button>
@@ -663,13 +663,13 @@ export default function ProfitabilityClient() {
                 className="w-full flex items-center justify-between py-3 hover:bg-[var(--bg2)]/30 transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Monthly Overhead</span>
-                  <span className="text-[11px] text-[var(--tx3)]">{formatCurrency(overhead.total)}</span>
+                  <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Monthly Overhead</span>
+                  <span className="text-caption text-[var(--tx3)]">{formatCurrency(overhead.total)}</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-[var(--tx3)] transition-transform ${showOverhead ? "rotate-180" : ""}`} />
               </button>
               {showOverhead && (
-                <div className="pt-4 pb-2 space-y-2 text-[11px] border-t border-[var(--brd)]/30">
+                <div className="pt-4 pb-2 space-y-2 text-caption border-t border-[var(--brd)]/30">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-1.5 py-3">
                     <div className="flex justify-between"><span className="text-[var(--tx3)]">Software</span><span className="text-[var(--tx)]">{formatCurrency(overhead.items.software)}</span></div>
                     <div className="flex justify-between"><span className="text-[var(--tx3)]">Auto Insurance</span><span className="text-[var(--tx)]">{formatCurrency(overhead.items.autoInsurance)}</span></div>
@@ -711,11 +711,11 @@ function StatCard({
   return (
     <div className="py-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{label}</span>
+        <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{label}</span>
         {icon && <span className={className}>{icon}</span>}
       </div>
       <div className={`text-2xl font-heading font-bold ${className}`}>{value}</div>
-      <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sub}</div>
+      <div className="text-label text-[var(--tx3)] mt-0.5">{sub}</div>
     </div>
   );
 }
@@ -723,7 +723,7 @@ function StatCard({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-      <h2 className="text-[13px] font-bold text-[var(--tx)] mb-4">{title}</h2>
+      <h2 className="text-body font-bold text-[var(--tx)] mb-4">{title}</h2>
       {children}
     </div>
   );

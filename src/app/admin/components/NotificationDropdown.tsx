@@ -32,7 +32,7 @@ export default function NotificationDropdown() {
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
-          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--red)] text-white text-[7px] font-bold flex items-center justify-center">
+          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--red)] text-white text-nano font-bold flex items-center justify-center">
             {unreadCount > 9 ? "9+" : unreadCount}
           </div>
         )}
@@ -41,11 +41,11 @@ export default function NotificationDropdown() {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] max-w-[320px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-[9999] animate-fade-up">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
-            <div className="font-heading text-[13px] font-bold">Notifications</div>
+            <div className="font-heading text-body font-bold">Notifications</div>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                className="text-label font-semibold text-[var(--gold)] hover:underline"
               >
                 Mark all read
               </button>
@@ -54,7 +54,7 @@ export default function NotificationDropdown() {
 
           <div className="max-h-[400px] overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-[11px] text-[var(--tx3)]">
+              <div className="px-4 py-8 text-center text-caption text-[var(--tx3)]">
                 No notifications
               </div>
             ) : (
@@ -80,10 +80,10 @@ export default function NotificationDropdown() {
                     )}
                     <div className="flex-shrink-0 text-[var(--tx2)]"><Icon name={notif.icon} className="w-[18px] h-[18px]" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[11px] ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                      <div className={`text-caption ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
                         {notif.title}
                       </div>
-                      <div className="text-[9px] text-[var(--tx3)] mt-0.5">{notif.time}</div>
+                      <div className="text-section text-[var(--tx3)] mt-0.5">{notif.time}</div>
                     </div>
                   </button>
                 );

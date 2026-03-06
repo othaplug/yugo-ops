@@ -46,25 +46,25 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span
-                className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                className="text-section font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
               >
                 {category}
               </span>
               {weight && (
                 <span
-                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                  className="text-section font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                   style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
                 >
                   {weight}
                 </span>
               )}
             </div>
-            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+            <p className="text-title font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "Single Item Delivery"}
             </p>
             {f?.assembly_surcharge != null && (
-              <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+              <p className="text-caption mt-1" style={{ color: `${FOREST}60` }}>
                 Assembly / disassembly included
               </p>
             )}
@@ -75,21 +75,21 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
-              <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
+              <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
+              <p className="text-ui font-medium truncate" style={{ color: FOREST }}>
                 {quote.from_address}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
-              <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
+              <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
+              <p className="text-ui font-medium truncate" style={{ color: FOREST }}>
                 {quote.to_address}
               </p>
             </div>
           </div>
           {quote.distance_km != null && (
-            <p className="text-[10px] text-center mt-2" style={{ color: `${FOREST}50` }}>
+            <p className="text-label text-center mt-2" style={{ color: `${FOREST}50` }}>
               {quote.distance_km} km{quote.drive_time_min ? ` \u00b7 ~${quote.drive_time_min} min` : ""}
             </p>
           )}
@@ -98,14 +98,14 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Service includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
           Service Includes
         </h2>
         <div className="space-y-2">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
+              <span className="text-ui leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
         </div>
@@ -113,16 +113,16 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Price + CTA */}
       <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
-        <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
+        <p className="font-hero text-price-sm md:text-price-lg" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
-        <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+        <p className="text-ui mt-1 mb-5" style={{ color: `${FOREST}70` }}>
           +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
         </p>
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-body font-bold tracking-wide text-white transition-all ${
             confirmed ? "opacity-80" : ""
           }`}
           style={{ backgroundColor: confirmed ? FOREST : WINE }}
@@ -137,7 +137,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
             `Book Now \u2014 ${fmtPrice(deposit)} Deposit`
           )}
         </button>
-        <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
+        <p className="text-label mt-2" style={{ color: `${FOREST}50` }}>
           {isFullPayment
             ? "Full payment at booking"
             : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}

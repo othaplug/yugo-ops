@@ -213,18 +213,18 @@ export default function FleetVehiclesManager() {
 
   const teamMap = new Map(teams.map((t) => [t.id, t.name]));
 
-  if (loading) return <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading fleet...</div>;
+  if (loading) return <div className="py-8 text-center text-ui text-[var(--tx3)]">Loading fleet...</div>;
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage trucks and vans. Vehicle data feeds into quote pricing and profitability tracking.</p>
+          <h3 className="font-heading text-title font-bold text-[var(--tx)]">Fleet Vehicles</h3>
+          <p className="text-caption text-[var(--tx3)] mt-0.5">Manage trucks and vans. Vehicle data feeds into quote pricing and profitability tracking.</p>
         </div>
         <button
           onClick={() => { resetForm(); setAddOpen(true); }}
-          className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="shrink-0 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
         >
           + Add Vehicle
         </button>
@@ -232,8 +232,8 @@ export default function FleetVehiclesManager() {
       <div className="px-5 py-4 space-y-3">
         {vehicles.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-[13px] text-[var(--tx3)]">No fleet vehicles yet.</p>
-            <p className="text-[11px] text-[var(--tx3)] mt-1">Add your fleet vehicles to enable automatic truck allocation in the quoting system.</p>
+            <p className="text-body text-[var(--tx3)]">No fleet vehicles yet.</p>
+            <p className="text-caption text-[var(--tx3)] mt-1">Add your fleet vehicles to enable automatic truck allocation in the quoting system.</p>
           </div>
         ) : vehicles.map((v) => {
           const typeInfo = TYPE_LABELS[v.vehicle_type] || { label: v.vehicle_type, cuft: 0, lbs: 0 };
@@ -252,22 +252,22 @@ export default function FleetVehiclesManager() {
                   <div className="flex items-start gap-2">
                     <Icon name="truck" className="w-4 h-4 text-[var(--tx3)] mt-0.5 shrink-0" />
                     <div>
-                      <div className="text-[13px] font-semibold text-[var(--tx)]">
+                      <div className="text-body font-semibold text-[var(--tx)]">
                         {v.license_plate} · {v.display_name}
                       </div>
-                      <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+                      <div className="text-caption text-[var(--tx3)] mt-0.5">
                         {typeInfo.label} · {v.capacity_cuft.toLocaleString()} cu ft · {v.capacity_lbs.toLocaleString()} lbs
                       </div>
                       {v.current_mileage > 0 && (
-                        <div className="text-[11px] text-[var(--tx3)]">Mileage: {v.current_mileage.toLocaleString()} km</div>
+                        <div className="text-caption text-[var(--tx3)]">Mileage: {v.current_mileage.toLocaleString()} km</div>
                       )}
                       {teamName && (
-                        <div className="text-[11px] text-[var(--tx3)]">Team: {teamName}</div>
+                        <div className="text-caption text-[var(--tx3)]">Team: {teamName}</div>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded capitalize ${statusCls}`}>{v.status}</span>
+                    <span className={`text-section font-semibold px-2 py-0.5 rounded capitalize ${statusCls}`}>{v.status}</span>
                     <svg className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
                   </div>
                 </div>
@@ -286,14 +286,14 @@ export default function FleetVehiclesManager() {
                         setFormTeam(v.default_team_id || "");
                         setFormNotes(v.notes || "");
                       }}
-                      className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                      className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => { setMaintVehicleId(v.id); setMaintDate(new Date().toISOString().split("T")[0]); }}
-                      className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                      className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
                     >
                       + Log Maintenance
                     </button>
@@ -302,7 +302,7 @@ export default function FleetVehiclesManager() {
                         type="button"
                         onClick={() => handleRetire(v)}
                         disabled={saving}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"
+                        className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"
                       >
                         Retire Vehicle
                       </button>
@@ -312,10 +312,10 @@ export default function FleetVehiclesManager() {
                   {/* Maintenance log */}
                   {logs.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Maintenance History</div>
+                      <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Maintenance History</div>
                       <div className="space-y-1">
                         {logs.sort((a, b) => b.maintenance_date.localeCompare(a.maintenance_date)).map((log) => (
-                          <div key={log.id} className="flex items-center justify-between px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--brd)] text-[11px]">
+                          <div key={log.id} className="flex items-center justify-between px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--brd)] text-caption">
                             <div className="flex items-center gap-2">
                               <span className="text-[var(--tx3)]">{log.maintenance_date}</span>
                               <span className="text-[var(--tx)] font-medium">{MAINT_LABELS[log.maintenance_type] || log.maintenance_type}</span>
@@ -329,7 +329,7 @@ export default function FleetVehiclesManager() {
                   )}
 
                   {v.notes && (
-                    <div className="text-[11px] text-[var(--tx3)]">Notes: {v.notes}</div>
+                    <div className="text-caption text-[var(--tx3)]">Notes: {v.notes}</div>
                   )}
                 </div>
               )}
@@ -342,29 +342,29 @@ export default function FleetVehiclesManager() {
       <ModalOverlay open={addOpen} onClose={() => setAddOpen(false)} title="Add Vehicle" maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAdd(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Type</label>
-            <select value={formType} onChange={(e) => { setFormType(e.target.value); setFormName(TYPE_LABELS[e.target.value]?.label || ""); }} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Type</label>
+            <select value={formType} onChange={(e) => { setFormType(e.target.value); setFormName(TYPE_LABELS[e.target.value]?.label || ""); }} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
               {Object.entries(TYPE_LABELS).map(([key, val]) => (
                 <option key={key} value={key}>{val.label} ({val.cuft} cu ft)</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">License Plate</label>
-            <input type="text" value={formPlate} onChange={(e) => setFormPlate(e.target.value.toUpperCase())} placeholder="e.g. SPR786" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">License Plate</label>
+            <input type="text" value={formPlate} onChange={(e) => setFormPlate(e.target.value.toUpperCase())} placeholder="e.g. SPR786" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
-            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
+            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
-              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
+              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
-              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
+              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="retired">Retired</option>
@@ -373,8 +373,8 @@ export default function FleetVehiclesManager() {
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
-              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
+              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
                 <option value="">None</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -383,12 +383,12 @@ export default function FleetVehiclesManager() {
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
+            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setAddOpen(false)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={!formPlate.trim() || saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Adding..." : "Add Vehicle"}</button>
+            <button type="button" onClick={() => setAddOpen(false)} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
+            <button type="submit" disabled={!formPlate.trim() || saving} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Adding..." : "Add Vehicle"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -397,17 +397,17 @@ export default function FleetVehiclesManager() {
       <ModalOverlay open={!!editVehicle} onClose={() => setEditVehicle(null)} title={`Edit ${editVehicle?.display_name ?? "Vehicle"}`} maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
-            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
+            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
-              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
+              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
-              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
+              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="retired">Retired</option>
@@ -416,8 +416,8 @@ export default function FleetVehiclesManager() {
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
-              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
+              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
                 <option value="">None</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -426,12 +426,12 @@ export default function FleetVehiclesManager() {
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
+            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setEditVehicle(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
+            <button type="button" onClick={() => setEditVehicle(null)} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -441,27 +441,27 @@ export default function FleetVehiclesManager() {
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAddMaintenance(); }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type</label>
-              <select value={maintType} onChange={(e) => setMaintType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type</label>
+              <select value={maintType} onChange={(e) => setMaintType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
                 {MAINT_TYPES.map((t) => <option key={t} value={t}>{MAINT_LABELS[t]}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Date</label>
-              <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Date</label>
+              <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Cost ($)</label>
-            <input type="number" step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)} placeholder="0.00" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Cost ($)</label>
+            <input type="number" step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)} placeholder="0.00" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={maintNotes} onChange={(e) => setMaintNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
+            <input type="text" value={maintNotes} onChange={(e) => setMaintNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setMaintVehicleId(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Log Entry"}</button>
+            <button type="button" onClick={() => setMaintVehicleId(null)} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Log Entry"}</button>
           </div>
         </form>
       </ModalOverlay>

@@ -100,12 +100,12 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
           <div>
             <span
-              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+              className="text-section font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
               style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
             >
               {PROJECT_TYPE_LABELS[projectType] ?? toTitleCase(projectType)}
             </span>
-            <h2 className="font-hero text-[18px] mt-2" style={{ color: WINE }}>
+            <h2 className="font-hero text-h3-lg mt-2" style={{ color: WINE }}>
               Project Proposal
             </h2>
           </div>
@@ -115,16 +115,16 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Location</p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
+              <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Location</p>
+              <p className="text-ui font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
           {quote.to_address !== quote.from_address && (
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Destination</p>
-                <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
+                <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Destination</p>
+                <p className="text-ui font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
               </div>
             </div>
           )}
@@ -132,8 +132,8 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Target Date</p>
-                <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Target Date</p>
+                <p className="text-ui font-medium" style={{ color: FOREST }}>
                   {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                     month: "long",
                     day: "numeric",
@@ -149,7 +149,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       {/* Special Requirements */}
       {requirements.length > 0 && (
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
             Special Requirements
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -159,10 +159,10 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
                 <div key={i} className="flex items-start gap-3">
                   <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: WINE }} />
                   <div>
-                    <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                    <p className="text-ui font-semibold" style={{ color: FOREST }}>
                       {req.title}
                     </p>
-                    <p className="text-[10px] mt-0.5 leading-snug" style={{ color: `${FOREST}60` }}>
+                    <p className="text-label mt-0.5 leading-snug" style={{ color: `${FOREST}60` }}>
                       {req.desc}
                     </p>
                   </div>
@@ -175,14 +175,14 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
 
       {/* Service Includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2.5">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
+              <span className="text-ui leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
         </div>
@@ -192,7 +192,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
         <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${GOLD}08` }}>
           <h2
-            className="font-heading text-[13px] font-bold tracking-wider uppercase"
+            className="font-heading text-body font-bold tracking-wider uppercase"
             style={{ color: WINE }}
           >
             Investment Summary
@@ -200,7 +200,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
         </div>
         <div className="p-5 md:p-6">
           {breakdown.length > 0 && (
-            <table className="w-full text-[12px] mb-4">
+            <table className="w-full text-ui mb-4">
               <tbody>
                 {breakdown.map((item, i) => (
                   <tr key={i} className={i > 0 ? "border-t border-[#E2DDD5]" : ""}>
@@ -214,16 +214,16 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             </table>
           )}
           <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${GOLD}30` }}>
-            <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
+            <p className="font-hero text-price-sm md:text-price-lg" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
-            <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+            <p className="text-ui mt-1 mb-5" style={{ color: `${FOREST}70` }}>
               +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
             </p>
             <button
               type="button"
               onClick={onConfirm}
-              className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+              className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-body font-bold tracking-wide text-white transition-all ${
                 confirmed ? "opacity-80" : ""
               }`}
               style={{ backgroundColor: confirmed ? FOREST : GOLD }}
@@ -236,7 +236,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
                 `Proceed \u2014 ${fmtPrice(deposit)} Deposit`
               )}
             </button>
-            <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
+            <p className="text-label mt-2" style={{ color: `${FOREST}50` }}>
               {price < 5000 ? "30%" : "50%"} deposit &middot; Balance due on completion
             </p>
           </div>

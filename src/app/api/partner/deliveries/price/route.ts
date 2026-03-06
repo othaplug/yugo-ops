@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend } = body;
+    const { booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend, heavy_items } = body;
 
     const db = createAdminClient();
 
@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
         isAfterHours: !!is_after_hours,
         isWeekend: !!is_weekend,
         pricingTier,
+        distanceKm: distance_km != null ? Number(distance_km) : undefined,
+        heavyItems: Array.isArray(heavy_items) ? heavy_items : undefined,
       });
 
       const thisMonth = new Date().toISOString().slice(0, 7);

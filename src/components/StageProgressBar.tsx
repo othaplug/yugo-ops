@@ -54,7 +54,7 @@ export default function StageProgressBar({
                 fontWeight: isDone || isCurrent ? 600 : 400,
               }}
             >
-              <span className="text-[11px] sm:text-[12px] truncate block">
+              <span className="text-caption sm:text-ui truncate block">
                 {s.label}
               </span>
             </div>
@@ -65,7 +65,7 @@ export default function StageProgressBar({
       {/* Completion indicator - subtle check at end when complete */}
       {isComplete && (
         <div className="mt-2 flex justify-end">
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] font-medium">
+          <span className="inline-flex items-center gap-1.5 text-caption text-[#22C55E] font-medium">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>

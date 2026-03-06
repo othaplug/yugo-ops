@@ -35,12 +35,12 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <Truck className="w-6 h-6" style={{ color: FOREST }} />
           </div>
           <div>
-            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+            <p className="text-title font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "Delivery Service"}
             </p>
             {f?.item_category ? (
               <span
-                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                className="inline-block mt-1 text-section font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
               >
                 {toTitleCase(String(f.item_category))}
@@ -56,8 +56,8 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
-                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                  <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
+                  <p className="text-ui font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
                 </div>
@@ -67,8 +67,8 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
-                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                  <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery</p>
+                  <p className="text-ui font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>
                 </div>
@@ -77,7 +77,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             </div>
           </div>
           {quote.distance_km != null && (
-            <p className="text-[10px] text-center mt-2" style={{ color: `${FOREST}50` }}>
+            <p className="text-label text-center mt-2" style={{ color: `${FOREST}50` }}>
               {quote.distance_km} km
               {quote.drive_time_min ? ` \u00b7 ~${quote.drive_time_min} min` : ""}
             </p>
@@ -90,7 +90,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             {["Professional handling", "Protective wrapping", "Careful delivery"].map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <Check className="w-3 h-3" style={{ color: GOLD }} />
-                <span className="text-[11px]" style={{ color: FOREST }}>{item}</span>
+                <span className="text-caption" style={{ color: FOREST }}>{item}</span>
               </div>
             ))}
           </div>
@@ -99,16 +99,16 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
 
       {/* Price + CTA */}
       <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
-        <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
+        <p className="font-hero text-price-sm md:text-price-lg" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
-        <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+        <p className="text-ui mt-1 mb-5" style={{ color: `${FOREST}70` }}>
           +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
         </p>
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-body font-bold tracking-wide text-white transition-all ${
             confirmed ? "opacity-80" : ""
           }`}
           style={{ backgroundColor: confirmed ? FOREST : FOREST }}
@@ -123,7 +123,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             `Confirm Delivery \u2014 ${fmtPrice(deposit)} Deposit`
           )}
         </button>
-        <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
+        <p className="text-label mt-2" style={{ color: `${FOREST}50` }}>
           {isFullPayment
             ? "Full payment at confirmation"
             : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}

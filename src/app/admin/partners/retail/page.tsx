@@ -72,37 +72,37 @@ export default async function RetailPage() {
 
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Retail Partners</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{clients.length} active partner{clients.length !== 1 ? "s" : ""} · {dels.length} total deliveries</p>
+          <h1 className="font-heading text-h2 font-bold text-[var(--tx)]">Retail Partners</h1>
+          <p className="text-ui text-[var(--tx3)] mt-0.5">{clients.length} active partner{clients.length !== 1 ? "s" : ""} · {dels.length} total deliveries</p>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Partners</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Partners</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{clients.length}</span>
+            <span className="text-h1 font-bold font-heading text-[var(--tx)]">{clients.length}</span>
             <StatPctChange current={clients.length} previous={partnersPrev} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Deliveries</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Deliveries</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{dels.length}</span>
+            <span className="text-h1 font-bold font-heading text-[var(--tx)]">{dels.length}</span>
             <StatPctChange current={deliveriesThisMonth} previous={deliveriesLastMonth} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue ({monthLabel})</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue ({monthLabel})</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(revenueThisMonth)}</span>
+            <span className="text-h1 font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(revenueThisMonth)}</span>
             <StatPctChange current={revenueThisMonth} previous={revenueLastMonth} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className={`text-[24px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCompactCurrency(outstandingTotal)}</div>
+          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
+          <div className={`text-h1 font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCompactCurrency(outstandingTotal)}</div>
         </div>
       </div>
 

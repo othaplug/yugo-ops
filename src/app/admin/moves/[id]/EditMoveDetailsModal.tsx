@@ -27,6 +27,7 @@ interface EditMoveDetailsModalProps {
     crew_id?: string | null;
     coordinator_name?: string | null;
     scheduled_date?: string | null;
+    preferred_time?: string | null;
     arrival_window?: string | null;
     from_access?: string | null;
     to_access?: string | null;
@@ -42,14 +43,14 @@ interface EditMoveDetailsModalProps {
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">{label}</label>
+      <label className="block text-caption font-semibold text-[var(--tx2)] mb-1.5">{label}</label>
       {children}
     </div>
   );
 }
 
 const inputBase =
-  "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all";
+  "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-body text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all";
 
 export default function EditMoveDetailsModal({ open, onClose, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   };
   const parsed = parseAccessNotes(initial.access_notes);
   const [scheduledDate, setScheduledDate] = useState(() => toDateInput(initial.scheduled_date));
+  const [preferredTime, setPreferredTime] = useState(initial.preferred_time || "");
   const [arrivalWindow, setArrivalWindow] = useState(initial.arrival_window || "");
   const [fromAccess, setFromAccess] = useState(initial.from_access || parsed.fromAccess);
   const [toAccess, setToAccess] = useState(initial.to_access || parsed.toAccess);
@@ -102,6 +104,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
     setToLat(initial.to_lat ?? null);
     setToLng(initial.to_lng ?? null);
     setScheduledDate(toDateInput(initial.scheduled_date));
+    setPreferredTime(initial.preferred_time || "");
     setArrivalWindow(initial.arrival_window || "");
     const p = parseAccessNotes(initial.access_notes);
     setFromAccess(initial.from_access || p.fromAccess);
@@ -135,6 +138,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
         to_access: toAccess.trim() || null,
         scheduled_date: scheduledDate.trim() || null,
         scheduled_time: null,
+        preferred_time: preferredTime.trim() || null,
         arrival_window: arrivalWindow.trim() || null,
         access_notes: accessNotesMerged,
         crew_id: crewId.trim() || null,
@@ -178,7 +182,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
           {/* Location */}
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+            <h3 className="text-label font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
               <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Location
             </h3>
@@ -234,7 +238,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
           {/* Schedule */}
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+            <h3 className="text-label font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
               <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Schedule
             </h3>
@@ -246,6 +250,9 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
                   onChange={(e) => setScheduledDate(e.target.value)}
                   className={inputBase}
                 />
+              </Field>
+              <Field label="Preferred time">
+                <input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} className={inputBase} />
               </Field>
               <Field label="Time window">
                 <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={inputBase}>
@@ -292,7 +299,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
             <button
               type="button"
               onClick={() => setShowOptional(!showOptional)}
-              className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
+              className="flex items-center gap-2 text-caption font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
             >
               {showOptional ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               {showOptional ? "Hide" : "Show"} optional details
@@ -306,7 +313,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
                         key={preset}
                         type="button"
                         onClick={() => toggleComplexity(preset)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                        className={`px-3 py-1.5 rounded-full text-caption font-medium transition-all ${
                           complexityIndicators.includes(preset)
                             ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40"
                             : "bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -332,7 +339,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
                     <button
                       type="button"
                       onClick={addCustomComplexity}
-                      className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
+                      className="px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
                     >
                       Add
                     </button>
@@ -357,14 +364,14 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-lg text-[12px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+            className="px-4 py-2.5 rounded-lg text-ui font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

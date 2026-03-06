@@ -278,8 +278,8 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
         <button onClick={() => navWeek(-1)} className="p-2 -ml-2 text-[var(--tx3)]">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <h1 className="text-[16px] font-bold text-[var(--tx)] font-heading">{fmtMonthYear(selDate)}</h1>
-        <button onClick={goToday} className="px-3 py-1 rounded-full text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
+        <h1 className="text-h3 font-bold text-[var(--tx)] font-heading">{fmtMonthYear(selDate)}</h1>
+        <button onClick={goToday} className="px-3 py-1 rounded-full text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
           Today
         </button>
       </div>
@@ -301,11 +301,11 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               onClick={() => setSelectedDate(key)}
               className="flex-1 flex flex-col items-center py-2 rounded-xl transition-colors"
             >
-              <span className={`text-[10px] font-medium mb-1 ${isSelected ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+              <span className={`text-label font-medium mb-1 ${isSelected ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
                 {fmtDayOfWeek(date)}
               </span>
               <span
-                className={`w-9 h-9 flex items-center justify-center rounded-full text-[14px] font-bold transition-all ${
+                className={`w-9 h-9 flex items-center justify-center rounded-full text-title font-bold transition-all ${
                   isSelected
                     ? "bg-[var(--gold)] text-[#0D0D0D]"
                     : isToday
@@ -325,7 +325,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
 
       {/* Day label */}
       <div className="px-4 pb-3 border-b border-[var(--brd)]">
-        <span className="text-[13px] font-semibold text-[var(--tx2)]">
+        <span className="text-body font-semibold text-[var(--tx2)]">
           {selectedDate === todayKey ? "Today, " : ""}{fmtDayFull(selDate)}
         </span>
       </div>
@@ -334,10 +334,10 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {selectedEvents.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[var(--tx3)] text-[13px] mb-4">No events scheduled</div>
+            <div className="text-[var(--tx3)] text-body mb-4">No events scheduled</div>
             <Link
               href={`/admin/deliveries/new?date=${selectedDate}`}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
             >
               + Schedule Job
             </Link>
@@ -352,7 +352,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               >
                 {/* Time column */}
                 <div className="w-14 shrink-0 flex flex-col items-end pt-0.5">
-                  <span className="text-[11px] text-[var(--tx3)] leading-tight">
+                  <span className="text-caption text-[var(--tx3)] leading-tight">
                     {ev.time || "Anytime"}
                   </span>
                 </div>
@@ -362,13 +362,13 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
+                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                     {ev.type === "delivery" ? "Delivery" : ev.moveType === "office" ? "Office Move" : "Move"}
                   </div>
-                  <div className="text-[15px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors truncate">
+                  <div className="text-h3-sm font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors truncate">
                     {ev.name}
                   </div>
-                  <div className="flex items-center gap-1 mt-1 text-[11px] flex-wrap">
+                  <div className="flex items-center gap-1 mt-1 text-caption flex-wrap">
                     <span style={{ color: ev.color }} className="font-medium capitalize">{ev.category}</span>
                     {ev.crew && (
                       <>
@@ -395,7 +395,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
   const DesktopHeader = (
     <div className="flex items-center justify-between mb-5 px-6 pt-5">
       <div className="flex items-center gap-4">
-        <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">
+        <h1 className="font-heading text-h2-sm font-bold text-[var(--tx)]">
           {viewMode === "month"
             ? fmtMonthYear(new Date(monthYear.year, monthYear.month, 1))
             : viewMode === "week"
@@ -415,7 +415,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
           </button>
-          <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
+          <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
             Today
           </button>
         </div>
@@ -428,7 +428,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`px-3 py-1 rounded-md text-[11px] font-semibold capitalize transition-colors ${
+              className={`px-3 py-1 rounded-md text-caption font-semibold capitalize transition-colors ${
                 viewMode === mode
                   ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
                   : "text-[var(--tx3)] hover:text-[var(--tx)]"
@@ -440,7 +440,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
         </div>
         <Link
           href="/admin/deliveries/new"
-          className="ml-3 inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+          className="ml-3 inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
         >
           + Schedule Job
         </Link>
@@ -453,7 +453,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
     <div className="px-6 pb-6">
       <div className="grid grid-cols-7 gap-px bg-[var(--brd)] overflow-hidden">
         {DAY_NAMES_SHORT.map((d) => (
-          <div key={d} className="bg-[var(--bg)] py-2.5 text-center text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+          <div key={d} className="bg-[var(--bg)] py-2.5 text-center text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
             {d}
           </div>
         ))}
@@ -472,7 +472,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(dk)}
             >
-              <div className={`text-[12px] font-semibold mb-1 ${isToday ? "text-[var(--gold)] font-bold" : "text-[var(--tx)]"}`}>
+              <div className={`text-ui font-semibold mb-1 ${isToday ? "text-[var(--gold)] font-bold" : "text-[var(--tx)]"}`}>
                 {day}
               </div>
               <div className="space-y-0.5">
@@ -482,14 +482,14 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
                     draggable
                     onDragStart={() => { setDragId(ev.id); setDragType(ev.type); }}
                     onClick={(e) => { e.stopPropagation(); router.push(ev.href); }}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] truncate bg-[var(--bg)] hover:bg-[var(--gdim)] transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-section truncate bg-[var(--bg)] hover:bg-[var(--gdim)] transition-colors cursor-pointer"
                     style={{ borderLeft: `2px solid ${ev.color}` }}
                   >
                     <span className="truncate text-[var(--tx)]">{ev.name}</span>
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-[8px] text-[var(--tx3)] pl-1">+{dayEvents.length - 3} more</div>
+                  <div className="text-micro text-[var(--tx3)] pl-1">+{dayEvents.length - 3} more</div>
                 )}
               </div>
             </div>
@@ -506,9 +506,9 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
         {weekDays.map(({ date, key }) => {
           const isToday = key === todayKey;
           return (
-            <div key={key} className={`bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-[0.14em] uppercase ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
+            <div key={key} className={`bg-[var(--bg)] py-2 text-center text-section font-bold tracking-[0.14em] uppercase ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
               {fmtDayOfWeek(date)} {date.getDate()}
-              {isToday && <span className="ml-1 text-[8px] bg-[var(--gold)]/20 text-[var(--gold)] px-1 py-px rounded">Today</span>}
+              {isToday && <span className="ml-1 text-micro bg-[var(--gold)]/20 text-[var(--gold)] px-1 py-px rounded">Today</span>}
             </div>
           );
         })}
@@ -534,12 +534,12 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
                   className="mb-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-80"
                   style={{ borderLeft: `3px solid ${ev.color}`, background: `${ev.color}11` }}
                 >
-                  <div className="text-[9px] font-bold truncate" style={{ color: ev.color }}>{ev.name}</div>
-                  <div className="text-[8px] text-[var(--tx3)] mt-0.5">{ev.time || "Anytime"}</div>
+                  <div className="text-section font-bold truncate" style={{ color: ev.color }}>{ev.name}</div>
+                  <div className="text-micro text-[var(--tx3)] mt-0.5">{ev.time || "Anytime"}</div>
                 </div>
               ))}
               {dayEvents.length === 0 && (
-                <div className="text-[9px] text-[var(--tx3)] opacity-40 text-center pt-8">+ Schedule</div>
+                <div className="text-section text-[var(--tx3)] opacity-40 text-center pt-8">+ Schedule</div>
               )}
             </div>
           );
@@ -553,10 +553,10 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
     <div className="px-6 pb-6 max-w-[800px]">
       {selectedEvents.length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-[var(--tx3)] text-[13px] mb-4">No events on this day</div>
+          <div className="text-[var(--tx3)] text-body mb-4">No events on this day</div>
           <Link
             href={`/admin/deliveries/new?date=${selectedDate}`}
-            className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
           >
             + Schedule Job
           </Link>
@@ -570,15 +570,15 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               className="flex gap-4 px-5 py-4 hover:bg-[var(--bg)]/50 transition-colors group"
             >
               <div className="w-16 shrink-0 pt-0.5 text-right">
-                <div className="text-[12px] font-semibold text-[var(--tx)]">{ev.time || "Anytime"}</div>
+                <div className="text-ui font-semibold text-[var(--tx)]">{ev.time || "Anytime"}</div>
               </div>
               <div className="w-[3px] rounded-full shrink-0 self-stretch" style={{ backgroundColor: ev.color }} />
               <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
+                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                   {ev.type === "delivery" ? "Delivery" : ev.moveType === "office" ? "Office Move" : "Move"}
                 </div>
-                <div className="text-[15px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate">{ev.name}</div>
-                <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                <div className="text-h3-sm font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate">{ev.name}</div>
+                <div className="flex items-center gap-1.5 mt-1 text-caption">
                   <span style={{ color: ev.color }} className="font-medium capitalize">{ev.category}</span>
                   {ev.crew && (
                     <>
@@ -607,7 +607,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
         { label: "Residential Move", color: "#2D9F5A" },
         { label: "Office Move", color: "#4A7CE5" },
       ].map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
+        <div key={item.label} className="flex items-center gap-1.5 text-label text-[var(--tx3)]">
           <div className="w-2.5 h-[3px] rounded" style={{ background: item.color }} />
           {item.label}
         </div>

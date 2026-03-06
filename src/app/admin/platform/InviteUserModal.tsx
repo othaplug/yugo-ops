@@ -99,39 +99,39 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h3 className="font-heading text-[18px] font-bold text-[var(--tx)] mb-1">Invitation sent</h3>
-          <p className="text-[12px] text-[var(--tx3)]">The user will receive an email to log in and continue setup. If they don&apos;t see it, ask them to check their spam folder.</p>
+          <h3 className="font-heading text-h3-lg font-bold text-[var(--tx)] mb-1">Invitation sent</h3>
+          <p className="text-ui text-[var(--tx3)]">The user will receive an email to log in and continue setup. If they don&apos;t see it, ask them to check their spam folder.</p>
         </div>
       ) : (
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {apiError && (
-            <div className="px-4 py-3 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/40 text-[12px] text-[var(--red)]">
+            <div className="px-4 py-3 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/40 text-ui text-[var(--red)]">
               {apiError}
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@company.com"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Full Name</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -141,7 +141,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 pr-10 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-4 py-2.5 pr-10 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 />
                 <button
                   type="button"
@@ -159,19 +159,19 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               <button
                 type="button"
                 onClick={handleGeneratePassword}
-                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
+                className="px-3 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
               >
                 Generate
               </button>
             </div>
-            <p className="text-[10px] text-[var(--tx3)] mt-1">User must change password on first login</p>
+            <p className="text-label text-[var(--tx3)] mt-1">User must change password on first login</p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
@@ -184,14 +184,14 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
             >
               {loading ? "Sending…" : "Send Invitation"}
             </button>

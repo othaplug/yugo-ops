@@ -80,7 +80,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       .finally(() => setLoading(false));
   }, [moveId]);
 
-  if (loading) return <p className="text-[11px] text-[var(--tx3)]">Loading sign-off…</p>;
+  if (loading) return <p className="text-caption text-[var(--tx3)]">Loading sign-off…</p>;
   if (!signOff && skips.length === 0) return null;
 
   const deadlinePassed = signOff?.damage_report_deadline
@@ -92,17 +92,17 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {/* Escalation banner */}
       {signOff?.escalation_triggered && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-[11px] font-bold text-red-700 uppercase mb-1">Escalation Triggered</p>
-          <p className="text-[11px] text-red-600">{signOff.escalation_reason}</p>
+          <p className="text-caption font-bold text-red-700 uppercase mb-1">Escalation Triggered</p>
+          <p className="text-caption text-red-600">{signOff.escalation_reason}</p>
         </div>
       )}
 
       {/* Discrepancy flags */}
       {signOff?.discrepancy_flags && signOff.discrepancy_flags.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">Discrepancy Flags</p>
+          <p className="text-caption font-bold text-amber-700 uppercase mb-1">Discrepancy Flags</p>
           {signOff.discrepancy_flags.map((f, i) => (
-            <p key={i} className="text-[11px] text-amber-600">• {f}</p>
+            <p key={i} className="text-caption text-amber-600">• {f}</p>
           ))}
         </div>
       )}
@@ -110,21 +110,21 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {signOff && (
         <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
+            <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)]">
               Client Sign-Off
             </h3>
             <a
               href={`/api/admin/moves/${moveId}/signoff/receipt`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] font-medium text-[var(--gold)] hover:underline"
+              className="text-label font-medium text-[var(--gold)] hover:underline"
             >
               Download PDF Receipt
             </a>
           </div>
 
           {/* Core info */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-[11px]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-caption">
             <div><span className="text-[var(--tx3)]">Signed by:</span> {signOff.signed_by}</div>
             <div><span className="text-[var(--tx3)]">Date:</span> {new Date(signOff.signed_at).toLocaleString()}</div>
             <div><span className="text-[var(--tx3)]">Rating:</span> {signOff.satisfaction_rating ? `${signOff.satisfaction_rating}/5` : "—"}</div>
@@ -138,7 +138,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
           {/* Damage window */}
           {signOff.damage_report_deadline && (
             <div className="mt-2 pt-2 border-t border-[var(--brd)]">
-              <p className="text-[10px]">
+              <p className="text-label">
                 <span className="text-[var(--tx3)]">Damage report deadline:</span>{" "}
                 <span className={deadlinePassed ? "text-[var(--tx3)]" : "text-red-500 font-medium"}>
                   {new Date(signOff.damage_report_deadline).toLocaleString()}
@@ -150,8 +150,8 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
 
           {/* Confirmations grid */}
           <div className="mt-2 pt-2 border-t border-[var(--brd)]">
-            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-1.5">Confirmations</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+            <p className="text-label font-bold uppercase text-[var(--tx3)] mb-1.5">Confirmations</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-caption">
               <div><span className="text-[var(--tx3)]">All items received:</span> <YesNo value={signOff.all_items_received} /></div>
               <div><span className="text-[var(--tx3)]">Condition accepted:</span> <YesNo value={signOff.condition_accepted} /></div>
               <div><span className="text-[var(--tx3)]">Walkthrough by client:</span> <YesNo value={signOff.walkthrough_conducted_by_client} /></div>
@@ -174,12 +174,12 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
           {(signOff.feedback_note || signOff.exceptions) && (
             <div className="mt-2 pt-2 border-t border-[var(--brd)]">
               {signOff.feedback_note && (
-                <p className="text-[11px] text-[var(--tx2)]">
+                <p className="text-caption text-[var(--tx2)]">
                   <span className="text-[var(--tx3)]">Feedback:</span> {signOff.feedback_note}
                 </p>
               )}
               {signOff.exceptions && (
-                <p className="text-[11px] text-red-500 mt-1">
+                <p className="text-caption text-red-500 mt-1">
                   <span className="text-[var(--tx3)]">Exceptions:</span> {signOff.exceptions}
                 </p>
               )}
@@ -191,16 +191,16 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {/* Skip records */}
       {skips.length > 0 && (
         <div className="bg-amber-50/50 border border-amber-200/50 rounded-lg p-3">
-          <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-amber-700 mb-2">
+          <h3 className="font-heading text-label font-bold tracking-wide uppercase text-amber-700 mb-2">
             Skip History ({skips.length})
           </h3>
           {skips.map((s) => (
-            <div key={s.id} className="text-[11px] mb-2 last:mb-0">
+            <div key={s.id} className="text-caption mb-2 last:mb-0">
               <p className="font-medium text-amber-800">
                 {SKIP_REASON_LABELS[s.skip_reason] || s.skip_reason}
               </p>
               {s.skip_note && <p className="text-amber-700">{s.skip_note}</p>}
-              <p className="text-amber-600/70 text-[10px]">
+              <p className="text-amber-600/70 text-label">
                 {new Date(s.created_at).toLocaleString()}
                 {s.location_lat != null && ` • ${s.location_lat.toFixed(4)}, ${s.location_lng?.toFixed(4)}`}
               </p>

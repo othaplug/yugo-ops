@@ -134,12 +134,18 @@ export function TrackLiveMapMapbox({
       const from = `${pickup.lng},${pickup.lat}`;
       const to = `${dropoff.lng},${dropoff.lat}`;
       const res = await fetch(`/api/mapbox/directions?from=${from}&to=${to}`);
+      if (!res.ok) {
+        console.warn("[TrackLiveMap] Directions API returned", res.status);
+        return;
+      }
       const data = await res.json();
       if (data?.coordinates && Array.isArray(data.coordinates)) {
         setRouteCoords(data.coordinates);
+      } else {
+        console.warn("[TrackLiveMap] No route coordinates returned");
       }
-    } catch {
-      // Fall back to straight line
+    } catch (err) {
+      console.warn("[TrackLiveMap] Failed to fetch directions, falling back to straight line", err);
     }
   }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -261,7 +267,7 @@ export function TrackLiveMapMapbox({
       {pickup && (
         <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="bottom">
           <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full bg-[#22C55E] border-2 border-white shadow-lg flex items-center justify-center text-[11px] font-bold text-white">A</div>
+            <div className="w-7 h-7 rounded-full bg-[#22C55E] border-2 border-white shadow-lg flex items-center justify-center text-caption font-bold text-white">A</div>
             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#22C55E] -mt-0.5" />
           </div>
         </Marker>
@@ -271,7 +277,7 @@ export function TrackLiveMapMapbox({
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
           <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full bg-[#EF4444] border-2 border-white shadow-lg flex items-center justify-center text-[11px] font-bold text-white">B</div>
+            <div className="w-7 h-7 rounded-full bg-[#EF4444] border-2 border-white shadow-lg flex items-center justify-center text-caption font-bold text-white">B</div>
             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#EF4444] -mt-0.5" />
           </div>
         </Marker>
@@ -292,12 +298,11 @@ export function TrackLiveMapMapbox({
         <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
           <div className="relative" style={{ transition: "transform 0.1s linear" }}>
             {/* Pulsing ring */}
-            <div className="absolute -inset-3 rounded-full bg-[#C9A962] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
+            <div className="absolute -inset-2.5 rounded-full bg-[#C9A962] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
             {/* Outer ring */}
-            <div className="w-14 h-14 rounded-full flex items-center justify-center border-3 border-[#C9A962] shadow-lg" style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.2), rgba(201,169,98,0.1))" }}>
-              {/* Truck icon + initial */}
+            <div className="w-11 h-11 rounded-full flex items-center justify-center border-2 border-[#C9A962] shadow-lg" style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.2), rgba(201,169,98,0.1))" }}>
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold text-white shadow-inner"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-ui font-bold text-white shadow-inner"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {(crewName || crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
@@ -305,7 +310,7 @@ export function TrackLiveMapMapbox({
             </div>
             {/* Speed indicator */}
             {speed != null && speed > 0 && (
-              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-section font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
               </div>
             )}

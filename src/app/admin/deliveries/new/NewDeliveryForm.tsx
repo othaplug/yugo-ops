@@ -27,21 +27,8 @@ interface Crew {
 
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Office", "Garage", "Other"];
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage", "Assembly Required"];
-const TIME_OPTIONS = (() => {
-  const times: string[] = [];
-  for (let h = 6; h <= 20; h++) {
-    for (const m of [0, 30]) {
-      if (h === 20 && m === 30) break;
-      const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      const ampm = h < 12 ? "AM" : "PM";
-      times.push(`${h12}:${m.toString().padStart(2, "0")} ${ampm}`);
-    }
-  }
-  return times;
-})();
-
 const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
 
 export default function NewDeliveryForm({ organizations, crews = [] }: { organizations: Org[]; crews?: Crew[] }) {
   const router = useRouter();
@@ -66,6 +53,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [scheduledDate, setScheduledDate] = useState(dateFromUrl);
   const [timeSlot, setTimeSlot] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
   const [deliveryWindow, setDeliveryWindow] = useState("");
   const [instructions, setInstructions] = useState("");
   const [accessNotes, setAccessNotes] = useState("");
@@ -166,6 +154,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         items: itemsList,
         scheduled_date: scheduledDate,
         time_slot: timeSlot || null,
+        preferred_time: preferredTime || null,
         delivery_window: deliveryWindow || null,
         status: "scheduled",
         category: projectType || org?.type || "retail",
@@ -194,12 +183,12 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       <div className="mb-4"><BackButton label="Back" /></div>
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-[12px] text-[var(--red)]">{error}</div>
+          <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-ui text-[var(--red)]">{error}</div>
         )}
 
         {/* Section: Project type + Client */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Project & Client</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Project & Client</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Project Type">
               <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
@@ -225,7 +214,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                         key={o.id}
                         type="button"
                         onClick={() => { setOrganizationId(o.id); setContactSearch(o.name); setShowDropdown(false); }}
-                        className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+                        className="w-full text-left px-3 py-2 text-ui text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
                       >
                         <span className="font-semibold">{o.name}</span>
                         {o.contact_name && <span className="text-[var(--tx3)]"> · {o.contact_name}</span>}
@@ -240,7 +229,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Customer details */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Customer / Recipient</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Customer / Recipient</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Name *">
               <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Full name" className={fieldInput} />
@@ -263,7 +252,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Addresses */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Addresses</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Addresses</h3>
           <Field label="Pickup Address">
             <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Warehouse, store, or pickup location" className={fieldInput} />
           </Field>
@@ -274,16 +263,16 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Schedule */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Schedule</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Schedule</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Date *">
               <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} />
             </Field>
             <Field label="Time Slot">
-              <select value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} className={fieldInput}>
-                <option value="">Select time…</option>
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <input type="time" value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} className={fieldInput} />
+            </Field>
+            <Field label="Preferred Time">
+              <input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput} />
             </Field>
             <Field label="Delivery Window">
               <select value={deliveryWindow} onChange={(e) => setDeliveryWindow(e.target.value)} className={fieldInput}>
@@ -296,7 +285,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Crew + Pricing */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Assignment & Pricing</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Assignment & Pricing</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {crews.length > 0 && (
               <Field label="Assign Crew">
@@ -322,12 +311,12 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Inventory */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory</h3>
           {inventory.length > 0 && (
             <ul className="space-y-1.5 mb-2">
               {inventory.map((item, idx) => (
                 <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-                  <span className="text-[12px] text-[var(--tx)]">
+                  <span className="text-ui text-[var(--tx)]">
                     <span className="text-[var(--tx3)]">{item.room}:</span> {item.item_name}
                   </span>
                   <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[var(--tx3)] hover:text-[var(--red)]" aria-label="Remove">
@@ -338,10 +327,10 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             </ul>
           )}
           <div className="flex items-center gap-2 mb-2">
-            <button type="button" onClick={() => setBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button type="button" onClick={() => setBulkMode(false)} className={`text-caption font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
               Single add
             </button>
-            <button type="button" onClick={() => setBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button type="button" onClick={() => setBulkMode(true)} className={`text-caption font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
               Bulk add
             </button>
           </div>
@@ -352,7 +341,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
               <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y`} />
-              <button type="button" onClick={addBulkItems} disabled={!bulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="button" onClick={addBulkItems} disabled={!bulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 <Plus className="w-[14px] h-[14px]" /> Add all
               </button>
             </div>
@@ -364,25 +353,25 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
               </select>
               <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item name" className={`${fieldInput} flex-1 min-w-[120px]`} />
               <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))} className={`${fieldInput} w-16`} />
-              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 <Plus className="w-[14px] h-[14px]" /> Add
               </button>
             </div>
           )}
-          <p className="text-[10px] text-[var(--tx3)]">Or paste a simple list below (one per line).</p>
+          <p className="text-label text-[var(--tx3)]">Or paste a simple list below (one per line).</p>
           <textarea value={itemsFallback} onChange={(e) => setItemsFallback(e.target.value)} rows={2} placeholder="Sofa x2&#10;Coffee Table" className={`${fieldInput} resize-y`} />
         </section>
 
         {/* Section: Complexity */}
         <section className="space-y-2">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Complexity Indicators</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Complexity Indicators</h3>
           <div className="flex flex-wrap gap-2">
             {COMPLEXITY_PRESETS.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => toggleComplexity(p)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-caption font-semibold border transition-colors ${
                   complexityIndicators.includes(p)
                     ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
                     : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/50"
@@ -394,13 +383,13 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
           </div>
           <label className="flex items-center gap-2.5 cursor-pointer mt-2">
             <input type="checkbox" checked={specialHandling} onChange={(e) => setSpecialHandling(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]" />
-            <span className="text-[12px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
+            <span className="text-ui text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
           </label>
         </section>
 
         {/* Section: Notes */}
         <section className="space-y-3">
-          <h3 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Notes & Instructions</h3>
+          <h3 className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Notes & Instructions</h3>
           <Field label="Delivery Instructions">
             <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder="Special delivery instructions…" className={`${fieldInput} resize-y`} />
           </Field>
@@ -416,7 +405,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 rounded-xl text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+          className="w-full px-4 py-3 rounded-xl text-ui font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
         >
           {loading ? "Creating…" : "Create Delivery"}
         </button>
@@ -428,7 +417,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{label}</label>
+      <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{label}</label>
       {children}
     </div>
   );

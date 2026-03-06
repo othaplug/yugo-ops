@@ -153,16 +153,54 @@ export async function notifyOnCheckpoint(
     ? `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`
     : `Your crew is on the way — ${formatJobId(moveCode || jobId, jobType)}`;
 
+  const isComplete = status === "completed";
+  const subtext = isComplete
+    ? "Thank you for choosing Yugo. We hope your move went smoothly."
+    : "Your crew has updated the status of your job.";
+  const ctaLabel = isComplete ? "View summary →" : "Track your job →";
+
   const html = `
-    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px">
-      <div style="text-align:center;margin-bottom:28px">
-        <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</div>
-      </div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${cfg.clientMessage || "Status update"}</h1>
-      <p style="font-size:14px;color:#B0ADA8;margin-bottom:24px">${status === "completed" ? "Thank you for choosing Yugo. We hope your move went smoothly." : "Your crew has updated the status of your job."}</p>
-      ${trackUrl ? `<a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">Track your job →</a>` : ""}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#F5F3EF;-webkit-font-smoothing:antialiased">
+<div style="max-width:560px;margin:0 auto;padding:40px 20px">
+  <!-- Header with logo -->
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;letter-spacing:2px;color:#2C3E2D">YUGO</div>
+    <div style="width:40px;height:2px;background:#C9A962;margin:12px auto 0"></div>
+  </div>
+
+  <!-- Card -->
+  <div style="background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+    <!-- Gold accent bar -->
+    <div style="height:3px;background:linear-gradient(90deg,#C9A962,#E8D5A3,#C9A962)"></div>
+
+    <div style="padding:36px 32px 32px">
+      <!-- Hero text -->
+      <h1 style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:26px;font-weight:400;line-height:1.3;margin:0 0 12px;color:#2C3E2D;text-align:center">${cfg.clientMessage || "Status update"}</h1>
+      <p style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;color:#6B7C6B;margin:0 0 28px;text-align:center">${subtext}</p>
+
+      <!-- CTA button -->
+      ${trackUrl ? `
+      <div style="text-align:center">
+        <a href="${trackUrl}" style="display:inline-block;font-family:'DM Sans',sans-serif;background:#C9A962;color:#1A1A1A;padding:14px 32px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;letter-spacing:0.3px">${ctaLabel}</a>
+      </div>` : ""}
     </div>
-  `;
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;margin-top:28px">
+    <p style="font-family:'DM Sans',sans-serif;font-size:11px;color:#A0A0A0;margin:0">Yugo Moving & Logistics · Toronto, Canada</p>
+  </div>
+</div>
+</body>
+</html>
+  `.trim();
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);

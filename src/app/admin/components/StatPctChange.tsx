@@ -12,7 +12,7 @@ export function StatPctChange({
 }) {
   if (previous === 0) {
     if (current === 0) return null;
-    return <span className={`text-[10px] font-medium text-[var(--grn)] ${className}`}>+100%</span>;
+    return <span className={`text-label font-medium text-[var(--grn)] ${className}`}>+100%</span>;
   }
   const pct = ((current - previous) / previous) * 100;
   if (pct === 0) return null;
@@ -20,7 +20,7 @@ export function StatPctChange({
   const color = isUp ? "text-[var(--grn)]" : "text-[var(--red)]";
   const sign = isUp ? "+" : "";
   return (
-    <span className={`text-[10px] font-medium ${color} ${className}`}>
+    <span className={`text-label font-medium ${color} ${className}`}>
       {sign}{pct.toFixed(1)}%
     </span>
   );

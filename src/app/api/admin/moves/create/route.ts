@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
         stage: "quote",
         scheduled_date: (body.scheduled_date as string)?.trim() || null,
         scheduled_time: (body.scheduled_time as string)?.trim() || null,
+        preferred_time: (body.preferred_time as string)?.trim() || null,
         arrival_window: (body.arrival_window as string)?.trim() || null,
         access_notes: accessNotesWithAccess,
         internal_notes: (body.internal_notes as string)?.trim() || null,

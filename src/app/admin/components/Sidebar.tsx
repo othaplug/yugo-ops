@@ -63,7 +63,7 @@ export default function Sidebar() {
       {/* Nav Sections */}
       {NAV.map((section) => (
         <div key={section.label} className="py-2">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-1">
+          <div className="text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-1">
             {section.label}
           </div>
           {section.items.map((item) => {
@@ -74,7 +74,7 @@ export default function Sidebar() {
               <Link
                 key={`${section.label}-${item.name}`}
                 href={item.href}
-                className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-lg text-[11px] font-medium border-l-2 -ml-px
+                className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-lg text-caption font-medium border-l-2 -ml-px
                   ${isActive 
                     ? "bg-[var(--gdim)] text-[var(--gold)] border-[var(--gold)] font-semibold" 
                     : "text-[var(--tx2)] border-transparent hover:bg-[var(--gdim)] hover:text-[var(--tx)]"
@@ -83,7 +83,7 @@ export default function Sidebar() {
                 <span className="text-[var(--tx3)]"><Icon name={item.icon} className="w-[15px] h-[15px]" /></span>
                 <span className="flex-1">{item.name}</span>
                 {badgeCount > 0 && (
-                  <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold px-1">{badgeCount}</span>
+                  <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-section font-bold px-1">{badgeCount}</span>
                 )}
               </Link>
             );
@@ -94,12 +94,12 @@ export default function Sidebar() {
       {/* User Footer */}
       <div className="mt-auto px-4 py-3 border-t border-[var(--brd)]">
         <Link href="/admin/settings" className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-lg hover:bg-[var(--gdim)]">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-[9px] font-bold text-white">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-section font-bold text-white">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
           <div>
-            <div className="text-[10px] font-semibold text-[var(--tx)]">Settings</div>
-            <div className="text-[8px] text-[var(--tx3)]">Account</div>
+            <div className="text-label font-semibold text-[var(--tx)]">Settings</div>
+            <div className="text-micro text-[var(--tx3)]">Account</div>
           </div>
         </Link>
       </div>

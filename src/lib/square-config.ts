@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Server-side Square config for payment form (app ID, location ID).
- * Reads env first, then platform_config so admin can set via Platform Settings.
+ * Resolution order: env vars → platform_config DB table.
  */
 export async function getSquarePaymentConfig(): Promise<{
   appId: string;
@@ -19,20 +19,27 @@ export async function getSquarePaymentConfig(): Promise<{
     ""
   ).trim();
 
-  if (!appId || !locationId) {
-    try {
-      const admin = createAdminClient();
-      const { data } = await admin
-        .from("platform_config")
-        .select("key, value")
-        .in("key", ["square_app_id", "square_location_id"]);
-      const cfg: Record<string, string> = {};
-      if (data) for (const row of data) cfg[row.key] = (row.value ?? "").trim();
-      if (!appId) appId = cfg.square_app_id ?? "";
-      if (!locationId) locationId = cfg.square_location_id ?? "";
-    } catch {
-      // keep env-only on error
+  if (appId && locationId) {
+    return { appId, locationId };
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("platform_config")
+      .select("key, value")
+      .in("key", ["square_app_id", "square_location_id"]);
+
+    if (error) {
+      console.error("[square-config] DB lookup failed:", error.message);
     }
+
+    const cfg: Record<string, string> = {};
+    if (data) for (const row of data) cfg[row.key] = (row.value ?? "").trim();
+    if (!appId) appId = cfg.square_app_id ?? "";
+    if (!locationId) locationId = cfg.square_location_id ?? "";
+  } catch (err) {
+    console.error("[square-config] Unexpected error reading platform_config:", err);
   }
 
   return { appId, locationId };

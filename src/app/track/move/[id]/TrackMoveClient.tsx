@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
@@ -26,6 +27,19 @@ import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 import TipScreen from "@/components/tracking/TipScreen";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+
+type SquareCard = {
+  attach: (selector: string) => Promise<void>;
+  tokenize: () => Promise<{ status: string; token?: string; errors?: { message: string }[] }>;
+  destroy: () => void;
+};
+type SquarePayments = { card: () => Promise<SquareCard> };
+declare global {
+  interface Window { Square?: { payments: (appId: string, locationId: string) => SquarePayments } }
+}
+
+const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
+const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
 
 const CHANGE_TYPES = [
   "Change move date",
@@ -273,8 +287,13 @@ export default function TrackMoveClient({
   const baseBalance = isPaid ? 0 : Number(move.estimate || 0);
   const feesDollars = isPaid ? 0 : (additionalFeesCents || 0) / 100;
   const totalBalance = baseBalance + feesDollars;
-  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
-  const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [sqSdkReady, setSqSdkReady] = useState(false);
+  const [sqCardReady, setSqCardReady] = useState(false);
+  const [sqProcessing, setSqProcessing] = useState(false);
+  const [sqError, setSqError] = useState<string | null>(null);
+  const sqCardRef = useRef<SquareCard | null>(null);
+  const sqInitRef = useRef(false);
 
   const crewMembers = Array.isArray(move.assigned_members) ? move.assigned_members : (crew?.members ?? []);
   const crewRoles = ["Lead", "Specialist", "Specialist", "Driver"];
@@ -313,35 +332,77 @@ export default function TrackMoveClient({
     }
   };
 
-  const handleMakePayment = async () => {
-    if (totalBalance <= 0) return;
-    setPaymentLinkError(null);
-    setPaymentLinkLoading(true);
+  const initSquareCard = useCallback(async (appId: string, locationId: string) => {
+    if (sqInitRef.current || !window.Square) return;
+    sqInitRef.current = true;
     try {
-      const res = await fetch(
-        `/api/track/moves/${move.id}/payment-link?token=${encodeURIComponent(token)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        }
-      );
-      const data = (await res.json().catch(() => ({}))) as { url?: string; paymentUrl?: string; error?: string; code?: string };
-      if (!res.ok) {
-        const msg = typeof data?.error === "string" ? data.error : "Unable to process payment right now. Please contact us to arrange payment.";
-        const withCode = data?.code ? `${msg} (Reference: ${data.code})` : msg;
-        setPaymentLinkError(withCode);
+      const payments = window.Square.payments(appId, locationId);
+      const card = await payments.card();
+      await card.attach("#sq-track-card");
+      sqCardRef.current = card;
+      setSqCardReady(true);
+    } catch {
+      setSqError("Unable to load payment form. Please refresh.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!sqSdkReady || sqInitRef.current || !paymentModalOpen) return;
+    const appId = process.env.NEXT_PUBLIC_SQUARE_APP_ID?.trim();
+    const locId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID?.trim();
+    if (appId && locId) { initSquareCard(appId, locId); return; }
+
+    let cancelled = false;
+    let attempts = 0;
+    const fetchCfg = () => {
+      attempts++;
+      fetch("/api/payments/config").then(r => r.json()).then(d => {
+        if (cancelled || sqInitRef.current) return;
+        const a = d.appId?.trim(); const l = d.locationId?.trim();
+        if (a && l) initSquareCard(a, l);
+        else if (attempts < 3) setTimeout(fetchCfg, 1500 * attempts);
+        else setSqError("Payment not configured. Please contact support.");
+      }).catch(() => { if (!cancelled && attempts < 3) setTimeout(fetchCfg, 1500 * attempts); else setSqError("Payment not configured."); });
+    };
+    fetchCfg();
+    return () => { cancelled = true; };
+  }, [sqSdkReady, initSquareCard, paymentModalOpen]);
+
+  useEffect(() => { return () => { sqCardRef.current?.destroy(); }; }, []);
+
+  const handleInlinePayment = async () => {
+    if (!sqCardRef.current || sqProcessing) return;
+    setSqProcessing(true);
+    setSqError(null);
+    try {
+      const tokenResult = await sqCardRef.current.tokenize();
+      if (tokenResult.status !== "OK" || !tokenResult.token) {
+        setSqError(tokenResult.errors?.[0]?.message ?? "Card verification failed.");
+        setSqProcessing(false);
         return;
       }
-      const url = data.url ?? data.paymentUrl;
-      if (url) window.location.href = url;
-      else setPaymentLinkError("Unable to process payment right now. Please contact us to arrange payment.");
-    } catch {
-      setPaymentLinkError("Unable to process payment right now. Please contact us to arrange payment.");
-    } finally {
-      setPaymentLinkLoading(false);
+      const res = await fetch("/api/payments/balance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceId: tokenResult.token, moveId: move.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setSqError(data.error ?? "Payment failed. Please try again.");
+        setSqProcessing(false);
+        return;
+      }
+      setPaymentRecorded(true);
+      setPaymentModalOpen(false);
+      toast("Payment successful!", "check");
+    } catch (e) {
+      setSqError(e instanceof Error ? e.message : "An unexpected error occurred.");
+      setSqProcessing(false);
     }
   };
+
+  const useSandbox = process.env.NEXT_PUBLIC_SQUARE_USE_SANDBOX === "true";
+  const squareScriptUrl = useSandbox ? SQUARE_SDK_SANDBOX : SQUARE_SDK_PRODUCTION;
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
@@ -375,13 +436,13 @@ export default function TrackMoveClient({
     return (
       <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: CREAM, color: FOREST }}>
         <div className="max-w-md w-full text-center">
-          <h1 className="font-hero text-[24px] sm:text-[28px] font-semibold mb-2" style={{ color: WINE }}>Your move is complete</h1>
-          <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
+          <h1 className="font-hero text-h1 sm:text-hero font-semibold mb-2" style={{ color: WINE }}>Your move is complete</h1>
+          <p className="text-body mb-6 opacity-80" style={{ color: FOREST }}>
             This tracking link has expired. If you need documents or support, please contact us.
           </p>
           <a
             href={`tel:${normalizePhone(YUGO_PHONE)}`}
-            className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
+            className="inline-block rounded-lg font-semibold text-ui py-2.5 px-4 transition-colors hover:opacity-90"
             style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
           >
             Contact us
@@ -396,17 +457,20 @@ export default function TrackMoveClient({
       {/* Header */}
       <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-3">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <YugoLogo size={20} variant="gold" />
-            <span className="text-[9px] font-bold px-2.5 py-1 rounded-full tracking-[2px] uppercase" style={{ color: WINE, backgroundColor: CREAM }}>
-              Your Move
+            <span
+              className="text-nano font-bold px-1.5 py-[2px] rounded tracking-[1.5px] uppercase leading-none"
+              style={{ color: CREAM, backgroundColor: `${GOLD}CC`, letterSpacing: "1.5px" }}
+            >
+              BETA
             </span>
           </div>
           {isInProgress && liveStage != null && (
             <button
               type="button"
               onClick={() => setActiveTab("track")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-label font-bold transition-colors"
               style={{ backgroundColor: `${GOLD}25`, color: GOLD }}
             >
               <span className="relative flex h-1.5 w-1.5">
@@ -439,14 +503,14 @@ export default function TrackMoveClient({
                 </div>
               </div>
               <div className="flex-1 min-w-0 text-center sm:text-left">
-                <h2 className="text-[20px] sm:text-[22px] font-bold font-heading" style={{ color: WINE }}>Payment received</h2>
-                <p className="text-[14px] mt-2 leading-relaxed opacity-80" style={{ color: FOREST }}>
+                <h2 className="text-h2-sm sm:text-h2 font-bold font-heading" style={{ color: WINE }}>Payment received</h2>
+                <p className="text-title mt-2 leading-relaxed opacity-80" style={{ color: FOREST }}>
                   Thank you for making your final payment. We are excited to see you on move day!
                 </p>
                 <button
                   type="button"
                   onClick={handleBackToDashboard}
-                  className="mt-5 rounded-lg font-semibold text-[14px] py-3 px-5 transition-colors shadow-sm hover:opacity-90"
+                  className="mt-5 rounded-lg font-semibold text-title py-3 px-5 transition-colors shadow-sm hover:opacity-90"
                   style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                 >
                   Back to main dashboard
@@ -465,8 +529,8 @@ export default function TrackMoveClient({
                 className={`rounded-xl border px-4 py-3 transition-opacity duration-300 ease-out ${showNotifyBanner ? "opacity-100" : "opacity-0"}`}
                 style={{ borderColor: `${GOLD}40`, backgroundColor: `${GOLD}12` }}
               >
-                <div className="text-[13px] font-semibold" style={{ color: FOREST }}>Your move status was recently updated</div>
-                <div className="text-[11px] mt-0.5 opacity-80" style={{ color: FOREST }}>View the details below to see what changed.</div>
+                <div className="text-body font-semibold" style={{ color: FOREST }}>Your move status was recently updated</div>
+                <div className="text-caption mt-0.5 opacity-80" style={{ color: FOREST }}>View the details below to see what changed.</div>
               </div>
             </div>
           </div>
@@ -475,13 +539,13 @@ export default function TrackMoveClient({
         {tippingEnabled && showTipBanner && !move.tip_charged_at && (
           <div className="mb-5 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ borderColor: `${GOLD}40`, backgroundColor: `${GOLD}12` }}>
             <div>
-              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>Leave a tip for your crew?</div>
-              <div className="text-[11px] mt-0.5 opacity-70" style={{ color: FOREST }}>100% goes directly to your movers.</div>
+              <div className="text-body font-semibold" style={{ color: FOREST }}>Leave a tip for your crew?</div>
+              <div className="text-caption mt-0.5 opacity-70" style={{ color: FOREST }}>100% goes directly to your movers.</div>
             </div>
             <button
               type="button"
               onClick={() => { setShowTipBanner(false); setShowTipScreen(true); }}
-              className="shrink-0 rounded-lg font-semibold text-[12px] py-2 px-4 transition-colors hover:opacity-90"
+              className="shrink-0 rounded-lg font-semibold text-ui py-2 px-4 transition-colors hover:opacity-90"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               Leave Tip
@@ -498,36 +562,36 @@ export default function TrackMoveClient({
               const subtitle = isCompleted ? "Here's your move summary" : "Here's your move overview";
               return (
                 <>
-                  <p className="text-[13px] mb-0.5 font-sans opacity-80" style={{ color: FOREST }}>
+                  <p className="text-body mb-0.5 font-sans opacity-80" style={{ color: FOREST }}>
                     {greeting}, {firstName}
                   </p>
-                  <h1 className="font-hero text-[22px] sm:text-[26px] leading-tight font-semibold tracking-tight" style={{ color: WINE }}>
+                  <h1 className="font-hero text-h2 sm:text-h1-lg leading-tight font-semibold tracking-tight" style={{ color: WINE }}>
                     {move.client_name || "Your Move"}
                   </h1>
-                  <p className="text-[13px] mt-0.5 font-sans opacity-80" style={{ color: FOREST }}>
+                  <p className="text-body mt-0.5 font-sans opacity-80" style={{ color: FOREST }}>
                     {displayCode} • {typeLabel}
                   </p>
-                  <p className="text-[12px] mt-0.5 font-sans opacity-80" style={{ color: FOREST }}>
+                  <p className="text-ui mt-0.5 font-sans opacity-80" style={{ color: FOREST }}>
                     {subtitle}
                   </p>
                 </>
               );
             })()}
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold shrink-0" style={{ backgroundColor: `${GOLD}20`, color: WINE }}>
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-semibold shrink-0" style={{ backgroundColor: `${GOLD}20`, color: WINE }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} aria-hidden />
             {getStatusLabel(statusVal)}
           </span>
         </div>
 
-        {/* Main countdown card */}
-        <div className="rounded-[16px] border p-6 sm:p-8 mb-5 bg-white" style={{ borderColor: `${FOREST}20`, backgroundColor: CREAM }}>
+        {/* Main countdown section */}
+        <div className="py-4 sm:py-6 mb-3">
           {isCompleted ? (
             <div className="text-center">
-              <div className="font-hero text-[24px] sm:text-[28px] leading-tight font-semibold" style={{ color: WINE }}>
+              <div className="font-hero text-h1 sm:text-hero leading-tight font-semibold" style={{ color: WINE }}>
                 Your Move is Complete
               </div>
-              <p className="mt-2 text-[13px] font-sans opacity-80" style={{ color: FOREST }}>
+              <p className="mt-2 text-body font-sans opacity-80" style={{ color: FOREST }}>
                 Please tell us about your move.
               </p>
               <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -535,7 +599,7 @@ export default function TrackMoveClient({
                   href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-lg font-semibold text-[12px] py-2.5 px-5 transition-colors hover:opacity-90 border-2"
+                  className="inline-flex items-center justify-center rounded-lg font-semibold text-ui py-2.5 px-5 transition-colors hover:opacity-90 border-2"
                   style={{ backgroundColor: GOLD, color: "#1A1A1A", borderColor: GOLD }}
                 >
                   Leave a Review
@@ -543,7 +607,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={() => setTipModalOpen(true)}
-                  className="inline-flex items-center justify-center rounded-lg font-semibold text-[12px] py-2.5 px-5 transition-colors hover:opacity-90 border-2"
+                  className="inline-flex items-center justify-center rounded-lg font-semibold text-ui py-2.5 px-5 transition-colors hover:opacity-90 border-2"
                   style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
                 >
                   Leave a Tip
@@ -553,8 +617,8 @@ export default function TrackMoveClient({
           ) : daysUntil === 0 ? (
             <>
               <div className="text-center">
-                <div className="font-hero text-[28px] md:text-[32px] leading-tight font-semibold" style={{ color: GOLD }}>Today&apos;s the day!</div>
-                <div className="mt-1 text-[13px] font-sans opacity-80" style={{ color: FOREST }}>
+                <div className="font-hero text-hero md:text-price-xs leading-tight font-semibold" style={{ color: GOLD }}>Today&apos;s the day!</div>
+                <div className="mt-1 text-body font-sans opacity-80" style={{ color: FOREST }}>
                   {isInProgress && liveStage != null
                     ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
                     : arrivalWindow
@@ -562,7 +626,7 @@ export default function TrackMoveClient({
                       : "Your crew is on the way"}
                 </div>
                 {crewMembers.length > 0 && (
-                  <div className="mt-2 text-[12px] text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
+                  <div className="mt-2 text-ui text-[#2D2D2D] font-sans">Crew: {crewMembers.join(", ")}</div>
                 )}
               </div>
               {/* Stage progress bar: En Route → Loading → In Transit (to destination) → Unloading → Complete */}
@@ -598,22 +662,22 @@ export default function TrackMoveClient({
             </>
           ) : daysUntil != null && daysUntil < 0 && !isInProgress ? (
             <div className="text-center">
-              <div className="font-hero text-[20px] sm:text-[24px] leading-tight font-semibold" style={{ color: WINE }}>
+              <div className="font-hero text-h2-sm sm:text-h1 leading-tight font-semibold" style={{ color: WINE }}>
                 Move day has passed
               </div>
-              <p className="mt-1 text-[13px] font-sans opacity-80" style={{ color: FOREST }}>
+              <p className="mt-1 text-body font-sans opacity-80" style={{ color: FOREST }}>
                 Your move will be marked complete soon. Contact us if you have questions.
               </p>
             </div>
           ) : (
             <>
               <div className="text-center">
-                <div className="font-hero text-[56px] sm:text-[64px] md:text-[72px] leading-none font-semibold tracking-tight" style={{ color: GOLD }}>
+                <div className="font-hero text-display sm:text-display-lg md:text-display-xl leading-none font-semibold tracking-tight" style={{ color: GOLD }}>
                   {daysUntil ?? "—"}
                 </div>
-                <div className="mt-1 text-[13px] font-sans" style={{ color: FOREST }}>days until move day</div>
+                <div className="mt-1 text-body font-sans" style={{ color: FOREST }}>days until move day</div>
                 {scheduledDate && (
-                  <div className="mt-3 text-[14px] font-sans">
+                  <div className="mt-3 text-title font-sans">
                     <span className="font-semibold" style={{ color: FOREST }}>
                       {scheduledDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </span>
@@ -658,51 +722,40 @@ export default function TrackMoveClient({
         </div>
 
         {!isCompleted && showAsMoveDay && (
-          <button
-            type="button"
-            onClick={() => setActiveTab("track")}
-            className="mb-5 w-full rounded-2xl border-2 p-4 sm:p-5 text-left transition-all hover:shadow-md"
-            style={{ borderColor: isInProgress && liveStage != null ? `#22C55E50` : `${GOLD}40`, backgroundColor: "white" }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: isInProgress && liveStage != null ? "rgba(34,197,94,0.1)" : `${GOLD}12` }}
-                >
-                  <span className="relative flex h-3 w-3">
-                    {isInProgress && liveStage != null && (
-                      <>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
-                      </>
-                    )}
-                    {(!isInProgress || liveStage == null) && (
-                      <span className="inline-flex rounded-full h-3 w-3" style={{ backgroundColor: GOLD, opacity: 0.6 }} />
-                    )}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-[14px] font-bold" style={{ color: FOREST }}>
-                    {isInProgress && liveStage != null
-                      ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "Live"
-                      : "Live Tracking"}
-                  </h3>
-                  <p className="text-[12px] mt-0.5 opacity-70" style={{ color: FOREST }}>
-                    {isInProgress && liveStage != null
-                      ? "See your crew on the map"
-                      : "Map will appear when your crew starts"}
-                  </p>
-                </div>
-              </div>
-              <div
-                className="shrink-0 rounded-xl font-bold text-[12px] py-2.5 px-5 transition-colors"
-                style={{ backgroundColor: isInProgress && liveStage != null ? "#22C55E" : GOLD, color: isInProgress && liveStage != null ? "white" : "#1A1A1A" }}
-              >
-                View map
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                {isInProgress && liveStage != null ? (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
+                  </>
+                ) : (
+                  <span className="inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: GOLD, opacity: 0.6 }} />
+                )}
+              </span>
+              <div className="min-w-0">
+                <span className="text-body font-semibold" style={{ color: FOREST }}>
+                  {isInProgress && liveStage != null
+                    ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "Live"
+                    : "Live"}
+                </span>
+                <span className="text-caption ml-1.5 opacity-60" style={{ color: FOREST }}>
+                  {isInProgress && liveStage != null
+                    ? "See your crew on the map"
+                    : "Map appears when crew starts"}
+                </span>
               </div>
             </div>
-          </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("track")}
+              className="shrink-0 rounded-full font-semibold text-caption py-1.5 px-4 transition-all hover:opacity-90"
+              style={{ backgroundColor: isInProgress && liveStage != null ? "#22C55E" : GOLD, color: isInProgress && liveStage != null ? "white" : "#1A1A1A" }}
+            >
+              View
+            </button>
+          </div>
         )}
 
         {/* Tabs - horizontally scrollable on mobile with fade hint */}
@@ -716,7 +769,7 @@ export default function TrackMoveClient({
                 key={t.key}
                 type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`shrink-0 px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 rounded-t-lg transition-colors ${
+                className={`shrink-0 px-4 py-3 text-ui font-semibold whitespace-nowrap border-b-2 rounded-t-lg transition-colors ${
                   activeTab === t.key
                     ? "text-[#B8962E] border-[#B8962E]"
                     : "border-transparent opacity-60 hover:opacity-80"
@@ -740,7 +793,7 @@ export default function TrackMoveClient({
           <div className="space-y-0">
             {/* Move Timeline - Confirmed → Scheduled → In Progress → Completed (Paid shown in financial section) */}
             <div className="pt-6">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Move Timeline</h3>
+              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Move Timeline</h3>
               <div className="relative pl-7 before:content-[''] before:absolute before:left-[11px] before:top-0 before:bottom-0 before:w-0.5 before:bg-[#2C3E2D20] before:transition-colors before:duration-500">
                 {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s, i) => {
                   const statusOrder = ["confirmed", "scheduled", "paid", "in_progress", "completed"];
@@ -783,10 +836,10 @@ export default function TrackMoveClient({
                             : "w-3 h-3 bg-[#2C3E2D20] group-hover:bg-[#2C3E2D40]"
                         }`}
                       />
-                      <div className={`text-[13px] font-semibold transition-colors duration-300 ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
+                      <div className={`text-body font-semibold transition-colors duration-300 ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[#F59E0B]" : "text-[#999]"}`}>
                         {s.label}
                       </div>
-                      <div className="text-[11px] mt-0.5 opacity-80" style={{ color: FOREST }}>
+                      <div className="text-caption mt-0.5 opacity-80" style={{ color: FOREST }}>
                         {state === "done" ? (completedDate ? `Completed ${completedDate}` : sub.done) : state === "act" ? (actDateStr ? `In Progress — ${actDateStr}` : sub.act) : sub.wait}
                       </div>
                     </div>
@@ -796,7 +849,7 @@ export default function TrackMoveClient({
             </div>
 
             {additionalFeesCents > 0 && !isPaid && (
-              <div className="border-t border-[var(--brd)]/30 pt-6 pb-4 text-[13px]" style={{ color: FOREST }}>
+              <div className="border-t border-[var(--brd)]/30 pt-6 pb-4 text-body" style={{ color: FOREST }}>
                 You have additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved change requests and extra items. Pay below.
               </div>
             )}
@@ -808,13 +861,13 @@ export default function TrackMoveClient({
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${GOLD}12` }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                   </div>
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Inventory</h3>
+                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Inventory</h3>
                 </div>
                 {(dashboardInventory?.items?.length ?? 0) > 0 || (dashboardInventory?.extraItems?.length ?? 0) > 0 ? (
                   <button
                     type="button"
                     onClick={() => setActiveTab("inv")}
-                    className="text-[12px] font-semibold hover:opacity-80 transition-opacity flex items-center gap-1"
+                    className="text-ui font-semibold hover:opacity-80 transition-opacity flex items-center gap-1"
                     style={{ color: GOLD }}
                   >
                     View all
@@ -825,15 +878,15 @@ export default function TrackMoveClient({
               {dashboardInventory === null ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-                  <p className="text-[12px] opacity-60" style={{ color: FOREST }}>Loading inventory...</p>
+                  <p className="text-ui opacity-60" style={{ color: FOREST }}>Loading inventory...</p>
                 </div>
               ) : (dashboardInventory?.items?.length ?? 0) === 0 && (dashboardInventory?.extraItems?.length ?? 0) === 0 ? (
                 <div>
-                  <p className="text-[12px] opacity-80" style={{ color: FOREST }}>No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
+                  <p className="text-ui opacity-80" style={{ color: FOREST }}>No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
                   <button
                     type="button"
                     onClick={() => setActiveTab("inv")}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-[11px] font-semibold transition-colors"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-caption font-semibold transition-colors"
                     style={{ borderColor: `${GOLD}50`, color: GOLD }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -843,15 +896,15 @@ export default function TrackMoveClient({
               ) : (
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[20px] font-bold font-hero" style={{ color: GOLD }}>
+                    <span className="text-h2-sm font-bold font-hero" style={{ color: GOLD }}>
                       {(dashboardInventory?.items?.length ?? 0) + (dashboardInventory?.extraItems?.length ?? 0)}
                     </span>
-                    <span className="text-[12px] opacity-70" style={{ color: FOREST }}>items on file</span>
+                    <span className="text-ui opacity-70" style={{ color: FOREST }}>items on file</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab("inv")}
-                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-[11px] font-semibold transition-colors"
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-caption font-semibold transition-colors"
                     style={{ borderColor: `${GOLD}50`, color: GOLD }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -864,15 +917,15 @@ export default function TrackMoveClient({
             {/* Move Details + Your Crew grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-[var(--brd)]/30">
               <div>
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Move Details</h3>
+                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Move Details</h3>
                 <div className="space-y-3">
                   {scheduledDate && (
                     <div>
-                      <div className="text-[10px] font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>Date & Time</div>
-                      <div className="text-[13px]" style={{ color: FOREST }}>
+                      <div className="text-label font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>Date & Time</div>
+                      <div className="text-body" style={{ color: FOREST }}>
                         {formatMoveDate(scheduledDate)}
                         {arrivalWindow && (
-                          <span className="block text-[12px] mt-0.5 opacity-80" style={{ color: FOREST }}>
+                          <span className="block text-ui mt-0.5 opacity-80" style={{ color: FOREST }}>
                             Crew arrives between {arrivalWindow}
                           </span>
                         )}
@@ -880,41 +933,35 @@ export default function TrackMoveClient({
                     </div>
                   )}
                   <div>
-                    <div className="text-[10px] font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>From</div>
-                    <div className="text-[13px]" style={{ color: FOREST }}>{move.from_address || "—"}</div>
+                    <div className="text-label font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>From</div>
+                    <div className="text-body" style={{ color: FOREST }}>{move.from_address || "—"}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>To</div>
-                    <div className="text-[13px]" style={{ color: FOREST }}>{move.to_address || move.delivery_address || "—"}</div>
+                    <div className="text-label font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>To</div>
+                    <div className="text-body" style={{ color: FOREST }}>{move.to_address || move.delivery_address || "—"}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>Total Balance</div>
-                    <div className="font-hero text-[18px] font-bold" style={{ color: GOLD }}>{formatCurrency(totalBalance)}</div>
-                    {totalBalance > 0 && <div className="text-[10px] opacity-60" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>}
+                    <div className="text-label font-semibold uppercase mb-0.5 opacity-80" style={{ color: FOREST }}>Total Balance</div>
+                    <div className="font-hero text-h3-lg font-bold" style={{ color: GOLD }}>{formatCurrency(totalBalance)}</div>
+                    {totalBalance > 0 && <div className="text-label opacity-60" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>}
                   </div>
                   {totalBalance > 0 && (
                     <div className="pt-2">
                       <button
                         type="button"
-                        onClick={handleMakePayment}
-                        disabled={paymentLinkLoading}
-                        className="w-full rounded-lg font-semibold text-[13px] py-3 px-4 disabled:opacity-60 transition-colors hover:opacity-90"
+                        onClick={() => setPaymentModalOpen(true)}
+                        className="w-full rounded-lg font-semibold text-body py-3 px-4 transition-colors hover:opacity-90"
                         style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                       >
-                        {paymentLinkLoading ? "Preparing…" : "Make Payment"}
+                        Make Payment
                       </button>
-                      {paymentLinkError && (
-                        <p className="mt-2 text-[11px] text-red-600" role="alert">
-                          {paymentLinkError}
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
                   Your Crew ({crewMembers.length})
                 </h3>
                 {crewMembers.length > 0 ? (
@@ -922,26 +969,26 @@ export default function TrackMoveClient({
                     <div className="space-y-4">
                       {crewMembers.map((name: string, i: number) => (
                         <div key={i} className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#C19A6B] flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#C19A6B] flex items-center justify-center text-caption font-bold text-white shrink-0">
                             {(name || "?").slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-[13px] font-bold" style={{ color: FOREST }}>{name}</div>
-                            <div className="text-[11px] opacity-80" style={{ color: FOREST }}>{crewRoles[i] || "Team member"}</div>
+                            <div className="text-body font-bold" style={{ color: FOREST }}>{name}</div>
+                            <div className="text-caption opacity-80" style={{ color: FOREST }}>{crewRoles[i] || "Team member"}</div>
                           </div>
                         </div>
                       ))}
                     </div>
                     <div className="mt-4 pt-4 border-t border-[#E0E0E0]">
-                      <div className="text-[13px] font-bold" style={{ color: FOREST }}>Coordinator</div>
-                      <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="inline-flex items-center gap-2 text-[13px] mt-0.5 transition-colors hover:opacity-80" style={{ color: FOREST }} onMouseOver={(e) => { e.currentTarget.style.color = GOLD; }} onMouseOut={(e) => { e.currentTarget.style.color = FOREST; }}>
+                      <div className="text-body font-bold" style={{ color: FOREST }}>Coordinator</div>
+                      <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="inline-flex items-center gap-2 text-body mt-0.5 transition-colors hover:opacity-80" style={{ color: FOREST }} onMouseOver={(e) => { e.currentTarget.style.color = GOLD; }} onMouseOut={(e) => { e.currentTarget.style.color = FOREST; }}>
                         <YugoLogo size={14} variant="gold" onLightBackground />
                         <span>{formatPhone(YUGO_PHONE)}</span>
                       </a>
                     </div>
                   </>
                 ) : (
-                  <div className="text-[12px] opacity-80" style={{ color: FOREST }}>
+                  <div className="text-ui opacity-80" style={{ color: FOREST }}>
                     Your crew will be assigned as your move is confirmed. Contact us with any questions.
                   </div>
                 )}
@@ -950,8 +997,8 @@ export default function TrackMoveClient({
 
             {changeSubmitted && (
               <div className="border-t border-[var(--brd)]/30 pt-6">
-                <div className="text-[13px] font-semibold" style={{ color: FOREST }}>Change request submitted</div>
-                <div className="text-[12px] mt-0.5 opacity-80" style={{ color: FOREST }}>Your coordinator will reach out within 10 minutes.</div>
+                <div className="text-body font-semibold" style={{ color: FOREST }}>Change request submitted</div>
+                <div className="text-ui mt-0.5 opacity-80" style={{ color: FOREST }}>Your coordinator will reach out within 10 minutes.</div>
               </div>
             )}
 
@@ -961,7 +1008,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={() => setChangeModalOpen(true)}
-                  className="w-full rounded-xl border-2 border-dashed py-4 text-[12px] font-semibold transition-colors flex items-center justify-center gap-2 bg-white"
+                  className="w-full rounded-xl border-2 border-dashed py-4 text-ui font-semibold transition-colors flex items-center justify-center gap-2 bg-white"
                   style={{ borderColor: `${FOREST}30`, color: FOREST }}
                   onMouseOver={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
                   onMouseOut={(e) => { e.currentTarget.style.borderColor = `${FOREST}30`; e.currentTarget.style.color = FOREST; }}
@@ -971,7 +1018,7 @@ export default function TrackMoveClient({
               </div>
             )}
             {isCompleted && (
-              <p className="text-[12px] opacity-80" style={{ color: FOREST }}>Change requests are closed for completed moves.</p>
+              <p className="text-ui opacity-80" style={{ color: FOREST }}>Change requests are closed for completed moves.</p>
             )}
           </div>
         )}
@@ -980,14 +1027,14 @@ export default function TrackMoveClient({
           <div className="space-y-5">
             {isCompleted ? (
               <div className="rounded-xl border bg-white p-6 sm:p-8 text-center" style={{ borderColor: `${FOREST}20` }}>
-                <h2 className="font-hero text-[20px] font-semibold" style={{ color: WINE }}>Your move is complete</h2>
-                <p className="mt-2 text-[13px] opacity-80" style={{ color: FOREST }}>Thank you for choosing us. We hope your move went smoothly.</p>
+                <h2 className="font-hero text-h2-sm font-semibold" style={{ color: WINE }}>Your move is complete</h2>
+                <p className="mt-2 text-body opacity-80" style={{ color: FOREST }}>Thank you for choosing us. We hope your move went smoothly.</p>
                 <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <a
                     href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-lg font-semibold text-[12px] py-2.5 px-5 transition-colors hover:opacity-90 border-2"
+                    className="inline-flex items-center justify-center rounded-lg font-semibold text-ui py-2.5 px-5 transition-colors hover:opacity-90 border-2"
                     style={{ backgroundColor: GOLD, color: "#1A1A1A", borderColor: GOLD }}
                   >
                     Leave a Review
@@ -995,7 +1042,7 @@ export default function TrackMoveClient({
                   <button
                     type="button"
                     onClick={() => setTipModalOpen(true)}
-                    className="inline-flex items-center justify-center rounded-lg font-semibold text-[12px] py-2.5 px-5 transition-colors hover:opacity-90 border-2"
+                    className="inline-flex items-center justify-center rounded-lg font-semibold text-ui py-2.5 px-5 transition-colors hover:opacity-90 border-2"
                     style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
                   >
                     Leave a Tip
@@ -1034,8 +1081,8 @@ export default function TrackMoveClient({
 
         {activeTab === "msg" && (
           <div className="pt-6 border-t border-[var(--brd)]/30">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Messages with your coordinator</h3>
-            <div className="space-y-1.5 text-[13px] mb-4" style={{ color: FOREST }}>
+            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Messages with your coordinator</h3>
+            <div className="space-y-1.5 text-body mb-4" style={{ color: FOREST }}>
               <p>Phone: <a href={`tel:${normalizePhone(YUGO_PHONE)}`} className="hover:underline font-medium" style={{ color: GOLD }}>{formatPhone(YUGO_PHONE)}</a></p>
               <p>Email: <a href={`mailto:${YUGO_EMAIL}`} className="hover:underline font-medium" style={{ color: GOLD }}>{YUGO_EMAIL}</a></p>
             </div>
@@ -1049,10 +1096,10 @@ export default function TrackMoveClient({
         <div className="flex items-center justify-center gap-2 mb-3">
           <YugoLogo size={16} variant="gold" onLightBackground />
         </div>
-        <p className="text-[11px] mb-2 opacity-60" style={{ color: FOREST }}>
+        <p className="text-caption mb-2 opacity-60" style={{ color: FOREST }}>
           Premium Moving · Toronto &amp; GTA
         </p>
-        <p className="text-[10px] opacity-50" style={{ color: FOREST }}>
+        <p className="text-label opacity-50" style={{ color: FOREST }}>
           <Link href="/privacy" className="hover:underline font-medium" style={{ color: GOLD }}>Privacy</Link>
           <span className="mx-2">·</span>
           <Link href="/terms" className="hover:underline font-medium" style={{ color: GOLD }}>Terms</Link>
@@ -1070,14 +1117,14 @@ export default function TrackMoveClient({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 sm:p-8" style={{ backgroundColor: CREAM }}>
-              <h3 className="font-hero text-[20px] font-semibold text-center" style={{ color: WINE }}>
+              <h3 className="font-hero text-h2-sm font-semibold text-center" style={{ color: WINE }}>
                 Leave a Tip
               </h3>
-              <p className="mt-2 text-center text-[12px] opacity-90" style={{ color: FOREST }}>
+              <p className="mt-2 text-center text-ui opacity-90" style={{ color: FOREST }}>
                 Thank your crew. This will be charged to the card on your file.
               </p>
               <div className="mt-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-3 opacity-80" style={{ color: FOREST }}>
+                <p className="text-label font-bold uppercase tracking-wider mb-3 opacity-80" style={{ color: FOREST }}>
                   Amount
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1086,7 +1133,7 @@ export default function TrackMoveClient({
                       key={d}
                       type="button"
                       onClick={() => { setTipPreset(d); setTipCustomDollars(""); }}
-                      className="rounded-xl border-2 px-4 py-2.5 text-[14px] font-semibold transition-all"
+                      className="rounded-xl border-2 px-4 py-2.5 text-title font-semibold transition-all"
                       style={{
                         borderColor: tipPreset === d ? GOLD : `${FOREST}30`,
                         color: tipPreset === d ? WINE : FOREST,
@@ -1099,7 +1146,7 @@ export default function TrackMoveClient({
                   <button
                     type="button"
                     onClick={() => { setTipPreset(null); setTipCustomDollars(""); }}
-                    className="rounded-xl border-2 px-4 py-2.5 text-[14px] font-semibold transition-all"
+                    className="rounded-xl border-2 px-4 py-2.5 text-title font-semibold transition-all"
                     style={{
                       borderColor: tipPreset === null ? GOLD : `${FOREST}30`,
                       color: tipPreset === null ? WINE : FOREST,
@@ -1113,7 +1160,7 @@ export default function TrackMoveClient({
                   <div className="mt-3">
                     <label className="sr-only">Custom amount ($)</label>
                     <div className="flex items-center rounded-xl border-2 px-4 py-2.5" style={{ borderColor: `${FOREST}30` }}>
-                      <span className="text-[14px] font-semibold mr-2" style={{ color: FOREST }}>$</span>
+                      <span className="text-title font-semibold mr-2" style={{ color: FOREST }}>$</span>
                       <input
                         type="number"
                         min={1}
@@ -1121,7 +1168,7 @@ export default function TrackMoveClient({
                         placeholder="Enter amount"
                         value={tipCustomDollars}
                         onChange={(e) => setTipCustomDollars(e.target.value.replace(/[^0-9.]/g, ""))}
-                        className="flex-1 bg-transparent text-[14px] font-semibold outline-none min-w-0"
+                        className="flex-1 bg-transparent text-title font-semibold outline-none min-w-0"
                         style={{ color: FOREST }}
                       />
                     </div>
@@ -1132,7 +1179,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={() => !tipSubmitting && setTipModalOpen(false)}
-                  className="flex-1 rounded-xl border-2 py-3 text-[13px] font-semibold transition-colors"
+                  className="flex-1 rounded-xl border-2 py-3 text-body font-semibold transition-colors"
                   style={{ borderColor: `${FOREST}30`, color: FOREST }}
                 >
                   Cancel
@@ -1141,7 +1188,7 @@ export default function TrackMoveClient({
                   type="button"
                   onClick={handleTipSubmit}
                   disabled={tipSubmitting || tipAmountCents < 100}
-                  className="flex-1 rounded-xl py-3 text-[13px] font-bold transition-colors disabled:opacity-50 hover:opacity-90"
+                  className="flex-1 rounded-xl py-3 text-body font-bold transition-colors disabled:opacity-50 hover:opacity-90"
                   style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                 >
                   {tipSubmitting ? "Processing…" : `Pay ${formatCurrency(tipAmountCents / 100)}`}
@@ -1156,17 +1203,17 @@ export default function TrackMoveClient({
       {changeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl border bg-white p-5" style={{ borderColor: `${FOREST}20` }}>
-            <h3 className="mb-3 text-[16px] font-bold font-heading" style={{ color: WINE }}>Request a Change</h3>
-            <p className="mb-4 text-[12px] leading-relaxed opacity-80" style={{ color: FOREST }}>
+            <h3 className="mb-3 text-h3 font-bold font-heading" style={{ color: WINE }}>Request a Change</h3>
+            <p className="mb-4 text-ui leading-relaxed opacity-80" style={{ color: FOREST }}>
               Submit a change request. Your coordinator will review and confirm.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>Type of Change</label>
+                <label className="mb-1 block text-label font-bold uppercase opacity-80" style={{ color: FOREST }}>Type of Change</label>
                 <select
                   value={changeType}
                   onChange={(e) => setChangeType(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-[12px] outline-none focus:ring-2"
+                  className="w-full rounded-lg border px-3 py-2 text-ui outline-none focus:ring-2"
                   style={{ borderColor: `${FOREST}25`, backgroundColor: CREAM, color: FOREST }}
                 >
                   {CHANGE_TYPES.map((t) => (
@@ -1182,12 +1229,12 @@ export default function TrackMoveClient({
                     onChange={(r) => setChangeAddress(r.fullAddress)}
                     placeholder="Enter new destination address"
                     label="New Address"
-                    className="w-full rounded-lg border px-3 py-2 text-[12px] outline-none focus:ring-2"
+                    className="w-full rounded-lg border px-3 py-2 text-ui outline-none focus:ring-2"
                   />
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>
+                <label className="mb-1 block text-label font-bold uppercase opacity-80" style={{ color: FOREST }}>
                   {changeType === "Change destination address" ? "Additional details (optional)" : "Details"}
                 </label>
                 <textarea
@@ -1195,18 +1242,18 @@ export default function TrackMoveClient({
                   onChange={(e) => setChangeDesc(e.target.value)}
                   placeholder={changeType === "Change destination address" ? "e.g. Access code, special instructions..." : "Describe what you need changed..."}
                   rows={changeType === "Change destination address" ? 2 : 4}
-                  className="w-full resize-y rounded-lg border px-3 py-2 text-[12px] placeholder:opacity-60 outline-none focus:ring-2"
+                  className="w-full resize-y rounded-lg border px-3 py-2 text-ui placeholder:opacity-60 outline-none focus:ring-2"
                   style={{ borderColor: `${FOREST}25`, backgroundColor: CREAM, color: FOREST }}
                 />
               </div>
               <div>
-                <label className="mb-2 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>Urgency</label>
+                <label className="mb-2 block text-label font-bold uppercase opacity-80" style={{ color: FOREST }}>Urgency</label>
                 <div className="flex gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80" style={{ color: FOREST }}>
+                  <label className="flex cursor-pointer items-center gap-2 text-ui opacity-80" style={{ color: FOREST }}>
                     <input type="radio" name="urgency" checked={!changeUrgent} onChange={() => setChangeUrgent(false)} className="accent-[#B8962E]" />
                     Normal
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80" style={{ color: FOREST }}>
+                  <label className="flex cursor-pointer items-center gap-2 text-ui opacity-80" style={{ color: FOREST }}>
                     <input type="radio" name="urgency" checked={changeUrgent} onChange={() => setChangeUrgent(true)} className="accent-[#B8962E]" />
                     Urgent
                   </label>
@@ -1216,7 +1263,7 @@ export default function TrackMoveClient({
                 <button
                   type="button"
                   onClick={() => setChangeModalOpen(false)}
-                  className="flex-1 rounded-lg border py-2.5 text-[12px] font-semibold transition-colors"
+                  className="flex-1 rounded-lg border py-2.5 text-ui font-semibold transition-colors"
                   style={{ borderColor: `${FOREST}25`, color: FOREST }}
                 >
                   Cancel
@@ -1228,7 +1275,7 @@ export default function TrackMoveClient({
                     changeSubmitting ||
                     (changeType === "Change destination address" ? !changeAddress.trim() : !changeDesc.trim())
                   }
-                  className="flex-1 rounded-lg py-2.5 text-[12px] font-bold disabled:opacity-50 transition-colors hover:opacity-90"
+                  className="flex-1 rounded-lg py-2.5 text-ui font-bold disabled:opacity-50 transition-colors hover:opacity-90"
                   style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                 >
                   {changeSubmitting ? "Submitting…" : "Submit"}
@@ -1237,6 +1284,81 @@ export default function TrackMoveClient({
             </div>
           </div>
         </div>
+      )}
+      {/* Payment modal with inline card form */}
+      {paymentModalOpen && (
+        <>
+          <Script src={squareScriptUrl} strategy="afterInteractive" onLoad={() => setSqSdkReady(true)} onError={() => setSqError("Payment script failed to load.")} />
+          <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPaymentModalOpen(false)} />
+            <div className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto safe-area-bottom">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-h3 font-bold" style={{ color: FOREST }}>Pay Balance</h2>
+                  <button type="button" onClick={() => setPaymentModalOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F0F0F0] transition-colors">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+
+                <div className="rounded-xl border p-4 mb-4" style={{ borderColor: `${FOREST}15`, backgroundColor: `${CREAM}` }}>
+                  <div className="flex justify-between text-body mb-1.5" style={{ color: FOREST }}>
+                    <span className="opacity-70">Move balance</span>
+                    <span className="font-semibold">{formatCurrency(totalBalance)}</span>
+                  </div>
+                  <div className="flex justify-between text-body mb-1.5" style={{ color: FOREST }}>
+                    <span className="opacity-70">HST (13%)</span>
+                    <span className="font-semibold">{formatCurrency(calcHST(totalBalance))}</span>
+                  </div>
+                  <div className="border-t pt-2 mt-2 flex justify-between text-title font-bold" style={{ borderColor: `${FOREST}15`, color: GOLD }}>
+                    <span>Total</span>
+                    <span>{formatCurrency(totalBalance + calcHST(totalBalance))}</span>
+                  </div>
+                </div>
+
+                <div className="mb-1.5">
+                  <div className="text-section font-bold tracking-widest uppercase mb-2" style={{ color: GOLD }}>Card Details</div>
+                  <div className="rounded-xl border-2 p-3.5 transition-colors" style={{ borderColor: sqCardReady ? GOLD : `${FOREST}15`, backgroundColor: CREAM }}>
+                    <div id="sq-track-card" style={{ minHeight: 80 }} />
+                    {!sqSdkReady && !sqError && (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: `${GOLD}30`, borderTopColor: GOLD }} />
+                        <span className="ml-2 text-caption opacity-60" style={{ color: FOREST }}>Loading…</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {sqError && (
+                  <div className="px-3 py-2 rounded-lg text-caption font-medium mb-3" style={{ backgroundColor: "rgba(209,67,67,0.08)", color: "#D14343", border: "1px solid rgba(209,67,67,0.2)" }}>
+                    {sqError}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleInlinePayment}
+                  disabled={!sqCardReady || sqProcessing}
+                  className="w-full py-3 rounded-xl text-body font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+                  style={{ backgroundColor: sqCardReady && !sqProcessing ? GOLD : `${GOLD}60`, color: "#1A1A1A" }}
+                >
+                  {sqProcessing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.2)", borderTopColor: "#0D0D0D" }} />
+                      Processing…
+                    </span>
+                  ) : (
+                    `Pay ${formatCurrency(totalBalance + calcHST(totalBalance))}`
+                  )}
+                </button>
+
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span className="text-label opacity-50" style={{ color: FOREST }}>Secured by Square · 256-bit encryption</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -134,22 +134,22 @@ export default function CrewExpenseClient() {
 
   return (
     <PageContent>
-      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]">
+      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-ui text-[var(--tx3)] hover:text-[var(--gold)]">
         ← Back to Dashboard
       </Link>
-      <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-2">Log Expense</h1>
-      <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
+      <h1 className="font-hero text-h2-sm font-bold text-[var(--tx)] mt-2">Log Expense</h1>
+      <p className="text-ui text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6">
         <div className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
-          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Category</label>
+          <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Category</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => setCategory(c.id)}
-                className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-ui font-medium transition-colors ${
                   category === c.id ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"
                 }`}
               >
@@ -159,7 +159,7 @@ export default function CrewExpenseClient() {
           </div>
         </div>
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Amount</label>
+          <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Amount</label>
           <input
             type="number"
             step="0.01"
@@ -167,11 +167,11 @@ export default function CrewExpenseClient() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="25.00"
-            className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[16px]"
+            className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-h3"
           />
         </div>
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Description</label>
+          <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Description</label>
           <input
             type="text"
             value={description}
@@ -181,7 +181,7 @@ export default function CrewExpenseClient() {
           />
         </div>
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Link to job (optional)</label>
+          <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Link to job (optional)</label>
           <select
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
@@ -194,7 +194,7 @@ export default function CrewExpenseClient() {
           </select>
         </div>
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Receipt photo (optional)</label>
+          <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Receipt photo (optional)</label>
           <div className="flex items-center gap-3">
             <input
               ref={fileInputRef}
@@ -208,7 +208,7 @@ export default function CrewExpenseClient() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingReceipt}
-              className="px-4 py-2.5 rounded-xl border border-[var(--brd)] text-[13px] font-medium text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl border border-[var(--brd)] text-body font-medium text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
             >
               {uploadingReceipt ? "Uploading…" : receiptStoragePath ? "Change receipt" : "Add receipt"}
             </button>
@@ -220,11 +220,11 @@ export default function CrewExpenseClient() {
           </div>
         </div>
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          {error && <p className="text-[12px] text-[var(--red)] mb-3">{error}</p>}
+          {error && <p className="text-ui text-[var(--red)] mb-3">{error}</p>}
           <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-semibold text-h3-sm text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? "Submitting…" : "Submit Expense"}
         </button>
@@ -232,17 +232,17 @@ export default function CrewExpenseClient() {
       </form>
 
       <div className="mt-8 pt-8 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Expense history</h2>
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Expense history</h2>
         {expenses.length === 0 ? (
-          <p className="text-[13px] text-[var(--tx3)]">No expenses yet.</p>
+          <p className="text-body text-[var(--tx3)]">No expenses yet.</p>
         ) : (
           <ul className="space-y-0">
             {expenses.map((e, i) => (
               <li key={e.id} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
                 <div>
-                  <p className="text-[13px] font-medium text-[var(--tx)]">${(e.amount_cents / 100).toFixed(2)} · {toTitleCase(e.category)}</p>
-                  <p className="text-[11px] text-[var(--tx3)]">{e.description}</p>
-                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                  <p className="text-body font-medium text-[var(--tx)]">${(e.amount_cents / 100).toFixed(2)} · {toTitleCase(e.category)}</p>
+                  <p className="text-caption text-[var(--tx3)]">{e.description}</p>
+                  <p className="text-label text-[var(--tx3)] mt-0.5">
                     {new Date(e.submitted_at).toLocaleDateString()} · {toTitleCase(e.status)}
                   </p>
                 </div>
@@ -251,7 +251,7 @@ export default function CrewExpenseClient() {
                     href={`/api/crew/expenses/${e.id}/receipt`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 text-[11px] text-[var(--gold)] hover:underline"
+                    className="shrink-0 text-caption text-[var(--gold)] hover:underline"
                   >
                     Receipt
                   </a>

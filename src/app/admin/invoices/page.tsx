@@ -23,23 +23,23 @@ export default async function InvoicesPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--gold)] rounded-xl p-4 md:p-5 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total</div>
+          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total</div>
           <div className="text-xl md:text-2xl font-bold font-heading text-[var(--tx)]">{all.length}</div>
         </Link>
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--grn)] rounded-xl p-4 md:p-5 hover:border-[var(--grn)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Paid</div>
+          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Paid</div>
           <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
         </Link>
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--blue)] rounded-xl p-4 md:p-5 hover:border-[var(--blue)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Pending / Sent</div>
+          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Pending / Sent</div>
           <div className="text-xl font-bold font-heading text-[var(--blue)]">{formatCompactCurrency(sentTotal)}</div>
         </Link>
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--red)] rounded-xl p-4 md:p-5 hover:border-[var(--red)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Overdue</div>
+          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Overdue</div>
           <div className="text-xl font-bold font-heading text-[var(--red)]">{formatCompactCurrency(overdueTotal)}</div>
         </Link>
         <Link href="/admin/moves" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] border-l-4 border-l-[var(--tx3)] rounded-xl p-4 md:p-5 hover:border-[var(--tx3)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Draft</div>
+          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Draft</div>
           <div className="text-xl font-bold font-heading text-[var(--tx2)]">{draft.length}</div>
         </Link>
       </div>

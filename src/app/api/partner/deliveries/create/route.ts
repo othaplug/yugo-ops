@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       delivery_address: deliveryAddress,
       scheduled_date: scheduledDate,
       time_slot: (body.time_slot || "").trim() || null,
+      preferred_time: (body.preferred_time || "").trim() || null,
       delivery_window: (body.delivery_window || "").trim() || null,
       items,
       instructions: (body.instructions || "").trim() || null,

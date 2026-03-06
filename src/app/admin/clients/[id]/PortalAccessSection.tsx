@@ -138,23 +138,23 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <h3 className="font-heading text-h3 font-bold text-[var(--tx)] flex items-center gap-2">
             <Icon name="lock" className="w-[16px] h-[16px]" /> Portal Access
           </h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage who at this partner can log in to view deliveries and schedule requests.</p>
+          <p className="text-caption text-[var(--tx3)] mt-0.5">Manage who at this partner can log in to view deliveries and schedule requests.</p>
         </div>
         <button
           onClick={() => setInviteOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
         >
           + Invite Portal User
         </button>
       </div>
       <div className="px-5 py-5">
         {loading ? (
-          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">Loading…</div>
+          <div className="py-6 text-center text-ui text-[var(--tx3)]">Loading…</div>
         ) : users.length === 0 ? (
-          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
+          <div className="py-6 text-center text-ui text-[var(--tx3)]">
             No portal users yet. Invite someone to give them access.
           </div>
         ) : (
@@ -165,14 +165,14 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                 className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--bg)]"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-[var(--tx)] truncate">
+                  <div className="text-body font-semibold text-[var(--tx)] truncate">
                     {u.name || u.email?.split("@")[0] || "—"}
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
+                  <div className="text-caption text-[var(--tx3)] truncate">{u.email}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    className={`text-label font-semibold px-2 py-0.5 rounded-full ${
                       u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
                     }`}
                   >
@@ -181,14 +181,14 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                   <button
                     type="button"
                     onClick={() => setResetUser(u)}
-                    className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                    className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
                   >
                     Reset password
                   </button>
                   <button
                     onClick={() => handleRevoke(u.user_id)}
                     disabled={revoking === u.user_id}
-                    className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all disabled:opacity-50"
+                    className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all disabled:opacity-50"
                   >
                     {revoking === u.user_id ? "Revoking…" : "Revoke"}
                   </button>
@@ -207,11 +207,11 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
       >
         {resetUser && (
           <form onSubmit={handleResetPassword} className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx3)]">
+            <p className="text-ui text-[var(--tx3)]">
               Set a new temporary password for <strong>{resetUser.name || resetUser.email}</strong>. They will receive an email with the new password and login link.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New temporary password *</label>
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New temporary password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -220,18 +220,18 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                 />
-                <button type="button" onClick={generateResetPassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+                <button type="button" onClick={generateResetPassword} className="px-3 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                   Generate
                 </button>
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
+              <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 {resetLoading ? "Sending…" : "Set password & send email"}
               </button>
             </div>
@@ -241,32 +241,32 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
 
       <ModalOverlay open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite Portal User" maxWidth="md">
         <form onSubmit={handleInvite} className="p-5 space-y-4">
-          <p className="text-[12px] text-[var(--tx3)]">
+          <p className="text-ui text-[var(--tx3)]">
             Invite someone at {orgName} to log in and view their deliveries.
           </p>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@company.com"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -275,18 +275,18 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                 placeholder="Min 8 characters"
                 required
                 minLength={8}
-                className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
-              <button type="button" onClick={generatePassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+              <button type="button" onClick={generatePassword} className="px-3 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                 Generate
               </button>
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setInviteOpen(false)} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
+            <button type="button" onClick={() => setInviteOpen(false)} className="flex-1 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]">
               Cancel
             </button>
-            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
               {inviteLoading ? "Sending…" : "Send Invitation"}
             </button>
           </div>

@@ -143,12 +143,12 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
     <ModalOverlay open={open} onClose={onClose} title="Edit project" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project name *</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Feinstein: Convergence" required className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project name *</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Feinstein: Convergence" required className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project type</label>
-          <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project type</label>
+          <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
             <option value="">Select type…</option>
             {PROJECT_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -156,16 +156,16 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
             {STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Gallery partner</label>
-          <select value={galleryOrgId} onChange={(e) => setGalleryOrgId(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Gallery partner</label>
+          <select value={galleryOrgId} onChange={(e) => setGalleryOrgId(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none">
             <option value="">Select gallery…</option>
             {galleryPartners.map((p) => (
               <option key={p.id} value={p.id}>{p.name || p.email || p.id}</option>
@@ -179,46 +179,46 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
             onChange={(r) => setAddress(r.fullAddress)}
             placeholder="Delivery or exhibition address"
             label="Address / venue"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Location / venue name</label>
-          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Main Gallery, Vault" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Location / venue name</label>
+          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Main Gallery, Vault" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
         </div>
         {(projectType === "exhibition" || projectType === "art_fair") && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Start date</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Start date</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">End date</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">End date</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
             </div>
           </div>
         )}
         <div className="border-t border-[var(--brd)] pt-3">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Transport & handling</div>
-          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={whiteGlove} onChange={(e) => setWhiteGlove(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-[12px] text-[var(--tx2)]">White-glove handling</span></label>
-          <label className="flex items-center gap-2 cursor-pointer mt-1"><input type="checkbox" checked={cratingRequired} onChange={(e) => setCratingRequired(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-[12px] text-[var(--tx2)]">Crating required</span></label>
-          <label className="flex items-center gap-2 cursor-pointer mt-1"><input type="checkbox" checked={climateControlled} onChange={(e) => setClimateControlled(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-[12px] text-[var(--tx2)]">Climate-controlled transport</span></label>
+          <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Transport & handling</div>
+          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={whiteGlove} onChange={(e) => setWhiteGlove(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-ui text-[var(--tx2)]">White-glove handling</span></label>
+          <label className="flex items-center gap-2 cursor-pointer mt-1"><input type="checkbox" checked={cratingRequired} onChange={(e) => setCratingRequired(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-ui text-[var(--tx2)]">Crating required</span></label>
+          <label className="flex items-center gap-2 cursor-pointer mt-1"><input type="checkbox" checked={climateControlled} onChange={(e) => setClimateControlled(e.target.checked)} className="rounded border-[var(--brd)]" /><span className="text-ui text-[var(--tx2)]">Climate-controlled transport</span></label>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Estimate</label>
-          <input type="text" value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder="e.g. $45K" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Estimate</label>
+          <input type="text" value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder="e.g. $45K" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Install / deinstall notes</label>
-          <input type="text" value={installDeinstallNotes} onChange={(e) => setInstallDeinstallNotes(e.target.value)} placeholder="e.g. Install only, Both" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Install / deinstall notes</label>
+          <input type="text" value={installDeinstallNotes} onChange={(e) => setInstallDeinstallNotes(e.target.value)} placeholder="e.g. Install only, Both" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Details</label>
-          <textarea value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Project details…" rows={3} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none resize-none" />
+          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Details</label>
+          <textarea value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Project details…" rows={3} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none resize-none" />
         </div>
         <div className="flex gap-2 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
+          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
         </div>
       </form>
     </ModalOverlay>

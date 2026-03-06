@@ -57,8 +57,8 @@ export default function TrackDocuments({
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
-        <p className="text-[12px] text-[#666]">Loading...</p>
+        <h3 className="text-title font-bold text-[#1A1A1A] mb-4">Documents</h3>
+        <p className="text-ui text-[#666]">Loading...</p>
       </div>
     );
   }
@@ -66,8 +66,8 @@ export default function TrackDocuments({
   if (allDocs.length === 0) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Documents</h3>
-        <p className="text-[12px] text-[#666]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
+        <h3 className="text-title font-bold text-[#1A1A1A] mb-4">Documents</h3>
+        <p className="text-ui text-[#666]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
       </div>
     );
   }
@@ -75,7 +75,7 @@ export default function TrackDocuments({
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#E7E5E4]">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Documents</h3>
+        <h3 className="text-title font-bold text-[#1A1A1A]">Documents</h3>
       </div>
       <div className="p-5 space-y-2">
         {allDocs.map((doc) => {
@@ -89,21 +89,21 @@ export default function TrackDocuments({
               className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-[#E7E5E4] flex items-center justify-center shrink-0 text-[#999] text-[12px] font-semibold">
+                <div className="w-10 h-10 rounded-lg bg-[#E7E5E4] flex items-center justify-center shrink-0 text-[#999] text-ui font-semibold">
                   Doc
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>
-                  <div className="text-[11px] text-[#666] flex items-center gap-2">
+                  <div className="text-body font-medium text-[#1A1A1A] truncate">{doc.title}</div>
+                  <div className="text-caption text-[#666] flex items-center gap-2">
                     {dateStr}
                     {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
                     {isPaid && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-section font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
                         PAID
                       </span>
                     )}
                     {isSent && !isPaid && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-section font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
                         SENT
                       </span>
                     )}
@@ -115,7 +115,7 @@ export default function TrackDocuments({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-caption font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
                 >
                   Download
                 </a>

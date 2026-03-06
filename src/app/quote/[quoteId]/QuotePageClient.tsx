@@ -476,7 +476,7 @@ export default function QuotePageClient({
     <div className="min-h-screen" style={{ backgroundColor: CREAM }} data-theme="light">
       {expiringSoon && (
         <div
-          className="sticky top-0 z-50 px-4 py-2.5 text-center text-[13px] font-medium"
+          className="sticky top-0 z-50 px-4 py-2.5 text-center text-body font-medium"
           style={{ backgroundColor: "#FFF8E1", color: "#8B6914", borderBottom: `1px solid ${GOLD}33` }}
         >
           <Clock className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
@@ -497,27 +497,27 @@ export default function QuotePageClient({
             <YugoLogo size={36} variant="cream" />
           </div>
           <div className="w-12 h-px mx-auto mb-6" style={{ backgroundColor: GOLD }} />
-          <h1 className="font-hero text-[22px] md:text-[28px] text-white leading-snug mb-3">
+          <h1 className="font-hero text-h2 md:text-hero text-white leading-snug mb-3">
             {hero.headline}
           </h1>
-          <p className="text-[14px] text-white/70 max-w-md mx-auto leading-relaxed">
+          <p className="text-title text-white/70 max-w-md mx-auto leading-relaxed">
             {hero.subtitle}
           </p>
 
           {/* Quote badge */}
           <div className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
             <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+              <p className="text-section font-semibold tracking-widest uppercase text-white/50">
                 Quote
               </p>
-              <p className="text-[14px] font-mono font-bold text-white">{quote.quote_id}</p>
+              <p className="text-title font-mono font-bold text-white">{quote.quote_id}</p>
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+              <p className="text-section font-semibold tracking-widest uppercase text-white/50">
                 {dateLabel}
               </p>
-              <p className="text-[13px] font-semibold text-white">
+              <p className="text-body font-semibold text-white">
                 {quote.move_date
                   ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                       month: "short",
@@ -531,10 +531,10 @@ export default function QuotePageClient({
               <>
                 <div className="w-px h-8 bg-white/20" />
                 <div className="text-left">
-                  <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+                  <p className="text-section font-semibold tracking-widest uppercase text-white/50">
                     Valid
                   </p>
-                  <p className="text-[13px] font-semibold text-white">
+                  <p className="text-body font-semibold text-white">
                     {expiresLabel(quote.expires_at)}
                   </p>
                 </div>
@@ -561,10 +561,10 @@ export default function QuotePageClient({
               <Lock className="w-4 h-4" style={{ color: GOLD }} />
             </div>
             <div>
-              <p className="text-[12px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>
+              <p className="text-ui font-bold tracking-wider uppercase" style={{ color: GOLD }}>
                 Guaranteed Price
               </p>
-              <p className="text-[11px] leading-snug" style={{ color: `${FOREST}70` }}>
+              <p className="text-caption leading-snug" style={{ color: `${FOREST}70` }}>
                 The price you see is the price you pay. No hourly surprises. No hidden fees.
               </p>
             </div>
@@ -574,45 +574,45 @@ export default function QuotePageClient({
         {/* ═══ MOVE DETAILS (Residential only) ═══ */}
         {isResidential && (
           <section className="-mt-6 relative z-10 pt-6 border-t border-[var(--brd)]/30 mb-10">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
               Move Details
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <DetailRow icon={MapPin} label="From" color={WINE}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                <p className="text-body font-medium" style={{ color: FOREST }}>
                   {quote.from_address}
                 </p>
                 {fmtAccess(quote.from_access) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
+                  <p className="text-caption mt-0.5" style={{ color: `${FOREST}70` }}>
                     {fmtAccess(quote.from_access)}
                   </p>
                 )}
               </DetailRow>
               <DetailRow icon={MapPin} label="To" color={FOREST}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                <p className="text-body font-medium" style={{ color: FOREST }}>
                   {quote.to_address}
                 </p>
                 {fmtAccess(quote.to_access) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
+                  <p className="text-caption mt-0.5" style={{ color: `${FOREST}70` }}>
                     {fmtAccess(quote.to_access)}
                   </p>
                 )}
               </DetailRow>
               <DetailRow icon={Calendar} label="Move Date" color={GOLD}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                <p className="text-body font-medium" style={{ color: FOREST }}>
                   {fmtDate(quote.move_date)}
                 </p>
               </DetailRow>
               {quote.move_size && (
                 <DetailRow icon={Ruler} label="Move Size" color={GOLD}>
-                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                  <p className="text-body font-medium" style={{ color: FOREST }}>
                     {MOVE_SIZE_LABELS[quote.move_size] ?? quote.move_size}
                   </p>
                 </DetailRow>
               )}
               {quote.distance_km != null && (
                 <DetailRow icon={Clock} label="Distance" color={FOREST}>
-                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                  <p className="text-body font-medium" style={{ color: FOREST }}>
                     {quote.distance_km} km
                     {quote.drive_time_min ? ` \u00b7 ~${quote.drive_time_min} min drive` : ""}
                   </p>
@@ -704,34 +704,34 @@ export default function QuotePageClient({
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <Star className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
-                <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+                <p className="text-body font-bold" style={{ color: FOREST }}>
                   360+ Reviews
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-label" style={{ color: `${FOREST}60` }}>
                   5-star rated on Google
                 </p>
               </div>
               <div>
                 <Shield className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
-                <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+                <p className="text-body font-bold" style={{ color: FOREST }}>
                   $2M Insurance
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-label" style={{ color: `${FOREST}60` }}>
                   Full cargo coverage
                 </p>
               </div>
               <div>
                 <Check className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
-                <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+                <p className="text-body font-bold" style={{ color: FOREST }}>
                   Flat-Rate
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-label" style={{ color: `${FOREST}60` }}>
                   No hidden fees, guaranteed
                 </p>
               </div>
             </div>
             <div className="mt-4 pt-3 text-center border-t border-[var(--brd)]/30">
-              <p className="text-[11px] font-medium" style={{ color: `${FOREST}60` }}>
+              <p className="text-caption font-medium" style={{ color: `${FOREST}60` }}>
                 Trusted by leading Toronto businesses &amp; homeowners
               </p>
             </div>
@@ -746,7 +746,7 @@ export default function QuotePageClient({
               style={{ backgroundColor: "#FFF8E1" }}
             >
               <Zap className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
-              <p className="text-[12px] font-medium" style={{ color: "#8B6914" }}>
+              <p className="text-ui font-medium" style={{ color: "#8B6914" }}>
                 High demand &mdash; only {slotsRemaining} slot{slotsRemaining > 1 ? "s" : ""} remaining for{" "}
                 {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                   month: "long",
@@ -791,12 +791,12 @@ export default function QuotePageClient({
                 style={{ backgroundColor: `${FOREST}06` }}
               >
                 <h2
-                  className="font-heading text-[14px] font-bold tracking-wider uppercase"
+                  className="font-heading text-title font-bold tracking-wider uppercase"
                   style={{ color: FOREST }}
                 >
                   Payment
                 </h2>
-                <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
+                <p className="text-caption mt-0.5" style={{ color: `${FOREST}70` }}>
                   Complete your booking with a secure deposit payment
                 </p>
               </div>
@@ -835,11 +835,11 @@ export default function QuotePageClient({
               >
                 <Check className="w-7 h-7" style={{ color: GOLD }} />
               </div>
-              <h2 className="font-hero text-[24px] mb-2" style={{ color: WINE }}>
+              <h2 className="font-hero text-h1 mb-2" style={{ color: WINE }}>
                 You&apos;re All Set!
               </h2>
               <p
-                className="text-[14px] max-w-sm mx-auto leading-relaxed"
+                className="text-title max-w-sm mx-auto leading-relaxed"
                 style={{ color: `${FOREST}80` }}
               >
                 Your{" "}
@@ -858,18 +858,18 @@ export default function QuotePageClient({
                 className="mt-6 inline-flex items-center gap-3 px-5 py-2.5 rounded-full"
                 style={{ backgroundColor: `${FOREST}08` }}
               >
-                <span className="text-[11px] font-semibold" style={{ color: FOREST }}>
+                <span className="text-caption font-semibold" style={{ color: FOREST }}>
                   Quote {quote.quote_id}
                 </span>
-                <span className="text-[11px]" style={{ color: `${FOREST}50` }}>
+                <span className="text-caption" style={{ color: `${FOREST}50` }}>
                   &middot;
                 </span>
-                <span className="text-[11px]" style={{ color: FOREST }}>
+                <span className="text-caption" style={{ color: FOREST }}>
                   {fmtDate(quote.move_date)}
                 </span>
               </div>
               {paymentMoveId && (
-                <p className="text-[12px] mt-4" style={{ color: `${FOREST}60` }}>
+                <p className="text-ui mt-4" style={{ color: `${FOREST}60` }}>
                   A confirmation email is on its way. You can track your{" "}
                   {quote.service_type === "office_move" ? "relocation" : "move"} status anytime.
                 </p>
@@ -883,10 +883,10 @@ export default function QuotePageClient({
           <div className="flex justify-center mb-2">
             <YugoLogo size={20} variant="gold" onLightBackground />
           </div>
-          <p className="text-[11px]" style={{ color: `${FOREST}60` }}>
+          <p className="text-caption" style={{ color: `${FOREST}60` }}>
             Premium Moving &middot; Toronto &amp; GTA
           </p>
-          <p className="text-[10px] mt-1" style={{ color: `${FOREST}40` }}>
+          <p className="text-label mt-1" style={{ color: `${FOREST}40` }}>
             Questions? Email us at{" "}
             <a href="mailto:info@helloyugo.com" style={{ color: GOLD }} className="hover:underline">
               info@helloyugo.com
@@ -943,10 +943,10 @@ const InclusionsShowcase = React.forwardRef<
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
           Your Move Includes
         </h2>
-        <p className="font-serif text-[15px] italic" style={{ color: `${FOREST}60` }}>
+        <p className="font-serif text-h3-sm italic" style={{ color: `${FOREST}60` }}>
           Every detail, handled.
         </p>
       </div>
@@ -965,10 +965,10 @@ const InclusionsShowcase = React.forwardRef<
                 <Icon className="w-[18px] h-[18px]" style={{ color: GOLD }} />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
+                <p className="text-body font-semibold leading-snug" style={{ color: FOREST }}>
                   {item.label}
                 </p>
-                <p className="text-[11px] mt-0.5 leading-snug" style={{ color: `${FOREST}55` }}>
+                <p className="text-caption mt-0.5 leading-snug" style={{ color: `${FOREST}55` }}>
                   {item.description}
                 </p>
               </div>
@@ -978,7 +978,7 @@ const InclusionsShowcase = React.forwardRef<
       </div>
 
       {showUpgradeHint && (
-        <p className="text-center text-[11px] mt-6" style={{ color: `${FOREST}50` }}>
+        <p className="text-center text-caption mt-6" style={{ color: `${FOREST}50` }}>
           Upgrade to <span style={{ color: GOLD }} className="font-semibold">Premier</span> or{" "}
           <span style={{ color: WINE }} className="font-semibold">Estate</span> for even more.
         </p>
@@ -1062,21 +1062,21 @@ function ValuationProtectionCard({
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div>
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
           Your Protection
         </h2>
-        <p className="text-[11px] mb-4" style={{ color: `${FOREST}55` }}>
+        <p className="text-caption mb-4" style={{ color: `${FOREST}55` }}>
           {dispActive.label} &mdash; {upgradeSelected ? "Upgraded" : "Included"}
         </p>
 
         <div className="space-y-5">
           {/* Description */}
-          <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}85` }}>
+          <p className="text-ui leading-relaxed" style={{ color: `${FOREST}85` }}>
             {tierData.damage_process}
           </p>
 
           {tierData.rate_per_pound != null && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px]" style={{ color: `${FOREST}70` }}>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-caption" style={{ color: `${FOREST}70` }}>
               <span>Rate: <b style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound)}/lb</b></span>
               {tierData.max_per_item && <span>Per item: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</b></span>}
               {tierData.max_per_shipment && <span>Per shipment: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</b></span>}
@@ -1085,7 +1085,7 @@ function ValuationProtectionCard({
           )}
 
           {!tierData.rate_per_pound && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px]" style={{ color: `${FOREST}70` }}>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-caption" style={{ color: `${FOREST}70` }}>
               <span>Per item: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</b></span>
               <span>Per shipment: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</b></span>
               <span style={{ color: GOLD }}>Zero deductible</span>
@@ -1096,7 +1096,7 @@ function ValuationProtectionCard({
           <div>
             <button
               onClick={() => setCoversOpen((p) => !p)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold w-full text-left"
+              className="flex items-center gap-1.5 text-caption font-semibold w-full text-left"
               style={{ color: FOREST }}
             >
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${coversOpen ? "rotate-180" : ""}`} style={{ color: GOLD }} />
@@ -1105,7 +1105,7 @@ function ValuationProtectionCard({
             {coversOpen && (
               <ul className="mt-2 space-y-1.5 pl-5">
                 {tierData.covers.map((c, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-2" style={{ color: `${FOREST}75` }}>
+                  <li key={i} className="text-caption flex items-start gap-2" style={{ color: `${FOREST}75` }}>
                     <Check className="w-3 h-3 mt-0.5 shrink-0" style={{ color: GOLD }} />
                     {c}
                   </li>
@@ -1118,7 +1118,7 @@ function ValuationProtectionCard({
           <div>
             <button
               onClick={() => setExcludesOpen((p) => !p)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold w-full text-left"
+              className="flex items-center gap-1.5 text-caption font-semibold w-full text-left"
               style={{ color: FOREST }}
             >
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${excludesOpen ? "rotate-180" : ""}`} style={{ color: GOLD }} />
@@ -1127,8 +1127,8 @@ function ValuationProtectionCard({
             {excludesOpen && (
               <ul className="mt-2 space-y-1.5 pl-5">
                 {tierData.excludes.map((e, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-2" style={{ color: `${FOREST}55` }}>
-                    <span className="w-3 text-center shrink-0 text-[10px]" style={{ color: `${FOREST}35` }}>&ndash;</span>
+                  <li key={i} className="text-caption flex items-start gap-2" style={{ color: `${FOREST}55` }}>
+                    <span className="w-3 text-center shrink-0 text-label" style={{ color: `${FOREST}35` }}>&ndash;</span>
                     {e}
                   </li>
                 ))}
@@ -1140,7 +1140,7 @@ function ValuationProtectionCard({
           {isHighest && (
             <div className="flex items-center gap-2 pt-1">
               <Check className="w-4 h-4" style={{ color: GOLD }} />
-              <p className="text-[11px] font-semibold" style={{ color: GOLD }}>
+              <p className="text-caption font-semibold" style={{ color: GOLD }}>
                 You have the highest level of protection.
               </p>
             </div>
@@ -1157,24 +1157,24 @@ function ValuationProtectionCard({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-bold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
+                  <p className="text-section font-bold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
                     Upgrade Your Protection
                   </p>
-                  <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                  <p className="text-body font-semibold" style={{ color: FOREST }}>
                     {dispUpgrade.label} &mdash; {fmtPrice(upgradeData.price)}
                   </p>
-                  <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+                  <p className="text-caption mt-1" style={{ color: `${FOREST}60` }}>
                     {upgradeTierData.rate_description}
                   </p>
                   {upgradeData.assumed_shipment_value > 0 && (
-                    <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}45` }}>
+                    <p className="text-label mt-0.5" style={{ color: `${FOREST}45` }}>
                       Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
                     </p>
                   )}
                 </div>
                 <button
                   onClick={onToggleUpgrade}
-                  className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold transition-colors"
+                  className="shrink-0 px-4 py-2 rounded-lg text-caption font-bold transition-colors"
                   style={{
                     backgroundColor: upgradeSelected ? FOREST : GOLD,
                     color: "#FFFFFF",
@@ -1188,17 +1188,17 @@ function ValuationProtectionCard({
 
           {/* High-value item declarations */}
           <div className="pt-2 border-t" style={{ borderColor: `${FOREST}10` }}>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: FOREST }}>
+            <p className="text-caption font-semibold mb-1" style={{ color: FOREST }}>
               Have a high-value item?
             </p>
-            <p className="text-[10px] mb-3" style={{ color: `${FOREST}55` }}>
+            <p className="text-label mb-3" style={{ color: `${FOREST}55` }}>
               Items over {fmtPrice(declThreshold)} need individual coverage.
             </p>
 
             {declarations.length > 0 && (
               <div className="space-y-2 mb-3">
                 {declarations.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2 text-[11px]" style={{ backgroundColor: `${FOREST}05` }}>
+                  <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2 text-caption" style={{ backgroundColor: `${FOREST}05` }}>
                     <div>
                       <span className="font-medium" style={{ color: FOREST }}>{d.item_name}</span>
                       <span className="mx-1.5" style={{ color: `${FOREST}35` }}>&mdash;</span>
@@ -1211,7 +1211,7 @@ function ValuationProtectionCard({
                     </button>
                   </div>
                 ))}
-                <div className="text-right text-[11px] font-semibold" style={{ color: GOLD }}>
+                <div className="text-right text-caption font-semibold" style={{ color: GOLD }}>
                   Declaration fees: {fmtPrice(declarations.reduce((s, d) => s + d.fee, 0))}
                 </div>
               </div>
@@ -1220,7 +1220,7 @@ function ValuationProtectionCard({
             {!declFormOpen ? (
               <button
                 onClick={() => setDeclFormOpen(true)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold"
+                className="flex items-center gap-1.5 text-caption font-semibold"
                 style={{ color: GOLD }}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1229,31 +1229,31 @@ function ValuationProtectionCard({
             ) : (
               <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: `${FOREST}15` }}>
                 <div>
-                  <label className="block text-[10px] font-semibold mb-1" style={{ color: `${FOREST}70` }}>Item name</label>
+                  <label className="block text-label font-semibold mb-1" style={{ color: `${FOREST}70` }}>Item name</label>
                   <input
                     value={declName}
                     onChange={(e) => setDeclName(e.target.value)}
                     placeholder="e.g. Steinway Piano"
-                    className="w-full px-3 py-2 rounded-lg border text-[12px]"
+                    className="w-full px-3 py-2 rounded-lg border text-ui"
                     style={{ borderColor: `${FOREST}20`, color: FOREST }}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold mb-1" style={{ color: `${FOREST}70` }}>Estimated value (CAD)</label>
+                  <label className="block text-label font-semibold mb-1" style={{ color: `${FOREST}70` }}>Estimated value (CAD)</label>
                   <input
                     value={declValue}
                     onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
                     placeholder="15000"
-                    className="w-full px-3 py-2 rounded-lg border text-[12px]"
+                    className="w-full px-3 py-2 rounded-lg border text-ui"
                     style={{ borderColor: `${FOREST}20`, color: FOREST }}
                   />
                   {declValue && parseFloat(declValue) > 0 && (
-                    <p className="text-[10px] mt-1" style={{ color: GOLD }}>
+                    <p className="text-label mt-1" style={{ color: GOLD }}>
                       Coverage fee: {fmtPrice(calcFee(parseFloat(declValue)))}
                     </p>
                   )}
                   {declValue && parseFloat(declValue) >= 50000 && (
-                    <p className="text-[10px] mt-1 font-medium" style={{ color: WINE }}>
+                    <p className="text-label mt-1 font-medium" style={{ color: WINE }}>
                       For items over $50,000, contact Yugo directly for custom coverage arrangements.
                     </p>
                   )}
@@ -1261,7 +1261,7 @@ function ValuationProtectionCard({
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setDeclFormOpen(false); setDeclName(""); setDeclValue(""); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium border"
+                    className="px-3 py-1.5 rounded-lg text-caption font-medium border"
                     style={{ borderColor: `${FOREST}20`, color: `${FOREST}60` }}
                   >
                     Cancel
@@ -1269,7 +1269,7 @@ function ValuationProtectionCard({
                   <button
                     onClick={handleAddDeclaration}
                     disabled={!declName.trim() || !declValue || parseFloat(declValue) <= 0 || parseFloat(declValue) >= 50000}
-                    className="px-4 py-1.5 rounded-lg text-[11px] font-bold text-white disabled:opacity-40"
+                    className="px-4 py-1.5 rounded-lg text-caption font-bold text-white disabled:opacity-40"
                     style={{ backgroundColor: GOLD }}
                   >
                     Add declaration
@@ -1305,7 +1305,7 @@ function DetailRow({
       </div>
       <div>
         <p
-          className="text-[10px] font-semibold tracking-wider uppercase"
+          className="text-label font-semibold tracking-wider uppercase"
           style={{ color: `${FOREST}80` }}
         >
           {label}
@@ -1328,7 +1328,7 @@ function FallbackPrice({
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
-        <h2 className="font-hero text-[22px] md:text-[26px] mb-2" style={{ color: WINE }}>
+        <h2 className="font-hero text-h2 md:text-h1-lg mb-2" style={{ color: WINE }}>
           Your Quote
         </h2>
       </div>
@@ -1336,16 +1336,16 @@ function FallbackPrice({
         className="max-w-sm mx-auto bg-white rounded-2xl border-2 p-6 text-center"
         style={{ borderColor: GOLD }}
       >
-        <p className="font-hero text-[36px]" style={{ color: WINE }}>
+        <p className="font-hero text-price-sm" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
-        <p className="text-[12px] mt-1 mb-4" style={{ color: `${FOREST}70` }}>
+        <p className="text-ui mt-1 mb-4" style={{ color: `${FOREST}70` }}>
           +{fmtPrice(Math.round(price * TAX_RATE))} HST
         </p>
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-all"
+          className="w-full py-3 rounded-xl text-body font-bold text-white transition-all"
           style={{ backgroundColor: GOLD }}
         >
           {confirmed ? "Selected" : "Continue"}
@@ -1385,10 +1385,10 @@ function AddOnsSection({
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">
+        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">
           Customize Your Move
         </h2>
-        <p className="text-[13px]" style={{ color: `${FOREST}80` }}>
+        <p className="text-body" style={{ color: `${FOREST}80` }}>
           Add optional extras to make your move even smoother
         </p>
       </div>
@@ -1443,14 +1443,14 @@ function AddOnsSection({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className="text-[13px] font-semibold"
+                      className="text-body font-semibold"
                       style={{ color: isOn ? WINE : FOREST }}
                     >
                       {addon.name}
                     </span>
                     {addon.is_popular && (
                       <span
-                        className="text-[8px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
+                        className="text-micro font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: `${GOLD}18`, color: GOLD }}
                       >
                         Popular
@@ -1459,7 +1459,7 @@ function AddOnsSection({
                   </div>
                   {addon.description && (
                     <p
-                      className="text-[11px] mt-0.5 leading-snug"
+                      className="text-caption mt-0.5 leading-snug"
                       style={{ color: `${FOREST}70` }}
                     >
                       {addon.description}
@@ -1471,13 +1471,13 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) - 1)}
-                        className="w-7 h-7 rounded-lg border text-[14px] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-lg border text-title font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         &minus;
                       </button>
                       <span
-                        className="text-[13px] font-semibold w-6 text-center"
+                        className="text-body font-semibold w-6 text-center"
                         style={{ color: FOREST }}
                       >
                         {sel?.quantity ?? 1}
@@ -1485,12 +1485,12 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) + 1)}
-                        className="w-7 h-7 rounded-lg border text-[14px] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-lg border text-title font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         +
                       </button>
-                      <span className="text-[11px] ml-1" style={{ color: `${FOREST}60` }}>
+                      <span className="text-caption ml-1" style={{ color: `${FOREST}60` }}>
                         {addon.unit_label ?? "units"}
                       </span>
                     </div>
@@ -1501,7 +1501,7 @@ function AddOnsSection({
                       <select
                         value={sel?.tier_index ?? 0}
                         onChange={(e) => updateTierIdx(addon.id, parseInt(e.target.value))}
-                        className="text-[12px] rounded-lg border px-3 py-1.5"
+                        className="text-ui rounded-lg border px-3 py-1.5"
                         style={{
                           borderColor: "#D5D0C8",
                           color: FOREST,
@@ -1520,7 +1520,7 @@ function AddOnsSection({
 
                 <div className="text-right shrink-0">
                   <span
-                    className="text-[13px] font-bold"
+                    className="text-body font-bold"
                     style={{ color: isOn ? WINE : `${FOREST}50` }}
                   >
                     {isOn ? fmtPrice(computedCost) : priceLabel}
@@ -1539,7 +1539,7 @@ function AddOnsSection({
           style={{ borderColor: GOLD, backgroundColor: "#FFFDF8" }}
         >
           <div
-            className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1 text-[12px]"
+            className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1 text-ui"
             style={{ color: FOREST }}
           >
             <span>
@@ -1554,11 +1554,11 @@ function AddOnsSection({
               HST: <b>{fmtPrice(tax)}</b>
             </span>
             <span style={{ color: `${FOREST}40` }}>=</span>
-            <span className="text-[14px] font-bold" style={{ color: WINE }}>
+            <span className="text-title font-bold" style={{ color: WINE }}>
               Total: {fmtPrice(grandTotal)}
             </span>
           </div>
-          <p className="text-[11px] mt-1" style={{ color: GOLD }}>
+          <p className="text-caption mt-1" style={{ color: GOLD }}>
             {fmtPrice(deposit)} deposit to book
           </p>
         </div>

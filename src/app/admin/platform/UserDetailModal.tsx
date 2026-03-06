@@ -51,10 +51,10 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     return (
       <ModalOverlay open={open} onClose={onClose} title="Partner User" maxWidth="sm">
         <div className="p-5 space-y-4">
-          <p className="text-[13px] text-[var(--tx2)]">
+          <p className="text-body text-[var(--tx2)]">
             {user.name || user.email} is a partner with portal access. Manage them from the Clients page.
           </p>
-          <Link href={`/admin/clients/${orgId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+          <Link href={`/admin/clients/${orgId}`} className="inline-flex items-center gap-1 text-ui font-semibold text-[var(--gold)] hover:underline">
             View client profile →
           </Link>
         </div>
@@ -66,13 +66,13 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     return (
       <ModalOverlay open={open} onClose={onClose} title="Client (move)" maxWidth="sm">
         <div className="p-5 space-y-4">
-          <p className="text-[13px] text-[var(--tx2)]">
+          <p className="text-body text-[var(--tx2)]">
             <strong>{user.name || user.email}</strong> is a move client. They access their move via a magic-link tracking URL sent by email — no account needed.
           </p>
-          <p className="text-[12px] text-[var(--tx3)]">
+          <p className="text-ui text-[var(--tx3)]">
             Use &quot;Resend tracking link&quot; on the move to send them the tracking URL again.
           </p>
-          <Link href={`/admin/moves/${moveId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+          <Link href={`/admin/moves/${moveId}`} className="inline-flex items-center gap-1 text-ui font-semibold text-[var(--gold)] hover:underline">
             View move →
           </Link>
         </div>
@@ -151,26 +151,26 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       <div className="p-5 space-y-5">
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Full name"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
-            <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)]">
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+            <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx2)]">
               {user.email}
             </div>
-            <p className="text-[10px] text-[var(--tx3)] mt-1">Email cannot be changed</p>
+            <p className="text-label text-[var(--tx3)] mt-1">Email cannot be changed</p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
             {isAdmin ? (
-              <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)] flex items-center gap-2">
+              <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx2)] flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />
                 Admin (cannot be changed)
               </div>
@@ -179,7 +179,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 disabled={!canEditRole}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
@@ -189,14 +189,14 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               </select>
             )}
           </div>
-          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>
 
         {!user.id.startsWith("inv-") && (
         <div className="border-t border-[var(--brd)] pt-5 space-y-4">
-          <h3 className="text-[12px] font-bold text-[var(--tx2)]">Reset password</h3>
+          <h3 className="text-ui font-bold text-[var(--tx2)]">Reset password</h3>
           <form onSubmit={handleResetPassword} className="flex gap-2">
             <input
               type="password"
@@ -204,9 +204,9 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password (min 8 chars)"
               minLength={8}
-              className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
-            <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50">
+            <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50">
               {resetting ? "Resetting…" : "Reset"}
             </button>
           </form>
@@ -215,23 +215,23 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
 
         {!isSelf && (
           <div className="border-t border-[var(--brd)] pt-5">
-            <h3 className="text-[12px] font-bold text-[var(--red)] mb-2">Danger zone</h3>
+            <h3 className="text-ui font-bold text-[var(--red)] mb-2">Danger zone</h3>
             {!showDeleteConfirm ? (
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--red)]/10"
+                className="px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--red)]/10"
               >
                 Delete user
               </button>
             ) : (
               <div className="space-y-2">
-                <p className="text-[12px] text-[var(--tx2)]">Are you sure? This cannot be undone. The user will be removed from the database and will no longer be able to sign in.</p>
+                <p className="text-ui text-[var(--tx2)]">Are you sure? This cannot be undone. The user will be removed from the database and will no longer be able to sign in.</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                    className="px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx2)]"
                   >
                     Cancel
                   </button>
@@ -239,7 +239,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
+                    className="px-4 py-2.5 rounded-lg text-ui font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {deleting ? "Deleting…" : "Yes, delete"}
                   </button>

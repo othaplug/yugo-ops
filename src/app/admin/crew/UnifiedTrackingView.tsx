@@ -217,7 +217,7 @@ const GodEyeMap = dynamic(
               <div className="flex flex-col items-center group cursor-default">
                 {/* Label */}
                 <span
-                  className="mb-1 px-2.5 py-1 rounded-md text-[9px] font-semibold tracking-[0.08em] uppercase whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity"
+                  className="mb-1 px-2.5 py-1 rounded-md text-section font-semibold tracking-[0.08em] uppercase whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity"
                   style={{
                     background: "linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)",
                     color: "#C9A962",
@@ -283,7 +283,7 @@ const GodEyeMap = dynamic(
                         }}
                       >
                         {/* Inner gold circle with initials */}
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9A962] to-[#8B7332] flex items-center justify-center text-[11px] font-bold text-white shadow-inner">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9A962] to-[#8B7332] flex items-center justify-center text-caption font-bold text-white shadow-inner">
                           {isNearOffice && !isOnJob(status) ? (
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
                           ) : (
@@ -309,7 +309,7 @@ const GodEyeMap = dynamic(
                       {/* Warning badge */}
                       {warningBadge && (
                         <div
-                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
+                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-micro font-bold text-white"
                           style={{ backgroundColor: warningBadge === "red" ? "#EF4444" : "#F59E0B" }}
                         >
                           !
@@ -317,7 +317,7 @@ const GodEyeMap = dynamic(
                       )}
 
                       {/* Name label */}
-                      <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[var(--tx)] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--card)]/95 border border-[var(--brd)] shadow-sm">
+                      <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-section font-semibold text-[var(--tx)] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--card)]/95 border border-[var(--brd)] shadow-sm">
                         {(c.name || "Crew").replace("Team ", "")}
                       </span>
                     </button>
@@ -378,14 +378,14 @@ function CrewPopup({
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-ui font-bold text-white shadow"
             style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
           >
             {(crew.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <h3 className="text-[14px] font-bold text-[var(--tx)]">{crew.name}</h3>
-            <span className="text-[10px] text-[var(--tx3)]">{crew.members?.length || 0} members</span>
+            <h3 className="text-title font-bold text-[var(--tx)]">{crew.name}</h3>
+            <span className="text-label text-[var(--tx3)]">{crew.members?.length || 0} members</span>
           </div>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
@@ -395,7 +395,7 @@ function CrewPopup({
 
       {/* Status badge */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold" style={{ backgroundColor: `${STATUS_RING[status] || "#6B7280"}20`, color: STATUS_RING[status] || "#6B7280" }}>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-semibold" style={{ backgroundColor: `${STATUS_RING[status] || "#6B7280"}20`, color: STATUS_RING[status] || "#6B7280" }}>
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_RING[status] || "#6B7280" }} />
           {getStatusLabel(status)}
         </span>
@@ -404,10 +404,10 @@ function CrewPopup({
       {/* Current job */}
       {(clientName || currentMove) && (
         <div className="pt-3 mt-3 border-t border-[var(--brd)]/30">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
-          <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "—"}</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
+          <div className="text-ui font-semibold text-[var(--tx)]">{clientName || "—"}</div>
           {fromAddr && toAddr && (
-            <div className="text-[11px] text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
+            <div className="text-caption text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
           )}
         </div>
       )}
@@ -415,27 +415,27 @@ function CrewPopup({
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
-          <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
-          <div className="text-[8px] text-[var(--tx3)]">km/h</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
+          <div className="text-title font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
+          <div className="text-micro text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
-          <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
-          <div className="text-[8px] text-[var(--tx3)]">min</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
+          <div className="text-title font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
+          <div className="text-micro text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
-          <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">{formatRelative(crewLocation?.updated_at || crew.updated_at || new Date().toISOString())}</div>
+          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
+          <div className="text-ui font-semibold text-[var(--tx)] mt-0.5">{formatRelative(crewLocation?.updated_at || crew.updated_at || new Date().toISOString())}</div>
         </div>
       </div>
 
       {/* Team members */}
       <div className="mb-3 pt-3 border-t border-[var(--brd)]/30">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
+        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
         <div className="flex flex-wrap gap-1.5">
           {(crew.members || []).map((m) => (
-            <span key={m} className="px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">{m}</span>
+            <span key={m} className="px-2 py-1 rounded-md text-label font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">{m}</span>
           ))}
         </div>
       </div>
@@ -443,7 +443,7 @@ function CrewPopup({
       {detailHref && (
         <Link
           href={detailHref}
-          className="block text-center py-2.5 rounded-xl bg-[var(--gdim)] text-[var(--gold)] text-[12px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
+          className="block text-center py-2.5 rounded-xl bg-[var(--gdim)] text-[var(--gold)] text-ui font-semibold hover:bg-[var(--gold)]/20 transition-colors"
         >
           View Job Details →
         </Link>
@@ -676,7 +676,7 @@ export default function UnifiedTrackingView({
               office={office}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--bg2)] text-[var(--tx3)] text-[12px]">
+            <div className="w-full h-full flex items-center justify-center bg-[var(--bg2)] text-[var(--tx3)] text-ui">
               Set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to enable map
             </div>
           )}
@@ -685,13 +685,13 @@ export default function UnifiedTrackingView({
         {/* Top-left: connection status */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)]/95 border border-[var(--brd)] backdrop-blur-sm shadow-sm">
           <span className={`w-2 h-2 rounded-full ${eventSourceConnected ? "bg-[var(--grn)]" : "bg-[var(--red)] animate-pulse"}`} />
-          <span className="text-[10px] font-semibold text-[var(--tx2)]">
+          <span className="text-label font-semibold text-[var(--tx2)]">
             {eventSourceConnected ? "Live" : "Reconnecting…"}
           </span>
-          <span className="text-[9px] text-[var(--tx3)]">
+          <span className="text-section text-[var(--tx3)]">
             {crewsWithPosition.length} team{crewsWithPosition.length !== 1 ? "s" : ""} on map
           </span>
-          {loading && <span className="text-[9px] text-[var(--tx3)] animate-pulse">Updating…</span>}
+          {loading && <span className="text-section text-[var(--tx3)] animate-pulse">Updating…</span>}
         </div>
 
         {/* Bottom-left panel: Active Jobs + Teams */}
@@ -701,7 +701,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-label font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               {(() => {
                 const STALE_TAB_MS = 90 * 60 * 1000;
@@ -715,7 +715,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-label font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>
@@ -738,14 +738,14 @@ export default function UnifiedTrackingView({
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
                           </span>
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]">Active Now</span>
+                          <span className="text-section font-bold tracking-wider uppercase text-[var(--gold)]">Active Now</span>
                         </>
                       ) : (
                         <>
                           <span className="relative flex h-2 w-2">
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--tx3)]/40" />
                           </span>
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">Recent Sessions</span>
+                          <span className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]/50">Recent Sessions</span>
                         </>
                       )}
                     </div>
@@ -781,29 +781,29 @@ export default function UnifiedTrackingView({
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <div
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-section font-bold text-white shrink-0"
                                 style={{ background: `linear-gradient(135deg, ${ringColor}CC, ${ringColor}80)` }}
                               >
                                 {(s.teamName || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-[12px] font-bold text-[var(--tx)] truncate">{s.teamName}</div>
-                                <div className="text-[10px] text-[var(--tx3)] truncate">
+                                <div className="text-ui font-bold text-[var(--tx)] truncate">{s.teamName}</div>
+                                <div className="text-label text-[var(--tx3)] truncate">
                                   {clientName || "Job in progress"}
                                 </div>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ backgroundColor: `${ringColor}15`, color: ringColor }}>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-section font-semibold" style={{ backgroundColor: `${ringColor}15`, color: ringColor }}>
                                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ringColor }} />
                                 {statusLabel}
                               </span>
-                              <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatRelative(s.updatedAt)}</div>
+                              <div className="text-section text-[var(--tx3)] mt-0.5">{formatRelative(s.updatedAt)}</div>
                             </div>
                           </div>
 
                           {(fromAddr || toAddr) && (
-                            <div className="mt-1.5 text-[10px] text-[var(--tx3)] truncate pl-9">
+                            <div className="mt-1.5 text-label text-[var(--tx3)] truncate pl-9">
                               {fromAddr && toAddr ? `${fromAddr} → ${toAddr}` : toAddr || fromAddr}
                             </div>
                           )}
@@ -823,7 +823,7 @@ export default function UnifiedTrackingView({
                                     boxShadow: i === stageIdx ? `0 0 6px ${ringColor}60` : undefined,
                                   }}
                                 />
-                                <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[7px] text-[var(--tx3)] whitespace-nowrap opacity-0 group-hover/seg:opacity-100 transition-opacity">
+                                <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-nano text-[var(--tx3)] whitespace-nowrap opacity-0 group-hover/seg:opacity-100 transition-opacity">
                                   {label}
                                 </span>
                               </div>
@@ -840,7 +840,7 @@ export default function UnifiedTrackingView({
                 {activeSessions.length === 0 && (todayMoves.length > 0 || todayDeliveries.length > 0) && (
                   <>
                     <div className="px-4 pt-3 pb-1">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
+                      <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
                     </div>
                     {todayMoves.map((m) => {
                       const crew = crews.find((c) => c.id === m.crew_id);
@@ -851,13 +851,13 @@ export default function UnifiedTrackingView({
                           className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                         >
                           <div className="w-6 h-6 rounded-full bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                            <span className="text-[8px] font-bold text-[#3B82F6]">M</span>
+                            <span className="text-micro font-bold text-[#3B82F6]">M</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{m.client_name || m.move_code}</div>
-                            <div className="text-[9px] text-[var(--tx3)] truncate">{m.from_address ?? "—"} → {m.to_address ?? "—"}</div>
+                            <div className="text-caption font-semibold text-[var(--tx)] truncate">{m.client_name || m.move_code}</div>
+                            <div className="text-section text-[var(--tx3)] truncate">{m.from_address ?? "—"} → {m.to_address ?? "—"}</div>
                           </div>
-                          {crew && <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
+                          {crew && <span className="text-section font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
                         </Link>
                       );
                     })}
@@ -870,13 +870,13 @@ export default function UnifiedTrackingView({
                           className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                         >
                           <div className="w-6 h-6 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
-                            <span className="text-[8px] font-bold text-[var(--gold)]">D</span>
+                            <span className="text-micro font-bold text-[var(--gold)]">D</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{d.delivery_number}</div>
-                            <div className="text-[9px] text-[var(--tx3)] truncate">{d.pickup_address} → {d.delivery_address}</div>
+                            <div className="text-caption font-semibold text-[var(--tx)] truncate">{d.delivery_number}</div>
+                            <div className="text-section text-[var(--tx3)] truncate">{d.pickup_address} → {d.delivery_address}</div>
                           </div>
-                          {crew && <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
+                          {crew && <span className="text-section font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
                         </Link>
                       );
                     })}
@@ -885,9 +885,9 @@ export default function UnifiedTrackingView({
 
                 {activeSessions.length === 0 && todayMoves.length === 0 && todayDeliveries.length === 0 && (
                   <div className="px-4 py-10 text-center">
-                    <div className="text-[24px] mb-2 opacity-30">📍</div>
-                    <div className="text-[12px] font-medium text-[var(--tx3)]">No jobs today</div>
-                    <div className="text-[10px] text-[var(--tx3)]/60 mt-1">Active jobs and crew tracking will appear here</div>
+                    <div className="text-h1 mb-2 opacity-30">📍</div>
+                    <div className="text-ui font-medium text-[var(--tx3)]">No jobs today</div>
+                    <div className="text-label text-[var(--tx3)]/60 mt-1">Active jobs and crew tracking will appear here</div>
                   </div>
                 )}
               </>
@@ -896,9 +896,9 @@ export default function UnifiedTrackingView({
             {activePanel === "teams" && (
               crews.length === 0 ? (
                 <div className="px-4 py-10 text-center">
-                  <div className="text-[24px] mb-2 opacity-30">👥</div>
-                  <div className="text-[12px] font-medium text-[var(--tx3)]">No teams configured</div>
-                  <div className="text-[10px] text-[var(--tx3)]/60 mt-1">
+                  <div className="text-h1 mb-2 opacity-30">👥</div>
+                  <div className="text-ui font-medium text-[var(--tx3)]">No teams configured</div>
+                  <div className="text-label text-[var(--tx3)]/60 mt-1">
                     <Link href="/admin/platform?tab=teams" className="text-[var(--gold)] hover:underline">Add teams in settings</Link>
                   </div>
                 </div>
@@ -923,23 +923,23 @@ export default function UnifiedTrackingView({
                       className="w-full text-left flex items-center gap-3 px-4 py-3 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                     >
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-label font-bold text-white shrink-0"
                         style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                       >
                         {(c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-bold text-[var(--tx)] truncate">{c.name}</span>
+                          <span className="text-ui font-bold text-[var(--tx)] truncate">{c.name}</span>
                           {hasActiveSession && (
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[var(--gold)] bg-[var(--gold)]/10">LIVE</span>
+                            <span className="px-1.5 py-0.5 rounded text-micro font-bold text-[var(--gold)] bg-[var(--gold)]/10">LIVE</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                        <div className="text-label text-[var(--tx3)] mt-0.5 truncate">
                           {c.current_job ? `${c.current_job} · ` : ""}{locationLabel}
                         </div>
                         {c.members && c.members.length > 0 && (
-                          <div className="text-[9px] text-[var(--tx3)]/60 mt-0.5 truncate">{c.members.join(", ")}</div>
+                          <div className="text-section text-[var(--tx3)]/60 mt-0.5 truncate">{c.members.join(", ")}</div>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">

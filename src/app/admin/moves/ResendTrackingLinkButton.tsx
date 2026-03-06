@@ -41,7 +41,7 @@ export default function ResendTrackingLinkButton({ move }: { move: any }) {
       type="button"
       onClick={handleResend}
       disabled={loading}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--card)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-section font-semibold tracking-wide bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--card)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       title={hasEmail ? "Send magic-link tracking URL to client email" : "Add client email first (click name → edit contact)"}
     >
       <Mail className="w-[10px] h-[10px]" />

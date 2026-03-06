@@ -35,13 +35,13 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
     <ToastProvider>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 md:px-5 py-4 border-b border-[var(--brd)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Invoices</h3>
+          <h3 className="font-heading text-h3-sm font-bold text-[var(--tx)]">All Invoices</h3>
           <div className="flex items-center gap-2">
-            <p className="text-[11px] text-[var(--tx3)]">Create and manage invoices.</p>
+            <p className="text-caption text-[var(--tx3)]">Create and manage invoices.</p>
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               + Create Invoice
             </button>
@@ -53,7 +53,7 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
               key={f.value}
               type="button"
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-full text-label font-semibold transition-all ${
                 statusFilter === f.value
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                   : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"

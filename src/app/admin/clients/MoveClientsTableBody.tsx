@@ -57,7 +57,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
   if (clients.length === 0) {
     return (
       <tr>
-        <td colSpan={7} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
+        <td colSpan={7} className="px-4 py-12 text-center text-ui text-[var(--tx3)]">
           No move clients yet. <Link href="/admin/clients/new" className="text-[var(--gold)] hover:underline">Add one</Link>
         </td>
       </tr>
@@ -78,26 +78,26 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
         >
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
+              <span className="text-label font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
               {(() => {
                 const s = (c.move_status || "").toLowerCase();
                 const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
                 const isCompleted = s === "completed";
-                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
-                if (isCompleted) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Completed</span>;
-                if (s === "cancelled") return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--rdim)] text-[var(--red)]">Cancelled</span>;
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                if (isCompleted) return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--grdim)] text-[var(--grn)]">Completed</span>;
+                if (s === "cancelled") return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--rdim)] text-[var(--red)]">Cancelled</span>;
                 return null;
               })()}
             </div>
           </td>
-          <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.move_type === "office" ? "Commercial" : "Residential"}</td>
+          <td className="px-3 py-2 text-label capitalize border-b border-[var(--brd)]">{c.move_type === "office" ? "Commercial" : "Residential"}</td>
           <td className="hidden sm:table-cell px-3 py-2 border-b border-[var(--brd)]">
-            <div className="text-[9px]">{c.contact_name}</div>
-            <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
+            <div className="text-section">{c.contact_name}</div>
+            <div className="text-section text-[var(--tx3)]">{c.email}</div>
           </td>
-          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</td>
+          <td className="hidden md:table-cell px-3 py-2 text-label border-b border-[var(--brd)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</td>
           <td className="px-3 py-2 border-b border-[var(--brd)]">
-            <span className={`inline-flex px-2 py-[2px] rounded text-[8px] font-bold ${
+            <span className={`inline-flex px-2 py-[2px] rounded text-micro font-bold ${
               c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
               c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
               "bg-[var(--gdim)] text-[var(--gold)]"
@@ -105,7 +105,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
               {(c.move_status || "—").replace("_", " ")}
             </span>
           </td>
-          <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
+          <td className="px-3 py-2 text-label border-b border-[var(--brd)]">
             {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
           </td>
           <td className="px-3 py-2 border-b border-[var(--brd)] w-10" onClick={(e) => e.stopPropagation()}>
@@ -122,9 +122,9 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
               </button>
               {menuOpenId === c.id && (
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
-                  <Link href={`/admin/clients/${c.id}`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>View</Link>
-                  <Link href={`/admin/clients/${c.id}?edit=1`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>Edit</Link>
-                  <button type="button" onClick={() => { setMenuOpenId(null); setDeleteConfirmId(c.id); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--rdim)]">Delete</button>
+                  <Link href={`/admin/clients/${c.id}`} className="block w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>View</Link>
+                  <Link href={`/admin/clients/${c.id}?edit=1`} className="block w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>Edit</Link>
+                  <button type="button" onClick={() => { setMenuOpenId(null); setDeleteConfirmId(c.id); }} className="w-full text-left px-3 py-2 text-label font-medium text-[var(--red)] hover:bg-[var(--rdim)]">Delete</button>
                 </div>
               )}
             </div>
@@ -135,10 +135,10 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
       {typeof document !== "undefined" && deleteConfirmId && createPortal(
         <ModalOverlay open onClose={() => setDeleteConfirmId(null)} title="Delete client?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">This will remove the client from the list. Moves or invoices linked to them will not be deleted. Continue?</p>
+            <p className="text-ui text-[var(--tx2)]">This will remove the client from the list. Moves or invoices linked to them will not be deleted. Continue?</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-              <button onClick={() => handleDelete(deleteConfirmId)} disabled={deleting} className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50">{deleting ? "Deleting…" : "Delete"}</button>
+              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+              <button onClick={() => handleDelete(deleteConfirmId)} disabled={deleting} className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50">{deleting ? "Deleting…" : "Delete"}</button>
             </div>
           </div>
         </ModalOverlay>,

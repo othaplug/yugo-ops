@@ -29,7 +29,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {visible && (
-        <div className="fixed bottom-4 right-4 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 z-[200] text-[11px] font-medium animate-fade-up">
+        <div className="fixed bottom-4 right-4 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 z-[200] text-caption font-medium animate-fade-up">
           <span className={iconKey === "x" || iconKey === "alertTriangle" ? "text-[var(--red)]" : "text-[var(--grn)]"}>
             <Icon name={iconKey} className="w-[14px] h-[14px]" />
           </span>
