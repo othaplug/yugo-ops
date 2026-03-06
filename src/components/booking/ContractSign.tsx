@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Check, ChevronDown, ChevronUp, FileText, Shield } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Check, ChevronDown, ChevronUp, FileText, Shield, MapPin, Calendar, ArrowDown } from "lucide-react";
 import { toTitleCase } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
@@ -115,7 +115,13 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [summaryMounted, setSummaryMounted] = useState(false);
   const contractStartedRef = useRef(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSummaryMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const q = quoteData;
   const canSign = typedName.trim().length >= 2 && agreed && !signing && !signed;
@@ -252,66 +258,175 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
       </div>
 
       <div className="p-5 md:p-6 space-y-5">
-        {/* ── Service & financial summary (always visible) ── */}
+        {/* ── Service & financial summary (redesigned, elevated) ── */}
         <div
-          className="p-4 rounded-xl text-[12px] leading-relaxed space-y-2"
-          style={{ backgroundColor: CREAM, color: FOREST }}
+          className="rounded-2xl overflow-hidden text-[12px] transition-all duration-500 ease-out"
+          style={{
+            backgroundColor: CREAM,
+            color: FOREST,
+            boxShadow: `0 1px 3px ${FOREST}08`,
+            border: `1px solid ${FOREST}12`,
+          }}
         >
-          <p>
-            <b>Service:</b>{" "}
-            {toTitleCase(q.serviceType)}{" "}
-            &mdash; {q.packageLabel}
-          </p>
-          <p>
-            <b>From:</b> {q.fromAddress}
-          </p>
-          <p>
-            <b>To:</b> {q.toAddress}
-          </p>
-          {q.moveDate && (
-            <p>
-              <b>Date:</b> {fmtDate(q.moveDate)}
+          <div className="p-5 md:p-6">
+            {/* Service details */}
+            <p
+              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4 opacity-0 translate-y-2 transition-all duration-300 ease-out"
+              style={{
+                color: `${FOREST}70`,
+                ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
+                transitionDelay: "0ms",
+              }}
+            >
+              Service details
             </p>
-          )}
-
-          {/* Financial breakdown */}
-          <div className="pt-2 mt-2 border-t" style={{ borderColor: `${FOREST}15` }}>
-            <p>
-              <b>Base Rate:</b> {fmtPrice(q.basePrice)}
+            <p
+              className="text-[15px] font-semibold mb-4 transition-all duration-300 ease-out opacity-0 translate-y-2"
+              style={{
+                color: WINE,
+                ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
+                transitionDelay: "60ms",
+              }}
+            >
+              {toTitleCase(q.serviceType)} — {q.packageLabel}
             </p>
 
-            {q.addons.length > 0 && (
-              <div className="mt-2 space-y-1">
-                <p className="font-semibold">Add-ons:</p>
-                {q.addons.map((a, i) => (
-                  <p key={i} className="pl-3">
-                    &mdash; {a.name}
-                    {a.quantity && a.quantity > 1 ? ` \u00d7${a.quantity}` : ""}:{" "}
-                    {fmtPrice(a.price)}
-                  </p>
-                ))}
-                <p className="pl-3 font-semibold">Add-on subtotal: {fmtPrice(q.addonTotal)}</p>
+            {/* Address block with staggered animation + hover refinement */}
+            <div className="space-y-2 mb-1">
+              <div
+                className="flex gap-3 rounded-xl py-3 px-3.5 transition-all duration-300 ease-out hover:bg-black/[0.03]"
+                style={{
+                  opacity: summaryMounted ? 1 : 0,
+                  transform: summaryMounted ? "translateY(0)" : "translateY(8px)",
+                  transitionDelay: "120ms",
+                }}
+              >
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                <div>
+                  <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}60` }}>From</span>
+                  <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.fromAddress}</p>
+                </div>
+              </div>
+              <div
+                className="flex justify-center py-0.5"
+                style={{
+                  opacity: summaryMounted ? 1 : 0,
+                  transition: "opacity 300ms ease-out",
+                  transitionDelay: "180ms",
+                }}
+              >
+                <ArrowDown className="w-4 h-4 shrink-0" style={{ color: `${GOLD}99` }} aria-hidden />
+              </div>
+              <div
+                className="flex gap-3 rounded-xl py-3 px-3.5 transition-all duration-300 ease-out hover:bg-black/[0.03]"
+                style={{
+                  opacity: summaryMounted ? 1 : 0,
+                  transform: summaryMounted ? "translateY(0)" : "translateY(8px)",
+                  transitionDelay: "200ms",
+                }}
+              >
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                <div>
+                  <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}60` }}>To</span>
+                  <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.toAddress}</p>
+                </div>
+              </div>
+            </div>
+
+            {q.moveDate && (
+              <div
+                className="flex items-center gap-2 mt-3 rounded-lg py-2 px-3"
+                style={{
+                  opacity: summaryMounted ? 1 : 0,
+                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
+                  transition: "opacity 300ms ease-out, transform 300ms ease-out",
+                  transitionDelay: "260ms",
+                  color: `${FOREST}90`,
+                }}
+              >
+                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: GOLD }} aria-hidden />
+                <span className="text-[12px]">{fmtDate(q.moveDate)}</span>
               </div>
             )}
           </div>
 
-          <div className="pt-2 mt-2 border-t" style={{ borderColor: `${FOREST}15` }}>
-            <p>
-              <b>Total before tax:</b> {fmtPrice(q.totalBeforeTax)}
+          {/* Divider */}
+          <div className="h-px" style={{ backgroundColor: `${FOREST}12` }} />
+
+          {/* Pricing details */}
+          <div className="p-5 md:p-6">
+            <p
+              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4"
+              style={{
+                color: `${FOREST}70`,
+                opacity: summaryMounted ? 1 : 0,
+                transition: "opacity 300ms ease-out",
+                transitionDelay: "320ms",
+              }}
+            >
+              Pricing details
             </p>
-            <p>
-              <b>HST (13%):</b> {fmtPrice(q.tax)}
-            </p>
-            <p className="text-[13px] font-bold" style={{ color: WINE }}>
-              Total: {fmtPrice(q.grandTotal)}
-            </p>
-            <p>
-              <b>Deposit due now:</b>{" "}
-              <span style={{ color: GOLD }}>{fmtPrice(q.deposit)}</span>
-            </p>
-            <p>
-              <b>Balance due {balanceDue}:</b> {fmtPrice(balance)}
-            </p>
+
+            <div
+              className="space-y-2 mb-4"
+              style={{
+                opacity: summaryMounted ? 1 : 0,
+                transition: "opacity 300ms ease-out",
+                transitionDelay: "360ms",
+              }}
+            >
+              <div className="flex justify-between items-baseline">
+                <span style={{ color: `${FOREST}80` }}>Base rate</span>
+                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.basePrice)}</span>
+              </div>
+              {q.addons.length > 0 && (
+                <>
+                  {q.addons.map((a, i) => (
+                    <div key={i} className="flex justify-between items-baseline pl-2 border-l-2" style={{ borderColor: `${GOLD}40` }}>
+                      <span style={{ color: `${FOREST}80` }}>
+                        {a.name}{a.quantity && a.quantity > 1 ? ` ×${a.quantity}` : ""}
+                      </span>
+                      <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(a.price)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-baseline pt-1 text-[11px]">
+                    <span style={{ color: `${FOREST}60` }}>Add-on subtotal</span>
+                    <span className="font-semibold" style={{ color: FOREST }}>{fmtPrice(q.addonTotal)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div
+              className="space-y-2 pt-4 border-t"
+              style={{
+                borderColor: `${FOREST}15`,
+                opacity: summaryMounted ? 1 : 0,
+                transition: "opacity 300ms ease-out",
+                transitionDelay: "400ms",
+              }}
+            >
+              <div className="flex justify-between items-baseline">
+                <span style={{ color: `${FOREST}80` }}>Total before tax</span>
+                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.totalBeforeTax)}</span>
+              </div>
+              <div className="flex justify-between items-baseline">
+                <span style={{ color: `${FOREST}80` }}>HST (13%)</span>
+                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.tax)}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-2">
+                <span className="font-bold text-[13px]" style={{ color: WINE }}>Total</span>
+                <span className="font-bold text-[15px]" style={{ color: WINE }}>{fmtPrice(q.grandTotal)}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-3">
+                <span className="font-semibold" style={{ color: FOREST }}>Deposit due now</span>
+                <span className="font-bold text-[14px]" style={{ color: GOLD }}>{fmtPrice(q.deposit)}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-1">
+                <span className="text-[11px]" style={{ color: `${FOREST}70` }}>Balance due {balanceDue}</span>
+                <span className="font-medium text-[11px]" style={{ color: FOREST }}>{fmtPrice(balance)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
