@@ -312,11 +312,11 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               }}
             >
               {/* Coloured animated line left of addresses */}
-              <div className="relative shrink-0 w-0.5 rounded-full min-h-[4rem]" style={{ backgroundColor: `${GOLD}30` }}>
+              <div className="relative shrink-0 w-0.5 rounded-full min-h-[4rem]" style={{ backgroundColor: `${WINE}25` }}>
                 <span
                   className="contract-address-flow-dot absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-1.5 rounded-full"
                   style={{
-                    backgroundColor: GOLD,
+                    backgroundColor: WINE,
                     boxShadow: `0 0 0 2px ${CREAM}`,
                   }}
                 />

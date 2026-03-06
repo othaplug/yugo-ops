@@ -47,7 +47,7 @@ export async function POST(
     }
 
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-    const portalUrl = `${getEmailBaseUrl()}/login`;
+    const portalUrl = `${getEmailBaseUrl()}/partner/login`;
 
     const html = welcomeEmail({
       name: (org.contact_name || org.name || "").trim() || "Partner",

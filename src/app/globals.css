@@ -465,7 +465,7 @@ input[type="time"] {
   50% { top: 100%; opacity: 0.9; }
 }
 .contract-address-flow-dot {
-  animation: flowDown 1.4s ease-in-out infinite;
+  animation: flowDown 4.5s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .contract-address-flow-dot { animation: none; }
