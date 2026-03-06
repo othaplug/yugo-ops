@@ -169,6 +169,15 @@ export async function POST(req: Request) {
       moveCode = moveResult.moveCode;
     } catch (moveErr) {
       console.error("[createMoveFromQuote] failed:", moveErr);
+      // Payment succeeded but move creation failed — return success with a warning
+      // so the client knows payment went through, and admin can recover the move
+      return NextResponse.json({
+        success: true,
+        payment_id: squarePaymentId,
+        move_id: null,
+        tracking_url: null,
+        warning: "Payment was processed successfully but move creation failed. Please contact support with your quote ID.",
+      });
     }
 
     // ── 7. Post-payment actions (fire-and-forget) ──

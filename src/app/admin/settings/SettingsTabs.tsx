@@ -27,6 +27,8 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
           <Link
             key={tab.id}
             href={href}
+            // @ts-expect-error -- viewTransition is experimental and not yet typed
+            viewTransition
             className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
               isActive
                 ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"

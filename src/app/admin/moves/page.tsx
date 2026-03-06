@@ -11,7 +11,7 @@ export default async function AllMovesPage() {
     db
       .from("moves")
       .select(
-        "id, move_code, client_name, email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at",
+        "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at",
       )
       .order("scheduled_date", { ascending: false }),
     db

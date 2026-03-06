@@ -78,6 +78,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Settings",
     items: [
       { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "admin" },
+      { href: "/admin/platform?tab=rate-templates", label: "Rate Templates", Icon: Icons.dollarSign, minRole: "owner" },
     ],
   },
 ];
@@ -315,7 +316,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               )}
 
               {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
-              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto animate-fade-in min-h-0">
+              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto tab-content min-h-0">
                 {children}
               </main>
             </div>

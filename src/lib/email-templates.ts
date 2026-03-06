@@ -4,9 +4,10 @@ import { formatPhone } from "./phone";
 
 function emailFooter(loginUrl?: string) {
   const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
+  const logoUrl = getEmailLogoUrl();
   return `
     <div style="font-size:10px;color:#999;text-align:left;margin-top:32px;padding-top:20px;border-top:1px solid #2A2A2A">
-      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</span>
+      <img src="${logoUrl}" alt="YUGO" width="52" height="14" style="display:inline-block;vertical-align:middle;border:0;height:14px;width:auto" />
       <span style="color:#888;margin:0 6px">·</span>
       <a href="${url}" style="color:#C9A962;text-decoration:none">Learn more</a>
       <div style="margin-top:6px;font-size:9px;color:#888">Powered by YUGO</div>

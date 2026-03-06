@@ -53,13 +53,13 @@ export default function GlobalModal({
     >
       {/* Dimmed backdrop - covers viewport */}
       <div
-        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm modal-overlay"
         onClick={onClose}
         aria-hidden="true"
       />
       {/* Content panel - centered, above backdrop so form/inputs receive pointer events */}
       <div
-        className={`relative z-10 w-full ${maxW} max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden animate-fade-up my-auto pointer-events-auto`}
+        className={`relative z-10 w-full ${maxW} max-h-[85vh] flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden modal-card my-auto pointer-events-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {!noHeader && (

@@ -104,6 +104,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      // @ts-expect-error -- viewTransition is experimental and not yet typed
+                      viewTransition
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
                         active
@@ -179,7 +181,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 admin-main-offset animate-fade-in">
+            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 admin-main-offset tab-content">
               {children}
             </main>
           </div>

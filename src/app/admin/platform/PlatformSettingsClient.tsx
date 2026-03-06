@@ -15,11 +15,13 @@ import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
 import PricingControlPanel from "./PricingControlPanel";
+import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
   { id: "pricing", label: "Pricing" },
+  { id: "rate-templates", label: "Rate Templates", ownerOnly: true },
   { id: "crews", label: "Teams" },
   { id: "devices", label: "Devices" },
   { id: "app", label: "App Settings" },
@@ -1096,7 +1098,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
     router.refresh();
   };
 
-  const visibleTabs = TABS.filter((t) => (t.id !== "users" && t.id !== "audit") || isSuperAdmin);
+  const visibleTabs = TABS.filter((t) => {
+    if ((t.id === "users" || t.id === "audit") && !isSuperAdmin) return false;
+    if ("ownerOnly" in t && t.ownerOnly && !isSuperAdmin) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -1118,11 +1124,12 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
 
       {/* Pricing Control Panel */}
-      {activeTab === "pricing" && <PricingControlPanel />}
+      {activeTab === "pricing" && <div key="pricing" className="tab-content"><PricingControlPanel /></div>}
+      {activeTab === "rate-templates" && <div key="rate-templates" className="tab-content"><RateTemplatesPanel /></div>}
 
       {/* Teams tab — reorganized: Staff Roster first, Teams second, Portal Access third */}
       {activeTab === "crews" && (
-      <div id="crews" className="space-y-0">
+      <div key="crews" id="crews" className="space-y-0 tab-content">
         {/* ═══ SECTION 1: STAFF ROSTER ═══ */}
         <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 scroll-mt-4">
           <div className="mb-4">

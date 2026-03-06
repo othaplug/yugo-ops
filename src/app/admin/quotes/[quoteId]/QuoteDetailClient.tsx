@@ -112,6 +112,31 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [engagementExpanded, setEngagementExpanded] = useState(false);
+  const [recoveringMove, setRecoveringMove] = useState(false);
+
+  async function handleRecoverMove() {
+    if (!window.confirm("Create a move record from this accepted quote?")) return;
+    setRecoveringMove(true);
+    try {
+      const res = await fetch("/api/admin/quotes/recover-move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quoteId: quote.quote_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      if (data.move_code) {
+        router.push(`/admin/moves/${data.move_code}`);
+      } else {
+        alert("Move created. Check the Moves page.");
+        router.push("/admin/moves");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create move");
+    } finally {
+      setRecoveringMove(false);
+    }
+  }
   const contact = Array.isArray(quote.contacts) ? quote.contacts[0] : quote.contacts;
 
   async function handleDeleteDraft() {
@@ -215,6 +240,16 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 Cancel
               </button>
             </div>
+          )}
+          {quote.status === "accepted" && (
+            <button
+              type="button"
+              onClick={handleRecoverMove}
+              disabled={recoveringMove}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] hover:text-[var(--grn)]/80 px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
+            >
+              {recoveringMove ? "Creating…" : "Create Move"}
+            </button>
           )}
           <button
             type="button"

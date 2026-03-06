@@ -291,8 +291,8 @@ export default function TrackMoveClient({
   const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
   const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const isPaid = move.status === "paid" || !!move.payment_marked_paid || paymentRecorded || showPaymentSuccess;
-  const baseBalance = isPaid ? 0 : Number(move.estimate || 0);
+  const isPaid = move.status === "paid" || !!move.payment_marked_paid || !!move.balance_paid_at || paymentRecorded || showPaymentSuccess;
+  const baseBalance = isPaid ? 0 : Number(move.balance_amount || 0);
   const feesDollars = isPaid ? 0 : (additionalFeesCents || 0) / 100;
   const totalBalance = baseBalance + feesDollars;
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -641,9 +641,9 @@ export default function TrackMoveClient({
         </div>
 
         {/* Tabs */}
-        <div className="relative mb-4 overflow-hidden">
+        <div className="relative mb-4">
           <div
-            className="flex gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth"
+            className="flex gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth sm:justify-center"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             {tabs.map((t) => (
@@ -662,6 +662,7 @@ export default function TrackMoveClient({
               </button>
             ))}
           </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[1px]" style={{ backgroundColor: `${FOREST}12` }} />
         </div>
 
         {/* Tab content */}
@@ -748,9 +749,15 @@ export default function TrackMoveClient({
 
               <div className="flex items-center justify-between gap-4 pt-1">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance</div>
-                  <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: GOLD }}>{formatCurrency(totalBalance)}</div>
-                  {totalBalance > 0 && <div className="text-[10px] opacity-50" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>}
+                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance Due</div>
+                  <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
+                    {formatCurrency(totalBalance)}
+                  </div>
+                  {totalBalance > 0 ? (
+                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>
+                  ) : (
+                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Fully paid — thank you!</div>
+                  )}
                 </div>
                 {totalBalance > 0 && (
                   <button
@@ -763,6 +770,33 @@ export default function TrackMoveClient({
                   </button>
                 )}
               </div>
+
+              {/* Package selected by client */}
+              {(move.tier_selected || move.service_type) && (
+                <div className="flex items-center gap-2 pt-1">
+                  {move.tier_selected && (
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold tracking-widest uppercase"
+                      style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}30` }}
+                    >
+                      {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)} Package
+                    </span>
+                  )}
+                  {move.service_type && (
+                    <span className="text-[10px] opacity-40" style={{ color: FOREST }}>
+                      {({
+                        local_move: "Residential",
+                        long_distance: "Long Distance",
+                        office_move: "Office",
+                        single_item: "Single Item",
+                        white_glove: "White Glove",
+                        specialty: "Specialty",
+                        b2b_delivery: "B2B Delivery",
+                      } as Record<string, string>)[move.service_type] || move.service_type}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Crew */}

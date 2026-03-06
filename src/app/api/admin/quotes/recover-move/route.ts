@@ -1,0 +1,80 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
+import { requireStaff } from "@/lib/api-auth";
+
+/**
+ * POST /api/admin/quotes/recover-move
+ *
+ * Creates a move from an accepted quote that has no linked move yet.
+ * Used to recover from payment-succeeded-but-move-creation-failed scenarios.
+ */
+export async function POST(req: Request) {
+  const { error: authError } = await requireStaff();
+  if (authError) return authError;
+
+  const { quoteId } = await req.json();
+  if (!quoteId) {
+    return NextResponse.json({ error: "quoteId is required" }, { status: 400 });
+  }
+
+  const db = createAdminClient();
+
+  const { data: quote, error: quoteErr } = await db
+    .from("quotes")
+    .select("*")
+    .eq("quote_id", quoteId)
+    .single();
+
+  if (quoteErr || !quote) {
+    return NextResponse.json({ error: "Quote not found" }, { status: 404 });
+  }
+
+  if (quote.status !== "accepted") {
+    return NextResponse.json(
+      { error: "Quote must be accepted before creating a move" },
+      { status: 400 },
+    );
+  }
+
+  // Check if a move already exists for this quote
+  const { data: existing } = await db
+    .from("moves")
+    .select("id, move_code")
+    .eq("quote_id", quote.id)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({
+      success: true,
+      move_id: existing.id,
+      move_code: existing.move_code,
+      message: "Move already exists",
+    });
+  }
+
+  try {
+    const result = await createMoveFromQuote({
+      quoteId,
+      depositAmount: Number(quote.deposit_amount ?? 0),
+      selectedTier: quote.selected_tier ?? null,
+      selectedAddons: quote.selected_addons ?? [],
+      squareCustomerId: quote.square_customer_id ?? undefined,
+      squareCardId: quote.square_card_id ?? undefined,
+      squarePaymentId: quote.square_payment_id ?? undefined,
+    });
+
+    return NextResponse.json({
+      success: true,
+      move_id: result.moveId,
+      move_code: result.moveCode,
+      tracking_url: result.trackingUrl,
+    });
+  } catch (err) {
+    console.error("[recover-move] createMoveFromQuote failed:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to create move" },
+      { status: 500 },
+    );
+  }
+}

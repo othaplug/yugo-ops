@@ -18,7 +18,7 @@ interface Move {
   id: string;
   move_code?: string;
   client_name?: string;
-  email?: string;
+  client_email?: string;
   from_address?: string;
   to_address?: string;
   scheduled_date?: string;

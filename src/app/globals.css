@@ -102,6 +102,119 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   animation-duration: 0.01ms !important;
 }
 
+/* ═══════════════════════════════════════════════════════
+   PAGE VIEW TRANSITIONS (Next.js 16 native API)
+   ═══════════════════════════════════════════════════════ */
+::view-transition-old(root) {
+  animation: 200ms var(--ease-smooth) both vt-page-out;
+}
+::view-transition-new(root) {
+  animation: 300ms var(--ease-out-expo) both vt-page-in;
+}
+@keyframes vt-page-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-5px) scale(0.995); }
+}
+@keyframes vt-page-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.995); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODAL / DIALOG / SHEET TRANSITIONS
+   ═══════════════════════════════════════════════════════ */
+
+/* Dark backdrop fade */
+.modal-overlay {
+  animation: 220ms var(--ease-smooth) both modal-overlay-in;
+}
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Centre-screen card (desktop modals) */
+.modal-card {
+  animation: 300ms var(--ease-out-expo) both modal-card-in;
+}
+@keyframes modal-card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* Bottom sheet (mobile) */
+.sheet-card {
+  animation: 340ms var(--ease-out-expo) both sheet-in;
+}
+@keyframes sheet-in {
+  from { transform: translateY(100%); opacity: 0.6; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Side drawer (right-to-left slide) */
+.drawer-card {
+  animation: 320ms var(--ease-out-expo) both drawer-in;
+}
+@keyframes drawer-in {
+  from { transform: translateX(100%); opacity: 0.7; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB / PANEL CONTENT TRANSITIONS
+   ═══════════════════════════════════════════════════════ */
+.tab-content {
+  animation: 240ms var(--ease-out-expo) both tab-fade-in;
+}
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Horizontal slide variant (for left/right tab switching) */
+.tab-content-slide {
+  animation: 240ms var(--ease-out-expo) both tab-slide-in;
+}
+@keyframes tab-slide-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   GENERIC UTILITY ENTRY ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+.enter-fade {
+  animation: 260ms var(--ease-out-expo) both enter-fade-anim;
+}
+@keyframes enter-fade-anim {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.enter-up {
+  animation: 300ms var(--ease-out-expo) both enter-up-anim;
+}
+@keyframes enter-up-anim {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered list items — use style="--i:0" through --i:N */
+.stagger-item {
+  animation: 280ms var(--ease-out-expo) calc(var(--i, 0) * 40ms) both enter-up-anim;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-card, .sheet-card, .drawer-card,
+  .tab-content, .tab-content-slide, .enter-fade, .enter-up, .stagger-item {
+    animation: none !important;
+  }
+}
+
 /* Premium scrollbar - app-wide */
 * {
   scrollbar-width: thin;
@@ -280,16 +393,16 @@ input[type="time"] {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px) scale(0.997); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes progressFill {
   from { opacity: 0.9; }
@@ -306,13 +419,13 @@ input[type="time"] {
   animation: progressShimmer 3s ease-in-out infinite;
 }
 .animate-fade-up {
-  animation: fadeUp 0.4s var(--ease-out-expo) forwards;
+  animation: fadeUp 0.32s var(--ease-out-expo) both;
 }
 .animate-fade-in {
-  animation: fadeIn var(--transition-normal) var(--ease-out-expo) forwards;
+  animation: fadeIn 0.26s var(--ease-out-expo) both;
 }
 .animate-slide-in {
-  animation: slideIn var(--transition-fast) var(--ease-out-expo) forwards;
+  animation: slideIn 0.22s var(--ease-out-expo) both;
 }
 
 /* Timeline animations - subtle */

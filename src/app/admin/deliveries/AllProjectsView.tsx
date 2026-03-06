@@ -381,7 +381,7 @@ export default function AllProjectsView({
 
       {/* ── Partners list ── */}
       {mainTab === "partners" && (
-        <div className="border-t border-[var(--brd)]/30 pt-5">
+        <div key="partners" className="border-t border-[var(--brd)]/30 pt-5 tab-content">
           <DataTable<Delivery>
             data={filteredDeliveries}
             columns={deliveryColumns}
@@ -399,7 +399,7 @@ export default function AllProjectsView({
 
       {/* ── Moves list ── */}
       {mainTab === "move" && (
-        <div className="border-t border-[var(--brd)]/30 pt-5">
+        <div key="move" className="border-t border-[var(--brd)]/30 pt-5 tab-content">
           <DataTable<Move>
             data={filteredMoves}
             columns={moveColumns}

@@ -23,6 +23,28 @@ function roundToNearest5(n: number): number {
   return Math.round(n / 5) * 5;
 }
 
+function SkippedBanner({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 1500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[150] pb-10 px-4 flex justify-center"
+      style={{ pointerEvents: "none" }}
+    >
+      <div
+        className="w-full max-w-[400px] rounded-[20px] shadow-xl px-7 py-5 text-center"
+        style={{ backgroundColor: CREAM, pointerEvents: "auto" }}
+      >
+        <p className="text-[16px] font-semibold" style={{ color: FOREST }}>No problem!</p>
+        <p className="text-[13px] mt-1 opacity-60" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
+      </div>
+    </div>
+  );
+}
+
 function ConfettiEffect() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -122,9 +144,9 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
     return (
       <>
         <ConfettiEffect />
-        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay" style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
           <div
-            className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4"
+            className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
             style={{ backgroundColor: CREAM }}
           >
             <div className="pt-8 pb-8 px-7 text-center">
@@ -163,28 +185,19 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
     );
   }
 
-  /* ── Skipped ── */
+  /* ── Skipped ── auto-dismiss after 1.5 s ── */
   if (phase === "skipped") {
-    return (
-      <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}>
-        <div className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden mx-0 sm:mx-4 shadow-xl" style={{ backgroundColor: CREAM }}>
-          <div className="py-10 px-7 text-center">
-            <p className="text-[16px] font-semibold" style={{ color: FOREST }}>No problem!</p>
-            <p className="text-[13px] mt-1.5 opacity-70" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <SkippedBanner onDone={onComplete} />;
   }
 
   /* ── Main tip screen ── */
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay"
       style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
     >
       <div
-        className="w-full max-w-[420px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4"
+        className="w-full max-w-[420px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
         style={{ backgroundColor: CREAM }}
       >
         {/* Drag handle (mobile) */}

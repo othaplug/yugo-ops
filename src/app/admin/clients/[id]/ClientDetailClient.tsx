@@ -9,6 +9,7 @@ import ContactDetailsModal from "../../components/ContactDetailsModal";
 import EditPartnerModal from "./EditPartnerModal";
 import DeliverySummaryModal from "./DeliverySummaryModal";
 import PortalAccessSection from "./PortalAccessSection";
+import PartnerRateCardTab from "./PartnerRateCardTab";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
@@ -75,9 +76,11 @@ export default function ClientDetailClient({
   const [resendPortalLoading, setResendPortalLoading] = useState(false);
   const [summaryDelivery, setSummaryDelivery] = useState<typeof deliveries[0] | null>(null);
   const [summaryInvoice, setSummaryInvoice] = useState<typeof allInvoices[0] | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "rate-card">("overview");
 
   useEffect(() => {
     if (searchParams.get("edit") === "1") setEditModalOpen(true);
+    if (searchParams.get("tab") === "rate-card") setActiveTab("rate-card");
   }, [searchParams]);
 
   const paidInvoices = allInvoices.filter((i) => i.status === "paid");
@@ -204,6 +207,34 @@ export default function ClientDetailClient({
 
       {/* Portal Access — partners only */}
       {!isClient && isAdmin && <PortalAccessSection orgId={client.id} orgName={client.name || ""} />}
+
+      {/* Tab bar — partners only */}
+      {!isClient && isAdmin && (
+        <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0">
+          {(["overview", "rate-card"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px ${
+                activeTab === tab
+                  ? "border-[var(--gold)] text-[var(--gold)]"
+                  : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
+              }`}
+            >
+              {tab === "overview" ? "Overview" : "Rate Card"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Rate Card tab content */}
+      {!isClient && isAdmin && activeTab === "rate-card" && (
+        <PartnerRateCardTab orgId={client.id} orgName={client.name || ""} />
+      )}
+
+      {/* Overview content — hidden when rate card tab active */}
+      {(isClient || !isAdmin || activeTab === "overview") && (
+        <>
 
       {/* Overview + since */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
@@ -370,6 +401,9 @@ export default function ClientDetailClient({
           )}
         </div>
       </div>
+
+        </>
+      )}
 
       <DeliverySummaryModal open={!!summaryDelivery} onClose={() => setSummaryDelivery(null)} delivery={summaryDelivery} />
       <InvoiceDetailModal open={!!summaryInvoice} onClose={() => setSummaryInvoice(null)} invoice={summaryInvoice} />

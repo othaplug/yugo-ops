@@ -74,6 +74,8 @@ export default function Sidebar() {
               <Link
                 key={`${section.label}-${item.name}`}
                 href={item.href}
+                // @ts-expect-error -- viewTransition is experimental and not yet typed
+                viewTransition
                 className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-lg text-[11px] font-medium border-l-2 -ml-px
                   ${isActive 
                     ? "bg-[var(--gdim)] text-[var(--gold)] border-[var(--gold)] font-semibold shadow-[0_0_0_1px_rgba(201,169,98,0.18),0_2px_8px_rgba(0,0,0,0.25)]" 
@@ -95,7 +97,8 @@ export default function Sidebar() {
 
       {/* User Footer */}
       <div className="mt-auto px-4 py-3 border-t border-[var(--brd)]">
-        <Link href="/admin/settings" className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-lg hover:bg-[var(--gdim)]">
+        {/* @ts-expect-error -- viewTransition is experimental and not yet typed */}
+        <Link href="/admin/settings" viewTransition className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-lg hover:bg-[var(--gdim)]">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-[9px] font-bold text-white">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>

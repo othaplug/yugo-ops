@@ -499,7 +499,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           </div>
 
         {/* Tab Content */}
-        <div className="p-4 sm:p-6">
+        <div key={activeTab} className="p-4 sm:p-6 tab-content">
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
               projects={(data.projects || []).map((p) => {

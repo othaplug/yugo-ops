@@ -46,8 +46,8 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-[420px] mx-4" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm modal-overlay" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-[420px] mx-4 modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[18px] font-bold text-[#1A1A1A] font-serif">Share Tracking Link</h2>

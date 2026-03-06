@@ -20,7 +20,6 @@ import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import DistanceLogistics from "./DistanceLogistics";
-import BalancePaymentSection from "./BalancePaymentSection";
 import ModalOverlay from "../../components/ModalOverlay";
 import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
@@ -82,14 +81,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
     }
   }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
   const estimate = Number(move.estimate ?? move.amount ?? 0);
-  const depositPaid = Math.round(estimate * 0.25);
-  const balanceDue = estimate - depositPaid;
+  const depositPaid = Number(move.deposit_amount ?? Math.round(estimate * 0.25));
+  const balanceDue = Number(move.balance_amount ?? (estimate - depositPaid));
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
   const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const isCompleted = isMoveStatusCompleted(move.status);
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
+  const isBalancePaid = !!move.balance_paid_at;
+  const [balanceLoading, setBalanceLoading] = useState<"etransfer" | "card" | null>(null);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
 
@@ -577,52 +578,179 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         )}
       </div>
 
-      {/* Financial Snapshot — keeps card (hero pricing) */}
-      <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/5 to-transparent border border-[var(--gold)]/15 p-4">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">Financial Snapshot</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
-          <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/15 to-[var(--gold)]/5 border-2 border-[var(--gold)]/40 px-4 py-3 shadow-sm">
-            <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
-            <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
-            {estimate > 0 && <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(calcHST(estimate))} HST &middot; {formatCurrency(estimate + calcHST(estimate))}</div>}
-          </div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
-          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(isPaid ? 0 : balanceDue)}</div></div>
-        </div>
-        <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 flex flex-wrap items-center gap-3">
-          <div>
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
-            <div className="mt-0.5 text-[13px] font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit received"}</div>
-          </div>
-          {!isPaid && (
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const res = await fetch(`/api/admin/moves/${move.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
-                  });
-                  const data = await res.json();
-                  if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
-                  if (data) setMove(data);
-                  router.refresh();
-                  toast("Move marked as paid", "check");
-                } catch (err) {
-                  toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
-                }
-              }}
-              className="text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
-            >
-              Mark as Paid
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Financial Snapshot */}
+      {(() => {
+        const fullyPaid = isPaid || isBalancePaid;
+        const quoteTotal = estimate > 0 ? estimate : (depositPaid + balanceDue);
+        const collectedAmount = fullyPaid ? quoteTotal : depositPaid;
+        const progressPct = quoteTotal > 0 ? Math.min(100, Math.round((collectedAmount / quoteTotal) * 100)) : 0;
+        const SERVICE_LABELS: Record<string, string> = {
+          local_move: "Residential", long_distance: "Long Distance",
+          office_move: "Office", single_item: "Single Item",
+          white_glove: "White Glove", specialty: "Specialty", b2b_delivery: "B2B Delivery",
+        };
 
-      {/* Balance Payment */}
-      <BalancePaymentSection move={move} onUpdate={(m) => { setMove(m); router.refresh(); }} />
+        return (
+          <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
+            {/* Header strip */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-0">
+              <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Payments</span>
+              <div className="flex items-center gap-1.5">
+                {move.tier_selected && (
+                  <span className="text-[8px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
+                    {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)}
+                  </span>
+                )}
+                {move.service_type && (
+                  <span className="text-[8px] text-[var(--tx3)]/50">
+                    {SERVICE_LABELS[move.service_type as string] || move.service_type}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Main amount */}
+            <div className="px-5 pt-3 pb-4">
+              <div>
+                  {/* Status badge sits above the number */}
+                  <div className="mb-2">
+                    {fullyPaid ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
+                        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        Paid
+                      </span>
+                    ) : balanceUnpaid ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/20">
+                        Overdue
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20">
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                  <div className={`font-heading text-[32px] font-bold leading-none tracking-tight ${
+                    fullyPaid ? "text-[var(--grn)]" : balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"
+                  }`}>
+                    {formatCurrency(fullyPaid ? quoteTotal : balanceDue)}
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="text-[10px] text-[var(--tx3)]/60">
+                      {fullyPaid
+                        ? `Total collected${move.balance_method ? ` · ${move.balance_method === "etransfer" ? "E-Transfer" : "Card"}${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
+                        : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
+                    </span>
+                  </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[9px] text-[var(--tx3)]/50">{formatCurrency(collectedAmount)} collected</span>
+                  <span className="text-[9px] text-[var(--tx3)]/50">{formatCurrency(quoteTotal)} contract</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : balanceUnpaid ? "bg-[var(--red)]" : "bg-[var(--gold)]"}`}
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Action row — only when action is needed */}
+            {!fullyPaid && (
+              <div className="px-4 py-3 border-t border-[var(--brd)]/40 flex flex-wrap items-center gap-2">
+                {!isPaid && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/admin/moves/${move.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
+                        if (data) setMove(data);
+                        router.refresh();
+                        toast("Move marked as paid", "check");
+                      } catch (err) {
+                        toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
+                      }
+                    }}
+                    className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors"
+                  >
+                    Mark Deposit Paid
+                  </button>
+                )}
+                {balanceDue > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={balanceLoading !== null}
+                      onClick={async () => {
+                        if (!window.confirm("Confirm that you've received the e-transfer for this move's balance?")) return;
+                        setBalanceLoading("etransfer");
+                        try {
+                          const res = await fetch(`/api/admin/moves/${move.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "mark_etransfer_received", marked_by: "admin" }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || "Failed");
+                          setMove(data);
+                          router.refresh();
+                          toast("E-transfer marked as received", "check");
+                        } catch (err) {
+                          toast(err instanceof Error ? err.message : "Failed to mark e-transfer", "alertTriangle");
+                        } finally {
+                          setBalanceLoading(null);
+                        }
+                      }}
+                      className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors disabled:opacity-40"
+                    >
+                      {balanceLoading === "etransfer" ? "Processing…" : "Mark E-Transfer Received"}
+                    </button>
+                    {move.square_card_id && (
+                      <button
+                        type="button"
+                        disabled={balanceLoading !== null}
+                        onClick={async () => {
+                          const ccTotal = (balanceDue * 1.033 + 0.15).toFixed(2);
+                          if (!window.confirm(`Charge ${ccTotal} CAD to the client's card on file? This includes the 3.3% processing fee.`)) return;
+                          setBalanceLoading("card");
+                          try {
+                            const res = await fetch(`/api/admin/moves/${move.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "charge_card_now", marked_by: "admin" }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || "Failed");
+                            setMove(data);
+                            router.refresh();
+                            toast("Card charged successfully", "check");
+                          } catch (err) {
+                            toast(err instanceof Error ? err.message : "Failed to charge card", "alertTriangle");
+                          } finally {
+                            setBalanceLoading(null);
+                          }
+                        }}
+                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 hover:bg-[var(--gold)]/18 transition-colors disabled:opacity-40"
+                      >
+                        {balanceLoading === "card" ? "Charging…" : "Charge Card Now"}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Profitability — Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}

@@ -4,6 +4,12 @@ import { ToastProvider } from "@/app/admin/components/Toast";
 export const metadata = {
   title: "YUGO",
   description: "Premium logistics operations platform",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/icon.png",
+  },
 };
 
 export const viewport = {

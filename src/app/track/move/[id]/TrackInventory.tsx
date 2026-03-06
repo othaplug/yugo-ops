@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
 
+const GOLD = "#C9A962";
+const FOREST = "#2C3B2D";
+
 type InventoryItem = {
   id: string;
   room: string;
@@ -21,6 +24,35 @@ type ExtraItem = {
   quantity?: number;
   added_at?: string;
 };
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-[#E7E5E4] last:border-0">
+      <td className="px-5 py-3.5">
+        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-2/5" />
+      </td>
+      <td className="px-5 py-3.5 text-right">
+        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-6 ml-auto" />
+      </td>
+    </tr>
+  );
+}
+
+function SkeletonRoom({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="rounded-xl border border-[#E7E5E4] overflow-hidden">
+      <div className="px-5 py-3.5 bg-[#FAFAF8] flex items-center justify-between border-b border-[#E7E5E4]">
+        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-28" />
+        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-8" />
+      </div>
+      <table className="w-full">
+        <tbody>
+          {Array.from({ length: rows }).map((_, i) => <SkeletonRow key={i} />)}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function TrackInventory({ moveId, token, moveComplete = false }: { moveId: string; token: string; moveComplete?: boolean }) {
   const { toast } = useToast();
@@ -100,6 +132,9 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
     URL.revokeObjectURL(url);
   };
 
+  const capitalize = (str: string) =>
+    str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
+
   const byRoom = items.reduce<Record<string, InventoryItem[]>>((acc, item) => {
     const room = item.room || "Uncategorized";
     if (!acc[room]) acc[room] = [];
@@ -122,6 +157,20 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
   }
   const rooms = Object.keys(byRoom).sort();
 
+  const totalItemCount = items.reduce((sum, item) => {
+    const rows = expandItemRow(item.item_name);
+    return sum + rows.reduce((s, r) => s + r.qty, 0);
+  }, 0) + extraItems.reduce((sum, e) => sum + (e.quantity ?? 1), 0);
+
+  const roomItemCount = (room: string) =>
+    byRoom[room]?.reduce((sum, item) => {
+      const rows = expandItemRow(item.item_name);
+      return sum + rows.reduce((s, r) => {
+        const qty = rows.length === 1 && item.quantity != null ? item.quantity : r.qty;
+        return s + qty;
+      }, 0);
+    }, 0) ?? 0;
+
   const toggleRoom = (room: string) => {
     setCollapsedRooms((prev) => {
       const next = new Set(prev);
@@ -132,111 +181,200 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
   };
   const isExpanded = (room: string) => !collapsedRooms.has(room);
 
+  const AddExtraModal = () => (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[400px] shadow-2xl overflow-hidden">
+        <div className="px-5 pt-5 pb-4 border-b border-[#E7E5E4]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[15px] font-bold text-[#1A1A1A]">Request Extra Item</h3>
+              <p className="text-[11px] text-[#888] mt-0.5">Sent to your coordinator for approval</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddExtraOpen(false)}
+              className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#666] hover:bg-[#EEECEA] transition-colors"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+        <form onSubmit={handleAddExtra} className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Description *</label>
+            <input
+              value={extraDesc}
+              onChange={(e) => setExtraDesc(e.target.value)}
+              placeholder="e.g. Extra boxes from garage"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Quantity</label>
+              <input
+                type="number"
+                min={1}
+                value={extraQty}
+                onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Room</label>
+              <input
+                value={extraRoom}
+                onChange={(e) => setExtraRoom(e.target.value)}
+                placeholder="e.g. Garage"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setAddExtraOpen(false)}
+              className="flex-1 py-2.5 rounded-xl border border-[#E7E5E4] text-[#555] text-[12px] font-semibold hover:bg-[#F5F5F3] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !extraDesc.trim()}
+              className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
+              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            >
+              {submitting ? "Submitting…" : "Submit Request"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">
-          Inventory
-        </h3>
-        <p className="text-[12px] text-[#666]">Loading...</p>
+      <div className="space-y-3">
+        <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
+            <div className="h-4 rounded-full bg-[#E7E5E4] animate-pulse w-20" />
+            <div className="h-7 rounded-lg bg-[#E7E5E4] animate-pulse w-16" />
+          </div>
+          <div className="px-5 py-3 border-b border-[#E7E5E4]">
+            <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-40" />
+          </div>
+          <div className="p-4 space-y-2.5">
+            <SkeletonRoom rows={4} />
+            <SkeletonRoom rows={3} />
+            <SkeletonRoom rows={2} />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (items.length === 0 && extraItems.length === 0) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">
-          Inventory
-        </h3>
-        <p className="text-[12px] text-[#666] mb-4">No inventory items logged yet. Your coordinator will add items as your move is prepared.</p>
-        {!moveComplete && (
-          <button
-            type="button"
-            onClick={() => setAddExtraOpen(true)}
-            className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
-          >
-            + Add Extra Item
-          </button>
-        )}
-        {addExtraOpen && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">
-              <h3 className="text-[16px] font-bold text-[#1A1A1A] mb-2">Add Extra Item</h3>
-              <p className="text-[11px] text-[#666] mb-4">Your request will be sent to your coordinator for approval.</p>
-              <form onSubmit={handleAddExtra} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Description</label>
-                  <input
-                    value={extraDesc}
-                    onChange={(e) => setExtraDesc(e.target.value)}
-                    placeholder="e.g. Extra boxes from garage"
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Quantity</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={extraQty}
-                    onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-[#666] mb-1">Room (optional)</label>
-                  <input
-                    value={extraRoom}
-                    onChange={(e) => setExtraRoom(e.target.value)}
-                    placeholder="e.g. Garage"
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setAddExtraOpen(false)} className="flex-1 py-2.5 rounded-lg border border-[#E7E5E4] text-[#1A1A1A] text-[13px]">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={submitting || !extraDesc.trim()} className="flex-1 py-2.5 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50">
-                    {submitting ? "Submitting…" : "Submit"}
-                  </button>
-                </div>
-              </form>
-            </div>
+      <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#E7E5E4]">
+          <h3 className="text-[14px] font-bold text-[#1A1A1A]">Inventory</h3>
+        </div>
+        <div className="px-5 py-10 text-center">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${GOLD}14` }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              <path d="m3.3 7 8.7 5 8.7-5"/>
+              <line x1="12" y1="22" x2="12" y2="12"/>
+            </svg>
           </div>
-        )}
+          <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
+          <p className="text-[11px] text-[#888] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
+          {!moveComplete && (
+            <button
+              type="button"
+              onClick={() => setAddExtraOpen(true)}
+              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Request extra item
+            </button>
+          )}
+        </div>
+        {addExtraOpen && <AddExtraModal />}
       </div>
     );
   }
 
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A]">
-          Inventory
-        </h3>
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-bold text-[#1A1A1A]">Inventory</h3>
+          <p className="text-[11px] text-[#888] mt-0.5">
+            {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
+          </p>
+        </div>
         <button
           type="button"
           onClick={handleExport}
-          className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#555] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
         >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
           Export
         </button>
       </div>
-      <div className="p-5 space-y-2">
+
+      {/* Room list */}
+      <div className="p-4 space-y-2">
         {rooms.map((room) => {
           const expanded = isExpanded(room);
+          const count = roomItemCount(room);
+          const isOnSite = room === "Added on-site";
           return (
-            <div key={room} className="rounded-lg border border-[#E7E5E4] overflow-hidden transition-colors hover:border-[#D4D4D4]">
+            <div
+              key={room}
+              className="rounded-xl border overflow-hidden transition-all duration-150"
+              style={{ borderColor: expanded ? "#E0DDD8" : "#E7E5E4" }}
+            >
+              {/* Room header */}
               <button
                 type="button"
                 onClick={() => toggleRoom(room)}
-                className="w-full flex items-center justify-between gap-2 bg-[#FAFAF8] px-4 py-2.5 text-left hover:bg-[#F5F5F3] transition-colors cursor-pointer group border-b border-[#E7E5E4]"
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-[#FAFAF8] border-b"
+                style={{
+                  backgroundColor: expanded ? "#F8F7F4" : "#FAFAF8",
+                  borderBottomColor: expanded ? "#E7E5E4" : "transparent",
+                }}
               >
-                <h4 className="text-[12px] font-bold text-[#C9A962] group-hover:text-[#B8983E] transition-colors">{room}</h4>
-                <span className={`text-[10px] text-[#999] transition-transform duration-200 ease-out inline-block ${expanded ? "rotate-0" : "-rotate-90"}`} aria-hidden>▼</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {isOnSite && (
+                    <span className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: `${GOLD}20` }}>
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </span>
+                  )}
+                  <h4 className="text-[12px] font-bold truncate" style={{ color: isOnSite ? GOLD : "#C9A962" }}>{room}</h4>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${GOLD}14`, color: GOLD }}>
+                    {count}
+                  </span>
+                  <svg
+                    width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round"
+                    className="transition-transform duration-200"
+                    style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
               </button>
+
+              {/* Collapsible table */}
               <div
                 className="grid transition-[grid-template-rows] duration-200 ease-out"
                 style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
@@ -244,22 +382,30 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                 <div className="overflow-hidden">
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead>
-                      <tr className="bg-[#F5F5F3]">
-                        <th className="text-[10px] font-bold uppercase tracking-wider text-[#666] px-4 py-3 border-b-2 border-[#E7E5E4] w-[1%] whitespace-nowrap">Item</th>
-                        <th className="text-[10px] font-bold uppercase tracking-wider text-[#666] px-4 py-3 border-b-2 border-[#E7E5E4] text-right w-16">Qty</th>
+                      <tr style={{ backgroundColor: "#F5F5F3" }}>
+                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] w-auto">Item</th>
+                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
                       {byRoom[room].flatMap((item) => {
-                        const capitalize = (str: string) =>
-                          str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
                         const rows = expandItemRow(item.item_name);
                         return rows.map((r, ri) => {
                           const qty = rows.length === 1 && item.quantity != null ? item.quantity : r.qty;
                           return (
-                            <tr key={`${item.id}-${ri}`} className="border-b border-[#E7E5E4] last:border-0 hover:bg-[#FAFAF8]/60 transition-colors">
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] align-middle">{capitalize(r.label)}</td>
-                              <td className="px-4 py-3 text-[13px] font-medium text-[#1A1A1A] text-right align-middle tabular-nums w-16">{qty}</td>
+                            <tr
+                              key={`${item.id}-${ri}`}
+                              className="border-b border-[#F0EDE8] last:border-0 transition-colors"
+                              style={{ backgroundColor: "transparent" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAF8")}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle">{capitalize(r.label)}</td>
+                              <td className="px-4 py-3 align-middle w-14">
+                                <span className="flex items-center justify-end">
+                                  <span className="text-[12.5px] font-semibold tabular-nums text-[#555]">{qty}</span>
+                                </span>
+                              </td>
                             </tr>
                           );
                         });
@@ -272,65 +418,36 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           );
         })}
       </div>
+
+      {/* Add Extra Item CTA */}
       {!moveComplete && (
-        <div className="px-5 py-4 border-t border-[#E7E5E4]">
+        <div className="px-4 pb-4">
           <button
             type="button"
             onClick={() => setAddExtraOpen(true)}
-            className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#E7E5E4] text-[12px] font-semibold text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+            className="w-full py-3 rounded-xl border border-dashed flex items-center justify-center gap-2 text-[12px] font-semibold transition-all hover:scale-[1.005] active:scale-[0.998]"
+            style={{ borderColor: "#D4D0C8", color: "#888" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = GOLD;
+              (e.currentTarget as HTMLButtonElement).style.color = GOLD;
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${GOLD}06`;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "#D4D0C8";
+              (e.currentTarget as HTMLButtonElement).style.color = "#888";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+            }}
           >
-            + Add Extra Item
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Request extra item
           </button>
         </div>
       )}
-      {addExtraOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-5 max-w-[340px] w-full shadow-xl">
-            <h3 className="text-[16px] font-bold text-[#1A1A1A] mb-2">Add Extra Item</h3>
-            <p className="text-[11px] text-[#666] mb-4">Your request will be sent to your coordinator for approval.</p>
-            <form onSubmit={handleAddExtra} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-semibold text-[#666] mb-1">Description</label>
-                <input
-                  value={extraDesc}
-                  onChange={(e) => setExtraDesc(e.target.value)}
-                  placeholder="e.g. Extra boxes from garage"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-[#666] mb-1">Quantity</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={extraQty}
-                  onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-[#666] mb-1">Room (optional)</label>
-                <input
-                  value={extraRoom}
-                  onChange={(e) => setExtraRoom(e.target.value)}
-                  placeholder="e.g. Garage"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#E7E5E4] bg-white text-[#1A1A1A] text-[13px]"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setAddExtraOpen(false)} className="flex-1 py-2.5 rounded-lg border border-[#E7E5E4] text-[#1A1A1A] text-[13px]">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting || !extraDesc.trim()} className="flex-1 py-2.5 rounded-lg bg-[#C9A962] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50">
-                  {submitting ? "Submitting…" : "Submit"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+      {addExtraOpen && <AddExtraModal />}
     </div>
   );
 }
-

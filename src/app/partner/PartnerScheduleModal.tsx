@@ -283,9 +283,9 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[640px] max-h-[92vh] overflow-y-auto mx-0 sm:mx-4 flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[640px] max-h-[92vh] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
