@@ -576,13 +576,13 @@ export default function UnifiedTrackingView({
             const sessionByTeam = new Map<string, StreamSessionPayload>(sessions.map((s) => [s.team_id, s]));
             return prev.map((c) => {
               const s = sessionByTeam.get(c.id);
-              if (!s?.lastLocation?.lat) return c;
+              if (!s) return c;
+              const hasLoc = s.lastLocation?.lat != null && s.lastLocation?.lng != null;
               return {
                 ...c,
-                current_lat: s.lastLocation.lat,
-                current_lng: s.lastLocation.lng,
+                ...(hasLoc && { current_lat: s.lastLocation!.lat, current_lng: s.lastLocation!.lng }),
                 status: s.status && !["completed", "not_started"].includes(s.status) ? "en-route" : c.status,
-                updated_at: s.updatedAt,
+                updated_at: s.updatedAt || c.updated_at,
               };
             });
           });
@@ -634,11 +634,14 @@ export default function UnifiedTrackingView({
           if (!coords || coords.length < 2) continue;
 
           const res = await fetch(`/api/mapbox/directions?from=${from}&to=${coords[0]},${coords[1]}`);
+          if (!res.ok) { console.warn("[UnifiedTracking] directions API", res.status); continue; }
           const data = await res.json();
-          if (data?.coordinates) {
+          if (data?.coordinates && Array.isArray(data.coordinates)) {
             newRoutes.set(s.teamId, data.coordinates);
+          } else {
+            console.warn("[UnifiedTracking] No route for crew", s.teamId);
           }
-        } catch {} // eslint-disable-line no-empty
+        } catch (err) { console.warn("[UnifiedTracking] route fetch failed", err); }
       }
       if (newRoutes.size > 0) {
         setRouteLines(newRoutes);

@@ -48,19 +48,7 @@ const MapboxMap = dynamic(
       routeLineColor?: string;
       routeGeoJson?: RouteGeoJson;
     }) {
-      const lineGeoJson = routeGeoJson ?? (hasPosition && crew && destination
-        ? {
-            type: "Feature" as const,
-            properties: {},
-            geometry: {
-              type: "LineString" as const,
-              coordinates: [
-                [crew.current_lng, crew.current_lat],
-                [destination.lng, destination.lat],
-              ] as [number, number][],
-            },
-          }
-        : null);
+      const lineGeoJson = routeGeoJson ?? null;
 
       return (
         <M
@@ -256,8 +244,12 @@ export default function LiveTrackingMap({
     const from = `${crew.current_lng},${crew.current_lat}`;
     const to = `${destination.lng},${destination.lat}`;
     fetch(`/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) { console.warn("[LiveTrackingMap] directions API returned", res.status); return null; }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) { setRouteGeoJson(null); setRoutePositions([]); return; }
         const coordsList = data?.coordinates;
         if (Array.isArray(coordsList) && coordsList.length > 0) {
           setRouteGeoJson({
@@ -267,11 +259,13 @@ export default function LiveTrackingMap({
           });
           setRoutePositions(coordsList.map((c: [number, number]) => [c[1], c[0]]));
         } else {
+          console.warn("[LiveTrackingMap] No route coordinates returned", { from, to });
           setRouteGeoJson(null);
           setRoutePositions([]);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn("[LiveTrackingMap] directions fetch failed", err);
         setRouteGeoJson(null);
         setRoutePositions([]);
       });

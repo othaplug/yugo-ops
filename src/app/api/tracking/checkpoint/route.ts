@@ -48,10 +48,14 @@ export async function POST(req: NextRequest) {
   checkpoints.push(newCheckpoint);
 
   const isCompleted = status === "completed";
+  const lastLocation = (lat != null && lng != null)
+    ? { lat: Number(lat), lng: Number(lng), accuracy: 0, timestamp: now }
+    : undefined;
   const updates: Record<string, unknown> = {
     status,
     checkpoints,
     updated_at: now,
+    ...(lastLocation && { last_location: lastLocation }),
   };
   if (isCompleted) {
     updates.is_active = false;
@@ -64,6 +68,13 @@ export async function POST(req: NextRequest) {
     .eq("id", sessionId);
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
+  if (lat != null && lng != null) {
+    await admin
+      .from("crews")
+      .update({ current_lat: Number(lat), current_lng: Number(lng), updated_at: now })
+      .eq("id", session.team_id);
+  }
 
   // Sync move/delivery status and stage with crew tracking for admin and dashboard
   const table = session.job_type === "move" ? "moves" : "deliveries";

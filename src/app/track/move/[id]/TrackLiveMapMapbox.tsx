@@ -194,18 +194,7 @@ export function TrackLiveMapMapbox({
     };
   }, [remainingCoords]);
 
-  // Fallback straight-line route when no directions data
-  const fallbackGeoJson = useMemo(() => {
-    if (routeCoords || !pickup || !dropoff) return null;
-    return {
-      type: "Feature" as const,
-      properties: {},
-      geometry: {
-        type: "LineString" as const,
-        coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]],
-      },
-    };
-  }, [routeCoords, pickup, dropoff]);
+  const fallbackGeoJson = null;
 
   return (
     <Map
@@ -263,22 +252,24 @@ export function TrackLiveMapMapbox({
         </Source>
       )}
 
-      {/* Pickup pin (A - green) */}
+      {/* Pickup marker (green dot) */}
       {pickup && (
-        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="bottom">
-          <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full bg-[#22C55E] border-2 border-white shadow-lg flex items-center justify-center text-caption font-bold text-white">A</div>
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#22C55E] -mt-0.5" />
-          </div>
+        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
+          <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-white shadow-md" />
         </Marker>
       )}
 
-      {/* Delivery pin (B - red/gold) */}
+      {/* Destination — Home icon (dark, pin-style) */}
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
           <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full bg-[#EF4444] border-2 border-white shadow-lg flex items-center justify-center text-caption font-bold text-white">B</div>
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#EF4444] -mt-0.5" />
+            <div className="w-9 h-9 rounded-full bg-[#1A1A1A] border-2 border-white shadow-lg flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#1A1A1A] -mt-0.5" />
           </div>
         </Marker>
       )}
@@ -293,22 +284,19 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      {/* Crew truck marker (smoothly animated, pulsing gold with Yugo branding) */}
+      {/* Crew — Car icon (red, with pulse) */}
       {hasPosition && animatedCrew && (
         <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
           <div className="relative" style={{ transition: "transform 0.1s linear" }}>
-            {/* Pulsing ring */}
-            <div className="absolute -inset-2.5 rounded-full bg-[#C9A962] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
-            {/* Outer ring */}
-            <div className="w-11 h-11 rounded-full flex items-center justify-center border-2 border-[#C9A962] shadow-lg" style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.2), rgba(201,169,98,0.1))" }}>
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-ui font-bold text-white shadow-inner"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
-              >
-                {(crewName || crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
-              </div>
+            <div className="absolute -inset-2 rounded-full bg-[#DC2626] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
+            <div className="w-10 h-10 rounded-full bg-[#DC2626] border-2 border-white shadow-lg flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 17h2m10 0h2M3 9l2-5h14l2 5"/>
+                <path d="M3 9v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/>
+                <circle cx="7" cy="17" r="1.5" fill="#FFFFFF" stroke="none"/>
+                <circle cx="17" cy="17" r="1.5" fill="#FFFFFF" stroke="none"/>
+              </svg>
             </div>
-            {/* Speed indicator */}
             {speed != null && speed > 0 && (
               <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-section font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
