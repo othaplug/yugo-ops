@@ -4,8 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateDayRate, calculatePerDelivery, detectZone, getVolumeDiscount, getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function POST(req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { primaryOrgId, orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!primaryOrgId) return NextResponse.json({ error: "No organization linked" }, { status: 403 });
 
   try {
     const body = await req.json();
@@ -16,12 +17,12 @@ export async function POST(req: NextRequest) {
     const { data: org } = await db
       .from("organizations")
       .select("pricing_tier")
-      .eq("id", orgId!)
+      .eq("id", primaryOrgId)
       .single();
 
     const pricingTier = (org?.pricing_tier === "partner" ? "partner" : "standard") as "standard" | "partner";
 
-    const rateCardId = await getActiveRateCard(orgId!);
+    const rateCardId = await getActiveRateCard(primaryOrgId);
     if (!rateCardId) return NextResponse.json({ error: "No rate card configured" }, { status: 404 });
 
     if (booking_type === "day_rate") {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       const { count } = await db
         .from("deliveries")
         .select("id", { count: "exact", head: true })
-        .eq("organization_id", orgId!)
+        .in("organization_id", orgIds)
         .gte("scheduled_date", `${thisMonth}-01`)
         .in("status", ["completed", "delivered", "in_transit", "scheduled", "confirmed"]);
 

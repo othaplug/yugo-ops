@@ -7,13 +7,14 @@ export default async function PartnerDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/partner/login");
 
-  const { data: partnerUser } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).single();
-  if (!partnerUser) redirect("/partner/login");
+  const { data: partnerRows } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).order("created_at", { ascending: true });
+  const primaryOrgId = partnerRows?.[0]?.org_id;
+  if (!primaryOrgId) redirect("/partner/login");
 
   const { data: org } = await supabase
     .from("organizations")
     .select("id, name, type, contact_name, email, phone")
-    .eq("id", partnerUser.org_id)
+    .eq("id", primaryOrgId)
     .single();
 
   const contactName = org?.contact_name || user.email?.split("@")[0] || "Partner";
@@ -21,7 +22,7 @@ export default async function PartnerDashboardPage() {
 
   return (
     <PartnerPortalClient
-      orgId={org?.id || partnerUser.org_id}
+      orgId={org?.id || primaryOrgId}
       orgName={org?.name || "Partner"}
       orgType={org?.type || "retail"}
       contactName={firstName}

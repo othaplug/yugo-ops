@@ -4,8 +4,9 @@ import { requirePartner } from "@/lib/partner-auth";
 import { getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function POST(req: NextRequest) {
-  const { orgId, userId, error } = await requirePartner();
+  const { primaryOrgId, userId, error } = await requirePartner();
   if (error) return error;
+  if (!primaryOrgId) return NextResponse.json({ error: "No organization linked" }, { status: 403 });
 
   try {
     const body = await req.json();
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     const { data: org } = await admin
       .from("organizations")
       .select("name, type, pricing_tier")
-      .eq("id", orgId!)
+      .eq("id", primaryOrgId)
       .single();
 
     const customerName = (body.customer_name || "").trim();
@@ -32,11 +33,11 @@ export async function POST(req: NextRequest) {
         ? body.items.split("\n").map((i: string) => i.trim()).filter(Boolean)
         : [];
 
-    const rateCardId = await getActiveRateCard(orgId!);
+    const rateCardId = await getActiveRateCard(primaryOrgId);
 
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
-      organization_id: orgId,
+      organization_id: primaryOrgId,
       client_name: org?.name || "",
       customer_name: customerName,
       customer_email: (body.customer_email || "").trim() || null,

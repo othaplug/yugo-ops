@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePartner } from "@/lib/partner-auth";
 
 export async function POST(req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { primaryOrgId, error } = await requirePartner();
   if (error) return error;
 
   try {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { data: org } = await supabase
       .from("organizations")
       .select("name, contact_name")
-      .eq("id", orgId!)
+      .eq("id", primaryOrgId!)
       .single();
 
     const agentName = org?.contact_name || org?.name || "Partner Agent";

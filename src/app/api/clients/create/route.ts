@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
             address: addressTrimmed,
           })
           .eq("id", orgId);
-        await admin.from("partner_users").upsert({ user_id: userId, org_id: orgId }, { onConflict: "user_id" });
+        await admin.from("partner_users").upsert({ user_id: userId, org_id: orgId }, { onConflict: "user_id,org_id" });
       } else {
         const { data: existingUsers } = await admin.auth.admin.listUsers();
         const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);

@@ -6,8 +6,9 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getResend } from "@/lib/resend";
 
 export async function POST(req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
 
   try {
     const { delivery_id, method, recipient } = await req.json();
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
-    if (delivery.organization_id !== orgId) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    if (!delivery.organization_id || !orgIds.includes(delivery.organization_id)) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
 
     const token = signTrackToken("delivery", delivery.id);
     const trackUrl = `${getEmailBaseUrl()}/track/delivery/${encodeURIComponent(delivery.delivery_number)}?token=${token}`;

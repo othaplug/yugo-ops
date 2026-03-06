@@ -6,8 +6,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export async function PATCH(
     .single();
 
   if (!delivery) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (delivery.organization_id !== orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!delivery.organization_id || !orgIds.includes(delivery.organization_id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const locked = ["delivered", "completed", "cancelled"].includes((delivery.status || "").toLowerCase());
   if (locked) return NextResponse.json({ error: "Cannot edit a delivery that is already " + delivery.status }, { status: 400 });

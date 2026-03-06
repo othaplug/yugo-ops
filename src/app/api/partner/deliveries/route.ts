@@ -4,8 +4,9 @@ import { requirePartner } from "@/lib/partner-auth";
 
 /** GET /api/partner/deliveries - List deliveries for the partner's organization. */
 export async function GET(req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "No organization linked" }, { status: 403 });
 
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("deliveries")
     .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, category, created_at, updated_at")
-    .eq("organization_id", orgId!)
+    .in("organization_id", orgIds)
     .order("scheduled_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);

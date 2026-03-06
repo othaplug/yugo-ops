@@ -4,8 +4,9 @@ import { requirePartner } from "@/lib/partner-auth";
 
 /** GET /api/partner/dashboard - Summary for partner dashboard (counts, recent activity). */
 export async function GET() {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "No organization linked" }, { status: 403 });
 
   const supabase = await createClient();
 
@@ -15,18 +16,18 @@ export async function GET() {
     { data: recentDeliveries },
     { data: recentMoves },
   ] = await Promise.all([
-    supabase.from("deliveries").select("id", { count: "exact", head: true }).eq("organization_id", orgId!),
-    supabase.from("moves").select("id", { count: "exact", head: true }).eq("organization_id", orgId!),
+    supabase.from("deliveries").select("id", { count: "exact", head: true }).in("organization_id", orgIds),
+    supabase.from("moves").select("id", { count: "exact", head: true }).in("organization_id", orgIds),
     supabase
       .from("deliveries")
       .select("id, delivery_number, status, scheduled_date")
-      .eq("organization_id", orgId!)
+      .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: false })
       .limit(5),
     supabase
       .from("moves")
       .select("id, move_code, status, scheduled_date")
-      .eq("organization_id", orgId!)
+      .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: false })
       .limit(5),
   ]);

@@ -6,8 +6,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export async function GET(
     .single();
 
   if (!delivery) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (delivery.organization_id !== orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!delivery.organization_id || !orgIds.includes(delivery.organization_id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { data: notes } = await supabase
     .from("delivery_notes")
@@ -34,8 +35,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const supabase = await createClient();
@@ -47,7 +49,7 @@ export async function POST(
     .single();
 
   if (!delivery) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (delivery.organization_id !== orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!delivery.organization_id || !orgIds.includes(delivery.organization_id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { content } = await req.json();
   if (!content?.trim()) return NextResponse.json({ error: "Content is required" }, { status: 400 });

@@ -4,8 +4,11 @@ import { requirePartner } from "@/lib/partner-auth";
 import { getTodayString, getMonthStartString } from "@/lib/business-timezone";
 
 export async function GET() {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, primaryOrgId, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) {
+    return NextResponse.json({ error: "No organization linked" }, { status: 403 });
+  }
 
   const admin = createAdminClient();
   const todayStr = getTodayString();
@@ -14,7 +17,7 @@ export async function GET() {
   const { data: org } = await admin
     .from("organizations")
     .select("type")
-    .eq("id", orgId!)
+    .eq("id", primaryOrgId!)
     .single();
 
   const orgType = org?.type || "retail";
@@ -29,27 +32,35 @@ export async function GET() {
     admin
       .from("deliveries")
       .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price")
-      .eq("organization_id", orgId!)
+      .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: true })
       .order("created_at", { ascending: false }),
     admin
       .from("moves")
       .select("id, move_code, client_name, status, stage, scheduled_date, scheduled_time, from_address, to_address, crew_id")
-      .eq("organization_id", orgId!)
+      .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: false })
       .limit(20),
     admin
       .from("invoices")
       .select("id, invoice_number, client_name, amount, status, due_date, created_at")
-      .eq("organization_id", orgId!)
+      .in("organization_id", orgIds)
       .order("created_at", { ascending: false }),
     orgType === "realtor"
-      ? admin.from("referrals").select("*").order("created_at", { ascending: false })
+      ? admin.from("referrals").select("*").in("organization_id", orgIds).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     (orgType === "designer" || orgType === "gallery")
-      ? admin.from("gallery_projects").select("*").eq("gallery_org_id", orgId!).order("created_at", { ascending: false })
+      ? admin.from("gallery_projects").select("*").in("gallery_org_id", orgIds).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
   ]);
+
+  console.log("DEBUG portal-data", {
+    orgIds,
+    primaryOrgId,
+    deliveriesCount: allDeliveries?.length,
+    deliveriesError: allDeliveries === null ? "null result" : "ok",
+    firstDelivery: allDeliveries?.[0] || null,
+  });
 
   const dels = allDeliveries || [];
   const invs = invoices || [];

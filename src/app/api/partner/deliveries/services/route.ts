@@ -4,19 +4,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function GET(_req: NextRequest) {
-  const { orgId, error } = await requirePartner();
+  const { primaryOrgId, error } = await requirePartner();
   if (error) return error;
+  if (!primaryOrgId) return NextResponse.json({ services: [] });
 
   const db = createAdminClient();
 
   const { data: org } = await db
     .from("organizations")
     .select("pricing_tier")
-    .eq("id", orgId!)
+    .eq("id", primaryOrgId)
     .single();
 
   const pricingTier = org?.pricing_tier === "partner" ? "partner" : "standard";
-  const rateCardId = await getActiveRateCard(orgId!);
+  const rateCardId = await getActiveRateCard(primaryOrgId);
 
   if (!rateCardId) return NextResponse.json({ services: [] });
 

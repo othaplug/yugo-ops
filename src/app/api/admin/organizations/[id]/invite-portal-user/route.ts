@@ -51,7 +51,7 @@ export async function POST(
     });
     if (createError) return NextResponse.json({ error: createError.message }, { status: 400 });
 
-    await admin.from("partner_users").insert({ user_id: newUser.user.id, org_id: orgId });
+    await admin.from("partner_users").upsert({ user_id: newUser.user.id, org_id: orgId }, { onConflict: "user_id,org_id" });
 
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;

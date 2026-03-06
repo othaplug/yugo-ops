@@ -23,8 +23,9 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 }
 
 export async function GET() {
-  const { orgId, error } = await requirePartner();
+  const { orgIds, error } = await requirePartner();
   if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ deliveries: [] });
 
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -38,7 +39,7 @@ export async function GET() {
   const { data: deliveries } = await supabase
     .from("deliveries")
     .select("id, delivery_number, customer_name, status, delivery_address, crew_id")
-    .eq("organization_id", orgId!)
+    .in("organization_id", orgIds)
     .eq("scheduled_date", todayStr)
     .in("status", liveStatuses)
     .order("scheduled_date", { ascending: true });
