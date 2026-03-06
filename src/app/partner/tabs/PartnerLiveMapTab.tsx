@@ -51,10 +51,13 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
   }, [orgId]);
 
   const activeWithCrew = deliveries.filter((d) => d.crew_lat != null && d.crew_lng != null);
-  const hasAny = activeWithCrew.length > 0;
+  // Show map whenever ANY delivery exists — destination pins render even without live GPS
+  const hasAny = deliveries.length > 0;
 
-  const center = hasAny
+  const center = activeWithCrew.length > 0
     ? { latitude: activeWithCrew[0].crew_lat!, longitude: activeWithCrew[0].crew_lng! }
+    : deliveries[0]?.dest_lat != null
+    ? { latitude: deliveries[0].dest_lat!, longitude: deliveries[0].dest_lng! }
     : { latitude: 43.665, longitude: -79.385 };
 
   return (
@@ -123,20 +126,20 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D4D0CB" strokeWidth="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7Z"/></svg>
-            <p className="text-[14px] text-[#888] mt-3">No active deliveries with live tracking right now.</p>
-            <p className="text-[12px] text-[#aaa] mt-1">When a crew is dispatched, their live position will appear here.</p>
+            <p className="text-[14px] text-[#888] mt-3">No confirmed deliveries scheduled for today.</p>
+            <p className="text-[12px] text-[#aaa] mt-1">Confirmed or dispatched deliveries will appear on the map here.</p>
           </div>
         ) : HAS_MAPBOX ? (
           <PartnerMapMapbox
             token={MAPBOX_TOKEN}
             center={center}
-            deliveries={activeWithCrew}
+            deliveries={deliveries}
             onSelect={setSelected}
           />
         ) : (
           <PartnerMapLeaflet
             center={center}
-            deliveries={activeWithCrew}
+            deliveries={deliveries}
             onSelect={setSelected}
           />
         )}

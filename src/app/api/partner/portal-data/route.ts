@@ -28,7 +28,7 @@ export async function GET() {
   ] = await Promise.all([
     admin
       .from("deliveries")
-      .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at")
+      .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price")
       .eq("organization_id", orgId!)
       .order("scheduled_date", { ascending: true })
       .order("created_at", { ascending: false }),
@@ -55,17 +55,21 @@ export async function GET() {
   const invs = invoices || [];
   const refs = referrals || [];
 
-  // Today: only confirmed/active deliveries scheduled for today — pending_approval goes to Upcoming
+  const DONE_STATUSES = new Set(["cancelled", "rejected", "delivered", "completed"]);
+
+  // Today: deliveries scheduled for today that are active (not cancelled/completed/still awaiting approval)
   const todayDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
     if (s === "pending_approval") return false;
+    if (DONE_STATUSES.has(s)) return false;
     return d.scheduled_date?.slice(0, 10) === todayStr;
   });
 
-  // Upcoming: all pending_approval deliveries (regardless of date) + all future-dated non-pending deliveries
+  // Upcoming: pending_approval (waiting on admin) + confirmed/scheduled future deliveries
   const upcomingDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
-    if (s === "pending_approval") return true; // always surface in Upcoming until accepted
+    if (DONE_STATUSES.has(s)) return false;
+    if (s === "pending_approval") return true; // awaiting admin review — always show until accepted
     if (!d.scheduled_date) return false;
     return d.scheduled_date.slice(0, 10) > todayStr;
   });

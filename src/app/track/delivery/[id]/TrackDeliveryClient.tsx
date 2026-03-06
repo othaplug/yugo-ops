@@ -170,11 +170,11 @@ export default function TrackDeliveryClient({
 
         {/* Header */}
         <div className="mb-5">
-          <div className="text-[9px] font-bold tracking-widest uppercase mb-1" style={{ color: WINE }}>Delivery Tracking</div>
-          <h1 className="text-[20px] md:text-[24px] font-bold leading-tight" style={{ color: FOREST }}>
+          <div className="text-[9px] font-bold tracking-widest uppercase mb-1.5" style={{ color: WINE }}>Delivery Tracking</div>
+          <h1 className="font-hero text-[26px] md:text-[30px] leading-tight font-semibold" style={{ color: FOREST }}>
             {delivery.customer_name || "Your Delivery"}
           </h1>
-          <p className="text-[13px] mt-0.5 font-mono opacity-75" style={{ color: FOREST }}>{delivery.delivery_number}</p>
+          <p className="text-[12px] mt-0.5 font-mono opacity-50" style={{ color: FOREST }}>{delivery.delivery_number}</p>
         </div>
 
         {/* Progress */}
@@ -317,9 +317,16 @@ export default function TrackDeliveryClient({
           )}
         </div>
 
-        <p className="text-center text-[11px] mt-8 opacity-75" style={{ color: FOREST }}>
-          <Link href="/tracking" className="hover:underline font-semibold" style={{ color: GOLD }}>Track another delivery</Link> · Powered by YUGO
-        </p>
+        <div className="flex items-center justify-center gap-3 mt-8">
+          <Link href="/tracking" className="text-[11px] font-semibold hover:underline" style={{ color: GOLD }}>
+            Track another delivery
+          </Link>
+          <span className="text-[11px] opacity-30" style={{ color: FOREST }}>·</span>
+          <div className="flex items-center gap-1 opacity-30">
+            <span className="text-[10px]" style={{ color: FOREST }}>Powered by</span>
+            <YugoLogo size={12} variant="gold" />
+          </div>
+        </div>
       </div>
     </div>
   );

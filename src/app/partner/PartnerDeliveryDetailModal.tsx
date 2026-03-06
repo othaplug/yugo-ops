@@ -34,6 +34,9 @@ interface Delivery {
   category: string | null;
   crew_id: string | null;
   created_at: string;
+  quoted_price?: number | null;
+  total_price?: number | null;
+  admin_adjusted_price?: number | null;
 }
 
 interface Props {
@@ -292,6 +295,43 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                     {d.time_slot && ` · ${d.time_slot}`}
                   </div>
                 </div>
+                {(() => {
+                  const displayPrice = d.admin_adjusted_price || d.total_price || d.quoted_price;
+                  if (!displayPrice || displayPrice <= 0) return null;
+                  const isPending = (d.status || "").toLowerCase() === "pending_approval";
+                  return (
+                    <div className="pt-3 border-t border-[var(--brd)]/20">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
+                            {isPending ? "Quoted Price" : "Confirmed Price"}
+                          </div>
+                          <div className="text-[18px] font-bold text-[#C9A962]">
+                            ${Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </div>
+                          <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                            +${Math.round(displayPrice * 0.13).toLocaleString()} HST
+                            &nbsp;·&nbsp;
+                            Total ${Math.round(displayPrice * 1.13).toLocaleString()}
+                          </div>
+                        </div>
+                        {isPending && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">
+                            Awaiting approval
+                          </span>
+                        )}
+                        {!isPending && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#C9A962]/10 text-[#C9A962]">
+                            Confirmed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[var(--tx3)] mt-1.5 opacity-60">
+                        Your rates are locked per your partnership agreement.
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {itemsDisplay.length > 0 && (

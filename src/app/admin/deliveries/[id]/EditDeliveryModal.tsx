@@ -72,14 +72,17 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   const router = useRouter();
   const { toast } = useToast();
 
+  // Effective price: admin override → partner booking total → quoted
+  const effectivePrice = delivery?.admin_adjusted_price || delivery?.total_price || delivery?.quoted_price || 0;
+
   useEffect(() => {
     if (open && delivery) {
       setPickupAddress(delivery.pickup_address ?? "");
       setDeliveryAddress(delivery.delivery_address ?? "");
-      setQuotedPrice(formatNumberInput(delivery.quoted_price) || "");
+      setQuotedPrice(formatNumberInput(effectivePrice) || "");
       setCrewId(delivery.crew_id || "");
     }
-  }, [open, delivery]);
+  }, [open, delivery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -111,7 +114,10 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           delivery_window: form.get("delivery_window"),
           instructions: form.get("instructions"),
           items,
+          // Sync all three price fields so admin, partner, and delivery detail always agree
           quoted_price: parseNumberInput(quotedPrice) || null,
+          total_price: parseNumberInput(quotedPrice) || null,
+          admin_adjusted_price: parseNumberInput(quotedPrice) || null,
           status: form.get("status") || delivery.status,
           special_handling: !!form.get("special_handling"),
           organization_id: orgId || null,
@@ -270,6 +276,14 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
                   className={`${inputCls} pl-7`}
                 />
               </div>
+              {delivery?.total_price > 0 && (
+                <p className="text-[9px] text-[var(--tx3)] mt-1">
+                  Partner booked at <span className="font-semibold text-[var(--gold)]">${Number(delivery.total_price).toFixed(2)}</span>
+                  {delivery.admin_adjusted_price && delivery.admin_adjusted_price !== delivery.total_price && (
+                    <span className="ml-1 opacity-70">(adjusted to ${Number(delivery.admin_adjusted_price).toFixed(2)})</span>
+                  )}
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls}>Status</label>

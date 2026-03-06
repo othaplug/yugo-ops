@@ -1141,6 +1141,9 @@ export async function POST(req: NextRequest) {
   const { error: authErr } = await requireAuth();
   if (authErr) return authErr;
 
+  // ?preview=true → run all pricing logic but skip the DB insert
+  const isPreview = new URL(req.url).searchParams.get("preview") === "true";
+
   let input: QuoteInput;
   try {
     input = await req.json();
@@ -1325,7 +1328,7 @@ export async function POST(req: NextRequest) {
     .eq("active", true)
     .order("tier_slug");
 
-  const quoteId = await generateQuoteId(sb, input.hubspot_deal_id);
+  const quoteId = isPreview ? "PREVIEW" : await generateQuoteId(sb, input.hubspot_deal_id);
 
   const primaryPrice = tiers ? tiers.essentials.price : custom_price!.price;
   const depositAmount = tiers ? tiers.essentials.deposit : custom_price!.deposit;
@@ -1357,40 +1360,42 @@ export async function POST(req: NextRequest) {
 
   const expiryDays = cfgNum(config, "quote_expiry_days", 7);
 
-  const { error: insertErr } = await sb.from("quotes").insert({
-    quote_id: quoteId,
-    hubspot_deal_id: input.hubspot_deal_id || null,
-    contact_id: contactId,
-    service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType,
-    status: "draft",
-    from_address: input.from_address,
-    from_access: input.from_access || null,
-    from_postal: neighbourhood.postalPrefix || null,
-    to_address: input.to_address,
-    to_access: input.to_access || null,
-    move_date: input.move_date,
-    move_size: input.move_size || null,
-    distance_km: distInfo?.distance_km ?? null,
-    drive_time_min: distInfo?.drive_time_min ?? null,
-    specialty_items: input.specialty_items ?? [],
-    tiers: tiers ?? null,
-    custom_price: custom_price?.price ?? null,
-    deposit_amount: depositAmount,
-    factors_applied: factors,
-    selected_addons: addonResult.breakdown,
-    expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
-    inventory_items: input.inventory_items ?? [],
-    inventory_score: invResult.inventoryScore || null,
-    inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
-    est_crew_size: labour?.crewSize ?? null,
-    est_hours: labour?.estimatedHours ?? null,
-    est_truck_size: labour?.truckSize ?? null,
-    truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
-    truck_secondary: truckResult.secondary?.vehicle_type ?? null,
-  });
+  if (!isPreview) {
+    const { error: insertErr } = await sb.from("quotes").insert({
+      quote_id: quoteId,
+      hubspot_deal_id: input.hubspot_deal_id || null,
+      contact_id: contactId,
+      service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType,
+      status: "draft",
+      from_address: input.from_address,
+      from_access: input.from_access || null,
+      from_postal: neighbourhood.postalPrefix || null,
+      to_address: input.to_address,
+      to_access: input.to_access || null,
+      move_date: input.move_date,
+      move_size: input.move_size || null,
+      distance_km: distInfo?.distance_km ?? null,
+      drive_time_min: distInfo?.drive_time_min ?? null,
+      specialty_items: input.specialty_items ?? [],
+      tiers: tiers ?? null,
+      custom_price: custom_price?.price ?? null,
+      deposit_amount: depositAmount,
+      factors_applied: factors,
+      selected_addons: addonResult.breakdown,
+      expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
+      inventory_items: input.inventory_items ?? [],
+      inventory_score: invResult.inventoryScore || null,
+      inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
+      est_crew_size: labour?.crewSize ?? null,
+      est_hours: labour?.estimatedHours ?? null,
+      est_truck_size: labour?.truckSize ?? null,
+      truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
+      truck_secondary: truckResult.secondary?.vehicle_type ?? null,
+    });
 
-  if (insertErr) {
-    return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
   }
 
   const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
@@ -1398,6 +1403,7 @@ export async function POST(req: NextRequest) {
   const response: Record<string, unknown> = {
     quote_id: quoteId,
     quoteId,
+    preview: isPreview,
     service_type: svcType,
     distance_km: distInfo?.distance_km ?? null,
     drive_time_min: distInfo?.drive_time_min ?? null,

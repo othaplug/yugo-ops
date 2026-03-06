@@ -73,6 +73,9 @@ interface Delivery {
   category: string | null;
   crew_id: string | null;
   created_at: string;
+  quoted_price?: number | null;
+  total_price?: number | null;
+  admin_adjusted_price?: number | null;
 }
 
 interface Move {

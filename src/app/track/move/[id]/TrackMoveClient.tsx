@@ -502,18 +502,24 @@ export default function TrackMoveClient({
             Your move status was recently updated.
           </div>
         )}
-        {tippingEnabled && showTipBanner && !move.tip_charged_at && (
-          <div className="mb-4 flex items-center justify-between gap-3 py-2">
-            <span className="text-[11px] font-medium opacity-60" style={{ color: FOREST }}>Tip your crew — 100% goes to your movers.</span>
-            <button
-              type="button"
-              onClick={() => { setShowTipBanner(false); setShowTipScreen(true); }}
-              className="shrink-0 rounded-md font-semibold text-[10px] py-1.5 px-3 transition-colors hover:opacity-90"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
-            >
-              Tip
-            </button>
-          </div>
+        {tippingEnabled && !move.tip_charged_at && isCompleted && (
+          <button
+            type="button"
+            onClick={() => setShowTipScreen(true)}
+            className="mb-4 w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border transition-all hover:opacity-80 active:scale-[0.99]"
+            style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}08` }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div className="text-left">
+                <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Tip your crew</div>
+                <div className="text-[10px] opacity-50" style={{ color: FOREST }}>100% goes directly to your movers</div>
+              </div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         )}
         {/* Client header */}
         <div className="flex items-center justify-between gap-3 mb-2">
@@ -549,24 +555,28 @@ export default function TrackMoveClient({
               <div className="font-hero text-[26px] sm:text-[30px] leading-tight font-semibold" style={{ color: WINE }}>
                 Move Complete
               </div>
-              <div className="mt-4 flex items-center justify-center gap-3">
+              <div className="mt-4 flex items-center justify-center gap-2.5">
                 <a
                   href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-lg font-semibold text-[12px] py-2 px-4 transition-colors hover:opacity-90"
-                  style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+                  className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-4 transition-all hover:opacity-90 active:scale-95 tracking-wide shadow-sm"
+                  style={{ backgroundColor: FOREST, color: CREAM }}
                 >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Leave a Review
                 </a>
-                <button
-                  type="button"
-                  onClick={() => setTipModalOpen(true)}
-                  className="rounded-lg font-semibold text-[12px] py-2 px-4 transition-colors hover:opacity-90 border"
-                  style={{ borderColor: `${FOREST}25`, color: FOREST }}
-                >
-                  Leave a Tip
-                </button>
+                {tippingEnabled && !move.tip_charged_at && (
+                  <button
+                    type="button"
+                    onClick={() => setShowTipScreen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-4 transition-all hover:opacity-90 active:scale-95 tracking-wide"
+                    style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}35` }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Tip Crew
+                  </button>
+                )}
               </div>
             </div>
           ) : daysUntil === 0 ? (

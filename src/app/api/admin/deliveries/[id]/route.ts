@@ -21,7 +21,7 @@ export async function PATCH(
     "customer_name", "customer_email", "customer_phone",
     "delivery_address", "pickup_address",
     "scheduled_date", "time_slot", "delivery_window",
-    "instructions", "items", "quoted_price", "status",
+    "instructions", "items", "quoted_price", "total_price", "status",
     "special_handling", "organization_id", "client_name",
     "crew_id", "updated_at", "pickup_access", "delivery_access",
     "admin_adjusted_price", "notes",
