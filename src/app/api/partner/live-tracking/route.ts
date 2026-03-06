@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { getTodayString } from "@/lib/business-timezone";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -28,11 +29,18 @@ export async function GET() {
   const supabase = await createClient();
   const admin = createAdminClient();
 
+  // Only show deliveries on the live map when they are:
+  //   1. Scheduled for TODAY (not days in the future)
+  //   2. Already confirmed/dispatched/in-transit — not still pending acceptance
+  const todayStr = getTodayString();
+  const liveStatuses = ["confirmed", "dispatched", "in-transit", "in_transit", "in_progress"];
+
   const { data: deliveries } = await supabase
     .from("deliveries")
     .select("id, delivery_number, customer_name, status, delivery_address, crew_id")
     .eq("organization_id", orgId!)
-    .not("status", "in", '("delivered","completed","cancelled")')
+    .eq("scheduled_date", todayStr)
+    .in("status", liveStatuses)
     .order("scheduled_date", { ascending: true });
 
   if (!deliveries || deliveries.length === 0) {

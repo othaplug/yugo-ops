@@ -33,6 +33,7 @@ interface Delivery {
 }
 
 const STATUS_BADGE: Record<string, string> = {
+  pending_approval: "bg-amber-50 text-amber-700 border border-amber-200",
   scheduled: "bg-blue-50 text-blue-600",
   confirmed: "bg-green-50 text-green-600",
   dispatched: "bg-amber-50 text-amber-600",
@@ -42,8 +43,11 @@ const STATUS_BADGE: Record<string, string> = {
   delivered: "bg-green-50 text-green-700",
   completed: "bg-green-50 text-green-700",
   pending: "bg-orange-50 text-orange-600",
-  pending_approval: "bg-orange-50 text-orange-600",
   cancelled: "bg-red-50 text-red-600",
+};
+
+const STATUS_LABEL_OVERRIDE: Record<string, string> = {
+  pending_approval: "Pending Acceptance",
 };
 
 const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "dispatched", "in_progress", "in-transit", "delivered", "completed", "cancelled"];
@@ -181,8 +185,9 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
     ? items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean).join(", ")
     : null;
 
-  const statusLabel = toTitleCase(d.status || "");
-  const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase().replace(/ /g, "_")] || "bg-gray-50 text-gray-600";
+  const statusKey = (d.status || "").toLowerCase().replace(/ /g, "_");
+  const statusLabel = STATUS_LABEL_OVERRIDE[statusKey] || toTitleCase(d.status || "");
+  const badgeClass = STATUS_BADGE[statusKey] || "bg-gray-50 text-gray-600";
 
   const copyTrackingLink = async () => {
     try {
@@ -252,6 +257,14 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           </button>
         </div>
       </div>
+
+      {/* Pending acceptance notice */}
+      {statusKey === "pending_approval" && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span className="text-[11px] text-amber-700 font-medium">Awaiting confirmation from Yugo — we&apos;ll update you shortly.</span>
+        </div>
+      )}
 
       {/* Progress bar */}
       {showProgressBar && (

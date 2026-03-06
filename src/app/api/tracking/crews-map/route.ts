@@ -117,26 +117,59 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const inactiveStatuses = ["completed", "delivered", "done", "not_started", "cancelled"];
-  const STALE_MS = 90 * 60 * 1000; // 90 minutes — sessions not updated in this window are stale
+  // Synthesize virtual crew entries for active sessions whose team has no row in the crews table.
+  // This happens when a crew member is tracked via crew_members but the team was never added to
+  // the crews table — the session exists, GPS is live, but crewsOut would otherwise be empty.
+  // We include sessions of ANY status (even completed) as long as last_location is present, so
+  // teams always remain visible on the map throughout and after the job.
+  const crewIdsInTable = new Set((crews || []).map((c) => c.id));
+  for (const [teamId, session] of sessionByTeam.entries()) {
+    if (crewIdsInTable.has(teamId)) continue; // already represented by a real crews row
+    const loc = session.last_location as { lat?: number; lng?: number } | null;
+    const lat = loc?.lat ?? null;
+    const lng = loc?.lng ?? null;
+    if (lat == null || lng == null) continue; // no position — nothing to plot
+    const members = membersByTeam.get(teamId) || [];
+    const displayName = members[0] || `Team ${teamId.slice(0, 8)}`;
+    const pendingDeliveries = (deliveryByCrew.get(teamId) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
+    const pendingMoves = (moveByCrew.get(teamId) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
+    const currentJob = pendingDeliveries[0]?.delivery_number || pendingMoves[0]?.move_code || null;
+    const sessionStatus = (session.status || "").toLowerCase();
+    const doneStatuses = ["completed", "delivered", "done", "not_started", "cancelled"];
+    crewsOut.push({
+      id: teamId,
+      name: displayName,
+      members,
+      status: doneStatuses.includes(sessionStatus) ? "standby" : "en-route",
+      current_lat: lat,
+      current_lng: lng,
+      current_job: currentJob,
+      updated_at: session.updated_at ?? undefined,
+      delay_minutes: undefined,
+    });
+  }
+
+  // Keep sessions active for 12 hours so teams stay visible on the map all day even after jobs complete.
+  const STALE_MS = 12 * 60 * 60 * 1000;
   const now = Date.now();
 
-  // Auto-close stale sessions in the database so they don't keep appearing
+  // Only auto-close sessions that haven't had ANY update in 12 hours (true inactivity, not job completion).
   const staleIds = (sessions || [])
     .filter((s) => {
       if (!s.updated_at) return true;
-      const status = (s.status || "").toLowerCase();
-      return inactiveStatuses.includes(status) || now - new Date(s.updated_at).getTime() > STALE_MS;
+      return now - new Date(s.updated_at).getTime() > STALE_MS;
     })
     .map((s) => s.id);
   if (staleIds.length > 0) {
     admin.from("tracking_sessions").update({ is_active: false }).in("id", staleIds).then(() => {});
   }
 
+  // Active sessions for the panel — show all non-abandoned sessions updated within 12 hours.
+  const panelExcludeStatuses = ["not_started", "cancelled"];
   const activeSessions = (sessions || [])
     .filter((s) => {
       const status = (s.status || "").toLowerCase();
-      if (inactiveStatuses.includes(status)) return false;
+      if (panelExcludeStatuses.includes(status)) return false;
       if (!s.updated_at || now - new Date(s.updated_at).getTime() > STALE_MS) return false;
       return true;
     })

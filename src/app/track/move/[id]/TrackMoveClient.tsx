@@ -258,6 +258,13 @@ export default function TrackMoveClient({
 
   const moveCode = getMoveCode(move);
   const displayCode = formatJobId(moveCode, "move");
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
   // On move day: when crew shares live stage, treat as in_progress across timeline/progress bar (no refresh needed)
   const EN_ROUTE_OR_ACTIVE = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route", "arrived_at_pickup", "loading", "arrived_at_destination", "unloading"];
   const statusVal =
@@ -504,11 +511,22 @@ export default function TrackMoveClient({
         {/* Client header */}
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="min-w-0">
+            <p className="text-[11px] font-medium mb-0.5 opacity-50" style={{ color: FOREST }}>
+              {greeting}
+            </p>
             <h1 className="font-hero text-[26px] sm:text-[28px] leading-tight font-semibold tracking-tight truncate" style={{ color: WINE }}>
               {move.client_name || "Your Move"}
             </h1>
-            <p className="text-[11px] mt-0.5 font-sans opacity-40" style={{ color: FOREST }}>
+            <p className="text-[11px] mt-0.5 font-sans opacity-40 flex items-center gap-1.5" style={{ color: FOREST }}>
               {displayCode}
+              {(move.tier || move.service_tier) && (
+                <span
+                  className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${GOLD}18`, color: GOLD, opacity: 1 }}
+                >
+                  {move.tier || move.service_tier}
+                </span>
+              )}
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0" style={{ backgroundColor: `${GOLD}15`, color: WINE }}>
@@ -678,7 +696,7 @@ export default function TrackMoveClient({
                 </div>
               </div>
 
-              <div className="flex items-end justify-between gap-4 pt-1">
+              <div className="flex items-center justify-between gap-4 pt-1">
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance</div>
                   <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: GOLD }}>{formatCurrency(totalBalance)}</div>
@@ -688,8 +706,8 @@ export default function TrackMoveClient({
                   <button
                     type="button"
                     onClick={() => setPaymentModalOpen(true)}
-                    className="rounded-lg font-semibold text-[12px] py-2.5 px-5 transition-colors hover:opacity-90 shrink-0"
-                    style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+                    className="rounded-full font-semibold text-[11px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm"
+                    style={{ backgroundColor: GOLD, color: "#1A1A1A", boxShadow: `0 2px 12px ${GOLD}40` }}
                   >
                     Pay Now
                   </button>

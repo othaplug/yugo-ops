@@ -55,8 +55,17 @@ export async function GET() {
   const invs = invoices || [];
   const refs = referrals || [];
 
-  const todayDeliveries = dels.filter((d) => d.scheduled_date?.slice(0, 10) === todayStr);
+  // Today: only confirmed/active deliveries scheduled for today — pending_approval goes to Upcoming
+  const todayDeliveries = dels.filter((d) => {
+    const s = (d.status || "").toLowerCase();
+    if (s === "pending_approval") return false;
+    return d.scheduled_date?.slice(0, 10) === todayStr;
+  });
+
+  // Upcoming: all pending_approval deliveries (regardless of date) + all future-dated non-pending deliveries
   const upcomingDeliveries = dels.filter((d) => {
+    const s = (d.status || "").toLowerCase();
+    if (s === "pending_approval") return true; // always surface in Upcoming until accepted
     if (!d.scheduled_date) return false;
     return d.scheduled_date.slice(0, 10) > todayStr;
   });

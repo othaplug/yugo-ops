@@ -39,6 +39,26 @@ const STATUS_RING: Record<string, string> = {
   offline: "#EF4444",
 };
 
+/* Distinct per-team colors — assigned by hashing the team ID so each team always gets the same color */
+const TEAM_PALETTE = [
+  "#22C55E", // green
+  "#3B82F6", // blue
+  "#A855F7", // purple
+  "#F97316", // orange
+  "#EC4899", // pink
+  "#06B6D4", // cyan
+  "#EAB308", // yellow
+  "#14B8A6", // teal
+  "#F43F5E", // rose
+  "#8B5CF6", // violet
+];
+
+function teamColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
+  return TEAM_PALETTE[h % TEAM_PALETTE.length];
+}
+
 interface Crew {
   id: string;
   name: string;
@@ -250,7 +270,7 @@ const GodEyeMap = dynamic(
               .map((c) => {
                 const loc = crewLocations.get(c.id);
                 const status = loc?.status || (c.status === "en-route" ? "en_route_pickup" : "idle");
-                const ringColor = STATUS_RING[status] || "#6B7280";
+                const ringColor = teamColor(c.id);
                 const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
                 const isNearOffice = haversineM(c.current_lat!, c.current_lng!, office.lat, office.lng) < office.radiusM;
                 const isSelected = selectedCrew === c.id;
@@ -350,7 +370,7 @@ function CrewPopup({
   onClose: () => void;
   onViewJob: (href: string) => void;
 }) {
-  const status = crewLocation?.status || (crew.status === "en-route" ? "en_route_pickup" : "idle");
+  const status = crewLocation?.status || session?.status || (crew.status === "en-route" ? "en_route_pickup" : "idle");
   const speedKmh = crewLocation?.speed != null ? Math.round(Number(crewLocation.speed) * 3.6) : null;
   const offMin = getOfflineMinutes(crewLocation?.updated_at || crew.updated_at);
 
@@ -735,7 +755,7 @@ export default function UnifiedTrackingView({
               <>
                 {/* Live sessions */}
                 {activeSessions.length > 0 && (() => {
-                  const STALE_HEADER_MS = 90 * 60 * 1000;
+                  const STALE_HEADER_MS = 12 * 60 * 60 * 1000;
                   const allStale = activeSessions.every((s) => s.updatedAt && Date.now() - new Date(s.updatedAt).getTime() > STALE_HEADER_MS);
                   return (
                   <>
@@ -761,7 +781,7 @@ export default function UnifiedTrackingView({
                       const loc = crewLocations.get(s.teamId);
                       const effectiveStatus = loc?.status || s.status || "idle";
                       const statusLabel = getStatusLabel(effectiveStatus);
-                      const ringColor = STATUS_RING[effectiveStatus] || "#C9A962";
+                      const ringColor = teamColor(s.teamId);
 
                       const STAGE_ORDER: Record<string, number> = {
                         en_route_pickup: 0, at_pickup: 1, loading: 1,
@@ -775,7 +795,7 @@ export default function UnifiedTrackingView({
                       const fromAddr = loc?.current_from_address || null;
                       const toAddr = loc?.current_to_address || null;
 
-                      const STALE_CLIENT_MS = 90 * 60 * 1000; // 1.5 hours
+                      const STALE_CLIENT_MS = 12 * 60 * 60 * 1000;
                       const updatedMs = s.updatedAt ? Date.now() - new Date(s.updatedAt).getTime() : 0;
                       const isStale = updatedMs > STALE_CLIENT_MS;
 
@@ -932,7 +952,10 @@ export default function UnifiedTrackingView({
                     >
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                        style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                        style={{
+                          background: "linear-gradient(135deg, #C9A962, #8B7332)",
+                          boxShadow: `0 0 0 2px ${teamColor(c.id)}`,
+                        }}
                       >
                         {(c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
                       </div>
@@ -955,7 +978,8 @@ export default function UnifiedTrackingView({
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                         )}
                         <div
-                          className={`w-2.5 h-2.5 rounded-full ${isOff ? "bg-[var(--red)]" : hasActiveSession ? "bg-[var(--gold)] animate-pulse" : isOnJob(status) ? "bg-[var(--gold)]" : "bg-[var(--grn)]"}`}
+                          className={`w-2.5 h-2.5 rounded-full ${isOff ? "" : hasActiveSession ? "animate-pulse" : ""}`}
+                          style={{ backgroundColor: isOff ? "#EF4444" : teamColor(c.id) }}
                         />
                       </div>
                     </button>

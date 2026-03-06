@@ -101,19 +101,47 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-t border-[var(--brd)]/30 pt-5">
+    <div
+      className={`rounded-2xl border transition-all duration-200 ${
+        open
+          ? "border-[var(--gold)]/40 bg-[var(--card)] shadow-[0_0_0_1px_rgba(201,169,98,0.08),0_4px_24px_rgba(0,0,0,0.18)]"
+          : "border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/20 hover:shadow-md"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-3 hover:bg-[var(--bg2)]/30 transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
-        <div>
-          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{title}</h3>
-          {subtitle && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{subtitle}</p>}
+        <div className="flex items-center gap-3">
+          {/* Gold accent bar */}
+          <div
+            className={`w-1 h-8 rounded-full shrink-0 transition-all duration-200 ${
+              open ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
+            }`}
+          />
+          <div>
+            <h3 className={`text-[13px] font-bold tracking-wide transition-colors ${open ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="text-[11px] text-[var(--tx3)] mt-0.5">{subtitle}</p>
+            )}
+          </div>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-[var(--tx3)] transition-transform ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
+        <div
+          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+            open ? "bg-[var(--gold)]/15 text-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx3)]"
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
+        </div>
       </button>
-      {open && <div className="pt-4 pb-5">{children}</div>}
+      {open && (
+        <div className="px-5 pb-5 border-t border-[var(--brd)]/30">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -200,20 +228,20 @@ function AnalyticsDashboard() {
   if (!data) return null;
 
   const metrics = [
-    { label: "Quotes sent (30d)", value: data.quotesSent || 0 },
-    { label: "Conversion rate", value: `${data.conversionRate || 0}%` },
-    { label: "Avg quote", value: currency(Number(data.avgQuoteAmount) || 0) },
-    { label: "Top tier", value: data.mostQuotedTier || "—" },
-    { label: "Best hood", value: data.highestConvertingHood || "—" },
-    { label: "Top lost reason", value: data.topLostReason || "—" },
+    { label: "Quotes (30d)", value: data.quotesSent || 0 },
+    { label: "Conversion", value: `${data.conversionRate || 0}%` },
+    { label: "Avg Quote", value: currency(Number(data.avgQuoteAmount) || 0) },
+    { label: "Top Tier", value: data.mostQuotedTier || "—" },
+    { label: "Best Hood", value: data.highestConvertingHood || "—" },
+    { label: "Lost Reason", value: data.topLostReason || "—" },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+    <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
       {metrics.map((m) => (
-        <div key={m.label} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl px-4 py-3">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{m.label}</div>
-          <div className="text-[16px] font-bold text-[var(--tx)] mt-1 truncate">{m.value}</div>
+        <div key={m.label} className="bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
+          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60 whitespace-nowrap">{m.label}</div>
+          <div className="text-[13px] font-bold text-[var(--tx)] mt-0.5 truncate">{m.value}</div>
         </div>
       ))}
     </div>
@@ -1346,7 +1374,7 @@ function FleetVehiclesSection() {
    ════════════════════════════════════════ */
 export default function PricingControlPanel() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <AnalyticsDashboard />
 
       <Accordion title="Base Rates (Residential)" subtitle={`Move size → base price, crew, hours`} defaultOpen>

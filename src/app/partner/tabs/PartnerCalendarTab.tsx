@@ -12,6 +12,7 @@ interface Delivery {
 }
 
 const STATUS_DOT: Record<string, string> = {
+  pending_approval: "#F59E0B",
   scheduled: "#3B82F6",
   confirmed: "#2D9F5A",
   dispatched: "#D48A29",

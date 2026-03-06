@@ -1,6 +1,7 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useState, useEffect } from "react";
 import Map, { Marker, Source, Layer, NavigationControl, useMap } from "react-map-gl/mapbox";
 
 function MyLocationButton() {
@@ -57,23 +58,63 @@ export default function PartnerMapMapbox({
   deliveries: ActiveDelivery[];
   onSelect: (d: ActiveDelivery) => void;
 }) {
-  const routeFeatures = deliveries
-    .filter((d) => d.crew_lat != null && d.dest_lat != null && d.dest_lng != null)
-    .map((d) => ({
-      type: "Feature" as const,
-      properties: { id: d.id },
-      geometry: {
-        type: "LineString" as const,
-        coordinates: [
-          [d.crew_lng!, d.crew_lat!],
-          [d.dest_lng!, d.dest_lat!],
-        ],
-      },
-    }));
+  // Routed travel lines keyed by delivery id: [lng, lat][]
+  const [routedLines, setRoutedLines] = useState<Record<string, [number, number][]>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchRoutes = async () => {
+      const next: Record<string, [number, number][]> = {};
+      await Promise.all(
+        deliveries.map(async (d) => {
+          if (d.crew_lat == null || d.crew_lng == null) return;
+
+          // Determine destination coords — either already geocoded or fall back to geocoding address
+          let destLat = d.dest_lat;
+          let destLng = d.dest_lng;
+
+          if ((destLat == null || destLng == null) && d.delivery_address) {
+            try {
+              const geoRes = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address)}&limit=1`);
+              const geoData = await geoRes.json();
+              const coords = geoData?.features?.[0]?.geometry?.coordinates;
+              if (coords) { destLng = coords[0]; destLat = coords[1]; }
+            } catch { /* ignore */ }
+          }
+
+          if (destLat == null || destLng == null) return;
+
+          try {
+            const from = `${d.crew_lng},${d.crew_lat}`;
+            const to = `${destLng},${destLat}`;
+            const res = await fetch(`/api/mapbox/directions?from=${from}&to=${to}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data?.coordinates) && data.coordinates.length >= 2) {
+                next[d.id] = data.coordinates;
+                return;
+              }
+            }
+          } catch { /* fall through to straight line */ }
+
+          // Straight-line fallback
+          next[d.id] = [[d.crew_lng!, d.crew_lat!], [destLng!, destLat!]];
+        })
+      );
+      if (!cancelled) setRoutedLines(next);
+    };
+
+    fetchRoutes();
+    return () => { cancelled = true; };
+  }, [deliveries]);
 
   const routeGeoJson = {
     type: "FeatureCollection" as const,
-    features: routeFeatures,
+    features: Object.entries(routedLines).map(([id, coords]) => ({
+      type: "Feature" as const,
+      properties: { id },
+      geometry: { type: "LineString" as const, coordinates: coords },
+    })),
   };
 
   return (
@@ -83,7 +124,7 @@ export default function PartnerMapMapbox({
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/light-v11"
     >
-      {routeFeatures.length > 0 && (
+      {Object.keys(routedLines).length > 0 && (
         <Source id="partner-routes" type="geojson" data={routeGeoJson}>
           <Layer
             id="partner-routes-layer"

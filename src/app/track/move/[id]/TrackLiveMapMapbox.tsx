@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Map from "react-map-gl/mapbox";
-import { Marker, NavigationControl, Source, Layer, useMap } from "react-map-gl/mapbox";
+import { Marker, Source, Layer, useMap } from "react-map-gl/mapbox";
 
 type Center = { latitude: number; longitude: number };
 type CenterLatLng = { lat: number; lng: number };
@@ -306,7 +306,6 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      <NavigationControl position="bottom-right" showCompass showZoom />
     </Map>
   );
 }

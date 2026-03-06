@@ -206,7 +206,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
     : [
         ...(features.showProjects ? [{ key: "projects", label: `Projects (${data?.projects?.length ?? 0})` }] : []),
         { key: "today", label: `Today (${data?.todayDeliveries.length ?? 0})` },
-        { key: "upcoming", label: "Upcoming" },
+        { key: "upcoming", label: `Upcoming (${data?.upcomingDeliveries.length ?? 0})` },
         { key: "calendar", label: "Calendar" },
         { key: "tracking", label: "Live Map" },
         { key: "invoices", label: "Invoices" },
