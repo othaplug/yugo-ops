@@ -53,6 +53,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
   const activeWithCrew = deliveries.filter((d) => d.crew_lat != null && d.crew_lng != null);
   // Show map whenever ANY delivery exists — destination pins render even without live GPS
   const hasAny = deliveries.length > 0;
+  const crewHasStarted = activeWithCrew.length > 0;
 
   const center = activeWithCrew.length > 0
     ? { latitude: activeWithCrew[0].crew_lat!, longitude: activeWithCrew[0].crew_lng! }
@@ -98,8 +99,8 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           </button>
         )}
 
-        {/* Status overlay */}
-        {selected && (
+        {/* Status overlay — only when crew has started (live signal on) */}
+        {crewHasStarted && selected && (
           <div className="absolute top-4 left-4 z-10 bg-white rounded-xl border border-[#E8E4DF] p-4 shadow-lg max-w-[280px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="relative flex h-2.5 w-2.5">
@@ -129,23 +130,34 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             <p className="text-[14px] text-[#888] mt-3">No confirmed deliveries scheduled for today.</p>
             <p className="text-[12px] text-[#aaa] mt-1">Confirmed or dispatched deliveries will appear on the map here.</p>
           </div>
-        ) : HAS_MAPBOX ? (
-          <PartnerMapMapbox
-            token={MAPBOX_TOKEN}
-            center={center}
-            deliveries={deliveries}
-            onSelect={setSelected}
-          />
         ) : (
-          <PartnerMapLeaflet
-            center={center}
-            deliveries={deliveries}
-            onSelect={setSelected}
-          />
+          <>
+            {HAS_MAPBOX ? (
+              <PartnerMapMapbox
+                token={MAPBOX_TOKEN}
+                center={center}
+                deliveries={deliveries}
+                onSelect={setSelected}
+              />
+            ) : (
+              <PartnerMapLeaflet
+                center={center}
+                deliveries={deliveries}
+                onSelect={setSelected}
+              />
+            )}
+            {/* Blur overlay when no crew has started — live signal off */}
+            {!crewHasStarted && (
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
+                <span className="text-[14px] font-semibold text-[#1A1A1A]">Live signal off</span>
+                <span className="text-[12px] text-[#666] mt-1">Map and tracking will appear when crew start their job</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Active deliveries list */}
+      {/* Active deliveries list — hide addresses until crew has started (live signal on) */}
       {deliveries.length > 0 && (
         <div className="mt-4 space-y-2">
           {deliveries.map((d) => {
@@ -158,10 +170,14 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               >
                 <div>
                   <div className="text-[14px] font-semibold text-[#1A1A1A]">{d.customer_name || d.delivery_number}</div>
-                  <div className="text-[12px] text-[#888] mt-0.5">{d.delivery_address || "—"}</div>
+                  {crewHasStarted ? (
+                    <div className="text-[12px] text-[#888] mt-0.5">{d.delivery_address || "—"}</div>
+                  ) : (
+                    <div className="text-[11px] text-[#999] mt-0.5">Live signal off — details when crew starts</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {d.crew_name && <span className="text-[11px] text-[#888]">{d.crew_name}</span>}
+                  {crewHasStarted && d.crew_name && <span className="text-[11px] text-[#888]">{d.crew_name}</span>}
                   {hasGPS ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
                       <span className="w-2 h-2 rounded-full bg-[#2D9F5A]" />

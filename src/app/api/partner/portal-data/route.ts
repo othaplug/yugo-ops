@@ -57,7 +57,7 @@ export async function GET() {
 
   const DONE_STATUSES = new Set(["cancelled", "rejected", "delivered", "completed"]);
 
-  // Today: deliveries scheduled for today that are active (not cancelled/completed/still awaiting approval)
+  // Today: deliveries scheduled for today that are active (include confirmed + accepted)
   const todayDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
     if (s === "pending_approval") return false;
@@ -65,11 +65,15 @@ export async function GET() {
     return d.scheduled_date?.slice(0, 10) === todayStr;
   });
 
-  // Upcoming: pending_approval (waiting on admin) + confirmed/scheduled future deliveries
+  // Upcoming: pending_approval + confirmed/accepted/scheduled (including with no date yet so they appear)
   const upcomingDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
     if (DONE_STATUSES.has(s)) return false;
-    if (s === "pending_approval") return true; // awaiting admin review — always show until accepted
+    if (s === "pending_approval") return true;
+    if (s === "confirmed" || s === "accepted" || s === "scheduled") {
+      if (!d.scheduled_date) return true; // show confirmed/accepted even without date (TBD)
+      return d.scheduled_date.slice(0, 10) > todayStr;
+    }
     if (!d.scheduled_date) return false;
     return d.scheduled_date.slice(0, 10) > todayStr;
   });

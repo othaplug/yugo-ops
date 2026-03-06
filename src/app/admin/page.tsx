@@ -81,38 +81,35 @@ export default async function AdminPage() {
     return ta.localeCompare(tb);
   });
 
-  const upcomingJobs: Job[] = [
-    ...allDeliveries
-      .filter((d) => d.scheduled_date && d.scheduled_date > today && d.status !== "delivered" && d.status !== "cancelled")
-      .slice(0, 10)
-      .map((d) => ({
-        id: d.id,
-        type: "delivery" as const,
-        name: d.customer_name || d.client_name || "Delivery",
-        subtitle: d.category || "Delivery",
-        time: d.time_slot || "",
-        status: (d.status || "pending").toLowerCase(),
-        date: d.scheduled_date || "",
-        tag: d.category || "Delivery",
-        delivery_number: d.delivery_number,
-      })),
-    ...allMoves
-      .filter((m) => m.scheduled_date && m.scheduled_date > today && m.status !== "completed" && m.status !== "cancelled")
-      .slice(0, 10)
-      .map((m) => ({
-        id: m.id,
-        type: "move" as const,
-        name: m.client_name || "Move",
-        subtitle: m.from_address && m.to_address ? `${m.from_address} → ${m.to_address}` : "",
-        time: m.time_slot || "",
-        status: (m.status || "confirmed").toLowerCase(),
-        date: m.scheduled_date || "",
-        tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
-        move_code: m.move_code,
-      })),
-  ]
+  const upcomingDeliveries = allDeliveries
+    .filter((d) => d.scheduled_date && d.scheduled_date > today && d.status !== "delivered" && d.status !== "cancelled")
+    .map((d) => ({
+      id: d.id,
+      type: "delivery" as const,
+      name: d.customer_name || d.client_name || "Delivery",
+      subtitle: d.category || "Delivery",
+      time: d.time_slot || "",
+      status: (d.status || "pending").toLowerCase(),
+      date: d.scheduled_date || "",
+      tag: d.category || "Delivery",
+      delivery_number: d.delivery_number,
+    }));
+  const upcomingMoves = allMoves
+    .filter((m) => m.scheduled_date && m.scheduled_date > today && m.status !== "completed" && m.status !== "cancelled")
+    .map((m) => ({
+      id: m.id,
+      type: "move" as const,
+      name: m.client_name || "Move",
+      subtitle: m.from_address && m.to_address ? `${m.from_address} → ${m.to_address}` : "",
+      time: m.time_slot || "",
+      status: (m.status || "confirmed").toLowerCase(),
+      date: m.scheduled_date || "",
+      tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
+      move_code: m.move_code,
+    }));
+  const upcomingJobs: Job[] = [...upcomingDeliveries, ...upcomingMoves]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 5);
+    .slice(0, 10);
 
   const overdueInvoices = allInvoices.filter((i) => i.status === "overdue");
   const overdueAmount = overdueInvoices.reduce((s, i) => s + Number(i.amount || 0), 0);

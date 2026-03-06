@@ -326,7 +326,7 @@ export default function AdminPageClient({
                 <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">All &rarr;</Link>
               </div>
               <div className="divide-y divide-[var(--brd)]/30">
-                {upcomingJobs.slice(0, 3).map((job) => (
+                {upcomingJobs.slice(0, 5).map((job) => (
                   <Link
                     key={`up-${job.type}-${job.id}`}
                     href={getJobHref(job)}

@@ -296,10 +296,11 @@ export default function TrackLiveMap({
           <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
           {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
           {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          {crewMembers && <p className="text-[12px] text-[#666]">Your crew: {crewMembers}</p>}
-          {/* Static map with pickup/delivery preview */}
+          {/* Don't show crew name or addresses until crew has started — live signal off */}
+          <p className="text-[11px] text-[#999] font-medium uppercase tracking-wider">Live signal off</p>
+          {/* Static map with pickup/delivery preview — blurred until crew starts */}
           {(pickup || dropoff) && (
-            <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4]">
+            <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4] relative">
               {HAS_MAPBOX && MAPBOX_TOKEN ? (
                 <MapboxMap
                   mapboxAccessToken={MAPBOX_TOKEN}
@@ -312,6 +313,10 @@ export default function TrackLiveMap({
               ) : (
                 <LeafletMap center={center} crew={null} pickup={pickup} dropoff={dropoff} liveStage={null} />
               )}
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10 rounded-b-xl" aria-hidden="true">
+                <span className="text-[12px] font-semibold text-[#666]">Live signal off</span>
+                <span className="text-[11px] text-[#888] mt-1">Tracking begins when your crew starts the job</span>
+              </div>
             </div>
           )}
         </div>

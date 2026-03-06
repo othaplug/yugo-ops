@@ -31,9 +31,9 @@ export async function GET() {
 
   // Only show deliveries on the live map when they are:
   //   1. Scheduled for TODAY (not days in the future)
-  //   2. Already confirmed/dispatched/in-transit — not still pending acceptance
+  //   2. Confirmed, accepted, or already in progress — not still pending approval
   const todayStr = getTodayString();
-  const liveStatuses = ["confirmed", "dispatched", "in-transit", "in_transit", "in_progress"];
+  const liveStatuses = ["confirmed", "accepted", "dispatched", "in-transit", "in_transit", "in_progress"];
 
   const { data: deliveries } = await supabase
     .from("deliveries")

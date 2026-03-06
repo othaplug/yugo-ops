@@ -101,14 +101,15 @@ export default function TrackDeliveryClient({
     : null;
 
   const showMap = !loading && (hasActiveTracking || crewLoc || (pickup && dropoff));
+  const crewHasStarted = hasActiveTracking;
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: CREAM, color: FOREST }} data-theme="light">
-      {/* Map area — full-width at top when live (stays dark for map contrast) */}
+      {/* Map area — full-width at top when live (stays dark for map contrast). Blur until crew starts. */}
       {showMap && (
         <div className={`relative ${isFullscreen ? "fixed inset-0 z-50" : "h-[340px] sm:h-[420px]"} bg-[#1A1A1A]`}>
-          {/* Overlay: stage card */}
-          {liveStage && (
+          {/* Overlay: stage card — only when crew has started (live signal on) */}
+          {crewHasStarted && liveStage && (
             <div className="absolute top-4 left-4 z-20 rounded-xl bg-white/95 backdrop-blur-sm border px-4 py-3 flex items-center gap-3 shadow-xl" style={{ borderColor: `${FOREST}25` }}>
               <span className="relative flex h-3 w-3 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
@@ -125,8 +126,8 @@ export default function TrackDeliveryClient({
             </div>
           )}
 
-          {/* Overlay: ETA pill */}
-          {displayEta != null && (
+          {/* Overlay: ETA pill — only when crew has started */}
+          {crewHasStarted && displayEta != null && (
             <div className="absolute top-4 right-4 z-20 rounded-xl px-4 py-2.5 shadow-xl" style={{ backgroundColor: GOLD }}>
               <div className="text-[20px] font-bold text-[#1A1A1A] leading-none">{displayEta}</div>
               <div className="text-[9px] font-semibold text-[#1A1A1A]/70 uppercase tracking-wider">min</div>
@@ -148,6 +149,13 @@ export default function TrackDeliveryClient({
           </button>
 
           <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
+          {/* Blur overlay when crew have not started — live signal off */}
+          {!crewHasStarted && (
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
+              <span className="text-[14px] font-semibold text-white">Live signal off</span>
+              <span className="text-[12px] text-white/80 mt-1">Tracking begins when your crew starts the job</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -276,44 +284,50 @@ export default function TrackDeliveryClient({
           </div>
         )}
 
-        {/* Details */}
+        {/* Details — only show addresses/item list when crew has started (live signal on) */}
         <div className="pt-6 border-t border-[var(--brd)]/30 space-y-4">
           <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Delivery Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
-              <div className="text-[13px]" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
-            </div>
-            {delivery.pickup_address && (
-              <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
-                <div className="text-[13px]" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
+          {!crewHasStarted ? (
+            <p className="text-[12px] opacity-75" style={{ color: FOREST }}>Live signal off — address and details will appear when your crew starts the job.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
+                  <div className="text-[13px]" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
+                </div>
+                {delivery.pickup_address && (
+                  <div>
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
+                    <div className="text-[13px]" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
+                  <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                    {delivery.scheduled_date || "—"} {(delivery.delivery_window || delivery.time_slot) ? `· ${delivery.delivery_window || delivery.time_slot}` : ""}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
+                  <div className="text-[13px] font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
+                </div>
               </div>
-            )}
-            <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
-              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
-                {delivery.scheduled_date || "—"} {(delivery.delivery_window || delivery.time_slot) ? `· ${delivery.delivery_window || delivery.time_slot}` : ""}
-              </div>
-            </div>
-            <div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
-              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
-            </div>
-          </div>
 
-          {itemsCount > 0 && (
-            <div className="pt-4 border-t border-[var(--brd)]/30">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
-              <ul className="text-[13px] space-y-1">
-                {(delivery.items as string[]).map((item: string, i: number) => (
-                  <li key={i} className="flex items-center gap-2" style={{ color: FOREST }}>
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {itemsCount > 0 && (
+                <div className="pt-4 border-t border-[var(--brd)]/30">
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
+                  <ul className="text-[13px] space-y-1">
+                    {(delivery.items as string[]).map((item: string, i: number) => (
+                      <li key={i} className="flex items-center gap-2" style={{ color: FOREST }}>
+                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
 
