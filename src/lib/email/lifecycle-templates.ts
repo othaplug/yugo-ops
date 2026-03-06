@@ -1,5 +1,6 @@
 import { emailLayout } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatAccessForDisplay } from "@/lib/format-text";
 
 /* ═══════════════════════════════════════════════════════════
    Pre-Move, Post-Move, Review & Lifecycle Email Templates
@@ -38,10 +39,12 @@ export interface PreMove72hrData {
 
 export function preMove72hrEmail(d: PreMove72hrData): string {
   const accessNotes: string[] = [];
-  if (d.fromAccess && d.fromAccess !== "none")
-    accessNotes.push(`<strong>Pickup access:</strong> ${d.fromAccess} &mdash; please reserve the elevator/loading dock.`);
-  if (d.toAccess && d.toAccess !== "none")
-    accessNotes.push(`<strong>Drop-off access:</strong> ${d.toAccess} &mdash; please reserve the elevator/loading dock.`);
+  const fromAccessLabel = formatAccessForDisplay(d.fromAccess);
+  const toAccessLabel = formatAccessForDisplay(d.toAccess);
+  if (fromAccessLabel && fromAccessLabel !== "None")
+    accessNotes.push(`<strong>Pickup access:</strong> ${fromAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+  if (toAccessLabel && toAccessLabel !== "None")
+    accessNotes.push(`<strong>Drop-off access:</strong> ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">3 Days To Go</div>

@@ -11,6 +11,7 @@ import {
   getStatusLabel,
 } from "@/lib/crew-tracking-status";
 import { normalizePhone } from "@/lib/phone";
+import { formatAccessForDisplay } from "@/lib/format-text";
 import PageContent from "@/app/admin/components/PageContent";
 import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
@@ -649,12 +650,12 @@ export default function CrewJobPage({
           <div className="pt-6 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Pickup</h3>
             <p className="text-[14px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
-            {job.fromAccess && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {job.fromAccess}</p>}
+            {formatAccessForDisplay(job.fromAccess) && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {formatAccessForDisplay(job.fromAccess)}</p>}
           </div>
           <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Drop-off</h3>
             <p className="text-[14px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
-            {job.toAccess && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {job.toAccess}</p>}
+            {formatAccessForDisplay(job.toAccess) && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {formatAccessForDisplay(job.toAccess)}</p>}
           </div>
           {job.accessNotes && (
             <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">

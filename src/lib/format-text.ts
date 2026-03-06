@@ -11,3 +11,12 @@ export function toTitleCase(s: string | null | undefined): string {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/**
+ * Public-facing access label: no underscores, title case.
+ * "ground_floor" → "Ground Floor", "" → null.
+ */
+export function formatAccessForDisplay(access: string | null | undefined): string | null {
+  if (!access || !access.trim()) return null;
+  return toTitleCase(access.trim());
+}

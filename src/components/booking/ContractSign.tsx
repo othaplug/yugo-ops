@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown, ChevronUp, FileText, Shield, MapPin, Calendar } from "lucide-react";
-import { toTitleCase } from "@/lib/format-text";
+import { Check, ChevronDown, ChevronUp, FileText, Shield, Calendar } from "lucide-react";
+import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -280,69 +280,60 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
             >
               Service details
             </p>
-            <p
-              className="text-[15px] font-semibold mb-2 transition-all duration-300 ease-out opacity-0 translate-y-2"
+            <div
+              className="flex flex-wrap items-center gap-2 mb-2 transition-all duration-300 ease-out opacity-0 translate-y-2"
               style={{
-                color: WINE,
                 ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
                 transitionDelay: "60ms",
               }}
             >
-              {toTitleCase(q.serviceType)} — {q.packageLabel}
-            </p>
-
-            {/* Address block: from → to with animated connector + access text */}
-            <div className="relative">
-              <div
-                className="flex gap-3 rounded-lg py-2 px-3 transition-all duration-300 ease-out hover:bg-black/[0.02]"
+              <span className="text-[15px] font-semibold" style={{ color: WINE }}>
+                {toTitleCase(q.serviceType)}
+              </span>
+              <span
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide"
                 style={{
-                  opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
-                  transitionDelay: "120ms",
+                  color: WINE,
+                  backgroundColor: `${WINE}12`,
+                  border: `1px solid ${WINE}25`,
                 }}
               >
-                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
-                <div className="min-w-0">
+                {q.packageLabel}
+              </span>
+            </div>
+
+            {/* Address block: coloured line left, from → to tight stack, no icons */}
+            <div
+              className="flex gap-3"
+              style={{
+                opacity: summaryMounted ? 1 : 0,
+                transition: "opacity 300ms ease-out",
+                transitionDelay: "120ms",
+              }}
+            >
+              {/* Coloured animated line left of addresses */}
+              <div className="relative shrink-0 w-0.5 rounded-full min-h-[4rem]" style={{ backgroundColor: `${GOLD}30` }}>
+                <span
+                  className="contract-address-flow-dot absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-1.5 rounded-full"
+                  style={{
+                    backgroundColor: GOLD,
+                    boxShadow: `0 0 0 2px ${CREAM}`,
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0 space-y-0.5">
+                <div className="rounded-lg py-1 pr-2 transition-colors hover:bg-black/[0.02]">
                   <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>From</span>
                   <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.fromAddress}</p>
-                  {q.fromAccess && (
-                    <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}60` }}>Access: {q.fromAccess}</p>
+                  {formatAccessForDisplay(q.fromAccess) && (
+                    <p className="text-[10px] mt-0.5 leading-tight" style={{ color: `${FOREST}60` }}>Access: {formatAccessForDisplay(q.fromAccess)}</p>
                   )}
                 </div>
-              </div>
-              {/* Animated from-to connector */}
-              <div
-                className="flex justify-center py-0.5 relative"
-                style={{
-                  opacity: summaryMounted ? 1 : 0,
-                  transition: "opacity 300ms ease-out",
-                  transitionDelay: "160ms",
-                }}
-              >
-                <div className="relative w-px min-h-[20px]" style={{ backgroundColor: `${FOREST}18` }}>
-                  <span
-                    className="contract-address-flow-dot absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-1.5 rounded-full"
-                    style={{
-                      backgroundColor: GOLD,
-                      boxShadow: `0 0 0 2px ${CREAM}`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div
-                className="flex gap-3 rounded-lg py-2 px-3 transition-all duration-300 ease-out hover:bg-black/[0.02]"
-                style={{
-                  opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(6px)",
-                  transitionDelay: "200ms",
-                }}
-              >
-                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
-                <div className="min-w-0">
+                <div className="rounded-lg py-1 pr-2 transition-colors hover:bg-black/[0.02]">
                   <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>To</span>
                   <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.toAddress}</p>
-                  {q.toAccess && (
-                    <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}60` }}>Access: {q.toAccess}</p>
+                  {formatAccessForDisplay(q.toAccess) && (
+                    <p className="text-[10px] mt-0.5 leading-tight" style={{ color: `${FOREST}60` }}>Access: {formatAccessForDisplay(q.toAccess)}</p>
                   )}
                 </div>
               </div>
