@@ -14,7 +14,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: photos, error } = await admin
       .from("move_photos")
-      .select("id, storage_path, caption, sort_order")
+      .select("id, storage_path, caption, sort_order, source")
       .eq("move_id", moveId)
       .order("sort_order")
       .order("created_at");
@@ -22,10 +22,10 @@ export async function GET(
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
     const bucket = "move-photos";
-    const urls: { id: string; url: string; caption: string | null }[] = [];
+    const urls: { id: string; url: string; caption: string | null; source?: string }[] = [];
     for (const p of photos ?? []) {
       const { data: signed } = await admin.storage.from(bucket).createSignedUrl(p.storage_path, 3600);
-      urls.push({ id: p.id, url: signed?.signedUrl ?? "", caption: p.caption });
+      urls.push({ id: p.id, url: signed?.signedUrl ?? "", caption: p.caption, source: p.source || "admin" });
     }
 
     return NextResponse.json({ photos: urls });

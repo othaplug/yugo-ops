@@ -1,0 +1,163 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { Icon } from "@/components/AppIcons";
+import { createClient } from "@/lib/supabase/client";
+import { getStatusLabel } from "@/lib/move-status";
+
+type ActivityEvent = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  event_type: string;
+  description: string | null;
+  icon: string | null;
+  created_at: string;
+};
+
+function formatTime(createdAt: string): string {
+  const diffMs = Date.now() - new Date(createdAt).getTime();
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 10) return "just now";
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function getHref(e: ActivityEvent): string {
+  if (e.entity_type === "move") return `/admin/moves/${e.entity_id}`;
+  if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
+  if (e.entity_type === "invoice") return "/admin/invoices";
+  return "/admin";
+}
+
+function getIcon(eventType: string, description: string | null): string {
+  const et = (eventType || "").toLowerCase();
+  const desc = (description || "").toLowerCase();
+  if (et === "payment" || desc.includes("payment") || desc.includes("paid")) return "dollar";
+  if (et === "client_message" || desc.includes("message")) return "messageSquare";
+  if (et === "created" || desc.includes("new booking") || desc.includes("new referral")) return "calendar";
+  if (et === "status_change" || et === "notification") return "target";
+  return "bell";
+}
+
+function formatDesc(desc: string): string {
+  const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
+  if (match) return `${match[1]} · ${getStatusLabel(match[2] || null)}`;
+  if (desc.toLowerCase().includes("payment")) {
+    const nameMatch = desc.match(/(.+?)\s*[·—]/);
+    return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc;
+  }
+  return desc.length > 60 ? desc.slice(0, 57) + "..." : desc;
+}
+
+export default function LiveActivityFeed({ initialEvents }: { initialEvents: ActivityEvent[] }) {
+  const [events, setEvents] = useState<ActivityEvent[]>(initialEvents);
+  const [, setTick] = useState(0);
+  const seenIds = useRef(new Set(initialEvents.map((e) => e.id)));
+  const supabase = createClient();
+
+  const mergeEvents = useCallback((incoming: ActivityEvent[]) => {
+    setEvents((prev) => {
+      const merged = [...prev];
+      let added = false;
+      for (const e of incoming) {
+        if (!seenIds.current.has(e.id)) {
+          seenIds.current.add(e.id);
+          merged.unshift(e);
+          added = true;
+        }
+      }
+      if (!added) return prev;
+      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return merged.slice(0, 30);
+    });
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("activity-feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "status_events" },
+        (payload) => {
+          const row = payload.new as ActivityEvent;
+          if (row?.id) mergeEvents([row]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, mergeEvents]);
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const { data } = await supabase
+          .from("status_events")
+          .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+          .order("created_at", { ascending: false })
+          .limit(12);
+        if (data?.length) mergeEvents(data);
+      } catch {
+        /* silent */
+      }
+    };
+
+    const id = setInterval(poll, 15_000);
+    return () => clearInterval(id);
+  }, [supabase, mergeEvents]);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const visible = events
+    .filter((a, i) => i === 0 || events[i - 1].description !== a.description)
+    .slice(0, 8);
+
+  return (
+    <div className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Activity</h2>
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+          </span>
+        </div>
+      </div>
+      {visible.length > 0 ? (
+        <div className="divide-y divide-[var(--brd)]/30">
+          {visible.map((e, idx) => (
+            <Link
+              key={`${e.id}-${idx}`}
+              href={getHref(e)}
+              className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
+            >
+              <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
+                <Icon name={getIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] text-[var(--tx)] leading-snug truncate">
+                  {formatDesc(e.description || e.event_type)}
+                </div>
+                <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.created_at)}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-[var(--tx3)] py-3">No recent activity</p>
+      )}
+    </div>
+  );
+}

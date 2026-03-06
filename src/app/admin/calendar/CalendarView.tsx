@@ -25,6 +25,18 @@ interface CalEvent {
   moveType?: string;
 }
 
+interface ProjectPhaseBlock {
+  id: string;
+  projectId: string;
+  projectNumber: string;
+  phaseName: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  color: string;
+  href: string;
+}
+
 type ViewMode = "day" | "week" | "month";
 
 // ─── Constants ──────────────────────────────────
@@ -176,11 +188,12 @@ function fmtDayOfWeek(d: Date) {
 interface CalendarViewProps {
   deliveries: any[];
   moves: any[];
+  projectPhases?: any[];
   today?: string;
   appTimezone?: string;
 }
 
-export default function CalendarView({ deliveries, moves, today: todayStr, appTimezone = "America/Toronto" }: CalendarViewProps) {
+export default function CalendarView({ deliveries, moves, projectPhases = [], today: todayStr, appTimezone = "America/Toronto" }: CalendarViewProps) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -198,6 +211,36 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
   const [dragType, setDragType] = useState<"delivery" | "move" | null>(null);
 
   const allEvents = useMemo(() => normalizeEvents(deliveries, moves), [deliveries, moves]);
+
+  const phaseBlocks: ProjectPhaseBlock[] = useMemo(() => {
+    return (projectPhases || [])
+      .filter((p: any) => p.scheduled_date && p.status !== "skipped")
+      .map((p: any) => ({
+        id: p.id,
+        projectId: p.project_id,
+        projectNumber: p.project_number || "PRJ",
+        phaseName: p.phase_name,
+        startDate: p.start_date || p.scheduled_date,
+        endDate: p.scheduled_date,
+        status: p.status,
+        color: p.status === "completed" ? "#2D9F5A" : p.status === "active" ? "#D48A29" : "#8B5CF6",
+        href: `/admin/projects/${p.project_id}`,
+      }));
+  }, [projectPhases]);
+
+  const phasesByDate = useMemo(() => {
+    const map: Record<string, ProjectPhaseBlock[]> = {};
+    for (const block of phaseBlocks) {
+      const start = new Date(block.startDate + "T00:00:00");
+      const end = new Date(block.endDate + "T00:00:00");
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = toDateKey(d, appTimezone);
+        if (!map[key]) map[key] = [];
+        if (!map[key].find((b) => b.id === block.id)) map[key].push(block);
+      }
+    }
+    return map;
+  }, [phaseBlocks, appTimezone]);
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalEvent[]> = {};
@@ -476,6 +519,16 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
                 {day}
               </div>
               <div className="space-y-0.5">
+                {(phasesByDate[dk] || []).slice(0, 1).map((block) => (
+                  <div
+                    key={block.id}
+                    onClick={(e) => { e.stopPropagation(); router.push(block.href); }}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] truncate cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ background: `${block.color}20`, borderLeft: `2px solid ${block.color}`, color: block.color }}
+                  >
+                    <span className="truncate font-semibold">{block.projectNumber} {block.phaseName}</span>
+                  </div>
+                ))}
                 {dayEvents.slice(0, 3).map((ev) => (
                   <div
                     key={ev.id}
@@ -525,6 +578,16 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(key)}
             >
+              {(phasesByDate[key] || []).map((block) => (
+                <div
+                  key={`ph-${block.id}`}
+                  onClick={(e) => { e.stopPropagation(); router.push(block.href); }}
+                  className="mb-1.5 px-2 py-1 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ background: `${block.color}15`, borderLeft: `3px solid ${block.color}` }}
+                >
+                  <div className="text-[8px] font-bold truncate" style={{ color: block.color }}>{block.projectNumber} {block.phaseName}</div>
+                </div>
+              ))}
               {dayEvents.map((ev) => (
                 <div
                   key={ev.id}
@@ -538,7 +601,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
                   <div className="text-[8px] text-[var(--tx3)] mt-0.5">{ev.time || "Anytime"}</div>
                 </div>
               ))}
-              {dayEvents.length === 0 && (
+              {dayEvents.length === 0 && (phasesByDate[key] || []).length === 0 && (
                 <div className="text-[9px] text-[var(--tx3)] opacity-40 text-center pt-8">+ Schedule</div>
               )}
             </div>
@@ -606,6 +669,7 @@ export default function CalendarView({ deliveries, moves, today: todayStr, appTi
         { label: "Gallery", color: "#4A7CE5" },
         { label: "Residential Move", color: "#2D9F5A" },
         { label: "Office Move", color: "#4A7CE5" },
+        { label: "Project Phase", color: "#8B5CF6" },
       ].map((item) => (
         <div key={item.label} className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
           <div className="w-2.5 h-[3px] rounded" style={{ background: item.color }} />

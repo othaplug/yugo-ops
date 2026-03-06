@@ -22,7 +22,7 @@ export default function TermsPage() {
           <strong>Last updated:</strong> February 2025
         </p>
         <p className="text-[14px] text-[#666] leading-relaxed mb-6">
-          These Terms of Use (&quot;Terms&quot;) govern your access to and use of the services, websites, and applications operated by Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), including the YUGO platform. By using our services, you agree to be bound by these Terms.
+          These Terms of Use (&quot;Terms&quot;) govern your access to and use of the services, websites, and applications operated by Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), including the YUGO+ platform. By using our services, you agree to be bound by these Terms.
         </p>
 
         <section className="mb-8">
@@ -40,7 +40,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-6 text-[14px] text-[#666] leading-relaxed mb-3 space-y-1">
             <li>Residential and commercial moving services</li>
             <li>Packing, loading, transport, and unloading</li>
-            <li>Real-time tracking and status updates via the YUGO platform</li>
+            <li>Real-time tracking and status updates via the YUGO+ platform</li>
             <li>Coordination between customers, crew members, and partners</li>
           </ul>
           <p className="text-[14px] text-[#666] leading-relaxed">
@@ -148,7 +148,7 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-[18px] font-semibold text-[#1A1A1A] mb-3">9. Intellectual Property</h2>
           <p className="text-[14px] text-[#666] leading-relaxed">
-            The YUGO platform, our websites, applications, logos, content, and other materials are owned by Yugo or our licensors and are protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission. You retain ownership of your content; by submitting it, you grant us a license to use it as necessary to provide our services.
+            The YUGO+ platform, our websites, applications, logos, content, and other materials are owned by Yugo or our licensors and are protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission. You retain ownership of your content; by submitting it, you grant us a license to use it as necessary to provide our services.
           </p>
         </section>
 

@@ -16,14 +16,24 @@ export async function GET() {
 
   const { data: org } = await admin
     .from("organizations")
-    .select("type")
+    .select("type, name")
     .eq("id", primaryOrgId!)
     .single();
 
   const orgType = org?.type || "retail";
 
+  // Resolve org names for client_name fallback matching
+  const orgNamesRes = await admin
+    .from("organizations")
+    .select("name")
+    .in("id", orgIds);
+  const orgNames = (orgNamesRes.data || []).map((o) => o.name).filter(Boolean);
+
+  const deliverySelect = "id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price";
+
   const [
-    { data: allDeliveries },
+    { data: byOrgId },
+    { data: byClientName },
     { data: recentMoves },
     { data: invoices },
     { data: referrals },
@@ -31,10 +41,20 @@ export async function GET() {
   ] = await Promise.all([
     admin
       .from("deliveries")
-      .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price")
+      .select(deliverySelect)
       .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: true })
       .order("created_at", { ascending: false }),
+    // Fallback: deliveries with matching client_name but NULL organization_id
+    orgNames.length > 0
+      ? admin
+          .from("deliveries")
+          .select(deliverySelect)
+          .is("organization_id", null)
+          .in("client_name", orgNames)
+          .order("scheduled_date", { ascending: true })
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
     admin
       .from("moves")
       .select("id, move_code, client_name, status, stage, scheduled_date, scheduled_time, from_address, to_address, crew_id")
@@ -54,15 +74,28 @@ export async function GET() {
       : Promise.resolve({ data: [] }),
   ]);
 
-  console.log("DEBUG portal-data", {
-    orgIds,
-    primaryOrgId,
-    deliveriesCount: allDeliveries?.length,
-    deliveriesError: allDeliveries === null ? "null result" : "ok",
-    firstDelivery: allDeliveries?.[0] || null,
-  });
+  // Merge org_id matched + client_name fallback, dedup by id
+  const seenIds = new Set<string>();
+  const allDeliveries: typeof byOrgId = [];
+  for (const d of [...(byOrgId || []), ...(byClientName || [])]) {
+    if (!seenIds.has(d.id)) {
+      seenIds.add(d.id);
+      allDeliveries.push(d);
+    }
+  }
 
-  const dels = allDeliveries || [];
+  // Backfill: async update orphaned deliveries so future queries use organization_id directly
+  const orphanIds = (byClientName || []).map((d) => d.id);
+  if (orphanIds.length > 0) {
+    admin
+      .from("deliveries")
+      .update({ organization_id: primaryOrgId })
+      .in("id", orphanIds)
+      .is("organization_id", null)
+      .then(() => {});
+  }
+
+  const dels = allDeliveries;
   const invs = invoices || [];
   const refs = referrals || [];
 

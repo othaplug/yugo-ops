@@ -12,6 +12,7 @@ export default function PartnerLoginPage() {
   const [checking, setChecking] = useState(true);
   const errorParam = searchParams.get("error");
   const messageParam = searchParams.get("message");
+  const isWelcome = searchParams.get("welcome") === "1";
 
   useEffect(() => {
     const check = async () => {
@@ -42,9 +43,10 @@ export default function PartnerLoginPage() {
 
   return (
     <LoginForm
-      title="Partner portal"
-      subtitle="Sign in to your partner dashboard"
+      title={isWelcome ? "Welcome to YUGO+" : "Partner portal"}
+      subtitle={isWelcome ? "Use the credentials from your invite email to sign in" : "Sign in to your partner dashboard"}
       redirectTo="/partner"
+      isWelcome={isWelcome}
       initialError={errorParam === "partner_lookup" && messageParam ? decodeURIComponent(messageParam) : errorParam === "no_org" ? "No organization linked to this account. Contact support." : undefined}
     />
   );

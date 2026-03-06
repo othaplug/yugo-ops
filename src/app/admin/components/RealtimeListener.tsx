@@ -65,14 +65,15 @@ export default function RealtimeListener() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, (payload) => {
         if (payload.eventType === "INSERT") {
-          const row = payload.new as { delivery_number?: string; status?: string; category?: string; customer_name?: string; created_by_source?: string };
+          const row = payload.new as { delivery_number?: string; status?: string; category?: string; customer_name?: string; client_name?: string; created_by_source?: string };
           if (row.status === "pending_approval" || row.created_by_source === "partner_portal") {
             const categoryLabel = row.category
               ? row.category.charAt(0).toUpperCase() + row.category.slice(1)
               : "Partner";
-            const label = row.customer_name ? ` for ${row.customer_name}` : row.delivery_number ? ` ${row.delivery_number}` : "";
+            const from = row.client_name ? ` from ${row.client_name}` : "";
+            const forCustomer = row.customer_name ? ` for ${row.customer_name}` : row.delivery_number ? ` ${row.delivery_number}` : "";
             createNotification(addNotification, {
-              title: `New ${categoryLabel} delivery request${label} awaiting approval`,
+              title: `New ${categoryLabel} delivery request${from}${forCustomer} awaiting approval`,
               icon: "clipboard",
               link: "/admin/deliveries",
             });

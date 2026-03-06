@@ -21,7 +21,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your Yugo crew is on the way!",
+    clientMessage: "Your YUGO+ crew is on the way!",
   },
   arrived_at_pickup: {
     notifyClient: false,
@@ -57,7 +57,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your move is complete. Thank you for choosing Yugo!",
+    clientMessage: "Your move is complete. Thank you for choosing YUGO+!",
   },
   en_route: {
     notifyClient: true,
@@ -156,10 +156,10 @@ export async function notifyOnCheckpoint(
   const html = `
     <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px">
       <div style="text-align:center;margin-bottom:28px">
-        <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO</div>
+        <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO+</div>
       </div>
       <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${cfg.clientMessage || "Status update"}</h1>
-      <p style="font-size:14px;color:#B0ADA8;margin-bottom:24px">${status === "completed" ? "Thank you for choosing Yugo. We hope your move went smoothly." : "Your crew has updated the status of your job."}</p>
+      <p style="font-size:14px;color:#B0ADA8;margin-bottom:24px">${status === "completed" ? "Thank you for choosing YUGO+. We hope your move went smoothly." : "Your crew has updated the status of your job."}</p>
       ${trackUrl ? `<a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">Track your job →</a>` : ""}
     </div>
   `;
@@ -172,7 +172,7 @@ export async function notifyOnCheckpoint(
   for (const to of toSend) {
     try {
       await resend.emails.send({
-        from: "YUGO <notifications@opsplus.co>",
+        from: "Yugo+ <notifications@opsplus.co>",
         to,
         subject,
         html,

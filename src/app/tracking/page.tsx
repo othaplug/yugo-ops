@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import TrackingLookup from "./TrackingLookup";
 
 export const metadata: Metadata = {
-  title: "Track Your Move or Delivery — YUGO",
+  title: "Yugo+ | Track Your Move or Delivery",
   description: "Enter your tracking number to see real-time status, live GPS location, and delivery details.",
   robots: "noindex, nofollow",
 };

@@ -88,9 +88,9 @@ export async function POST(req: NextRequest) {
     const name = (authUser.user_metadata?.full_name as string) || email.split("@")[0] || "";
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "YUGO <notifications@opsplus.co>",
+      from: "Yugo+ <notifications@opsplus.co>",
       to: email,
-      subject: "Your YUGO Partner Portal password has been reset",
+      subject: "Your YUGO+ Partner Portal password has been reset",
       html: partnerPasswordResetEmail({
         contactName: name,
         companyName: org.name,

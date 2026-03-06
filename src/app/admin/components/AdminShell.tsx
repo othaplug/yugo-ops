@@ -34,7 +34,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Dashboard",
     items: [
       { href: "/admin", label: "Command Center", Icon: Icons.home, minRole: "coordinator" },
-      { href: "/admin/deliveries", label: "All Projects", Icon: Icons.projects },
       { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar },
       { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin },
       { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
@@ -43,6 +42,8 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "B2B Partners",
     items: [
+      { href: "/admin/deliveries", label: "All Deliveries", Icon: Icons.truck, minRole: "coordinator" },
+      { href: "/admin/projects", label: "Projects", Icon: Icons.clipboardList, minRole: "admin" },
       { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },
       { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, minRole: "admin" },
       { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, minRole: "admin" },
@@ -54,6 +55,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Moves",
     items: [
       { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes" },
+      { href: "/admin/widget-leads", label: "Widget Leads", Icon: Icons.zap, minRole: "coordinator" },
       { href: "/admin/moves", label: "All Moves", Icon: Icons.truck },
     ],
   },
@@ -63,6 +65,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText, minRole: "admin" },
       { href: "/admin/revenue", label: "Revenue", Icon: Icons.dollarSign, minRole: "admin" },
       { href: "/admin/tips", label: "Tips", Icon: Icons.creditCard, minRole: "admin" },
+      { href: "/admin/claims", label: "Claims", Icon: Icons.shield, minRole: "admin" },
       { href: "/admin/finance/profitability", label: "Profitability", Icon: Icons.trendingUp, minRole: "owner" },
     ],
   },

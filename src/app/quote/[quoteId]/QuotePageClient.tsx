@@ -573,53 +573,16 @@ export default function QuotePageClient({
 
         {/* ═══ MOVE DETAILS (Residential only) ═══ */}
         {isResidential && (
-          <section className="-mt-6 relative z-10 pt-6 border-t border-[var(--brd)]/30 mb-10">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
-              Move Details
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <DetailRow icon={MapPin} label="From" color={WINE}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
-                  {quote.from_address}
-                </p>
-                {fmtAccess(quote.from_access) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
-                    {fmtAccess(quote.from_access)}
-                  </p>
-                )}
-              </DetailRow>
-              <DetailRow icon={MapPin} label="To" color={FOREST}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
-                  {quote.to_address}
-                </p>
-                {fmtAccess(quote.to_access) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
-                    {fmtAccess(quote.to_access)}
-                  </p>
-                )}
-              </DetailRow>
-              <DetailRow icon={Calendar} label="Move Date" color={GOLD}>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
-                  {fmtDate(quote.move_date)}
-                </p>
-              </DetailRow>
-              {quote.move_size && (
-                <DetailRow icon={Ruler} label="Move Size" color={GOLD}>
-                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
-                    {MOVE_SIZE_LABELS[quote.move_size] ?? quote.move_size}
-                  </p>
-                </DetailRow>
-              )}
-              {quote.distance_km != null && (
-                <DetailRow icon={Clock} label="Distance" color={FOREST}>
-                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
-                    {quote.distance_km} km
-                    {quote.drive_time_min ? ` \u00b7 ~${quote.drive_time_min} min drive` : ""}
-                  </p>
-                </DetailRow>
-              )}
-            </div>
-          </section>
+          <MoveDetailsSection
+            fromAddress={quote.from_address}
+            toAddress={quote.to_address}
+            fromAccess={quote.from_access}
+            toAccess={quote.to_access}
+            moveDate={quote.move_date}
+            moveSize={quote.move_size}
+            distanceKm={quote.distance_km}
+            driveTimeMin={quote.drive_time_min}
+          />
         )}
 
         {/* Non-residential spacer */}
@@ -1282,35 +1245,188 @@ function ValuationProtectionCard({
   );
 }
 
-function DetailRow({
-  icon: Icon,
-  label,
-  color,
-  children,
+function MoveDetailsSection({
+  fromAddress,
+  toAddress,
+  fromAccess,
+  toAccess,
+  moveDate,
+  moveSize,
+  distanceKm,
+  driveTimeMin,
 }: {
-  icon: typeof MapPin;
-  label: string;
-  color: string;
-  children: React.ReactNode;
+  fromAddress: string;
+  toAddress: string;
+  fromAccess: string | null;
+  toAccess: string | null;
+  moveDate: string | null;
+  moveSize: string | null;
+  distanceKm: number | null;
+  driveTimeMin: number | null;
 }) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div className="flex items-start gap-3">
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-        style={{ backgroundColor: `${color}12` }}
+    <section className="-mt-6 relative z-10 pt-6 mb-10">
+      <style>{`
+        @keyframes md-line-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        @keyframes md-fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes md-dot-travel { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        @keyframes md-marker-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(92,26,51,0.15); } 50% { box-shadow: 0 0 0 6px rgba(92,26,51,0); } }
+        .md-stagger { opacity: 0; animation: md-fade-up 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+      `}</style>
+
+      <h2
+        className={`text-[9px] font-bold tracking-[0.16em] uppercase mb-5 ${mounted ? "md-stagger" : "opacity-0"}`}
+        style={{ color: `${FOREST}50`, animationDelay: "0ms" }}
       >
-        <Icon className="w-4 h-4" style={{ color }} />
-      </div>
-      <div>
-        <p
-          className="text-[10px] font-semibold tracking-wider uppercase"
-          style={{ color: `${FOREST}80` }}
+        Your Move
+      </h2>
+
+      {/* Route card */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          backgroundColor: "#FFFFFF",
+          boxShadow: `0 1px 3px ${FOREST}06, 0 6px 20px ${FOREST}04`,
+          border: `1px solid ${FOREST}08`,
+        }}
+      >
+        <div className="px-5 py-5 md:px-6 md:py-6">
+          <div className="flex gap-4">
+            {/* Animated route line */}
+            <div
+              className="relative shrink-0 w-[3px] rounded-full"
+              style={{
+                minHeight: "7rem",
+                ...(mounted ? {
+                  animation: "md-line-draw 0.7s cubic-bezier(0.22,1,0.36,1) 0.15s forwards",
+                  transformOrigin: "top",
+                } : { opacity: 0 }),
+              }}
+            >
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{ background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`, opacity: 0.2 }}
+              />
+              <span
+                className="absolute left-1/2 -translate-x-1/2 top-0 w-[11px] h-[11px] rounded-full z-10"
+                style={{
+                  backgroundColor: WINE,
+                  boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${WINE}25`,
+                  animation: mounted ? "md-marker-pulse 3s ease-in-out infinite" : "none",
+                }}
+              />
+              {mounted && (
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full z-10"
+                  style={{
+                    backgroundColor: GOLD,
+                    boxShadow: `0 0 6px ${GOLD}80`,
+                    animation: "md-dot-travel 2.6s ease-in-out 0.6s infinite",
+                  }}
+                />
+              )}
+              <span
+                className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[11px] h-[11px] rounded-full z-10"
+                style={{
+                  backgroundColor: GOLD,
+                  boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${GOLD}25`,
+                }}
+              />
+            </div>
+
+            {/* Address cards */}
+            <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
+              <div
+                className={`rounded-xl px-4 py-3 ${mounted ? "md-stagger" : "opacity-0"}`}
+                style={{
+                  animationDelay: "180ms",
+                  backgroundColor: `${WINE}04`,
+                  border: `1px solid ${WINE}10`,
+                }}
+              >
+                <span
+                  className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                  style={{ color: WINE }}
+                >
+                  <MapPin className="w-3 h-3" />
+                  From
+                </span>
+                <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                  {fromAddress}
+                </p>
+                {fmtAccess(fromAccess) && (
+                  <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                    {fmtAccess(fromAccess)}
+                  </p>
+                )}
+              </div>
+              <div
+                className={`rounded-xl px-4 py-3 ${mounted ? "md-stagger" : "opacity-0"}`}
+                style={{
+                  animationDelay: "320ms",
+                  backgroundColor: `${GOLD}05`,
+                  border: `1px solid ${GOLD}12`,
+                }}
+              >
+                <span
+                  className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                  style={{ color: GOLD }}
+                >
+                  <MapPin className="w-3 h-3" />
+                  To
+                </span>
+                <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                  {toAddress}
+                </p>
+                {fmtAccess(toAccess) && (
+                  <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                    {fmtAccess(toAccess)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom detail bar */}
+        <div
+          className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5 md:px-6"
+          style={{
+            backgroundColor: CREAM,
+            borderTop: `1px solid ${FOREST}08`,
+          }}
         >
-          {label}
-        </p>
-        {children}
+          <div className={`flex items-center gap-2 ${mounted ? "md-stagger" : "opacity-0"}`} style={{ animationDelay: "420ms" }}>
+            <Calendar className="w-3.5 h-3.5" style={{ color: GOLD }} />
+            <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
+              {fmtDate(moveDate)}
+            </span>
+          </div>
+          {moveSize && (
+            <div className={`flex items-center gap-2 ${mounted ? "md-stagger" : "opacity-0"}`} style={{ animationDelay: "480ms" }}>
+              <Ruler className="w-3.5 h-3.5" style={{ color: GOLD }} />
+              <span className="text-[12px] font-medium" style={{ color: FOREST }}>
+                {MOVE_SIZE_LABELS[moveSize] ?? moveSize}
+              </span>
+            </div>
+          )}
+          {distanceKm != null && (
+            <div className={`flex items-center gap-2 ${mounted ? "md-stagger" : "opacity-0"}`} style={{ animationDelay: "540ms" }}>
+              <Clock className="w-3.5 h-3.5" style={{ color: GOLD }} />
+              <span className="text-[12px] font-medium" style={{ color: FOREST }}>
+                {distanceKm} km{driveTimeMin ? ` · ~${driveTimeMin} min` : ""}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 

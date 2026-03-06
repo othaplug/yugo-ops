@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePartner } from "@/lib/partner-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculateDayRate, calculatePerDelivery, detectZone, getVolumeDiscount, getActiveRateCard } from "@/lib/partners/calculateDeliveryPrice";
+import { calculateDayRate, calculatePerDelivery, detectZone, getVolumeDiscount, getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, orgIds, error } = await requirePartner();
@@ -22,8 +22,11 @@ export async function POST(req: NextRequest) {
 
     const pricingTier = (org?.pricing_tier === "partner" ? "partner" : "standard") as "standard" | "partner";
 
-    const rateCardId = await getActiveRateCard(primaryOrgId);
-    if (!rateCardId) return NextResponse.json({ error: "No rate card configured" }, { status: 404 });
+    const lookup = await getActiveRateCardLookup(primaryOrgId);
+    if (!lookup.rateCardId && !lookup.templateId) {
+      return NextResponse.json({ error: "No rate card configured" }, { status: 404 });
+    }
+    const rateCardId = lookup.rateCardId || lookup.templateId!;
 
     if (booking_type === "day_rate") {
       const result = await calculateDayRate({
@@ -35,13 +38,14 @@ export async function POST(req: NextRequest) {
         isAfterHours: !!is_after_hours,
         isWeekend: !!is_weekend,
         pricingTier,
+        lookup,
       });
       return NextResponse.json(result);
     }
 
     if (booking_type === "per_delivery") {
       const zone = distance_km != null
-        ? (await detectZone(rateCardId, distance_km, pricingTier)).zone
+        ? (await detectZone(rateCardId, distance_km, pricingTier, lookup)).zone
         : body.zone || 1;
 
       const result = await calculatePerDelivery({
@@ -52,6 +56,7 @@ export async function POST(req: NextRequest) {
         isAfterHours: !!is_after_hours,
         isWeekend: !!is_weekend,
         pricingTier,
+        lookup,
       });
 
       const thisMonth = new Date().toISOString().slice(0, 7);
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
         .gte("scheduled_date", `${thisMonth}-01`)
         .in("status", ["completed", "delivered", "in_transit", "scheduled", "confirmed"]);
 
-      const discount = await getVolumeDiscount(rateCardId, (count || 0) + 1);
+      const discount = await getVolumeDiscount(rateCardId, (count || 0) + 1, lookup);
       if (discount > 0) {
         const discountAmount = Math.round(result.totalPrice * (discount / 100));
         result.volumeDiscount = discountAmount;

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const persona = body.persona === "partner" ? "partner" : "client";
 
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-    const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
+    const partnerLoginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
 
     if (persona === "partner") {
       // Partner: create org + auth user + partner_users; optionally send invite
@@ -158,12 +158,12 @@ export async function POST(req: NextRequest) {
           email: emailTrimmed,
           typeLabel,
           tempPassword,
-          loginUrl,
+          loginUrl: partnerLoginUrl,
         };
         await resend.emails.send({
-          from: "YUGO <notifications@opsplus.co>",
+          from: "Yugo+ <notifications@opsplus.co>",
           to: emailTrimmed,
-          subject: `You're invited to YUGO — ${nameTrimmed}`,
+          subject: `You're invited to YUGO+ — ${nameTrimmed}`,
           html: invitePartnerEmail(inviteParams),
           text: invitePartnerEmailText(inviteParams),
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

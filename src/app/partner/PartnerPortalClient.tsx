@@ -11,11 +11,13 @@ import PartnerBillingTab from "./tabs/PartnerBillingTab";
 import PartnerLiveMapTab from "./tabs/PartnerLiveMapTab";
 import PartnerRealtorTab from "./tabs/PartnerRealtorTab";
 import PartnerProjectsTab from "./tabs/PartnerProjectsTab";
+import PartnerB2BProjectsTab from "./tabs/PartnerB2BProjectsTab";
 import PartnerScheduleModal from "./PartnerScheduleModal";
 import PartnerShareModal from "./PartnerShareModal";
 import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
 import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
+import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import YugoLogo from "@/components/YugoLogo";
 
 interface Props {
@@ -220,7 +222,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "materials", label: "Materials" },
       ]
     : [
-        ...(features.showProjects ? [{ key: "projects", label: `Projects (${data?.projects?.length ?? 0})` }] : []),
+        { key: "b2b-projects", label: "Projects" },
+        ...(features.showProjects ? [{ key: "projects", label: `Gallery (${data?.projects?.length ?? 0})` }] : []),
         { key: "today", label: `Today (${data?.todayDeliveries.length ?? 0})` },
         { key: "upcoming", label: `Upcoming (${data?.upcomingDeliveries.length ?? 0})` },
         { key: "calendar", label: "Calendar" },
@@ -230,6 +233,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       ];
 
   return (
+    <PartnerChangePasswordGate>
     <div className={`min-h-screen ${partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"}`} data-theme={partnerTheme}>
       {/* Header */}
       <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
@@ -296,7 +300,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
                     <span className="text-[30px]" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-hero text-[36px] font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
+                  <h2 className="font-hero text-[36px] font-semibold text-[#1A1714] mb-2">Welcome to YUGO+, {contactName}!</h2>
                   <p className="text-[14px] text-[#888] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>
@@ -527,6 +531,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
         {/* Tab Content */}
         <div key={activeTab} className="p-4 sm:p-6 tab-content">
+          {activeTab === "b2b-projects" && (
+            <PartnerB2BProjectsTab />
+          )}
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
               projects={(data.projects || []).map((p) => {
@@ -667,6 +674,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         orgType={orgType}
       />
     </div>
+    </PartnerChangePasswordGate>
   );
 }
 

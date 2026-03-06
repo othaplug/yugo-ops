@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { notifyExtraItemRequest } from "@/lib/extra-item-notifications";
 
 export async function POST(
   req: NextRequest,
@@ -79,5 +80,14 @@ export async function POST(
         : error.message;
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+
+  notifyExtraItemRequest({
+    jobId: entityId,
+    jobType,
+    requestedBy: "crew",
+    description,
+    quantity,
+  }).catch(() => {});
+
   return NextResponse.json(item);
 }

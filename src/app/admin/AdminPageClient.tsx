@@ -7,6 +7,7 @@ import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
+import LiveActivityFeed from "./components/LiveActivityFeed";
 
 /* ── Types ── */
 
@@ -21,6 +22,15 @@ type Job = {
   tag: string;
   delivery_number?: string | null;
   move_code?: string | null;
+};
+
+type ActionTask = {
+  id: string;
+  taskType: "delivery_request" | "change_request";
+  title: string;
+  subtitle: string;
+  createdAt: string;
+  href: string;
 };
 
 type ActivityEvent = {
@@ -45,6 +55,8 @@ interface LiveSession {
   toAddress: string | null;
 }
 
+type MonthRevenue = { m: string; moves: number; deliveries: number; invoices: number };
+
 interface Props {
   todayJobs: Job[];
   upcomingJobs: Job[];
@@ -53,9 +65,11 @@ interface Props {
   overdueCount: number;
   currentMonthRevenue: number;
   revenuePctChange: number;
-  monthlyRevenue: { m: string; v: number }[];
+  revenueBreakdown: { moves: number; deliveries: number; invoices: number };
+  monthlyRevenue: MonthRevenue[];
   activityEvents: ActivityEvent[];
   activeQuotesCount: number;
+  actionTasks: ActionTask[];
 }
 
 /* ── Helpers ── */
@@ -165,11 +179,15 @@ export default function AdminPageClient({
   overdueCount,
   currentMonthRevenue,
   revenuePctChange,
+  revenueBreakdown,
   monthlyRevenue,
   activityEvents,
   activeQuotesCount,
+  actionTasks,
 }: Props) {
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+  const [tasksOpen, setTasksOpen] = useState(true);
+  const [showAllTasks, setShowAllTasks] = useState(false);
 
   useEffect(() => {
     const load = () => {
@@ -188,6 +206,7 @@ export default function AdminPageClient({
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   const summaryParts: string[] = [];
+  if (actionTasks.length > 0) summaryParts.push(`${actionTasks.length} task${actionTasks.length > 1 ? "s" : ""}`);
   if (todayJobCount > 0) summaryParts.push(`${todayJobCount} job${todayJobCount > 1 ? "s" : ""} today`);
   if (liveSessions.length > 0) summaryParts.push(`${liveSessions.length} crew${liveSessions.length > 1 ? "s" : ""} active`);
   if (currentMonthRevenue > 0) summaryParts.push(`${formatCompactCurrency(currentMonthRevenue)} this month`);
@@ -251,10 +270,77 @@ export default function AdminPageClient({
 
         {/* ── LEFT: Schedule ── */}
         <div className="min-w-0">
+
+          {/* ── Action Tasks (collapsible) ── */}
+          {actionTasks.length > 0 && (
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setTasksOpen((v) => !v)}
+                className="flex items-center justify-between w-full mb-3 group"
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    className={`w-3 h-3 text-[var(--tx3)] transition-transform duration-200 ${tasksOpen ? "rotate-90" : ""}`}
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  ><path d="M9 18l6-6-6-6"/></svg>
+                  <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 group-hover:text-[var(--tx2)] transition-colors">Tasks</h2>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#6B8CFF]/15 text-[#6B8CFF]">
+                    {actionTasks.length}
+                  </span>
+                </div>
+              </button>
+              {tasksOpen && (
+                <div className="rounded-xl border border-[#6B8CFF]/20 bg-[#6B8CFF]/[0.03] divide-y divide-[var(--brd)]/30 overflow-hidden">
+                  {actionTasks.slice(0, showAllTasks ? undefined : 5).map((task) => {
+                    const isDelivery = task.taskType === "delivery_request";
+                    return (
+                      <Link
+                        key={`task-${task.id}`}
+                        href={task.href}
+                        className="group flex items-start gap-3 px-4 py-3 hover:bg-[#6B8CFF]/[0.05] transition-colors"
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${isDelivery ? "bg-[#6B8CFF]/15" : "bg-[var(--gold)]/15"}`}>
+                          <Icon
+                            name={isDelivery ? "truck" : "clipboard"}
+                            className={`w-3 h-3 ${isDelivery ? "text-[#6B8CFF]" : "text-[var(--gold)]"}`}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-semibold text-[var(--tx)] leading-snug group-hover:text-[#6B8CFF] transition-colors">
+                            {task.title}
+                          </div>
+                          {task.subtitle && (
+                            <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">{task.subtitle}</div>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-[var(--tx3)] shrink-0 mt-1">{formatActivityTime(task.createdAt)}</span>
+                      </Link>
+                    );
+                  })}
+                  {actionTasks.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTasks((v) => !v)}
+                      className="w-full py-2.5 text-center text-[10px] font-semibold text-[#6B8CFF] hover:bg-[#6B8CFF]/[0.05] transition-colors"
+                    >
+                      {showAllTasks ? "Show less" : `View all ${actionTasks.length} tasks`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{scheduleLabel}</h2>
-            <Link href="/admin/calendar" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">
-              Calendar &rarr;
+            <Link
+              href="/admin/calendar"
+              className="inline-flex items-center gap-1 px-3 py-[5px] rounded-full text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 hover:bg-[var(--gold)]/18 transition-colors"
+            >
+              <Icon name="calendar" className="w-3 h-3" />
+              Calendar
+              <svg className="w-3 h-3 -mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </Link>
           </div>
 
@@ -276,7 +362,7 @@ export default function AdminPageClient({
                     {/* Time / Date column */}
                     <div className="shrink-0 w-[52px] pt-0.5 text-right">
                       {showDate ? (
-                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{formatMoveDate(job.date)}</span>
+                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
                       ) : (
                         <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{job.time}</span>
                       )}
@@ -332,7 +418,7 @@ export default function AdminPageClient({
                     href={getJobHref(job)}
                     className="flex items-center gap-3 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
                   >
-                    <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{formatMoveDate(job.date)}</span>
+                    <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
                     <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
                     <span className="text-[9px] font-semibold uppercase text-[var(--tx3)]">{job.tag}</span>
@@ -346,11 +432,18 @@ export default function AdminPageClient({
         {/* ── RIGHT: Intelligence Column ── */}
         <div className="min-w-0 space-y-0">
 
-          {/* Revenue */}
+          {/* Revenue (multi-source) */}
           <div className="pb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Revenue</h2>
-              <Link href="/admin/revenue" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Details &rarr;</Link>
+              <Link
+                href="/admin/revenue"
+                className="inline-flex items-center gap-1 px-3 py-[5px] rounded-full text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 hover:bg-[var(--gold)]/18 transition-colors"
+              >
+                <Icon name="barChart" className="w-3 h-3" />
+                Details
+                <svg className="w-3 h-3 -mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+              </Link>
             </div>
             <div className="flex items-baseline gap-2 mb-1">
               <span className="text-[24px] font-bold font-heading text-[var(--tx)] tabular-nums">
@@ -362,26 +455,75 @@ export default function AdminPageClient({
                 </span>
               )}
             </div>
-            {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mb-3">Before HST (13%)</div>}
+            {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mb-1">Before HST (13%)</div>}
+
+            {/* Breakdown pills */}
+            {currentMonthRevenue > 0 && (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
+                {revenueBreakdown.moves > 0 && (
+                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} />
+                    Moves {formatCompactCurrency(revenueBreakdown.moves)}
+                  </span>
+                )}
+                {revenueBreakdown.deliveries > 0 && (
+                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#3B82F6" }} />
+                    Deliveries {formatCompactCurrency(revenueBreakdown.deliveries)}
+                  </span>
+                )}
+                {revenueBreakdown.invoices > 0 && (
+                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22C55E" }} />
+                    Invoices {formatCompactCurrency(revenueBreakdown.invoices)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Stacked bar chart */}
             <div className="flex items-end gap-[3px] h-[56px]">
-              {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", v: 0 }]).map((d, i) => {
-                const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.v));
-                const pct = Math.round((d.v / maxV) * 100);
+              {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", moves: 0, deliveries: 0, invoices: 0 }] as MonthRevenue[]).map((d, i) => {
+                const total = d.moves + d.deliveries + d.invoices;
+                const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.moves + x.deliveries + x.invoices));
+                const pct = Math.round((total / maxV) * 100);
                 const isNow = monthlyRevenue.length > 0 && i === monthlyRevenue.length - 1;
+                const movePct = total > 0 ? (d.moves / total) * 100 : 0;
+                const dlvPct = total > 0 ? (d.deliveries / total) * 100 : 0;
+                const invPct = total > 0 ? (d.invoices / total) * 100 : 0;
+
                 return (
-                  <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-0.5 h-full">
+                  <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-0.5 h-full group relative">
                     <div className="flex-1 w-full flex items-end">
                       <div
-                        className="w-full rounded-t min-h-[2px] transition-all duration-300"
-                        style={{
-                          height: `${Math.max(pct, 6)}%`,
-                          background: isNow
-                            ? "linear-gradient(180deg, var(--gold) 0%, var(--gold2) 100%)"
-                            : "rgba(255,255,255,0.06)",
-                        }}
-                      />
+                        className="w-full rounded-t overflow-hidden min-h-[2px] transition-all duration-300 flex flex-col-reverse"
+                        style={{ height: `${Math.max(pct, 6)}%` }}
+                      >
+                        {invPct > 0 && (
+                          <div style={{ height: `${invPct}%`, background: isNow ? "#22C55E" : "rgba(34,197,94,0.25)" }} />
+                        )}
+                        {dlvPct > 0 && (
+                          <div style={{ height: `${dlvPct}%`, background: isNow ? "#3B82F6" : "rgba(59,130,246,0.25)" }} />
+                        )}
+                        {movePct > 0 && (
+                          <div style={{ height: `${movePct}%`, background: isNow ? "var(--gold)" : "rgba(255,255,255,0.08)" }} />
+                        )}
+                        {total === 0 && (
+                          <div className="w-full h-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+                        )}
+                      </div>
                     </div>
                     <span className={`text-[8px] font-medium ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>{d.m}</span>
+
+                    {/* Tooltip */}
+                    {total > 0 && (
+                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[#1a1a1a] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+                        <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">{d.m} — ${total.toFixed(1)}K</p>
+                        {d.moves > 0 && <p className="text-[8px] text-[var(--gold)]">Moves ${d.moves.toFixed(1)}K</p>}
+                        {d.deliveries > 0 && <p className="text-[8px] text-[#3B82F6]">Deliveries ${d.deliveries.toFixed(1)}K</p>}
+                        {d.invoices > 0 && <p className="text-[8px] text-[#22C55E]">Invoices ${d.invoices.toFixed(1)}K</p>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -401,38 +543,8 @@ export default function AdminPageClient({
             </div>
           )}
 
-          {/* Activity */}
-          <div className="pt-6 border-t border-[var(--brd)]/30">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Activity</h2>
-            </div>
-            {activityEvents.length > 0 ? (
-              <div className="divide-y divide-[var(--brd)]/30">
-                {activityEvents
-                  .filter((a, i) => i === 0 || activityEvents[i - 1].description !== a.description)
-                  .slice(0, 8)
-                  .map((e, idx) => (
-                    <Link
-                      key={`${e.id}-${idx}`}
-                      href={getActivityHref(e)}
-                      className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
-                    >
-                      <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
-                        <Icon name={getActivityIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-[var(--tx)] leading-snug truncate">
-                          {formatActivityDesc(e.description || e.event_type)}
-                        </div>
-                        <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatActivityTime(e.created_at)}</div>
-                      </div>
-                    </Link>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-[11px] text-[var(--tx3)] py-3">No recent activity</p>
-            )}
-          </div>
+          {/* Activity — live feed */}
+          <LiveActivityFeed initialEvents={activityEvents} />
 
           {/* Quick links */}
           <div className="grid grid-cols-2 gap-2 pt-6 border-t border-[var(--brd)]/30">

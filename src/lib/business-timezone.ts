@@ -57,7 +57,7 @@ export function getLocalDateDisplay(date: Date, timeZone?: string): string {
     timeZone: tz,
     weekday: "long",
     month: "short",
-    day: "numeric",
+    day: "2-digit",
   }).formatToParts(date);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   const month = parts.find((p) => p.type === "month")?.value ?? "";

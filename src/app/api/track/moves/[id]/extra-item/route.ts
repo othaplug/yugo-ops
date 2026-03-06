@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { notifyExtraItemRequest } from "@/lib/extra-item-notifications";
 
 /** POST: Client adds extra item request (pending admin approval) */
 export async function POST(
@@ -51,5 +52,14 @@ export async function POST(
         : error.message;
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+
+  notifyExtraItemRequest({
+    jobId: moveId,
+    jobType: "move",
+    requestedBy: "client",
+    description,
+    quantity,
+  }).catch(() => {});
+
   return NextResponse.json(item);
 }

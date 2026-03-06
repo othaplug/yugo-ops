@@ -252,7 +252,7 @@ export async function runPostPaymentActions(
         });
 
         await resend.emails.send({
-          from: "YUGO <notifications@opsplus.co>",
+          from: "Yugo+ <notifications@opsplus.co>",
           to: clientEmail,
           subject: `Booking confirmed — ${input.moveCode}`,
           html,
@@ -324,7 +324,7 @@ export async function runPostPaymentActions(
         });
 
         await resend.emails.send({
-          from: "YUGO OPS+ <notifications@opsplus.co>",
+          from: "Yugo+ <notifications@opsplus.co>",
           to: adminEmail,
           subject: `New booking: ${clientName} — ${tierLabel || serviceLabel} — $${totalWithTax}`,
           html,

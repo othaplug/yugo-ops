@@ -34,9 +34,9 @@ export async function POST() {
 
     const resend = getResend();
     await resend.emails.send({
-      from: "YUGO <notifications@opsplus.co>",
+      from: "Yugo+ <notifications@opsplus.co>",
       to: user.email,
-      subject: "Your YUGO login code",
+      subject: "Your YUGO+ login code",
       html: verificationCodeEmail({ code, purpose: "2fa" }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

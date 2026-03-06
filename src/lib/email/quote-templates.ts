@@ -51,7 +51,7 @@ function quoteEmailLayout(innerHtml: string): string {
       </div>
       <!-- Footer -->
       <div style="border-top:1px solid ${CARD_BORDER};padding:24px 36px;text-align:center">
-        <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:13px;font-weight:600;letter-spacing:2px;color:${GOLD}">YUGO</div>
+        <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:13px;font-weight:600;letter-spacing:2px;color:${GOLD}">YUGO+</div>
         <div style="font-size:10px;color:${TX3};margin-top:6px">The Art of Moving</div>
       </div>
     </div>
@@ -306,7 +306,7 @@ function officeTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Thank you for considering YUGO for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
+    ${bodyText("Thank you for considering YUGO+ for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? priceCard("Project Estimate", price, "+ HST &middot; Flat-rate guarantee") : ""}

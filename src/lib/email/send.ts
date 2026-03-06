@@ -38,7 +38,7 @@ import {
   BalanceChargeFailedAdminData,
 } from "./lifecycle-templates";
 
-const FROM_ADDRESS = "YUGO <notifications@opsplus.co>";
+const FROM_ADDRESS = "Yugo+ <notifications@opsplus.co>";
 
 export type TemplateName =
   | "quote-residential"

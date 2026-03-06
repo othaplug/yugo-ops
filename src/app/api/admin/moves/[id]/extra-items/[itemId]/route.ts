@@ -50,7 +50,7 @@ export async function PATCH(
           feeCents,
         });
         await resend.emails.send({
-          from: "YUGO <notifications@opsplus.co>",
+          from: "Yugo+ <notifications@opsplus.co>",
           to: move.client_email,
           subject: "Your extra item has been approved",
           html,

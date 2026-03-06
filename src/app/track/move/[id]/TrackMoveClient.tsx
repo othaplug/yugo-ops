@@ -23,6 +23,8 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 import TipScreen from "@/components/tracking/TipScreen";
+import ClientSettingsMenu from "./ClientSettingsMenu";
+import TrackingAgreementModal from "./TrackingAgreementModal";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 
 function shortAddress(addr: string | null | undefined): string {
@@ -462,6 +464,7 @@ export default function TrackMoveClient({
 
   return (
     <div className="min-h-screen font-sans flex flex-col" data-theme="light" style={{ backgroundColor: CREAM, color: FOREST }}>
+      <TrackingAgreementModal />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-3">
@@ -474,6 +477,7 @@ export default function TrackMoveClient({
               BETA
             </span>
           </div>
+          <ClientSettingsMenu />
         </div>
       </header>
 
@@ -772,29 +776,14 @@ export default function TrackMoveClient({
               </div>
 
               {/* Package selected by client */}
-              {(move.tier_selected || move.service_type) && (
+              {move.tier_selected && (
                 <div className="flex items-center gap-2 pt-1">
-                  {move.tier_selected && (
-                    <span
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold tracking-widest uppercase"
-                      style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}30` }}
-                    >
-                      {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)} Package
-                    </span>
-                  )}
-                  {move.service_type && (
-                    <span className="text-[10px] opacity-40" style={{ color: FOREST }}>
-                      {({
-                        local_move: "Residential",
-                        long_distance: "Long Distance",
-                        office_move: "Office",
-                        single_item: "Single Item",
-                        white_glove: "White Glove",
-                        specialty: "Specialty",
-                        b2b_delivery: "B2B Delivery",
-                      } as Record<string, string>)[move.service_type] || move.service_type}
-                    </span>
-                  )}
+                  <span
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold tracking-widest uppercase"
+                    style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}30` }}
+                  >
+                    {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)} Package
+                  </span>
                 </div>
               )}
             </div>
@@ -879,7 +868,7 @@ export default function TrackMoveClient({
 
         {activeTab === "photos" && (
           <div className="mb-6">
-            <TrackPhotos moveId={move.id} token={token} />
+            <TrackPhotos moveId={move.id} token={token} moveComplete={isCompleted} />
           </div>
         )}
 

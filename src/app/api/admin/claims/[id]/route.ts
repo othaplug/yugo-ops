@@ -1,0 +1,221 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email/send";
+
+function approvalEmailHtml(claimNumber: string, clientName: string, approvedAmount: number, resolutionNotes: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF7F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span style="font-size:20px;font-weight:700;color:#722F37;letter-spacing:1px;">YUGO+</span>
+  </div>
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <h1 style="font-size:22px;color:#1a1a1a;margin:0 0 8px;">Claim Review Complete</h1>
+    <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
+      Hi ${clientName}, your claim <strong>${claimNumber}</strong> has been reviewed.
+    </p>
+    <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:13px;color:#888;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Approved Amount</p>
+      <p style="font-size:28px;font-weight:700;color:#16a34a;margin:0;">
+        $${approvedAmount.toLocaleString()}
+      </p>
+    </div>
+    ${resolutionNotes ? `<p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 16px;"><strong>Resolution:</strong> ${resolutionNotes}</p>` : ""}
+    <p style="font-size:14px;color:#555;line-height:1.6;margin:0;">
+      Payout will be processed via e-Transfer within 5 business days.
+    </p>
+  </div>
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">© ${new Date().getFullYear()} Yugo Moving · Toronto, ON</p>
+</div>
+</body>
+</html>`;
+}
+
+function statusUpdateHtml(claimNumber: string, clientName: string, fromStatus: string, toStatus: string, notes: string | null): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF7F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span style="font-size:20px;font-weight:700;color:#722F37;letter-spacing:1px;">YUGO+</span>
+  </div>
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <h1 style="font-size:22px;color:#1a1a1a;margin:0 0 8px;">Claim Status Update</h1>
+    <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
+      Hi ${clientName}, there's an update on your claim <strong>${claimNumber}</strong>.
+    </p>
+    <div style="background:#FAF7F2;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:13px;color:#888;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Status</p>
+      <p style="font-size:14px;color:#555;margin:0;">
+        <span style="text-decoration:line-through;color:#999;">${fromStatus}</span>
+        &nbsp;&rarr;&nbsp;
+        <strong style="color:#1a1a1a;text-transform:capitalize;">${toStatus}</strong>
+      </p>
+    </div>
+    ${notes ? `<p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 16px;"><strong>Notes:</strong> ${notes}</p>` : ""}
+    <p style="font-size:14px;color:#555;line-height:1.6;margin:0;">
+      If you have any questions, reply to this email and our team will get back to you.
+    </p>
+  </div>
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">© ${new Date().getFullYear()} Yugo Moving · Toronto, ON</p>
+</div>
+</body>
+</html>`;
+}
+
+function denialEmailHtml(claimNumber: string, clientName: string, reason: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF7F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <span style="font-size:20px;font-weight:700;color:#722F37;letter-spacing:1px;">YUGO+</span>
+  </div>
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <h1 style="font-size:22px;color:#1a1a1a;margin:0 0 8px;">Claim Review Complete</h1>
+    <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
+      Hi ${clientName}, your claim <strong>${claimNumber}</strong> has been reviewed.
+    </p>
+    <div style="background:#fef2f2;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:14px;color:#991b1b;line-height:1.6;margin:0;">
+        Unfortunately, we were unable to approve this claim.
+      </p>
+    </div>
+    <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 16px;"><strong>Reason:</strong> ${reason}</p>
+    <p style="font-size:13px;color:#888;line-height:1.5;margin:0;">
+      If you have additional information to support your claim, please reply to this email.
+    </p>
+  </div>
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">© ${new Date().getFullYear()} Yugo Moving · Toronto, ON</p>
+</div>
+</body>
+</html>`;
+}
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const supabase = createAdminClient();
+
+    const [{ data: claim }, { data: photos }, { data: timeline }] = await Promise.all([
+      supabase.from("claims").select("*").eq("id", id).single(),
+      supabase.from("claim_photos").select("*").eq("claim_id", id).order("created_at", { ascending: true }),
+      supabase.from("claim_timeline").select("*").eq("claim_id", id).order("created_at", { ascending: true }),
+    ]);
+
+    if (!claim) {
+      return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ claim, photos: photos || [], timeline: timeline || [] });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { action, ...updates } = body;
+    const supabase = createAdminClient();
+
+    const { data: claim } = await supabase.from("claims").select("*").eq("id", id).single();
+    if (!claim) return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+
+    if (action === "approve") {
+      const approvedAmount = updates.approved_amount || 0;
+      const { error } = await supabase
+        .from("claims")
+        .update({
+          status: approvedAmount < claim.total_claimed_value ? "partially_approved" : "approved",
+          approved_amount: approvedAmount,
+          resolution_type: updates.resolution_type || "cash_settlement",
+          resolution_notes: updates.resolution_notes || null,
+          payout_method: updates.payout_method || "e_transfer",
+          assessment_notes: updates.assessment_notes || null,
+          assessed_at: new Date().toISOString(),
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      await supabase.from("claim_timeline").insert({
+        claim_id: id,
+        event_type: "status_changed",
+        event_description: `Claim approved. Amount: $${approvedAmount.toLocaleString()}. Resolution: ${updates.resolution_type || "cash_settlement"}.`,
+        user_id: updates.assessed_by || null,
+      });
+
+      sendEmail({
+        to: claim.client_email,
+        subject: `Claim ${claim.claim_number} — Approved`,
+        html: approvalEmailHtml(claim.claim_number, claim.client_name, approvedAmount, updates.resolution_notes || ""),
+      }).catch(() => {});
+    } else if (action === "deny") {
+      if (!updates.resolution_notes) {
+        return NextResponse.json({ error: "Denial reason is required" }, { status: 400 });
+      }
+      const { error } = await supabase
+        .from("claims")
+        .update({
+          status: "denied",
+          resolution_type: "denied",
+          resolution_notes: updates.resolution_notes,
+          assessment_notes: updates.assessment_notes || null,
+          assessed_at: new Date().toISOString(),
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      await supabase.from("claim_timeline").insert({
+        claim_id: id,
+        event_type: "status_changed",
+        event_description: `Claim denied. Reason: ${updates.resolution_notes}`,
+        user_id: updates.assessed_by || null,
+      });
+
+      sendEmail({
+        to: claim.client_email,
+        subject: `Claim ${claim.claim_number} — Review Complete`,
+        html: denialEmailHtml(claim.claim_number, claim.client_name, updates.resolution_notes),
+      }).catch(() => {});
+    } else {
+      const { error } = await supabase.from("claims").update(updates).eq("id", id);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      if (updates.status && updates.status !== claim.status) {
+        const fromLabel = claim.status.replace(/_/g, " ");
+        const toLabel = updates.status.replace(/_/g, " ");
+
+        await supabase.from("claim_timeline").insert({
+          claim_id: id,
+          event_type: "status_changed",
+          event_description: `Status changed from ${fromLabel} to ${toLabel}.`,
+          user_id: updates.assessed_by || null,
+        });
+
+        sendEmail({
+          to: claim.client_email,
+          subject: `Claim ${claim.claim_number} — Status Update`,
+          html: statusUpdateHtml(claim.claim_number, claim.client_name, fromLabel, toLabel, updates.resolution_notes || null),
+        }).catch(() => {});
+      }
+    }
+
+    const { data: updated } = await supabase.from("claims").select("*").eq("id", id).single();
+    return NextResponse.json({ claim: updated });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

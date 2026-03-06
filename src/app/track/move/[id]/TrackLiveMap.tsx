@@ -257,11 +257,12 @@ export default function TrackLiveMap({
     ? new Date(move.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
     : null;
 
-  // Compute ETA
+  // Compute ETA (client-side Haversine fallback when server ETA is unavailable)
   const computedEtaMinutes =
-    crewLoc && liveStage && ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"].includes(liveStage)
+    crewLoc && liveStage && ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route", "loading", "arrived_at_pickup"].includes(liveStage)
       ? (() => {
-          const dest = liveStage === "en_route_to_pickup" ? pickup : dropoff ?? pickup;
+          const toPickup = liveStage === "en_route_to_pickup";
+          const dest = toPickup ? pickup : dropoff ?? pickup;
           if (!dest) return null;
           const km = haversineKm(crewLoc.current_lat, crewLoc.current_lng, dest.lat, dest.lng);
           return Math.max(1, Math.round((km / 35) * 60));

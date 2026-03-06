@@ -5,7 +5,7 @@ import { Trash2, Plus } from "lucide-react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 
-type Photo = { id: string; url: string; caption: string | null };
+type Photo = { id: string; url: string; caption: string | null; source?: string };
 
 export default function MovePhotosSection({ moveId }: { moveId: string }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -95,24 +95,32 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
             <p className="text-[11px] text-[var(--tx3)]">No photos yet. Add photos for the client portal.</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {photos.map((p) => (
-                <div key={p.id} className="relative group rounded-lg overflow-hidden border border-[var(--brd)]/50 aspect-square bg-[var(--bg)]">
-                  <img src={p.url} alt={p.caption || ""} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(p)}
-                    className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="w-[11px] h-[11px]" />
-                  </button>
-                  {p.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-[9px] text-white truncate">
-                      {p.caption}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {photos.map((p) => {
+                const isClient = p.source === "client";
+                return (
+                  <div key={p.id} className="relative group rounded-lg overflow-hidden border border-[var(--brd)]/50 aspect-square bg-[var(--bg)]">
+                    <img src={p.url} alt={p.caption || ""} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p)}
+                      className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-[11px] h-[11px]" />
+                    </button>
+                    {isClient && (
+                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]">
+                        Client
+                      </div>
+                    )}
+                    {p.caption && (
+                      <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-[9px] text-white truncate">
+                        {p.caption}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>

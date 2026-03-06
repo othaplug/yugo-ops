@@ -45,9 +45,9 @@ export async function POST(req: NextRequest) {
 
     const resend = getResend();
     await resend.emails.send({
-      from: "YUGO <notifications@opsplus.co>",
+      from: "Yugo+ <notifications@opsplus.co>",
       to: user.email,
-      subject: "Verify your email change — YUGO",
+      subject: "Verify your email change — YUGO+",
       html: verificationCodeEmail({ code, purpose: "email_change" }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

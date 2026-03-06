@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ quoteId: string }> }) {
   const { quoteId } = await params;
-  return { title: `Quote ${quoteId} — YUGO` };
+  return { title: `Yugo+ | Quote ${quoteId}` };
 }
 
 export default async function QuotePage({ params }: { params: Promise<{ quoteId: string }> }) {

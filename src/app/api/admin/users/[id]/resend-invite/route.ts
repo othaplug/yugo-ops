@@ -44,9 +44,9 @@ export async function POST(
       const roleLabel = inv.role === "admin" ? "Admin" : inv.role === "manager" ? "Manager" : "Dispatcher";
       const resend = getResend();
       const { error: sendError } = await resend.emails.send({
-        from: "YUGO <notifications@opsplus.co>",
+        from: "Yugo+ <notifications@opsplus.co>",
         to: inv.email,
-        subject: "You're invited to YUGO — Log in to continue setup",
+        subject: "You're invited to YUGO+ — Log in to continue setup",
         html: inviteUserEmail({ name: inv.name || "", email: inv.email, roleLabel, tempPassword, loginUrl }),
         text: inviteUserEmailText({ name: inv.name || "", email: inv.email, roleLabel, tempPassword, loginUrl }),
       });
@@ -94,7 +94,7 @@ export async function POST(
       const moveCode = getMoveCode(move);
       const jobIdDisplay = formatJobId(moveCode, "move");
       const { error: sendError } = await resend.emails.send({
-        from: "YUGO <notifications@opsplus.co>",
+        from: "Yugo+ <notifications@opsplus.co>",
         to: email,
         subject: `Track your move — ${jobIdDisplay}`,
         html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: jobIdDisplay }),
@@ -112,9 +112,9 @@ export async function POST(
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
 
     const { error: sendError } = await resend.emails.send({
-      from: "YUGO <notifications@opsplus.co>",
+      from: "Yugo+ <notifications@opsplus.co>",
       to: email,
-      subject: "You're invited to YUGO — Log in to continue setup",
+      subject: "You're invited to YUGO+ — Log in to continue setup",
       html: inviteUserEmail({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
       text: inviteUserEmailText({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

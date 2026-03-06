@@ -85,7 +85,7 @@ function generateContractPdf(
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text("YUGO", pageWidth / 2, y, { align: "center" });
+  doc.text("YUGO+", pageWidth / 2, y, { align: "center" });
   y += 7;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);

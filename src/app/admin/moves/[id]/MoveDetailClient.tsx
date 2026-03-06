@@ -30,6 +30,7 @@ interface MoveDetailClientProps {
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
   userRole?: string;
+  additionalFeesCents?: number;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 
@@ -50,7 +51,7 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
 
-export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer" }: MoveDetailClientProps) {
+export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -82,7 +83,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
   const estimate = Number(move.estimate ?? move.amount ?? 0);
   const depositPaid = Number(move.deposit_amount ?? Math.round(estimate * 0.25));
-  const balanceDue = Number(move.balance_amount ?? (estimate - depositPaid));
+  const baseBalance = Number(move.balance_amount ?? (estimate - depositPaid));
+  const balanceDue = baseBalance + (additionalFeesCents / 100);
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
   const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;

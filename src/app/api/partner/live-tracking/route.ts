@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { getTodayString } from "@/lib/business-timezone";
@@ -27,16 +26,12 @@ export async function GET() {
   if (error) return error;
   if (!orgIds.length) return NextResponse.json({ deliveries: [] });
 
-  const supabase = await createClient();
   const admin = createAdminClient();
 
-  // Only show deliveries on the live map when they are:
-  //   1. Scheduled for TODAY (not days in the future)
-  //   2. Confirmed, accepted, or already in progress — not still pending approval
   const todayStr = getTodayString();
   const liveStatuses = ["confirmed", "accepted", "approved", "dispatched", "in-transit", "in_transit", "in_progress"];
 
-  const { data: deliveries } = await supabase
+  const { data: deliveries } = await admin
     .from("deliveries")
     .select("id, delivery_number, customer_name, status, delivery_address, crew_id")
     .in("organization_id", orgIds)

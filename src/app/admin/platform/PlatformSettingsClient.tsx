@@ -391,7 +391,7 @@ function BusinessInfoSection() {
   if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const fields = [
-    { key: "company_name", label: "Company Name", placeholder: "YUGO" },
+    { key: "company_name", label: "Company Name", placeholder: "YUGO+" },
     { key: "company_legal_name", label: "Legal Name", placeholder: "OHELLO Inc." },
     { key: "company_phone", label: "Phone", placeholder: "(647) 370-4525" },
     { key: "company_email", label: "Email", placeholder: "info@helloyugo.com" },
@@ -557,7 +557,7 @@ function FeatureTogglesSection() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
   const widgetEnabled = config["instant_quote_widget"] === "true";
 
-  const embedCode = `<!-- YUGO Instant Quote Widget -->
+  const embedCode = `<!-- YUGO+ Instant Quote Widget -->
 <div id="yugo-quote-widget"></div>
 <script>
 (function() {
@@ -568,16 +568,16 @@ function FeatureTogglesSection() {
   d.getElementById('yugo-quote-widget').appendChild(s);
 })();
 </script>
-<!-- End YUGO Widget -->`;
+<!-- End YUGO+ Widget -->`;
 
-  const iframeCode = `<!-- YUGO Instant Quote (iframe) -->
+  const iframeCode = `<!-- YUGO+ Instant Quote (iframe) -->
 <iframe
   src="${appUrl}/widget/quote"
   width="100%"
   height="680"
   frameborder="0"
   style="border:none;border-radius:12px;max-width:480px;"
-  title="Get a Quote - YUGO"
+  title="Get a Quote - YUGO+"
 ></iframe>`;
 
   const copyEmbed = (code: string) => {
@@ -652,7 +652,7 @@ function FeatureTogglesSection() {
                   <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
                     <div className="text-[10px] font-semibold text-amber-400 mb-0.5">Note</div>
                     <div className="text-[10px] text-[var(--tx3)] leading-relaxed">
-                      The widget page at <span className="font-mono text-[var(--tx2)]">/widget/quote</span> needs to be built for this to work. The embed codes above will render a YUGO-branded quote calculator that submits directly to your quoting system.
+                      The widget page at <span className="font-mono text-[var(--tx2)]">/widget/quote</span> needs to be built for this to work. The embed codes above will render a YUGO+-branded quote calculator that submits directly to your quoting system.
                     </div>
                   </div>
                 </div>

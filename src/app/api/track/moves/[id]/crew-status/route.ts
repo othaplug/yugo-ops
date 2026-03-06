@@ -20,12 +20,27 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
   return null;
 }
 
-/** Haversine distance in km */
+async function getMapboxDrivingEta(
+  fromLat: number, fromLng: number,
+  toLat: number, toLng: number
+): Promise<number | null> {
+  if (!MAPBOX_TOKEN) return null;
+  try {
+    const coords = `${fromLng},${fromLat};${toLng},${toLat}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${MAPBOX_TOKEN}&overview=false`;
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    const data = await res.json();
+    const durationSec = data?.routes?.[0]?.duration;
+    if (typeof durationSec === "number" && durationSec > 0) {
+      return Math.max(1, Math.round(durationSec / 60));
+    }
+  } catch {}
+  return null;
+}
+
 function haversineKm(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
 ): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -54,7 +69,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, to_address, stage, scheduled_date, status, arrival_window")
+      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, from_address, to_address, stage, scheduled_date, status, arrival_window")
       .eq("id", moveId)
       .single();
 
@@ -115,15 +130,16 @@ export async function GET(
       }
     }
 
-    const center =
-      move.from_lat != null && move.from_lng != null
-        ? { lat: move.from_lat, lng: move.from_lng }
-        : { lat: 43.665, lng: -79.385 };
-
-    const pickup =
+    let pickup: { lat: number; lng: number } | null =
       move.from_lat != null && move.from_lng != null
         ? { lat: move.from_lat, lng: move.from_lng }
         : null;
+    if (!pickup && move.from_address) {
+      pickup = await geocodeAddress(move.from_address);
+    }
+
+    const center = pickup ?? { lat: 43.665, lng: -79.385 };
+
     let dropoff: { lat: number; lng: number } | null =
       move.to_lat != null && move.to_lng != null
         ? { lat: move.to_lat, lng: move.to_lng }
@@ -132,25 +148,28 @@ export async function GET(
       dropoff = await geocodeAddress(move.to_address);
     }
 
-    // Compute ETA (minutes) when crew has position and destination
+    // Compute ETA — use Mapbox Directions for actual driving time, Haversine as fallback
     let etaMinutes: number | null = null;
-    const enRouteStages = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"];
+    const etaStages = [
+      "en_route_to_pickup", "en_route_to_destination", "on_route", "en_route",
+      "loading", "arrived_at_pickup",
+    ];
     if (
       crew &&
       (ts?.is_active || liveStage) &&
-      enRouteStages.includes(liveStage || "")
+      etaStages.includes(liveStage || "")
     ) {
-      const dest =
-        liveStage === "en_route_to_pickup" ? pickup : dropoff ?? pickup;
+      const toPickup = liveStage === "en_route_to_pickup";
+      const dest = toPickup ? pickup : dropoff ?? pickup;
       if (dest) {
-        const km = haversineKm(
-          crew.current_lat,
-          crew.current_lng,
-          dest.lat,
-          dest.lng
+        etaMinutes = await getMapboxDrivingEta(
+          crew.current_lat, crew.current_lng,
+          dest.lat, dest.lng
         );
-        const avgSpeedKmh = 35;
-        etaMinutes = Math.max(1, Math.round((km / avgSpeedKmh) * 60));
+        if (etaMinutes == null) {
+          const km = haversineKm(crew.current_lat, crew.current_lng, dest.lat, dest.lng);
+          etaMinutes = Math.max(1, Math.round((km / 35) * 60));
+        }
       }
     }
 

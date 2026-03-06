@@ -10,9 +10,10 @@ interface LoginFormProps {
   subtitle: string;
   redirectTo: string;
   initialError?: string;
+  isWelcome?: boolean;
 }
 
-export default function PartnerLoginForm({ title, subtitle, redirectTo, initialError }: LoginFormProps) {
+export default function PartnerLoginForm({ title, subtitle, redirectTo, initialError, isWelcome }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -136,6 +137,12 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
 
           {mode === "login" && (
             <>
+              {isWelcome && (
+                <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 13, padding: "12px 16px", borderRadius: 12, marginBottom: 20, lineHeight: 1.5 }}>
+                  <strong>Welcome!</strong> Your partner account is ready. Sign in with the email and temporary password from your invite.
+                </div>
+              )}
+
               <div style={{ marginBottom: 32 }}>
                 <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 32, fontWeight: 500, color: "#1A1714", marginBottom: 6, lineHeight: 1.2 }}>
                   {title}

@@ -258,179 +258,335 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
       </div>
 
       <div className="p-4 md:p-5 space-y-4">
-        {/* ── Service & financial summary (redesigned, elevated) ── */}
+        {/* ── Keyframe animations ── */}
+        <style>{`
+          @keyframes qs-route-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+            50% { transform: translateX(-50%) scale(1.6); opacity: 0.4; }
+          }
+          @keyframes qs-route-travel {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+          }
+          @keyframes qs-line-draw {
+            from { transform: scaleY(0); }
+            to   { transform: scaleY(1); }
+          }
+          @keyframes qs-fade-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes qs-total-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(92,26,51,0); }
+            50% { box-shadow: 0 0 20px 2px rgba(92,26,51,0.08); }
+          }
+          @keyframes qs-shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .qs-stagger { opacity: 0; animation: qs-fade-up 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+        `}</style>
+
+        {/* ── Service & financial summary — elevated redesign ── */}
         <div
-          className="rounded-2xl overflow-hidden text-[12px] transition-all duration-500 ease-out"
+          className="rounded-2xl overflow-hidden text-[12px]"
           style={{
-            backgroundColor: CREAM,
             color: FOREST,
-            boxShadow: `0 1px 2px ${FOREST}06, 0 4px 12px ${FOREST}04`,
-            border: `1px solid ${FOREST}15`,
+            boxShadow: `0 2px 4px ${FOREST}08, 0 8px 24px ${FOREST}06, 0 0 0 1px ${FOREST}08`,
           }}
         >
-          <div className="p-4 md:p-5">
-            {/* Service details */}
-            <p
-              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-1 opacity-0 translate-y-2 transition-all duration-300 ease-out"
-              style={{
-                color: `${FOREST}70`,
-                ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
-                transitionDelay: "0ms",
-              }}
-            >
-              Service details
-            </p>
+          {/* ─── Premium header band ─── */}
+          <div
+            className="relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${WINE} 0%, ${WINE}E8 50%, ${WINE}D0 100%)`,
+            }}
+          >
             <div
-              className="flex flex-wrap items-center gap-2 mb-2 transition-all duration-300 ease-out opacity-0 translate-y-2"
+              className="absolute inset-0 opacity-[0.07]"
               style={{
-                ...(summaryMounted ? { opacity: 1, transform: "translateY(0)" } : {}),
-                transitionDelay: "60ms",
+                backgroundImage: `radial-gradient(circle at 15% 50%, ${GOLD} 0%, transparent 60%), radial-gradient(circle at 85% 30%, ${GOLD} 0%, transparent 50%)`,
               }}
-            >
-              <span className="text-[15px] font-semibold" style={{ color: WINE }}>
-                {toTitleCase(q.serviceType)}
-              </span>
-              <span
-                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide"
-                style={{
-                  color: WINE,
-                  backgroundColor: `${WINE}12`,
-                  border: `1px solid ${WINE}25`,
-                }}
-              >
-                {q.packageLabel}
-              </span>
-            </div>
-
-            {/* Address block: coloured line left, from → to tight stack, no icons */}
-            <div
-              className="flex gap-3"
-              style={{
-                opacity: summaryMounted ? 1 : 0,
-                transition: "opacity 300ms ease-out",
-                transitionDelay: "120ms",
-              }}
-            >
-              {/* Coloured animated line left of addresses */}
-              <div className="relative shrink-0 w-0.5 rounded-full min-h-[4rem]" style={{ backgroundColor: `${WINE}25` }}>
-                <span
-                  className="contract-address-flow-dot absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-1.5 rounded-full"
-                  style={{
-                    backgroundColor: WINE,
-                    boxShadow: `0 0 0 2px ${CREAM}`,
-                  }}
-                />
-              </div>
-              <div className="flex-1 min-w-0 space-y-0.5">
-                <div className="rounded-lg py-1 pr-2 transition-colors hover:bg-black/[0.02]">
-                  <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>From</span>
-                  <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.fromAddress}</p>
-                  {formatAccessForDisplay(q.fromAccess) && (
-                    <p className="text-[10px] mt-0.5 leading-tight" style={{ color: `${FOREST}60` }}>Access: {formatAccessForDisplay(q.fromAccess)}</p>
-                  )}
+            />
+            <div className="relative px-5 py-4 md:px-6 md:py-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p
+                    className={`text-[9px] font-bold tracking-[0.18em] uppercase mb-1 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                    style={{ color: `${GOLD}CC`, animationDelay: "0ms" }}
+                  >
+                    Your Service
+                  </p>
+                  <h3
+                    className={`font-hero text-[20px] md:text-[22px] text-white leading-tight ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                    style={{ animationDelay: "80ms" }}
+                  >
+                    {toTitleCase(q.serviceType)}
+                  </h3>
                 </div>
-                <div className="rounded-lg py-1 pr-2 transition-colors hover:bg-black/[0.02]">
-                  <span className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: `${FOREST}55` }}>To</span>
-                  <p className="text-[13px] leading-snug mt-0.5 font-medium" style={{ color: FOREST }}>{q.toAddress}</p>
-                  {formatAccessForDisplay(q.toAccess) && (
-                    <p className="text-[10px] mt-0.5 leading-tight" style={{ color: `${FOREST}60` }}>Access: {formatAccessForDisplay(q.toAccess)}</p>
-                  )}
+                <div
+                  className={`shrink-0 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                  style={{ animationDelay: "160ms" }}
+                >
+                  <span
+                    className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase backdrop-blur-sm"
+                    style={{
+                      color: GOLD,
+                      backgroundColor: "rgba(255,255,255,0.12)",
+                      border: `1px solid ${GOLD}40`,
+                    }}
+                  >
+                    {q.packageLabel}
+                  </span>
                 </div>
               </div>
             </div>
-
-            {q.moveDate && (
-              <div
-                className="flex items-center gap-2 mt-2 rounded-lg py-1.5 px-2.5"
-                style={{
-                  opacity: summaryMounted ? 1 : 0,
-                  transform: summaryMounted ? "translateY(0)" : "translateY(4px)",
-                  transition: "opacity 300ms ease-out, transform 300ms ease-out",
-                  transitionDelay: "240ms",
-                  color: `${FOREST}90`,
-                }}
-              >
-                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: GOLD }} aria-hidden />
-                <span className="text-[12px]">{fmtDate(q.moveDate)}</span>
-              </div>
-            )}
           </div>
 
-          {/* Divider */}
-          <div className="h-px" style={{ backgroundColor: `${FOREST}12` }} />
+          {/* ─── Route / Addresses section ─── */}
+          <div style={{ backgroundColor: CREAM }}>
+            <div className="px-5 py-5 md:px-6 md:py-6">
+              <div className="flex gap-4">
+                {/* Animated route line */}
+                <div
+                  className={`relative shrink-0 w-[3px] rounded-full ${summaryMounted ? "" : "opacity-0"}`}
+                  style={{
+                    minHeight: "6.5rem",
+                    ...(summaryMounted ? {
+                      animation: "qs-line-draw 0.6s cubic-bezier(0.22,1,0.36,1) 0.2s forwards",
+                      transformOrigin: "top",
+                    } : {}),
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`,
+                      opacity: 0.25,
+                    }}
+                  />
+                  {/* Origin marker */}
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 top-0 w-[11px] h-[11px] rounded-full z-10"
+                    style={{
+                      backgroundColor: WINE,
+                      boxShadow: `0 0 0 3px ${CREAM}, 0 0 0 4px ${WINE}30`,
+                      animation: summaryMounted ? "qs-route-pulse 3s ease-in-out infinite" : "none",
+                    }}
+                  />
+                  {/* Travelling dot */}
+                  {summaryMounted && (
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full z-10"
+                      style={{
+                        backgroundColor: GOLD,
+                        boxShadow: `0 0 6px ${GOLD}80`,
+                        animation: "qs-route-travel 2.8s ease-in-out 0.8s infinite",
+                      }}
+                    />
+                  )}
+                  {/* Destination marker */}
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[11px] h-[11px] rounded-full z-10"
+                    style={{
+                      backgroundColor: GOLD,
+                      boxShadow: `0 0 0 3px ${CREAM}, 0 0 0 4px ${GOLD}30`,
+                    }}
+                  />
+                </div>
 
-          {/* Pricing details */}
-          <div className="p-4 md:p-5">
-            <p
-              className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-2"
-              style={{
-                color: `${FOREST}70`,
-                opacity: summaryMounted ? 1 : 0,
-                transition: "opacity 300ms ease-out",
-                transitionDelay: "280ms",
-              }}
-            >
-              Pricing details
-            </p>
-
-            <div
-              className="space-y-1.5 mb-2"
-              style={{
-                opacity: summaryMounted ? 1 : 0,
-                transition: "opacity 300ms ease-out",
-                transitionDelay: "320ms",
-              }}
-            >
-              <div className="flex justify-between items-baseline">
-                <span style={{ color: `${FOREST}80` }}>Base rate</span>
-                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.basePrice)}</span>
-              </div>
-              {q.addons.length > 0 && (
-                <>
-                  {q.addons.map((a, i) => (
-                    <div key={i} className="flex justify-between items-baseline pl-2 border-l-2" style={{ borderColor: `${GOLD}40` }}>
-                      <span style={{ color: `${FOREST}80` }}>
-                        {a.name}{a.quantity && a.quantity > 1 ? ` ×${a.quantity}` : ""}
-                      </span>
-                      <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(a.price)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between items-baseline pt-0.5 text-[11px]">
-                    <span style={{ color: `${FOREST}60` }}>Add-on subtotal</span>
-                    <span className="font-semibold" style={{ color: FOREST }}>{fmtPrice(q.addonTotal)}</span>
+                {/* Address cards */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between gap-5">
+                  {/* FROM */}
+                  <div
+                    className={`rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                    style={{
+                      animationDelay: "200ms",
+                      backgroundColor: "rgba(255,255,255,0.7)",
+                      border: `1px solid ${WINE}12`,
+                    }}
+                  >
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                      style={{ color: WINE }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: WINE }} />
+                      Pickup
+                    </span>
+                    <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                      {q.fromAddress}
+                    </p>
+                    {formatAccessForDisplay(q.fromAccess) && (
+                      <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}55` }}>
+                        {formatAccessForDisplay(q.fromAccess)}
+                      </p>
+                    )}
                   </div>
-                </>
+
+                  {/* TO */}
+                  <div
+                    className={`rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                    style={{
+                      animationDelay: "340ms",
+                      backgroundColor: "rgba(255,255,255,0.7)",
+                      border: `1px solid ${GOLD}15`,
+                    }}
+                  >
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                      style={{ color: GOLD }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                      Destination
+                    </span>
+                    <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                      {q.toAddress}
+                    </p>
+                    {formatAccessForDisplay(q.toAccess) && (
+                      <p className="text-[10px] mt-1 leading-tight" style={{ color: `${FOREST}55` }}>
+                        {formatAccessForDisplay(q.toAccess)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Date chip */}
+              {q.moveDate && (
+                <div
+                  className={`mt-5 inline-flex items-center gap-2.5 rounded-full px-4 py-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                  style={{
+                    animationDelay: "460ms",
+                    backgroundColor: "rgba(255,255,255,0.75)",
+                    border: `1px solid ${FOREST}10`,
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  <Calendar className="w-4 h-4 shrink-0" style={{ color: GOLD }} aria-hidden />
+                  <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                    {fmtDate(q.moveDate)}
+                  </span>
+                </div>
               )}
             </div>
 
-            <div
-              className="space-y-1 pt-2 border-t"
-              style={{
-                borderColor: `${FOREST}15`,
-                opacity: summaryMounted ? 1 : 0,
-                transition: "opacity 300ms ease-out",
-                transitionDelay: "360ms",
-              }}
-            >
-              <div className="flex justify-between items-baseline">
-                <span style={{ color: `${FOREST}80` }}>Total before tax</span>
-                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.totalBeforeTax)}</span>
+            {/* Divider — decorative gold rule */}
+            <div className="flex items-center gap-3 px-5 md:px-6">
+              <div className="flex-1 h-px" style={{ backgroundColor: `${FOREST}10` }} />
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `${GOLD}50` }} />
+              <div className="flex-1 h-px" style={{ backgroundColor: `${FOREST}10` }} />
+            </div>
+
+            {/* ─── Pricing section ─── */}
+            <div className="px-5 py-5 md:px-6 md:py-6">
+              <p
+                className={`text-[9px] font-bold tracking-[0.18em] uppercase mb-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                style={{ color: `${FOREST}55`, animationDelay: "500ms" }}
+              >
+                Investment Summary
+              </p>
+
+              {/* Line items */}
+              <div
+                className={`space-y-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                style={{ animationDelay: "560ms" }}
+              >
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[12px]" style={{ color: `${FOREST}80` }}>Base Rate</span>
+                  <span className="text-[13px] font-semibold tabular-nums" style={{ color: FOREST }}>{fmtPrice(q.basePrice)}</span>
+                </div>
+                {q.addons.length > 0 && (
+                  <>
+                    {q.addons.map((a, i) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-baseline pl-3 ml-1"
+                        style={{ borderLeft: `2px solid ${GOLD}30` }}
+                      >
+                        <span className="text-[11px]" style={{ color: `${FOREST}70` }}>
+                          {a.name}{a.quantity && a.quantity > 1 ? ` ×${a.quantity}` : ""}
+                        </span>
+                        <span className="text-[12px] font-medium tabular-nums" style={{ color: FOREST }}>{fmtPrice(a.price)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-baseline pt-1">
+                      <span className="text-[11px]" style={{ color: `${FOREST}55` }}>Add-on subtotal</span>
+                      <span className="text-[12px] font-semibold tabular-nums" style={{ color: FOREST }}>{fmtPrice(q.addonTotal)}</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="flex justify-between items-baseline">
-                <span style={{ color: `${FOREST}80` }}>HST (13%)</span>
-                <span className="font-medium" style={{ color: FOREST }}>{fmtPrice(q.tax)}</span>
+
+              {/* Tax & totals */}
+              <div
+                className={`mt-3 pt-3 space-y-1.5 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                style={{
+                  animationDelay: "640ms",
+                  borderTop: `1px solid ${FOREST}10`,
+                }}
+              >
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[12px]" style={{ color: `${FOREST}70` }}>Total before tax</span>
+                  <span className="text-[12px] font-medium tabular-nums" style={{ color: FOREST }}>{fmtPrice(q.totalBeforeTax)}</span>
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[12px]" style={{ color: `${FOREST}70` }}>HST (13%)</span>
+                  <span className="text-[12px] font-medium tabular-nums" style={{ color: FOREST }}>{fmtPrice(q.tax)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-baseline pt-1.5">
-                <span className="font-bold text-[13px]" style={{ color: WINE }}>Total</span>
-                <span className="font-bold text-[15px]" style={{ color: WINE }}>{fmtPrice(q.grandTotal)}</span>
+
+              {/* Grand total card */}
+              <div
+                className={`mt-4 rounded-xl px-4 py-3 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                style={{
+                  animationDelay: "720ms",
+                  background: `linear-gradient(135deg, ${WINE}08 0%, ${WINE}04 100%)`,
+                  border: `1px solid ${WINE}18`,
+                  animation: summaryMounted ? "qs-total-glow 4s ease-in-out 1.5s infinite" : "none",
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-[13px] font-bold" style={{ color: WINE }}>Total</span>
+                  <span className="font-hero text-[22px]" style={{ color: WINE }}>{fmtPrice(q.grandTotal)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-baseline pt-2">
-                <span className="font-semibold" style={{ color: FOREST }}>Deposit due now</span>
-                <span className="font-bold text-[14px]" style={{ color: GOLD }}>{fmtPrice(q.deposit)}</span>
-              </div>
-              <div className="flex justify-between items-baseline pt-0.5">
-                <span className="text-[11px]" style={{ color: `${FOREST}70` }}>Balance due {balanceDue}</span>
-                <span className="font-medium text-[11px]" style={{ color: FOREST }}>{fmtPrice(balance)}</span>
+
+              {/* Deposit & balance */}
+              <div
+                className={`mt-3 flex flex-col gap-2 ${summaryMounted ? "qs-stagger" : "opacity-0"}`}
+                style={{ animationDelay: "800ms" }}
+              >
+                <div
+                  className="flex justify-between items-center rounded-lg px-4 py-2.5"
+                  style={{
+                    background: `linear-gradient(135deg, ${GOLD}08, ${GOLD}04)`,
+                    border: `1px solid ${GOLD}20`,
+                  }}
+                >
+                  <span className="text-[12px] font-semibold" style={{ color: FOREST }}>Deposit due now</span>
+                  <span
+                    className="text-[16px] font-bold"
+                    style={{
+                      color: GOLD,
+                      backgroundImage: `linear-gradient(135deg, ${GOLD}, #D4AF37)`,
+                      backgroundClip: "text",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {fmtPrice(q.deposit)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-baseline px-4">
+                  <span className="text-[11px]" style={{ color: `${FOREST}55` }}>
+                    Balance due {balanceDue}
+                  </span>
+                  <span className="text-[12px] font-medium tabular-nums" style={{ color: FOREST }}>
+                    {fmtPrice(balance)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -30,5 +30,13 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
 
   const isOffice = move.move_type === "office";
 
-  return <MoveDetailClient move={move} crews={crews ?? []} isOffice={isOffice} userRole={userRole} />;
+  const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
+    db.from("move_change_requests").select("fee_cents").eq("move_id", move.id).eq("status", "approved"),
+    db.from("extra_items").select("fee_cents").eq("job_id", move.id).eq("job_type", "move").eq("status", "approved"),
+  ]);
+  const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+  const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+  const additionalFeesCents = changeFeesCents + extraFeesCents;
+
+  return <MoveDetailClient move={move} crews={crews ?? []} isOffice={isOffice} userRole={userRole} additionalFeesCents={additionalFeesCents} />;
 }

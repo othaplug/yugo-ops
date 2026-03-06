@@ -12,6 +12,7 @@ interface YugoLogoProps {
   variant?: LogoVariant;
   useImage?: boolean;
   onLightBackground?: boolean;
+  hidePlus?: boolean;
 }
 
 const LOGO_VERSION = "v2";
@@ -22,20 +23,41 @@ const LOGO_SRC: Record<Exclude<LogoVariant, "auto">, string> = {
   black: `/images/yugo-logo-black.png?${LOGO_VERSION}`,
 };
 
-/** YUGO logo — uses gold image on dark, gold text on light (most reliable) */
+function PlusMark({ size, color }: { size: number; color: string }) {
+  const plusSize = Math.max(8, Math.round(size * 0.52));
+  return (
+    <span
+      style={{
+        fontSize: plusSize,
+        fontWeight: 800,
+        lineHeight: 1,
+        color,
+        marginLeft: Math.max(1, Math.round(size * 0.06)),
+        letterSpacing: 0,
+        position: "relative",
+        top: Math.round(size * -0.12),
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      +
+    </span>
+  );
+}
+
+/** YUGO+ logo — uses gold image on dark, gold text on light (most reliable) */
 export default function YugoLogo({
   size = 18,
   className = "",
   variant = "auto",
   useImage = true,
   onLightBackground = false,
+  hidePlus = false,
 }: YugoLogoProps) {
   const themeContext = useContext(ThemeContext);
   const theme = themeContext?.theme ?? "dark";
 
   const isLight = theme === "light" || onLightBackground;
 
-  // On light backgrounds with auto variant, use styled text (cache-proof)
   if (isLight && variant === "auto") {
     return (
       <span
@@ -44,9 +66,11 @@ export default function YugoLogo({
           fontSize: size,
           letterSpacing: size >= 18 ? 4 : 3,
           color: "#B8962E",
+          display: "inline-flex",
+          alignItems: "baseline",
         }}
       >
-        YUGO
+        YUGO{!hidePlus && <PlusMark size={size} color="#B8962E" />}
       </span>
     );
   }
@@ -56,15 +80,17 @@ export default function YugoLogo({
 
   const src = LOGO_SRC[resolvedVariant];
 
+  const plusColor = resolvedVariant === "cream" ? "#F5F0E8" : resolvedVariant === "black" ? "#1A1A1A" : "#C9A962";
+
   if (useImage && src) {
     return (
       <span
         className={className.trim()}
-        style={{ display: "inline-block" }}
+        style={{ display: "inline-flex", alignItems: "center" }}
       >
         <Image
           src={src}
-          alt="YUGO"
+          alt="YUGO+"
           height={size}
           width={size * 4}
           className="select-none object-contain"
@@ -72,9 +98,12 @@ export default function YugoLogo({
           unoptimized
           priority
         />
+        {!hidePlus && <PlusMark size={size} color={plusColor} />}
       </span>
     );
   }
+
+  const textColor = resolvedVariant === "cream" ? "#F5F0E8" : resolvedVariant === "black" ? "#1A1A1A" : "var(--gold)";
 
   return (
     <span
@@ -82,10 +111,12 @@ export default function YugoLogo({
       style={{
         fontSize: size,
         letterSpacing: size >= 18 ? 4 : 3,
-        color: "var(--gold)",
+        color: textColor,
+        display: "inline-flex",
+        alignItems: "baseline",
       }}
     >
-      YUGO
+      YUGO{!hidePlus && <PlusMark size={size} color={textColor} />}
     </span>
   );
 }

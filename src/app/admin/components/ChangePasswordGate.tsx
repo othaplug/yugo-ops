@@ -73,7 +73,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
               <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
-              <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to YUGO</h2>
+              <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to YUGO+</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">

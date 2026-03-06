@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
         });
 
         const sendResult = await resend.emails.send({
-          from: "YUGO <notifications@opsplus.co>",
+          from: "Yugo+ <notifications@opsplus.co>",
           to: emailTrimmed,
           subject: `Your move has been created — track your move`,
           html,

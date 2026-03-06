@@ -54,12 +54,12 @@ export async function POST(
     await admin.from("partner_users").upsert({ user_id: newUser.user.id, org_id: orgId }, { onConflict: "user_id,org_id" });
 
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-    const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
+    const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
     const resend = getResend();
     const { error: sendError } = await resend.emails.send({
-      from: "YUGO <notifications@opsplus.co>",
+      from: "Yugo+ <notifications@opsplus.co>",
       to: emailTrimmed,
-      subject: "You're invited to YUGO Partner Portal",
+      subject: "You're invited to YUGO+ Partner Portal",
       html: invitePartnerEmail({
         contactName: nameTrimmed,
         companyName: org.name,

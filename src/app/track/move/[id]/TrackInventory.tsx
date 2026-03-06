@@ -182,8 +182,12 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
   const isExpanded = (room: string) => !collapsedRooms.has(room);
 
   const AddExtraModal = () => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[400px] shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+      style={{ minHeight: "100dvh" }}
+      onClick={(e) => { if (e.target === e.currentTarget) setAddExtraOpen(false); }}
+    >
+      <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden my-auto">
         <div className="px-5 pt-5 pb-4 border-b border-[#E7E5E4]">
           <div className="flex items-center justify-between">
             <div>

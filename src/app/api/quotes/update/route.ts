@@ -155,7 +155,7 @@ export async function POST(req: Request) {
 
       sendEmail({
         to: clientEmail,
-        subject: `Your updated Yugo quote is ready — ${contactObj?.name || ""}`,
+        subject: `Your updated YUGO+ quote is ready — ${contactObj?.name || ""}`,
         template: "quote-updated",
         data: {
           clientName: contactObj?.name || "",

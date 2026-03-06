@@ -48,20 +48,22 @@ export async function calculateDayRate(opts: {
   isAfterHours: boolean;
   isWeekend: boolean;
   pricingTier: "standard" | "partner";
+  lookup?: RateCardLookup;
 }): Promise<DeliveryPriceResult> {
   const db = createAdminClient();
   const { rateCardId, vehicleType, dayType, numStops, services, isAfterHours, isWeekend, pricingTier } = opts;
+  const lookup = opts.lookup || { rateCardId, templateId: null };
 
   const breakdown: PriceBreakdownItem[] = [];
 
   // 1. Base day rate
-  const { data: dayRate } = await db
+  let dayRateQuery = db
     .from("rate_card_day_rates")
     .select("*")
-    .eq("rate_card_id", rateCardId)
     .eq("vehicle_type", vehicleType)
-    .eq("pricing_tier", pricingTier)
-    .single();
+    .eq("pricing_tier", pricingTier);
+  dayRateQuery = applyRateFilter(dayRateQuery, lookup);
+  const { data: dayRate } = await dayRateQuery.single();
 
   if (!dayRate) throw new Error(`No day rate found for ${vehicleType} / ${pricingTier}`);
 
@@ -75,17 +77,17 @@ export async function calculateDayRate(opts: {
   let overagePrice = 0;
   const extraStops = Math.max(0, numStops - includedStops);
   if (extraStops > 0) {
-    const { data: overages } = await db
+    let ovQuery = db
       .from("rate_card_overages")
       .select("*")
-      .eq("rate_card_id", rateCardId)
       .eq("pricing_tier", pricingTier);
+    ovQuery = applyRateFilter(ovQuery, lookup);
+    const { data: overages } = await ovQuery;
 
     if (overages && overages.length > 0) {
       const overageMap = Object.fromEntries(overages.map((o) => [o.overage_tier, o.price_per_stop]));
 
       let remaining = extraStops;
-      // First tier of overages (e.g. stops 7-10 for full day)
       const firstTier = getOverageTier(dayType, 1, includedStops);
       const firstMax = dayType === "full_day" ? Math.min(remaining, 10 - includedStops) : Math.min(remaining, 6 - includedStops);
       const tier1Stops = Math.max(0, Math.min(remaining, firstMax));
@@ -97,7 +99,6 @@ export async function calculateDayRate(opts: {
         remaining -= tier1Stops;
       }
 
-      // Second tier (11+ for full day, 7+ for half day)
       if (remaining > 0) {
         const secondTier = dayType === "full_day" ? "full_11_plus" : "half_7_plus";
         if (overageMap[secondTier]) {
@@ -112,11 +113,12 @@ export async function calculateDayRate(opts: {
   // 3. Services
   let servicesPrice = 0;
   if (services.length > 0) {
-    const { data: svcData } = await db
+    let svcQuery = db
       .from("rate_card_services")
       .select("*")
-      .eq("rate_card_id", rateCardId)
       .eq("pricing_tier", pricingTier);
+    svcQuery = applyRateFilter(svcQuery, lookup);
+    const { data: svcData } = await svcQuery;
 
     const svcMap = Object.fromEntries((svcData || []).map((s) => [s.service_slug, s]));
 
@@ -145,12 +147,13 @@ export async function calculateDayRate(opts: {
   // 4. After hours / weekend surcharge (percentage of base)
   let afterHoursSurcharge = 0;
   if (isAfterHours || isWeekend) {
-    const { data: svcData } = await db
+    let ahQuery = db
       .from("rate_card_services")
       .select("*")
-      .eq("rate_card_id", rateCardId)
       .eq("pricing_tier", pricingTier)
       .in("service_slug", ["after_hours", "weekend"]);
+    ahQuery = applyRateFilter(ahQuery, lookup);
+    const { data: svcData } = await ahQuery;
 
     const svcMap = Object.fromEntries((svcData || []).map((s) => [s.service_slug, s]));
 
@@ -192,22 +195,24 @@ export async function calculatePerDelivery(opts: {
   isAfterHours: boolean;
   isWeekend: boolean;
   pricingTier: "standard" | "partner";
+  lookup?: RateCardLookup;
 }): Promise<DeliveryPriceResult> {
   const db = createAdminClient();
   const { rateCardId, deliveryType, zone, services, isAfterHours, isWeekend, pricingTier } = opts;
+  const lookup = opts.lookup || { rateCardId, templateId: null };
 
   const breakdown: PriceBreakdownItem[] = [];
 
   // 1. Base per-delivery rate (zone 1 or 2 have direct rates)
   const lookupZone = Math.min(zone, 2);
-  const { data: rate } = await db
+  let rateQuery = db
     .from("rate_card_delivery_rates")
     .select("*")
-    .eq("rate_card_id", rateCardId)
     .eq("delivery_type", deliveryType)
     .eq("zone", lookupZone)
-    .eq("pricing_tier", pricingTier)
-    .single();
+    .eq("pricing_tier", pricingTier);
+  rateQuery = applyRateFilter(rateQuery, lookup);
+  const { data: rate } = await rateQuery.single();
 
   if (!rate) throw new Error(`No rate found for ${deliveryType} zone ${lookupZone} / ${pricingTier}`);
 
@@ -222,26 +227,26 @@ export async function calculatePerDelivery(opts: {
   // 2. Zone surcharge for Z3+
   let zoneSurcharge = 0;
   if (zone >= 3) {
-    const { data: zoneData } = await db
+    let zq = db
       .from("rate_card_zones")
       .select("surcharge, zone_name")
-      .eq("rate_card_id", rateCardId)
       .eq("zone_number", zone)
-      .eq("pricing_tier", pricingTier)
-      .single();
+      .eq("pricing_tier", pricingTier);
+    zq = applyRateFilter(zq, lookup);
+    const { data: zoneData } = await zq.single();
 
     if (zoneData && zoneData.surcharge) {
       zoneSurcharge = zoneData.surcharge;
       breakdown.push({ label: `Zone ${zone} Surcharge (${zoneData.zone_name})`, amount: zoneSurcharge });
     }
   } else if (zone === 2) {
-    const { data: zoneData } = await db
+    let zq = db
       .from("rate_card_zones")
       .select("surcharge, zone_name")
-      .eq("rate_card_id", rateCardId)
       .eq("zone_number", 2)
-      .eq("pricing_tier", pricingTier)
-      .single();
+      .eq("pricing_tier", pricingTier);
+    zq = applyRateFilter(zq, lookup);
+    const { data: zoneData } = await zq.single();
 
     if (zoneData && zoneData.surcharge > 0) {
       zoneSurcharge = zoneData.surcharge;
@@ -252,11 +257,12 @@ export async function calculatePerDelivery(opts: {
   // 3. Services
   let servicesPrice = 0;
   if (services.length > 0) {
-    const { data: svcData } = await db
+    let svcQuery = db
       .from("rate_card_services")
       .select("*")
-      .eq("rate_card_id", rateCardId)
       .eq("pricing_tier", pricingTier);
+    svcQuery = applyRateFilter(svcQuery, lookup);
+    const { data: svcData } = await svcQuery;
 
     const svcMap = Object.fromEntries((svcData || []).map((s) => [s.service_slug, s]));
 
@@ -283,12 +289,13 @@ export async function calculatePerDelivery(opts: {
   // 4. After hours / weekend
   let afterHoursSurcharge = 0;
   if (isAfterHours || isWeekend) {
-    const { data: svcData } = await db
+    let ahQuery = db
       .from("rate_card_services")
       .select("*")
-      .eq("rate_card_id", rateCardId)
       .eq("pricing_tier", pricingTier)
       .in("service_slug", ["after_hours", "weekend"]);
+    ahQuery = applyRateFilter(ahQuery, lookup);
+    const { data: svcData } = await ahQuery;
 
     const svcMap = Object.fromEntries((svcData || []).map((s) => [s.service_slug, s]));
 
@@ -320,15 +327,17 @@ export async function calculatePerDelivery(opts: {
 
 /* ─── Zone Detection ─── */
 
-export async function detectZone(rateCardId: string, distanceKm: number, pricingTier: "standard" | "partner"): Promise<{ zone: number; zoneName: string; surcharge: number }> {
+export async function detectZone(rateCardId: string, distanceKm: number, pricingTier: "standard" | "partner", lookup?: RateCardLookup): Promise<{ zone: number; zoneName: string; surcharge: number }> {
   const db = createAdminClient();
+  const lk = lookup || { rateCardId, templateId: null };
 
-  const { data: zones } = await db
+  let zq = db
     .from("rate_card_zones")
     .select("*")
-    .eq("rate_card_id", rateCardId)
     .eq("pricing_tier", pricingTier)
     .order("zone_number", { ascending: true });
+  zq = applyRateFilter(zq, lk);
+  const { data: zones } = await zq;
 
   if (!zones || zones.length === 0) return { zone: 1, zoneName: "GTA Core", surcharge: 0 };
 
@@ -346,14 +355,16 @@ export async function detectZone(rateCardId: string, distanceKm: number, pricing
 
 /* ─── Volume Discount ─── */
 
-export async function getVolumeDiscount(rateCardId: string, deliveryCount: number): Promise<number> {
+export async function getVolumeDiscount(rateCardId: string, deliveryCount: number, lookup?: RateCardLookup): Promise<number> {
   const db = createAdminClient();
+  const lk = lookup || { rateCardId, templateId: null };
 
-  const { data: bonuses } = await db
+  let bq = db
     .from("rate_card_volume_bonuses")
     .select("*")
-    .eq("rate_card_id", rateCardId)
     .order("min_deliveries", { ascending: true });
+  bq = applyRateFilter(bq, lk);
+  const { data: bonuses } = await bq;
 
   if (!bonuses || bonuses.length === 0) return 0;
 
@@ -364,17 +375,51 @@ export async function getVolumeDiscount(rateCardId: string, deliveryCount: numbe
   return 0;
 }
 
+/* ─── Rate card lookup result ─── */
+
+export interface RateCardLookup {
+  rateCardId: string | null;
+  templateId: string | null;
+}
+
+/** Build the correct filter for rate sub-table queries */
+export function applyRateFilter<T extends { eq: (col: string, val: string) => T }>(
+  query: T,
+  lookup: RateCardLookup
+): T {
+  if (lookup.rateCardId) return query.eq("rate_card_id", lookup.rateCardId);
+  if (lookup.templateId) return query.eq("template_id", lookup.templateId);
+  throw new Error("No rate card or template configured");
+}
+
 /* ─── Get Active Rate Card for Org ─── */
 
 export async function getActiveRateCard(organizationId: string): Promise<string | null> {
+  const lookup = await getActiveRateCardLookup(organizationId);
+  return lookup.rateCardId || lookup.templateId;
+}
+
+export async function getActiveRateCardLookup(organizationId: string): Promise<RateCardLookup> {
   const db = createAdminClient();
 
-  const { data } = await db
+  // 1. Check legacy partner_rate_cards
+  const { data: card } = await db
     .from("partner_rate_cards")
     .select("id")
     .eq("organization_id", organizationId)
     .eq("is_active", true)
     .single();
 
-  return data?.id ?? null;
+  if (card) return { rateCardId: card.id, templateId: null };
+
+  // 2. Fallback: check organization's template_id (new template system)
+  const { data: org } = await db
+    .from("organizations")
+    .select("template_id")
+    .eq("id", organizationId)
+    .single();
+
+  if (org?.template_id) return { rateCardId: null, templateId: org.template_id };
+
+  return { rateCardId: null, templateId: null };
 }
