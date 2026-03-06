@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import LoginForm from "./LoginForm";
 
 export default function PartnerLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [checking, setChecking] = useState(true);
+  const errorParam = searchParams.get("error");
+  const messageParam = searchParams.get("message");
 
   useEffect(() => {
     const check = async () => {
@@ -38,6 +41,7 @@ export default function PartnerLoginPage() {
       title="Partner portal"
       subtitle="Sign in to your partner dashboard"
       redirectTo="/partner"
+      initialError={errorParam === "partner_lookup" && messageParam ? decodeURIComponent(messageParam) : errorParam === "no_org" ? "No organization linked to this account. Contact support." : undefined}
     />
   );
 }

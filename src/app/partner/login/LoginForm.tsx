@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
@@ -9,17 +9,22 @@ interface LoginFormProps {
   title: string;
   subtitle: string;
   redirectTo: string;
+  initialError?: string;
 }
 
-export default function PartnerLoginForm({ title, subtitle, redirectTo }: LoginFormProps) {
+export default function PartnerLoginForm({ title, subtitle, redirectTo, initialError }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError ?? "");
   const [mode, setMode] = useState<"login" | "forgot" | "sent">("login");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (initialError) setError(initialError);
+  }, [initialError]);
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {

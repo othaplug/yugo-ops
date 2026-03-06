@@ -134,6 +134,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const features = getPartnerFeatures(orgType);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : features.showProjects ? "projects" : "today");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
@@ -186,11 +187,21 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const loadData = useCallback(async () => {
     try {
       const res = await fetch("/api/partner/portal-data");
-      if (!res.ok) throw new Error("Failed to load");
-      const d = await res.json();
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = d?.detail || d?.error || `Failed to load (${res.status})`;
+        console.error("portal-data error", res.status, d);
+        setData(null);
+        setPortalError(msg);
+        setLoading(false);
+        return;
+      }
+      setPortalError(null);
       setData(d);
-    } catch {
+    } catch (e) {
+      console.error("portal-data fetch failed", e);
       setData(null);
+      setPortalError("Network error loading dashboard");
     } finally {
       setLoading(false);
     }
@@ -463,6 +474,20 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             </>
           )}
         </div>
+
+        {/* API error */}
+        {portalError && (
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-[13px] flex items-center justify-between gap-4">
+            <span>{portalError}</span>
+            <button
+              type="button"
+              onClick={() => { setPortalError(null); setLoading(true); loadData(); }}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-red-500/20 font-semibold hover:bg-red-500/30"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* KPI Stats */}
         {loading ? (

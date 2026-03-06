@@ -7,9 +7,19 @@ export default async function PartnerDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/partner/login");
 
-  const { data: partnerRows } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).order("created_at", { ascending: true });
+  const { data: partnerRows, error: partnerError } = await supabase
+    .from("partner_users")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (partnerError) {
+    console.error("Partner page partner_users error", partnerError);
+    redirect(`/partner/login?error=partner_lookup&message=${encodeURIComponent(partnerError.message)}`);
+  }
+
   const primaryOrgId = partnerRows?.[0]?.org_id;
-  if (!primaryOrgId) redirect("/partner/login");
+  if (!primaryOrgId) redirect("/partner/login?error=no_org");
 
   const { data: org } = await supabase
     .from("organizations")
