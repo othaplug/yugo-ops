@@ -15,9 +15,10 @@ export default async function PartnerLayout({ children }: { children: React.Reac
   if (!toggles.partner_portal) redirect("/portal-disabled");
 
   const { data: platformUser } = await supabase.from("platform_users").select("user_id").eq("user_id", user.id).single();
-  const { data: partnerUser } = await supabase.from("partner_users").select("user_id, org_id").eq("user_id", user.id).single();
+  const { data: partnerRows } = await supabase.from("partner_users").select("user_id").eq("user_id", user.id).limit(1);
+  const hasPartnerAccess = partnerRows && partnerRows.length > 0;
 
-  if (platformUser && !partnerUser) redirect("/admin");
+  if (platformUser && !hasPartnerAccess) redirect("/admin");
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">

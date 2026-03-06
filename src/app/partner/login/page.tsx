@@ -21,7 +21,10 @@ export default function PartnerLoginPage() {
         const { role } = await res.json();
         if (role === "partner") router.replace("/partner");
         else if (role === "admin") router.replace("/admin");
-        else router.replace("/login");
+        else {
+          // Never send partner-login visitors to main app /login; stay or send to /partner (page will redirect to /partner/login if no org)
+          router.replace("/partner");
+        }
       }
       setChecking(false);
     };

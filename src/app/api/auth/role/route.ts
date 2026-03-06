@@ -30,13 +30,13 @@ export async function GET() {
     .maybeSingle();
   if (move) return NextResponse.json({ role: "client" });
 
-  // partner_users → partner
-  const { data: partnerUser } = await supabase
+  // partner_users → partner (use limit(1) so multiple orgs per user don't make .single() fail)
+  const { data: partnerRows } = await supabase
     .from("partner_users")
     .select("user_id")
     .eq("user_id", user.id)
-    .single();
-  if (partnerUser) return NextResponse.json({ role: "partner" });
+    .limit(1);
+  if (partnerRows && partnerRows.length > 0) return NextResponse.json({ role: "partner" });
 
   return NextResponse.json({ role: null });
 }
