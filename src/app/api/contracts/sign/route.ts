@@ -89,7 +89,7 @@ function generateContractPdf(
   y += 7;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("Premium Moving Services \u2022 Toronto & GTA", pageWidth / 2, y, { align: "center" });
+  doc.text("The Art of Moving", pageWidth / 2, y, { align: "center" });
   y += 5;
 
   doc.setDrawColor(184, 150, 46);

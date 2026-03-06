@@ -52,7 +52,7 @@ export default function CrewEndOfDayPage() {
       <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-ui text-[var(--tx3)] hover:text-[var(--gold)]">
         ← Back to Dashboard
       </Link>
-      <h1 className="font-hero text-h2-sm font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
+      <h1 className="font-hero text-h1 font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
       <p className="text-ui text-[var(--tx3)] mt-1">
         {preview?.alreadySubmitted
           ? "You already submitted a report for today. Submit again to update it with any new jobs or expenses."
@@ -61,7 +61,7 @@ export default function CrewEndOfDayPage() {
 
       {preview?.summary && (
         <div className="mt-4 p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
-          <h2 className="font-hero text-caption font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
+          <h2 className="font-hero text-h3-lg font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
           <div className="grid grid-cols-2 gap-2 text-ui">
             <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
             <div><span className="text-[var(--tx3)]">Total job time:</span> {Math.floor((preview.summary.totalJobTime ?? 0) / 60)}h {((preview.summary.totalJobTime ?? 0) % 60)}m</div>

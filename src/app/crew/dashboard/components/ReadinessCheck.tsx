@@ -85,7 +85,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
     <div className="max-w-[420px] mx-auto">
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-hero text-h3 font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
+          <h2 className="font-hero text-h1 font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
           <p className="text-caption text-[var(--tx3)] mt-0.5">Quick 60-second check before starting the day</p>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">

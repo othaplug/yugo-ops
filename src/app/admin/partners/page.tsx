@@ -13,7 +13,7 @@ export default function PartnersHubPage() {
   return (
     <div className="max-w-[800px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
-      <h1 className="font-hero text-h2 font-bold text-[var(--tx)] mb-1">Partner Management</h1>
+      <h1 className="font-hero text-hero font-bold text-[var(--tx)] mb-1">Partner Management</h1>
       <p className="text-body text-[var(--tx3)] mb-6">Manage all your B2B partner relationships.</p>
       <div className="grid gap-3">
         {PARTNER_CATEGORIES.map((cat) => (

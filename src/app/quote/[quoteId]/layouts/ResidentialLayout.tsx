@@ -21,7 +21,7 @@ export default function ResidentialLayout({ tiers, selectedTier, onSelectTier }:
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
-        <h2 className="font-hero text-h2 md:text-h1-lg mb-2" style={{ color: WINE }}>
+        <h2 className="font-hero text-hero md:text-hero-md mb-2" style={{ color: WINE }}>
           Choose Your Package
         </h2>
         <p className="text-body max-w-md mx-auto" style={{ color: `${FOREST}80` }}>

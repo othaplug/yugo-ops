@@ -578,9 +578,14 @@ export default function UnifiedTrackingView({
               const s = sessionByTeam.get(c.id);
               if (!s) return c;
               const hasLoc = s.lastLocation?.lat != null && s.lastLocation?.lng != null;
+              // Fall back to crewLocations (Supabase Realtime) if session has no position
+              const loc = !hasLoc ? crewLocations.get(c.id) : null;
+              const fallbackLat = loc?.lat ?? c.current_lat;
+              const fallbackLng = loc?.lng ?? c.current_lng;
               return {
                 ...c,
-                ...(hasLoc && { current_lat: s.lastLocation!.lat, current_lng: s.lastLocation!.lng }),
+                current_lat: hasLoc ? s.lastLocation!.lat : fallbackLat,
+                current_lng: hasLoc ? s.lastLocation!.lng : fallbackLng,
                 status: s.status && !["completed", "not_started"].includes(s.status) ? "en-route" : c.status,
                 updated_at: s.updatedAt || c.updated_at,
               };

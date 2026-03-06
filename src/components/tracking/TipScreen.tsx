@@ -181,7 +181,7 @@ export default function TipScreen({
             <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6" style={{ background: `linear-gradient(135deg, ${GOLD}, #A07F26)` }}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
-            <h2 className="font-hero text-h1 sm:text-hero font-semibold" style={{ color: WINE }}>Thank you!</h2>
+            <h2 className="font-hero text-hero sm:text-hero-lg font-semibold" style={{ color: WINE }}>Thank you!</h2>
             <p className="text-h3-sm mt-3 leading-relaxed" style={{ color: FOREST }}>
               Your {formatCurrency(tipAmount)} tip has been sent to {crewName}.
             </p>
@@ -233,7 +233,7 @@ export default function TipScreen({
           <div className="flex items-center justify-center gap-2 mb-4">
             <YugoLogo size={20} variant="gold" onLightBackground />
           </div>
-          <h1 className="font-hero text-h1-lg sm:text-hero-md font-semibold leading-tight" style={{ color: WINE }}>
+          <h1 className="font-hero text-hero sm:text-hero-lg font-semibold leading-tight" style={{ color: WINE }}>
             Move Complete!
           </h1>
           <p className="text-title mt-2 opacity-80" style={{ color: FOREST }}>

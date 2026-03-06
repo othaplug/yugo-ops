@@ -130,9 +130,9 @@ export default function TrackingLookup() {
         </div>
       </div>
 
-      <footer className="text-center py-6 border-t" style={{ borderColor: `${FOREST}15` }}>
-        <p className="text-label opacity-70" style={{ color: FOREST }}>
-          <Link href="/" className="hover:underline font-semibold" style={{ color: GOLD }}>YUGO</Link> · Logistics & Moving
+      <footer className="text-center py-4 border-t" style={{ borderColor: `${FOREST}10` }}>
+        <p className="text-nano opacity-40" style={{ color: FOREST }}>
+          <Link href="/" className="hover:underline font-semibold" style={{ color: GOLD }}>YUGO</Link> · The Art of Moving
         </p>
       </footer>
     </div>

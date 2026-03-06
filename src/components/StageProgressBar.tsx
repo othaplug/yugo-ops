@@ -54,7 +54,7 @@ export default function StageProgressBar({
                 fontWeight: isDone || isCurrent ? 600 : 400,
               }}
             >
-              <span className="text-caption sm:text-ui truncate block">
+              <span className="text-label sm:text-caption truncate block">
                 {s.label}
               </span>
             </div>

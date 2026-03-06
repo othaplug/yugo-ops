@@ -218,7 +218,7 @@ export default function SquarePaymentForm({
         <p className="text-caption font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
           Deposit Amount
         </p>
-        <p className="font-hero text-hero mt-1" style={{ color: WINE }}>
+        <p className="font-hero text-hero-lg mt-1" style={{ color: WINE }}>
           {fmtPrice(amount)}
         </p>
       </div>

@@ -217,10 +217,10 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
     <div className={`min-h-screen ${partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"}`} data-theme={partnerTheme}>
       {/* Header */}
       <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
           <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
-          <span className="text-body text-[var(--tx3)] font-medium hidden sm:inline">{orgName}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-micro font-bold tracking-[2px] uppercase bg-[var(--gold)]/12 text-[var(--gold)] border border-[var(--gold)]/25">BETA</span>
+          <span className="text-nano font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50">BETA</span>
+          <span className="text-body text-[var(--tx3)] font-medium hidden sm:inline ml-1.5">{orgName}</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -280,7 +280,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
                     <span className="text-hero" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-hero text-hero font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
+                  <h2 className="font-hero text-hero-lg font-semibold text-[#1A1714] mb-2">Welcome to YUGO, {contactName}!</h2>
                   <p className="text-title text-[#888] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>
@@ -289,7 +289,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
               {welcomeStep === 1 && (
                 <div>
-                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
+                  <h3 className="font-hero text-h1 font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
                       { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
@@ -319,7 +319,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
-                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-2">Secure your account</h3>
+                  <h3 className="font-hero text-h1 font-semibold text-[#1A1714] mb-2">Secure your account</h3>
                   <p className="text-title text-[#888] leading-relaxed max-w-[360px] mx-auto mb-4">
                     For your security, we strongly recommend changing your password to something personal and memorable.
                   </p>
@@ -345,7 +345,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h3 className="font-hero text-h2 font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
+                  <h3 className="font-hero text-h1 font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
                   <p className="text-title text-[#888] leading-relaxed max-w-[360px] mx-auto">
                     Your portal is ready. If you need help at any time, reach out to your Yugo account manager.
                   </p>
@@ -404,7 +404,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
         {/* Hero + Greeting */}
         <div className="mb-6">
-          <h1 className="font-hero text-hero sm:text-price-xs font-semibold text-[var(--tx)] leading-tight tracking-tight">
+          <h1 className="font-hero text-hero-lg sm:text-price-sm font-semibold text-[var(--tx)] leading-tight tracking-tight">
             {isReturning ? "Welcome back" : getPartnerGreeting()}, {contactName}
           </h1>
           {features.showReferrals ? (

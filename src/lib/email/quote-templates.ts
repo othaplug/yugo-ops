@@ -52,7 +52,7 @@ function quoteEmailLayout(innerHtml: string): string {
       <!-- Footer -->
       <div style="border-top:1px solid ${CARD_BORDER};padding:24px 36px;text-align:center">
         <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:13px;font-weight:600;letter-spacing:2px;color:${GOLD}">YUGO</div>
-        <div style="font-size:10px;color:${TX3};margin-top:6px">Premium Moving Services &middot; Toronto &amp; GTA</div>
+        <div style="font-size:10px;color:${TX3};margin-top:6px">The Art of Moving</div>
       </div>
     </div>
   `;

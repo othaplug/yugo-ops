@@ -292,7 +292,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
           <div>
-            <h2 className="font-hero text-h2-sm sm:text-h2 font-bold text-[#1A1A1A]">Schedule Delivery</h2>
+            <h2 className="font-hero text-h1 sm:text-hero font-bold text-[#1A1A1A]">Schedule Delivery</h2>
             {step !== "type" && (
               <div className="flex gap-1.5 mt-1">
                 {(["type", "config", "details", "review"] as const).map((s, i) => (
@@ -509,21 +509,21 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               {/* Schedule */}
               <section className="space-y-3">
                 <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Schedule</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                   <FormField label="Date" required>
                     <input type="date" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} className={fieldInput} />
-                  </FormField>
-                  <FormField label="Time slot">
-                    <input type="time" value={form.time_slot} onChange={(e) => set("time_slot", e.target.value)} className={fieldInput} />
-                  </FormField>
-                  <FormField label="Preferred time">
-                    <input type="time" value={form.preferred_time} onChange={(e) => set("preferred_time", e.target.value)} className={fieldInput} />
                   </FormField>
                   <FormField label="Delivery window">
                     <select value={form.delivery_window} onChange={(e) => set("delivery_window", e.target.value)} className={fieldInput}>
                       <option value="">Select window…</option>
                       {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
                     </select>
+                  </FormField>
+                  <FormField label="Time slot">
+                    <input type="time" value={form.time_slot} onChange={(e) => set("time_slot", e.target.value)} className={fieldInput} />
+                  </FormField>
+                  <FormField label="Preferred time">
+                    <input type="time" value={form.preferred_time} onChange={(e) => set("preferred_time", e.target.value)} className={fieldInput} />
                   </FormField>
                 </div>
               </section>

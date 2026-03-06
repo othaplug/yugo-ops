@@ -497,7 +497,7 @@ export default function QuotePageClient({
             <YugoLogo size={36} variant="cream" />
           </div>
           <div className="w-12 h-px mx-auto mb-6" style={{ backgroundColor: GOLD }} />
-          <h1 className="font-hero text-h2 md:text-hero text-white leading-snug mb-3">
+          <h1 className="font-hero text-hero md:text-hero-lg text-white leading-snug mb-3">
             {hero.headline}
           </h1>
           <p className="text-title text-white/70 max-w-md mx-auto leading-relaxed">
@@ -835,7 +835,7 @@ export default function QuotePageClient({
               >
                 <Check className="w-7 h-7" style={{ color: GOLD }} />
               </div>
-              <h2 className="font-hero text-h1 mb-2" style={{ color: WINE }}>
+              <h2 className="font-hero text-hero mb-2" style={{ color: WINE }}>
                 You&apos;re All Set!
               </h2>
               <p
@@ -878,17 +878,15 @@ export default function QuotePageClient({
           </section>
         )}
 
-        {/* ═══ FOOTER ═══ */}
-        <footer className="py-10 text-center border-t border-[var(--brd)]/30">
-          <div className="flex justify-center mb-2">
-            <YugoLogo size={20} variant="gold" onLightBackground />
+        <footer className="py-5 text-center border-t border-[var(--brd)]/20">
+          <div className="flex justify-center mb-1">
+            <YugoLogo size={14} variant="gold" onLightBackground />
           </div>
-          <p className="text-caption" style={{ color: `${FOREST}60` }}>
-            Premium Moving &middot; Toronto &amp; GTA
+          <p className="text-nano" style={{ color: `${FOREST}40` }}>
+            The Art of Moving
           </p>
-          <p className="text-label mt-1" style={{ color: `${FOREST}40` }}>
-            Questions? Email us at{" "}
-            <a href="mailto:info@helloyugo.com" style={{ color: GOLD }} className="hover:underline">
+          <p className="text-nano mt-0.5" style={{ color: `${FOREST}30` }}>
+            <a href="mailto:info@helloyugo.com" style={{ color: `${FOREST}30` }} className="hover:underline">
               info@helloyugo.com
             </a>
           </p>
@@ -1328,7 +1326,7 @@ function FallbackPrice({
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
-        <h2 className="font-hero text-h2 md:text-h1-lg mb-2" style={{ color: WINE }}>
+        <h2 className="font-hero text-h1 md:text-hero mb-2" style={{ color: WINE }}>
           Your Quote
         </h2>
       </div>
@@ -1382,6 +1380,12 @@ function AddOnsSection({
   updateQty: (id: string, qty: number) => void;
   updateTierIdx: (id: string, idx: number) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
+  const KEY_COUNT = 3;
+  const keyAddons = addons.filter((a) => a.is_popular || selectedAddons.has(a.id)).slice(0, KEY_COUNT);
+  const hasMore = addons.length > keyAddons.length;
+  const visibleAddons = showAll ? addons : (keyAddons.length > 0 ? keyAddons : addons.slice(0, KEY_COUNT));
+
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
@@ -1394,7 +1398,7 @@ function AddOnsSection({
       </div>
 
       <div className="space-y-3">
-        {addons.map((addon) => {
+        {visibleAddons.map((addon) => {
           const sel = selectedAddons.get(addon.id);
           const isOn = !!sel;
 
@@ -1531,6 +1535,31 @@ function AddOnsSection({
           );
         })}
       </div>
+
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setShowAll((p) => !p)}
+          className="w-full mt-3 py-2.5 text-caption font-semibold tracking-wider uppercase transition-colors rounded-lg hover:bg-[#FAF8F5]"
+          style={{ color: GOLD }}
+        >
+          {showAll ? "Show less" : `View all ${addons.length} add-ons`}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="inline ml-1.5 transition-transform"
+            style={{ transform: showAll ? "rotate(180deg)" : "rotate(0deg)" }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
 
       {/* Running total bar */}
       {addonTotal > 0 && (selectedTierData || basePrice > 0) && (

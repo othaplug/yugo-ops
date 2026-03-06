@@ -154,7 +154,7 @@ export default function JobInventory({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-hero text-caption font-bold uppercase tracking-wider text-[var(--tx3)]">
+        <h2 className="font-hero text-h3-lg font-bold uppercase tracking-wider text-[var(--tx3)]">
           {isPremierNoInventory ? "Room Confirmation" : isUnloading ? "Unloading Verification" : "Inventory"}
         </h2>
         {isPremierNoInventory ? (
@@ -287,7 +287,7 @@ export default function JobInventory({
       {addExtraOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
-            <h3 className="font-hero text-h3 font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
+            <h3 className="font-hero text-h1 font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
             <p className="text-caption text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>
             <form onSubmit={handleAddExtra} className="space-y-4">
               <div>

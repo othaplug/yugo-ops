@@ -90,10 +90,9 @@ export default function YugoLogo({
   );
 }
 
-/** Small "BETA" badge — position unchanged to the right of the logo */
 export function BetaBadge({ className = "" }: { className?: string }) {
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-micro font-bold tracking-[2px] uppercase bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 ${className}`}>
+    <span className={`text-nano font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50 ${className}`}>
       BETA
     </span>
   );

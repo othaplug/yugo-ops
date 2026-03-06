@@ -63,7 +63,7 @@ export default function PartnerCalendarTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-h3-lg font-bold text-[#1A1A1A] font-hero">{monthLabel}</h3>
+        <h3 className="text-h1 font-bold text-[#1A1A1A] font-hero">{monthLabel}</h3>
         <div className="flex gap-1">
           <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>

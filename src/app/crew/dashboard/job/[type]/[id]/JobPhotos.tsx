@@ -120,7 +120,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
 
   return (
     <div>
-      <h2 className="font-hero text-caption font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
+      <h2 className="font-hero text-h3-lg font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
       {readOnly ? null : !canAddPhotos ? (
         <p className="text-caption text-[var(--tx3)] mb-3">Add photos after arriving at pickup.</p>
       ) : showPrompt ? (

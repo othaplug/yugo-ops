@@ -387,7 +387,7 @@ export default function CrewJobPage({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{job.jobTypeLabel}</p>
-            <h1 className="font-hero text-h2 font-bold text-[var(--tx)] leading-tight">{job.clientName}</h1>
+            <h1 className="font-hero text-hero font-bold text-[var(--tx)] leading-tight">{job.clientName}</h1>
             <p className="text-caption text-[var(--tx3)] mt-1 font-mono">{job.jobId}</p>
           </div>
           {isCompleted && (
@@ -735,7 +735,7 @@ export default function CrewJobPage({
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
-              <h3 className="font-hero text-h3-lg font-bold text-[var(--tx)]">
+              <h3 className="font-hero text-h1 font-bold text-[var(--tx)]">
                 Pickup Verification
               </h3>
               <p className="text-ui text-[var(--tx3)] mt-1">
@@ -822,7 +822,7 @@ export default function CrewJobPage({
       {reportModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl">
-            <h3 className="font-hero text-h3 font-bold text-[var(--tx)] mb-2">Report Issue</h3>
+            <h3 className="font-hero text-h2 font-bold text-[var(--tx)] mb-2">Report Issue</h3>
             {reportSubmitted ? (
               <div className="py-4">
                 <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/10 flex items-center justify-center mx-auto mb-3">

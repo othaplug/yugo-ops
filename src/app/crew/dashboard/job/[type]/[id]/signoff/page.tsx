@@ -322,7 +322,7 @@ export default function ClientSignOffPage({
     return (
       <main className="min-h-screen bg-[#FAF8F4] flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
-          <h1 className="font-hero text-2xl text-[#1A1A1A] mb-2">Already Signed</h1>
+          <h1 className="font-hero text-hero text-[#1A1A1A] mb-2">Already Signed</h1>
           <p className="text-[#555] mb-6">This job has already been signed off.</p>
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
@@ -385,7 +385,7 @@ export default function ClientSignOffPage({
         {phase === 1 && (
           <div className="animate-fade-in">
             <div className="text-center mb-8">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+              <h1 className="font-hero text-hero mb-1" style={{ color: textColor }}>
                 Items Confirmation
               </h1>
               <p className="text-sm mt-2" style={{ color: mutedColor }}>
@@ -481,7 +481,7 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="animate-fade-in">
             <div className="text-center mb-6">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+              <h1 className="font-hero text-hero mb-1" style={{ color: textColor }}>
                 How was your experience?
               </h1>
             </div>
@@ -617,7 +617,7 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="animate-fade-in">
             <div className="text-center mb-6">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+              <h1 className="font-hero text-hero mb-1" style={{ color: textColor }}>
                 Almost done — sign to confirm
               </h1>
             </div>
@@ -701,7 +701,7 @@ export default function ClientSignOffPage({
         {phase === 4 && (
           <div className="text-center py-12 animate-fade-in">
             <h1
-              className="font-hero text-2xl font-semibold mb-2"
+              className="font-hero text-hero font-semibold mb-2"
               style={{ color: textColor }}
             >
               Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!
@@ -726,7 +726,7 @@ export default function ClientSignOffPage({
         {phase === 5 && (
           <div className="animate-fade-in">
             <div className="text-center mb-6">
-              <h1 className="font-hero text-2xl mb-1" style={{ color: textColor }}>
+              <h1 className="font-hero text-hero mb-1" style={{ color: textColor }}>
                 Skip Sign-Off
               </h1>
               <p className="text-sm mt-2" style={{ color: mutedColor }}>

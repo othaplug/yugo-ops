@@ -97,7 +97,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
       >
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
           <div>
-            <h2 className="font-hero text-h3-lg font-bold text-[var(--tx)]">Edit Delivery</h2>
+            <h2 className="font-hero text-h1 font-bold text-[var(--tx)]">Edit Delivery</h2>
             <p className="text-caption text-[var(--tx3)] mt-0.5">{d.delivery_number}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">

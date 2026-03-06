@@ -280,35 +280,6 @@ export default function TrackLiveMap({
 
   return (
     <div className="space-y-4">
-      {/* Status progression bar */}
-      {hasActiveTracking && (
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-1">
-          {PROGRESSION.map((step, i) => {
-            const isActive = i === progressionIdx;
-            const isDone = i < progressionIdx;
-            return (
-              <div key={step.key} className="flex items-center gap-1 shrink-0">
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-section font-semibold whitespace-nowrap transition-all ${isDone ? "bg-[#22C55E]/15 text-[#22C55E]" : isActive ? "bg-[#C9A962]/20 text-[#C9A962]" : "bg-[#E7E5E4] text-[#999]"}`}>
-                  {isDone && (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                  )}
-                  {isActive && (
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A962] opacity-75" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#C9A962]" />
-                    </span>
-                  )}
-                  {step.label}
-                </div>
-                {i < PROGRESSION.length - 1 && (
-                  <div className={`w-3 h-0.5 rounded-full ${isDone ? "bg-[#22C55E]" : "bg-[#E7E5E4]"}`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {hasActiveTracking && (
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
@@ -408,17 +379,26 @@ export default function TrackLiveMap({
             {/* Bottom crew drawer */}
             {crewLoc && (
               <div
-                className="absolute bottom-0 left-0 right-0 z-10 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-bottom transition-all duration-300 ease-out"
-                style={{ borderRadius: "16px 16px 0 0", maxHeight: drawerExpanded ? "280px" : "68px", overflow: "hidden" }}
+                className="absolute bottom-0 left-0 right-0 z-10 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-bottom"
+                style={{
+                  borderRadius: "16px 16px 0 0",
+                  maxHeight: drawerExpanded ? "320px" : "68px",
+                  overflow: "hidden",
+                  transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
+                  willChange: "max-height",
+                }}
               >
                 {/* Tap handle */}
                 <button
                   type="button"
                   onClick={() => setDrawerExpanded((e) => !e)}
-                  className="w-full flex flex-col items-center pt-2 pb-1 cursor-pointer"
+                  className="w-full flex flex-col items-center pt-2 pb-1 cursor-pointer active:scale-95 transition-transform"
                   aria-label={drawerExpanded ? "Collapse crew details" : "Expand crew details"}
                 >
-                  <div className="w-10 h-1 rounded-full bg-[#D4D4D4] transition-colors" />
+                  <div
+                    className="w-10 h-1 rounded-full bg-[#D4D4D4] transition-transform duration-300"
+                    style={{ transform: drawerExpanded ? "scaleX(1.4)" : "scaleX(1)" }}
+                  />
                 </button>
 
                 {/* Compact row (always visible) */}
@@ -433,7 +413,7 @@ export default function TrackLiveMap({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-body font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
                       {crew?.members && <span className="text-label text-[#666]">{crew.members.length} movers</span>}
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-section font-semibold bg-[#22C55E]/15 text-[#22C55E]">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-micro font-semibold bg-[#22C55E]/15 text-[#22C55E]">
                         <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-1 w-1 bg-[#22C55E]" /></span>
                         {CREW_STATUS_TO_LABEL[liveStage || ""] || toTitleCase(liveStage || "") || "Live"}
                       </span>
@@ -449,7 +429,7 @@ export default function TrackLiveMap({
                 </div>
 
                 {/* Expanded details */}
-                <div className="px-3 pb-4 space-y-3 border-t border-[#F0EFED]" style={{ opacity: drawerExpanded ? 1 : 0, transition: "opacity 0.2s ease" }}>
+                <div className="px-3 pb-4 space-y-3 border-t border-[#F0EFED]" style={{ opacity: drawerExpanded ? 1 : 0, transition: "opacity 0.25s ease 0.1s" }}>
                   {/* ETA + last update */}
                   {(displayEta != null || lastLocationAt) && (
                     <div className="flex items-center gap-4 pt-3 text-caption text-[#666]">

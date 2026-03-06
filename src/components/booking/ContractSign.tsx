@@ -498,7 +498,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               value={typedName}
               onChange={handleNameChange}
               placeholder="e.g. Harold Blackwood"
-              className="w-full px-4 py-3 rounded-xl border text-title font-hero outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl border text-h2-sm font-hero outline-none transition-colors"
               style={{
                 borderColor: typedName.trim().length >= 2 ? GOLD : "#D5D0C8",
                 color: WINE,

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: session, error: fetchErr } = await admin
     .from("tracking_sessions")
-    .select("id, job_id, job_type, team_id, status, checkpoints, is_active")
+    .select("id, job_id, job_type, team_id, status, checkpoints, is_active, last_location")
     .eq("id", sessionId)
     .single();
 
@@ -38,18 +38,37 @@ export async function POST(req: NextRequest) {
 
   const checkpoints = Array.isArray(session.checkpoints) ? [...session.checkpoints] : [];
   const now = new Date().toISOString();
+
+  // Use provided coords → session last_location → crew row as fallback so the
+  // team stays visible on the admin map even when GPS is unavailable.
+  const prevLoc = session.last_location as { lat?: number; lng?: number } | null;
+  let effectiveLat: number | null = lat != null ? Number(lat) : (prevLoc?.lat ?? null);
+  let effectiveLng: number | null = lng != null ? Number(lng) : (prevLoc?.lng ?? null);
+  if (effectiveLat == null || effectiveLng == null) {
+    const { data: crewPos } = await admin
+      .from("crews")
+      .select("current_lat, current_lng")
+      .eq("id", session.team_id)
+      .single();
+    if (crewPos?.current_lat != null && crewPos?.current_lng != null) {
+      effectiveLat = Number(crewPos.current_lat);
+      effectiveLng = Number(crewPos.current_lng);
+    }
+  }
+  const hasPosition = effectiveLat != null && effectiveLng != null;
+
   const newCheckpoint = {
     status,
     timestamp: now,
-    lat: lat ?? null,
-    lng: lng ?? null,
+    lat: effectiveLat,
+    lng: effectiveLng,
     note: (note || "").trim() || null,
   };
   checkpoints.push(newCheckpoint);
 
   const isCompleted = status === "completed";
-  const lastLocation = (lat != null && lng != null)
-    ? { lat: Number(lat), lng: Number(lng), accuracy: 0, timestamp: now }
+  const lastLocation = hasPosition
+    ? { lat: effectiveLat!, lng: effectiveLng!, accuracy: 0, timestamp: now }
     : undefined;
   const updates: Record<string, unknown> = {
     status,
@@ -69,11 +88,32 @@ export async function POST(req: NextRequest) {
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
-  if (lat != null && lng != null) {
-    await admin
-      .from("crews")
-      .update({ current_lat: Number(lat), current_lng: Number(lng), updated_at: now })
-      .eq("id", session.team_id);
+  // Keep crew position current so the admin map always shows active teams
+  if (hasPosition) {
+    const statusMap: Record<string, string> = {
+      en_route_to_pickup: "en_route_pickup",
+      arrived_at_pickup: "at_pickup",
+      loading: "loading",
+      en_route_to_destination: "en_route_delivery",
+      arrived_at_destination: "at_delivery",
+      unloading: "unloading",
+    };
+    await Promise.all([
+      admin
+        .from("crews")
+        .update({ current_lat: effectiveLat, current_lng: effectiveLng, updated_at: now })
+        .eq("id", session.team_id),
+      admin.from("crew_locations").upsert(
+        {
+          crew_id: session.team_id,
+          lat: effectiveLat!,
+          lng: effectiveLng!,
+          status: statusMap[status] || "idle",
+          updated_at: now,
+        },
+        { onConflict: "crew_id" },
+      ),
+    ]);
   }
 
   // Sync move/delivery status and stage with crew tracking for admin and dashboard

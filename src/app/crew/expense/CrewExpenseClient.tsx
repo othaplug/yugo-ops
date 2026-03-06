@@ -137,7 +137,7 @@ export default function CrewExpenseClient() {
       <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-ui text-[var(--tx3)] hover:text-[var(--gold)]">
         ← Back to Dashboard
       </Link>
-      <h1 className="font-hero text-h2-sm font-bold text-[var(--tx)] mt-2">Log Expense</h1>
+      <h1 className="font-hero text-h1 font-bold text-[var(--tx)] mt-2">Log Expense</h1>
       <p className="text-ui text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6">

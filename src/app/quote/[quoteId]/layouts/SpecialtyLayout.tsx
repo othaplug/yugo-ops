@@ -105,7 +105,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             >
               {PROJECT_TYPE_LABELS[projectType] ?? toTitleCase(projectType)}
             </span>
-            <h2 className="font-hero text-h3-lg mt-2" style={{ color: WINE }}>
+            <h2 className="font-hero text-h1 mt-2" style={{ color: WINE }}>
               Project Proposal
             </h2>
           </div>

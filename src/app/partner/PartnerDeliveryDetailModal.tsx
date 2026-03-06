@@ -207,7 +207,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
         {/* Header */}
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between shrink-0">
           <div className="min-w-0">
-            <h2 className="font-hero text-h3-lg font-bold text-[var(--tx)] truncate">
+            <h2 className="font-hero text-h1 font-bold text-[var(--tx)] truncate">
               {d.customer_name || d.delivery_number}
             </h2>
             <p className="text-caption text-[var(--tx3)] font-mono">{d.delivery_number}</p>

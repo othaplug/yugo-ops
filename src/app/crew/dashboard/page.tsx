@@ -116,7 +116,7 @@ export default function CrewDashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
           </div>
-          <h2 className="font-hero text-h3 font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
+          <h2 className="font-hero text-h1 font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
           <p className="text-body text-[var(--tx3)]">The crew lead must complete the pre-trip readiness check before jobs are available.</p>
         </div>
       </PageContent>
@@ -146,7 +146,7 @@ export default function CrewDashboardPage() {
             <p className="text-caption font-semibold uppercase tracking-[1.5px] text-[var(--gold)] mb-1">
               {data.crewMember?.teamName || "Team"}
             </p>
-            <h1 className="font-hero text-h1 font-bold text-[var(--tx)] leading-tight">{greeting}, {firstName}</h1>
+            <h1 className="font-hero text-hero font-bold text-[var(--tx)] leading-tight">{greeting}, {firstName}</h1>
             <p className="text-body text-[var(--tx3)] mt-1">
               {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
             </p>

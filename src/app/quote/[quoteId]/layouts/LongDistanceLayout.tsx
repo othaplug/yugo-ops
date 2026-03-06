@@ -126,7 +126,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         className="bg-white rounded-2xl border-2 shadow-sm p-6 md:p-8 text-center"
         style={{ borderColor: GOLD }}
       >
-        <h2 className="font-hero text-h2-sm mb-1" style={{ color: WINE }}>
+        <h2 className="font-hero text-h1 mb-1" style={{ color: WINE }}>
           All-Inclusive Flat Rate
         </h2>
         <p className="font-hero text-price md:text-display-sm my-3" style={{ color: WINE }}>
