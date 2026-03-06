@@ -20,7 +20,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
   if (platformUser && !partnerUser) redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
+    <div className="min-h-screen bg-[#FAF8F5]">
       {children}
     </div>
   );

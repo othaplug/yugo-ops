@@ -146,12 +146,12 @@ const TAX_RATE = 0.13;
 // ─── Helpers ────────────────────────────────────
 
 const fieldInput =
-  "w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
       {children}
     </div>
   );
@@ -258,7 +258,6 @@ export default function QuoteFormClient({
 
   // Inventory
   const [inventoryItems, setInventoryItems] = useState<InventoryEntry[]>([]);
-  const [boxCount, setBoxCount] = useState("");
   const [inventorySearch, setInventorySearch] = useState("");
   const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
   const inventorySearchRef = useRef<HTMLDivElement>(null);
@@ -535,9 +534,6 @@ export default function QuoteFormClient({
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
       }
-      if (boxCount && Number(boxCount) > 0) {
-        base.client_box_count = Number(boxCount);
-      }
     }
     if (serviceType === "office_move") {
       base.square_footage = Number(sqft) || undefined;
@@ -574,7 +570,7 @@ export default function QuoteFormClient({
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
-    selectedAddons, moveSize, specialtyItems, inventoryItems, boxCount, sqft, wsCount, hasIt, hasConf,
+    selectedAddons, moveSize, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     hasReception, timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
     firstName, lastName, email, phone,
@@ -678,7 +674,7 @@ export default function QuoteFormClient({
       </div>
 
       {hubspotBanner && (
-        <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-ui font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
           <Check className="w-4 h-4 shrink-0" />
           {hubspotBanner}
         </div>
@@ -689,8 +685,8 @@ export default function QuoteFormClient({
         <div className={`flex flex-col transition-all duration-300 ${previewOpen ? "lg:w-[60%]" : "lg:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[var(--brd)]">
-              <h1 className="font-heading text-h3-lg font-bold text-[var(--tx)]">Generate Quote</h1>
-              <p className="text-caption text-[var(--tx3)] mt-0.5">
+              <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
+              <p className="text-[11px] text-[var(--tx3)] mt-0.5">
                 Fill in the details and generate a quote. The live preview updates as you type.
               </p>
             </div>
@@ -698,7 +694,7 @@ export default function QuoteFormClient({
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
               <div>
-                <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+                <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
@@ -718,10 +714,10 @@ export default function QuoteFormClient({
                             <card.Icon className={`w-3.5 h-3.5 ${sel ? "text-[#B8962E]" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
                           </div>
                           <div className="min-w-0">
-                            <div className={`text-ui leading-tight ${sel ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
+                            <div className={`text-[12px] leading-tight ${sel ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
                               {card.label}
                             </div>
-                            <div className={`text-section mt-0.5 leading-snug ${sel ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
+                            <div className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
                               {card.desc}
                             </div>
                           </div>
@@ -736,7 +732,7 @@ export default function QuoteFormClient({
 
               {/* ── 2. Client ── */}
               <div className="space-y-3">
-                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
                 <Field label="Select to auto fill">
                   <div ref={contactDropdownRef} className="relative">
                     <input
@@ -752,7 +748,7 @@ export default function QuoteFormClient({
                     />
                     {showContactDropdown && dbContacts.length > 0 && (
                       <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                        <div className="px-3 py-1.5 text-section font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Contacts</div>
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Contacts</div>
                         {dbContacts.map((c) => (
                           <button
                             key={c.hubspot_id}
@@ -768,7 +764,7 @@ export default function QuoteFormClient({
                               setShowContactDropdown(false);
                               setDbContacts([]);
                             }}
-                            className="w-full text-left px-3 py-2 text-ui text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {c.name}
                             {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
@@ -778,7 +774,7 @@ export default function QuoteFormClient({
                       </div>
                     )}
                     {showContactDropdown && contactSearch.length >= 2 && dbContacts.length === 0 && (
-                      <div className="absolute z-10 top-full left-0 right-0 mt-1 px-3 py-2 text-caption text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 px-3 py-2 text-[11px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
                         No matches
                       </div>
                     )}
@@ -804,7 +800,7 @@ export default function QuoteFormClient({
 
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
-                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
                 <div className="flex flex-col sm:flex-row gap-3 items-end">
                   <div className="flex-1 min-w-0 w-full">
                     <AddressAutocomplete
@@ -851,7 +847,7 @@ export default function QuoteFormClient({
 
               {/* ── 4. Move details ── */}
               <div>
-                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <Field label="Move Date *">
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
@@ -882,7 +878,7 @@ export default function QuoteFormClient({
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
                 <div className="space-y-2">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {SPECIALTY_ITEM_TYPES.map((type) => {
                       const active = specialtyItems.some((i) => i.type === type);
@@ -891,7 +887,7 @@ export default function QuoteFormClient({
                           key={type}
                           type="button"
                           onClick={() => toggleSpecialtyItem(type)}
-                          className={`px-2.5 py-1 rounded-full text-section font-semibold border transition-colors ${
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                             active
                               ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
                               : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -906,14 +902,14 @@ export default function QuoteFormClient({
                     <div className="space-y-1 mt-2">
                       {specialtyItems.map((item) => (
                         <div key={item.type} className="flex items-center gap-2">
-                          <span className="text-caption text-[var(--tx)] flex-1">{toTitleCase(item.type)}</span>
+                          <span className="text-[11px] text-[var(--tx)] flex-1">{toTitleCase(item.type)}</span>
                           <input
                             type="number"
                             min={1}
                             max={20}
                             value={item.qty}
                             onChange={(e) => updateSpecialtyQty(item.type, parseInt(e.target.value) || 1)}
-                            className="w-14 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-center text-[var(--tx)]"
+                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-center text-[var(--tx)]"
                           />
                         </div>
                       ))}
@@ -928,9 +924,9 @@ export default function QuoteFormClient({
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client Inventory</h3>
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client Inventory</h3>
                     {inventoryItems.length > 0 && (
-                      <span className="text-label text-[var(--tx3)]">
+                      <span className="text-[10px] text-[var(--tx3)]">
                         {inventoryTotalItems} items · Score {inventoryScore.toFixed(1)}
                       </span>
                     )}
@@ -945,7 +941,7 @@ export default function QuoteFormClient({
                           key={w.slug}
                           type="button"
                           onClick={() => addInventoryItem(w)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-section font-semibold border transition-colors ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                             existing
                               ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
                               : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -979,10 +975,10 @@ export default function QuoteFormClient({
                             key={w.slug}
                             type="button"
                             onClick={() => addInventoryItem(w)}
-                            className="w-full text-left px-3 py-2 text-ui text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
                           >
                             <span>{w.item_name}</span>
-                            <span className={`text-section font-mono tabular-nums ${
+                            <span className={`text-[9px] font-mono tabular-nums ${
                               w.weight_score >= 2 ? "text-orange-400 font-bold" : w.weight_score <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--tx2)]"
                             }`}>
                               ×{w.weight_score}
@@ -1001,45 +997,31 @@ export default function QuoteFormClient({
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                             item.weight_score >= 2 ? "bg-orange-400" : item.weight_score <= 0.5 ? "bg-[var(--tx3)]" : "bg-[var(--gold)]"
                           }`} />
-                          <span className="text-caption text-[var(--tx)] flex-1 truncate">{item.name}</span>
-                          <span className="text-section text-[var(--tx3)] font-mono tabular-nums">×{item.weight_score}</span>
+                          <span className="text-[11px] text-[var(--tx)] flex-1 truncate">{item.name}</span>
+                          <span className="text-[9px] text-[var(--tx3)] font-mono tabular-nums">×{item.weight_score}</span>
                           <div className="flex items-center gap-1">
                             <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity - 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="text-caption font-medium text-[var(--tx)] w-5 text-center tabular-nums">{item.quantity}</span>
+                            <span className="text-[11px] font-medium text-[var(--tx)] w-5 text-center tabular-nums">{item.quantity}</span>
                             <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity + 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
-                          <button type="button" onClick={() => removeInventoryItem(item.slug)} className="text-[var(--tx3)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-caption ml-1">
+                          <button type="button" onClick={() => removeInventoryItem(item.slug)} className="text-[var(--tx3)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] ml-1">
                             ×
                           </button>
                         </div>
                       ))}
-                      <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-label">
+                      <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
                         <span className="text-[var(--tx3)]">Item score: {inventoryScore.toFixed(1)}</span>
                         <span className="text-[var(--tx3)]">{inventoryTotalItems} items</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Box count */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <label className="text-label font-medium text-[var(--tx2)] whitespace-nowrap">Estimated boxes</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={boxCount}
-                      onChange={(e) => setBoxCount(e.target.value)}
-                      placeholder="Auto"
-                      className={`${fieldInput} w-24 text-center tabular-nums`}
-                    />
-                    <span className="text-section text-[var(--tx3)]">Leave blank for default based on move size</span>
-                  </div>
-
-                  {inventoryItems.length === 0 && !boxCount && (
-                    <p className="text-label text-[var(--tx3)] italic">No inventory added — standard volume assumed for pricing.</p>
+                  {inventoryItems.length === 0 && (
+                    <p className="text-[10px] text-[var(--tx3)] italic">No inventory added — standard volume assumed for pricing.</p>
                   )}
                 </div>
                 </>
@@ -1050,7 +1032,7 @@ export default function QuoteFormClient({
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
                 <div className="space-y-3">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Square Footage">
                       <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={fieldInput} />
@@ -1066,7 +1048,7 @@ export default function QuoteFormClient({
                       { label: "Reception Area", val: hasReception, set: setHasReception },
                     ].map((tog) => (
                       <div key={tog.label} className="flex items-center justify-between">
-                        <span className="text-label font-medium text-[var(--tx)]">{tog.label}</span>
+                        <span className="text-[10px] font-medium text-[var(--tx)]">{tog.label}</span>
                         <button
                           type="button"
                           role="switch"
@@ -1091,7 +1073,7 @@ export default function QuoteFormClient({
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
                 <div className="space-y-3">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Category">
                       <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
@@ -1116,7 +1098,7 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-label font-medium text-[var(--tx)]">Stair Carry</span>
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
                     <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                     </button>
@@ -1132,7 +1114,7 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-3">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove Details</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Item Category">
                       <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
@@ -1152,7 +1134,7 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-label font-medium text-[var(--tx)]">Stair Carry</span>
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
                     <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                     </button>
@@ -1168,7 +1150,7 @@ export default function QuoteFormClient({
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
                 <div className="space-y-3">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Project Type">
                       <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
@@ -1185,7 +1167,7 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-label font-medium text-[var(--tx)]">Climate Control Required</span>
+                    <span className="text-[10px] font-medium text-[var(--tx)]">Climate Control Required</span>
                     <button type="button" role="switch" aria-checked={climateControl} onClick={() => setClimateControl(!climateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${climateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${climateControl ? "translate-x-4" : ""}`} />
                     </button>
@@ -1198,7 +1180,7 @@ export default function QuoteFormClient({
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
                   <div className="space-y-2">
                     {popularAddons.map((addon) => {
                       const sel = selectedAddons.get(addon.id);
@@ -1219,29 +1201,29 @@ export default function QuoteFormClient({
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-ui font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
+                                <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-micro font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
-                                <span className="text-caption text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
+                                <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
                               {addon.description && (
-                                <p className="text-label text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
+                                <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
                               )}
                             </div>
                           </label>
                           {isSelected && addon.price_type === "per_unit" && (
                             <div className="ml-6 flex items-center gap-2">
-                              <span className="text-label text-[var(--tx3)]">Qty:</span>
+                              <span className="text-[10px] text-[var(--tx3)]">Qty:</span>
                               <input
                                 type="number"
                                 min={1}
                                 max={99}
                                 value={sel!.quantity}
                                 onChange={(e) => updateAddonQty(addon.id, parseInt(e.target.value) || 1)}
-                                className="w-16 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                                className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               />
-                              <span className="text-label text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
+                              <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
                           {isSelected && addon.price_type === "tiered" && addon.tiers && (
@@ -1249,7 +1231,7 @@ export default function QuoteFormClient({
                               <select
                                 value={sel!.tier_index}
                                 onChange={(e) => updateAddonTier(addon.id, parseInt(e.target.value))}
-                                className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               >
                                 {addon.tiers.map((t, i) => (
                                   <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
@@ -1264,7 +1246,7 @@ export default function QuoteFormClient({
                       <button
                         type="button"
                         onClick={() => setShowAllAddons((v) => !v)}
-                        className="flex items-center gap-1.5 text-caption font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors py-1.5"
+                        className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors py-1.5"
                       >
                         {showAllAddons ? "Hide other add-ons" : "Show all add-ons ▾"}
                         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAllAddons ? "rotate-90" : ""}`} />
@@ -1289,29 +1271,29 @@ export default function QuoteFormClient({
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-ui font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
+                                <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-micro font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
-                                <span className="text-caption text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
+                                <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
                               {addon.description && (
-                                <p className="text-label text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
+                                <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">{addon.description}</p>
                               )}
                             </div>
                           </label>
                           {isSelected && addon.price_type === "per_unit" && (
                             <div className="ml-6 flex items-center gap-2">
-                              <span className="text-label text-[var(--tx3)]">Qty:</span>
+                              <span className="text-[10px] text-[var(--tx3)]">Qty:</span>
                               <input
                                 type="number"
                                 min={1}
                                 max={99}
                                 value={sel!.quantity}
                                 onChange={(e) => updateAddonQty(addon.id, parseInt(e.target.value) || 1)}
-                                className="w-16 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                                className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               />
-                              <span className="text-label text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
+                              <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
                           {isSelected && addon.price_type === "tiered" && addon.tiers && (
@@ -1319,7 +1301,7 @@ export default function QuoteFormClient({
                               <select
                                 value={sel!.tier_index}
                                 onChange={(e) => updateAddonTier(addon.id, parseInt(e.target.value))}
-                                className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+                                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               >
                                 {addon.tiers.map((t, i) => (
                                   <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
@@ -1332,8 +1314,8 @@ export default function QuoteFormClient({
                     })}
                   </div>
                   <div className="pt-3 border-t border-[var(--brd)] flex items-center justify-between">
-                    <span className="text-caption font-semibold text-[var(--tx)]">Add-ons total</span>
-                    <span className="text-title font-bold text-[var(--gold)]">{fmtPrice(addonSubtotal)}</span>
+                    <span className="text-[11px] font-semibold text-[var(--tx)]">Add-ons total</span>
+                    <span className="text-[14px] font-bold text-[var(--gold)]">{fmtPrice(addonSubtotal)}</span>
                   </div>
                 </div>
               )}
@@ -1349,7 +1331,7 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={handleGenerate}
                 disabled={generating}
-                className="flex-1 py-2.5 rounded-lg text-caption font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {generating ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…</> : quoteId ? "Regenerate" : "Generate Quote"}
               </button>
@@ -1357,7 +1339,7 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={handleSend}
                 disabled={sending || !quoteId || sendSuccess}
-                className={`flex-1 py-2.5 rounded-lg text-caption font-bold border-2 flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 ${
                   sendSuccess
                     ? "border-[var(--grn)] bg-[var(--grn)]/10 text-[var(--grn)] cursor-default"
                     : "border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 disabled:opacity-40"
@@ -1369,7 +1351,7 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={() => quoteResult && window.open(`/quote/${quoteResult.quote_id}`, "_blank")}
                 disabled={!quoteResult}
-                className="py-2.5 px-4 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 <Eye className="w-3.5 h-3.5" /> Preview
               </button>
@@ -1388,7 +1370,7 @@ export default function QuoteFormClient({
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />
-            <span className="text-section font-bold tracking-wider uppercase [writing-mode:vertical-lr]">Preview</span>
+            <span className="text-[9px] font-bold tracking-wider uppercase [writing-mode:vertical-lr]">Preview</span>
           </button>
         )}
 
@@ -1397,11 +1379,11 @@ export default function QuoteFormClient({
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
                 <div>
-                  <h2 className="font-heading text-h3-sm font-bold text-[var(--tx)]">
+                  <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
                     {quoteResult ? `Quote ${quoteResult.quote_id}` : "Live Quote Preview"}
                   </h2>
                   {!quoteResult && (
-                    <p className="text-label text-[var(--tx3)] mt-0.5">Updates as you fill in the form</p>
+                    <p className="text-[10px] text-[var(--tx3)] mt-0.5">Updates as you fill in the form</p>
                   )}
                 </div>
                 <button
@@ -1426,9 +1408,9 @@ export default function QuoteFormClient({
 
                     {quoteResult.addons && quoteResult.addons.items.length > 0 && (
                       <div className="space-y-1.5">
-                        <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h4>
+                        <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h4>
                         {quoteResult.addons.items.map((item, i) => (
-                          <div key={i} className="flex items-center justify-between text-caption">
+                          <div key={i} className="flex items-center justify-between text-[11px]">
                             <span className="text-[var(--tx2)]">{item.name}</span>
                             <span className="text-[var(--tx)] font-medium">{fmtPrice(item.subtotal)}</span>
                           </div>
@@ -1448,12 +1430,12 @@ export default function QuoteFormClient({
                         <div className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center mx-auto mb-2">
                           <ChevronDown className="w-4 h-4 text-[var(--tx3)]" />
                         </div>
-                        <p className="text-caption text-[var(--tx3)]">Fill in the form to see a live estimate</p>
+                        <p className="text-[11px] text-[var(--tx3)]">Fill in the form to see a live estimate</p>
                       </div>
                     )}
 
                     {addonSubtotal > 0 && (
-                      <div className="flex items-center justify-between text-caption pt-2 border-t border-[var(--brd)]">
+                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-[var(--brd)]">
                         <span className="text-[var(--tx3)]">Add-ons</span>
                         <span className="text-[var(--tx)] font-medium">+{fmtPrice(addonSubtotal)}</span>
                       </div>
@@ -1465,7 +1447,7 @@ export default function QuoteFormClient({
 
             {/* ── Quote metadata ── */}
             {quoteResult && (
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-caption">
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-[11px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Quote ID</span>
                   <span className="font-mono font-bold text-[var(--tx)]">{quoteResult.quote_id}</span>
@@ -1497,8 +1479,8 @@ export default function QuoteFormClient({
 
             {/* ── Labour estimate (coordinator-only) ── */}
             {quoteResult?.labour && (
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-caption">
-                <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">Labour Estimate</h4>
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Labour Estimate</h4>
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">{quoteResult.labour.crewSize} movers <span className="text-[var(--tx3)]">(recommended)</span></span>
@@ -1512,7 +1494,7 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx)]">1 × {quoteResult.labour.truckSize}</span>
                 </div>
                 {quoteResult.inventory && quoteResult.inventory.modifier !== 1.0 && (
-                  <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-label">
+                  <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
                     <span className="text-[var(--tx3)]">
                       Inventory volume
                       <span className="ml-1 text-[var(--tx)]">
@@ -1529,8 +1511,8 @@ export default function QuoteFormClient({
 
             {/* ── Fleet allocation (after generate) ── */}
             {quoteResult?.truck?.primary && (
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-caption">
-                <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">Fleet Allocation</h4>
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Fleet Allocation</h4>
                 <div className="flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <div>
@@ -1548,15 +1530,15 @@ export default function QuoteFormClient({
                   </div>
                 )}
                 {quoteResult.truck.notes && (
-                  <p className="text-label text-[var(--tx3)] italic">{quoteResult.truck.notes}</p>
+                  <p className="text-[10px] text-[var(--tx3)] italic">{quoteResult.truck.notes}</p>
                 )}
               </div>
             )}
 
             {/* ── Valuation protection (after generate) ── */}
             {quoteResult?.valuation && (
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-caption">
-                <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
                 {["essentials", "premier", "estate"].map((pkg) => {
                   const included = { essentials: "Released Value", premier: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
                   const upgrade = quoteResult.valuation?.upgrades?.[pkg];
@@ -1575,8 +1557,8 @@ export default function QuoteFormClient({
 
             {/* ── Live inventory score (before generate) ── */}
             {!quoteResult && inventoryItems.length > 0 && (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && (
-              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-caption">
-                <h4 className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory Summary</h4>
+              <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-[11px]">
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory Summary</h4>
                 <div className="flex items-center justify-between">
                   <span className="text-[var(--tx3)]">Items</span>
                   <span className="text-[var(--tx)] font-medium">{inventoryTotalItems}</span>
@@ -1585,7 +1567,7 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx3)]">Item score</span>
                   <span className="text-[var(--tx)] font-medium tabular-nums">{inventoryScore.toFixed(1)}</span>
                 </div>
-                <p className="text-section text-[var(--tx3)] italic">Generate quote to see volume modifier and labour estimate.</p>
+                <p className="text-[9px] text-[var(--tx3)] italic">Generate quote to see volume modifier and labour estimate.</p>
               </div>
             )}
           </div>
@@ -1617,32 +1599,32 @@ function TiersDisplay({ tiers }: { tiers: Record<string, TierResult> }) {
           <div key={name} className={`rounded-xl border-2 ${c.border} ${c.bg} p-5 space-y-2`}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className={`text-body font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
+                <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
                 {isPremier && (
-                  <span className="text-micro font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                     Recommended
                   </span>
                 )}
               </div>
               <span className={`text-3xl font-black tabular-nums ${c.accent}`}>{fmtPrice(t.price)}</span>
             </div>
-            <div className="flex items-center justify-between text-caption text-[var(--tx3)]">
+            <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
               <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
               <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
             </div>
-            <div className="flex items-center justify-between text-caption">
+            <div className="flex items-center justify-between text-[11px]">
               <span className="text-[var(--tx3)]">Deposit to book</span>
               <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
             </div>
             {t.includes.length > 0 && (
               <details className="group">
-                <summary className="text-section font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+                <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
                   <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
                   What&apos;s included ▾
                 </summary>
                 <ul className="mt-1.5 space-y-0.5 pl-5">
                   {t.includes.map((inc, i) => (
-                    <li key={i} className="text-label text-[var(--tx2)] flex items-start gap-1.5">
+                    <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
                       <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
                       {inc}
                     </li>
@@ -1661,26 +1643,26 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-body font-bold text-[#B8962E] capitalize">{label}</span>
+        <span className="text-[13px] font-bold text-[#B8962E] capitalize">{label}</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
-      <div className="flex items-center justify-between text-caption text-[var(--tx3)]">
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
         <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
       </div>
-      <div className="flex items-center justify-between text-caption">
+      <div className="flex items-center justify-between text-[11px]">
         <span className="text-[var(--tx3)]">Deposit to book</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
       {t.includes.length > 0 && (
         <details className="group">
-          <summary className="text-section font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+          <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
             What&apos;s included ▾
           </summary>
           <ul className="mt-1.5 space-y-0.5 pl-5">
             {t.includes.map((inc, i) => (
-              <li key={i} className="text-label text-[var(--tx2)] flex items-start gap-1.5">
+              <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
                 <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
                 {inc}
               </li>
@@ -1700,20 +1682,20 @@ function OptimisticTiers({ est }: { est: { essentials: number; premier: number; 
   ];
   return (
     <div className="space-y-2">
-      <p className="text-section font-bold uppercase tracking-wider text-[var(--tx3)]">Estimated Pricing</p>
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Estimated Pricing</p>
       {tiers.map((t) => {
         const tax = Math.round(t.price * TAX_RATE);
         return (
           <div key={t.name} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-            <span className="text-ui font-semibold text-[var(--tx)]">{t.name}</span>
+            <span className="text-[12px] font-semibold text-[var(--tx)]">{t.name}</span>
             <div className="text-right">
-              <span className="text-h3 font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
-              <span className="text-section text-[var(--tx3)] ml-1.5">+{fmtPrice(tax)} HST</span>
+              <span className="text-[16px] font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
+              <span className="text-[9px] text-[var(--tx3)] ml-1.5">+{fmtPrice(tax)} HST</span>
             </div>
           </div>
         );
       })}
-      <p className="text-section text-[var(--tx3)] italic text-center">
+      <p className="text-[9px] text-[var(--tx3)] italic text-center">
         Estimate only — generate quote for exact pricing with distance, date &amp; access factors
       </p>
     </div>
@@ -1737,13 +1719,13 @@ function FactorsDisplay({
   return (
     <div className="space-y-1.5">
       {distance != null && (
-        <div className="flex items-center justify-between text-label">
+        <div className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">Distance</span>
           <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
         </div>
       )}
       {entries.map(([key, val]) => (
-        <div key={key} className="flex items-center justify-between text-label">
+        <div key={key} className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">{toTitleCase(key)}</span>
           <span className="text-[var(--tx)] font-medium">
             {showMultipliers
@@ -1781,7 +1763,7 @@ function FactorsDisplayCollapsible({
 
   return (
     <details className="pt-3 border-t border-[var(--brd)] group" defaultValue={undefined}>
-      <summary className="text-section font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+      <summary className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
         <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
         Factors applied
       </summary>

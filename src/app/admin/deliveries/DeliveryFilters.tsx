@@ -63,7 +63,7 @@ export default function DeliveryFilters({
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`sidebar-nav-lift flex-1 text-center py-[7px] text-label font-bold border-b-2 rounded-t-lg cursor-pointer
+            className={`sidebar-nav-lift flex-1 text-center py-[7px] text-[10px] font-bold border-b-2 rounded-t-lg cursor-pointer
               ${filter === tab.key
                 ? "text-[var(--gold)] border-[var(--gold)]"
                 : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
@@ -90,23 +90,23 @@ export default function DeliveryFilters({
               <Icon name={CATEGORY_ICONS[d.category] || "package"} className="w-[16px] h-[16px]" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-caption font-semibold break-words line-clamp-2">
+              <div className="text-[11px] font-semibold break-words line-clamp-2">
                 {d.customer_name} ({d.client_name})
               </div>
-              <div className="text-section text-[var(--tx3)] truncate max-w-[200px] sm:max-w-none">
+              <div className="text-[9px] text-[var(--tx3)] truncate max-w-[200px] sm:max-w-none">
                 {d.items?.length || 0} items • {d.delivery_number}
               </div>
             </div>
-            <div className="hidden sm:block text-label text-[var(--tx3)] shrink-0 text-right">
+            <div className="hidden sm:block text-[10px] text-[var(--tx3)] shrink-0 text-right">
               <div>{formatMoveDate(d.scheduled_date)}</div>
               <div>{d.time_slot}</div>
             </div>
-            <div className="sm:hidden text-section text-[var(--tx3)] shrink-0">{formatMoveDate(d.scheduled_date)}</div>
+            <div className="sm:hidden text-[9px] text-[var(--tx3)] shrink-0">{formatMoveDate(d.scheduled_date)}</div>
             <Badge status={d.status} />
           </Link>
         ))}
         {filtered.length === 0 && (
-          <div className="px-4 py-12 text-center text-ui text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
+          <div className="px-4 py-12 text-center text-[12px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-xl">
             No deliveries {filter === "today" ? "today" : filter === "pending" ? "pending" : "yet"}
           </div>
         )}

@@ -92,7 +92,7 @@ export default function YugoLogo({
 
 export function BetaBadge({ className = "" }: { className?: string }) {
   return (
-    <span className={`text-nano font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50 ${className}`}>
+    <span className={`text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50 ${className}`}>
       BETA
     </span>
   );

@@ -53,7 +53,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
   if (clients.length === 0) {
     return (
       <tr>
-        <td colSpan={6} className="px-4 py-12 text-center text-ui text-[var(--tx3)]">
+        <td colSpan={6} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
           No clients yet. <Link href="/admin/clients/new" className="text-[var(--gold)] hover:underline">Add one</Link>
         </td>
       </tr>
@@ -74,23 +74,23 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
         >
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
-              <span className="text-label font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
+              <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
               {(() => {
                 const hasBalance = (c.outstanding_balance ?? 0) > 0;
                 const isActive = Number(c.deliveries_per_month ?? 0) > 0;
-                if (hasBalance) return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>;
-                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
-                return <span className="inline-flex px-2 py-[2px] rounded text-micro font-bold bg-[var(--bg)] text-[var(--tx3)]">Inactive</span>;
+                if (hasBalance) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>;
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--bg)] text-[var(--tx3)]">Inactive</span>;
               })()}
             </div>
           </td>
-          <td className="px-3 py-2 text-label capitalize border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>
+          <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>
           <td className="hidden sm:table-cell px-3 py-2 border-b border-[var(--brd)]">
-            <div className="text-section">{c.contact_name}</div>
-            <div className="text-section text-[var(--tx3)]">{c.email}</div>
+            <div className="text-[9px]">{c.contact_name}</div>
+            <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
           </td>
-          <td className="hidden md:table-cell px-3 py-2 text-label border-b border-[var(--brd)]">{c.deliveries_per_month ?? "—"}</td>
-          <td className="px-3 py-2 text-label border-b border-[var(--brd)]">
+          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month ?? "—"}</td>
+          <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
             {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
           </td>
           <td className="px-3 py-2 border-b border-[var(--brd)] w-10" onClick={(e) => e.stopPropagation()}>
@@ -109,14 +109,14 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
                   <Link
                     href={`/admin/clients/${c.id}`}
-                    className="block w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
+                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
                     onClick={() => setMenuOpenId(null)}
                   >
                     View
                   </Link>
                   <Link
                     href={`/admin/clients/${c.id}?edit=1`}
-                    className="block w-full text-left px-3 py-2 text-label font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
+                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
                     onClick={() => setMenuOpenId(null)}
                   >
                     Edit
@@ -124,7 +124,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpenId(null); setDeleteConfirmId(c.id); }}
-                    className="w-full text-left px-3 py-2 text-label font-medium text-[var(--red)] hover:bg-[var(--rdim)]"
+                    className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--rdim)]"
                   >
                     Delete
                   </button>
@@ -140,20 +140,20 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
         createPortal(
           <ModalOverlay open onClose={() => setDeleteConfirmId(null)} title="Delete client?" maxWidth="sm">
             <div className="p-5 space-y-4">
-              <p className="text-ui text-[var(--tx2)]">
+              <p className="text-[12px] text-[var(--tx2)]">
                 This will remove the client from the list. Moves or invoices linked to them will not be deleted. Continue?
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
-                  className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirmId)}
                   disabled={deleting}
-                  className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>

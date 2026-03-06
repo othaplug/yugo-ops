@@ -216,25 +216,25 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
       {/* KPI Cards - real data */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{currentMonthLabel} Revenue</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{currentMonthLabel} Revenue</div>
           <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
-          {currentMonthRevenue > 0 && <div className="text-micro text-[var(--tx3)] mt-0.5">Before HST</div>}
+          {currentMonthRevenue > 0 && <div className="text-[8px] text-[var(--tx3)] mt-0.5">Before HST</div>}
           {pctChange !== 0 && (
-            <div className={`text-label font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
+            <div className={`text-[10px] font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
               {pctChange >= 0 ? "↑" : "↓"}{Math.abs(pctChange)}% vs last month
             </div>
           )}
         </Link>
         <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">YTD</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">YTD</div>
           <div className="text-xl font-bold font-heading">{formatCompactCurrency(ytdRevenue)}</div>
         </Link>
         <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
           <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(outstanding)}</div>
         </Link>
         <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg Job</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg Job</div>
           <div className="text-xl font-bold font-heading">{formatCompactCurrency(avgJob)}</div>
         </Link>
       </div>
@@ -242,17 +242,17 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
       {/* Revenue breakdown: Move vs Invoice */}
       {(invoiceRevenue > 0 || moveRevenue > 0) && (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-6">
-          <h3 className="font-heading text-body font-bold text-[var(--tx)] mb-3">Revenue by Source</h3>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Revenue by Source</h3>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[var(--gold)]" />
-              <span className="text-caption text-[var(--tx2)]">Invoice payments</span>
-              <span className="text-caption font-bold text-[var(--tx)]">{formatCurrency(invoiceRevenue)}</span>
+              <span className="text-[11px] text-[var(--tx2)]">Invoice payments</span>
+              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(invoiceRevenue)}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[var(--grn)]" />
-              <span className="text-caption text-[var(--tx2)]">Move payments</span>
-              <span className="text-caption font-bold text-[var(--tx)]">{formatCurrency(moveRevenue)}</span>
+              <span className="text-[11px] text-[var(--tx2)]">Move payments</span>
+              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(moveRevenue)}</span>
             </div>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
 
       {/* Revenue Trend - real interactive chart */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6">
-        <h3 className="font-heading text-h3-sm font-bold text-[var(--tx)] mb-1">
+        <h3 className="font-heading text-[15px] font-bold text-[var(--tx)] mb-1">
           Revenue Trend{period === "monthly" ? ` — ${now.toLocaleString("en-US", { month: "long", year: "numeric" })}` : ` — ${now.getFullYear()}`}
         </h3>
         <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -269,7 +269,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
               <button
                 key={opt.key}
                 onClick={() => setPeriod(opt.key)}
-                className={`px-3 py-1.5 rounded-full text-label font-semibold transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 ${
                   period === opt.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
                 }`}
               >
@@ -322,7 +322,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-body text-[var(--tx3)]">
+            <div className="h-full flex items-center justify-center text-[13px] text-[var(--tx3)]">
               No paid revenue in this period. Revenue appears when invoices are marked paid or moves are marked paid.
             </div>
           )}
@@ -332,8 +332,8 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
       {/* By Type + Top Clients */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-          <h3 className="font-heading text-body font-bold text-[var(--tx)] mb-4">By Type</h3>
-          <p className="text-label text-[var(--tx3)] mb-3">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">By Type</h3>
+          <p className="text-[10px] text-[var(--tx3)] mb-3">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
           <div className="space-y-3">
             {byType.map((t) => (
                 <button
@@ -343,8 +343,8 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
                   className="block w-full text-left group"
                 >
                   <div className="flex justify-between mb-1">
-                    <span className="text-caption font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{t.label}</span>
-                    <span className="text-caption font-bold text-[var(--tx)]">{formatCurrency(t.amount)}</span>
+                    <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{t.label}</span>
+                    <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(t.amount)}</span>
                   </div>
                   <div className="h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
                     <div
@@ -359,8 +359,8 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
 
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-heading text-body font-bold text-[var(--tx)]">Top Clients</h3>
-            <Link href="/admin/clients" className="text-label font-semibold text-[var(--gold)] hover:underline">
+            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Top Clients</h3>
+            <Link href="/admin/clients" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
               View all →
             </Link>
           </div>
@@ -375,13 +375,13 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
                     href={href}
                     className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg border border-transparent border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] hover:border-[var(--gold)]/40 hover:shadow-md hover:scale-[1.02] transition-all duration-200"
                   >
-                    <span className="text-caption font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
-                    <span className="text-caption font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
+                    <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
+                    <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
                   </Link>
                 );
               })
             ) : (
-              <div className="text-caption text-[var(--tx3)] py-4">No paid invoices or moves yet</div>
+              <div className="text-[11px] text-[var(--tx3)] py-4">No paid invoices or moves yet</div>
             )}
           </div>
         </div>
@@ -393,14 +393,14 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedType(null)} aria-hidden="true" />
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--brd)] shrink-0">
-              <h3 className="font-heading text-body font-bold text-[var(--tx)]">
+              <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
                 Invoices — {byType.find((t) => t.key === selectedType)?.label ?? selectedType}
               </h3>
               <div className="flex items-center gap-2">
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="text-label bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[var(--tx)]"
+                  className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[var(--tx)]"
                 >
                   {byType.map((t) => (
                     <option key={t.key} value={t.key}>{t.label}</option>
@@ -409,7 +409,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
                 <button
                   type="button"
                   onClick={() => setSelectedType(null)}
-                  className="text-label font-semibold text-[var(--gold)] hover:underline"
+                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                 >
                   View all
                 </button>
@@ -420,7 +420,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
               {invoicesByType.length > 0 ? (
                 <ul className="space-y-2">
                   {invoicesByType.map((inv) => (
-                    <li key={inv.id} className="flex items-center justify-between py-2 border-b border-[var(--brd)] last:border-0 text-caption">
+                    <li key={inv.id} className="flex items-center justify-between py-2 border-b border-[var(--brd)] last:border-0 text-[11px]">
                       <span className="font-mono font-semibold text-[var(--tx)]">{inv.invoice_number}</span>
                       <span className="text-[var(--tx2)]">{inv.client_name}</span>
                       <span className="font-bold text-[var(--tx)]">{formatCurrency(inv.amount)}</span>
@@ -428,7 +428,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
                   ))}
                 </ul>
               ) : (
-                <p className="text-caption text-[var(--tx3)]">No invoices for this type.</p>
+                <p className="text-[11px] text-[var(--tx3)]">No invoices for this type.</p>
               )}
             </div>
           </div>

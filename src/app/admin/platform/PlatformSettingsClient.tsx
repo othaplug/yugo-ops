@@ -99,15 +99,15 @@ function ReadinessChecklistSection() {
     setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, label } : x)));
   };
 
-  if (loading) return <div className="py-6"><p className="text-ui text-[var(--tx3)]">Loading…</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading…</p></div>;
 
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="clipboard" className="w-[14px] h-[14px]" /> Readiness Checklist
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Configure items for crew pre-trip readiness check</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Configure items for crew pre-trip readiness check</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="space-y-2">
@@ -116,7 +116,7 @@ function ReadinessChecklistSection() {
               <input
                 value={item.label}
                 onChange={(e) => updateItem(i, e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-body text-[var(--tx)]"
+                className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)]"
               />
               <button
                 type="button"
@@ -135,13 +135,13 @@ function ReadinessChecklistSection() {
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())}
             placeholder="Add new item..."
-            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-body text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]"
           />
           <button
             type="button"
             onClick={addItem}
             disabled={!newLabel.trim()}
-            className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
           >
             Add
           </button>
@@ -150,7 +150,7 @@ function ReadinessChecklistSection() {
           type="button"
           onClick={handleSave}
           disabled={saving || items.length === 0}
-          className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save checklist"}
         </button>
@@ -224,20 +224,20 @@ function AuditLogSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="clipboard" className="w-[14px] h-[14px]" /> Audit Log
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Platform activity and access history</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Platform activity and access history</p>
       </div>
 
       {/* Filter bar */}
       <div className="py-3 border-b border-[var(--brd)]/30 flex flex-wrap items-center gap-3">
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Action</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Action</label>
           <select
             value={filters.action}
             onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value }))}
-            className="px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-caption text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+            className="px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
           >
             <option value="">All</option>
             {ACTION_OPTIONS.map((a) => (
@@ -246,28 +246,28 @@ function AuditLogSection() {
           </select>
         </div>
         <div className="flex-1 min-w-[160px]">
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Search</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Search</label>
           <input
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             placeholder="Filter by email or resource..."
-            className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-caption text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]"
+            className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]"
           />
         </div>
       </div>
 
       <div className="py-4">
         {loading ? (
-          <div className="py-8 text-center text-ui text-[var(--tx3)]">Loading audit log…</div>
+          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading audit log…</div>
         ) : filtered.length === 0 ? (
-          <div className="py-8 text-center text-ui text-[var(--tx3)]">No entries found</div>
+          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">No entries found</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-[var(--brd)]">
                   {["Time", "User", "Role", "Action", "Resource", "Details"].map((h) => (
-                    <th key={h} className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] pb-2 pr-4 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] pb-2 pr-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -279,21 +279,21 @@ function AuditLogSection() {
                   const hasDetails = log.details && Object.keys(log.details).length > 0;
                   return (
                     <tr key={log.id} className="border-b border-[var(--brd)] last:border-0">
-                      <td className="text-caption text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
-                      <td className="text-caption text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
+                      <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
+                      <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-section font-semibold px-2 py-0.5 rounded ${roleCls}`}>{log.role}</span>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{log.role}</span>
                       </td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-section font-semibold px-2 py-0.5 rounded ${actionCls}`}>{log.action}</span>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{log.action}</span>
                       </td>
-                      <td className="text-caption text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "—"}</td>
-                      <td className="text-caption text-[var(--tx3)] py-2.5">
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "—"}</td>
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5">
                         {hasDetails ? (
                           <button
                             type="button"
                             onClick={() => setExpandedRow(isExpanded ? null : log.id)}
-                            className="text-label font-semibold text-[var(--gold)] hover:underline"
+                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                           >
                             {isExpanded ? "Hide" : "View"}
                           </button>
@@ -301,7 +301,7 @@ function AuditLogSection() {
                           "—"
                         )}
                         {isExpanded && hasDetails && (
-                          <pre className="mt-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-label text-[var(--tx3)] whitespace-pre-wrap break-all max-w-[320px] overflow-auto max-h-[160px]">
+                          <pre className="mt-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] whitespace-pre-wrap break-all max-w-[320px] overflow-auto max-h-[160px]">
                             {JSON.stringify(log.details, null, 2)}
                           </pre>
                         )}
@@ -386,7 +386,7 @@ function BusinessInfoSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-ui text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const fields = [
     { key: "company_name", label: "Company Name", placeholder: "YUGO" },
@@ -402,27 +402,27 @@ function BusinessInfoSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="building" className="w-[14px] h-[14px]" /> Business Information
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Company details used across quotes, invoices, and emails</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, and emails</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => (
             <div key={f.key}>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{f.label}</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{f.label}</label>
               <input
                 type="text"
                 value={config[f.key] || ""}
                 onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
               />
             </div>
           ))}
         </div>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Business Info"}
         </button>
       </div>
@@ -465,48 +465,48 @@ function QuotingDefaultsSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-ui text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Default settings for quote generation</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Default settings for quote generation</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
-            <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
+            <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Default Deposit %</label>
-            <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Default Deposit %</label>
+            <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
-            <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
+            <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
-            <input type="text" value={config.quote_id_prefix || "YGO-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
+            <input type="text" value={config.quote_id_prefix || "YGO-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
-            <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
+            <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div className="flex items-end">
-            <label className="flex items-center gap-2 text-ui text-[var(--tx)]">
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
               <input type="checkbox" checked={config.auto_followup_enabled === "true"} onChange={(e) => setConfig((p) => ({ ...p, auto_followup_enabled: e.target.checked ? "true" : "false" }))} className="accent-[var(--gold)]" />
               Auto-send follow-up
             </label>
           </div>
         </div>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Quoting Defaults"}
         </button>
       </div>
@@ -543,7 +543,7 @@ function FeatureTogglesSection() {
 
   const [embedCopied, setEmbedCopied] = useState(false);
 
-  if (loading) return <div className="py-6"><p className="text-ui text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const features = [
     { key: "tipping_enabled", label: "Tipping System", desc: "Allow clients to tip crew after move completion" },
@@ -589,10 +589,10 @@ function FeatureTogglesSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Enable or disable platform features</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Enable or disable platform features</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
       <div className="px-5 py-5 space-y-0">
@@ -602,8 +602,8 @@ function FeatureTogglesSection() {
             <div key={f.key}>
               <div className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
                 <div>
-                  <div className="text-body font-semibold text-[var(--tx)]">{f.label}</div>
-                  <div className="text-caption text-[var(--tx3)] mt-0.5">{f.desc}</div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{f.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{f.desc}</div>
                 </div>
                 <button
                   type="button"
@@ -619,37 +619,37 @@ function FeatureTogglesSection() {
                 <div className="py-4 px-1 border-b border-[var(--brd)] space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-caption font-bold text-[var(--tx2)]">Embed Code (JavaScript)</div>
-                      <button type="button" onClick={() => copyEmbed(embedCode)} className="text-label font-semibold text-[var(--gold)] hover:underline">
+                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (JavaScript)</div>
+                      <button type="button" onClick={() => copyEmbed(embedCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
                         {embedCopied ? "Copied!" : "Copy"}
                       </button>
                     </div>
-                    <p className="text-label text-[var(--tx3)] mb-2">
+                    <p className="text-[10px] text-[var(--tx3)] mb-2">
                       Paste this into your website HTML where you want the quote calculator to appear. It loads asynchronously and matches your brand styling.
                     </p>
-                    <pre className="text-label leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
+                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
                       {embedCode}
                     </pre>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-caption font-bold text-[var(--tx2)]">Embed Code (iframe)</div>
-                      <button type="button" onClick={() => copyEmbed(iframeCode)} className="text-label font-semibold text-[var(--gold)] hover:underline">
+                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (iframe)</div>
+                      <button type="button" onClick={() => copyEmbed(iframeCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
                         Copy
                       </button>
                     </div>
-                    <p className="text-label text-[var(--tx3)] mb-2">
+                    <p className="text-[10px] text-[var(--tx3)] mb-2">
                       Simpler option — embeds the quote form in an iframe. No JavaScript required.
                     </p>
-                    <pre className="text-label leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
+                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
                       {iframeCode}
                     </pre>
                   </div>
 
                   <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
-                    <div className="text-label font-semibold text-amber-400 mb-0.5">Note</div>
-                    <div className="text-label text-[var(--tx3)] leading-relaxed">
+                    <div className="text-[10px] font-semibold text-amber-400 mb-0.5">Note</div>
+                    <div className="text-[10px] text-[var(--tx3)] leading-relaxed">
                       The widget page at <span className="font-mono text-[var(--tx2)]">/widget/quote</span> needs to be built for this to work. The embed codes above will render a YUGO-branded quote calculator that submits directly to your quoting system.
                     </div>
                   </div>
@@ -709,7 +709,7 @@ function EmailTemplatesSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-ui text-[var(--tx3)]">Loading...</p></div>;
+  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const previewTpl = templates.find((t) => t.template_slug === previewSlug);
 
@@ -717,23 +717,23 @@ function EmailTemplatesSection() {
     <>
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
         </h2>
-        <p className="text-caption text-[var(--tx3)] mt-1">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
       </div>
       <div className="space-y-2">
         {templates.length === 0 ? (
-          <p className="text-ui text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
+          <p className="text-[12px] text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
         ) : templates.map((tpl) => (
           <div key={tpl.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/30 transition-colors">
             <div>
-              <div className="text-body font-medium text-[var(--tx)]">{SLUG_LABELS[tpl.template_slug] || tpl.template_slug}</div>
-              <div className="text-caption text-[var(--tx3)] mt-0.5 truncate max-w-[300px]">{tpl.subject}</div>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{SLUG_LABELS[tpl.template_slug] || tpl.template_slug}</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate max-w-[300px]">{tpl.subject}</div>
             </div>
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]">Preview</button>
-              <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="px-2.5 py-1 rounded text-label font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10">Edit</button>
+              <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]">Preview</button>
+              <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10">Edit</button>
             </div>
           </div>
         ))}
@@ -745,26 +745,26 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setEditing(null)} title={`Edit: ${SLUG_LABELS[editing.template_slug] || editing.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject Line</label>
-            <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject Line</label>
+            <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body (HTML)</label>
-            <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-ui text-[var(--tx)] font-mono focus:border-[var(--gold)] outline-none resize-y" />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body (HTML)</label>
+            <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] font-mono focus:border-[var(--gold)] outline-none resize-y" />
           </div>
           {editing.merge_variables?.length > 0 && (
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
               <div className="flex flex-wrap gap-1.5">
                 {editing.merge_variables.map((v: string) => (
-                  <span key={v} className="text-label px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[var(--gold)] font-mono">{`{{${v}}}`}</span>
+                  <span key={v} className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[var(--gold)] font-mono">{`{{${v}}}`}</span>
                 ))}
               </div>
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">{saving ? "Saving..." : "Save Template"}</button>
+            <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Cancel</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">{saving ? "Saving..." : "Save Template"}</button>
           </div>
         </div>
       </ModalOverlay>
@@ -775,14 +775,14 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setPreviewSlug(null)} title={`Preview: ${SLUG_LABELS[previewTpl.template_slug] || previewTpl.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
-            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
+            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
-            <div className="px-4 py-3 bg-white rounded-lg text-body text-gray-800" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
+            <div className="px-4 py-3 bg-white rounded-lg text-[13px] text-gray-800" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
           </div>
-          <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
+          <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
         </div>
       </ModalOverlay>
     )}
@@ -1106,7 +1106,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <Link
             key={t.id}
             href={`/admin/platform?tab=${t.id}`}
-            className={`sidebar-nav-lift text-ui font-semibold px-3 py-1.5 rounded-lg ${
+            className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
               activeTab === t.id
                 ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                 : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
@@ -1127,33 +1127,33 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 scroll-mt-4">
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-label font-bold shrink-0">1</span>
-              <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
                 <Icon name="users" className="w-[14px] h-[14px]" /> Staff Roster
               </h2>
             </div>
-            <p className="text-caption text-[var(--tx3)] ml-7">Everyone who works at Yugo. Add new hires here first, then assign them to teams below.</p>
+            <p className="text-[11px] text-[var(--tx3)] ml-7">Everyone who works at Yugo. Add new hires here first, then assign them to teams below.</p>
           </div>
           <div className="space-y-4">
             {/* Add new staff */}
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[140px]">
-                <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Full Name</label>
+                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Full Name</label>
                 <input
                   type="text"
                   value={addStaffName}
                   onChange={(e) => setAddStaffName(e.target.value)}
                   placeholder="e.g. Marcus Johnson"
-                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-ui text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
+                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
                   onKeyDown={(e) => { if (e.key === "Enter") handleAddStaff(); }}
                 />
               </div>
               <div className="min-w-[100px]">
-                <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Role</label>
+                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Role</label>
                 <select
                   value={addStaffRole}
                   onChange={(e) => setAddStaffRole(e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-ui text-[var(--tx)] outline-none focus:border-[var(--gold)]/50"
+                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] outline-none focus:border-[var(--gold)]/50"
                 >
                   <option value="mover">Mover</option>
                   <option value="driver">Driver</option>
@@ -1167,7 +1167,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 type="button"
                 onClick={handleAddStaff}
                 disabled={!addStaffName.trim() || addStaffSaving}
-                className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {addStaffSaving ? "Adding..." : "+ Add Employee"}
               </button>
@@ -1175,32 +1175,32 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
             {/* Active staff list */}
             {staffLoading ? (
-              <p className="text-ui text-[var(--tx3)]">Loading staff roster...</p>
+              <p className="text-[12px] text-[var(--tx3)]">Loading staff roster...</p>
             ) : staffRoster.filter((s) => s.is_active).length === 0 ? (
               <div className="py-6 text-center">
-                <p className="text-body text-[var(--tx3)]">No staff yet. Add your first employee above.</p>
+                <p className="text-[13px] text-[var(--tx3)]">No staff yet. Add your first employee above.</p>
               </div>
             ) : (
               <>
-                <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees ({staffRoster.filter((s) => s.is_active).length})</div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees ({staffRoster.filter((s) => s.is_active).length})</div>
                 <div className="space-y-1.5">
                   {staffRoster.filter((s) => s.is_active).map((s) => {
                     const memberOfTeams = teams.filter((t) => t.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
                     return (
                       <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
                         <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <span className="text-ui font-semibold text-[var(--tx)]">{s.name}</span>
-                          <span className="text-section px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold capitalize shrink-0">{s.role}</span>
-                          {s.hourly_rate != null && <span className="text-section text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
+                          <span className="text-[12px] font-semibold text-[var(--tx)]">{s.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold capitalize shrink-0">{s.role}</span>
+                          {s.hourly_rate != null && <span className="text-[9px] text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
                           {memberOfTeams.length > 0 ? (
-                            <span className="text-section text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
+                            <span className="text-[9px] text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
                           ) : (
-                            <span className="text-section text-[var(--tx3)] italic shrink-0">Not on a team</span>
+                            <span className="text-[9px] text-[var(--tx3)] italic shrink-0">Not on a team</span>
                           )}
                           {s.specialties && s.specialties.length > 0 && (
                             <span className="flex items-center gap-1 flex-wrap">
                               {s.specialties.map((sp) => (
-                                <span key={sp} className="text-micro px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium capitalize shrink-0">{sp.replace(/_/g, " ")}</span>
+                                <span key={sp} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium capitalize shrink-0">{sp.replace(/_/g, " ")}</span>
                               ))}
                             </span>
                           )}
@@ -1215,14 +1215,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                               setEditStaffPhone(s.phone || "");
                               setEditStaffEmail(s.email || "");
                             }}
-                            className="px-2.5 py-1 rounded text-label font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)] transition-all"
+                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)] transition-all"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeactivateStaff(s)}
-                            className="px-2.5 py-1 rounded text-label font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400 transition-all"
+                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400 transition-all"
                           >
                             Remove
                           </button>
@@ -1240,7 +1240,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 <button
                   type="button"
                   onClick={() => setShowInactiveStaff(!showInactiveStaff)}
-                  className="flex items-center gap-1.5 text-caption font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
                 >
                   <svg className={`w-3 h-3 transition-transform ${showInactiveStaff ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
                   Former / Inactive ({inactiveStaff.length})
@@ -1250,15 +1250,15 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     {inactiveStaff.map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] opacity-70">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-ui text-[var(--tx3)] line-through">{s.name}</span>
-                          <span className="text-section px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 font-semibold">Inactive</span>
+                          <span className="text-[12px] text-[var(--tx3)] line-through">{s.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 font-semibold">Inactive</span>
                           {s.deactivated_at && (
-                            <span className="text-section text-[var(--tx3)]">since {new Date(s.deactivated_at).toLocaleDateString()}</span>
+                            <span className="text-[9px] text-[var(--tx3)]">since {new Date(s.deactivated_at).toLocaleDateString()}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button type="button" onClick={() => handleReactivateStaff(s)} className="px-2 py-1 rounded text-label font-semibold text-[var(--gold)] hover:bg-[var(--gdim)] transition-all">Rehire</button>
-                          <button type="button" onClick={() => setConfirmDeleteStaff(s)} className="px-2 py-1 rounded text-label font-semibold text-red-400 hover:bg-red-500/10 transition-all">Delete forever</button>
+                          <button type="button" onClick={() => handleReactivateStaff(s)} className="px-2 py-1 rounded text-[10px] font-semibold text-[var(--gold)] hover:bg-[var(--gdim)] transition-all">Rehire</button>
+                          <button type="button" onClick={() => setConfirmDeleteStaff(s)} className="px-2 py-1 rounded text-[10px] font-semibold text-red-400 hover:bg-red-500/10 transition-all">Delete forever</button>
                         </div>
                       </div>
                     ))}
@@ -1274,29 +1274,29 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-label font-bold shrink-0">2</span>
-                <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Teams</h2>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
+                <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Teams</h2>
               </div>
               <div className="flex flex-nowrap items-center gap-2 sm:ml-auto">
                 <button
                   onClick={() => setAddTeamModalOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
                 >
                   + Create Team
                 </button>
                 <button
                   onClick={() => setAddTeamMemberOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
                 >
                   + Assign to Team
                 </button>
               </div>
             </div>
-            <p className="text-caption text-[var(--tx3)] mt-2 ml-7">Group staff into moving crews. Click a team to add/remove members, set leads, or delete.</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-2 ml-7">Group staff into moving crews. Click a team to add/remove members, set leads, or delete.</p>
           </div>
           <div className="space-y-3">
             {teams.length === 0 ? (
-              <div className="py-6 text-center"><p className="text-body text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
+              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
             ) : null}
           {teams.map((team, i) => (
             <div key={team.id} className="border border-[var(--brd)] rounded-lg overflow-hidden">
@@ -1305,8 +1305,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-[var(--bg)] transition-colors"
               >
                 <div>
-                  <div className="text-body font-semibold text-[var(--tx)]">{team.label}</div>
-                  <div className="text-caption text-[var(--tx3)] mt-0.5">
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{team.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">
                     {team.memberIds.length > 0 ? team.memberIds.join(", ") : "No members — click to add"}
                     {(() => {
                       const memberStaff = staffRoster.filter((s) => s.is_active && team.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
@@ -1314,7 +1314,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         const rates = memberStaff.filter((s) => s.hourly_rate != null).map((s) => s.hourly_rate!);
                         if (rates.length > 0) {
                           const avg = rates.reduce((a, b) => a + b, 0) / rates.length;
-                          return <span className="ml-2 text-section text-[var(--gold)]">Avg ${avg.toFixed(2)}/hr</span>;
+                          return <span className="ml-2 text-[9px] text-[var(--gold)]">Avg ${avg.toFixed(2)}/hr</span>;
                         }
                       }
                       return null;
@@ -1322,7 +1322,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   </div>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2 shrink-0">
-                  <span className={`text-section font-semibold px-2 py-0.5 rounded shrink-0 ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded shrink-0 ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
                     {team.active ? "Active" : "Inactive"}
                   </span>
                   <button
@@ -1367,11 +1367,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-4">
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Current Members</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Current Members</div>
                     {(team.memberIds ?? []).length > 0 ? (
                       <div className="flex flex-wrap gap-2 mb-3">
                         {(team.memberIds ?? []).map((member) => (
-                          <span key={member} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-caption font-medium bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)]">
+                          <span key={member} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)]">
                             {member}
                             <button
                               type="button"
@@ -1385,9 +1385,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         ))}
                       </div>
                     ) : (
-                      <p className="text-caption text-[var(--tx3)] mb-3">No members assigned.</p>
+                      <p className="text-[11px] text-[var(--tx3)] mb-3">No members assigned.</p>
                     )}
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Available Staff (click to add)</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Available Staff (click to add)</div>
                     <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto p-1">
                       {activeStaffNames.filter((m) => {
                         const norm = (s: string) => s.trim().toLowerCase();
@@ -1397,34 +1397,34 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                           key={m}
                           type="button"
                           onClick={() => toggleMember(i, m)}
-                          className="px-2.5 py-1 rounded-lg text-label font-medium border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
                         >
                           + {m}
                         </button>
                       ))}
                       {activeStaffNames.length === 0 && (
-                        <p className="text-label text-[var(--tx3)]">No staff in roster yet. Add employees in the Staff Roster section above first.</p>
+                        <p className="text-[10px] text-[var(--tx3)]">No staff in roster yet. Add employees in the Staff Roster section above first.</p>
                       )}
                       {activeStaffNames.length > 0 && activeStaffNames.filter((m) => {
                         const norm = (s: string) => s.trim().toLowerCase();
                         return !(team.memberIds ?? []).some((id) => norm(id) === norm(m));
                       }).length === 0 && (
-                        <p className="text-label text-[var(--tx3)]">All active staff are assigned to this team.</p>
+                        <p className="text-[10px] text-[var(--tx3)]">All active staff are assigned to this team.</p>
                       )}
                     </div>
                   </div>
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal access (who can log in on tablet)</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal access (who can log in on tablet)</div>
                     {crewPortalMembers.filter((m) => m.team_id === team.id && m.is_active).length === 0 ? (
-                      <p className="text-caption text-[var(--tx3)]">No one with portal access on this team. Use “+ Add Portal Access” above.</p>
+                      <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add Portal Access” above.</p>
                     ) : (
                       <ul className="space-y-1.5">
                         {crewPortalMembers
                           .filter((m) => m.team_id === team.id && m.is_active)
                           .map((m) => (
                             <li key={m.id} className="flex flex-nowrap items-center justify-between gap-2 py-1.5 px-2 rounded bg-[var(--card)] border border-[var(--brd)]">
-                              <span className="text-ui text-[var(--tx)] min-w-0 truncate">{m.name}</span>
-                              <span className="text-section font-semibold px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] shrink-0">{m.role === "lead" ? "Lead" : m.role}</span>
+                              <span className="text-[12px] text-[var(--tx)] min-w-0 truncate">{m.name}</span>
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] shrink-0">{m.role === "lead" ? "Lead" : m.role}</span>
                               {m.role !== "lead" && (
                                 <button
                                   type="button"
@@ -1439,7 +1439,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                                       toast(d.error || "Failed", "x");
                                     }
                                   }}
-                                  className="text-label font-semibold text-[var(--gold)] hover:underline"
+                                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                                 >
                                   Set as lead
                                 </button>
@@ -1471,7 +1471,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         }
                       }}
                       disabled={!!deletingTeamId}
-                      className="px-3 py-1.5 rounded-lg text-caption font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10 transition-all disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10 transition-all disabled:opacity-50"
                     >
                       {deletingTeamId === team.id ? "Deleting…" : "Delete team"}
                     </button>
@@ -1488,23 +1488,23 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-label font-bold shrink-0">3</span>
-                <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew Portal Access</h3>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew Portal Access</h3>
               </div>
-              <p className="text-caption text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
+              <p className="text-[11px] text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
             </div>
             <button
               onClick={() => setAddPortalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               + Add portal access
             </button>
           </div>
           <div className="px-5 py-4">
             {crewPortalLoading ? (
-              <p className="text-ui text-[var(--tx3)]">Loading…</p>
+              <p className="text-[12px] text-[var(--tx3)]">Loading…</p>
             ) : crewPortalMembers.filter((m) => m.is_active).length === 0 ? (
-              <div className="py-6 text-center"><p className="text-body text-[var(--tx3)]">No portal access set up yet.</p><p className="text-caption text-[var(--tx3)] mt-1">Click &quot;+ Add Portal Access&quot; to give someone a PIN.</p></div>
+              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No portal access set up yet.</p><p className="text-[11px] text-[var(--tx3)] mt-1">Click &quot;+ Add Portal Access&quot; to give someone a PIN.</p></div>
             ) : (
               <ul className="space-y-2">
                 {crewPortalMembers
@@ -1514,10 +1514,10 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     return (
                       <li key={m.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] flex-wrap">
                         <div>
-                          <span className="text-body font-medium text-[var(--tx)]">{m.name}</span>
-                          <span className="text-label text-[var(--tx3)] ml-2">({teamLabel})</span>
-                          <span className="text-section font-semibold ml-1.5 px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)]">{m.role === "lead" ? "Lead" : m.role}</span>
-                          <div className="text-caption text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "—"}</div>
+                          <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
+                          <span className="text-[10px] text-[var(--tx3)] ml-2">({teamLabel})</span>
+                          <span className="text-[9px] font-semibold ml-1.5 px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)]">{m.role === "lead" ? "Lead" : m.role}</span>
+                          <div className="text-[11px] text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "—"}</div>
                         </div>
                         <div className="flex flex-nowrap items-center gap-2 shrink-0">
                           {m.role !== "lead" && (
@@ -1534,7 +1534,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                                   toast(d.error || "Failed", "x");
                                 }
                               }}
-                              className="shrink-0 px-2.5 py-1 rounded text-label font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                              className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
                             >
                               Set as lead
                             </button>
@@ -1542,7 +1542,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                           <button
                             type="button"
                             onClick={() => { setResetPinMember(m); setResetPinValue(""); }}
-                            className="shrink-0 px-2.5 py-1 rounded text-label font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
                           >
                             Reset PIN
                           </button>
@@ -1559,7 +1559,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                                 toast(d.error || "Failed", "x");
                               }
                             }}
-                            className="shrink-0 px-2.5 py-1 rounded text-label font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10"
+                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10"
                           >
                             Revoke
                           </button>
@@ -1588,10 +1588,10 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <div id="app" className="space-y-0 scroll-mt-4">
       <section className="pt-0 first:pt-0">
         <div className="mb-4">
-          <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
             <Icon name="settings" className="w-[14px] h-[14px]" /> App
           </h2>
-          <p className="text-caption text-[var(--tx3)] mt-1">Platform-wide settings</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Platform-wide settings</p>
         </div>
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-5 space-y-4">
@@ -1634,8 +1634,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             return (
               <div key={item.label} className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
                 <div>
-                  <div className="text-body font-semibold text-[var(--tx)]">{item.label}</div>
-                  <div className="text-caption text-[var(--tx3)] mt-0.5">{item.desc}</div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{item.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{item.desc}</div>
                 </div>
                 <button
                   type="button"
@@ -1676,18 +1676,18 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Danger Zone - in App Settings */}
       <section className="pt-6 border-t border-[var(--brd)]/30">
         <div className="mb-4">
-          <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
             <Icon name="alertTriangle" className="w-[14px] h-[14px] text-[var(--red)]" /> Danger Zone
           </h2>
-          <p className="text-caption text-[var(--tx3)] mt-1">Irreversible platform actions</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Irreversible platform actions</p>
         </div>
         <div className="rounded-xl border border-[var(--red)]/20 bg-[rgba(209,67,67,0.04)] p-5 space-y-3">
           <div className="flex items-center justify-between py-3">
             <div>
-              <div className="text-body font-semibold text-[var(--tx)]">Reset All Settings</div>
-              <div className="text-caption text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">Reset All Settings</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5">Restore platform defaults</div>
             </div>
-            <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-caption font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
+            <button onClick={() => toast("Reset requires confirmation", "alertTriangle")} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--org)]/40 text-[var(--org)] hover:bg-[var(--ordim)] transition-all">
               Reset
             </button>
           </div>
@@ -1706,21 +1706,21 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
               <Icon name="lock" className="w-[14px] h-[14px]" /> User Management
             </h2>
-            <p className="text-caption text-[var(--tx3)] mt-1">Roles, permissions, and access control</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Roles, permissions, and access control</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Link
               href="/admin/users"
-              className="px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
             >
               View All Users
             </Link>
             <button
               onClick={() => setInviteUserOpen(true)}
-              className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
             >
               + Invite Team Member
             </button>
@@ -1728,17 +1728,17 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         </div>
         <div>
           {usersLoading ? (
-            <div className="py-8 text-center text-body text-[var(--tx3)]">Loading users…</div>
+            <div className="py-8 text-center text-[13px] text-[var(--tx3)]">Loading users…</div>
           ) : users.length === 0 ? (
             <div className="py-10 px-4 text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--gdim)] border border-[rgba(201,169,98,0.25)] mb-4">
                 <Icon name="users" className="w-6 h-6 text-[var(--gold)]" />
               </div>
-              <p className="text-title font-medium text-[var(--tx)] mb-1">No users yet</p>
-              <p className="text-ui text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
+              <p className="text-[14px] font-medium text-[var(--tx)] mb-1">No users yet</p>
+              <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}
-                className="px-6 py-3 rounded-lg text-body font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
               >
                 Invite your first user
               </button>
@@ -1753,18 +1753,18 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)] bg-[var(--bg)] hover:bg-[var(--card)] transition-all text-left"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-body font-semibold text-[var(--tx)] truncate">{u.name || u.email}</div>
-                    <div className="text-caption text-[var(--tx3)] truncate">{u.email}</div>
+                    <div className="text-[13px] font-semibold text-[var(--tx)] truncate">{u.name || u.email}</div>
+                    <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    <span className={`text-label font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : u.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : u.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
                       {u.status === "activated" ? "Active" : u.status === "pending" ? "Pending" : "Inactive"}
                     </span>
-                    <span className="text-label font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
                       {u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "coordinator" ? "Coordinator" : u.role === "viewer" ? "Viewer" : "Dispatcher"}
                     </span>
                     {u.last_sign_in_at && (
-                      <span className="text-section text-[var(--tx3)]">
+                      <span className="text-[9px] text-[var(--tx3)]">
                         {formatLastActive(u.last_sign_in_at)}
                       </span>
                     )}
@@ -1784,16 +1784,16 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <ModalOverlay open={addTeamModalOpen} onClose={() => setAddTeamModalOpen(false)} title="Add Team" maxWidth="md">
         <div className="p-5 space-y-5">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
             <input
               value={addTeamName}
               onChange={(e) => setAddTeamName(e.target.value)}
               placeholder="e.g. Team A"
-              className="w-full px-4 py-2.5 rounded-lg text-body bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full px-4 py-2.5 rounded-lg text-[13px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
             />
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
             <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
               {activeStaffNames.map((m) => (
                 <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
@@ -1803,7 +1803,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     onChange={() => setAddTeamMembers((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m])}
                     className="checkbox-elegant"
                   />
-                  <span className="text-ui text-[var(--tx)] group-hover:text-[var(--tx)]">{m}</span>
+                  <span className="text-[12px] text-[var(--tx)] group-hover:text-[var(--tx)]">{m}</span>
                 </label>
               ))}
             </div>
@@ -1811,7 +1811,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <button
             onClick={addTeam}
             disabled={!addTeamName.trim()}
-            className="w-full px-4 py-3 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Team
           </button>
@@ -1856,14 +1856,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         maxWidth="sm"
       >
         <div className="p-5 space-y-4">
-          <p className="text-body text-[var(--tx2)]">
+          <p className="text-[13px] text-[var(--tx2)]">
             Disabling Partner Portal Access will prevent all partners from viewing their deliveries. Are you sure you want to continue?
           </p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setConfirmPartnerPortalOff(false)}
-              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
             >
               Cancel
             </button>
@@ -1877,7 +1877,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   setConfirmPartnerPortalOff(false);
                 }
               }}
-              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
             >
               Disable access
             </button>
@@ -1892,14 +1892,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         maxWidth="sm"
       >
         <div className="p-5 space-y-4">
-          <p className="text-body text-[var(--tx2)]">
+          <p className="text-[13px] text-[var(--tx2)]">
             Disabling Crew GPS Tracking will stop real-time crew location updates. Are you sure you want to continue?
           </p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setConfirmCrewTrackingOff(false)}
-              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
             >
               Cancel
             </button>
@@ -1913,7 +1913,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   setConfirmCrewTrackingOff(false);
                 }
               }}
-              className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
             >
               Disable tracking
             </button>
@@ -1931,20 +1931,20 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         {editingStaff && (
           <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleEditStaff(); }}>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
               <input
                 type="text"
                 value={editStaffName}
                 onChange={(e) => setEditStaffName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
             </div>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
               <select
                 value={editStaffRole}
                 onChange={(e) => setEditStaffRole(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               >
                 <option value="mover">Mover</option>
                 <option value="driver">Driver</option>
@@ -1955,27 +1955,27 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </select>
             </div>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
               <input
                 type="tel"
                 value={editStaffPhone}
                 onChange={(e) => setEditStaffPhone(e.target.value)}
                 placeholder="Optional"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
             </div>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
               <input
                 type="email"
                 value={editStaffEmail}
                 onChange={(e) => setEditStaffEmail(e.target.value)}
                 placeholder="Optional"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
             </div>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
               <input
                 type="number"
                 step="0.50"
@@ -1983,11 +1983,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 onChange={(e) => {
                   if (editingStaff) setEditingStaff({ ...editingStaff, hourly_rate: parseFloat(e.target.value) || 0 });
                 }}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
             </div>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specialties</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specialties</label>
               <div className="flex flex-wrap gap-1.5">
                 {["Piano", "Art Handling", "Heavy Lift", "Fragile Items", "Electronics", "Disassembly", "Packing", "Office Moves"].map((sp) => {
                   const slug = sp.toLowerCase().replace(/\s+/g, "_");
@@ -2002,7 +2002,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         const next = selected ? current.filter((s) => s !== slug) : [...current, slug];
                         setEditingStaff({ ...editingStaff, specialties: next });
                       }}
-                      className={`px-2.5 py-1 rounded text-label font-medium transition-all ${
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium transition-all ${
                         selected
                           ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]"
                           : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
@@ -2018,14 +2018,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <button
                 type="button"
                 onClick={() => setEditingStaff(null)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!editStaffName.trim() || editStaffSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {editStaffSaving ? "Saving..." : "Save Changes"}
               </button>
@@ -2034,7 +2034,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <button
                 type="button"
                 onClick={() => { setEditingStaff(null); handleDeactivateStaff(editingStaff); }}
-                className="w-full px-4 py-2 rounded-lg text-caption font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+                className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
               >
                 Remove from Active Roster
               </button>
@@ -2052,14 +2052,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       >
         {confirmDeleteStaff && (
           <div className="p-5 space-y-4">
-            <p className="text-body text-[var(--tx2)]">
+            <p className="text-[13px] text-[var(--tx2)]">
               This will permanently remove <strong>{confirmDeleteStaff.name}</strong> from the system. This cannot be undone. All historical data will remain, but they will no longer appear in any roster or reports.
             </p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmDeleteStaff(null)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
               >
                 Cancel
               </button>
@@ -2067,7 +2067,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 type="button"
                 disabled={deleteStaffSaving}
                 onClick={() => handlePermanentDeleteStaff(confirmDeleteStaff)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[#c53030] text-white hover:opacity-90 transition-all disabled:opacity-50"
               >
                 {deleteStaffSaving ? "Deleting..." : "Delete Permanently"}
               </button>
@@ -2112,11 +2112,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               }
             }}
           >
-            <p className="text-ui text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--tx2)]">
               Set a new 6-digit PIN for <strong>{resetPinMember.name}</strong>. They will use it to log in to the Crew Portal.
             </p>
             <div>
-              <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
               <input
                 type="password"
                 inputMode="numeric"
@@ -2125,21 +2125,21 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 value={resetPinValue}
                 onChange={(e) => setResetPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono"
               />
             </div>
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => { setResetPinMember(null); setResetPinValue(""); }}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={resetPinValue.length !== 6 || resetPinSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
               >
                 {resetPinSaving ? "Saving…" : "Set new PIN"}
               </button>

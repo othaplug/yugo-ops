@@ -104,9 +104,9 @@ export default function ClientsPageClient({
         const isActive = Number(c.deliveries_per_month ?? 0) > 0;
         return (
           <div className="flex items-center gap-2">
-            <span className="text-caption font-semibold text-[var(--tx)]">{c.name}</span>
-            {hasBalance && <span className="inline-flex px-1.5 py-0.5 rounded text-micro font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>}
-            {!hasBalance && isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-micro font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
+            <span className="text-[11px] font-semibold text-[var(--tx)]">{c.name}</span>
+            {hasBalance && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>}
+            {!hasBalance && isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
           </div>
         );
       },
@@ -114,29 +114,29 @@ export default function ClientsPageClient({
     {
       id: "type", label: "Type",
       accessor: (c) => c.type,
-      render: (c) => <span className="text-caption capitalize text-[var(--tx2)]">{c.type}</span>,
+      render: (c) => <span className="text-[11px] capitalize text-[var(--tx2)]">{c.type}</span>,
     },
     {
       id: "contact", label: "Contact",
       accessor: (c) => c.contact_name || c.email || "",
       render: (c) => (
         <div>
-          <div className="text-label text-[var(--tx)]">{c.contact_name}</div>
-          <div className="text-label text-[var(--tx3)]">{c.email}</div>
+          <div className="text-[10px] text-[var(--tx)]">{c.contact_name}</div>
+          <div className="text-[10px] text-[var(--tx3)]">{c.email}</div>
         </div>
       ),
     },
     {
       id: "avg", label: "Avg/Month",
       accessor: (c) => Number(c.deliveries_per_month) || 0,
-      render: (c) => <span className="text-caption text-[var(--tx2)]">{c.deliveries_per_month ?? "—"}</span>,
+      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.deliveries_per_month ?? "—"}</span>,
       align: "right",
     },
     {
       id: "owing", label: "Owing",
       accessor: (c) => c.outstanding_balance ?? 0,
       render: (c) => (
-        <span className="text-caption text-[var(--tx)]">
+        <span className="text-[11px] text-[var(--tx)]">
           {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
         </span>
       ),
@@ -153,8 +153,8 @@ export default function ClientsPageClient({
         const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
         return (
           <div className="flex items-center gap-2">
-            <span className="text-caption font-semibold text-[var(--tx)]">{c.name}</span>
-            {isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-micro font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
+            <span className="text-[11px] font-semibold text-[var(--tx)]">{c.name}</span>
+            {isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
           </div>
         );
       },
@@ -162,28 +162,28 @@ export default function ClientsPageClient({
     {
       id: "move_type", label: "Type",
       accessor: (c) => c.move_type,
-      render: (c) => <span className="text-caption capitalize text-[var(--tx2)]">{c.move_type === "office" ? "Commercial" : "Residential"}</span>,
+      render: (c) => <span className="text-[11px] capitalize text-[var(--tx2)]">{c.move_type === "office" ? "Commercial" : "Residential"}</span>,
     },
     {
       id: "contact", label: "Contact",
       accessor: (c) => c.contact_name || c.email || "",
       render: (c) => (
         <div>
-          <div className="text-label text-[var(--tx)]">{c.contact_name}</div>
-          <div className="text-label text-[var(--tx3)]">{c.email}</div>
+          <div className="text-[10px] text-[var(--tx)]">{c.contact_name}</div>
+          <div className="text-[10px] text-[var(--tx3)]">{c.email}</div>
         </div>
       ),
     },
     {
       id: "move_date", label: "Move Date",
       accessor: (c) => c.move_date || "",
-      render: (c) => <span className="text-caption text-[var(--tx2)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</span>,
+      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</span>,
     },
     {
       id: "status", label: "Status",
       accessor: (c) => c.move_status || "",
       render: (c) => (
-        <span className={`inline-flex px-1.5 py-0.5 rounded text-micro font-bold ${
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold ${
           c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
           c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
           "bg-[var(--gdim)] text-[var(--gold)]"
@@ -196,7 +196,7 @@ export default function ClientsPageClient({
       id: "owing", label: "Balance",
       accessor: (c) => c.outstanding_balance ?? 0,
       render: (c) => (
-        <span className="text-caption text-[var(--tx)]">
+        <span className="text-[11px] text-[var(--tx)]">
           {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
         </span>
       ),
@@ -218,13 +218,13 @@ export default function ClientsPageClient({
         <div className="flex gap-1.5 shrink-0">
           <Link
             href="/admin/clients/new"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
           >
             + Add Client
           </Link>
           <Link
             href="/admin/revenue"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
           >
             Export
           </Link>
@@ -235,7 +235,7 @@ export default function ClientsPageClient({
       <div className="flex gap-1 p-1 bg-[var(--bg2)] border border-[var(--brd)] rounded-xl mb-4 w-fit">
         <button
           onClick={() => setActiveTab("partners")}
-          className={`px-4 py-2 rounded-lg text-ui font-semibold transition-colors ${
+          className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
             activeTab === "partners" ? "bg-[var(--card)] text-[var(--gold)] border border-[var(--brd)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
           }`}
         >
@@ -243,7 +243,7 @@ export default function ClientsPageClient({
         </button>
         <button
           onClick={() => setActiveTab("move-clients")}
-          className={`px-4 py-2 rounded-lg text-ui font-semibold transition-colors ${
+          className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
             activeTab === "move-clients" ? "bg-[var(--card)] text-[var(--gold)] border border-[var(--brd)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
           }`}
         >

@@ -138,7 +138,7 @@ export default function RealtorsTable({
     <>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden overflow-x-auto">
         <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h3 className="font-heading text-body font-bold text-[var(--tx)]">Referral Pipeline</h3>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referral Pipeline</h3>
           <AddReferralButton realtors={realtors} />
         </div>
         <FilterBar
@@ -169,16 +169,16 @@ export default function RealtorsTable({
                 className="hover:bg-[var(--gdim)] transition-colors cursor-pointer"
               >
                 <td className="px-4 py-2.5 border-b border-[var(--brd)]">
-                  <div className="text-label font-semibold text-[var(--tx)]">{r.agent_name}</div>
-                  <div className="text-section text-[var(--tx3)]">{r.brokerage}</div>
+                  <div className="text-[10px] font-semibold text-[var(--tx)]">{r.agent_name}</div>
+                  <div className="text-[9px] text-[var(--tx3)]">{r.brokerage}</div>
                 </td>
-                <td className="px-4 py-2.5 text-label border-b border-[var(--brd)]">{r.client_name}</td>
-                <td className="px-4 py-2.5 text-label border-b border-[var(--brd)]">{r.property}</td>
-                <td className="px-4 py-2.5 text-label border-b border-[var(--brd)]">{r.tier}</td>
+                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.client_name}</td>
+                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.property}</td>
+                <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.tier}</td>
                 <td className="px-4 py-2.5 border-b border-[var(--brd)]">
                   <Badge status={r.status} />
                 </td>
-                <td className="px-4 py-2.5 text-label font-semibold border-b border-[var(--brd)]">
+                <td className="px-4 py-2.5 text-[10px] font-semibold border-b border-[var(--brd)]">
                   {Number(r.commission) > 0 ? formatCurrency(r.commission) : "—"}
                 </td>
               </tr>

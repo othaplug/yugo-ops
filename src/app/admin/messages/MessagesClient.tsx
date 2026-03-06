@@ -192,15 +192,15 @@ export default function MessagesClient({
               <Icon name="messageSquare" className="w-5 h-5 text-[var(--gold)]" />
             </div>
             <div>
-              <div className="text-body font-bold text-[var(--tx)]">Connect Slack for real-time sync</div>
-              <div className="text-caption text-[var(--tx3)] mt-0.5">
+              <div className="text-[13px] font-bold text-[var(--tx)]">Connect Slack for real-time sync</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5">
                 Sync #ops-inbox, reply from admin or Slack. API integration coming soon.
               </div>
             </div>
           </div>
           <button
             onClick={() => setSlackConnectedLocal(true)}
-            className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
           >
             Connect
           </button>
@@ -212,11 +212,11 @@ export default function MessagesClient({
         <div className="mb-4 flex items-center justify-between gap-4 px-4 py-2.5 bg-[var(--grdim)]/30 border border-[var(--grn)]/20 rounded-xl">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[var(--grn)] animate-pulse" />
-            <span className="text-caption font-semibold text-[var(--grn)]">Slack connected — #ops-inbox</span>
+            <span className="text-[11px] font-semibold text-[var(--grn)]">Slack connected — #ops-inbox</span>
           </div>
           <button
             onClick={() => setSlackConnectedLocal(false)}
-            className="px-4 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--red)] hover:text-[var(--red)] transition-all shrink-0"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--red)] hover:text-[var(--red)] transition-all shrink-0"
           >
             Disconnect
           </button>
@@ -228,11 +228,11 @@ export default function MessagesClient({
         {/* Channel list - hidden on mobile when thread open */}
         <div className={`w-full sm:w-[280px] md:w-[320px] border-r border-[var(--brd)] flex flex-col shrink-0 ${openThread ? "hidden sm:flex" : "flex"}`}>
           <div className="px-4 py-3 border-b border-[var(--brd)]">
-            <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Channels</div>
-            <div className="text-body font-semibold text-[var(--tx)] mt-0.5"># ops-inbox</div>
+            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Channels</div>
+            <div className="text-[13px] font-semibold text-[var(--tx)] mt-0.5"># ops-inbox</div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2">Threads</div>
+            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2">Threads</div>
             {threadEntries.map(([threadId, msgs]) => {
               const latest = msgs[msgs.length - 1];
               const hasUnread = msgs.some((m) => !m.is_read && m.sender_type !== "admin");
@@ -250,29 +250,29 @@ export default function MessagesClient({
                 >
                   {hasUnread && <div className="w-1.5 h-1.5 rounded-full bg-[var(--grn)] mt-2 shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <div className={`text-ui truncate ${hasUnread ? "font-bold" : "font-semibold"} text-[var(--tx)]`}>
-                      {label} <span className="text-section font-normal text-[var(--tx3)]">{type}</span>
+                    <div className={`text-[12px] truncate ${hasUnread ? "font-bold" : "font-semibold"} text-[var(--tx)]`}>
+                      {label} <span className="text-[9px] font-normal text-[var(--tx3)]">{type}</span>
                     </div>
-                    <div className="text-caption text-[var(--tx3)] mt-0.5 line-clamp-2 break-words">{getThreadPreview(msgs)}</div>
-                    <div className="text-section text-[var(--tx3)] mt-0.5">{formatTimeAgo(latest?.created_at || "")}</div>
+                    <div className="text-[11px] text-[var(--tx3)] mt-0.5 line-clamp-2 break-words">{getThreadPreview(msgs)}</div>
+                    <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTimeAgo(latest?.created_at || "")}</div>
                   </div>
                 </div>
               );
             })}
             {threadEntries.length === 0 && (
-              <div className="p-6 text-center text-caption text-[var(--tx3)]">
+              <div className="p-6 text-center text-[11px] text-[var(--tx3)]">
                 No threads yet. Messages will appear here in real time.
               </div>
             )}
           </div>
           <div className="sticky bottom-0 px-4 py-3 border-t border-[var(--brd)] flex items-center justify-between bg-[var(--card)] shrink-0">
             <div>
-              <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)]">Threads</div>
-              <div className="text-title font-bold font-heading">{threadEntries.length}</div>
+              <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Threads</div>
+              <div className="text-[14px] font-bold font-heading">{threadEntries.length}</div>
             </div>
             <div>
-              <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)]">Unread</div>
-              <div className="text-title font-bold font-heading text-[var(--gold)]">{unreadCount}</div>
+              <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Unread</div>
+              <div className="text-[14px] font-bold font-heading text-[var(--gold)]">{unreadCount}</div>
             </div>
           </div>
         </div>
@@ -291,12 +291,12 @@ export default function MessagesClient({
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-body font-semibold text-[var(--tx)]">Conversation</div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">Conversation</div>
                 </div>
                 {openThread && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(openThread) && (
                   <a
                     href={`/admin/moves/${openThread}`}
-                    className="text-caption font-semibold text-[var(--gold)] hover:underline shrink-0"
+                    className="text-[11px] font-semibold text-[var(--gold)] hover:underline shrink-0"
                   >
                     View move →
                   </a>
@@ -307,23 +307,23 @@ export default function MessagesClient({
                 {selectedMsgs.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center min-h-[120px] text-center">
                     <div>
-                      <p className="text-ui text-[var(--tx3)]">Start a conversation</p>
-                      <p className="text-label text-[var(--tx3)] mt-1">Type a message below to begin</p>
+                      <p className="text-[12px] text-[var(--tx3)]">Start a conversation</p>
+                      <p className="text-[10px] text-[var(--tx3)] mt-1">Type a message below to begin</p>
                     </div>
                   </div>
                 ) : (
                   selectedMsgs.map((msg) => {
                     const isAdmin = msg.sender_type === "admin";
-                    const displayName = isAdmin ? (msg.sender_name || "Yugo") : msg.sender_name;
+                    const displayName = isAdmin ? "Yugo" : msg.sender_name;
                     return (
                       <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                         <div className={`flex flex-col max-w-[78%] ${isAdmin ? "items-end" : "items-start"}`}>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-label font-semibold text-[var(--tx2)]">{displayName}</span>
-                            <span className="text-section text-[var(--tx3)]">{formatTime(msg.created_at)}</span>
+                            <span className="text-[10px] font-semibold text-[var(--tx2)]">{displayName}</span>
+                            <span className="text-[9px] text-[var(--tx3)]">{formatTime(msg.created_at)}</span>
                           </div>
                           <div
-                            className={`py-2 px-3.5 rounded-2xl text-body leading-relaxed whitespace-pre-wrap ${
+                            className={`py-2 px-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
                               isAdmin
                                 ? "bg-[rgba(201,169,98,0.14)] text-[var(--tx)] rounded-br-md"
                                 : "bg-[var(--card)]/80 text-[var(--tx2)] border border-[var(--brd)]/60 rounded-bl-md"
@@ -353,26 +353,26 @@ export default function MessagesClient({
                     onKeyDown={(e) => handleKeyDown(e, openThread!)}
                     placeholder="Type a message… (Shift+Enter for new line)"
                     rows={1}
-                    className="flex-1 px-4 py-2.5 border border-[var(--brd)] rounded-lg text-body bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)] resize-none overflow-y-auto"
+                    className="flex-1 px-4 py-2.5 border border-[var(--brd)] rounded-lg text-[13px] bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)] resize-none overflow-y-auto"
                     style={{ minHeight: 40, maxHeight: 120 }}
                   />
                   <button
                     onClick={() => sendReply(openThread!)}
                     disabled={sending || !replyText.trim()}
-                    className="px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 h-[40px]"
+                    className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 h-[40px]"
                   >
                     {sending ? "Sending…" : "Send"}
                   </button>
                 </div>
-                <div className="text-section text-[var(--tx3)] mt-1.5">Press Enter to send, Shift+Enter for new line</div>
+                <div className="text-[9px] text-[var(--tx3)] mt-1.5">Press Enter to send, Shift+Enter for new line</div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-ui text-[var(--tx3)] p-8">
+            <div className="flex-1 flex items-center justify-center text-[12px] text-[var(--tx3)] p-8">
               <div className="text-center">
                 <Icon name="messageSquare" className="w-12 h-12 mx-auto mb-3 text-[var(--tx3)]/50" />
                 <p>Select a thread to view conversation</p>
-                <p className="text-label mt-1">Messages update in real time</p>
+                <p className="text-[10px] mt-1">Messages update in real time</p>
               </div>
             </div>
           )}

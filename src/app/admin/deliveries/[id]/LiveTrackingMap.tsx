@@ -281,8 +281,8 @@ export default function LiveTrackingMap({
         <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center mx-auto mb-3">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[var(--tx3)]"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
-        <p className="text-ui font-medium text-[var(--tx2)]">Crew assigned — waiting to start</p>
-        <p className="text-label text-[var(--tx3)] mt-1">
+        <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned — waiting to start</p>
+        <p className="text-[10px] text-[var(--tx3)] mt-1">
           Live tracking will activate when {crewName || "the crew"} starts this job and their GPS goes live
         </p>
       </div>
@@ -292,8 +292,8 @@ export default function LiveTrackingMap({
   if (!HAS_MAPBOX) {
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <h3 className="font-heading text-body font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
-        <p className="text-caption text-[var(--tx3)] mb-3">
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+        <p className="text-[11px] text-[var(--tx3)] mb-3">
           {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
         </p>
         <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
@@ -317,10 +317,10 @@ export default function LiveTrackingMap({
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
               </span>
               <div>
-                <div className="text-body font-bold text-[var(--tx)]">
+                <div className="text-[13px] font-bold text-[var(--tx)]">
                   {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
                 </div>
-                <div className="text-caption text-[var(--tx3)]">
+                <div className="text-[11px] text-[var(--tx3)]">
                   {liveStage === "loading"
                     ? "Crew is loading items"
                     : liveStage === "unloading"
@@ -333,7 +333,7 @@ export default function LiveTrackingMap({
             </div>
           )}
           {loading ? (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-ui">
+            <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
               Loading map...
             </div>
           ) : (
@@ -355,8 +355,8 @@ export default function LiveTrackingMap({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-      <h3 className="font-heading text-body font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
-      <p className="text-caption text-[var(--tx3)] mb-3">
+      <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+      <p className="text-[11px] text-[var(--tx3)] mb-3">
         {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
       </p>
       <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
@@ -380,10 +380,10 @@ export default function LiveTrackingMap({
               <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
             </span>
             <div>
-              <div className="text-body font-bold text-[var(--tx)]">
+              <div className="text-[13px] font-bold text-[var(--tx)]">
                 {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
               </div>
-              <div className="text-caption text-[var(--tx3)]">
+              <div className="text-[11px] text-[var(--tx3)]">
                 {liveStage === "loading"
                   ? "Crew is loading items"
                   : liveStage === "unloading"
@@ -396,7 +396,7 @@ export default function LiveTrackingMap({
           </div>
         )}
         {loading ? (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-ui">
+          <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
             Loading map...
           </div>
         ) : (

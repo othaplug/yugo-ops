@@ -31,9 +31,9 @@ export default function CollapsibleSection({
         ) : (
           <ChevronDown className="w-4 h-4 text-[var(--tx3)] shrink-0" />
         )}
-        <h3 className="font-heading text-body font-bold text-[var(--tx)]">{title}</h3>
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">{title}</h3>
         {subtitle && collapsed && (
-          <span className="text-caption text-[var(--tx3)] truncate">— {subtitle}</span>
+          <span className="text-[11px] text-[var(--tx3)] truncate">— {subtitle}</span>
         )}
       </button>
       {!collapsed && <div className="p-4 border-t border-[var(--brd)]">{children}</div>}

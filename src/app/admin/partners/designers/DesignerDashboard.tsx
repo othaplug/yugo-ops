@@ -69,38 +69,38 @@ export default function DesignerDashboard({
 
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="font-heading text-h2 font-bold text-[var(--tx)]">Designer Partners</h1>
-          <p className="text-ui text-[var(--tx3)] mt-0.5">{orgs.length} active partner{orgs.length !== 1 ? "s" : ""} · {deliveries.length} deliveries</p>
+          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Designer Partners</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{orgs.length} active partner{orgs.length !== 1 ? "s" : ""} · {deliveries.length} deliveries</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Projects</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Projects</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-h1 font-bold font-heading text-[var(--tx)]">{allProjects.length}</span>
+            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{allProjects.length}</span>
             <StatPctChange current={allProjects.length} previous={3} />
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-h1 font-bold font-heading text-[var(--grn)]">{activeProjects.length}</span>
+            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{activeProjects.length}</span>
             <StatPctChange current={activeProjects.length} previous={2} />
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delayed</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delayed</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-h1 font-bold font-heading text-[var(--red)]">{delayedCount}</span>
+            <span className="text-[24px] font-bold font-heading text-[var(--red)]">{delayedCount}</span>
             <StatPctChange current={delayedCount} previous={1} />
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-h1 font-bold font-heading text-[var(--grn)]">${(revenue / 1000).toFixed(1)}K</span>
+            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">${(revenue / 1000).toFixed(1)}K</span>
             <StatPctChange current={revenue} previous={revenuePrev} />
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function DesignerDashboard({
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-ui font-semibold transition-colors ${
+              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
                 activeTab === t.key
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                   : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
@@ -124,11 +124,11 @@ export default function DesignerDashboard({
           ))}
         </div>
         <div className="flex gap-2">
-          <Link href="/admin/deliveries/new?type=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
+          <Link href="/admin/deliveries/new?type=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Create Delivery
           </Link>
-          <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
+          <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
             Add Partner
           </Link>
@@ -139,20 +139,20 @@ export default function DesignerDashboard({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deliveries…" className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-ui text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deliveries…" className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors" />
               </div>
-              <select value={selectedPartner} onChange={(e) => setSelectedPartner(e.target.value)} className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-ui font-semibold text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors min-w-[160px]">
+              <select value={selectedPartner} onChange={(e) => setSelectedPartner(e.target.value)} className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors min-w-[160px]">
                 <option value="all">All Partners</option>
                 {orgs.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div className="divide-y divide-[var(--brd)]/30">
               {filteredDeliveries.length === 0 ? (
-                <div className="px-4 py-10 text-center text-ui text-[var(--tx3)]">
+                <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
                 </div>
               ) : filteredDeliveries.slice(0, 25).map((d: any) => {
@@ -162,18 +162,18 @@ export default function DesignerDashboard({
                   <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-body font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-                        <span className="text-label text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                        <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
                       </div>
-                      <div className="text-caption text-[var(--tx3)] mt-0.5 truncate">
+                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
                         {d.client_name && <span className="font-medium">{d.client_name}</span>}
                         {d.delivery_address && <span> · {d.delivery_address}</span>}
                         {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-label text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
-                      <span className={`px-2.5 py-1 rounded-lg text-label font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
+                      <span className="text-[10px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                   </Link>
@@ -185,13 +185,13 @@ export default function DesignerDashboard({
 
         {activeTab === "projects" && (
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
               <span>Projects</span>
-              <Link href="/admin/partners/designers/projects" className="text-caption font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
+              <Link href="/admin/partners/designers/projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
             </div>
             <div className="divide-y divide-[var(--brd)]/30">
               {allProjects.length === 0 ? (
-                <div className="px-4 py-10 text-center text-ui text-[var(--tx3)]">No projects yet.</div>
+                <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">No projects yet.</div>
               ) : allProjects.map((project) => {
                 const doneCount = project.vendors.filter((v) => v.status === "done").length;
                 const lateCount = project.vendors.filter((v) => v.status === "late").length;
@@ -201,17 +201,17 @@ export default function DesignerDashboard({
                   <Link key={project.id} href={`/admin/partners/designers/${project.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-body font-semibold text-[var(--tx)] truncate">{project.name}</span>
-                        {isActive && <span className="px-2 py-0.5 rounded text-section font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
-                        {lateCount > 0 && <span className="px-2 py-0.5 rounded text-section font-bold uppercase bg-[rgba(209,67,67,0.1)] text-[var(--red)]">{lateCount} delayed</span>}
+                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.name}</span>
+                        {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
+                        {lateCount > 0 && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(209,67,67,0.1)] text-[var(--red)]">{lateCount} delayed</span>}
                       </div>
-                      <div className="text-caption text-[var(--tx3)] mt-0.5 truncate">
+                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
                         {project.designerCompany || project.designer} · {project.address} · Install {project.installDate}
                       </div>
-                      <div className="text-label text-[var(--tx3)] mt-0.5">{summary}</div>
+                      <div className="text-[10px] text-[var(--tx3)] mt-0.5">{summary}</div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-ui font-bold text-[var(--gold)]">{project.percent}%</span>
+                      <span className="text-[12px] font-bold text-[var(--gold)]">{project.percent}%</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                   </Link>
@@ -223,28 +223,28 @@ export default function DesignerDashboard({
 
         {activeTab === "partners" && (
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">
-                <p className="text-body text-[var(--tx3)]">No designer partners yet.</p>
-                <Link href="/admin/clients/new?type=partner&partnerType=designer" className="text-ui font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">Add your first partner</Link>
+                <p className="text-[13px] text-[var(--tx3)]">No designer partners yet.</p>
+                <Link href="/admin/clients/new?type=partner&partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">Add your first partner</Link>
               </div>
             ) : orgs.map((c: any) => {
               const designerDeliveries = deliveries.filter((d: any) => d.client_name === c.name);
               return (
                 <Link key={c.id} href={`/admin/clients/${c.id}?from=designers`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#B8860B]/10 flex items-center justify-center text-ui font-bold text-[#B8860B]">
+                    <div className="w-9 h-9 rounded-lg bg-[#B8860B]/10 flex items-center justify-center text-[12px] font-bold text-[#B8860B]">
                       {(c.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="text-body font-semibold text-[var(--tx)]">{c.name}</div>
-                      <div className="text-caption text-[var(--tx3)]">{[c.contact_name, c.email].filter(Boolean).join(" · ") || "—"}</div>
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
+                      <div className="text-[11px] text-[var(--tx3)]">{[c.contact_name, c.email].filter(Boolean).join(" · ") || "—"}</div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    <div className="text-caption font-semibold text-[var(--tx)]">{designerDeliveries.length} deliveries</div>
+                    <div className="text-[11px] font-semibold text-[var(--tx)]">{designerDeliveries.length} deliveries</div>
                   </div>
                 </Link>
               );

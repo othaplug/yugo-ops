@@ -215,10 +215,10 @@ export default function SquarePaymentForm({
 
       {/* Amount display */}
       <div className="text-center py-3">
-        <p className="text-caption font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
+        <p className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
           Deposit Amount
         </p>
-        <p className="font-hero text-hero-lg mt-1" style={{ color: WINE }}>
+        <p className="font-hero text-[36px] mt-1" style={{ color: WINE }}>
           {fmtPrice(amount)}
         </p>
       </div>
@@ -242,7 +242,7 @@ export default function SquarePaymentForm({
               className="w-5 h-5 border-2 rounded-full animate-spin"
               style={{ borderColor: `${GOLD}30`, borderTopColor: GOLD }}
             />
-            <span className="ml-2 text-ui" style={{ color: `${FOREST}60` }}>
+            <span className="ml-2 text-[12px]" style={{ color: `${FOREST}60` }}>
               Loading payment form…
             </span>
           </div>
@@ -252,7 +252,7 @@ export default function SquarePaymentForm({
       {/* Error message */}
       {error && (
         <div
-          className="px-4 py-3 rounded-xl text-ui font-medium"
+          className="px-4 py-3 rounded-xl text-[12px] font-medium"
           style={{ backgroundColor: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }}
         >
           {error}
@@ -264,7 +264,7 @@ export default function SquarePaymentForm({
         type="button"
         onClick={handlePay}
         disabled={disabled || !cardReady || processing}
-        className="w-full py-4 rounded-xl text-title font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full py-4 rounded-xl text-[14px] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ backgroundColor: !disabled && cardReady ? WINE : `${WINE}60` }}
       >
         {processing ? (
@@ -286,7 +286,7 @@ export default function SquarePaymentForm({
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
-        <span className="text-label" style={{ color: `${FOREST}50` }}>
+        <span className="text-[10px]" style={{ color: `${FOREST}50` }}>
           Secured by Square &middot; 256-bit encryption
         </span>
       </div>

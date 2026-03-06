@@ -71,15 +71,15 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
         Move photos
       </h3>
       {loading ? (
-        <p className="text-caption text-[var(--tx3)]">Loading…</p>
+        <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
       ) : (
         <>
           <div className="flex flex-wrap gap-2 mb-2">
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer disabled:opacity-50 transition-colors">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer disabled:opacity-50 transition-colors">
               <Plus className="w-[11px] h-[11px]" />
               {uploading ? "Uploading…" : "Add photo"}
               <input
@@ -92,7 +92,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
             </label>
           </div>
           {photos.length === 0 ? (
-            <p className="text-caption text-[var(--tx3)]">No photos yet. Add photos for the client portal.</p>
+            <p className="text-[11px] text-[var(--tx3)]">No photos yet. Add photos for the client portal.</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {photos.map((p) => (
@@ -107,7 +107,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                     <Trash2 className="w-[11px] h-[11px]" />
                   </button>
                   {p.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-section text-white truncate">
+                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-[9px] text-white truncate">
                       {p.caption}
                     </div>
                   )}
@@ -121,7 +121,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
       {deleteConfirm && (
         <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove photo?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-ui text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--tx2)]">
               Are you sure you want to remove this photo? This cannot be undone.
             </p>
             <div className="flex gap-2">
@@ -129,7 +129,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -137,7 +137,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
               >
                 {deleting ? "Removing…" : "Remove"}
               </button>

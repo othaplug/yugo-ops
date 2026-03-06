@@ -120,14 +120,14 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
 
   return (
     <div>
-      <h2 className="font-hero text-h3-lg font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
+      <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
       {readOnly ? null : !canAddPhotos ? (
-        <p className="text-caption text-[var(--tx3)] mb-3">Add photos after arriving at pickup.</p>
+        <p className="text-[11px] text-[var(--tx3)] mb-3">Add photos after arriving at pickup.</p>
       ) : showPrompt ? (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)]/20 p-4 mb-3">
-          <p className="text-ui font-semibold text-[var(--tx)] mb-2">{prompt}</p>
+          <p className="text-[12px] font-semibold text-[var(--tx)] mb-2">{prompt}</p>
           {requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
-            <p className="text-label text-[var(--gold)] mb-3">Take at least {MIN_PHOTOS_AT_ARRIVED} photo to continue, or skip below.</p>
+            <p className="text-[10px] text-[var(--gold)] mb-3">Take at least {MIN_PHOTOS_AT_ARRIVED} photo to continue, or skip below.</p>
           )}
           <button
             type="button"
@@ -137,7 +137,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               uploading ? "opacity-50 pointer-events-none border-[var(--brd)]" : "border-[var(--gold)]/50 hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 cursor-pointer"
             }`}
           >
-            <span className="text-body font-semibold text-[var(--gold)]">Take Photo ({photosAtCurrentCheckpoint} taken)</span>
+            <span className="text-[13px] font-semibold text-[var(--gold)]">Take Photo ({photosAtCurrentCheckpoint} taken)</span>
           </button>
         </div>
       ) : (
@@ -148,7 +148,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
             disabled={uploading}
             className="flex items-center justify-center w-full py-3 rounded-xl border-2 border-dashed border-[var(--brd)] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <span className="text-body font-semibold text-[var(--tx)]">Take Photo ({photos.length} taken)</span>
+            <span className="text-[13px] font-semibold text-[var(--tx)]">Take Photo ({photos.length} taken)</span>
           </button>
         </div>
       )}
@@ -166,7 +166,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
         ))}
         {!readOnly && canAddPhotos && (
           <label
-            className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-h2-sm font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
+            className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-[22px] font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
               uploading ? "opacity-50 pointer-events-none" : ""
             }`}
           >
@@ -182,7 +182,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
           </label>
         )}
       </div>
-      <p className="text-label text-[var(--tx3)] mt-2">{photos.length} photo{photos.length !== 1 ? "s" : ""} taken</p>
+      <p className="text-[10px] text-[var(--tx3)] mt-2">{photos.length} photo{photos.length !== 1 ? "s" : ""} taken</p>
       {!readOnly && requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
         <button
           type="button"
@@ -194,7 +194,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               body: JSON.stringify({ jobId, jobType, checkpoint: currentStatus }),
             }).catch(() => {});
           }}
-          className="mt-2 text-label text-[var(--tx3)] hover:text-[var(--gold)] underline"
+          className="mt-2 text-[10px] text-[var(--tx3)] hover:text-[var(--gold)] underline"
         >
           Skip photos (not recommended)
         </button>

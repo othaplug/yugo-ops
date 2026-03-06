@@ -43,39 +43,39 @@ export default function RealtorsMetrics({
   return (
     <>
       <div className="flex items-center justify-between gap-2 mb-4">
-        <h3 className="font-heading text-body font-bold text-[var(--tx)]">Referrals</h3>
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referrals</h3>
         <button
           type="button"
           onClick={() => setAddRealtorOpen(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap"
         >
           Add Realtor
         </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
-          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Realtors</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Realtors</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{realtorsCount}</span>
             <StatPctChange current={realtorsCount} previous={realtorsPrev} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
-          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Referrals</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Referrals</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{referralsCount}</span>
             <StatPctChange current={refCur} previous={referralsPrev} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
-          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Booked</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Booked</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--grn)]">{booked}</span>
             <StatPctChange current={bookedCur} previous={bookedPrev} />
           </div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
-          <div className="text-label font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Commission</div>
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Commission</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalCommission)}</span>
             <StatPctChange current={commissionCur} previous={commissionPrev} />

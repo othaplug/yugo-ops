@@ -52,18 +52,18 @@ export default function AgentDetailModal({
     <ModalOverlay open={open} onClose={onClose} title={agentName} maxWidth="lg">
       <div className="p-4 space-y-4">
         {(brokerage || agentEmail) && (
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-caption text-[var(--tx3)]">
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--tx3)]">
             {brokerage && <span>{brokerage}</span>}
             {agentEmail && <a href={`mailto:${agentEmail}`} className="text-[var(--gold)] hover:underline">{agentEmail}</a>}
           </div>
         )}
         <div className="flex items-center justify-between">
-            <span className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
-            <span className="text-h3 font-bold text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
+            <span className="text-[16px] font-bold text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-label font-bold tracking-wider uppercase text-[var(--tx3)]">Referrals brought in</span>
-            <span className="text-body font-semibold text-[var(--tx)]">{referrals.length}</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Referrals brought in</span>
+            <span className="text-[13px] font-semibold text-[var(--tx)]">{referrals.length}</span>
           </div>
 
           {/* Clients referred - collapsible */}
@@ -73,7 +73,7 @@ export default function AgentDetailModal({
               onClick={() => setClientsExpanded((e) => !e)}
               className="w-full flex items-center justify-between px-4 py-3 bg-[var(--bg)]/50 text-left hover:bg-[var(--gdim)] transition-colors"
             >
-              <span className="text-caption font-bold text-[var(--tx)]">Clients referred</span>
+              <span className="text-[11px] font-bold text-[var(--tx)]">Clients referred</span>
               <svg
                 width="16"
                 height="16"
@@ -96,19 +96,19 @@ export default function AgentDetailModal({
                       className="w-full text-left group"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-ui font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
+                        <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
                           {r.client_name || "—"}
                         </span>
-                        <span className="text-label font-semibold text-[var(--gold)]">
+                        <span className="text-[10px] font-semibold text-[var(--gold)]">
                           {r.commission ? formatCurrency(r.commission) : "—"}
                         </span>
                       </div>
-                      <div className="text-label text-[var(--tx3)] mt-0.5">
+                      <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                         {r.property && <span>{r.property}</span>}
                       </div>
                     </button>
                     {clientDetailId === r.id && (
-                      <div className="mt-2 pt-2 border-t border-[var(--brd)] text-caption text-[var(--tx2)] space-y-1">
+                      <div className="mt-2 pt-2 border-t border-[var(--brd)] text-[11px] text-[var(--tx2)] space-y-1">
                         <div><span className="text-[var(--tx3)]">Address:</span> {r.property || "—"}</div>
                         <div className="flex items-center gap-2">
                           <Badge status={r.status} />
@@ -116,12 +116,12 @@ export default function AgentDetailModal({
                         {(r.move_id || clientNameToMoveId[r.client_name || ""]) ? (
                           <Link
                             href={`/admin/moves/${r.move_id || clientNameToMoveId[r.client_name || ""]}`}
-                            className="inline-block mt-2 text-label font-semibold text-[var(--gold)] hover:underline"
+                            className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline"
                           >
                             View move →
                           </Link>
                         ) : (
-                          <span className="inline-block mt-2 text-label text-[var(--tx3)]">No move linked</span>
+                          <span className="inline-block mt-2 text-[10px] text-[var(--tx3)]">No move linked</span>
                         )}
                       </div>
                     )}
@@ -134,7 +134,7 @@ export default function AgentDetailModal({
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2 rounded-lg text-caption font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
+          className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
         >
           Close
         </button>

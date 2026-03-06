@@ -279,7 +279,7 @@ export default function DataTable<T>({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-ui text-[var(--tx)] placeholder:text-[var(--tx3)]/50 focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/50 focus:border-[var(--gold)] outline-none transition-colors"
             />
           </div>
         )}
@@ -289,7 +289,7 @@ export default function DataTable<T>({
             <button
               type="button"
               onClick={handleExport}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-label font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
             >
               <Download className="w-3 h-3" /> Export
             </button>
@@ -300,7 +300,7 @@ export default function DataTable<T>({
               <button
                 type="button"
                 onClick={() => setShowColMenu((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-label font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
               >
                 <Columns3 className="w-3 h-3" /> Columns
               </button>
@@ -314,7 +314,7 @@ export default function DataTable<T>({
                     {columns.map((col) => (
                       <label
                         key={col.id}
-                        className="flex items-center gap-2.5 px-3 py-1.5 text-caption text-[var(--tx2)] hover:bg-[var(--bg)]/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--bg)]/50 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -345,7 +345,7 @@ export default function DataTable<T>({
                   <th
                     key={col.id}
                     onClick={isSortable ? () => handleSort(col.id) : undefined}
-                    className={`text-section font-bold tracking-[0.12em] uppercase py-2.5 px-3 whitespace-nowrap select-none transition-colors ${
+                    className={`text-[9px] font-bold tracking-[0.12em] uppercase py-2.5 px-3 whitespace-nowrap select-none transition-colors ${
                       col.align === "right"
                         ? "text-right"
                         : col.align === "center"
@@ -389,9 +389,9 @@ export default function DataTable<T>({
                   className="py-16 text-center"
                 >
                   {emptyIcon && <div className="flex justify-center mb-2">{emptyIcon}</div>}
-                  <p className="text-body text-[var(--tx3)]">{emptyMessage}</p>
+                  <p className="text-[13px] text-[var(--tx3)]">{emptyMessage}</p>
                   {emptySubtext && (
-                    <p className="text-caption text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>
+                    <p className="text-[11px] text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>
                   )}
                 </td>
               </tr>
@@ -404,14 +404,14 @@ export default function DataTable<T>({
                 <tr
                   key={getKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`border-b border-[var(--brd)]/20 transition-colors ${
-                    onRowClick ? "cursor-pointer hover:bg-[var(--bg)]/50" : ""
+                  className={`border-b border-[var(--brd)]/20 ${
+                    onRowClick ? "cursor-pointer admin-row-hover" : ""
                   } ${rowClassName ? rowClassName(row) : ""}`}
                 >
                   {visibleCols.map((col) => (
                     <td
                       key={col.id}
-                      className={`py-3 px-3 text-ui ${
+                      className={`py-3 px-3 text-[12px] ${
                         col.align === "right"
                           ? "text-right"
                           : col.align === "center"
@@ -434,7 +434,7 @@ export default function DataTable<T>({
       {/* ── Pagination ── */}
       {pagination && sorted.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-[var(--brd)]/20 mt-1">
-          <div className="text-label text-[var(--tx3)]">
+          <div className="text-[10px] text-[var(--tx3)]">
             Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, sorted.length)} of{" "}
             {sorted.length}{search.trim() && data.length !== sorted.length ? ` (filtered from ${data.length})` : ""}
           </div>
@@ -449,7 +449,7 @@ export default function DataTable<T>({
             </button>
             {pageNumbers.map((pn, i) =>
               pn === "…" ? (
-                <span key={`e${i}`} className="px-1 text-label text-[var(--tx3)]">
+                <span key={`e${i}`} className="px-1 text-[10px] text-[var(--tx3)]">
                   …
                 </span>
               ) : (
@@ -457,7 +457,7 @@ export default function DataTable<T>({
                   key={pn}
                   type="button"
                   onClick={() => setPage(pn as number)}
-                  className={`min-w-[28px] h-[28px] rounded-md text-label font-semibold transition-colors ${
+                  className={`min-w-[28px] h-[28px] rounded-md text-[10px] font-semibold transition-colors ${
                     safePage === pn
                       ? "bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30"
                       : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50"
@@ -480,7 +480,7 @@ export default function DataTable<T>({
               <select
                 value={perPage}
                 onChange={(e) => changePerPage(Number(e.target.value))}
-                className="text-label bg-[var(--card)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                className="text-[10px] bg-[var(--card)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
               >
                 {perPageOptions.map((n) => (
                   <option key={n} value={n}>

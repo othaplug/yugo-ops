@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
@@ -37,8 +40,8 @@ export default async function ChangeRequestsPage() {
       <div className="mb-4 flex items-center justify-between">
         <BackButton label="Back" />
       </div>
-      <h1 className="font-heading text-h2-sm font-bold text-[var(--tx)] mb-1">Change Requests</h1>
-      <p className="text-ui text-[var(--tx3)] mb-5">
+      <h1 className="font-heading text-[20px] font-bold text-[var(--tx)] mb-1">Change Requests</h1>
+      <p className="text-[12px] text-[var(--tx3)] mb-5">
         Client-submitted change requests. Review and approve or reject.
       </p>
       <ChangeRequestsClient

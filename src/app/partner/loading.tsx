@@ -3,7 +3,7 @@ export default function PartnerLoading() {
     <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#C9A962] border-t-transparent rounded-full animate-spin" />
-        <span className="text-ui text-[#888] font-medium">Loading your portal...</span>
+        <span className="text-[12px] text-[#888] font-medium">Loading your portal...</span>
       </div>
     </div>
   );

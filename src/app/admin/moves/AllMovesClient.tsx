@@ -196,7 +196,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Date",
       accessor: (m) => m.scheduled_date || "",
       render: (m) => (
-        <span className="text-caption font-semibold text-[var(--tx)] tabular-nums whitespace-nowrap">
+        <span className="text-[11px] font-semibold text-[var(--tx)] tabular-nums whitespace-nowrap">
           {formatMoveDate(m.scheduled_date)}
         </span>
       ),
@@ -208,8 +208,8 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       accessor: (m) => m.client_name || "",
       render: (m) => (
         <div className="min-w-0">
-          <span className="text-ui font-bold text-[var(--tx)] truncate block">{m.client_name || "—"}</span>
-          <span className="text-label text-[var(--tx3)] truncate block mt-0.5">{truncAddr(m.from_address, m.to_address, 40)}</span>
+          <span className="text-[12px] font-bold text-[var(--tx)] truncate block">{m.client_name || "—"}</span>
+          <span className="text-[10px] text-[var(--tx3)] truncate block mt-0.5">{truncAddr(m.from_address, m.to_address, 40)}</span>
         </div>
       ),
       minWidth: "180px",
@@ -219,7 +219,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Status",
       accessor: (m) => m.status || "",
       render: (m) => (
-        <span className={`inline-flex px-1.5 py-0.5 rounded text-micro font-bold uppercase tracking-wide ${statusBadgeStyle(m.status || "")}`}>
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadgeStyle(m.status || "")}`}>
           {getStatusLabel(m.status ?? null)}
         </span>
       ),
@@ -230,11 +230,11 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       accessor: (m) => m._type || "",
       render: (m) => (
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex px-1.5 py-0.5 rounded text-micro font-medium bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
+          <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-medium bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
             {typeLabel(m._type)}
           </span>
           {m._type === "residential" && m.tier_selected && (
-            <span className={`inline-flex px-1.5 py-0.5 rounded text-micro font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
+            <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
               {toTitleCase(m.tier_selected)}
             </span>
           )}
@@ -246,7 +246,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Crew",
       accessor: (m) => (m.crew_id ? crewMap[m.crew_id] || "" : ""),
       render: (m) => (
-        <span className="text-caption text-[var(--tx3)]">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
+        <span className="text-[11px] text-[var(--tx3)]">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
       ),
       defaultHidden: false,
     },
@@ -258,8 +258,8 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         const est = Number(m.estimate ?? 0);
         return (
           <span className="inline-flex items-baseline gap-1">
-            <span className="text-ui font-bold text-[var(--gold)] font-heading">{formatCurrency(est)}</span>
-            {est > 0 && <span className="text-micro text-[var(--tx3)]">+{hstAmount(est)} HST</span>}
+            <span className="text-[12px] font-bold text-[var(--gold)] font-heading">{formatCurrency(est)}</span>
+            {est > 0 && <span className="text-[8px] text-[var(--tx3)]">+{hstAmount(est)} HST</span>}
           </span>
         );
       },
@@ -397,21 +397,21 @@ export default function AllMovesClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div>
-          <h1 className="font-heading text-h2-sm font-bold text-[var(--tx)]">All Moves</h1>
-          <p className="text-ui text-[var(--tx3)] mt-0.5">
+          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">All Moves</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5">
             Manage all service types in one view
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/admin/quotes/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-caption font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors whitespace-nowrap"
           >
             New Quote
           </Link>
           <Link
             href="/admin/moves/new"
-            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
           >
             + New Move
           </Link>
@@ -421,7 +421,7 @@ export default function AllMovesClient({
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Total Moves
           </div>
           <div className="flex items-baseline gap-2">
@@ -430,7 +430,7 @@ export default function AllMovesClient({
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Upcoming
           </div>
           <div className="flex items-baseline gap-2">
@@ -441,7 +441,7 @@ export default function AllMovesClient({
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Total Revenue
           </div>
           <div className="flex items-baseline gap-2">
@@ -452,7 +452,7 @@ export default function AllMovesClient({
           </div>
         </div>
         <div>
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
             Avg $/Move
           </div>
           <div className="flex items-baseline gap-2">
@@ -475,10 +475,10 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("type", f.value)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label font-semibold border transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-150 ${
                   isActive
-                    ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
-                    : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)] hover:text-[var(--tx2)]"
+                    ? "border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,0.25)]"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] hover:bg-[var(--gdim)]"
                 }`}
               >
                 {f.label}
@@ -500,10 +500,10 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("status", f.value)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label font-medium border transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all duration-150 ${
                   isActive
-                    ? "border-[var(--tx3)] bg-[var(--bg2)] text-[var(--tx)]"
-                    : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
+                    ? "border-[var(--tx3)]/60 bg-[var(--bg2)] text-[var(--tx)] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
+                    : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
                 }`}
               >
                 {f.label}
@@ -539,7 +539,7 @@ export default function AllMovesClient({
       {recentQuotes.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Recent Quotes</h2>
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Recent Quotes</h2>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[var(--brd)] scrollbar-track-transparent">
             {recentQuotes.map((q) => {
@@ -548,28 +548,28 @@ export default function AllMovesClient({
                 <Link
                   key={q.id}
                   href={`/admin/quotes/${q.quote_id || q.id}/edit`}
-                  className="shrink-0 w-[220px] p-3.5 rounded-xl border border-transparent hover:border-[var(--brd)]/40 hover:bg-[var(--card)] active:scale-[0.97] transition-all duration-150 block cursor-pointer"
+                  className="shrink-0 w-[220px] p-3.5 rounded-xl border border-[var(--brd)]/30 bg-[var(--card)] hover:border-[var(--gold)]/40 hover:bg-[var(--card)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.25),0_0_0_1px_rgba(201,169,98,0.18)] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 block cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="text-label font-mono text-[var(--tx3)]">{q.quote_id}</span>
+                    <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-micro font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
                     >
                       {toTitleCase(q.status)}
                     </span>
                   </div>
-                  <div className="text-body font-bold text-[var(--tx)] truncate">
+                  <div className="text-[13px] font-bold text-[var(--tx)] truncate">
                     {q.client_name || "—"}
                   </div>
-                  <div className="text-label text-[var(--tx3)] mt-0.5 truncate">
+                  <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                     {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
                   </div>
                   <div className="mt-1.5">
-                    <span className="text-title font-bold text-[var(--gold)] font-heading">
+                    <span className="text-[14px] font-bold text-[var(--gold)] font-heading">
                       {quoteAmount(q)}
                     </span>
                     {quoteAmountRaw(q) != null && (
-                      <span className="text-micro text-[var(--tx3)] ml-0.5">+{hstAmount(quoteAmountRaw(q)!)} HST</span>
+                      <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{hstAmount(quoteAmountRaw(q)!)} HST</span>
                     )}
                   </div>
                 </Link>
@@ -580,9 +580,9 @@ export default function AllMovesClient({
               href="/admin/quotes"
               className="shrink-0 w-[140px] rounded-lg flex flex-col items-center justify-center gap-1.5 hover:bg-[var(--bg)]/30 transition-colors p-3.5"
             >
-              <span className="text-h2-sm text-[var(--gold)]">→</span>
-              <span className="text-caption font-semibold text-[var(--gold)]">View All</span>
-              <span className="text-section text-[var(--tx3)]">Quotes</span>
+              <span className="text-[20px] text-[var(--gold)]">→</span>
+              <span className="text-[11px] font-semibold text-[var(--gold)]">View All</span>
+              <span className="text-[9px] text-[var(--tx3)]">Quotes</span>
             </Link>
           </div>
         </div>

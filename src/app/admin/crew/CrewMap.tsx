@@ -134,8 +134,8 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
     return (
       <>
         <div className="mb-4">
-          <h2 className="font-heading text-h3-sm font-bold text-[var(--tx)]">Live Tracking</h2>
-          <p className="text-caption text-[var(--tx3)] mt-0.5">Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)</p>
+          <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)</p>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
           <div className="w-full rounded-lg border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
@@ -154,8 +154,8 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
   return (
     <>
       <div className="mb-4">
-        <h2 className="font-heading text-h3-sm font-bold text-[var(--tx)]">Live Tracking</h2>
-        <p className="text-caption text-[var(--tx3)] mt-0.5">Click a team for details</p>
+        <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team for details</p>
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
         <div className="w-full rounded-lg border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
@@ -194,13 +194,13 @@ function CrewListAndModal({
             onClick={() => setSelectedCrew(c)}
             className="flex items-center gap-3 px-4 py-3.5 bg-[var(--card)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)] transition-all text-left group"
           >
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-label font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
               {c.name?.replace("Team ", "")}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-ui font-bold text-[var(--tx)]">{c.name}</div>
-              <div className="text-label text-[var(--tx3)] mt-0.5 truncate">{(c.members || []).join(", ")}</div>
-              <div className="text-section text-[var(--tx2)] mt-0.5">{c.status === "en-route" ? `En route • ${c.current_job}` : c.current_job || "Standby"}</div>
+              <div className="text-[12px] font-bold text-[var(--tx)]">{c.name}</div>
+              <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">{(c.members || []).join(", ")}</div>
+              <div className="text-[9px] text-[var(--tx2)] mt-0.5">{c.status === "en-route" ? `En route • ${c.current_job}` : c.current_job || "Standby"}</div>
             </div>
             <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.status === "en-route" ? "bg-[var(--org)] animate-pulse" : "bg-[var(--grn)]"}`} />
           </button>
@@ -225,25 +225,25 @@ function CrewListAndModal({
             return (
               <div className="p-5 space-y-5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-semibold ${isEnRoute ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--grdim)] text-[var(--grn)]"}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${isEnRoute ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--grdim)] text-[var(--grn)]"}`}>
                     <span className={`w-2 h-2 rounded-full ${isEnRoute ? "bg-[var(--gold)] animate-pulse" : "bg-[var(--grn)]"}`} />
                     {isEnRoute ? "En route" : "Standby"}
                   </span>
                   {selectedCrew.updated_at && (
-                    <span className="text-label text-[var(--tx3)]">Updated {formatDate(selectedCrew.updated_at)}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">Updated {formatDate(selectedCrew.updated_at)}</span>
                   )}
                 </div>
 
                 {stageInsight && (
                   <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/60">
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">What&apos;s happening</div>
-                    <div className="text-body text-[var(--tx)]">{stageInsight}</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">What&apos;s happening</div>
+                    <div className="text-[13px] text-[var(--tx)]">{stageInsight}</div>
                   </div>
                 )}
 
                 {activeProject && (
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project stage</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project stage</div>
                     <div className="flex items-center gap-1">
                       {PROJECT_STAGES.map((s, i) => {
                         const isActive = currentStageIdx === i;
@@ -253,13 +253,13 @@ function CrewListAndModal({
                           <div key={s} className="flex items-center flex-1 min-w-0">
                             <div className="flex flex-col items-center flex-1 min-w-0">
                               <div
-                                className={`w-7 h-7 rounded-full flex items-center justify-center text-section font-bold shrink-0 transition-colors ${
+                                className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-colors ${
                                   isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
                                 }`}
                               >
                                 {isPast ? "✓" : i + 1}
                               </div>
-                              <span className={`text-section mt-1 truncate w-full text-center ${isActive ? "text-[var(--gold)] font-semibold" : isPast ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
+                              <span className={`text-[9px] mt-1 truncate w-full text-center ${isActive ? "text-[var(--gold)] font-semibold" : isPast ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
                                 {STAGE_LABELS[s] || s}
                               </span>
                             </div>
@@ -275,7 +275,7 @@ function CrewListAndModal({
 
                 {isEnRoute && (
                   <div>
-                    <div className="flex justify-between text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+                    <div className="flex justify-between text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
                       <span>Job progress</span>
                       <span className="text-[var(--grn)]">{progress}%</span>
                     </div>
@@ -287,23 +287,23 @@ function CrewListAndModal({
 
                 {delay > 0 && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--ordim)] border border-[var(--org)]/30">
-                    <span className="text-ui font-semibold text-[var(--org)]">~{delay} min delay</span>
+                    <span className="text-[12px] font-semibold text-[var(--org)]">~{delay} min delay</span>
                   </div>
                 )}
 
                 {!activeProject && selectedCrew.current_job && (
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current activity</div>
-                    <div className="text-body text-[var(--tx)]">{selectedCrew.current_job}</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current activity</div>
+                    <div className="text-[13px] text-[var(--tx)]">{selectedCrew.current_job}</div>
                   </div>
                 )}
                 {activeProject && (
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current project</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current project</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] space-y-1.5">
-                      <div className="text-ui font-semibold text-[var(--tx)]">{activeProject.delivery_number || `#${activeProject.id.slice(0, 8)}`}</div>
+                      <div className="text-[12px] font-semibold text-[var(--tx)]">{activeProject.delivery_number || `#${activeProject.id.slice(0, 8)}`}</div>
                       {(activeProject.pickup_address || activeProject.delivery_address) && (
-                        <div className="text-caption text-[var(--tx2)] space-y-0.5">
+                        <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
                           {activeProject.pickup_address && (
                             <div className="truncate">
                               <span className="text-[var(--tx3)]">From:</span> {activeProject.pickup_address}
@@ -317,7 +317,7 @@ function CrewListAndModal({
                         </div>
                       )}
                       {activeProject.scheduled_date && (
-                        <div className="text-label text-[var(--tx3)]">
+                        <div className="text-[10px] text-[var(--tx3)]">
                           {new Date(activeProject.scheduled_date).toLocaleDateString(undefined, {
                             weekday: "short",
                             month: "short",
@@ -333,12 +333,12 @@ function CrewListAndModal({
 
                 {nextProject && (
                   <div>
-                    <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Up next</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Up next</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/60 border border-[var(--brd)]/80">
-                      <div className="text-ui font-semibold text-[var(--tx)]">{nextProject.delivery_number || `#${nextProject.id.slice(0, 8)}`}</div>
-                      {nextProject.delivery_address && <div className="text-caption text-[var(--tx2)] mt-0.5 truncate">{nextProject.delivery_address}</div>}
+                      <div className="text-[12px] font-semibold text-[var(--tx)]">{nextProject.delivery_number || `#${nextProject.id.slice(0, 8)}`}</div>
+                      {nextProject.delivery_address && <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{nextProject.delivery_address}</div>}
                       {nextProject.scheduled_date && (
-                        <div className="text-label text-[var(--tx3)] mt-0.5">
+                        <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                           {new Date(nextProject.scheduled_date).toLocaleDateString(undefined, {
                             weekday: "short",
                             month: "short",
@@ -353,10 +353,10 @@ function CrewListAndModal({
                 )}
 
                 <div>
-                  <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team members</div>
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team members</div>
                   <div className="flex flex-wrap gap-2">
                     {(selectedCrew.members || []).map((m) => (
-                      <span key={m} className="px-3 py-1.5 rounded-lg text-caption font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">
+                      <span key={m} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">
                         {m}
                       </span>
                     ))}

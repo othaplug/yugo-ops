@@ -87,7 +87,7 @@ function EditCell({ value, onChange, type = "text", className = "" }: {
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => { setEditing(false); if (local !== String(value)) onChange(local); }}
       onKeyDown={(e) => { if (e.key === "Enter") { setEditing(false); if (local !== String(value)) onChange(local); } if (e.key === "Escape") { setEditing(false); setLocal(String(value)); } }}
-      className={`px-2 py-1 rounded border border-[var(--gold)] bg-[var(--card)] text-[var(--tx)] text-ui outline-none w-full ${className}`}
+      className={`px-2 py-1 rounded border border-[var(--gold)] bg-[var(--card)] text-[var(--tx)] text-[12px] outline-none w-full ${className}`}
     />
   );
 }
@@ -108,8 +108,8 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
         className="w-full flex items-center justify-between py-3 hover:bg-[var(--bg2)]/30 transition-colors text-left"
       >
         <div>
-          <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{title}</h3>
-          {subtitle && <p className="text-label text-[var(--tx3)] mt-0.5">{subtitle}</p>}
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{title}</h3>
+          {subtitle && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{subtitle}</p>}
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-[var(--tx3)] transition-transform ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
       </button>
@@ -172,15 +172,15 @@ function useSection(section: string) {
 }
 
 /* ────────── Table wrapper ────────── */
-const tbl = "w-full text-ui";
-const th = "text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2";
+const tbl = "w-full text-[12px]";
+const th = "text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2";
 const td = "py-1.5 px-2 border-t border-[var(--brd)]/50";
 
 function SaveBar({ onSave, onUndo }: { onSave: () => void; onUndo: () => void }) {
   return (
     <div className="flex items-center gap-2 pt-3">
-      <button type="button" onClick={onSave} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">Save</button>
-      <button type="button" onClick={onUndo} className="px-3 py-2 rounded-lg text-caption font-medium text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors">Undo</button>
+      <button type="button" onClick={onSave} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">Save</button>
+      <button type="button" onClick={onUndo} className="px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors">Undo</button>
     </div>
   );
 }
@@ -212,8 +212,8 @@ function AnalyticsDashboard() {
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
       {metrics.map((m) => (
         <div key={m.label} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl px-4 py-3">
-          <div className="text-section font-bold tracking-wider uppercase text-[var(--tx3)]">{m.label}</div>
-          <div className="text-h3 font-bold text-[var(--tx)] mt-1 truncate">{m.value}</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{m.label}</div>
+          <div className="text-[16px] font-bold text-[var(--tx)] mt-1 truncate">{m.value}</div>
         </div>
       ))}
     </div>
@@ -235,23 +235,23 @@ function BaseRatesSection() {
         <tbody>
           {rows.map((r) => (
             <tr key={String(r.id)}>
-              <td className={td}><span className="text-ui font-medium text-[var(--tx)]">{LABELS[String(r.move_size)] || String(r.move_size)}</span></td>
+              <td className={td}><span className="text-[12px] font-medium text-[var(--tx)]">{LABELS[String(r.move_size)] || String(r.move_size)}</span></td>
               <td className={td}><EditCell value={Number(r.base_price)} onChange={(v) => updateRow(String(r.id), "base_price", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
               <td className={td}><EditCell value={Number(r.min_crew)} onChange={(v) => updateRow(String(r.id), "min_crew", Number(v))} type="number" /></td>
               <td className={td}><EditCell value={Number(r.estimated_hours)} onChange={(v) => updateRow(String(r.id), "estimated_hours", Number(v))} type="number" /></td>
-              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="e.g. townhouse" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)]" />
-          <button type="button" onClick={async () => { if (newSize.trim()) { await add({ move_size: newSize.trim(), base_price: 0, min_crew: 2, estimated_hours: 0 }); setNewSize(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <input value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="e.g. townhouse" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)]" />
+          <button type="button" onClick={async () => { if (newSize.trim()) { await add({ move_size: newSize.trim(), base_price: 0, min_crew: 2, estimated_hours: 0 }); setNewSize(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Move Size</button>
+        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Move Size</button>
       )}
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
@@ -299,7 +299,7 @@ function TierMultipliersSection() {
         </tbody>
       </table>
 
-      <div className="bg-[var(--bg)] rounded-lg px-4 py-3 text-caption text-[var(--tx3)]">
+      <div className="bg-[var(--bg)] rounded-lg px-4 py-3 text-[11px] text-[var(--tx3)]">
         <span className="font-semibold text-[var(--tx)]">Live preview</span> (base ${previewBase.toLocaleString()}):
         <span className="ml-2">Essentials = <b className="text-[var(--gold)]">{currency(preview(essM))}</b></span>
         <span className="ml-2">→ Premier = <b className="text-[var(--gold)]">{currency(preview(premM))}</b></span>
@@ -316,8 +316,8 @@ function TierMultipliersSection() {
           if (!row) return null;
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
-              <div className="text-section font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
-              <EditCell value={c.val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-title font-bold text-[var(--tx)]" />
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
+              <EditCell value={c.val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[14px] font-bold text-[var(--tx)]" />
             </div>
           );
         })}
@@ -346,10 +346,10 @@ function NeighbourhoodsSection() {
   return (
     <div className="pt-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search postal code or name…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)] flex-1 min-w-[180px]" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search postal code or name…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)] flex-1 min-w-[180px]" />
         <div className="flex gap-1">
           {["", "A", "B", "C", "D"].map((t) => (
-            <button key={t} type="button" onClick={() => setFilterTier(t)} className={`px-2.5 py-1 rounded-lg text-label font-semibold transition-colors ${filterTier === t ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
+            <button key={t} type="button" onClick={() => setFilterTier(t)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filterTier === t ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
               {t || "All"}
             </button>
           ))}
@@ -361,11 +361,11 @@ function NeighbourhoodsSection() {
           <tbody>
             {filtered.map((r) => (
               <tr key={String(r.id)}>
-                <td className={td}><span className="font-mono text-caption">{String(r.postal_prefix)}</span></td>
-                <td className={td}><span className="text-ui">{String(r.neighbourhood_name)}</span></td>
-                <td className={td}><span className={`inline-block px-2 py-0.5 rounded-full text-section font-bold border ${TIER_BADGE[String(r.tier)] || TIER_BADGE.C}`}>{String(r.tier)}</span></td>
+                <td className={td}><span className="font-mono text-[11px]">{String(r.postal_prefix)}</span></td>
+                <td className={td}><span className="text-[12px]">{String(r.neighbourhood_name)}</span></td>
+                <td className={td}><span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold border ${TIER_BADGE[String(r.tier)] || TIER_BADGE.C}`}>{String(r.tier)}</span></td>
                 <td className={td}><EditCell value={Number(r.multiplier)} onChange={(v) => updateRow(String(r.id), "multiplier", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
-                <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+                <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
               </tr>
             ))}
           </tbody>
@@ -373,17 +373,17 @@ function NeighbourhoodsSection() {
       </div>
       {adding ? (
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          <input value={newRow.postal_prefix} onChange={(e) => setNewRow({ ...newRow, postal_prefix: e.target.value.toUpperCase() })} placeholder="M5R" className="w-20 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none" />
-          <input value={newRow.neighbourhood_name} onChange={(e) => setNewRow({ ...newRow, neighbourhood_name: e.target.value })} placeholder="Neighbourhood" className="flex-1 min-w-[120px] px-2 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none" />
-          <select value={newRow.tier} onChange={(e) => setNewRow({ ...newRow, tier: e.target.value })} className="px-2 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none">
+          <input value={newRow.postal_prefix} onChange={(e) => setNewRow({ ...newRow, postal_prefix: e.target.value.toUpperCase() })} placeholder="M5R" className="w-20 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
+          <input value={newRow.neighbourhood_name} onChange={(e) => setNewRow({ ...newRow, neighbourhood_name: e.target.value })} placeholder="Neighbourhood" className="flex-1 min-w-[120px] px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
+          <select value={newRow.tier} onChange={(e) => setNewRow({ ...newRow, tier: e.target.value })} className="px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none">
             <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
           </select>
-          <input value={newRow.multiplier} onChange={(e) => setNewRow({ ...newRow, multiplier: e.target.value })} placeholder="1.00" className="w-16 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none" type="number" step="0.01" />
-          <button type="button" onClick={async () => { await add({ postal_prefix: newRow.postal_prefix, neighbourhood_name: newRow.neighbourhood_name, tier: newRow.tier, multiplier: Number(newRow.multiplier) }); setNewRow({ postal_prefix: "", neighbourhood_name: "", tier: "C", multiplier: "1.00" }); setAdding(false); }} className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <input value={newRow.multiplier} onChange={(e) => setNewRow({ ...newRow, multiplier: e.target.value })} placeholder="1.00" className="w-16 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" type="number" step="0.01" />
+          <button type="button" onClick={async () => { await add({ postal_prefix: newRow.postal_prefix, neighbourhood_name: newRow.neighbourhood_name, tier: newRow.tier, multiplier: Number(newRow.multiplier) }); setNewRow({ postal_prefix: "", neighbourhood_name: "", tier: "C", multiplier: "1.00" }); setAdding(false); }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Neighbourhood</button>
+        <button type="button" onClick={() => setAdding(true)} className="text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Neighbourhood</button>
       )}
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
@@ -404,22 +404,22 @@ function AccessScoresSection() {
         <tbody>
           {rows.map((r) => (
             <tr key={String(r.id)}>
-              <td className={td}><span className="text-ui">{String(r.access_type).replace(/_/g, " ")}</span></td>
+              <td className={td}><span className="text-[12px]">{String(r.access_type).replace(/_/g, " ")}</span></td>
               <td className={td}><EditCell value={Number(r.surcharge)} onChange={(v) => updateRow(String(r.id), "surcharge", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
               <td className={td}><EditCell value={String(r.notes || "")} onChange={(v) => updateRow(String(r.id), "notes", v)} className="text-[var(--tx3)]" /></td>
-              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. rooftop_access" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newType.trim()) { await add({ access_type: newType.trim(), surcharge: 0, notes: "" }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. rooftop_access" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <button type="button" onClick={async () => { if (newType.trim()) { await add({ access_type: newType.trim(), surcharge: 0, notes: "" }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Access Type</button>
+        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Access Type</button>
       )}
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
@@ -443,7 +443,7 @@ function DateFactorsSection() {
 
   const renderGroup = (title: string, type: string) => (
     <div>
-      <h4 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
+      <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
       <table className={tbl}>
         <thead><tr><th className={th}>Condition</th><th className={th}>Multiplier</th></tr></thead>
         <tbody>
@@ -483,7 +483,7 @@ function SpecialtySurchargesSection() {
         <tbody>
           {rows.map((r) => (
             <tr key={String(r.id)}>
-              <td className={td}><span className="text-ui">{String(r.item_type).replace(/_/g, " ")}</span></td>
+              <td className={td}><span className="text-[12px]">{String(r.item_type).replace(/_/g, " ")}</span></td>
               <td className={td}><EditCell value={Number(r.surcharge)} onChange={(v) => updateRow(String(r.id), "surcharge", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
               <td className={td}>
                 <button
@@ -496,19 +496,19 @@ function SpecialtySurchargesSection() {
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${r.requires_specialty_crew ? "translate-x-4" : "translate-x-0"}`} />
                 </button>
               </td>
-              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. piano_baby_grand" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newType.trim()) { await add({ item_type: newType.trim(), surcharge: 0, requires_specialty_crew: false }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. piano_baby_grand" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <button type="button" onClick={async () => { if (newType.trim()) { await add({ item_type: newType.trim(), surcharge: 0, requires_specialty_crew: false }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Item Type</button>
+        <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Item Type</button>
       )}
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
@@ -534,23 +534,23 @@ function SingleItemSection() {
         <tbody>
           {rows.map((r) => (
             <tr key={String(r.id)}>
-              <td className={td}><span className="text-ui">{String(r.item_category).replace(/_/g, " ")}</span></td>
+              <td className={td}><span className="text-[12px]">{String(r.item_category).replace(/_/g, " ")}</span></td>
               <td className={td}><EditCell value={Number(r.base_price_min)} onChange={(v) => updateRow(String(r.id), "base_price_min", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
               <td className={td}><EditCell value={Number(r.base_price_max)} onChange={(v) => updateRow(String(r.id), "base_price_max", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
               <td className={td}><EditCell value={String(r.weight_class || "")} onChange={(v) => updateRow(String(r.id), "weight_class", v)} className="text-[var(--tx3)]" /></td>
-              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+              <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       {adding ? (
         <div className="flex items-center gap-2">
-          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category name" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newCat.trim()) { await add({ item_category: newCat.trim(), base_price_min: 0, base_price_max: 0, weight_class: "varies" }); setNewCat(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category name" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <button type="button" onClick={async () => { if (newCat.trim()) { await add({ item_category: newCat.trim(), base_price_min: 0, base_price_max: 0, weight_class: "varies" }); setNewCat(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Category</button>
+        <button type="button" onClick={() => setAdding(true)} className="text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Category</button>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -566,16 +566,16 @@ function SingleItemSection() {
           if (!row) return null;
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
-              <div className="text-section font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
-              <EditCell value={row.value as string} onChange={(v) => configSection.updateRow(String(row.id), "value", v)} type="number" className="text-title font-bold text-[var(--tx)]" />
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
+              <EditCell value={row.value as string} onChange={(v) => configSection.updateRow(String(row.id), "value", v)} type="number" className="text-[14px] font-bold text-[var(--tx)]" />
             </div>
           );
         })}
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="button" onClick={() => save()} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Rates</button>
-        <button type="button" onClick={() => configSection.save()} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Config</button>
-        <button type="button" onClick={() => { undo(); configSection.undo(); }} className="px-3 py-2 rounded-lg text-caption text-[var(--tx3)]">Undo</button>
+        <button type="button" onClick={() => save()} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Rates</button>
+        <button type="button" onClick={() => configSection.save()} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Config</button>
+        <button type="button" onClick={() => { undo(); configSection.undo(); }} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">Undo</button>
       </div>
     </div>
   );
@@ -615,7 +615,7 @@ function DepositRulesSection() {
                         <select
                           value={String(cell.deposit_type)}
                           onChange={(e) => updateRow(String(cell.id), "deposit_type", e.target.value)}
-                          className="bg-transparent text-label text-[var(--tx3)] outline-none border-none cursor-pointer"
+                          className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
                         >
                           <option value="full">Full</option>
                           <option value="flat">Flat $</option>
@@ -650,9 +650,9 @@ function OfficeRatesSection() {
         <tbody>
           {rows.map((r) => (
             <tr key={String(r.id)}>
-              <td className={td}><span className="text-ui capitalize">{String(r.parameter).replace(/_/g, " ")}</span></td>
+              <td className={td}><span className="text-[12px] capitalize">{String(r.parameter).replace(/_/g, " ")}</span></td>
               <td className={td}><EditCell value={Number(r.value)} onChange={(v) => updateRow(String(r.id), "value", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
-              <td className={td}><span className="text-caption text-[var(--tx3)]">{String(r.unit)}</span></td>
+              <td className={td}><span className="text-[11px] text-[var(--tx3)]">{String(r.unit)}</span></td>
             </tr>
           ))}
         </tbody>
@@ -805,13 +805,13 @@ function TierEditor({ tiers, onChange }: { tiers: { label: string; price: number
     <div className="space-y-1 pl-4 border-l-2 border-[var(--gold)]/30">
       {items.map((t, i) => (
         <div key={i} className="flex items-center gap-2">
-          <input value={t.label} onChange={(e) => update(i, "label", e.target.value)} className="flex-1 px-2 py-1 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--tx)]" />
-          <span className="text-label text-[var(--tx3)]">$</span>
-          <input type="number" value={t.price} onChange={(e) => update(i, "price", e.target.value)} className="w-16 px-2 py-1 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--gold)] font-semibold" />
-          <button type="button" onClick={() => { const next = items.filter((_, j) => j !== i); setItems(next); onChange(next); }} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button>
+          <input value={t.label} onChange={(e) => update(i, "label", e.target.value)} className="flex-1 px-2 py-1 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--tx)]" />
+          <span className="text-[10px] text-[var(--tx3)]">$</span>
+          <input type="number" value={t.price} onChange={(e) => update(i, "price", e.target.value)} className="w-16 px-2 py-1 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--gold)] font-semibold" />
+          <button type="button" onClick={() => { const next = items.filter((_, j) => j !== i); setItems(next); onChange(next); }} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button>
         </div>
       ))}
-      <button type="button" onClick={() => { const next = [...items, { label: "", price: 0 }]; setItems(next); onChange(next); }} className="text-label text-[var(--gold)] hover:underline mt-1">+ Add tier</button>
+      <button type="button" onClick={() => { const next = [...items, { label: "", price: 0 }]; setItems(next); onChange(next); }} className="text-[10px] text-[var(--gold)] hover:underline mt-1">+ Add tier</button>
     </div>
   );
 }
@@ -821,9 +821,9 @@ function ServiceTypeMultiSelect({ selected, onChange }: { selected: string[]; on
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(!open)} className="flex flex-wrap gap-1 min-h-[24px] cursor-pointer">
-        {selected.length === 0 && <span className="text-section text-[var(--tx3)]">None</span>}
+        {selected.length === 0 && <span className="text-[9px] text-[var(--tx3)]">None</span>}
         {selected.map((s) => (
-          <span key={s} className={`inline-block px-1.5 py-0.5 rounded text-micro font-bold border ${SERVICE_TYPE_BADGES[s] || "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+          <span key={s} className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold border ${SERVICE_TYPE_BADGES[s] || "bg-[var(--bg)] text-[var(--tx3)]"}`}>
             {SERVICE_TYPE_LABELS[s] || s}
           </span>
         ))}
@@ -838,10 +838,10 @@ function ServiceTypeMultiSelect({ selected, onChange }: { selected: string[]; on
                 onChange={() => onChange(selected.includes(st) ? selected.filter((s) => s !== st) : [...selected, st])}
                 className="accent-[var(--gold)] w-3 h-3"
               />
-              <span className="text-label text-[var(--tx)]">{SERVICE_TYPE_LABELS[st]}</span>
+              <span className="text-[10px] text-[var(--tx)]">{SERVICE_TYPE_LABELS[st]}</span>
             </label>
           ))}
-          <button type="button" onClick={() => setOpen(false)} className="mt-1 text-section text-[var(--tx3)] hover:text-[var(--tx)]">Close</button>
+          <button type="button" onClick={() => setOpen(false)} className="mt-1 text-[9px] text-[var(--tx3)] hover:text-[var(--tx)]">Close</button>
         </div>
       )}
     </div>
@@ -857,7 +857,7 @@ function ExcludedTiersSelect({ selected, onChange }: { selected: string[] | null
           key={t}
           type="button"
           onClick={() => onChange(vals.includes(t) ? vals.filter((v) => v !== t) : [...vals, t])}
-          className={`px-1.5 py-0.5 rounded text-micro font-semibold border capitalize transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[8px] font-semibold border capitalize transition-colors ${
             vals.includes(t)
               ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
               : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -893,23 +893,23 @@ function AddOnsSection() {
   return (
     <div className="pt-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search add-ons…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)] flex-1 min-w-[160px]" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search add-ons…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--gold)] flex-1 min-w-[160px]" />
         <div className="flex gap-1 flex-wrap">
           {FILTER_TABS.map((t) => (
-            <button key={t.key} type="button" onClick={() => setFilter(t.key)} className={`px-2.5 py-1 rounded-lg text-label font-semibold transition-colors ${filter === t.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
+            <button key={t.key} type="button" onClick={() => setFilter(t.key)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filter === t.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
               {t.label}
             </button>
           ))}
         </div>
         <label className="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" checked={showInactive} onChange={() => setShowInactive(!showInactive)} className="accent-[var(--gold)] w-3 h-3" />
-          <span className="text-section text-[var(--tx3)]">Show inactive</span>
+          <span className="text-[9px] text-[var(--tx3)]">Show inactive</span>
         </label>
       </div>
 
       {adding ? (
         <div className="flex items-center gap-2 p-3 bg-[var(--bg)] rounded-lg border border-[var(--brd)]">
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Add-on name" className="flex-1 px-3 py-1.5 border border-[var(--brd)] rounded-lg text-ui bg-[var(--card)] text-[var(--tx)] outline-none" />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Add-on name" className="flex-1 px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
           <button
             type="button"
             onClick={async () => {
@@ -931,17 +931,17 @@ function AddOnsSection() {
                 setAdding(false);
               }
             }}
-            className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
           >
             Add
           </button>
-          <button type="button" onClick={() => setAdding(false)} className="text-caption text-[var(--tx3)]">Cancel</button>
+          <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="text-caption font-semibold text-[var(--gold)] hover:underline">+ Add Add-On</button>
+        <button type="button" onClick={() => setAdding(true)} className="text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Add-On</button>
       )}
 
-      <div className="text-section text-[var(--tx3)]">{activeCount} active add-ons · {filtered.length} shown</div>
+      <div className="text-[9px] text-[var(--tx3)]">{activeCount} active add-ons · {filtered.length} shown</div>
 
       <div className="overflow-x-auto">
         <table className={tbl}>
@@ -970,27 +970,27 @@ function AddOnsSection() {
                   <tr className={!a.active ? "opacity-40" : ""}>
                     <td className={td}>
                       <div className="flex flex-col gap-0.5">
-                        <button type="button" onClick={() => moveRow(a.id, -1)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-section leading-none">▲</button>
-                        <button type="button" onClick={() => moveRow(a.id, 1)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-section leading-none">▼</button>
+                        <button type="button" onClick={() => moveRow(a.id, -1)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-[9px] leading-none">▲</button>
+                        <button type="button" onClick={() => moveRow(a.id, 1)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-[9px] leading-none">▼</button>
                       </div>
                     </td>
                     <td className={td}>
                       <EditCell value={String(a.name)} onChange={(v) => updateAddon(a.id, "name", v)} className="font-medium text-[var(--tx)]" />
-                      {a.description ? <div className="text-section text-[var(--tx3)] pl-2 truncate max-w-[200px]">{String(a.description)}</div> : null}
+                      {a.description ? <div className="text-[9px] text-[var(--tx3)] pl-2 truncate max-w-[200px]">{String(a.description)}</div> : null}
                     </td>
                     <td className={td}>
                       {isTiered ? (
-                        <button type="button" onClick={() => setExpandedTiers((s) => { const n = new Set(s); if (n.has(a.id)) n.delete(a.id); else n.add(a.id); return n; })} className="text-caption text-[var(--gold)] hover:underline">
+                        <button type="button" onClick={() => setExpandedTiers((s) => { const n = new Set(s); if (n.has(a.id)) n.delete(a.id); else n.add(a.id); return n; })} className="text-[11px] text-[var(--gold)] hover:underline">
                           {(a.tiers || []).length} tiers ▾
                         </button>
                       ) : isPercent ? (
                         <div className="flex items-center gap-1">
                           <EditCell value={Number(a.percent_value || 0) * 100} onChange={(v) => updateAddon(a.id, "percent_value", Number(v) / 100)} type="number" className="w-12 font-semibold text-[var(--gold)]" />
-                          <span className="text-label text-[var(--tx3)]">%</span>
+                          <span className="text-[10px] text-[var(--tx3)]">%</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-0.5">
-                          <span className="text-label text-[var(--tx3)]">$</span>
+                          <span className="text-[10px] text-[var(--tx3)]">$</span>
                           <EditCell value={Number(a.price)} onChange={(v) => updateAddon(a.id, "price", Number(v))} type="number" className="font-semibold text-[var(--gold)]" />
                         </div>
                       )}
@@ -999,7 +999,7 @@ function AddOnsSection() {
                       <select
                         value={a.price_type}
                         onChange={(e) => updateAddon(a.id, "price_type", e.target.value)}
-                        className="bg-transparent text-label text-[var(--tx3)] outline-none border-none cursor-pointer"
+                        className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
                       >
                         <option value="flat">Flat</option>
                         <option value="per_unit">Per unit</option>
@@ -1035,7 +1035,7 @@ function AddOnsSection() {
                       </button>
                     </td>
                     <td className={td}>
-                      <button type="button" onClick={() => softDelete(a.id)} className="text-[var(--tx3)] hover:text-red-400 text-caption" title="Deactivate">×</button>
+                      <button type="button" onClick={() => softDelete(a.id)} className="text-[var(--tx3)] hover:text-red-400 text-[11px]" title="Deactivate">×</button>
                     </td>
                   </tr>
                   {isTiered && tiersOpen && (
@@ -1080,12 +1080,12 @@ function InventoryVolumeSection() {
     <div className="space-y-6">
       {/* ── Volume Benchmarks ── */}
       <div>
-        <h4 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
-        <p className="text-section text-[var(--tx3)] mb-3">
+        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
+        <p className="text-[9px] text-[var(--tx3)] mb-3">
           These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
         </p>
         {bm.loading ? (
-          <p className="text-caption text-[var(--tx3)]">Loading…</p>
+          <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -1144,16 +1144,16 @@ function InventoryVolumeSection() {
       {/* ── Item Weight Scores ── */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
+          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-label text-[var(--tx3)] cursor-pointer">
+            <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
               Show inactive
             </label>
             <button
               type="button"
               onClick={() => iw.add({ item_name: "New Item", slug: `custom-${Date.now()}`, weight_score: 1.0, category: "furniture", is_common: false, active: true, display_order: 999 })}
-              className="text-label font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5"
+              className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5"
             >
               + Add Item
             </button>
@@ -1165,11 +1165,11 @@ function InventoryVolumeSection() {
           value={itemSearch}
           onChange={(e) => setItemSearch(e.target.value)}
           placeholder="Search items…"
-          className="w-full mb-3 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
+          className="w-full mb-3 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
         />
 
         {iw.loading ? (
-          <p className="text-caption text-[var(--tx3)]">Loading…</p>
+          <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
         ) : (
           <>
             <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
@@ -1192,13 +1192,13 @@ function InventoryVolumeSection() {
                         <EditCell value={String(r.item_name)} onChange={(v) => iw.updateRow(String(r.id), "item_name", v)} className="font-medium text-[var(--tx)]" />
                       </td>
                       <td className={td}>
-                        <span className="text-label font-mono text-[var(--tx3)]">{String(r.slug)}</span>
+                        <span className="text-[10px] font-mono text-[var(--tx3)]">{String(r.slug)}</span>
                       </td>
                       <td className={td}>
                         <select
                           value={Number(r.weight_score)}
                           onChange={(e) => iw.updateRow(String(r.id), "weight_score", Number(e.target.value))}
-                          className={`bg-transparent text-caption outline-none border-none cursor-pointer font-bold ${
+                          className={`bg-transparent text-[11px] outline-none border-none cursor-pointer font-bold ${
                             Number(r.weight_score) >= 2 ? "text-orange-400" : Number(r.weight_score) <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--gold)]"
                           }`}
                         >
@@ -1211,7 +1211,7 @@ function InventoryVolumeSection() {
                         <select
                           value={String(r.category)}
                           onChange={(e) => iw.updateRow(String(r.id), "category", e.target.value)}
-                          className="bg-transparent text-label text-[var(--tx3)] outline-none border-none cursor-pointer"
+                          className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
                         >
                           {CATEGORY_OPTS.map((c) => (
                             <option key={c} value={c}>{c}</option>
@@ -1229,14 +1229,14 @@ function InventoryVolumeSection() {
                         </button>
                       </td>
                       <td className={td}>
-                        <button type="button" onClick={() => iw.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption" title="Delete">×</button>
+                        <button type="button" onClick={() => iw.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]" title="Delete">×</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="text-section text-[var(--tx3)] mt-1">{filteredItems.length} items shown</div>
+            <div className="text-[9px] text-[var(--tx3)] mt-1">{filteredItems.length} items shown</div>
             <SaveBar onSave={() => iw.save()} onUndo={iw.undo} />
           </>
         )}
@@ -1257,10 +1257,10 @@ function FleetVehiclesSection() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
-          <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-label font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
+          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
+          <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
         </div>
-        {fleet.loading ? <p className="text-caption text-[var(--tx3)]">Loading…</p> : (
+        {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
             <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
               <table className={tbl}>
@@ -1276,7 +1276,7 @@ function FleetVehiclesSection() {
                 <tbody>
                   {fleet.rows.map((r) => (
                     <tr key={String(r.id)} className={!r.is_available ? "opacity-40" : ""}>
-                      <td className={`${td} font-mono text-label text-[var(--gold)]`}>{String(r.vehicle_type)}</td>
+                      <td className={`${td} font-mono text-[10px] text-[var(--gold)]`}>{String(r.vehicle_type)}</td>
                       <td className={td}><EditCell value={String(r.display_name)} onChange={(v) => fleet.updateRow(String(r.id), "display_name", v)} className="font-medium text-[var(--tx)]" /></td>
                       <td className={td}><EditCell value={Number(r.cargo_cubic_ft)} onChange={(v) => fleet.updateRow(String(r.id), "cargo_cubic_ft", Number(v))} type="number" className="w-16" /></td>
                       <td className={td}><EditCell value={Number(r.capacity_lbs)} onChange={(v) => fleet.updateRow(String(r.id), "capacity_lbs", Number(v))} type="number" className="w-16" /></td>
@@ -1286,7 +1286,7 @@ function FleetVehiclesSection() {
                           <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.is_available ? "translate-x-4" : ""}`} />
                         </button>
                       </td>
-                      <td className={td}><button type="button" onClick={() => fleet.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-caption">×</button></td>
+                      <td className={td}><button type="button" onClick={() => fleet.remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1298,9 +1298,9 @@ function FleetVehiclesSection() {
       </div>
 
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <h4 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
-        <p className="text-section text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
-        {rules.loading ? <p className="text-caption text-[var(--tx3)]">Loading…</p> : (
+        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
+        <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
+        {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
             <div className="overflow-x-auto">
               <table className={tbl}>
@@ -1317,12 +1317,12 @@ function FleetVehiclesSection() {
                       <td className={`${td} font-medium text-[var(--tx)]`}>{String(r.move_size)}</td>
                       <td className={`${td} text-[var(--tx3)]`}>{String(r.inventory_range)}</td>
                       <td className={td}>
-                        <select value={String(r.primary_vehicle)} onChange={(e) => rules.updateRow(String(r.id), "primary_vehicle", e.target.value)} className="bg-transparent text-caption text-[var(--gold)] font-bold outline-none border-none cursor-pointer">
+                        <select value={String(r.primary_vehicle)} onChange={(e) => rules.updateRow(String(r.id), "primary_vehicle", e.target.value)} className="bg-transparent text-[11px] text-[var(--gold)] font-bold outline-none border-none cursor-pointer">
                           {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
                         </select>
                       </td>
                       <td className={td}>
-                        <select value={String(r.secondary_vehicle || "")} onChange={(e) => rules.updateRow(String(r.id), "secondary_vehicle", e.target.value || "")} className="bg-transparent text-caption text-[var(--tx3)] outline-none border-none cursor-pointer">
+                        <select value={String(r.secondary_vehicle || "")} onChange={(e) => rules.updateRow(String(r.id), "secondary_vehicle", e.target.value || "")} className="bg-transparent text-[11px] text-[var(--tx3)] outline-none border-none cursor-pointer">
                           <option value="">None</option>
                           {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
                         </select>

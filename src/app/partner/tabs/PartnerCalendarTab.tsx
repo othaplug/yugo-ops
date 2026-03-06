@@ -63,7 +63,7 @@ export default function PartnerCalendarTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-h1 font-bold text-[#1A1A1A] font-hero">{monthLabel}</h3>
+        <h3 className="text-[26px] font-bold text-[#1A1A1A] font-hero">{monthLabel}</h3>
         <div className="flex gap-1">
           <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -76,7 +76,7 @@ export default function PartnerCalendarTab({
 
       <div className="grid grid-cols-7 gap-px bg-[#E8E4DF] border border-[#E8E4DF] rounded-xl overflow-hidden">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="bg-[#F5F3F0] py-2 text-center text-label font-semibold tracking-wider uppercase text-[#888]">
+          <div key={d} className="bg-[#F5F3F0] py-2 text-center text-[10px] font-semibold tracking-wider uppercase text-[#888]">
             {d}
           </div>
         ))}
@@ -93,19 +93,19 @@ export default function PartnerCalendarTab({
               onClick={() => onSelectDate?.(dateKey)}
               className={`bg-white min-h-[80px] p-1.5 text-left w-full rounded-lg border border-transparent hover:border-[#C9A962]/40 hover:bg-[#FAF8F5] transition-colors ${isToday ? "ring-2 ring-inset ring-[#C9A962]/50" : ""}`}
             >
-              <div className={`text-ui font-medium ${isToday ? "text-[#C9A962] font-bold" : "text-[#1A1A1A]"}`}>{day}</div>
+              <div className={`text-[12px] font-medium ${isToday ? "text-[#C9A962] font-bold" : "text-[#1A1A1A]"}`}>{day}</div>
               <div className="mt-1 space-y-0.5">
                 {dayDeliveries.slice(0, 3).map((d) => (
-                  <div key={d.id} className="flex items-center gap-1 px-1 py-0.5 rounded text-section truncate bg-[#F5F3F0]">
+                  <div key={d.id} className="flex items-center gap-1 px-1 py-0.5 rounded text-[9px] truncate bg-[#F5F3F0]">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_DOT[(d.status || "").toLowerCase()] || "#C9A962" }} />
                     <span className="truncate text-[#1A1A1A]">{d.customer_name || d.delivery_number}</span>
                   </div>
                 ))}
                 {dayDeliveries.length > 3 && (
-                  <div className="text-micro text-[#888] pl-1">+{dayDeliveries.length - 3} more</div>
+                  <div className="text-[8px] text-[#888] pl-1">+{dayDeliveries.length - 3} more</div>
                 )}
                 {dayDeliveries.length === 0 && (
-                  <span className="text-section text-[#999]">+ New</span>
+                  <span className="text-[9px] text-[#999]">+ New</span>
                 )}
               </div>
             </button>

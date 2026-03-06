@@ -104,7 +104,7 @@ export default function ClientDetailClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <Link href={backHref} className="inline-flex items-center gap-1 text-caption font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
+      <Link href={backHref} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
         ← Back
       </Link>
 
@@ -113,12 +113,12 @@ export default function ClientDetailClient({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading text-h2 md:text-h1 font-bold text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
-              <span className={`inline-flex px-2.5 py-[3px] rounded text-section font-bold ${isClient ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+              <h1 className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
+              <span className={`inline-flex px-2.5 py-[3px] rounded text-[9px] font-bold ${isClient ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                 {personaLabel}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-[var(--tx2)]">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--tx2)]">
               <span className="capitalize font-medium text-[var(--gold)]">{isClient ? "Move" : (client.type ?? "—")}</span>
               <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--gold)] hover:underline font-medium">
                 {client.contact_name || "—"}
@@ -155,7 +155,7 @@ export default function ClientDetailClient({
                   }
                 }}
                 disabled={resendPortalLoading || !client.email?.trim() || moves.length === 0}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
               >
                 {resendPortalLoading ? "Sending…" : "Send tracking link"}
               </button>
@@ -180,20 +180,20 @@ export default function ClientDetailClient({
                   }
                 }}
                 disabled={resendPortalLoading || !client.email?.trim()}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
               >
                 {resendPortalLoading ? "Sending…" : "Resend portal access"}
               </button>
             )}
             <button
               onClick={() => setEditModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
             >
               Edit {isClient ? "client" : "partner"}
             </button>
             <button
               onClick={() => setDeleteConfirmOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--red)] text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--red)] text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
             >
               Delete
             </button>
@@ -207,26 +207,26 @@ export default function ClientDetailClient({
 
       {/* Overview + since */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Overview</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Overview</div>
         <div className="grid md:grid-cols-2 gap-6">
           {partnerSince && (
             <div>
-              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
-              <div className="text-h3-sm font-bold font-heading text-[var(--tx)]">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
+              <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
                 {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 {partnerDuration && (
-                  <span className="text-caption font-normal text-[var(--tx3)] ml-2">({partnerDuration})</span>
+                  <span className="text-[11px] font-normal text-[var(--tx3)] ml-2">({partnerDuration})</span>
                 )}
               </div>
             </div>
           )}
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
-            <div className="text-body font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "—")}</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
+            <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "—")}</div>
             {client.address && (
               <>
-                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
-                <div className="text-ui text-[var(--tx2)]">{client.address}</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
+                <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
               </>
             )}
           </div>
@@ -235,40 +235,40 @@ export default function ClientDetailClient({
 
       {/* High-level metrics */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
-            <div className="text-h3-lg md:text-h2-sm font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
           </div>
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
-            <div className="text-h3-lg md:text-h2-sm font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "—"}</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "—"}</div>
           </div>
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
-            <div className="text-h3-lg md:text-h2-sm font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
           </div>
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
-            <div className={`text-h3-lg md:text-h2-sm font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+            <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
               {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
             </div>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
-            <div className="text-h3-lg md:text-h2-sm font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-caption font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
           </div>
         </div>
       </div>
 
       {/* Recent moves (B2C) or Recent projects (partners) */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-        <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
+        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
         <div className="divide-y divide-[var(--brd)]/30 -mx-2">
           {isClient ? (
           moves.length === 0 ? (
-            <div className="text-label text-[var(--tx3)] py-4 text-center">No moves yet</div>
+            <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
           ) : (
             moves.map((m, idx) => (
               <ScheduleMoveItem
@@ -296,7 +296,7 @@ export default function ClientDetailClient({
               />
             ))}
             {deliveries.length === 0 && (
-              <div className="text-label text-[var(--tx3)] py-4 text-center">No deliveries yet</div>
+              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No deliveries yet</div>
             )}
           </>
         )}
@@ -307,8 +307,8 @@ export default function ClientDetailClient({
       {changeRequests.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Change requests</h3>
-            <Link href="/admin/change-requests" className="text-label font-semibold text-[var(--gold)] hover:underline">
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Change requests</h3>
+            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
               View all
             </Link>
           </div>
@@ -323,11 +323,11 @@ export default function ClientDetailClient({
                   className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-caption font-semibold text-[var(--tx)]">{cr.type}</div>
-                    <div className="text-section text-[var(--tx3)] line-clamp-1">{cr.description}</div>
+                    <div className="text-[11px] font-semibold text-[var(--tx)]">{cr.type}</div>
+                    <div className="text-[9px] text-[var(--tx3)] line-clamp-1">{cr.description}</div>
                   </div>
-                  <span className="text-section text-[var(--tx3)] shrink-0">{moveCode}</span>
-                  <span className={`inline-flex px-2 py-0.5 rounded text-section font-bold shrink-0 ${
+                  <span className="text-[9px] text-[var(--tx3)] shrink-0">{moveCode}</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold shrink-0 ${
                     cr.status === "pending" ? "bg-[var(--gdim)] text-[var(--gold)]" : cr.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
                   }`}>
                     {toTitleCase(cr.status)}
@@ -342,9 +342,9 @@ export default function ClientDetailClient({
       {/* Invoices - click opens detail popup */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Invoices</h3>
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Invoices</h3>
           {outstandingTotal > 0 && (
-            <div className="text-caption font-semibold text-[var(--org)]">
+            <div className="text-[11px] font-semibold text-[var(--org)]">
               Outstanding: {formatCompactCurrency(outstandingTotal)}
             </div>
           )}
@@ -358,15 +358,15 @@ export default function ClientDetailClient({
               className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
             >
               <div className="flex-1">
-                <div className="text-caption font-semibold">{inv.invoice_number}</div>
-                <div className="text-section text-[var(--tx3)]">Due: {inv.due_date}</div>
+                <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
+                <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
               </div>
-              <div className="text-label font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-micro text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
+              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
               <Badge status={inv.status} />
             </button>
           ))}
           {allInvoices.length === 0 && (
-            <div className="text-label text-[var(--tx3)] py-4 text-center">No invoices yet</div>
+            <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No invoices yet</div>
           )}
         </div>
       </div>
@@ -397,20 +397,20 @@ export default function ClientDetailClient({
         createPortal(
           <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete client?" maxWidth="sm">
             <div className="p-5 space-y-4">
-              <p className="text-ui text-[var(--tx2)]">
+              <p className="text-[12px] text-[var(--tx2)]">
                 This will remove the client from the list. Linked moves or invoices will not be deleted. This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setDeleteConfirmOpen(false)}
-                  className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>

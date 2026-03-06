@@ -68,16 +68,16 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             <Diamond className="w-7 h-7" style={{ color: WINE }} />
           </div>
           <div className="flex-1">
-            <h3 className="text-title font-semibold" style={{ color: FOREST }}>
+            <h3 className="text-[14px] font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "White Glove Item"}
             </h3>
-            <p className="text-caption mt-0.5" style={{ color: `${FOREST}60` }}>
+            <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>
               {toTitleCase((f?.item_category as string) ?? "premium item")}
             </p>
             <div className="flex items-center gap-3 mt-3 flex-wrap">
               {declaredValue != null && (
                 <span
-                  className="text-label font-bold tracking-wide px-3 py-1 rounded-full"
+                  className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
                   style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
                 >
                   Declared Value: {fmtPrice(declaredValue)}
@@ -85,7 +85,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
               )}
               {f?.enhanced_insurance ? (
                 <span
-                  className="text-label font-bold tracking-wide px-3 py-1 rounded-full"
+                  className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
                   style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
                 >
                   Enhanced Insurance
@@ -98,10 +98,10 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* 5-Step Handling Protocol */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
           Our 5-Step Handling Protocol
         </h2>
-        <p className="text-caption mb-4" style={{ color: `${FOREST}60` }}>
+        <p className="text-[11px] mb-4" style={{ color: `${FOREST}60` }}>
           Every white glove delivery follows our meticulous care process
         </p>
         <div className="space-y-6">
@@ -125,14 +125,14 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
                 </div>
                 <div className="pt-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-label font-bold" style={{ color: GOLD }}>
+                    <span className="text-[10px] font-bold" style={{ color: GOLD }}>
                       Step {i + 1}
                     </span>
-                    <span className="text-body font-semibold" style={{ color: FOREST }}>
+                    <span className="text-[13px] font-semibold" style={{ color: FOREST }}>
                       {step.title}
                     </span>
                   </div>
-                  <p className="text-caption mt-1 leading-relaxed" style={{ color: `${FOREST}70` }}>
+                  <p className="text-[11px] mt-1 leading-relaxed" style={{ color: `${FOREST}70` }}>
                     {step.description}
                   </p>
                 </div>
@@ -145,10 +145,10 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
       {/* Photo documentation */}
       <div className="pt-6 border-t border-[var(--brd)]/30 text-center">
         <Camera className="w-6 h-6 mx-auto mb-2" style={{ color: FOREST }} />
-        <p className="text-body font-semibold" style={{ color: FOREST }}>
+        <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
           Photo Documentation Included
         </p>
-        <p className="text-caption mt-1 max-w-sm mx-auto" style={{ color: `${FOREST}60` }}>
+        <p className="text-[11px] mt-1 max-w-sm mx-auto" style={{ color: `${FOREST}60` }}>
           Before and after photos of your item at pickup and delivery for your records and peace of mind.
         </p>
       </div>
@@ -158,19 +158,19 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         className="bg-white rounded-2xl border-2 shadow-sm p-6 md:p-8 text-center"
         style={{ borderColor: GOLD }}
       >
-        <p className="text-caption font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
+        <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
           White Glove Service
         </p>
-        <p className="font-hero text-price md:text-display-sm" style={{ color: WINE }}>
+        <p className="font-hero text-[40px] md:text-[48px]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
-        <p className="text-ui mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+        <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
           +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
         </p>
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-body font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
             confirmed ? "opacity-80" : ""
           }`}
           style={{ backgroundColor: confirmed ? FOREST : WINE }}
@@ -183,7 +183,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             `Proceed \u2014 ${fmtPrice(deposit)} Deposit`
           )}
         </button>
-        <p className="text-label mt-2" style={{ color: `${FOREST}50` }}>
+        <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           Balance of {fmtPrice(price + tax - deposit)} due on delivery
         </p>
       </div>

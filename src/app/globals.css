@@ -1,39 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  /* ── Display / Price hero sizes ── */
-  --font-size-display-xl: 72px;
-  --font-size-display-lg: 64px;
-  --font-size-display: 56px;
-  --font-size-display-sm: 48px;
-  --font-size-price-lg: 44px;
-  --font-size-price: 40px;
-  --font-size-price-sm: 36px;
-  --font-size-price-xs: 34px;
-  /* ── Heading scale ── */
-  --font-size-hero-lg: 36px;
-  --font-size-hero-md: 32px;
-  --font-size-hero: 30px;
-  --font-size-h1-lg: 28px;
-  --font-size-h1: 26px;
-  --font-size-h2: 24px;
-  --font-size-h2-sm: 22px;
-  --font-size-h3-xl: 19px;
-  --font-size-h3-lg: 18px;
-  --font-size-h3-md: 17px;
-  --font-size-h3: 16px;
-  --font-size-h3-sm: 15px;
-  /* ── Body scale ── */
-  --font-size-title: 14px;
-  --font-size-body: 13px;
-  --font-size-ui: 12px;
-  --font-size-caption: 11px;
-  --font-size-label: 10px;
-  --font-size-section: 9px;
-  --font-size-micro: 8px;
-  --font-size-nano: 7px;
-}
-
 :root {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -161,22 +127,39 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 
 /* Lifted effect on hover only - flat at rest */
 .embossed-hover {
-  transition: transform var(--transition-normal) var(--ease-out-expo), box-shadow var(--transition-normal) var(--ease-smooth);
+  transition: transform var(--transition-normal) var(--ease-out-expo), box-shadow var(--transition-normal) var(--ease-smooth), border-color var(--transition-fast) var(--ease-smooth);
 }
 .embossed-hover:hover {
-  transform: translateY(-2px) scale(1.015);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(201, 169, 98, 0.2);
+  transform: translateY(-3px) scale(1.018);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(201, 169, 98, 0.35);
+  border-color: rgba(201, 169, 98, 0.35) !important;
 }
 
 /* Sidebar nav item - lifted on hover */
 .sidebar-nav-lift {
-  transition: transform var(--transition-normal) var(--ease-out-expo), box-shadow var(--transition-normal) var(--ease-smooth), background-color var(--transition-fast) var(--ease-smooth), color var(--transition-fast) var(--ease-smooth);
+  transition: transform 0.2s var(--ease-out-expo), box-shadow 0.2s var(--ease-smooth), background-color 0.15s var(--ease-smooth), color 0.15s var(--ease-smooth), border-color 0.15s var(--ease-smooth);
 }
 .sidebar-nav-lift:hover {
-  transform: translateX(6px) translateY(-2px) scale(1.01);
+  transform: translateX(4px);
+  background-color: rgba(201, 169, 98, 0.12) !important;
+  color: var(--gold) !important;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(201, 169, 98, 0.2);
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(201, 169, 98, 0.18);
+}
+.sidebar-nav-lift:hover .sidebar-icon {
+  color: var(--gold) !important;
+}
+
+/* Admin data table row hover - prominent gold left accent */
+.admin-row-hover {
+  transition: background-color 0.12s var(--ease-smooth), box-shadow 0.12s var(--ease-smooth);
+  border-left: 2px solid transparent;
+}
+.admin-row-hover:hover {
+  background-color: rgba(201, 169, 98, 0.065) !important;
+  border-left-color: var(--gold) !important;
+  box-shadow: inset 0 0 0 1px rgba(201, 169, 98, 0.1);
 }
 
 /* Hide scrollbar but keep scroll (for tab bars, etc.) */
@@ -438,15 +421,10 @@ input[type="time"] {
   max-width: none !important;
   border-radius: 0 !important;
   border: none !important;
-  background: #000;
 }
 .map-fullscreen .track-live-map-fill {
   position: absolute !important;
   inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-.map-fullscreen .mapboxgl-canvas {
   width: 100% !important;
   height: 100% !important;
 }

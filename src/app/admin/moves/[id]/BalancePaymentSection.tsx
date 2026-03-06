@@ -81,22 +81,22 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
-      <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Balance Payment</h3>
+      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Balance Payment</h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <div>
-          <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
-          <div className="text-h3-sm font-bold text-[var(--tx)]">{formatCurrency(balanceAmount)}</div>
-          {balanceAmount > 0 && <div className="text-section text-[var(--tx3)]">+{formatCurrency(calcHST(balanceAmount))} HST</div>}
+          <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
+          <div className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(balanceAmount)}</div>
+          {balanceAmount > 0 && <div className="text-[9px] text-[var(--tx3)]">+{formatCurrency(calcHST(balanceAmount))} HST</div>}
         </div>
         <div>
-          <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
-          <div className={`text-body font-bold ${status.color}`}>{status.label}</div>
+          <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
+          <div className={`text-[13px] font-bold ${status.color}`}>{status.label}</div>
         </div>
         {move.balance_method && (
           <div>
-            <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Method</span>
-            <div className="text-body font-medium text-[var(--tx)]">
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Method</span>
+            <div className="text-[13px] font-medium text-[var(--tx)]">
               {move.balance_method === "etransfer" ? "E-Transfer" : "Credit Card"}
               {move.balance_auto_charged && " (auto)"}
             </div>
@@ -110,7 +110,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
             type="button"
             onClick={handleETransfer}
             disabled={loading !== null}
-            className="text-label font-semibold px-3 py-1.5 rounded-md bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/25 transition-colors disabled:opacity-50"
+            className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/25 transition-colors disabled:opacity-50"
           >
             {loading === "etransfer" ? "Processing…" : "Mark E-Transfer Received"}
           </button>
@@ -119,7 +119,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
               type="button"
               onClick={handleChargeCard}
               disabled={loading !== null}
-              className="text-label font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
             >
               {loading === "card" ? "Charging…" : "Charge Card Now"}
             </button>

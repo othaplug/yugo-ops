@@ -298,7 +298,7 @@ export function TrackLiveMapMapbox({
               </svg>
             </div>
             {speed != null && speed > 0 && (
-              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-section font-bold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
               </div>
             )}

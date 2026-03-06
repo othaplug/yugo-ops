@@ -36,10 +36,10 @@ const SPECIALTY_ITEM_PRESETS = [
   "Artwork", "Antiques", "Wine collection", "Gym equipment", "Motorcycle",
 ];
 const ADDON_OPTIONS = [
-  { value: "extra_truck", label: "Extra truck" },
-  { value: "storage", label: "Storage" },
-  { value: "junk_removal", label: "Junk removal" },
-  { value: "cleaning", label: "Cleaning service" },
+  { value: "extra_truck", label: "Extra truck (+$TBD)" },
+  { value: "storage", label: "Storage (+$TBD/day)" },
+  { value: "junk_removal", label: "Junk removal (+$TBD)" },
+  { value: "cleaning", label: "Cleaning service (+$TBD)" },
 ];
 const BUSINESS_TYPES = ["Office", "Retail", "Salon/Spa", "Clinic/Medical", "Restaurant", "Warehouse", "Other"];
 const IT_DISCONNECT_OPTIONS = ["Client IT team", "Yugo coordinates", "N/A"];
@@ -70,17 +70,30 @@ function AnimatedSection({ show, children }: { show: boolean; children: React.Re
     </div>
   );
 }
+const TIME_OPTIONS = (() => {
+  const times: string[] = [];
+  for (let h = 6; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      if (h === 20 && m === 30) break;
+      const h12 = h > 12 ? h - 12 : h;
+      const ampm = h < 12 ? "AM" : "PM";
+      times.push(`${h12}:${m.toString().padStart(2, "0")} ${ampm}`);
+    }
+  }
+  return times;
+})();
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
       {children}
     </div>
   );
 }
 
 const fieldInput =
-  "w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
 
 export default function CreateMoveForm({
   organizations,
@@ -113,7 +126,6 @@ export default function CreateMoveForm({
   const [estimate, setEstimate] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
-  const [preferredTime, setPreferredTime] = useState("");
   const [arrivalWindow, setArrivalWindow] = useState("");
   const [accessNotes, setAccessNotes] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
@@ -328,23 +340,22 @@ export default function CreateMoveForm({
       return;
     }
 
-    // If no client selected, check for existing match and auto-link
+    // If no client selected, check for duplicate before creating
     if (!organizationId) {
-      try {
-        const checkRes = await fetch("/api/admin/clients/check-duplicate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            client_name: clientName.trim(),
-            client_email: clientEmail.trim(),
-            client_phone: normalizePhone(clientPhone),
-          }),
-        });
-        const checkData = await checkRes.json();
-        if (checkData.exists && checkData.org?.id) {
-          setOrganizationId(checkData.org.id);
-        }
-      } catch {}
+      const checkRes = await fetch("/api/admin/clients/check-duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_name: clientName.trim(),
+          client_email: clientEmail.trim(),
+          client_phone: normalizePhone(clientPhone),
+        }),
+      });
+      const checkData = await checkRes.json();
+      if (checkData.exists) {
+        alert(`Client already exists: ${checkData.org?.name || "Existing client"}. Please select them from the dropdown.`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -370,7 +381,6 @@ export default function CreateMoveForm({
       formData.append("estimate", String(parseNumberInput(estimate) || 0));
       formData.append("scheduled_date", scheduledDate);
       formData.append("scheduled_time", scheduledTime);
-      formData.append("preferred_time", preferredTime);
       formData.append("arrival_window", arrivalWindow);
       formData.append("access_notes", accessNotes);
       formData.append("internal_notes", internalNotes);
@@ -478,15 +488,15 @@ export default function CreateMoveForm({
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-[var(--brd)]">
-          <h1 className="font-heading text-h3-lg font-bold text-[var(--tx)]">Create New Move</h1>
-          <p className="text-caption text-[var(--tx3)] mt-0.5">
+          <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Create New Move</h1>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
             Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-0">
           {/* Move type selector */}
           <div>
-            <label className="block text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {([
                 { value: "residential", Icon: Home, label: "Residential", desc: "Local or long distance home move" },
@@ -513,16 +523,16 @@ export default function CreateMoveForm({
                         <card.Icon className={`w-4 h-4 ${selected ? "text-[#B8962E]" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
                       </div>
                       <div className="min-w-0">
-                        <div className={`text-body leading-tight tracking-tight ${selected ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
+                        <div className={`text-[13px] leading-tight tracking-tight ${selected ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
                           {card.label}
                         </div>
-                        <div className={`text-label mt-0.5 leading-snug ${selected ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
+                        <div className={`text-[10px] mt-0.5 leading-snug ${selected ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
                           {card.desc}
                         </div>
                       </div>
                     </div>
                     {card.value === "b2b_oneoff" && (
-                      <div className="mt-1.5 text-micro text-[var(--tx3)] italic pl-[44px]">For recurring partners, use B2B Partners → Create Project</div>
+                      <div className="mt-1.5 text-[8px] text-[var(--tx3)] italic pl-[44px]">For recurring partners, use B2B Partners → Create Project</div>
                     )}
                   </button>
                 );
@@ -534,7 +544,7 @@ export default function CreateMoveForm({
 
           {/* Client section */}
           <div className="space-y-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
             <Field label="Select to auto fill">
               <div ref={contactDropdownRef} className="relative">
                 <input
@@ -557,7 +567,7 @@ export default function CreateMoveForm({
                       setContactSearch("");
                       setShowContactDropdown(false);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--tx3)] hover:text-[var(--tx)] text-title"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--tx3)] hover:text-[var(--tx)] text-[14px]"
                     aria-label="Clear selection"
                   >
                     ×
@@ -567,7 +577,7 @@ export default function CreateMoveForm({
                   <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
                     {filteredOrgs.length > 0 && (
                       <>
-                        <div className="px-3 py-1.5 text-section font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Partners / Organizations</div>
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Partners / Organizations</div>
                         {filteredOrgs.map((o) => (
                           <button
                             key={o.id}
@@ -577,7 +587,7 @@ export default function CreateMoveForm({
                               setContactSearch("");
                               setShowContactDropdown(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-ui text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {o.contact_name || o.name}
                             {o.email && <span className="text-[var(--tx3)] ml-1">— {o.email}</span>}
@@ -587,7 +597,7 @@ export default function CreateMoveForm({
                     )}
                     {dbContacts.length > 0 && (
                       <>
-                        <div className="px-3 py-1.5 text-section font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">HubSpot Contacts</div>
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">HubSpot Contacts</div>
                         {dbContacts.map((c) => (
                           <button
                             key={c.hubspot_id}
@@ -601,7 +611,7 @@ export default function CreateMoveForm({
                               setShowContactDropdown(false);
                               setDbContacts([]);
                             }}
-                            className="w-full text-left px-3 py-2 text-ui text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {c.name}
                             {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
@@ -611,7 +621,7 @@ export default function CreateMoveForm({
                       </>
                     )}
                     {filteredOrgs.length === 0 && dbContacts.length === 0 && (
-                      <div className="px-3 py-2 text-caption text-[var(--tx3)]">No matches</div>
+                      <div className="px-3 py-2 text-[11px] text-[var(--tx3)]">No matches</div>
                     )}
                   </div>
                 )}
@@ -651,7 +661,7 @@ export default function CreateMoveForm({
               </Field>
             </div>
             {duplicateEmailMatch && (
-              <div className="px-3 py-2 rounded-lg bg-[var(--org)]/15 border border-[var(--org)]/40 text-caption font-medium text-[var(--org)]">
+              <div className="px-3 py-2 rounded-lg bg-[var(--org)]/15 border border-[var(--org)]/40 text-[11px] font-medium text-[var(--org)]">
                 A contact with this email already exists
               </div>
             )}
@@ -683,7 +693,7 @@ export default function CreateMoveForm({
           {/* Office: Company info */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Company Name">
                   <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Business name" className={fieldInput} />
@@ -701,7 +711,7 @@ export default function CreateMoveForm({
           {/* Single Item: item info */}
           <AnimatedSection show={moveType === "single_item"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
               <Field label="Item Description *">
                 <input value={siItemDescription} onChange={(e) => setSiItemDescription(e.target.value)} placeholder="e.g. Leather sectional sofa" className={fieldInput} />
               </Field>
@@ -741,12 +751,12 @@ export default function CreateMoveForm({
                         reader.readAsDataURL(file);
                       } else { setSiItemPhotoPreview(null); }
                     }}
-                    className="text-caption text-[var(--tx3)] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-label file:font-semibold file:bg-[var(--gold)] file:text-[var(--btn-text-on-accent)] file:cursor-pointer"
+                    className="text-[11px] text-[var(--tx3)] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--gold)] file:text-[var(--btn-text-on-accent)] file:cursor-pointer"
                   />
                   {siItemPhotoPreview && (
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-[var(--brd)]">
                       <img src={siItemPhotoPreview} alt="Item preview" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => { setSiItemPhoto(null); setSiItemPhotoPreview(null); }} className="absolute top-0 right-0 bg-black/60 text-white w-5 h-5 flex items-center justify-center text-label rounded-bl">×</button>
+                      <button type="button" onClick={() => { setSiItemPhoto(null); setSiItemPhotoPreview(null); }} className="absolute top-0 right-0 bg-black/60 text-white w-5 h-5 flex items-center justify-center text-[10px] rounded-bl">×</button>
                     </div>
                   )}
                 </div>
@@ -757,7 +767,7 @@ export default function CreateMoveForm({
           {/* White Glove: item info */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
               <Field label="Item Description *">
                 <input value={wgItemDescription} onChange={(e) => setWgItemDescription(e.target.value)} placeholder="Describe the item in detail" className={fieldInput} />
               </Field>
@@ -789,7 +799,7 @@ export default function CreateMoveForm({
           {/* Specialty: project info */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty / Event Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty / Event Details</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Project Type *">
                   <select value={spProjectType} onChange={(e) => setSpProjectType(e.target.value)} className={fieldInput}>
@@ -812,10 +822,10 @@ export default function CreateMoveForm({
           {/* B2B One-Off: business info */}
           <AnimatedSection show={moveType === "b2b_oneoff"}>
             <div className="space-y-3">
-              <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-caption text-[var(--gold)]">
+              <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
                 For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">B2B Partners → Create Project</span>.
               </div>
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Source Business Name">
                   <input value={b2bSourceBusiness} onChange={(e) => setB2bSourceBusiness(e.target.value)} placeholder="Company the item is coming from" className={fieldInput} />
@@ -850,7 +860,7 @@ export default function CreateMoveForm({
 
           {/* Addresses */}
           <div className="space-y-2">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 items-end">
                 <div className="flex-1 min-w-0 w-full">
@@ -932,7 +942,7 @@ export default function CreateMoveForm({
           {/* Residential-only fields */}
           <AnimatedSection show={moveType === "residential"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Move Size">
                   <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
@@ -955,7 +965,7 @@ export default function CreateMoveForm({
                       key={item}
                       type="button"
                       onClick={() => setSpecialtyItems((prev) => prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item])}
-                      className={`px-2.5 py-1 rounded-full text-section font-semibold border transition-colors ${
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                         specialtyItems.includes(item)
                           ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
                           : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -986,7 +996,7 @@ export default function CreateMoveForm({
                 {specialtyItems.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {specialtyItems.map((item) => (
-                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-section font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                         {item}
                         <button type="button" onClick={() => setSpecialtyItems((prev) => prev.filter((i) => i !== item))} className="hover:text-[var(--red)]">×</button>
                       </span>
@@ -1015,7 +1025,7 @@ export default function CreateMoveForm({
                         })}
                         className="accent-[var(--gold)] w-3.5 h-3.5"
                       />
-                      <span className="text-ui text-[var(--tx)]">{addon.label}</span>
+                      <span className="text-[12px] text-[var(--tx)]">{addon.label}</span>
                     </label>
                   ))}
                 </div>
@@ -1026,7 +1036,7 @@ export default function CreateMoveForm({
           {/* Office-only detail fields */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Square Footage">
                   <input type="number" min={0} value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} placeholder="e.g. 2500" className={fieldInput} />
@@ -1038,7 +1048,7 @@ export default function CreateMoveForm({
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">IT Equipment</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">IT Equipment</span>
                   <button
                     type="button"
                     role="switch"
@@ -1066,19 +1076,19 @@ export default function CreateMoveForm({
 
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Conference Room</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Conference Room</span>
                   <button type="button" role="switch" aria-checked={hasConferenceRoom} onClick={() => setHasConferenceRoom(!hasConferenceRoom)} className={`relative w-9 h-5 rounded-full transition-colors ${hasConferenceRoom ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasConferenceRoom ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Reception Area</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Reception Area</span>
                   <button type="button" role="switch" aria-checked={hasReceptionArea} onClick={() => setHasReceptionArea(!hasReceptionArea)} className={`relative w-9 h-5 rounded-full transition-colors ${hasReceptionArea ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasReceptionArea ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Building COI Required</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Building COI Required</span>
                   <button type="button" role="switch" aria-checked={buildingCoiRequired} onClick={() => setBuildingCoiRequired(!buildingCoiRequired)} className={`relative w-9 h-5 rounded-full transition-colors ${buildingCoiRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${buildingCoiRequired ? "translate-x-4" : ""}`} />
                   </button>
@@ -1109,7 +1119,7 @@ export default function CreateMoveForm({
           {/* Single Item: after-address fields */}
           <AnimatedSection show={moveType === "single_item"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Handling & Assembly</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Handling & Assembly</h3>
               <Field label="Assembly Needed">
                 <select value={siAssemblyNeeded} onChange={(e) => setSiAssemblyNeeded(e.target.value)} className={fieldInput}>
                   <option value="">Select…</option>
@@ -1118,7 +1128,7 @@ export default function CreateMoveForm({
               </Field>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Stair Carry</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Stair Carry</span>
                   <button type="button" role="switch" aria-checked={siStairCarry} onClick={() => setSiStairCarry(!siStairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${siStairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`} />
                   </button>
@@ -1137,7 +1147,7 @@ export default function CreateMoveForm({
           {/* White Glove: after-address fields */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
               <Field label="Assembly Required">
                 <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
                   <option value="">Select…</option>
@@ -1150,8 +1160,8 @@ export default function CreateMoveForm({
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-caption font-medium text-[var(--tx)]">Packaging Removal</span>
-                    <p className="text-section text-[var(--tx3)]">Remove all packaging on-site</p>
+                    <span className="text-[11px] font-medium text-[var(--tx)]">Packaging Removal</span>
+                    <p className="text-[9px] text-[var(--tx3)]">Remove all packaging on-site</p>
                   </div>
                   <button type="button" role="switch" aria-checked={wgPackagingRemoval} onClick={() => setWgPackagingRemoval(!wgPackagingRemoval)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPackagingRemoval ? "translate-x-4" : ""}`} />
@@ -1159,8 +1169,8 @@ export default function CreateMoveForm({
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-caption font-medium text-[var(--tx)]">Photo Documentation</span>
-                    <p className="text-section text-[var(--tx3)]">Before, during, after photos</p>
+                    <span className="text-[11px] font-medium text-[var(--tx)]">Photo Documentation</span>
+                    <p className="text-[9px] text-[var(--tx3)]">Before, during, after photos</p>
                   </div>
                   <button type="button" role="switch" aria-checked={wgPhotoDocumentation} onClick={() => setWgPhotoDocumentation(!wgPhotoDocumentation)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPhotoDocumentation ? "translate-x-4" : ""}`} />
@@ -1168,8 +1178,8 @@ export default function CreateMoveForm({
                 </div>
                 <div className="flex items-center justify-between sm:col-span-2">
                   <div>
-                    <span className="text-caption font-medium text-[var(--tx)]">Enhanced Insurance</span>
-                    <p className="text-section text-[var(--tx3)]">Full replacement value — recommended for items &gt;$5K</p>
+                    <span className="text-[11px] font-medium text-[var(--tx)]">Enhanced Insurance</span>
+                    <p className="text-[9px] text-[var(--tx3)]">Full replacement value — recommended for items &gt;$5K</p>
                   </div>
                   <button type="button" role="switch" aria-checked={wgEnhancedInsurance} onClick={() => setWgEnhancedInsurance(!wgEnhancedInsurance)} className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`} />
@@ -1182,7 +1192,7 @@ export default function CreateMoveForm({
           {/* Specialty: after-address fields */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-3">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Timeline">
                   <select value={spTimeline} onChange={(e) => setSpTimeline(e.target.value)} className={fieldInput}>
@@ -1199,21 +1209,21 @@ export default function CreateMoveForm({
               </div>
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Custom Crating Needed</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Custom Crating Needed</span>
                   <button type="button" role="switch" aria-checked={spCustomCrating} onClick={() => setSpCustomCrating(!spCustomCrating)} className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spCustomCrating ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-caption font-medium text-[var(--tx)]">Climate Control Required</span>
+                  <span className="text-[11px] font-medium text-[var(--tx)]">Climate Control Required</span>
                   <button type="button" role="switch" aria-checked={spClimateControl} onClick={() => setSpClimateControl(!spClimateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${spClimateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spClimateControl ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between sm:col-span-2">
                   <div>
-                    <span className="text-caption font-medium text-[var(--tx)]">Insurance Rider</span>
-                    <p className="text-section text-[var(--tx3)]">Fine art or high-value rider</p>
+                    <span className="text-[11px] font-medium text-[var(--tx)]">Insurance Rider</span>
+                    <p className="text-[9px] text-[var(--tx3)]">Fine art or high-value rider</p>
                   </div>
                   <button type="button" role="switch" aria-checked={spInsuranceRider} onClick={() => setSpInsuranceRider(!spInsuranceRider)} className={`relative w-9 h-5 rounded-full transition-colors ${spInsuranceRider ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spInsuranceRider ? "translate-x-4" : ""}`} />
@@ -1227,7 +1237,7 @@ export default function CreateMoveForm({
                       key={item}
                       type="button"
                       onClick={() => setSpSpecialEquipment((prev) => prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item])}
-                      className={`px-2.5 py-1 rounded-full text-section font-semibold border transition-colors ${
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                         spSpecialEquipment.includes(item)
                           ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
                           : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -1258,7 +1268,7 @@ export default function CreateMoveForm({
                 {spSpecialEquipment.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {spSpecialEquipment.map((item) => (
-                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-section font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                         {item}
                         <button type="button" onClick={() => setSpSpecialEquipment((prev) => prev.filter((i) => i !== item))} className="hover:text-[var(--red)]">×</button>
                       </span>
@@ -1283,22 +1293,17 @@ export default function CreateMoveForm({
               />
             </Field>
             <Field label="Scheduled Time">
-              <input
-                type="time"
+              <select
                 name="scheduled_time"
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
                 className={fieldInput}
-              />
-            </Field>
-            <Field label="Preferred Time">
-              <input
-                type="time"
-                name="preferred_time"
-                value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value)}
-                className={fieldInput}
-              />
+              >
+                <option value="">Select time…</option>
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Arrival Window">
               <select
@@ -1334,7 +1339,7 @@ export default function CreateMoveForm({
 
           {/* Crew / team */}
           <div className="space-y-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
             <Field label="Crew">
               <select
                 name="crew_id"
@@ -1379,12 +1384,12 @@ export default function CreateMoveForm({
                         onChange={() => toggleTeamMember(m)}
                         className="accent-[var(--gold)]"
                       />
-                      <span className="text-caption">{m}</span>
+                      <span className="text-[11px]">{m}</span>
                     </label>
                   ))}
                 </div>
               ) : (
-                <p className="text-label text-[var(--tx3)]">Select a crew above to see and assign members.</p>
+                <p className="text-[10px] text-[var(--tx3)]">Select a crew above to see and assign members.</p>
               )}
             </Field>
           </div>
@@ -1393,10 +1398,10 @@ export default function CreateMoveForm({
 
           {/* Inventory */}
           <div className="space-y-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               Client Inventory (optional)
             </h3>
-            <p className="text-label text-[var(--tx3)]">Add items now or later from the move detail page.</p>
+            <p className="text-[10px] text-[var(--tx3)]">Add items now or later from the move detail page.</p>
             {inventory.length > 0 && (
               <ul className="space-y-1.5 mb-3">
                 {inventory.map((item, idx) => (
@@ -1404,7 +1409,7 @@ export default function CreateMoveForm({
                     key={idx}
                     className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)]"
                   >
-                    <span className="text-caption">
+                    <span className="text-[11px]">
                       <span className="text-[var(--tx3)]">{item.room}:</span> {item.item_name}
                     </span>
                     <button
@@ -1423,14 +1428,14 @@ export default function CreateMoveForm({
                 <button
                   type="button"
                   onClick={() => setInventoryBulkMode(false)}
-                  className={`text-label font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                 >
                   Single
                 </button>
                 <button
                   type="button"
                   onClick={() => setInventoryBulkMode(true)}
-                  className={`text-label font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                 >
                   Bulk add
                 </button>
@@ -1438,11 +1443,11 @@ export default function CreateMoveForm({
               {inventoryBulkMode ? (
                 <div className="flex flex-col gap-2">
                   <div>
-                    <label className="block text-micro text-[var(--tx3)] mb-0.5">Room</label>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
                     <select
                       value={newRoom}
                       onChange={(e) => setNewRoom(e.target.value)}
-                      className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
                     >
                       <option value="">Select Room</option>
                       {DEFAULT_ROOMS.map((r) => (
@@ -1451,20 +1456,20 @@ export default function CreateMoveForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-micro text-[var(--tx3)] mb-0.5">Items (one per line, e.g. Couch x2)</label>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Items (one per line, e.g. Couch x2)</label>
                     <textarea
                       value={inventoryBulkText}
                       onChange={(e) => setInventoryBulkText(e.target.value)}
                       placeholder={"Couch x2\nCoffee Table\nBox 1 x5"}
                       rows={4}
-                      className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] resize-y"
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] resize-y"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={addBulkInventoryItems}
                     disabled={!inventoryBulkText.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 self-start"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 self-start"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add all
                   </button>
@@ -1472,11 +1477,11 @@ export default function CreateMoveForm({
               ) : (
                 <div className="flex flex-wrap gap-2 items-end">
                   <div>
-                    <label className="block text-micro text-[var(--tx3)] mb-0.5">Room</label>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
                     <select
                       value={newRoom}
                       onChange={(e) => setNewRoom(e.target.value)}
-                      className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
                     >
                       <option value="">Select Room</option>
                       {DEFAULT_ROOMS.map((r) => (
@@ -1485,32 +1490,32 @@ export default function CreateMoveForm({
                     </select>
                   </div>
                   <div className="flex-1 min-w-[140px]">
-                    <label className="block text-micro text-[var(--tx3)] mb-0.5">Item</label>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item</label>
                     <input
                       type="text"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())}
                       placeholder="e.g. Couch x2"
-                      className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
                     />
                   </div>
                   <div className="w-14">
-                    <label className="block text-micro text-[var(--tx3)] mb-0.5">Qty</label>
+                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Qty</label>
                     <input
                       type="number"
                       min={1}
                       max={99}
                       value={newItemQty}
                       onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                      className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={addInventoryItem}
                     disabled={!newItemName.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add
                   </button>
@@ -1523,10 +1528,10 @@ export default function CreateMoveForm({
 
           {/* Documents */}
           <div className="space-y-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               Documents & Invoices (optional)
             </h3>
-            <p className="text-label text-[var(--tx3)]">
+            <p className="text-[10px] text-[var(--tx3)]">
               Upload PDFs now or add them later from the move detail page.
             </p>
             {docFiles.length > 0 && (
@@ -1537,7 +1542,7 @@ export default function CreateMoveForm({
                     className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)]"
                   >
                     <FileText className="w-[12px] h-[12px] text-[var(--tx3)]" />
-                    <span className="text-caption truncate flex-1">{f.name}</span>
+                    <span className="text-[11px] truncate flex-1">{f.name}</span>
                     <button
                       type="button"
                       onClick={() => removeDoc(idx)}
@@ -1560,7 +1565,7 @@ export default function CreateMoveForm({
               />
               <label
                 htmlFor="move-doc-upload"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] cursor-pointer hover:bg-[var(--gold2)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] cursor-pointer hover:bg-[var(--gold2)]"
               >
                 <Plus className="w-[12px] h-[12px]" />
                 Upload PDF
@@ -1572,14 +1577,14 @@ export default function CreateMoveForm({
 
           {/* Complexity indicators */}
           <div className="space-y-3">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMPLEXITY_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   type="button"
                   onClick={() => setComplexityIndicators((prev) => (prev.includes(preset) ? prev.filter((p) => p !== preset) : [...prev, preset]))}
-                  className={`px-2.5 py-1 rounded-full text-section font-semibold border transition-colors ${complexityIndicators.includes(preset) ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+                  className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${complexityIndicators.includes(preset) ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
                 >
                   {preset}
                 </button>
@@ -1608,7 +1613,7 @@ export default function CreateMoveForm({
                     setCustomComplexity("");
                   }
                 }}
-                className="px-3 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
+                className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
               >
                 Add
               </button>
@@ -1616,7 +1621,7 @@ export default function CreateMoveForm({
             {complexityIndicators.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {complexityIndicators.map((ind) => (
-                  <span key={ind} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-section font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span key={ind} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                     {ind}
                     <button type="button" onClick={() => setComplexityIndicators((prev) => prev.filter((p) => p !== ind))} className="hover:text-[var(--red)]" aria-label={`Remove ${ind}`}>×</button>
                   </span>
@@ -1655,14 +1660,14 @@ export default function CreateMoveForm({
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+              className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-lg text-caption font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
             >
               {loading ? "Creating…" : "Create Move"}
             </button>

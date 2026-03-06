@@ -105,11 +105,11 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
   return (
     <ModalOverlay open={open} onClose={handleClose} title="Add portal access" maxWidth="sm">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
-        <p className="text-caption text-[var(--tx3)]">
+        <p className="text-[11px] text-[var(--tx3)]">
           This person will be able to log in to the Crew Portal (tablet/phone) with their phone and PIN. Select from roster members who don&apos;t yet have access.
         </p>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team member</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team member</label>
           <select
             value={name}
             onChange={(e) => {
@@ -118,7 +118,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               const team = activeTeams.find((t) => (t.memberIds || []).some((m) => nameMatches(m, v)));
               if (team) setTeamId(team.id);
             }}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="">Choose team member…</option>
             {availableForPortal.map((n) => (
@@ -126,21 +126,21 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             ))}
           </select>
           {availableForPortal.length === 0 && (
-            <p className="text-caption text-[var(--tx3)] mt-1">Add members to team rosters first, or they already have portal access.</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Add members to team rosters first, or they already have portal access.</p>
           )}
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
             placeholder="6475550123"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">PIN (6 digits)</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">PIN (6 digits)</label>
           <input
             type="password"
             inputMode="numeric"
@@ -148,15 +148,15 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="000000"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body font-mono text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] font-mono text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="">Choose team…</option>
             {activeTeams.map((t) => (
@@ -165,11 +165,11 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           </select>
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "lead" | "specialist" | "driver")}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="lead">Lead (shown first on tablet)</option>
             <option value="specialist">Specialist</option>
@@ -177,10 +177,10 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           </select>
         </div>
         <div className="flex gap-2 pt-2">
-          <button type="button" onClick={handleClose} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
+          <button type="button" onClick={handleClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">
             {saving ? "Adding…" : "Add access"}
           </button>
         </div>

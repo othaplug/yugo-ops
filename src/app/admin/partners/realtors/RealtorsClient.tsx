@@ -11,7 +11,7 @@ export function AddReferralButton({ realtors = [], label = "Add Referral" }: { r
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap"
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap"
       >
         {label}
       </button>

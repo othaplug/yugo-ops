@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString, getAppTimezone } from "@/lib/business-timezone";
 import CalendarView from "./CalendarView";

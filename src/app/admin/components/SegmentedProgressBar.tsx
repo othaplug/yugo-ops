@@ -18,7 +18,7 @@ export default function SegmentedProgressBar({
   return (
     <div className={`glass rounded-xl p-4 ${className}`}>
       {label && (
-        <div className="text-label font-bold tracking-widest uppercase text-[var(--gold)]/90 mb-3">{label}</div>
+        <div className="text-[10px] font-bold tracking-widest uppercase text-[var(--gold)]/90 mb-3">{label}</div>
       )}
       <div className="flex gap-1.5 h-2.5 w-full">
         {steps.map((step, i) => {
@@ -41,7 +41,7 @@ export default function SegmentedProgressBar({
           );
         })}
       </div>
-      <div className="text-ui font-semibold text-[var(--tx2)] mt-2 transition-opacity duration-300">
+      <div className="text-[12px] font-semibold text-[var(--tx2)] mt-2 transition-opacity duration-300">
         {filledCount} / {total} {steps[Math.min(currentIndex, total - 1)]?.label ?? ""}
       </div>
     </div>

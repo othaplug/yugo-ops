@@ -94,7 +94,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-body text-[var(--tx3)]">Loading…</span>
+          <span className="text-[13px] text-[var(--tx3)]">Loading…</span>
         </div>
       </div>
     );
@@ -108,12 +108,12 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
           <div className="p-6">
             <div className="text-center mb-6">
               <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
-              <h2 className="font-heading text-h3-lg font-bold text-[var(--tx)]">Two-factor verification</h2>
-              <p className="text-ui text-[var(--tx3)] mt-1">Enter the 6-digit code sent to your email</p>
+              <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Two-factor verification</h2>
+              <p className="text-[12px] text-[var(--tx3)] mt-1">Enter the 6-digit code sent to your email</p>
             </div>
             <form onSubmit={handleVerify} className="space-y-4">
               {error && (
-                <div className="px-3 py-2 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/30 text-ui text-[var(--red)]">
+                <div className="px-3 py-2 rounded-lg bg-[var(--rdim)] border border-[var(--red)]/30 text-[12px] text-[var(--red)]">
                   {error}
                 </div>
               )}
@@ -124,7 +124,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000000"
                   maxLength={6}
-                  className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-h2-sm text-center font-mono tracking-[0.5em] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[20px] text-center font-mono tracking-[0.5em] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   autoFocus
                 />
               </div>
@@ -133,14 +133,14 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={sendCode}
                   disabled={sending}
-                  className="flex-1 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
                 >
                   {sending ? "Sending…" : "Resend code"}
                 </button>
                 <button
                   type="submit"
                   disabled={verifying || code.length !== 6}
-                  className="flex-1 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
                 >
                   {verifying ? "Verifying…" : "Verify"}
                 </button>

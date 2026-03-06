@@ -52,15 +52,15 @@ export default function IntegrationHealthPanel({
                   <Icon name={item.icon} className="w-[20px] h-[20px]" />
                 </div>
                 <div>
-                  <div className="text-body font-semibold text-[var(--tx)]">{item.label}</div>
-                  <div className="text-caption text-[var(--tx3)] mt-0.5">{item.desc}</div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">{item.label}</div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-0.5">{item.desc}</div>
                   {item.details && (
-                    <div className="text-label text-[var(--tx3)] mt-1 font-mono">{item.details}</div>
+                    <div className="text-[10px] text-[var(--tx3)] mt-1 font-mono">{item.details}</div>
                   )}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <div className={`text-label font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                <div className={`text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
                   item.connected
                     ? "bg-[rgba(45,159,90,0.12)] text-[var(--grn)]"
                     : "bg-[rgba(212,138,41,0.12)] text-[var(--org)]"
@@ -69,7 +69,7 @@ export default function IntegrationHealthPanel({
                   {item.connected ? "Connected" : "Not connected"}
                 </div>
                 {result && (
-                  <div className={`text-section font-mono ${result.ok ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+                  <div className={`text-[9px] font-mono ${result.ok ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
                     {result.ok ? `OK (${result.ms}ms)` : "Failed"}
                   </div>
                 )}
@@ -79,7 +79,7 @@ export default function IntegrationHealthPanel({
               <button
                 type="button"
                 onClick={() => toast("Configure coming soon", "settings")}
-                className="px-3 py-1.5 text-label font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
               >
                 Configure
               </button>
@@ -88,7 +88,7 @@ export default function IntegrationHealthPanel({
                   type="button"
                   onClick={() => handleTest(item.key)}
                   disabled={testing === item.key}
-                  className="px-3 py-1.5 text-label font-semibold rounded-lg border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-all disabled:opacity-50"
+                  className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-all disabled:opacity-50"
                 >
                   {testing === item.key ? "Testing..." : "Test Connection"}
                 </button>
@@ -97,7 +97,7 @@ export default function IntegrationHealthPanel({
                 <button
                   type="button"
                   onClick={() => toast("Connect coming soon", "plug")}
-                  className="px-3 py-1.5 text-label font-semibold rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                  className="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
                 >
                   Connect
                 </button>

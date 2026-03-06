@@ -38,7 +38,7 @@ export default function Badge({ status }: { status: string }) {
   const moveLabel = getStatusLabel(status || null);
   const label = moveLabel !== "—" ? moveLabel : (status ? toTitleCase(status) : "—");
   return (
-    <span className={`inline-flex items-center px-2.5 py-[3px] rounded-full text-section font-bold ${colors}`}>
+    <span className={`inline-flex items-center px-2.5 py-[3px] rounded-full text-[9px] font-bold ${colors}`}>
       {label}
     </span>
   );

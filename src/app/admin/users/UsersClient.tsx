@@ -71,7 +71,7 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
         <BackButton label="Back" />
         <button
           onClick={() => setInviteOpen(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
         >
           + Invite User
         </button>
@@ -81,21 +81,21 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
         <table className="w-full border-collapse overflow-visible">
           <thead>
             <tr>
-              <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">User</th>
-              <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Role</th>
-              <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Status</th>
-              <th className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Last sign in</th>
+              <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">User</th>
+              <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Role</th>
+              <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Status</th>
+              <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)]">Last sign in</th>
               <th className="w-10 px-3 py-2 border-b border-[var(--brd)]" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-ui text-[var(--tx3)]">Loading users…</td>
+                <td colSpan={5} className="px-3 py-8 text-center text-[12px] text-[var(--tx3)]">Loading users…</td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-12 text-center text-ui text-[var(--tx3)]">No users yet. Invite users to get started.</td>
+                <td colSpan={5} className="px-3 py-12 text-center text-[12px] text-[var(--tx3)]">No users yet. Invite users to get started.</td>
               </tr>
             ) : (
               users.map((u) => (

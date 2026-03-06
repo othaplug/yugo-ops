@@ -83,19 +83,19 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
 
   return (
     <div>
-      <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email Address</label>
+      <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email Address</label>
       <div className="flex gap-2">
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
-          className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+          className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
         />
         <button
           type="button"
           onClick={handleChangeClick}
-          className="px-4 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
         >
           Change
         </button>
@@ -103,15 +103,15 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
 
       <ModalOverlay open={modalOpen} onClose={closeModal} title="Change email address">
         <div className="p-5 space-y-4">
-          <p className="text-ui text-[var(--tx2)]">Changing to: <strong className="text-[var(--tx)]">{newEmail}</strong></p>
-          <p className="text-label text-[var(--tx3)]">A verification code will be sent to <strong>{currentEmail}</strong> to confirm</p>
+          <p className="text-[12px] text-[var(--tx2)]">Changing to: <strong className="text-[var(--tx)]">{newEmail}</strong></p>
+          <p className="text-[10px] text-[var(--tx3)]">A verification code will be sent to <strong>{currentEmail}</strong> to confirm</p>
           {step === "email" ? (
             <form onSubmit={(e) => { e.preventDefault(); handleRequestCode(e); }} className="space-y-3">
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
+                <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
                   {loading ? "Sending…" : "Send code"}
                 </button>
               </div>
@@ -119,22 +119,22 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
           ) : (
             <form onSubmit={handleConfirm} className="space-y-3">
               <div>
-                <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Verification code</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Verification code</label>
                 <input
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="6-digit code"
                   maxLength={6}
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono tracking-widest"
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono tracking-widest"
                 />
               </div>
-              <p className="text-label text-[var(--tx3)]">Code sent to {currentEmail}. Check your inbox.</p>
+              <p className="text-[10px] text-[var(--tx3)]">Code sent to {currentEmail}. Check your inbox.</p>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="flex-1 px-4 py-2.5 rounded-lg text-ui font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
+                <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Back
                 </button>
-                <button type="submit" disabled={loading || code.length !== 6} className="flex-1 px-4 py-2.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+                <button type="submit" disabled={loading || code.length !== 6} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
                   {loading ? "Updating…" : "Confirm"}
                 </button>
               </div>

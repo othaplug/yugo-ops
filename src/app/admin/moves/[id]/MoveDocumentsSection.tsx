@@ -167,18 +167,18 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
         Documents & Invoices
       </h3>
       {loading ? (
-        <p className="text-caption text-[var(--tx3)]">Loading…</p>
+        <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
       ) : (
         <>
           <div className="mb-3">
             {linkedInvoices.length > 0 ? (
               <ul className="space-y-1">
                 {linkedInvoices.map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between gap-2 text-caption">
+                  <li key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
                     <span className="text-[var(--tx)]">
                       {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST` : ""})
                     </span>
@@ -198,7 +198,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 <select
                   value={linkInvoiceId}
                   onChange={(e) => setLinkInvoiceId(e.target.value)}
-                  className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] flex-1 focus:border-[var(--gold)] outline-none"
+                  className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] flex-1 focus:border-[var(--gold)] outline-none"
                 >
                   <option value="">Select invoice…</option>
                   {unlinkedInvoices.map((i) => (
@@ -211,11 +211,11 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleLinkInvoice}
                   disabled={!linkInvoiceId}
-                  className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                 >
                   Link
                 </button>
-                <button type="button" onClick={() => setAdding(null)} className="text-label font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
+                <button type="button" onClick={() => setAdding(null)} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
                   Cancel
                 </button>
               </div>
@@ -224,7 +224,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 <button
                   type="button"
                   onClick={() => setAdding("link")}
-                  className="text-label font-semibold text-[var(--gold)] hover:underline flex items-center gap-1"
+                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline flex items-center gap-1"
                 >
                   <LinkIcon className="w-[10px] h-[10px]" /> Link invoice to move
                 </button>
@@ -239,8 +239,8 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   <li key={d.source === "move" ? d.id : `client-${d.id}`} className="flex items-center justify-between gap-2 py-0.5">
                     <div className="min-w-0 flex-1 flex items-center gap-2">
                       <FileText className="w-[11px] h-[11px] text-[var(--tx3)] shrink-0" />
-                      <span className="text-caption text-[var(--tx)] truncate">{d.title}</span>
-                      <span className="ml-1 text-section text-[var(--tx3)] capitalize shrink-0">({d.type})</span>
+                      <span className="text-[11px] text-[var(--tx)] truncate">{d.title}</span>
+                      <span className="ml-1 text-[9px] text-[var(--tx3)] capitalize shrink-0">({d.type})</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {d.view_url && (
@@ -248,7 +248,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                           href={d.view_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-label font-semibold text-[var(--gold)] hover:underline"
+                          className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                         >
                           View
                         </a>
@@ -266,11 +266,11 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 ))}
               </ul>
             ) : (
-              <p className="text-caption text-[var(--tx3)] mb-2">No documents yet</p>
+              <p className="text-[11px] text-[var(--tx3)] mb-2">No documents yet</p>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer transition-colors disabled:opacity-50">
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer transition-colors disabled:opacity-50">
                 <Plus className="w-[11px] h-[11px]" />
                 {uploading ? "Uploading…" : "Add document (upload PDF)"}
                 <input type="file" accept=".pdf,image/*" onChange={handleUpload} disabled={uploading} className="hidden" />
@@ -282,19 +282,19 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     value={linkTitle}
                     onChange={(e) => setLinkTitle(e.target.value)}
                     placeholder="Title"
-                    className="w-32 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-32 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   />
                   <input
                     type="url"
                     value={linkUrl}
                     onChange={(e) => setLinkUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-40 text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-40 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   />
                   <select
                     value={linkType}
                     onChange={(e) => setLinkType(e.target.value)}
-                    className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   >
                     {DOC_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -304,11 +304,11 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     type="button"
                     onClick={handleAddLink}
                     disabled={!linkTitle.trim() || !linkUrl.trim()}
-                    className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
                   >
                     Add link
                   </button>
-                  <button type="button" onClick={() => setAdding(null)} className="text-label font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
+                  <button type="button" onClick={() => setAdding(null)} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
                     Cancel
                   </button>
                 </div>
@@ -316,7 +316,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 <button
                   type="button"
                   onClick={() => setAdding("link")}
-                  className="text-label font-semibold text-[var(--gold)] hover:underline flex items-center gap-1"
+                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline flex items-center gap-1"
                 >
                   <LinkIcon className="w-[10px] h-[10px]" /> Add link
                 </button>
@@ -330,7 +330,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
       {deleteConfirm && (
         <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove document?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-ui text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--tx2)]">
               Are you sure you want to remove &quot;{deleteConfirm.title}&quot;? This cannot be undone.
             </p>
             <div className="flex gap-2">
@@ -338,7 +338,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -346,7 +346,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={confirmDeleteDoc}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
               >
                 {deleting ? "Removing…" : "Remove"}
               </button>
@@ -359,7 +359,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
       {unlinkConfirm && (
         <ModalOverlay open onClose={() => !deleting && setUnlinkConfirm(null)} title="Unlink invoice?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-ui text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--tx2)]">
               Are you sure you want to unlink {unlinkConfirm.invoice_number} from this move?
             </p>
             <div className="flex gap-2">
@@ -367,7 +367,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={() => setUnlinkConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -375,7 +375,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={confirmUnlink}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
               >
                 {deleting ? "Unlinking…" : "Unlink"}
               </button>

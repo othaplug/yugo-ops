@@ -42,10 +42,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Balance already paid" }, { status: 409 });
     }
 
-    let balanceAmount = Number(move.balance_amount || 0);
-    if (balanceAmount <= 0) {
-      balanceAmount = Number(move.estimate || 0);
-    }
+    const balanceAmount = Number(move.balance_amount || 0);
     if (balanceAmount <= 0) {
       return NextResponse.json({ error: "No balance to charge" }, { status: 400 });
     }

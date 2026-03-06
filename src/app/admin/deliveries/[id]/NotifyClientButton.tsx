@@ -46,7 +46,7 @@ export default function NotifyClientButton({ delivery, clientEmail }: { delivery
     <button 
       onClick={handleNotify} 
       disabled={loading || !toEmail}
-      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all disabled:opacity-50"
+      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all disabled:opacity-50"
     >
       {loading ? "Sending..." : "Notify Client"}
     </button>

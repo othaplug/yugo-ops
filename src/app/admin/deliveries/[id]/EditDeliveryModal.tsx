@@ -17,19 +17,32 @@ import {
    Time helpers
    ═══════════════════════════════════════════════════ */
 
+const TIME_OPTIONS = (() => {
+  const times: string[] = [];
+  for (let h = 6; h <= 20; h++) {
+    for (const m of [0, 30]) {
+      if (h === 20 && m === 30) break;
+      const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      const ampm = h < 12 ? "AM" : "PM";
+      times.push(`${h12}:${m.toString().padStart(2, "0")} ${ampm}`);
+    }
+  }
+  return times;
+})();
+
 /* ═══════════════════════════════════════════════════
    Styled sub-components
    ═══════════════════════════════════════════════════ */
 
-const inputCls = "w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/20 outline-none transition-all";
+const inputCls = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/20 outline-none transition-all";
 const selectCls = `${inputCls} appearance-none`;
-const labelCls = "block text-section font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
+const labelCls = "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
 
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
     <div className="flex items-center gap-2 pb-2 border-b border-[var(--brd)]/30 mb-3">
       <Icon className="w-3.5 h-3.5 text-[var(--gold)]" />
-      <span className="text-label font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">{label}</span>
+      <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">{label}</span>
     </div>
   );
 }
@@ -95,7 +108,6 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           pickup_address: pickupAddress || form.get("pickup_address"),
           scheduled_date: form.get("scheduled_date"),
           time_slot: form.get("time_slot") || null,
-          preferred_time: form.get("preferred_time") || null,
           delivery_window: form.get("delivery_window"),
           instructions: form.get("instructions"),
           items,
@@ -134,7 +146,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-all"
       >
         Edit
       </button>
@@ -211,11 +223,13 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             </div>
             <div>
               <label className={labelCls}>Time Slot</label>
-              <input name="time_slot" type="time" defaultValue={delivery.time_slot || ""} className={selectCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Preferred Time</label>
-              <input name="preferred_time" type="time" defaultValue={delivery.preferred_time || ""} className={selectCls} />
+              <select name="time_slot" defaultValue={delivery.time_slot || ""} className={selectCls}>
+                <option value="">Select time…</option>
+                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {delivery.time_slot && !TIME_OPTIONS.includes(delivery.time_slot) && (
+                  <option value={delivery.time_slot}>{delivery.time_slot}</option>
+                )}
+              </select>
             </div>
             <div>
               <label className={labelCls}>Window</label>
@@ -244,7 +258,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             <div>
               <label className={labelCls}>Quoted Price</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-caption text-[var(--tx3)]">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">$</span>
                 <input
                   type="text"
                   name="quoted_price"
@@ -272,7 +286,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             <input name="special_handling" type="checkbox" defaultChecked={!!delivery.special_handling} className="rounded border-[var(--brd)] accent-[var(--gold)]" />
             <div className="flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-amber-500" />
-              <span className="text-caption font-medium text-[var(--tx)]">Requires special handling</span>
+              <span className="text-[11px] font-medium text-[var(--tx)]">Requires special handling</span>
             </div>
           </label>
         </div>
@@ -314,7 +328,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-ui font-bold tracking-wide bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--gold2)] transition-all shadow-sm"
+            className="w-full py-3 rounded-xl text-[12px] font-bold tracking-wide bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--gold2)] transition-all shadow-sm"
           >
             {loading ? "Saving…" : "Save Changes"}
           </button>

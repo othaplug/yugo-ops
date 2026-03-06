@@ -170,7 +170,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <BackButton label="Back" />
 
       {isCompleted && (
-        <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-caption text-[var(--tx2)]">
+        <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
           This move is complete. Some fields are locked for transparency.
         </div>
       )}
@@ -182,17 +182,17 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             <button
               type="button"
               onClick={() => setContactModalOpen(true)}
-              className="font-heading text-h3-md md:text-h3-xl font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
+              className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
             >
               {move.client_name}
             </button>
             {move.coordinator_name && (
-              <span className="text-caption text-[var(--tx2)]">
+              <span className="text-[11px] text-[var(--tx2)]">
                 Coordinator: {move.coordinator_name}
               </span>
             )}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-section font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
                 <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
                 {isOffice ? "Office" : "Residential"} Move
               </span>
@@ -201,7 +201,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-section font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
               >
                 Delete move
               </button>
@@ -211,10 +211,10 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-section font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
               {editingCard === "status" ? (
                 <select
-                  className="text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
                   value={(() => {
                     const s = normalizeStatus(move.status) || move.status || "confirmed";
                     return s === "paid" ? "scheduled" : s;
@@ -282,7 +282,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
                   aria-label="Edit status"
                 >
-                  <span className={`inline-flex px-2.5 py-1 rounded-md text-ui font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                     {getStatusLabel(move.status)}
                   </span>
                   <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
@@ -291,21 +291,21 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </div>
 
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 text-section font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
                 <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
                 </span>
                 Live stage
               </span>
-              <span className="text-ui font-medium text-[var(--tx)] truncate" title="Updated by crew from portal">
+              <span className="text-[12px] font-medium text-[var(--tx)] truncate" title="Updated by crew from portal">
                 {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}
               </span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
-              <span className="text-section font-semibold tracking-widest uppercase text-[var(--tx3)]/80">Last updated</span>
-              <span className="text-ui tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">Last updated</span>
+              <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
             </div>
           </div>
           {(normalizeStatus(move.status) || move.status) !== "cancelled" && (
@@ -324,7 +324,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {move.crew_id && (
         <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={selectedCrew?.name || "Crew"}>
           {!isInProgress && (
-            <p className="text-caption text-[var(--tx3)] mb-2">Move completed — live tracking still shown for vehicle and asset security.</p>
+            <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed — live tracking still shown for vehicle and asset security.</p>
           )}
           <LiveTrackingMap
             crewId={move.crew_id}
@@ -352,7 +352,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
             <select
               value={move.crew_id || ""}
               onChange={async (e) => {
@@ -364,7 +364,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 }
                 router.refresh();
               }}
-              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
             >
               <option value="">No crew assigned</option>
               {crews.map((c) => (
@@ -374,7 +374,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           </div>
           {selectedCrew && crewMembers.length > 0 && (
             <>
-              <p className="text-caption text-[var(--tx3)]">Check or uncheck members to assign to this move.</p>
+              <p className="text-[11px] text-[var(--tx3)]">Check or uncheck members to assign to this move.</p>
               <div className="space-y-2">
                 {crewMembers.map((m) => (
                   <label key={m} className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors">
@@ -384,7 +384,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                       onChange={() => toggleMember(m)}
                       className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
                     />
-                    <span className="text-body font-medium text-[var(--tx)]">{m}</span>
+                    <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
                   </label>
                 ))}
               </div>
@@ -397,17 +397,17 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   router.refresh();
                   setCrewModalOpen(false);
                 }}
-                className="w-full py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
               >
                 Save Assignments
               </button>
             </>
           )}
           {selectedCrew && crewMembers.length === 0 && (
-            <p className="text-caption text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Teams.</p>
+            <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Teams.</p>
           )}
           {!selectedCrew && (
-            <p className="text-caption text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
+            <p className="text-[11px] text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
           )}
         </div>
       </ModalOverlay>
@@ -415,7 +415,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <ModalOverlay open={vehicleModalOpen} onClose={() => setVehicleModalOpen(false)} title="Assign Vehicle" maxWidth="sm">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Primary Vehicle</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Primary Vehicle</label>
             <select
               value={move.truck_primary || ""}
               onChange={async (e) => {
@@ -425,7 +425,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
               <option value="">No vehicle assigned</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -434,7 +434,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </select>
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
             <select
               value={move.truck_secondary || ""}
               onChange={async (e) => {
@@ -443,7 +443,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
               <option value="">None</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -452,7 +452,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             </select>
           </div>
           <div>
-            <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Notes</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Notes</label>
             <textarea
               defaultValue={move.truck_notes || ""}
               onBlur={async (e) => {
@@ -464,10 +464,10 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               }}
               placeholder="e.g. Use truck #3 (newer lift gate)"
               rows={2}
-              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-none"
             />
           </div>
-          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
             Done
           </button>
         </div>
@@ -483,14 +483,13 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-caption font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            {move.preferred_time && <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Preferred Time</span><div className="text-caption font-medium text-[var(--tx)]">{move.preferred_time}</div></div>}
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-caption font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-caption font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-caption font-medium text-[var(--tx)]">4:00 PM</div></div>
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-caption font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completion</span><div className="text-[11px] font-medium text-[var(--tx)]">4:00 PM</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
           </div>
         </div>
 
@@ -501,17 +500,17 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
-              <div className="text-caption font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
-              {move.from_access && <div className="text-section text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
+              <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
+              {move.from_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
             </div>
             <div>
-              <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
-              <div className="text-caption font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
-              {move.to_access && <div className="text-section text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
+              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
+              <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
+              {move.to_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
             </div>
           </div>
         </div>
@@ -523,14 +522,14 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-caption font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-caption font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
             {isCompleted ? (
-              <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-caption font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+              <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
-              <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-caption font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
@@ -542,35 +541,35 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-caption font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
-            <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-caption font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
-            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-label text-[var(--tx3)]">{move.truck_notes}</div></div>}
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
+            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
+            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
           </div>
         </div>
 
         {/* Valuation Protection */}
         {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
           <div className="border-t border-[var(--brd)]/30 py-4">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
               <div>
-                <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
-                <div className="text-caption font-medium text-[var(--tx)]">
+                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
+                <div className="text-[11px] font-medium text-[var(--tx)]">
                   {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
                 </div>
               </div>
               {(move.valuation_upgrade_cost ?? 0) > 0 && (
                 <div>
-                  <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
-                  <div className="text-caption font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
+                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
+                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
                 </div>
               )}
               {(move.declaration_total ?? 0) > 0 && (
                 <div>
-                  <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
-                  <div className="text-caption font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
+                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
+                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
                 </div>
               )}
             </div>
@@ -580,20 +579,20 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Financial Snapshot — keeps card (hero pricing) */}
       <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/5 to-transparent border border-[var(--gold)]/15 p-4">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">Financial Snapshot</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">Financial Snapshot</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
           <div className="rounded-xl bg-gradient-to-br from-[var(--gold)]/15 to-[var(--gold)]/5 border-2 border-[var(--gold)]/40 px-4 py-3 shadow-sm">
-            <span className="text-section font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
-            <div className="text-h2-sm md:text-h2 font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
-            {estimate > 0 && <div className="text-section text-[var(--tx3)] mt-0.5">+{formatCurrency(calcHST(estimate))} HST &middot; {formatCurrency(estimate + calcHST(estimate))}</div>}
+            <span className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]/90">Estimate</span>
+            <div className="text-[20px] md:text-[22px] font-bold font-heading text-[var(--gold)] mt-1 tracking-tight">{formatCurrency(estimate)}</div>
+            {estimate > 0 && <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(calcHST(estimate))} HST &middot; {formatCurrency(estimate + calcHST(estimate))}</div>}
           </div>
-          <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-body font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
-          <div><span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-body font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(isPaid ? 0 : balanceDue)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Deposit</span><div className="text-[13px] font-bold text-[var(--grn)]">{formatCurrency(depositPaid)}</div></div>
+          <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance</span><div className={`text-[13px] font-bold ${balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"}`}>{formatCurrency(isPaid ? 0 : balanceDue)}</div></div>
         </div>
         <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 flex flex-wrap items-center gap-3">
           <div>
-            <span className="text-micro font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
-            <div className="mt-0.5 text-body font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit received"}</div>
+            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
+            <div className="mt-0.5 text-[13px] font-medium text-[var(--grn)]">{isPaid ? "Paid" : "Deposit received"}</div>
           </div>
           {!isPaid && (
             <button
@@ -614,7 +613,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
                 }
               }}
-              className="text-label font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
+              className="text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40 hover:bg-[var(--grn)]/30 transition-colors"
             >
               Mark as Paid
             </button>
@@ -633,16 +632,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
         <div className="flex flex-wrap gap-1">
           {(Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).length > 0 ? (
             (Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).map((tag: string) => (
-              <span key={tag} className="px-2 py-0.5 rounded text-section font-medium bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/15">
+              <span key={tag} className="px-2 py-0.5 rounded text-[9px] font-medium bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/15">
                 {tag}
               </span>
             ))
           ) : (
-            <span className="text-label text-[var(--tx3)]">No indicators. Click edit to add.</span>
+            <span className="text-[10px] text-[var(--tx3)]">No indicators. Click edit to add.</span>
           )}
         </div>
       </div>
@@ -658,7 +657,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <MoveDocumentsSection moveId={move.id} />
 
       {/* Client Messages - conversation thread */}
-      <ClientMessagesSection moveId={move.id} clientName={move.client_name} coordinatorName={move.coordinator_name} />
+      <ClientMessagesSection moveId={move.id} clientName={move.client_name} />
 
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />
@@ -668,8 +667,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
-        <p className="text-caption text-[var(--tx2)] leading-snug whitespace-pre-wrap">
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
+        <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
       </div>
@@ -690,7 +689,6 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           crew_id: move.crew_id,
           coordinator_name: move.coordinator_name,
           scheduled_date: move.scheduled_date,
-          preferred_time: move.preferred_time,
           arrival_window: move.arrival_window,
           from_access: move.from_access,
           to_access: move.to_access,
@@ -707,14 +705,14 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {deleteConfirmOpen && (
         <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete move?" maxWidth="sm">
           <div className="p-5 space-y-4">
-            <p className="text-ui text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--tx2)]">
               This will permanently remove this move and its inventory, documents, and photos. This cannot be undone.
             </p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(false)}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
               >
                 Cancel
               </button>
@@ -735,7 +733,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   }
                 }}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
               >
                 {deleting ? "Deleting…" : "Delete"}
               </button>
@@ -796,10 +794,10 @@ function MoveProfitCard({ move }: { move: any }) {
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
-        <span className="text-micro px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
+        <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
       </div>
-      <div className="space-y-1.5 text-caption">
+      <div className="space-y-1.5 text-[11px]">
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Revenue</span><span className="text-[var(--tx)] font-medium">{formatCurrency(revenue)}</span></div>
         <div className="border-t border-[var(--brd)]/30 my-1" />
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Labour</span><span className="text-red-400/80">-{formatCurrency(costs.labour)}</span></div>
@@ -815,7 +813,7 @@ function MoveProfitCard({ move }: { move: any }) {
         <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Net Profit</span><span className={costs.netMargin >= 0 ? "text-emerald-400" : "text-red-400"}>{formatCurrency(costs.netProfit)} ({costs.netMargin}%)</span></div>
       </div>
       {costs.grossMargin < target && (
-        <div className="mt-3 flex items-center gap-1.5 text-label text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
           <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
           Below Target Margin ({target}%)
         </div>

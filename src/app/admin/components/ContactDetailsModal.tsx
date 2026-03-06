@@ -22,19 +22,19 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
     <ModalOverlay open={open} onClose={onClose} title="Contact Details" maxWidth="sm">
       <div className="p-5 space-y-4">
         <div>
-          <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</div>
-          <div className="text-title font-semibold text-[var(--tx)]">{contact.name}</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</div>
+          <div className="text-[14px] font-semibold text-[var(--tx)]">{contact.name}</div>
         </div>
         {contact.company && (
           <div>
-            <div className="text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Company</div>
-            <div className="text-body text-[var(--tx2)]">{contact.company}</div>
+            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Company</div>
+            <div className="text-[13px] text-[var(--tx2)]">{contact.company}</div>
           </div>
         )}
         {contact.email && (
           <div className="flex items-center gap-2">
             <Icon name="mail" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-            <a href={`mailto:${contact.email}`} className="text-body text-[var(--gold)] hover:underline">
+            <a href={`mailto:${contact.email}`} className="text-[13px] text-[var(--gold)] hover:underline">
               {contact.email}
             </a>
           </div>
@@ -42,13 +42,13 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
         {contact.phone && (
           <div className="flex items-center gap-2">
             <Icon name="phone" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-            <a href={`tel:${normalizePhone(contact.phone)}`} className="text-body text-[var(--tx2)] hover:text-[var(--gold)]">
+            <a href={`tel:${normalizePhone(contact.phone)}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
               {formatPhone(contact.phone)}
             </a>
           </div>
         )}
         {!contact.email && !contact.phone && (
-          <div className="text-ui text-[var(--tx3)] py-2">No contact details on file</div>
+          <div className="text-[12px] text-[var(--tx3)] py-2">No contact details on file</div>
         )}
       </div>
     </ModalOverlay>

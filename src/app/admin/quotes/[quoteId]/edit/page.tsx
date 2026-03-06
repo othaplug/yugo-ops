@@ -18,14 +18,13 @@ export default async function EditQuotePage({ params }: Props) {
 
   if (!quote) redirect("/admin/quotes");
 
-  const [{ data: addons }, { data: configRows }, { data: itemWeights }] = await Promise.all([
+  const [{ data: addons }, { data: configRows }] = await Promise.all([
     db
       .from("addons")
       .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
       .eq("active", true)
       .order("display_order"),
     db.from("platform_config").select("key, value"),
-    db.from("item_weights").select("slug, item_name, weight_score, category, is_common").order("item_name"),
   ]);
 
   const config: Record<string, string> = {};
@@ -37,7 +36,6 @@ export default async function EditQuotePage({ params }: Props) {
         originalQuote={quote}
         addons={addons ?? []}
         config={config}
-        itemWeights={itemWeights ?? []}
       />
     </div>
   );

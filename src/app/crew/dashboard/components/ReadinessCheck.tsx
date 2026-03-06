@@ -76,7 +76,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
   if (loading) {
     return (
       <div className="max-w-[420px] mx-auto rounded-xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
-        <p className="text-body text-[var(--tx3)]">Loading readiness check…</p>
+        <p className="text-[13px] text-[var(--tx3)]">Loading readiness check…</p>
       </div>
     );
   }
@@ -85,8 +85,8 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
     <div className="max-w-[420px] mx-auto">
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-hero text-h1 font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
-          <p className="text-caption text-[var(--tx3)] mt-0.5">Quick 60-second check before starting the day</p>
+          <h2 className="font-hero text-[26px] font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Quick 60-second check before starting the day</p>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           <div className="space-y-2">
@@ -95,12 +95,12 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                 key={item.label}
                 className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-lg border border-[var(--brd)] bg-[var(--bg)]"
               >
-                <span className="text-body text-[var(--tx)]">{item.label}</span>
+                <span className="text-[13px] text-[var(--tx)]">{item.label}</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "ok" as const } : x)))}
-                    className={`px-3 py-1 rounded text-caption font-semibold transition-colors ${
+                    className={`px-3 py-1 rounded text-[11px] font-semibold transition-colors ${
                       item.status === "ok"
                         ? "bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40"
                         : "bg-transparent text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--grn)]/40"
@@ -111,7 +111,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                   <button
                     type="button"
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "issue" as const } : x)))}
-                    className={`px-3 py-1 rounded text-caption font-semibold transition-colors ${
+                    className={`px-3 py-1 rounded text-[11px] font-semibold transition-colors ${
                       item.status === "issue"
                         ? "bg-[var(--org)]/20 text-[var(--org)] border border-[var(--org)]/40"
                         : "bg-transparent text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--org)]/40"
@@ -124,7 +124,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             ))}
           </div>
           <div>
-            <label className="block text-label font-semibold text-[var(--tx3)] mb-1.5 uppercase tracking-wider">
+            <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1.5 uppercase tracking-wider">
               Note (optional)
             </label>
             <input
@@ -132,21 +132,21 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any notes about today's setup..."
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-body focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
             />
           </div>
           {error && (
-            <div className="text-ui text-[var(--red)] bg-[var(--red)]/10 px-3 py-2 rounded-lg">{error}</div>
+            <div className="text-[12px] text-[var(--red)] bg-[var(--red)]/10 px-3 py-2 rounded-lg">{error}</div>
           )}
           {flaggedCount > 0 && (
-            <p className="text-caption text-[var(--org)]">
+            <p className="text-[11px] text-[var(--org)]">
               {flaggedCount} item{flaggedCount > 1 ? "s" : ""} flagged — dispatch will be notified
             </p>
           )}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl font-semibold text-title text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 rounded-xl font-semibold text-[14px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
           >
             {submitting ? "Submitting…" : "Complete & Continue"}
           </button>

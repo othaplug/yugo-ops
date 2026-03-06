@@ -105,7 +105,7 @@ export default function ChangeRequestsClient({
           return (
             <Link
               href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
-              className="text-body font-semibold text-[var(--gold)] hover:underline"
+              className="text-[13px] font-semibold text-[var(--gold)] hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               {clientName}
@@ -127,7 +127,7 @@ export default function ChangeRequestsClient({
           const moveData = getMoveData(r);
           const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
           const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
-          return <span className="text-caption font-mono text-[var(--tx2)]">{moveCode}</span>;
+          return <span className="text-[11px] font-mono text-[var(--tx2)]">{moveCode}</span>;
         },
         sortable: true,
         searchable: true,
@@ -138,7 +138,7 @@ export default function ChangeRequestsClient({
         accessor: (r) => r.urgency,
         render: (r) => (
           <span
-            className={`inline-flex px-2 py-0.5 rounded text-section font-bold ${
+            className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
               r.urgency === "urgent" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
             }`}
           >
@@ -155,7 +155,7 @@ export default function ChangeRequestsClient({
         render: (r) =>
           r.status !== "pending" ? (
             <span
-              className={`inline-flex px-2 py-0.5 rounded text-section font-bold ${
+              className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
                 r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
               }`}
             >
@@ -171,7 +171,7 @@ export default function ChangeRequestsClient({
         id: "type",
         label: "Type",
         accessor: (r) => r.type,
-        render: (r) => <span className="text-caption font-medium text-[var(--tx2)]">{toTitleCase(r.type)}</span>,
+        render: (r) => <span className="text-[11px] font-medium text-[var(--tx2)]">{toTitleCase(r.type)}</span>,
         sortable: true,
         searchable: true,
       },
@@ -179,7 +179,7 @@ export default function ChangeRequestsClient({
         id: "description",
         label: "Description",
         accessor: (r) => r.description,
-        render: (r) => <span className="text-ui text-[var(--tx)] line-clamp-2 max-w-[200px]">{r.description}</span>,
+        render: (r) => <span className="text-[12px] text-[var(--tx)] line-clamp-2 max-w-[200px]">{r.description}</span>,
         sortable: true,
         searchable: true,
       },
@@ -188,7 +188,7 @@ export default function ChangeRequestsClient({
         label: "Time",
         accessor: (r) => r.created_at,
         render: (r) => (
-          <span className="text-label text-[var(--tx3)]">
+          <span className="text-[10px] text-[var(--tx3)]">
             {r.status === "pending" ? formatRelative(r.created_at) : new Date(r.created_at).toLocaleString()}
           </span>
         ),
@@ -206,7 +206,7 @@ export default function ChangeRequestsClient({
                 type="button"
                 onClick={() => openApproveModal(r.id)}
                 disabled={loadingId === r.id}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
                 {loadingId === r.id ? "…" : "Approve"}
               </button>
@@ -214,7 +214,7 @@ export default function ChangeRequestsClient({
                 type="button"
                 onClick={() => handleReview(r.id, "rejected")}
                 disabled={loadingId === r.id}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--red)] text-white hover:bg-[var(--red)]/90 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--red)] text-white hover:bg-[var(--red)]/90 disabled:opacity-50"
               >
                 {loadingId === r.id ? "…" : "Reject"}
               </button>
@@ -239,22 +239,22 @@ export default function ChangeRequestsClient({
     <div className="space-y-8">
       {/* Stats bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--brd)]/30">
           <div className="px-4 py-2 first:pl-0">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pending</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pending</div>
             <div className="text-xl font-bold font-heading text-[var(--tx)]">{pending.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Approved today</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Approved today</div>
             <div className="text-xl font-bold font-heading text-[var(--grn)]">{approvedToday.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Rejected</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Rejected</div>
             <div className="text-xl font-bold font-heading text-[var(--red)]">{rejected.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total approved</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total approved</div>
             <div className="text-xl font-bold font-heading text-[var(--blue)]">{approved.length}</div>
           </div>
         </div>
@@ -262,14 +262,14 @@ export default function ChangeRequestsClient({
 
       {/* Filter bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
               type="button"
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-label font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
                 statusFilter === f.value
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                   : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
@@ -283,7 +283,7 @@ export default function ChangeRequestsClient({
 
       {/* Content */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
         <DataTable
           data={filtered}
           columns={columns}
@@ -301,8 +301,8 @@ export default function ChangeRequestsClient({
       {approveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
-            <h2 id="approve-modal-title" className="text-body font-bold text-[var(--tx)] mb-3">Approve change request</h2>
-            <label className="block text-caption font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
+            <h2 id="approve-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve change request</h2>
+            <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
             <input
               type="number"
               min="0"
@@ -310,13 +310,13 @@ export default function ChangeRequestsClient({
               placeholder="0"
               value={approveFeeDollars}
               onChange={(e) => setApproveFeeDollars(e.target.value)}
-              className="w-full text-ui bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => { setApproveModal(null); setApproveFeeDollars(""); }}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
               >
                 Cancel
               </button>
@@ -324,7 +324,7 @@ export default function ChangeRequestsClient({
                 type="button"
                 onClick={confirmApproveWithFee}
                 disabled={loadingId === approveModal.id}
-                className="px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
               >
                 {loadingId === approveModal.id ? "…" : "Approve"}
               </button>

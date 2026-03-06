@@ -24,7 +24,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
 
   if (enabled) {
     return (
-      <span className="text-label font-semibold px-2.5 py-1 rounded-full bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">
+      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">
         Enabled
       </span>
     );
@@ -34,7 +34,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
     <button
       onClick={handleEnable}
       disabled={loading}
-      className="px-3 py-1.5 text-caption font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+      className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
     >
       {loading ? "Enabling…" : "Enable 2FA"}
     </button>

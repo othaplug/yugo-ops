@@ -143,7 +143,7 @@ export default function NewClientForm({
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-3 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {partnerButtonLabel}
           </button>
@@ -161,13 +161,13 @@ export default function NewClientForm({
           </Field>
           <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Main St" label="Address" className="field-input" />
           <input type="hidden" name="address" value={address} />
-          <p className="text-caption text-[var(--tx3)]">
+          <p className="text-[11px] text-[var(--tx3)]">
             Add this client to a move and use &quot;Resend tracking link&quot; on the move page to send them a magic-link to track their move (no account needed).
           </p>
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-3 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {clientButtonLabel}
           </button>
@@ -181,7 +181,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div>
       {label && (
-        <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
       )}
       {children}
     </div>

@@ -33,12 +33,12 @@ export default function SettingsForm() {
         placeholder="New password (min 6 characters)..."
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+        className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
       />
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 whitespace-nowrap"
+        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 whitespace-nowrap"
       >
         {loading ? "Updating..." : "Update"}
       </button>

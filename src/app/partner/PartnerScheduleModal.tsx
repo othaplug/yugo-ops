@@ -279,7 +279,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   };
 
   const fieldInput =
-    "w-full text-title bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
 
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -292,7 +292,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
           <div>
-            <h2 className="font-hero text-h1 sm:text-hero font-bold text-[#1A1A1A]">Schedule Delivery</h2>
+            <h2 className="font-hero text-[26px] sm:text-[30px] font-bold text-[#1A1A1A]">Schedule Delivery</h2>
             {step !== "type" && (
               <div className="flex gap-1.5 mt-1">
                 {(["type", "config", "details", "review"] as const).map((s, i) => (
@@ -308,13 +308,13 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
           {error && (
-            <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-body text-red-700">{error}</div>
+            <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{error}</div>
           )}
 
           {/* ════ Step 1: Booking Type ════ */}
           {step === "type" && (
             <div className="space-y-4">
-              <p className="text-body text-[#666]">How would you like to book?</p>
+              <p className="text-[13px] text-[#666]">How would you like to book?</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -322,8 +322,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   className="p-5 rounded-xl border-2 border-[#E8E4DF] hover:border-[#C9A962] transition-all text-left group"
                 >
                   <Calendar className="w-7 h-7 text-[#C9A962] mb-2.5" />
-                  <div className="text-h3-sm font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Day Rate</div>
-                  <p className="text-caption text-[#888] mt-1">Dedicated vehicle + crew for the day. Best for 4+ stops.</p>
+                  <div className="text-[15px] font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Day Rate</div>
+                  <p className="text-[11px] text-[#888] mt-1">Dedicated vehicle + crew for the day. Best for 4+ stops.</p>
                 </button>
                 <button
                   type="button"
@@ -331,8 +331,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   className="p-5 rounded-xl border-2 border-[#E8E4DF] hover:border-[#C9A962] transition-all text-left group"
                 >
                   <Send className="w-7 h-7 text-[#C9A962] mb-2.5" />
-                  <div className="text-h3-sm font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Per Delivery</div>
-                  <p className="text-caption text-[#888] mt-1">Individual delivery priced per service. Best for 1-3 stops.</p>
+                  <div className="text-[15px] font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Per Delivery</div>
+                  <p className="text-[11px] text-[#888] mt-1">Individual delivery priced per service. Best for 1-3 stops.</p>
                 </button>
               </div>
             </div>
@@ -342,7 +342,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "day_rate" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Vehicle</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Vehicle</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {VEHICLE_TYPES.map((v) => (
                     <button
@@ -352,15 +352,15 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${vehicleType === v.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
                     >
                       <Truck className={`w-4 h-4 mb-1 ${vehicleType === v.value ? "text-[#C9A962]" : "text-[#999]"}`} />
-                      <div className="text-body font-semibold text-[#1A1A1A]">{v.label}</div>
-                      <div className="text-label text-[#888]">{v.capacity}</div>
+                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{v.label}</div>
+                      <div className="text-[10px] text-[#888]">{v.capacity}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Duration</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Duration</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {([["full_day", "Full Day", "6 stops incl."], ["half_day", "Half Day", "3 stops incl."]] as const).map(([val, label, desc]) => (
                     <button
@@ -369,18 +369,18 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       onClick={() => setDayType(val)}
                       className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${dayType === val ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
                     >
-                      <div className="text-body font-semibold text-[#1A1A1A]">{label}</div>
-                      <div className="text-label text-[#888]">{desc}</div>
+                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{label}</div>
+                      <div className="text-[10px] text-[#888]">{desc}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Number of Stops</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Number of Stops</h3>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setNumStops((n) => Math.max(1, n - 1))} className="w-9 h-9 rounded-lg border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]">-</button>
-                  <span className="text-h2-sm font-bold text-[#1A1A1A] w-10 text-center">{numStops}</span>
+                  <span className="text-[22px] font-bold text-[#1A1A1A] w-10 text-center">{numStops}</span>
                   <button type="button" onClick={() => setNumStops((n) => n + 1)} className="w-9 h-9 rounded-lg border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]">+</button>
                 </div>
               </section>
@@ -394,7 +394,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "per_delivery" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Delivery Type</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Delivery Type</h3>
                 <div className="space-y-2">
                   {DELIVERY_TYPES.map((dt) => (
                     <button
@@ -403,15 +403,15 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       onClick={() => setDeliveryType(dt.value)}
                       className={`w-full px-4 py-3 rounded-xl border-2 text-left transition-all ${deliveryType === dt.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
                     >
-                      <div className="text-body font-semibold text-[#1A1A1A]">{dt.label}</div>
-                      <div className="text-label text-[#888]">{dt.desc}</div>
+                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{dt.label}</div>
+                      <div className="text-[10px] text-[#888]">{dt.desc}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Zone</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Zone</h3>
                 <select value={zone} onChange={(e) => setZone(Number(e.target.value))} className={fieldInput}>
                   <option value={1}>Zone 1 — GTA (0–40 km) — Included</option>
                   <option value={2}>Zone 2 — Outer GTA (40–70 km) — + $120–$145</option>
@@ -422,8 +422,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Heavy Items */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Heavy / Oversized Items</h3>
-                <p className="text-caption text-[#888]">Items over 250 lbs incur additional surcharges.</p>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Heavy / Oversized Items</h3>
+                <p className="text-[11px] text-[#888]">Items over 250 lbs incur additional surcharges.</p>
                 <div className="space-y-2">
                   {([
                     { label: "250–400 lbs", tier: "250_400" as const },
@@ -433,7 +433,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                     const count = existing?.count ?? 0;
                     return (
                       <div key={t.tier} className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-[#E8E4DF]">
-                        <span className="text-body text-[#1A1A1A]">{t.label}</span>
+                        <span className="text-[13px] text-[#1A1A1A]">{t.label}</span>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -449,7 +449,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                           >
                             -
                           </button>
-                          <span className="w-6 text-center text-title font-bold text-[#1A1A1A]">{count}</span>
+                          <span className="w-6 text-center text-[14px] font-bold text-[#1A1A1A]">{count}</span>
                           <button
                             type="button"
                             onClick={() =>
@@ -481,7 +481,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="space-y-5">
               {/* Client */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Client / Recipient</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Client / Recipient</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <FormField label="Name" required>
                     <input value={form.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Full name" className={fieldInput} />
@@ -497,7 +497,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Addresses */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Addresses</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Addresses</h3>
                 <FormField label="Pickup Address">
                   <AddressAutocomplete value={form.pickup_address || pickupRaw} onRawChange={setPickupRaw} onChange={(r) => set("pickup_address", r.fullAddress)} placeholder="Warehouse or store" className={fieldInput} />
                 </FormField>
@@ -508,7 +508,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Schedule */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Schedule</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Schedule</h3>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-4">
                   <FormField label="Date" required>
                     <input type="date" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} className={fieldInput} />
@@ -530,20 +530,20 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Inventory */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Inventory</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Inventory</h3>
                 {inventory.length > 0 && (
                   <ul className="space-y-1.5 mb-2">
                     {inventory.map((item, idx) => (
                       <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[#FAF8F5] border border-[#E8E4DF]">
-                        <span className="text-ui text-[#1A1A1A]"><span className="text-[#888]">{item.room}:</span> {item.item_name}</span>
+                        <span className="text-[12px] text-[#1A1A1A]"><span className="text-[#888]">{item.room}:</span> {item.item_name}</span>
                         <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[#888] hover:text-red-600" aria-label="Remove"><Trash2 className="w-[14px] h-[14px]" /></button>
                       </li>
                     ))}
                   </ul>
                 )}
                 <div className="flex items-center gap-2 mb-2">
-                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-caption font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Single add</button>
-                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-caption font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Bulk add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Single add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Bulk add</button>
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
@@ -551,8 +551,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       <option value="">Room</option>
                       {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
-                    <textarea value={inventoryBulkText} onChange={(e) => setInventoryBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y text-body`} />
-                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-ui font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
+                    <textarea value={inventoryBulkText} onChange={(e) => setInventoryBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
+                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
                       <Plus className="w-[14px] h-[14px]" /> Add all
                     </button>
                   </div>
@@ -564,7 +564,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                     </select>
                     <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item (e.g. Couch x2)" className={`${fieldInput} flex-1 min-w-[120px]`} />
                     <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))} className={`${fieldInput} w-16`} />
-                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-ui font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
+                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
                       <Plus className="w-[14px] h-[14px]" /> Add
                     </button>
                   </div>
@@ -573,10 +573,10 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Complexity */}
               <section className="space-y-2">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Complexity</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Complexity</h3>
                 <div className="flex flex-wrap gap-2">
                   {COMPLEXITY_PRESETS.map((preset) => (
-                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-caption font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-white text-[#666] border-[#E8E4DF] hover:border-[#C9A962]/50"}`}>
+                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-white text-[#666] border-[#E8E4DF] hover:border-[#C9A962]/50"}`}>
                       {preset}
                     </button>
                   ))}
@@ -585,13 +585,13 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Notes */}
               <section className="space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Notes</h3>
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Notes</h3>
                 <FormField label="Instructions / access">
-                  <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-body`} />
+                  <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-[13px]`} />
                 </FormField>
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-                  <span className="text-body text-[#1A1A1A]">Requires special handling (fragile, high-value)</span>
+                  <span className="text-[13px] text-[#1A1A1A]">Requires special handling (fragile, high-value)</span>
                 </label>
               </section>
             </div>
@@ -601,8 +601,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "review" && (
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E8E4DF] p-4 space-y-3">
-                <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Summary</h3>
-                <div className="grid grid-cols-2 gap-2 text-body">
+                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Summary</h3>
+                <div className="grid grid-cols-2 gap-2 text-[13px]">
                   <div className="text-[#888]">Type</div>
                   <div className="font-semibold text-[#1A1A1A]">{bookingType === "day_rate" ? "Day Rate" : "Per Delivery"}</div>
                   {bookingType === "day_rate" && <>
@@ -630,7 +630,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {renderPricePreview()}
 
-              <p className="text-caption text-[#888] text-center">Your rates are locked in per your partnership agreement.</p>
+              <p className="text-[11px] text-[#888] text-center">Your rates are locked in per your partnership agreement.</p>
             </div>
           )}
         </div>
@@ -645,7 +645,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 else if (step === "details") setStep("config");
                 else if (step === "review") setStep("details");
               }}
-              className="flex-1 py-3 rounded-xl text-body font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
+              className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
             >
               Back
             </button>
@@ -654,7 +654,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 py-3 rounded-xl text-body font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
               >
                 {submitting ? "Submitting…" : "Submit Delivery Request"}
               </button>
@@ -665,7 +665,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   if (step === "config") setStep("details");
                   else if (step === "details") { setStep("review"); fetchPricing(); }
                 }}
-                className="flex-1 py-3 rounded-xl text-body font-bold bg-[#C9A962] text-white hover:bg-[#B8862E] transition-colors"
+                className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B8862E] transition-colors"
               >
                 Continue
               </button>
@@ -681,15 +681,15 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   function renderSurcharges() {
     return (
       <section className="space-y-2">
-        <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Surcharges</h3>
+        <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Surcharges</h3>
         <div className="flex gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-            <span className="text-body text-[#1A1A1A]">After Hours (+20%)</span>
+            <span className="text-[13px] text-[#1A1A1A]">After Hours (+20%)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-            <span className="text-body text-[#1A1A1A]">Weekend (+10%)</span>
+            <span className="text-[13px] text-[#1A1A1A]">Weekend (+10%)</span>
           </label>
         </div>
       </section>
@@ -701,7 +701,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     if (displayServices.length === 0) return null;
     return (
       <section className="space-y-2">
-        <h3 className="text-caption font-semibold tracking-wider uppercase text-[#888]">Add-on Services</h3>
+        <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Add-on Services</h3>
         <div className="space-y-1.5">
           {displayServices.map((svc) => (
             <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[#E8E4DF] hover:border-[#C9A962]/40 transition-colors cursor-pointer">
@@ -713,16 +713,16 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]"
                 />
                 <div>
-                  <div className="text-body text-[#1A1A1A]">{svc.service_name}</div>
+                  <div className="text-[13px] text-[#1A1A1A]">{svc.service_name}</div>
                   {svc.slug === "stair_carry" && selectedServices[svc.slug]?.enabled && (
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-label text-[#888]">Flights:</span>
-                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-14 text-ui bg-white border border-[#E8E4DF] rounded px-2 py-1" />
+                      <span className="text-[10px] text-[#888]">Flights:</span>
+                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-14 text-[12px] bg-white border border-[#E8E4DF] rounded px-2 py-1" />
                     </div>
                   )}
                 </div>
               </div>
-              <span className="text-ui font-semibold text-[#C9A962] shrink-0">
+              <span className="text-[12px] font-semibold text-[#C9A962] shrink-0">
                 {fmtCurrency(svc.price_min)}
                 {svc.price_max ? ` – ${fmtCurrency(svc.price_max)}` : ""}
                 {svc.price_unit === "per_flight" ? "/flight" : svc.price_unit === "per_stop" ? "/stop" : ""}
@@ -739,13 +739,13 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       <div className="rounded-xl border border-[#C9A962]/30 bg-[#FFFDF7] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <DollarSign className="w-4 h-4 text-[#C9A962]" />
-          <h3 className="text-caption font-semibold tracking-wider uppercase text-[#8B6914]">Price Preview</h3>
-          {pricingLoading && <span className="text-label text-[#888]">Calculating…</span>}
+          <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#8B6914]">Price Preview</h3>
+          {pricingLoading && <span className="text-[10px] text-[#888]">Calculating…</span>}
         </div>
         {pricing ? (
           <>
             {pricing.breakdown.map((item, i) => (
-              <div key={i} className="flex justify-between text-body">
+              <div key={i} className="flex justify-between text-[13px]">
                 <span className="text-[#666]">{item.label}</span>
                 <span className={`font-semibold ${item.amount < 0 ? "text-green-600" : "text-[#1A1A1A]"}`}>
                   {item.amount < 0 ? `-${fmtCurrency(Math.abs(item.amount))}` : fmtCurrency(item.amount)}
@@ -753,15 +753,15 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </div>
             ))}
             <div className="border-t border-[#C9A962]/20 pt-2 mt-2 flex justify-between">
-              <span className="text-title font-bold text-[#1A1A1A]">Total</span>
-              <span className="text-h3 font-bold text-[#C9A962]">{fmtCurrency(pricing.totalPrice)}</span>
+              <span className="text-[14px] font-bold text-[#1A1A1A]">Total</span>
+              <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(pricing.totalPrice)}</span>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
-              <div className="text-caption text-[#888] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
+              <div className="text-[11px] text-[#888] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
             )}
           </>
         ) : (
-          <div className={`text-ui ${pricingError ? "text-red-600" : "text-[#888]"}`}>
+          <div className={`text-[12px] ${pricingError ? "text-red-600" : "text-[#888]"}`}>
             {pricingLoading ? "Loading rates…" : pricingError || "Configure options above to see pricing"}
           </div>
         )}
@@ -773,7 +773,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 function FormField({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-caption font-semibold text-[#888] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <label className="block text-[11px] font-semibold text-[#888] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       {children}
     </div>
   );

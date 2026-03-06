@@ -199,13 +199,13 @@ export default function AddressAutocomplete({
   };
 
   const inputClass =
-    "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-body text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all " +
+    "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all " +
     (className || "");
 
   return (
     <div ref={containerRef} className="w-full relative">
       {label && (
-        <label className="block text-caption font-semibold text-[var(--tx2)] mb-1.5">
+        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
           {label}
           {required && <span className="text-[var(--red)] ml-0.5">*</span>}
         </label>
@@ -233,14 +233,14 @@ export default function AddressAutocomplete({
           className="absolute z-[100] left-0 right-0 mt-1 py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg max-h-[280px] overflow-y-auto"
         >
           {loading && suggestions.length === 0 ? (
-            <li className="px-3 py-2 text-ui text-[var(--tx3)]">Searching...</li>
+            <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
           ) : (
             suggestions.map((f, i) => (
               <li
                 key={f.id}
                 role="option"
                 aria-selected={i === highlightIdx}
-                className={`px-3 py-2.5 text-body cursor-pointer transition-colors ${
+                className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
                   i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
                 }`}
                 onMouseDown={(e) => {

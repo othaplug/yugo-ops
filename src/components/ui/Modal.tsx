@@ -64,7 +64,7 @@ export default function GlobalModal({
       >
         {!noHeader && (
           <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between shrink-0">
-            <h2 id="modal-title" className="font-heading text-h3 font-bold text-[var(--tx)]">
+            <h2 id="modal-title" className="font-heading text-[16px] font-bold text-[var(--tx)]">
               {title}
             </h2>
             <button

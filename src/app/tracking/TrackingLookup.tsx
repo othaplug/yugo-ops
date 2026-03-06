@@ -54,10 +54,10 @@ export default function TrackingLookup() {
         </div>
 
         <div className="text-center max-w-md mb-8">
-          <h1 className="text-h2 md:text-hero font-bold mb-3 leading-tight" style={{ color: WINE }}>
+          <h1 className="text-[24px] md:text-[30px] font-bold mb-3 leading-tight" style={{ color: WINE }}>
             Track Your Move or Delivery
           </h1>
-          <p className="text-body md:text-title leading-relaxed opacity-80" style={{ color: FOREST }}>
+          <p className="text-[13px] md:text-[14px] leading-relaxed opacity-80" style={{ color: FOREST }}>
             Enter your tracking number to see real-time status, live crew location, and delivery details.
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function TrackingLookup() {
               onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); }}
               placeholder="e.g. MV1234 or PJ1024"
               autoFocus
-              className="w-full px-5 py-4 pr-[100px] rounded-2xl text-h3-sm font-semibold tracking-wide placeholder:font-normal focus:outline-none focus:ring-2 transition-all"
+              className="w-full px-5 py-4 pr-[100px] rounded-2xl text-[15px] font-semibold tracking-wide placeholder:font-normal focus:outline-none focus:ring-2 transition-all"
               style={{
                 backgroundColor: "#fff",
                 border: `2px solid ${FOREST}20`,
@@ -89,7 +89,7 @@ export default function TrackingLookup() {
             <button
               type="submit"
               disabled={loading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2.5 rounded-xl text-ui font-bold tracking-wide disabled:opacity-50 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2.5 rounded-xl text-[12px] font-bold tracking-wide disabled:opacity-50 transition-colors"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               {loading ? (
@@ -108,7 +108,7 @@ export default function TrackingLookup() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <p className="text-ui text-red-600">{error}</p>
+              <p className="text-[12px] text-red-600">{error}</p>
             </div>
           )}
         </form>
@@ -123,15 +123,15 @@ export default function TrackingLookup() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2.5 opacity-90">
                 <path d={c.icon} />
               </svg>
-              <div className="text-caption font-bold mb-0.5" style={{ color: FOREST }}>{c.title}</div>
-              <div className="text-label opacity-80">{c.desc}</div>
+              <div className="text-[11px] font-bold mb-0.5" style={{ color: FOREST }}>{c.title}</div>
+              <div className="text-[10px] opacity-80">{c.desc}</div>
             </div>
           ))}
         </div>
       </div>
 
       <footer className="text-center py-4 border-t" style={{ borderColor: `${FOREST}10` }}>
-        <p className="text-nano opacity-40" style={{ color: FOREST }}>
+        <p className="text-[7px] opacity-40" style={{ color: FOREST }}>
           <Link href="/" className="hover:underline font-semibold" style={{ color: GOLD }}>YUGO</Link> · The Art of Moving
         </p>
       </footer>

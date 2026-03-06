@@ -49,11 +49,11 @@ export default function CrewEndOfDayPage() {
 
   return (
     <PageContent>
-      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-ui text-[var(--tx3)] hover:text-[var(--gold)]">
+      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]">
         ← Back to Dashboard
       </Link>
-      <h1 className="font-hero text-h1 font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
-      <p className="text-ui text-[var(--tx3)] mt-1">
+      <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
+      <p className="text-[12px] text-[var(--tx3)] mt-1">
         {preview?.alreadySubmitted
           ? "You already submitted a report for today. Submit again to update it with any new jobs or expenses."
           : "Submit your daily report. Data is auto-compiled from today's activity."}
@@ -61,8 +61,8 @@ export default function CrewEndOfDayPage() {
 
       {preview?.summary && (
         <div className="mt-4 p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
-          <h2 className="font-hero text-h3-lg font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
-          <div className="grid grid-cols-2 gap-2 text-ui">
+          <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
+          <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
             <div><span className="text-[var(--tx3)]">Total job time:</span> {Math.floor((preview.summary.totalJobTime ?? 0) / 60)}h {((preview.summary.totalJobTime ?? 0) % 60)}m</div>
             <div><span className="text-[var(--tx3)]">Photos:</span> {preview.summary.photosCount ?? 0}</div>
@@ -72,15 +72,15 @@ export default function CrewEndOfDayPage() {
           </div>
           {preview.jobs && preview.jobs.length > 0 && (
             <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-              <p className="text-label font-semibold text-[var(--tx3)] mb-2">Jobs</p>
+              <p className="text-[10px] font-semibold text-[var(--tx3)] mb-2">Jobs</p>
               {preview.jobs.map((j, i) => (
                 <div key={i} className="mb-3 last:mb-0">
-                  <p className="text-caption text-[var(--tx2)] font-medium">{j.displayId ?? j.jobId} · {j.duration}m</p>
+                  <p className="text-[11px] text-[var(--tx2)] font-medium">{j.displayId ?? j.jobId} · {j.duration}m</p>
                   <textarea
                     value={jobNotes[j.jobId] ?? ""}
                     onChange={(e) => setJobNotes((prev) => ({ ...prev, [j.jobId]: e.target.value }))}
                     placeholder="Note for this job (optional)"
-                    className="mt-1 w-full px-3 py-2 rounded-lg text-caption bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[60px]"
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[60px]"
                   />
                 </div>
               ))}
@@ -91,7 +91,7 @@ export default function CrewEndOfDayPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="block text-label font-semibold text-[var(--tx3)] mb-2 uppercase">Anything else to note? (optional)</label>
+          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Anything else to note? (optional)</label>
           <textarea
             value={crewNote}
             onChange={(e) => setCrewNote(e.target.value)}
@@ -99,11 +99,11 @@ export default function CrewEndOfDayPage() {
             className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[100px]"
           />
         </div>
-        {error && <p className="text-ui text-[var(--red)]">{error}</p>}
+        {error && <p className="text-[12px] text-[var(--red)]">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-h3-sm text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
           {submitting ? (preview?.alreadySubmitted ? "Updating…" : "Submitting…") : preview?.alreadySubmitted ? "Update report" : "Submit & End Day"}
         </button>

@@ -33,7 +33,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="size-8 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-section font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
+        className="size-8 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[9px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
       >
         {initials}
       </button>
@@ -41,15 +41,15 @@ export default function ProfileDropdown({ user }: { user: any }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[min(220px,calc(100vw-2rem))] max-w-[220px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up">
           <div className="px-4 py-3 border-b border-[var(--brd)]">
-            <div className="text-ui font-semibold text-[var(--tx)] truncate">{user?.email}</div>
-            <div className="text-section text-[var(--tx3)]">Administrator</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{user?.email}</div>
+            <div className="text-[9px] text-[var(--tx3)]">Administrator</div>
           </div>
 
           <div className="py-1">
             <Link
               href="/admin/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-caption text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
+              className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -61,7 +61,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
             <Link
               href="/admin/platform"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-caption text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
+              className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" />
@@ -74,7 +74,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
           <div className="border-t border-[var(--brd)]">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-caption text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
+              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

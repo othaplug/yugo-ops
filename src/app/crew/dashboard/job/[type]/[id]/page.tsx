@@ -310,7 +310,7 @@ export default function CrewJobPage({
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-            <p className="text-body text-[var(--tx3)]">Loading job...</p>
+            <p className="text-[13px] text-[var(--tx3)]">Loading job...</p>
           </div>
         </div>
       </PageContent>
@@ -321,10 +321,10 @@ export default function CrewJobPage({
     return (
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-          <p className="text-title text-[var(--red)] mb-4">{error || "Job not found"}</p>
+          <p className="text-[14px] text-[var(--red)] mb-4">{error || "Job not found"}</p>
           <Link
             href="/crew/dashboard"
-            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-body font-medium text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
           >
             <span aria-hidden>←</span> Back to Jobs
           </Link>
@@ -356,7 +356,7 @@ export default function CrewJobPage({
       <div className="flex items-center justify-between gap-2 mb-4">
         <Link
           href="/crew/dashboard"
-          className="inline-flex items-center gap-1.5 py-2 px-3 -ml-3 rounded-xl text-ui font-medium text-[var(--tx2)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+          className="inline-flex items-center gap-1.5 py-2 px-3 -ml-3 rounded-xl text-[12px] font-medium text-[var(--tx2)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
           Jobs
@@ -365,13 +365,13 @@ export default function CrewJobPage({
           {(session?.isActive || isCompleted) && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span className="text-caption font-bold text-[var(--tx)] tabular-nums">
+              <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
                 {formatElapsed(isCompleted && session?.completedAt && session?.startedAt ? new Date(session.completedAt).getTime() - new Date(session.startedAt).getTime() : elapsedMs)}
               </span>
             </div>
           )}
           {session && !isCompleted && (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-label font-bold ${gpsStatus === "on" ? "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25" : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${gpsStatus === "on" ? "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25" : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"}`}>
               <span className="relative flex h-1.5 w-1.5">
                 {gpsStatus === "on" && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />}
                 <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${gpsStatus === "on" ? "bg-[#22C55E]" : "bg-[var(--tx3)]"}`} />
@@ -386,13 +386,13 @@ export default function CrewJobPage({
       <div className="mb-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{job.jobTypeLabel}</p>
-            <h1 className="font-hero text-hero font-bold text-[var(--tx)] leading-tight">{job.clientName}</h1>
-            <p className="text-caption text-[var(--tx3)] mt-1 font-mono">{job.jobId}</p>
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{job.jobTypeLabel}</p>
+            <h1 className="font-hero text-[30px] font-bold text-[var(--tx)] leading-tight">{job.clientName}</h1>
+            <p className="text-[11px] text-[var(--tx3)] mt-1 font-mono">{job.jobId}</p>
           </div>
           {isCompleted && (
             <div className="px-3 py-1.5 rounded-xl bg-[#22C55E]/12 border border-[#22C55E]/30">
-              <span className="text-caption font-bold text-[#22C55E]">Complete</span>
+              <span className="text-[11px] font-bold text-[#22C55E]">Complete</span>
             </div>
           )}
         </div>
@@ -405,15 +405,15 @@ export default function CrewJobPage({
               <div className="w-px h-4 bg-[var(--brd)]" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
-              <p className="text-body text-[var(--tx)] truncate">{job.fromAddress}</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
+              <p className="text-[13px] text-[var(--tx)] truncate">{job.fromAddress}</p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
             <div className="w-3 h-3 rounded-full border-2 border-[#22C55E] bg-[#22C55E]/20" />
             <div className="min-w-0 flex-1">
-              <p className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Drop-off</p>
-              <p className="text-body text-[var(--tx)] truncate">{job.toAddress}</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Drop-off</p>
+              <p className="text-[13px] text-[var(--tx)] truncate">{job.toAddress}</p>
             </div>
           </div>
         </div>
@@ -425,7 +425,7 @@ export default function CrewJobPage({
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-caption font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-[11px] font-semibold transition-all ${
               activeTab === t.id
                 ? "bg-[var(--card)] text-[var(--gold)] shadow-sm border border-[var(--brd)]"
                 : "text-[var(--tx3)] hover:text-[var(--tx2)] border border-transparent"
@@ -466,7 +466,7 @@ export default function CrewJobPage({
               <button
                 onClick={startJob}
                 disabled={advancing}
-                className="w-full py-4 rounded-2xl font-bold text-h3-sm text-white disabled:opacity-50 transition-all shadow-lg"
+                className="w-full py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {advancing ? "Starting..." : "START JOB"}
@@ -486,7 +486,7 @@ export default function CrewJobPage({
                 {currentStatus === "arrived_at_pickup" && !pickupVerificationDone && (
                   <button
                     onClick={() => setPickupModalOpen(true)}
-                    className="w-full mt-3 py-4 rounded-2xl font-bold text-title text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
+                    className="w-full mt-3 py-4 rounded-2xl font-bold text-[14px] text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
                   >
                     Verify Inventory & Take Photos
                   </button>
@@ -494,7 +494,7 @@ export default function CrewJobPage({
                 <button
                   onClick={advanceStatus}
                   disabled={advancing || blockedByPhotos || blockedByPickupVerification}
-                  className="w-full mt-3 py-4 rounded-2xl font-bold text-h3-sm text-white disabled:opacity-50 transition-all shadow-lg"
+                  className="w-full mt-3 py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
                   style={{
                     background: blockedByPhotos || blockedByPickupVerification
                       ? "var(--brd)"
@@ -515,7 +515,7 @@ export default function CrewJobPage({
               </>
             )}
             {isCompleted && (
-              <div className="w-full py-4 rounded-2xl font-bold text-h3-sm text-[#22C55E] text-center bg-[#22C55E]/10 border border-[#22C55E]/25">
+              <div className="w-full py-4 rounded-2xl font-bold text-[15px] text-[#22C55E] text-center bg-[#22C55E]/10 border border-[#22C55E]/25">
                 <div className="flex items-center justify-center gap-2">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   Job Complete
@@ -532,13 +532,13 @@ export default function CrewJobPage({
               placeholder="Add a note..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-full bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-caption focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full px-3.5 py-2 rounded-full bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[11px] focus:border-[var(--gold)] outline-none transition-colors"
             />
           )}
 
           {/* Timeline */}
           <div className="pt-6 pb-5 border-t border-[var(--brd)]/30">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-5">Timeline</h2>
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-5">Timeline</h2>
             <div className="relative pl-7 before:content-[''] before:absolute before:left-[7px] before:top-1 before:bottom-1 before:w-0.5 before:bg-[var(--brd)]">
               {statusFlow.map((s, i) => {
                 const cp = session?.checkpoints?.find((c) => c.status === s);
@@ -561,20 +561,20 @@ export default function CrewJobPage({
                       }`}
                     />
                     <div className="flex items-center justify-between gap-2">
-                      <div className={`text-body font-semibold transition-colors ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
+                      <div className={`text-[13px] font-semibold transition-colors ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
                         {getStatusLabel(s)}
                       </div>
                       {cp?.timestamp && (
-                        <span className="text-label text-[var(--tx3)] tabular-nums font-medium">
+                        <span className="text-[10px] text-[var(--tx3)] tabular-nums font-medium">
                           {formatTime(cp.timestamp, { hour: "numeric", minute: "2-digit" })}
                         </span>
                       )}
                     </div>
                     {cp?.note && (
-                      <p className="text-caption text-[var(--tx3)] mt-0.5 italic">{cp.note}</p>
+                      <p className="text-[11px] text-[var(--tx3)] mt-0.5 italic">{cp.note}</p>
                     )}
                     {state === "act" && !cp?.timestamp && (
-                      <span className="text-label text-[var(--gold)] font-medium">In progress</span>
+                      <span className="text-[10px] text-[var(--gold)] font-medium">In progress</span>
                     )}
                   </div>
                 );
@@ -588,21 +588,21 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => noteInputRef.current?.focus()}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-caption font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Note
               </button>
               <button
                 onClick={() => setReportModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-caption font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 Issue
               </button>
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-caption font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all ml-auto"
+                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all ml-auto"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 Dispatch
@@ -613,8 +613,8 @@ export default function CrewJobPage({
           {/* Dispatch notes */}
           {job.internalNotes && (
             <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Dispatch Notes</h2>
-              <p className="text-body text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Dispatch Notes</h2>
+              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
             </div>
           )}
 
@@ -622,7 +622,7 @@ export default function CrewJobPage({
           {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-title text-white transition-all shadow-lg"
+              className="flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[14px] text-white transition-all shadow-lg"
               style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -636,44 +636,44 @@ export default function CrewJobPage({
         <div className="space-y-0">
           {(job.scheduledDate || job.arrivalWindow) && (
             <div className="pt-6 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</h3>
               {job.scheduledDate && (
-                <p className="text-title font-semibold text-[var(--tx)]">
+                <p className="text-[14px] font-semibold text-[var(--tx)]">
                   {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}
-              {job.arrivalWindow && <p className="text-ui text-[var(--tx3)] mt-1">Window: {job.arrivalWindow}</p>}
-              {job.scheduledTime && <p className="text-ui text-[var(--tx3)] mt-0.5">Time: {job.scheduledTime}</p>}
+              {job.arrivalWindow && <p className="text-[12px] text-[var(--tx3)] mt-1">Window: {job.arrivalWindow}</p>}
+              {job.scheduledTime && <p className="text-[12px] text-[var(--tx3)] mt-0.5">Time: {job.scheduledTime}</p>}
             </div>
           )}
           <div className="pt-6 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Pickup</h3>
-            <p className="text-title font-semibold text-[var(--tx)]">{job.fromAddress}</p>
-            {job.fromAccess && <p className="text-ui text-[var(--tx3)] mt-1.5">Access: {job.fromAccess}</p>}
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Pickup</h3>
+            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
+            {job.fromAccess && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {job.fromAccess}</p>}
           </div>
           <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-            <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Drop-off</h3>
-            <p className="text-title font-semibold text-[var(--tx)]">{job.toAddress}</p>
-            {job.toAccess && <p className="text-ui text-[var(--tx3)] mt-1.5">Access: {job.toAccess}</p>}
+            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Drop-off</h3>
+            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
+            {job.toAccess && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {job.toAccess}</p>}
           </div>
           {job.accessNotes && (
             <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Access notes</h3>
-              <p className="text-body text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.accessNotes}</p>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Access notes</h3>
+              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.accessNotes}</p>
             </div>
           )}
           {job.crewMembers && job.crewMembers.length > 0 && (
             <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h3 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</h3>
               <div className="space-y-2">
                 {job.crewMembers.map((m, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-label font-bold bg-[var(--gold)]/15 text-[var(--gold)]">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--gold)]/15 text-[var(--gold)]">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <span className="text-body font-medium text-[var(--tx)]">{m.name}</span>
-                      <span className="text-caption text-[var(--tx3)] ml-2">{m.role}</span>
+                      <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
+                      <span className="text-[11px] text-[var(--tx3)] ml-2">{m.role}</span>
                     </div>
                   </div>
                 ))}
@@ -704,7 +704,7 @@ export default function CrewJobPage({
           <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
-          <p className="text-body text-[var(--tx3)]">No inventory for this job</p>
+          <p className="text-[13px] text-[var(--tx3)]">No inventory for this job</p>
         </div>
       )}
 
@@ -724,7 +724,7 @@ export default function CrewJobPage({
               <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </div>
-              <p className="text-body text-[var(--tx3)]">Start the job to capture photos</p>
+              <p className="text-[13px] text-[var(--tx3)]">Start the job to capture photos</p>
             </div>
           )}
         </div>
@@ -735,17 +735,17 @@ export default function CrewJobPage({
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
-              <h3 className="font-hero text-h1 font-bold text-[var(--tx)]">
+              <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">
                 Pickup Verification
               </h3>
-              <p className="text-ui text-[var(--tx3)] mt-1">
+              <p className="text-[12px] text-[var(--tx3)] mt-1">
                 Verify all items with the client and take photos before loading.
               </p>
             </div>
 
             <div className="px-5 py-4 space-y-5">
               <div>
-                <h4 className="font-hero text-caption font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
+                <h4 className="font-hero text-[11px] font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
                   Step 1 — Verify Inventory
                 </h4>
                 <JobInventory
@@ -764,10 +764,10 @@ export default function CrewJobPage({
               </div>
 
               <div>
-                <h4 className="font-hero text-caption font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
+                <h4 className="font-hero text-[11px] font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
                   Step 2 — Document Condition
                 </h4>
-                <p className="text-ui text-[var(--tx3)] mb-3">
+                <p className="text-[12px] text-[var(--tx3)] mb-3">
                   Take photos of items and rooms before loading begins.
                 </p>
                 {session && (
@@ -784,7 +784,7 @@ export default function CrewJobPage({
             </div>
 
             <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2">
-              <div className="flex items-center justify-between text-ui text-[var(--tx3)] mb-1">
+              <div className="flex items-center justify-between text-[12px] text-[var(--tx3)] mb-1">
                 <span>
                   Items: {itemsVerified}/{itemsTotal > 0 ? itemsTotal : totalItems} verified
                 </span>
@@ -796,7 +796,7 @@ export default function CrewJobPage({
                   setPickupModalOpen(false);
                 }}
                 disabled={pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)}
-                className="w-full py-4 rounded-2xl font-bold text-h3-sm text-white disabled:opacity-50 transition-all shadow-lg"
+                className="w-full py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)
@@ -804,12 +804,12 @@ export default function CrewJobPage({
                   : "Complete Verification"}
               </button>
               {(itemsTotal === 0 && totalItems === 0) && (
-                <p className="text-caption text-[var(--tx3)] text-center">No items to verify — take a photo of the space or complete to continue.</p>
+                <p className="text-[11px] text-[var(--tx3)] text-center">No items to verify — take a photo of the space or complete to continue.</p>
               )}
               <button
                 type="button"
                 onClick={() => setPickupModalOpen(false)}
-                className="w-full py-2.5 rounded-xl text-body font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
+                className="w-full py-2.5 rounded-xl text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
               >
                 Minimize
               </button>
@@ -822,13 +822,13 @@ export default function CrewJobPage({
       {reportModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl">
-            <h3 className="font-hero text-h2 font-bold text-[var(--tx)] mb-2">Report Issue</h3>
+            <h3 className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2">Report Issue</h3>
             {reportSubmitted ? (
               <div className="py-4">
                 <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/10 flex items-center justify-center mx-auto mb-3">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-body text-[#22C55E] text-center mb-4">Issue reported. Dispatch notified.</p>
+                <p className="text-[13px] text-[#22C55E] text-center mb-4">Issue reported. Dispatch notified.</p>
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
                   className="w-full py-2.5 rounded-xl text-white font-semibold"
@@ -840,11 +840,11 @@ export default function CrewJobPage({
             ) : (
               <>
                 <div className="mb-4">
-                  <label className="block text-label font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Issue type</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Issue type</label>
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body focus:border-[var(--gold)] outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
                   >
                     <option value="damage">Damage</option>
                     <option value="delay">Delay</option>
@@ -854,19 +854,19 @@ export default function CrewJobPage({
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-label font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Description</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Description</label>
                   <textarea
                     value={reportDesc}
                     onChange={(e) => setReportDesc(e.target.value)}
                     placeholder="Describe what happened..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-body focus:border-[var(--gold)] outline-none resize-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none resize-none"
                   />
                 </div>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setReportModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-[var(--brd)] text-[var(--tx2)] text-body font-medium hover:bg-[var(--bg)] transition-colors"
+                    className="flex-1 py-2.5 rounded-xl border border-[var(--brd)] text-[var(--tx2)] text-[13px] font-medium hover:bg-[var(--bg)] transition-colors"
                   >
                     Cancel
                   </button>

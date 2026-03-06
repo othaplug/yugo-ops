@@ -61,11 +61,11 @@ export default function TrackMessageThread({ moveId, token, moveStatus }: { move
   return (
     <div className="space-y-4">
       {loading ? (
-        <p className="text-body text-[#666]">Loading messages…</p>
+        <p className="text-[13px] text-[#666]">Loading messages…</p>
       ) : (
         <div className="space-y-4 max-h-[320px] overflow-y-auto pr-1">
           {messages.length === 0 ? (
-            <p className="text-body text-[#666]">No messages yet. Send one below.</p>
+            <p className="text-[13px] text-[#666]">No messages yet. Send one below.</p>
           ) : (
             messages.map((m) => {
               const isClient = m.sender_type === "client";
@@ -76,7 +76,7 @@ export default function TrackMessageThread({ moveId, token, moveStatus }: { move
                   className={`flex w-full ${isClient ? "justify-start" : "justify-end"}`}
                 >
                   <div className={`flex gap-3 max-w-[85%] sm:max-w-[80%] ${isClient ? "flex-row" : "flex-row-reverse"}`}>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-caption font-bold shrink-0 ${isClient ? "bg-[#3B82F6] text-white" : "bg-[#E8D5A3] text-[#1A1A1A]"}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isClient ? "bg-[#3B82F6] text-white" : "bg-[#E8D5A3] text-[#1A1A1A]"}`}>
                       {initials}
                     </div>
                     <div
@@ -84,8 +84,8 @@ export default function TrackMessageThread({ moveId, token, moveStatus }: { move
                         isClient ? "bg-white border border-[#E7E5E4] text-[#1A1A1A]" : "bg-[#C9A962] text-[var(--btn-text-on-accent)]"
                       }`}
                     >
-                      <p className="text-body leading-snug whitespace-pre-wrap">{m.content}</p>
-                      <p className={`text-label mt-1.5 ${isClient ? "text-[#666]" : "text-white/80"}`}>{formatMsgTime(m.created_at)}</p>
+                      <p className="text-[13px] leading-snug whitespace-pre-wrap">{m.content}</p>
+                      <p className={`text-[10px] mt-1.5 ${isClient ? "text-[#666]" : "text-white/80"}`}>{formatMsgTime(m.created_at)}</p>
                     </div>
                   </div>
                 </div>

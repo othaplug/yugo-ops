@@ -20,7 +20,7 @@ function formatMsgTime(iso: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
-export default function ClientMessagesSection({ moveId, clientName, coordinatorName }: { moveId: string; clientName?: string; coordinatorName?: string | null }) {
+export default function ClientMessagesSection({ moveId, clientName }: { moveId: string; clientName?: string }) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function ClientMessagesSection({ moveId, clientName, coordinatorN
       const res = await fetch(`/api/admin/moves/${moveId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: trimmed, senderName: coordinatorName || "Yugo" }),
+        body: JSON.stringify({ content: trimmed, senderName: "Yugo" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
@@ -81,10 +81,10 @@ export default function ClientMessagesSection({ moveId, clientName, coordinatorN
   return (
     <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-heading text-label font-bold tracking-wide uppercase text-[var(--tx3)]">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
           Client Messages
           {unreadCount > 0 && (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[var(--gold)] text-section font-bold text-white">
+            <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[var(--gold)] text-[9px] font-bold text-white">
               {unreadCount}
             </span>
           )}
@@ -92,14 +92,14 @@ export default function ClientMessagesSection({ moveId, clientName, coordinatorN
       </div>
 
       {loading ? (
-        <p className="text-caption text-[var(--tx3)]">Loading messages…</p>
+        <p className="text-[11px] text-[var(--tx3)]">Loading messages…</p>
       ) : (
         <div className="space-y-3 max-h-[280px] overflow-y-auto">
           {messages.length === 0 ? (
-            <p className="text-caption text-[var(--tx3)]">No messages yet.</p>
+            <p className="text-[11px] text-[var(--tx3)]">No messages yet.</p>
           ) : (
             messages.map((m) => (
-              <div key={m.id} className="text-caption">
+              <div key={m.id} className="text-[11px]">
                 <span className="font-medium text-[var(--tx2)]">
                   {m.sender_type === "client" ? (clientName || m.sender_name) : m.sender_name}
                 </span>
@@ -121,12 +121,12 @@ export default function ClientMessagesSection({ moveId, clientName, coordinatorN
             placeholder="Type a reply..."
             maxLength={2000}
             disabled={sending}
-            className="flex-1 rounded-md border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-caption text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none disabled:opacity-50"
+            className="flex-1 rounded-md border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={sending || !reply.trim()}
-            className="rounded-md px-4 py-2 text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? "Sending…" : "Send"}
           </button>

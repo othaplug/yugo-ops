@@ -142,12 +142,12 @@ export default function CrewAnalyticsClient({
     <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-heading text-h1 sm:text-hero font-bold text-[var(--tx)] tracking-tight">Crew Performance</h1>
-        <Link href="/admin/crew" className="text-caption font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
+        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">Crew Performance</h1>
+        <Link href="/admin/crew" className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
           Live Tracking
         </Link>
       </div>
-      <p className="text-ui text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
+      <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 
       {/* Date filter bar */}
       <div className="mb-5 relative">
@@ -157,7 +157,7 @@ export default function CrewAnalyticsClient({
               key={p.days}
               type="button"
               onClick={() => applyPreset(p.days)}
-              className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
                 currentPreset?.days === p.days
                   ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
                   : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
@@ -169,7 +169,7 @@ export default function CrewAnalyticsClient({
           <button
             type="button"
             onClick={() => setCalOpen(!calOpen)}
-            className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1.5 ${
               calOpen || !currentPreset
                 ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
                 : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
@@ -179,7 +179,7 @@ export default function CrewAnalyticsClient({
             {!currentPreset ? `${fmtLabel(from)} \u2014 ${fmtLabel(to)}` : "Custom"}
           </button>
           {loading && (
-            <div className="ml-auto flex items-center gap-1.5 text-label text-[var(--tx3)]">
+            <div className="ml-auto flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
               <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] border-t-transparent animate-spin" />
             </div>
           )}
@@ -192,14 +192,14 @@ export default function CrewAnalyticsClient({
               <button type="button" onClick={() => setCalMonth(new Date(calYear, calMo - 1, 1))} className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              <span className="text-body font-semibold text-[var(--tx)]">{calLabel}</span>
+              <span className="text-[13px] font-semibold text-[var(--tx)]">{calLabel}</span>
               <button type="button" onClick={() => setCalMonth(new Date(calYear, calMo + 1, 1))} className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
             <div className="grid grid-cols-7 gap-0.5 mb-2">
               {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
-                <div key={d} className="text-center text-label font-semibold text-[var(--tx3)] py-1">{d}</div>
+                <div key={d} className="text-center text-[10px] font-semibold text-[var(--tx3)] py-1">{d}</div>
               ))}
               {calCells.map((day, i) => {
                 if (day === null) return <div key={`e-${i}`} />;
@@ -214,7 +214,7 @@ export default function CrewAnalyticsClient({
                     key={dateKey}
                     type="button"
                     onClick={() => handleDayClick(dateKey)}
-                    className={`w-full aspect-square rounded-lg text-ui font-medium transition-colors ${
+                    className={`w-full aspect-square rounded-lg text-[12px] font-medium transition-colors ${
                       isStart || isEnd
                         ? "bg-[var(--gold)] text-white"
                         : inRange
@@ -230,14 +230,14 @@ export default function CrewAnalyticsClient({
               })}
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--brd)]">
-              <div className="text-caption text-[var(--tx3)]">
+              <div className="text-[11px] text-[var(--tx3)]">
                 {rangeStart ? fmtLabel(rangeStart) : "Start"} \u2192 {rangeEnd ? fmtLabel(rangeEnd) : "End"}
               </div>
               <button
                 type="button"
                 onClick={applyCustomRange}
                 disabled={!rangeStart || !rangeEnd}
-                className="px-3 py-1.5 rounded-lg text-ui font-semibold bg-[var(--gold)] text-white hover:opacity-90 disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-white hover:opacity-90 disabled:opacity-40 transition-colors"
               >
                 Apply
               </button>
@@ -248,7 +248,7 @@ export default function CrewAnalyticsClient({
 
       {/* Summary strip */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-        <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crew${sorted.length !== 1 ? "s" : ""}`} />
         <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
@@ -260,12 +260,12 @@ export default function CrewAnalyticsClient({
       {/* Crew list */}
       {sorted.length === 0 && !loading ? (
         <div className="border-t border-[var(--brd)]/30 pt-6 mt-6 py-16 text-center">
-          <p className="text-body text-[var(--tx3)]">No crew activity in this period</p>
-          <p className="text-caption text-[var(--tx3)] mt-1">Try a different date range.</p>
+          <p className="text-[13px] text-[var(--tx3)]">No crew activity in this period</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Try a different date range.</p>
         </div>
       ) : (
         <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-          <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Crew Rankings</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Crew Rankings</div>
           <div>
           {sorted.map((a, rank) => {
             const barW = maxJobs > 0 ? (a.jobsCompleted / maxJobs) * 100 : 0;
@@ -281,16 +281,16 @@ export default function CrewAnalyticsClient({
                 className={`group w-full text-left flex items-start gap-3 py-3.5 px-4 -mx-1 transition-all hover:bg-[var(--brd)]/5 ${rank > 0 ? "border-t border-[var(--brd)]/30" : ""}`}
               >
                 {/* Rank */}
-                <div className="shrink-0 w-7 h-7 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-caption font-bold text-[var(--gold)] mt-0.5">
+                <div className="shrink-0 w-7 h-7 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)] mt-0.5">
                   #{rank + 1}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-title font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{a.name}</span>
+                    <span className="text-[14px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{a.name}</span>
                     {a.members.length > 0 && (
-                      <span className="text-label text-[var(--tx3)] truncate hidden sm:inline">{a.members.join(", ")}</span>
+                      <span className="text-[10px] text-[var(--tx3)] truncate hidden sm:inline">{a.members.join(", ")}</span>
                     )}
                   </div>
 
@@ -299,11 +299,11 @@ export default function CrewAnalyticsClient({
                     <div className="flex-1 h-1.5 rounded-full bg-[var(--bg)] overflow-hidden">
                       <div className="h-full rounded-full bg-[var(--gold)] transition-all duration-500" style={{ width: `${barW}%` }} />
                     </div>
-                    <span className="text-caption font-bold text-[var(--tx)] tabular-nums shrink-0">{a.jobsCompleted} jobs</span>
+                    <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums shrink-0">{a.jobsCompleted} jobs</span>
                   </div>
 
                   {/* Stats row */}
-                  <div className="flex items-center gap-4 text-caption">
+                  <div className="flex items-center gap-4 text-[11px]">
                     <span className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: satColor }} />
                       <span className="text-[var(--tx2)]">{a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "\u2014"}</span>
@@ -335,8 +335,8 @@ export default function CrewAnalyticsClient({
 
             <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between">
               <div>
-                <h2 className="font-heading text-h3-lg font-bold text-[var(--tx)]">{selectedTeam.name}</h2>
-                <p className="text-caption text-[var(--tx3)] mt-0.5">{fmtLabel(from)} \u2014 {fmtLabel(to)}</p>
+                <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">{selectedTeam.name}</h2>
+                <p className="text-[11px] text-[var(--tx3)] mt-0.5">{fmtLabel(from)} \u2014 {fmtLabel(to)}</p>
               </div>
               <button type="button" onClick={() => setSelectedTeam(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]" aria-label="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -345,11 +345,11 @@ export default function CrewAnalyticsClient({
             <div className="p-5 space-y-0">
               {selectedTeam.members.length > 0 && (
                 <div className="pb-4">
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Team Members</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Team Members</div>
                   <div className="flex flex-wrap gap-2">
                     {selectedTeam.members.map((m) => (
-                      <span key={m} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg)] text-ui font-medium text-[var(--tx)]">
-                        <div className="w-5 h-5 rounded-full bg-[var(--gold)]/20 flex items-center justify-center text-section font-bold text-[var(--gold)]">
+                      <span key={m} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg)] text-[12px] font-medium text-[var(--tx)]">
+                        <div className="w-5 h-5 rounded-full bg-[var(--gold)]/20 flex items-center justify-center text-[9px] font-bold text-[var(--gold)]">
                           {m.charAt(0).toUpperCase()}
                         </div>
                         {m}
@@ -368,13 +368,13 @@ export default function CrewAnalyticsClient({
 
               {/* Performance bars */}
               <div className="space-y-2.5 pt-4 border-t border-[var(--brd)]/30">
-                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Performance</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Performance</div>
                 <MetricBar label="Satisfaction" value={selectedTeam.avgSatisfaction != null ? (selectedTeam.avgSatisfaction / 5) * 100 : 0} color="var(--grn)" />
                 <MetricBar label="Sign-offs" value={selectedTeam.signOffRate} color="var(--gold)" />
                 <MetricBar label="Efficiency" value={selectedTeam.avgDuration > 0 ? Math.min(100, Math.max(0, 100 - (selectedTeam.avgDuration - 30))) : 50} color="#3B82F6" />
               </div>
 
-              <p className="text-ui text-[var(--tx3)] pt-4 border-t border-[var(--brd)]/30">
+              <p className="text-[12px] text-[var(--tx3)] pt-4 border-t border-[var(--brd)]/30">
                 {selectedTeam.signOffs} of {selectedTeam.jobsCompleted} job{selectedTeam.jobsCompleted !== 1 ? "s" : ""} received client sign-off.
               </p>
             </div>
@@ -388,10 +388,10 @@ export default function CrewAnalyticsClient({
 function SummaryCell({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className="py-3">
-      <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
-      <div className={`text-h2 sm:text-h1-lg font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
+      <div className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
         {value}
-        {sub && <span className="text-caption font-normal text-[var(--tx3)] ml-1">{sub}</span>}
+        {sub && <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">{sub}</span>}
       </div>
     </div>
   );
@@ -400,8 +400,8 @@ function SummaryCell({ label, value, sub, accent }: { label: string; value: stri
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="py-3">
-      <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
-      <div className={`text-h2-sm font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
+      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
+      <div className={`text-[20px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
     </div>
   );
 }
@@ -409,11 +409,11 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
 function MetricBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-caption text-[var(--tx3)] w-20 shrink-0">{label}</span>
+      <span className="text-[11px] text-[var(--tx3)] w-20 shrink-0">{label}</span>
       <div className="flex-1 h-1.5 rounded-full bg-[var(--brd)] overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }} />
       </div>
-      <span className="text-caption font-semibold text-[var(--tx)] w-10 text-right tabular-nums">{Math.round(value)}%</span>
+      <span className="text-[11px] font-semibold text-[var(--tx)] w-10 text-right tabular-nums">{Math.round(value)}%</span>
     </div>
   );
 }

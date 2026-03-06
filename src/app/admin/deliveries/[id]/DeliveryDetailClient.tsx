@@ -115,8 +115,8 @@ function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementT
         <Icon className={`w-3.5 h-3.5 ${accent ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`} />
       </div>
       <div className="min-w-0">
-        <div className="text-micro font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
-        <div className={`text-ui font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
+        <div className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
+        <div className={`text-[12px] font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
       </div>
     </div>
   );
@@ -319,33 +319,33 @@ export default function DeliveryDetailClient({
         <div className="mt-3 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent p-4 md:p-5">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-body font-bold text-amber-700 dark:text-amber-300">
+            <span className="text-[13px] font-bold text-amber-700 dark:text-amber-300">
               Partner Request — Awaiting Your Approval
             </span>
           </div>
 
           {delivery.total_price > 0 && (
-            <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-caption">
+            <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
               {delivery.booking_type && (
                 <div>
-                  <span className="text-[var(--tx3)] block text-section uppercase tracking-wider font-semibold">Type</span>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Type</span>
                   <span className="font-medium text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"}</span>
                 </div>
               )}
               {delivery.base_price > 0 && (
                 <div>
-                  <span className="text-[var(--tx3)] block text-section uppercase tracking-wider font-semibold">Base</span>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Base</span>
                   <span className="font-medium text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
                 </div>
               )}
               {(delivery.services_price > 0 || delivery.overage_price > 0) && (
                 <div>
-                  <span className="text-[var(--tx3)] block text-section uppercase tracking-wider font-semibold">Add-ons</span>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Add-ons</span>
                   <span className="font-medium text-[var(--tx)]">{formatCurrency((delivery.services_price || 0) + (delivery.overage_price || 0))}</span>
                 </div>
               )}
               <div>
-                <span className="text-[var(--tx3)] block text-section uppercase tracking-wider font-semibold">Total</span>
+                <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Total</span>
                 <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
               </div>
             </div>
@@ -353,14 +353,14 @@ export default function DeliveryDetailClient({
 
           <div className="flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex-1">
-              <label className="block text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Adjust price (optional)</label>
+              <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Adjust price (optional)</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder={delivery.total_price ? String(delivery.total_price) : "Enter price"}
                 value={adjustedPrice}
                 onChange={(e) => setAdjustedPrice(e.target.value)}
-                className="w-full max-w-[200px] text-ui bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full max-w-[200px] text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               />
             </div>
             {showRejectForm ? (
@@ -370,21 +370,21 @@ export default function DeliveryDetailClient({
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={2}
-                  className="w-full text-ui bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-none"
+                  className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-none"
                 />
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-caption font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+                  <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
                     {approveDeclineLoading ? "…" : "Confirm Decline"}
                   </button>
-                  <button type="button" onClick={() => setShowRejectForm(false)} className="text-caption text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</button>
+                  <button type="button" onClick={() => setShowRejectForm(false)} className="text-[11px] text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-caption font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                   {approveDeclineLoading ? "…" : "Approve & Confirm"}
                 </button>
-                <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-caption font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
+                <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
                   Decline
                 </button>
               </div>
@@ -403,45 +403,45 @@ export default function DeliveryDetailClient({
                 <button
                   type="button"
                   onClick={() => setContactModalOpen(true)}
-                  className="font-heading text-h3-lg md:text-h2-sm font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors truncate"
+                  className="font-heading text-[18px] md:text-[20px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors truncate"
                 >
                   {delivery.customer_name || delivery.delivery_number}
                 </button>
                 {price > 0 && (
                   <span className="inline-flex items-baseline gap-1.5">
-                    <span className="text-h3 font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</span>
-                    <span className="text-label text-[var(--tx3)]">+{formatCurrency(Math.round(price * 0.13))} HST</span>
+                    <span className="text-[16px] font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">+{formatCurrency(Math.round(price * 0.13))} HST</span>
                   </span>
                 )}
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-section font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
                   <Hash className="w-2.5 h-2.5" />{delivery.delivery_number}
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-section font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
+                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
                 {delivery.special_handling && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-section font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
                     <AlertTriangle className="w-2.5 h-2.5" /> Special Handling
                   </span>
                 )}
                 {isPartnerRequest && (
-                  <span className="px-2 py-0.5 rounded-md text-section font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">Partner Portal</span>
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">Partner Portal</span>
                 )}
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-              <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
+              <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
                 <Pencil className="w-3 h-3" /> Edit
               </button>
-              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-all disabled:opacity-50">
+              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-all disabled:opacity-50">
                 <Copy className="w-3 h-3" /> {copyingLink ? "…" : "Tracking Link"}
               </button>
               <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
               <DownloadPDFButton delivery={delivery} />
-              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-label font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
+              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
             </div>
@@ -459,7 +459,7 @@ export default function DeliveryDetailClient({
                     defaultValue={delivery.status}
                     onBlur={() => setEditingStatus(false)}
                     onChange={(e) => handleStatusChange(e.target.value)}
-                    className="text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
                   >
                     {Object.entries(STATUS_LABELS).map(([val, label]) => (
                       <option key={val} value={val}>{label}</option>
@@ -467,7 +467,7 @@ export default function DeliveryDetailClient({
                   </select>
                 ) : (
                   <button type="button" onClick={() => setEditingStatus(true)} className="group inline-flex items-center gap-1">
-                    <span className={`text-ui font-bold ${sc.text}`}>{STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
+                    <span className={`text-[12px] font-bold ${sc.text}`}>{STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
                     <ChevronDown className="w-3 h-3 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 )}
@@ -489,7 +489,7 @@ export default function DeliveryDetailClient({
       </div>
 
       {completed && (
-        <div className="mt-2 rounded-lg bg-[var(--gdim)]/30 border border-[var(--brd)]/40 px-4 py-2 text-label text-[var(--tx3)]">
+        <div className="mt-2 rounded-lg bg-[var(--gdim)]/30 border border-[var(--brd)]/40 px-4 py-2 text-[10px] text-[var(--tx3)]">
           This delivery is {toTitleCase(delivery.status)}. Some fields are locked.
         </div>
       )}
@@ -504,11 +504,11 @@ export default function DeliveryDetailClient({
               <div className="px-5 py-5 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                  <span className="text-ui font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
                     {delivery.status === "cancelled" ? "Cancelled" : "Delivery Complete"}
                   </span>
                 </div>
-                <p className="text-caption text-[var(--tx3)]">
+                <p className="text-[11px] text-[var(--tx3)]">
                   {selectedCrew ? `Completed by ${selectedCrew.name}` : ""}
                   {delivery.updated_at ? ` · ${new Date(delivery.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${new Date(delivery.updated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
                 </p>
@@ -519,12 +519,12 @@ export default function DeliveryDetailClient({
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--brd)]/30">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-heading text-caption font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</span>
+                  <span className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</span>
                 </div>
                 {delivery.crew_id ? (
-                  <span className="text-label text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
+                  <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
                 ) : (
-                  <button type="button" onClick={() => setCrewModalOpen(true)} className="text-label font-semibold text-[var(--gold)] hover:underline">
+                  <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
                     Assign Crew
                   </button>
                 )}
@@ -534,9 +534,9 @@ export default function DeliveryDetailClient({
               ) : (
                 <div className="px-6 py-10 text-center">
                   <Truck className="w-5 h-5 text-[var(--tx3)]/30 mx-auto mb-2" />
-                  <p className="text-ui font-medium text-[var(--tx2)]">No crew assigned</p>
-                  <p className="text-label text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
-                  <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                  <p className="text-[12px] font-medium text-[var(--tx2)]">No crew assigned</p>
+                  <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
+                  <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
                     Assign Crew
                   </button>
                 </div>
@@ -549,7 +549,7 @@ export default function DeliveryDetailClient({
 
             {/* Route */}
             <div className="pb-5">
-              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Route</div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Route</div>
               <div className="space-y-0">
                 {/* Pickup */}
                 <div className="flex items-start gap-3.5">
@@ -558,9 +558,9 @@ export default function DeliveryDetailClient({
                     <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
                   </div>
                   <div className="flex-1 min-w-0 pb-4">
-                    <div className="text-section font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">Pickup</div>
-                    <div className="text-body font-semibold text-[var(--tx)] leading-snug">{delivery.pickup_address || "Not set"}</div>
-                    {delivery.pickup_access && <div className="text-label text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">Pickup</div>
+                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.pickup_address || "Not set"}</div>
+                    {delivery.pickup_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
                   </div>
                 </div>
                 {/* Drop-off */}
@@ -569,9 +569,9 @@ export default function DeliveryDetailClient({
                     <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-section font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
-                    <div className="text-body font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
-                    {delivery.delivery_access && <div className="text-label text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
+                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
+                    {delivery.delivery_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
                   </div>
                 </div>
               </div>
@@ -581,18 +581,18 @@ export default function DeliveryDetailClient({
             {itemsDisplay.length > 0 && (
               <div className="border-t border-[var(--brd)]/30 py-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
-                  <span className="text-label font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
+                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
+                  <span className="text-[10px] font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="space-y-1.5">
                   {itemsDisplay.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-section font-bold text-[var(--tx3)]/40 w-4 text-right shrink-0">{idx + 1}</span>
-                        <span className="text-ui text-[var(--tx)] truncate">{item.name}</span>
+                        <span className="text-[9px] font-bold text-[var(--tx3)]/40 w-4 text-right shrink-0">{idx + 1}</span>
+                        <span className="text-[12px] text-[var(--tx)] truncate">{item.name}</span>
                       </div>
                       {item.qty > 1 && (
-                        <span className="text-label font-semibold text-[var(--gold)] shrink-0">×{item.qty}</span>
+                        <span className="text-[10px] font-semibold text-[var(--gold)] shrink-0">×{item.qty}</span>
                       )}
                     </div>
                   ))}
@@ -607,8 +607,8 @@ export default function DeliveryDetailClient({
 
             {/* Instructions — seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">
-              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
-              <p className="text-caption text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
+              <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
                 {delivery.instructions || delivery.notes || "No instructions added."}
               </p>
             </div>
@@ -622,27 +622,21 @@ export default function DeliveryDetailClient({
 
             {/* Schedule */}
             <div className="pb-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
-              <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
-              <div className="space-y-1.5 text-ui">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
+              <div className="space-y-1.5 text-[12px]">
                 <div className="flex justify-between">
-                  <span className="text-[var(--tx3)] text-caption">Date</span>
+                  <span className="text-[var(--tx3)] text-[11px]">Date</span>
                   <span className="font-semibold text-[var(--tx)]">{formatDate(delivery.scheduled_date)}</span>
                 </div>
                 {delivery.time_slot && (
                   <div className="flex justify-between">
-                    <span className="text-[var(--tx3)] text-caption">Time</span>
+                    <span className="text-[var(--tx3)] text-[11px]">Time</span>
                     <span className="font-medium text-[var(--tx)]">{delivery.time_slot}</span>
-                  </div>
-                )}
-                {delivery.preferred_time && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)] text-caption">Preferred Time</span>
-                    <span className="font-medium text-[var(--tx)]">{delivery.preferred_time}</span>
                   </div>
                 )}
                 {delivery.delivery_window && (
                   <div className="flex justify-between">
-                    <span className="text-[var(--tx3)] text-caption">Window</span>
+                    <span className="text-[var(--tx3)] text-[11px]">Window</span>
                     <span className="font-medium text-[var(--tx)]">{delivery.delivery_window}</span>
                   </div>
                 )}
@@ -652,53 +646,53 @@ export default function DeliveryDetailClient({
             {/* Crew */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
-                <button type="button" onClick={() => setCrewModalOpen(true)} className="text-section font-semibold text-[var(--gold)] hover:underline">
+                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
+                <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
                   {selectedCrew ? "Change" : "Assign"}
                 </button>
               </div>
               {selectedCrew ? (
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-caption font-bold text-[var(--gold)]">
+                    <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)]">
                       {selectedCrew.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-body font-semibold text-[var(--tx)]">{selectedCrew.name}</span>
+                    <span className="text-[13px] font-semibold text-[var(--tx)]">{selectedCrew.name}</span>
                   </div>
                   {selectedCrew.members && selectedCrew.members.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2 pl-9">
                       {selectedCrew.members.map((m) => (
-                        <span key={m} className="text-label text-[var(--tx3)]">{m}</span>
+                        <span key={m} className="text-[10px] text-[var(--tx3)]">{m}</span>
                       ))}
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-caption text-[var(--tx3)]">No crew assigned</p>
+                <p className="text-[11px] text-[var(--tx3)]">No crew assigned</p>
               )}
             </div>
 
             {/* Customer */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
-                <button type="button" onClick={() => setContactModalOpen(true)} className="text-section font-semibold text-[var(--gold)] hover:underline">Details</button>
+                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
+                <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
               </div>
-              <div className="text-body font-semibold text-[var(--tx)]">{delivery.customer_name || "—"}</div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "—"}</div>
               {delivery.customer_email && (
-                <div className="flex items-center gap-1.5 text-caption text-[var(--tx3)] mt-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-1">
                   <Mail className="w-3 h-3" />
                   <span className="truncate">{delivery.customer_email}</span>
                 </div>
               )}
               {delivery.customer_phone && (
-                <div className="flex items-center gap-1.5 text-caption text-[var(--tx3)] mt-0.5">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-0.5">
                   <Phone className="w-3 h-3" />
                   <span>{formatPhone(delivery.customer_phone)}</span>
                 </div>
               )}
               <div className="flex flex-wrap gap-1.5 mt-3">
-                <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-section font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors disabled:opacity-50">
+                <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[9px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors disabled:opacity-50">
                   <ExternalLink className="w-2.5 h-2.5" /> {copyingLink ? "…" : "Share Link"}
                 </button>
                 <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
@@ -708,17 +702,17 @@ export default function DeliveryDetailClient({
 
           {/* Pricing — keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
               {delivery.quoted_price ? "Quoted Price" : "Pricing"}
             </div>
             {price > 0 ? (
               <>
-                <div className="text-h1 font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</div>
-                <div className="text-label text-[var(--tx3)] mt-0.5">
+                <div className="text-[24px] font-bold font-heading text-[var(--gold)]">{formatCurrency(price)}</div>
+                <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                   +{formatCurrency(calcHST(price))} HST &middot; Total {formatCurrency(price + calcHST(price))}
                 </div>
                 {delivery.admin_adjusted_price && delivery.admin_adjusted_price !== price && (
-                  <div className="text-label text-[var(--tx3)] mt-1">
+                  <div className="text-[10px] text-[var(--tx3)] mt-1">
                     Adjusted from {formatCurrency(delivery.total_price || delivery.quoted_price)}
                   </div>
                 )}
@@ -728,8 +722,8 @@ export default function DeliveryDetailClient({
               </>
             ) : (
               <div>
-                <div className="text-body text-[var(--tx3)]">No price set</div>
-                <button type="button" onClick={() => setEditModalOpen(true)} className="mt-1.5 text-label font-semibold text-[var(--gold)] hover:underline">
+                <div className="text-[13px] text-[var(--tx3)]">No price set</div>
+                <button type="button" onClick={() => setEditModalOpen(true)} className="mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
                   Add quoted price
                 </button>
               </div>
@@ -752,8 +746,8 @@ export default function DeliveryDetailClient({
               <Users className="w-3.5 h-3.5" />
             </div>
             <div>
-              <div className="text-ui font-medium text-[var(--tx)]">Unassigned</div>
-              <div className="text-label text-[var(--tx3)]">Remove crew assignment</div>
+              <div className="text-[12px] font-medium text-[var(--tx)]">Unassigned</div>
+              <div className="text-[10px] text-[var(--tx3)]">Remove crew assignment</div>
             </div>
           </button>
           {crews.map((c) => (
@@ -763,17 +757,17 @@ export default function DeliveryDetailClient({
               onClick={() => { assignCrew(c.id); setCrewModalOpen(false); }}
               className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
             >
-              <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-ui font-bold text-[var(--gold)]">
+              <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
                 {c.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-ui font-medium text-[var(--tx)]">{c.name}</div>
+                <div className="text-[12px] font-medium text-[var(--tx)]">{c.name}</div>
                 {c.members && c.members.length > 0 && (
-                  <div className="text-label text-[var(--tx3)] truncate">{c.members.join(", ")}</div>
+                  <div className="text-[10px] text-[var(--tx3)] truncate">{c.members.join(", ")}</div>
                 )}
               </div>
               {delivery.crew_id === c.id && (
-                <span className="px-2 py-0.5 rounded text-section font-bold text-emerald-600 bg-emerald-500/10">Active</span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-500/10">Active</span>
               )}
             </button>
           ))}
@@ -783,14 +777,14 @@ export default function DeliveryDetailClient({
       {/* Delete Confirmation */}
       <ModalOverlay open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Delivery" maxWidth="sm">
         <div className="p-5 space-y-4">
-          <p className="text-ui text-[var(--tx2)]">
+          <p className="text-[12px] text-[var(--tx2)]">
             Are you sure you want to delete <strong>{delivery.delivery_number}</strong>? This action cannot be undone.
           </p>
           <div className="flex items-center gap-2 justify-end">
-            <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 rounded-lg text-caption font-medium text-[var(--tx3)] hover:text-[var(--tx)]">
+            <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]">
               Cancel
             </button>
-            <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-lg text-caption font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+            <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
               {deleting ? "Deleting…" : "Delete Delivery"}
             </button>
           </div>

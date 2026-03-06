@@ -44,7 +44,7 @@ export default function PartnerRealtorTab({
   if (referrals.length === 0) {
     return (
       <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-        <p className="text-title text-[#888]">
+        <p className="text-[14px] text-[#888]">
           {mode === "active" ? "No active referrals." : "No completed referrals yet."}
         </p>
       </div>
@@ -62,24 +62,24 @@ export default function PartnerRealtorTab({
           <div key={r.id} className={`py-5 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-h3-sm font-bold text-[#1A1A1A]">{r.client_name || "Unnamed Client"}</h3>
-                <p className="text-ui text-[#888] mt-0.5">
+                <h3 className="text-[15px] font-bold text-[#1A1A1A]">{r.client_name || "Unnamed Client"}</h3>
+                <p className="text-[12px] text-[#888] mt-0.5">
                   {r.property || "Property TBD"} — {tierLabel}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-label font-semibold ${badgeClass}`}>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${badgeClass}`}>
                   {statusLabel}
                 </span>
                 {r.commission > 0 && (
-                  <span className="text-h3 font-bold text-[#2D9F5A] font-serif">{formatCurrency(r.commission)}</span>
+                  <span className="text-[16px] font-bold text-[#2D9F5A] font-serif">{formatCurrency(r.commission)}</span>
                 )}
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-4 text-ui">
+            <div className="mt-3 grid grid-cols-2 gap-4 text-[12px]">
               <div>
-                <div className="text-label font-semibold tracking-wider uppercase text-[#888]">Move Date</div>
+                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Move Date</div>
                 <div className="text-[#1A1A1A] font-medium mt-0.5">
                   {r.created_at
                     ? new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -88,13 +88,13 @@ export default function PartnerRealtorTab({
               </div>
               {mode === "completed" && (
                 <div>
-                  <div className="text-label font-semibold tracking-wider uppercase text-[#888]">Total Value</div>
+                  <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Total Value</div>
                   <div className="text-[#1A1A1A] font-medium mt-0.5">{formatCurrency(r.commission * 10)}</div>
                 </div>
               )}
               {mode === "active" && r.client_email && (
                 <div>
-                  <div className="text-label font-semibold tracking-wider uppercase text-[#888]">Est. Value</div>
+                  <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Est. Value</div>
                   <div className="text-[#1A1A1A] font-medium mt-0.5">
                     {r.tier === "luxury" ? "$30,000+" : r.tier === "premium" ? "$12,000+" : "$5,000+"}
                   </div>

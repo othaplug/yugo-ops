@@ -100,7 +100,7 @@ export default function SearchBox() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          className="flex-1 min-w-0 bg-transparent border-none text-ui text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
+          className="flex-1 min-w-0 bg-transparent border-none text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
         />
         {query.length > 0 && (
           <button
@@ -114,7 +114,7 @@ export default function SearchBox() {
       </div>
       {open && results.length > 0 && (
         <div className="absolute left-0 w-full sm:w-[420px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
-          <div className="px-3 py-2 text-label font-bold uppercase tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
+          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
             {results.length} result{results.length !== 1 ? "s" : ""}
           </div>
           {results.map((r) => (
@@ -127,8 +127,8 @@ export default function SearchBox() {
                 <Icon name={TYPE_ICONS[r.type] || "search"} className="w-3 h-3 text-[var(--tx3)]" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-caption font-semibold text-[var(--tx)] truncate">{r.name}</div>
-                <div className="text-section text-[var(--tx3)]">{r.type}</div>
+                <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
+                <div className="text-[9px] text-[var(--tx3)]">{r.type}</div>
               </div>
             </div>
           ))}
@@ -136,7 +136,7 @@ export default function SearchBox() {
       )}
       {open && query.length >= 2 && results.length === 0 && (
         <div className="absolute left-0 w-full sm:w-[420px] top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up px-4 py-6 text-center">
-          <div className="text-ui text-[var(--tx3)]">No results for &ldquo;{query}&rdquo;</div>
+          <div className="text-[12px] text-[var(--tx3)]">No results for &ldquo;{query}&rdquo;</div>
         </div>
       )}
     </div>

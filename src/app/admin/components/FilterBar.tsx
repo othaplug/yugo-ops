@@ -25,13 +25,13 @@ export default function FilterBar({ filters, onClear, hasActiveFilters, classNam
     <div className={`flex flex-wrap items-center gap-2 py-3 px-4 bg-[var(--bg)]/50 border-b border-[var(--brd)] ${className}`}>
       {filters.map((f) => (
         <div key={f.key} className="flex items-center gap-1.5">
-          <label className="text-section font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">
+          <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">
             {f.label}
           </label>
           <select
             value={f.value}
             onChange={(e) => f.onChange(e.target.value)}
-            className="text-caption bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
+            className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
           >
             {f.options.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -43,7 +43,7 @@ export default function FilterBar({ filters, onClear, hasActiveFilters, classNam
         <button
           type="button"
           onClick={onClear}
-          className="sidebar-nav-lift text-label font-semibold text-[var(--tx3)] hover:text-[var(--gold)] px-2 py-1 rounded-lg"
+          className="sidebar-nav-lift text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] px-2 py-1 rounded-lg"
         >
           Clear filters
         </button>
@@ -70,7 +70,7 @@ export function SortableHeader({
   const isActive = currentSort === sortKey;
   return (
     <th
-      className={`text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
+      className={`text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">

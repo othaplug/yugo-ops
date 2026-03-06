@@ -84,20 +84,20 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
     <ModalOverlay open={open} onClose={onClose} title="Client contact details" maxWidth="md">
       <div className="p-5 space-y-3">
         <div>
-          <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body" />
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
         </div>
         <div>
-          <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body" />
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
         </div>
         <div>
-          <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
-          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => setPhone(formatPhone(phone))} placeholder="(123) 456-7890" className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body" />
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => setPhone(formatPhone(phone))} placeholder="(123) 456-7890" className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
         </div>
         <div>
-          <label className="block text-section font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>
-          <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-body">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>
+          <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]">
             {PREFERRED_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
@@ -110,11 +110,11 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
             onChange={(e) => setSendTrackingLink(e.target.checked)}
             className="accent-[var(--gold)] rounded"
           />
-          <span className="text-ui text-[var(--tx2)]">Send tracking link (magic-link email, no account needed)</span>
+          <span className="text-[12px] text-[var(--tx2)]">Send tracking link (magic-link email, no account needed)</span>
         </label>
         <div className="flex gap-2 mt-4">
-          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>

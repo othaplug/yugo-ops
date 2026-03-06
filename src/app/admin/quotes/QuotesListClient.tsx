@@ -161,12 +161,12 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           return (
             <span className="inline-flex items-center gap-1.5 flex-wrap">
               <span
-                className={`px-1.5 py-0.5 rounded text-micro font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
+                className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
               >
                 {toTitleCase(q.status)}
               </span>
               {expiry && (
-                <span className={`text-section font-semibold ${expiry.className}`}>
+                <span className={`text-[9px] font-semibold ${expiry.className}`}>
                   {expiry.label}
                 </span>
               )}
@@ -195,7 +195,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                 {quoteAmount(q)}
               </span>
               {raw != null && (
-                <span className="text-micro text-[var(--tx3)] ml-0.5">{hstLabel(raw)}</span>
+                <span className="text-[8px] text-[var(--tx3)] ml-0.5">{hstLabel(raw)}</span>
               )}
             </span>
           );
@@ -224,14 +224,14 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                     type="button"
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="px-2 py-1 rounded text-section font-bold bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
+                    className="px-2 py-1 rounded text-[9px] font-bold bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
                   >
                     {deleting === q.id ? "…" : "Delete"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmId(null)}
-                    className="px-2 py-1 rounded text-section font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                    className="px-2 py-1 rounded text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
                   >
                     Cancel
                   </button>
@@ -258,12 +258,12 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="font-heading text-h2-sm font-bold text-[var(--tx)]">Quotes</h1>
-          <p className="text-ui text-[var(--tx3)] mt-0.5">All proposals & pricing</p>
+          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">Quotes</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5">All proposals & pricing</p>
         </div>
         <Link
           href="/admin/quotes/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
         >
           + New Quote
         </Link>
@@ -275,7 +275,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
             key={o.value}
             type="button"
             onClick={() => setFilter(o.value)}
-            className={`px-2.5 py-1 rounded-full text-label font-semibold border transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${
               filter === o.value
                 ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
                 : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx2)]"

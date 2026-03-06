@@ -42,7 +42,7 @@ const LeafletMap = dynamic(
 
 function MapLoading() {
   return (
-    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#666] text-ui">
+    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#666] text-[12px]">
       Loading map...
     </div>
   );
@@ -286,17 +286,17 @@ export default function TrackLiveMap({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
           </span>
-          <span className="text-ui font-semibold text-[#22C55E]">LIVE</span>
+          <span className="text-[12px] font-semibold text-[#22C55E]">LIVE</span>
         </div>
       )}
 
       {showPlaceholder ? (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
-          <p className="text-title text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
-          <p className="text-body text-[#666] mb-4">Live tracking activates when your crew begins.</p>
-          {scheduledStr && <p className="text-ui text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
-          {move?.arrival_window && <p className="text-ui text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          {crewMembers && <p className="text-ui text-[#666]">Your crew: {crewMembers}</p>}
+          <p className="text-[14px] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
+          <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
+          {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
+          {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
+          {crewMembers && <p className="text-[12px] text-[#666]">Your crew: {crewMembers}</p>}
           {/* Static map with pickup/delivery preview */}
           {(pickup || dropoff) && (
             <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4]">
@@ -404,16 +404,16 @@ export default function TrackLiveMap({
                 {/* Compact row (always visible) */}
                 <div className="flex items-center gap-2.5 px-3 pb-2.5">
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-ui font-bold text-white shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0"
                     style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                   >
                     {(crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-body font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
-                      {crew?.members && <span className="text-label text-[#666]">{crew.members.length} movers</span>}
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-micro font-semibold bg-[#22C55E]/15 text-[#22C55E]">
+                      <span className="text-[13px] font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
+                      {crew?.members && <span className="text-[10px] text-[#666]">{crew.members.length} movers</span>}
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
                         <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-1 w-1 bg-[#22C55E]" /></span>
                         {CREW_STATUS_TO_LABEL[liveStage || ""] || toTitleCase(liveStage || "") || "Live"}
                       </span>
@@ -421,7 +421,7 @@ export default function TrackLiveMap({
                   </div>
                   <a
                     href={`tel:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
-                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-caption font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[11px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     Call Crew
@@ -432,7 +432,7 @@ export default function TrackLiveMap({
                 <div className="px-3 pb-4 space-y-3 border-t border-[#F0EFED]" style={{ opacity: drawerExpanded ? 1 : 0, transition: "opacity 0.25s ease 0.1s" }}>
                   {/* ETA + last update */}
                   {(displayEta != null || lastLocationAt) && (
-                    <div className="flex items-center gap-4 pt-3 text-caption text-[#666]">
+                    <div className="flex items-center gap-4 pt-3 text-[11px] text-[#666]">
                       {displayEta != null && (
                         <div className="flex items-center gap-1.5">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -447,14 +447,14 @@ export default function TrackLiveMap({
                   {/* Crew members */}
                   {crew?.members && crew.members.length > 0 && (
                     <div>
-                      <div className="text-section font-bold tracking-wider uppercase text-[#999] mb-2">Your Team</div>
+                      <div className="text-[9px] font-bold tracking-wider uppercase text-[#999] mb-2">Your Team</div>
                       <div className="flex flex-wrap gap-2">
                         {crew.members.map((name, i) => (
                           <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]">
-                            <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-section font-bold text-white">
+                            <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-[9px] font-bold text-white">
                               {(name || "?").slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="text-caption font-medium text-[#1A1A1A]">{name}</span>
+                            <span className="text-[11px] font-medium text-[#1A1A1A]">{name}</span>
                           </div>
                         ))}
                       </div>
@@ -465,14 +465,14 @@ export default function TrackLiveMap({
                   <div className="flex gap-2 pt-1">
                     <a
                       href={`tel:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-ui font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                       Call
                     </a>
                     <a
                       href={`sms:${process.env.NEXT_PUBLIC_YUGO_PHONE ? encodeURIComponent(process.env.NEXT_PUBLIC_YUGO_PHONE.replace(/[^\d+]/g, "")) : "+16473704525"}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-ui font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                       Text
@@ -484,7 +484,7 @@ export default function TrackLiveMap({
           </div>
         </>
       ) : loading ? (
-        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-ui">
+        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-[12px]">
           Loading...
         </div>
       ) : null}

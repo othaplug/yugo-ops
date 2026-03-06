@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 
 const MAPBOX_TOKEN =
@@ -9,11 +10,10 @@ const MAPBOX_TOKEN =
 
 /** GET ?from=lng,lat&to=lng,lat — returns driving route geometry (GeoJSON coordinates) */
 export async function GET(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
-  const rl = rateLimit(`mapbox-dir:${ip}`, 120, 60_000);
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
+  const rl = rateLimit(`mapbox:${user!.id}`, 60, 60_000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -23,22 +23,16 @@ export async function GET(req: NextRequest) {
   if (!from || !to || !MAPBOX_TOKEN) {
     return NextResponse.json({ error: "Missing from, to, or Mapbox token" }, { status: 400 });
   }
-
-  const coordPair = `${from};${to}`;
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordPair}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+  const coords = `${from};${to}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
     const coordsList = data?.routes?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordsList) || coordsList.length === 0) {
-      console.warn("[mapbox/directions] No route returned", { from, to, code: data?.code });
       return NextResponse.json({ coordinates: null });
     }
-    return NextResponse.json({
-      coordinates: coordsList,
-      duration: data.routes[0].duration,
-      distance: data.routes[0].distance,
-    });
+    return NextResponse.json({ coordinates: coordsList });
   } catch (e) {
     console.error("[mapbox/directions]", e);
     return NextResponse.json({ error: "Directions failed" }, { status: 502 });

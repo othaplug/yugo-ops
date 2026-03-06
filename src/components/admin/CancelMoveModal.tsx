@@ -114,7 +114,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
   if (!open) return null;
 
-  const selectClass = "w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-body text-[var(--tx)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none";
+  const selectClass = "w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none";
   const inputClass = selectClass;
 
   return (
@@ -148,19 +148,19 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
           ) : (
             <>
               <div className="mb-6">
-                <div className="text-section font-bold text-[var(--red)] tracking-widest uppercase mb-1">Cancel Move</div>
+                <div className="text-[9px] font-bold text-[var(--red)] tracking-widest uppercase mb-1">Cancel Move</div>
                 <h2 className="text-lg font-bold text-[var(--tx)]">
                   Cancel move for {move.client_name || "this client"}?
                 </h2>
                 {move.move_code && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-label font-semibold bg-[var(--gold)]/10 text-[var(--gold)]">
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)]">
                     {move.move_code}
                   </span>
                 )}
               </div>
 
               {/* Policy check */}
-              <div className={`rounded-lg px-4 py-3 mb-5 text-ui border ${
+              <div className={`rounded-lg px-4 py-3 mb-5 text-[12px] border ${
                 policyCheck.eligible
                   ? "bg-[var(--green)]/5 border-[var(--green)]/20 text-[var(--green)]"
                   : "bg-[var(--red)]/5 border-[var(--red)]/20 text-[var(--red)]"
@@ -170,7 +170,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
               {/* Reason */}
               <div className="mb-4">
-                <label className="block text-caption font-semibold text-[var(--tx2)] mb-1.5">
+                <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
                   Cancellation Reason <span className="text-[var(--red)]">*</span>
                 </label>
                 <select
@@ -187,7 +187,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
               {reason === "other" && (
                 <div className="mb-4">
-                  <label className="block text-caption font-semibold text-[var(--tx2)] mb-1.5">Details</label>
+                  <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">Details</label>
                   <input
                     type="text"
                     value={reasonDetail}
@@ -200,12 +200,12 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
               {/* Refund type */}
               <div className="mb-4">
-                <label className="block text-caption font-semibold text-[var(--tx2)] mb-2">
+                <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-2">
                   Refund Decision
                 </label>
                 <div className="space-y-2">
                   {depositAmount > 0 && (
-                    <label className="flex items-center gap-2 text-body text-[var(--tx)] cursor-pointer">
+                    <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
                       <input
                         type="radio"
                         name="refund"
@@ -218,7 +218,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
                     </label>
                   )}
                   {depositAmount > 0 && (
-                    <label className="flex items-center gap-2 text-body text-[var(--tx)] cursor-pointer">
+                    <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
                       <input
                         type="radio"
                         name="refund"
@@ -230,7 +230,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
                       Partial refund
                     </label>
                   )}
-                  <label className="flex items-center gap-2 text-body text-[var(--tx)] cursor-pointer">
+                  <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
                     <input
                       type="radio"
                       name="refund"
@@ -246,11 +246,11 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
               {refundType === "partial" && (
                 <div className="mb-4">
-                  <label className="block text-caption font-semibold text-[var(--tx2)] mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
                     Refund Amount (max {formatCurrency(depositAmount)})
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] text-body">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] text-[13px]">$</span>
                     <input
                       type="number"
                       value={partialAmount}
@@ -266,13 +266,13 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
               )}
 
               {!move.square_payment_id && refundType !== "none" && (
-                <div className="rounded-lg px-4 py-3 mb-5 text-ui border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--gold)]">
+                <div className="rounded-lg px-4 py-3 mb-5 text-[12px] border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--gold)]">
                   No Square payment on file. Refund will be recorded but not processed automatically.
                 </div>
               )}
 
               {error && (
-                <div className="rounded-lg px-4 py-3 mb-4 text-ui border bg-[var(--red)]/5 border-[var(--red)]/20 text-[var(--red)]">
+                <div className="rounded-lg px-4 py-3 mb-4 text-[12px] border bg-[var(--red)]/5 border-[var(--red)]/20 text-[var(--red)]">
                   {error}
                 </div>
               )}

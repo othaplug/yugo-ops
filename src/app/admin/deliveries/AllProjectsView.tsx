@@ -69,8 +69,8 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     accessor: (d) => d.scheduled_date,
     render: (d) => (
       <div className="tabular-nums">
-        <div className="text-ui font-semibold text-[var(--tx2)]">{formatMoveDate(d.scheduled_date)}</div>
-        <div className="text-label text-[var(--tx3)]">{d.time_slot || ""}</div>
+        <div className="text-[12px] font-semibold text-[var(--tx2)]">{formatMoveDate(d.scheduled_date)}</div>
+        <div className="text-[10px] text-[var(--tx3)]">{d.time_slot || ""}</div>
       </div>
     ),
     sortable: true,
@@ -85,7 +85,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
       const s = (d.status || "").toLowerCase();
       const style = DELIVERY_STATUS_STYLE[s] || "text-[var(--tx3)] bg-[var(--gdim)]";
       return (
-        <span className={`inline-flex px-2 py-0.5 rounded text-section font-bold leading-tight ${style}`}>
+        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
           {toTitleCase(d.status || "")}
         </span>
       );
@@ -123,7 +123,7 @@ const moveColumns: ColumnDef<Move>[] = [
     label: "Date",
     accessor: (m) => m.scheduled_date,
     render: (m) => (
-      <span className="tabular-nums text-ui font-semibold text-[var(--tx2)]">{formatMoveDate(m.scheduled_date)}</span>
+      <span className="tabular-nums text-[12px] font-semibold text-[var(--tx2)]">{formatMoveDate(m.scheduled_date)}</span>
     ),
     sortable: true,
     searchable: true,
@@ -138,7 +138,7 @@ const moveColumns: ColumnDef<Move>[] = [
       const n = normalizeStatus(s) || "";
       const style = MOVE_STATUS_COLORS_ADMIN[s] || MOVE_STATUS_COLORS_ADMIN[n] || "text-[var(--tx3)] bg-[var(--gdim)]";
       return (
-        <span className={`inline-flex px-2 py-0.5 rounded text-section font-bold leading-tight ${style}`}>
+        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
           {getStatusLabel(m.status)}
         </span>
       );
@@ -172,8 +172,8 @@ const moveColumns: ColumnDef<Move>[] = [
       const est = Number(m.estimate ?? 0);
       return est > 0 ? (
         <span className="inline-flex items-baseline gap-1">
-          <span className="text-caption font-bold text-[var(--gold)]">{formatCurrency(est)}</span>
-          <span className="text-micro text-[var(--tx3)]">+{formatCurrency(Math.round(est * 0.13))} HST</span>
+          <span className="text-[11px] font-bold text-[var(--gold)]">{formatCurrency(est)}</span>
+          <span className="text-[8px] text-[var(--tx3)]">+{formatCurrency(Math.round(est * 0.13))} HST</span>
         </span>
       ) : (
         "—"
@@ -245,29 +245,29 @@ export default function AllProjectsView({
     <>
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-heading text-h1 sm:text-hero font-bold text-[var(--tx)] tracking-tight">All Projects</h1>
+        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Projects</h1>
         <Link
           href={mainTab === "move" ? "/admin/moves/new" : "/admin/deliveries/new"}
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
         >
           + {mainTab === "move" ? "New Move" : "New Project"}
         </Link>
       </div>
-      <p className="text-ui text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
+      <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 
       {/* Pending approval strip */}
       {pendingApproval.length > 0 && (
         <div className="mb-5 border-t border-amber-500/30 bg-amber-500/5 pt-4 pb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-ui font-semibold text-amber-300">
+            <span className="text-[12px] font-semibold text-amber-300">
               {pendingApproval.length} partner request{pendingApproval.length > 1 ? "s" : ""} awaiting approval
             </span>
           </div>
           <button
             type="button"
             onClick={() => { setMainTab("partners"); setStatusFilter("pending_approval"); }}
-            className="text-caption font-bold text-amber-400 hover:underline"
+            className="text-[11px] font-bold text-amber-400 hover:underline"
           >
             View all
           </button>
@@ -283,14 +283,14 @@ export default function AllProjectsView({
           <button
             key={tab.key}
             onClick={() => setMainTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-ui font-semibold transition-colors ${
+            className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
               mainTab === tab.key
                 ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
                 : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
             }`}
           >
             {tab.label}
-            <span className="ml-1.5 text-label opacity-70">{tab.count}</span>
+            <span className="ml-1.5 text-[10px] opacity-70">{tab.count}</span>
           </button>
         ))}
       </div>
@@ -308,7 +308,7 @@ export default function AllProjectsView({
             <button
               key={t.key}
               onClick={() => setPartnerType(t.key)}
-              className={`px-3 py-1.5 rounded-md text-label font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors ${
                 partnerType === t.key
                   ? "bg-[var(--gold)] text-[#0D0D0D]"
                   : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
@@ -322,28 +322,28 @@ export default function AllProjectsView({
 
       {/* Filter bar */}
       <div className="border-t border-[var(--brd)]/30 pt-5 flex flex-col gap-3 mb-5">
-        <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
+        <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
         <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => setFilterOpen(!filterOpen)}
-          className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-caption font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
+          className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filters
-          {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[#0D0D0D] text-section font-bold flex items-center justify-center">{activeFilterCount}</span>}
+          {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[#0D0D0D] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
         </button>
         <div className="hidden md:flex items-center gap-3 flex-1">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-caption bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} label="Date" />
           {hasActiveFilters && (
-            <button type="button" onClick={clearFilters} className="text-label font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear</button>
+            <button type="button" onClick={clearFilters} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear</button>
           )}
         </div>
         </div>
@@ -353,14 +353,14 @@ export default function AllProjectsView({
       {filterOpen && (
         <div className="md:hidden border-t border-[var(--brd)]/30 pt-4 pb-4 space-y-3 mb-5">
           <div className="flex justify-between items-center">
-            <span className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
-            <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-caption font-medium">Done</button>
+            <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
+            <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
           </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-caption bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} label="Date" />
-          {hasActiveFilters && <button type="button" onClick={clearFilters} className="text-caption font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear all</button>}
+          {hasActiveFilters && <button type="button" onClick={clearFilters} className="text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear all</button>}
         </div>
       )}
 

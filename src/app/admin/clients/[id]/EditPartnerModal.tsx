@@ -75,23 +75,23 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
     <ModalOverlay open={open} onClose={onClose} title={isClient ? "Edit Client" : "Edit Partner"}>
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{isClient ? "Name *" : "Company Name *"}</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{isClient ? "Name *" : "Company Name *"}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={isClient ? "e.g. John Smith" : "e.g. Roche Bobois"}
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         {!isClient && (
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type *</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type *</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             {TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -101,50 +101,50 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         )}
         {!isClient && (
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
           <input
             type="text"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder="e.g. Marie Dubois"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         )}
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="contact@company.com"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => setPhone(formatPhone(phone))}
             placeholder="(123) 456-7890"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div className="flex gap-2 pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {loading ? "Saving…" : "Save changes"}
           </button>

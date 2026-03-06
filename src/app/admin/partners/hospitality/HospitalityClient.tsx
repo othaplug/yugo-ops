@@ -87,7 +87,7 @@ export default function HospitalityClient({
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-ui font-semibold transition-colors ${
+              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
                 activeTab === t.key
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                   : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
@@ -100,14 +100,14 @@ export default function HospitalityClient({
         <div className="flex items-center gap-2">
           <Link
             href="/admin/deliveries/new?type=hospitality"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Create Delivery
           </Link>
           <Link
             href="/admin/clients/new?type=partner&partnerType=hospitality"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
             Add Partner
@@ -119,7 +119,7 @@ export default function HospitalityClient({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
@@ -128,13 +128,13 @@ export default function HospitalityClient({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search deliveries…"
-                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-ui text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors"
                 />
               </div>
               <select
                 value={selectedPartner}
                 onChange={(e) => setSelectedPartner(e.target.value)}
-                className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-ui font-semibold text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors min-w-[160px]"
+                className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors min-w-[160px]"
               >
                 <option value="all">All Partners</option>
                 {clients.map((c) => (
@@ -146,7 +146,7 @@ export default function HospitalityClient({
             {/* Deliveries list */}
             <div className="divide-y divide-[var(--brd)]/30">
               {filteredDeliveries.length === 0 ? (
-                <div className="px-4 py-10 text-center text-ui text-[var(--tx3)]">
+                <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
                 </div>
               ) : (
@@ -161,20 +161,20 @@ export default function HospitalityClient({
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-body font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-                          <span className="text-label text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                          <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                          <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
                         </div>
-                        <div className="text-caption text-[var(--tx3)] mt-0.5 truncate">
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
                           {d.client_name && <span className="font-medium">{d.client_name}</span>}
                           {d.delivery_address && <span> · {d.delivery_address}</span>}
                           {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className="text-label text-[var(--tx3)]">
+                        <span className="text-[10px] text-[var(--tx3)]">
                           {Array.isArray(d.items) ? d.items.length : 0} items
                         </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-label font-bold uppercase tracking-wide ${badgeClass}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
                           {statusLabel}
                         </span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -186,7 +186,7 @@ export default function HospitalityClient({
             </div>
             {filteredDeliveries.length > 25 && (
               <div className="px-4 py-3 border-t border-[var(--brd)] text-center">
-                <Link href="/admin/deliveries" className="text-ui font-semibold text-[var(--gold)] hover:underline">
+                <Link href="/admin/deliveries" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">
                   View all {filteredDeliveries.length} deliveries →
                 </Link>
               </div>
@@ -198,8 +198,8 @@ export default function HospitalityClient({
           <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
-                <p className="text-body text-[var(--tx3)]">No hospitality partners yet.</p>
-                <Link href="/admin/clients/new?type=partner&partnerType=hospitality" className="text-ui font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
+                <p className="text-[13px] text-[var(--tx3)]">No hospitality partners yet.</p>
+                <Link href="/admin/clients/new?type=partner&partnerType=hospitality" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
                   Add your first partner
                 </Link>
               </div>
@@ -213,21 +213,21 @@ export default function HospitalityClient({
                     className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-ui font-bold text-[var(--gold)]">
+                      <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
                         {(c.name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="text-body font-semibold text-[var(--tx)]">{c.name}</div>
-                        <div className="text-caption text-[var(--tx3)]">{c.contact_name} · {c.email}</div>
+                        <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
+                        <div className="text-[11px] text-[var(--tx3)]">{c.contact_name} · {c.email}</div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
-                      <div className="text-caption font-semibold text-[var(--tx)]">{stats.deliveryCount} deliveries</div>
+                      <div className="text-[11px] font-semibold text-[var(--tx)]">{stats.deliveryCount} deliveries</div>
                       {stats.revenue > 0 && (
-                        <div className="text-label text-[var(--grn)]">{formatCurrency(stats.revenue)} earned</div>
+                        <div className="text-[10px] text-[var(--grn)]">{formatCurrency(stats.revenue)} earned</div>
                       )}
                       {stats.owing > 0 && (
-                        <div className="text-label text-[var(--org)]">{formatCurrency(stats.owing)} owing</div>
+                        <div className="text-[10px] text-[var(--org)]">{formatCurrency(stats.owing)} owing</div>
                       )}
                     </div>
                   </Link>

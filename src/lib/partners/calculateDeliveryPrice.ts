@@ -19,18 +19,11 @@ export interface DeliveryPriceResult {
   overagePrice: number;
   servicesPrice: number;
   zoneSurcharge: number;
-  distanceOverage: number;
-  heavyItemSurcharge: number;
   afterHoursSurcharge: number;
   volumeDiscount: number;
   totalPrice: number;
   breakdown: PriceBreakdownItem[];
   effectivePerStop?: number;
-}
-
-export interface HeavyItemCount {
-  tier: "250_400" | "400_600";
-  count: number;
 }
 
 /* ─── Helpers ─── */
@@ -181,8 +174,6 @@ export async function calculateDayRate(opts: {
     overagePrice,
     servicesPrice,
     zoneSurcharge: 0,
-    distanceOverage: 0,
-    heavyItemSurcharge: 0,
     afterHoursSurcharge,
     volumeDiscount: 0,
     totalPrice,
@@ -201,25 +192,24 @@ export async function calculatePerDelivery(opts: {
   isAfterHours: boolean;
   isWeekend: boolean;
   pricingTier: "standard" | "partner";
-  distanceKm?: number | null;
-  heavyItems?: HeavyItemCount[];
 }): Promise<DeliveryPriceResult> {
   const db = createAdminClient();
-  const { rateCardId, deliveryType, zone, services, isAfterHours, isWeekend, pricingTier, distanceKm, heavyItems } = opts;
+  const { rateCardId, deliveryType, zone, services, isAfterHours, isWeekend, pricingTier } = opts;
 
   const breakdown: PriceBreakdownItem[] = [];
 
-  // 1. Base per-delivery rate (always Zone 1 — GTA 0–40 km)
+  // 1. Base per-delivery rate (zone 1 or 2 have direct rates)
+  const lookupZone = Math.min(zone, 2);
   const { data: rate } = await db
     .from("rate_card_delivery_rates")
     .select("*")
     .eq("rate_card_id", rateCardId)
     .eq("delivery_type", deliveryType)
-    .eq("zone", 1)
+    .eq("zone", lookupZone)
     .eq("pricing_tier", pricingTier)
     .single();
 
-  if (!rate) throw new Error(`No rate found for ${deliveryType} zone 1 / ${pricingTier}`);
+  if (!rate) throw new Error(`No rate found for ${deliveryType} zone ${lookupZone} / ${pricingTier}`);
 
   const typeLabels: Record<string, string> = {
     single_item: "Single Item", multi_piece: "Multi-Piece",
@@ -227,11 +217,11 @@ export async function calculatePerDelivery(opts: {
   };
 
   const basePrice = rate.price_min;
-  breakdown.push({ label: `${typeLabels[deliveryType] || deliveryType} Delivery`, amount: basePrice, detail: "Zone 1 — GTA" });
+  breakdown.push({ label: `${typeLabels[deliveryType] || deliveryType} Delivery`, amount: basePrice, detail: `Zone ${lookupZone}` });
 
-  // 2. Zone surcharge for Zone 2, 3, 4 (Zone 1 is included)
+  // 2. Zone surcharge for Z3+
   let zoneSurcharge = 0;
-  if (zone >= 2) {
+  if (zone >= 3) {
     const { data: zoneData } = await db
       .from("rate_card_zones")
       .select("surcharge, zone_name")
@@ -240,64 +230,22 @@ export async function calculatePerDelivery(opts: {
       .eq("pricing_tier", pricingTier)
       .single();
 
-    if (zoneData && zoneData.surcharge > 0) {
-      zoneSurcharge = Number(zoneData.surcharge);
+    if (zoneData && zoneData.surcharge) {
+      zoneSurcharge = zoneData.surcharge;
       breakdown.push({ label: `Zone ${zone} Surcharge (${zoneData.zone_name})`, amount: zoneSurcharge });
     }
-  }
-
-  // 2b. Distance overage (per-km beyond 40 km / 80 km)
-  let distanceOverage = 0;
-  if (distanceKm != null && distanceKm > 40) {
-    const { data: distRates } = await db
-      .from("rate_card_distance_overages")
-      .select("from_km, to_km, rate_per_km")
+  } else if (zone === 2) {
+    const { data: zoneData } = await db
+      .from("rate_card_zones")
+      .select("surcharge, zone_name")
       .eq("rate_card_id", rateCardId)
+      .eq("zone_number", 2)
       .eq("pricing_tier", pricingTier)
-      .order("from_km", { ascending: true });
+      .single();
 
-    if (distRates && distRates.length > 0) {
-      for (const r of distRates) {
-        const from = Number(r.from_km);
-        const to = r.to_km != null ? Number(r.to_km) : Infinity;
-        const rate = Number(r.rate_per_km);
-        if (distanceKm > from) {
-          const kmInTier = Math.min(distanceKm, to) - from;
-          if (kmInTier > 0) {
-            const amt = Math.round(kmInTier * rate);
-            distanceOverage += amt;
-            breakdown.push({ label: `Mileage (${kmInTier} km × $${rate}/km)`, amount: amt });
-          }
-        }
-      }
-    }
-  }
-
-  // 2c. Heavy item surcharges (250–400 lbs, 400–600 lbs per item)
-  let heavyItemSurcharge = 0;
-  if (heavyItems && heavyItems.length > 0) {
-    const { data: weightRates } = await db
-      .from("rate_card_weight_surcharges")
-      .select("weight_min_lbs, weight_max_lbs, surcharge_per_item, label")
-      .eq("rate_card_id", rateCardId)
-      .eq("pricing_tier", pricingTier);
-
-    const tierMap: Record<string, number> = {};
-    if (weightRates) {
-      for (const w of weightRates) {
-        const key = w.weight_min_lbs === 250 ? "250_400" : w.weight_min_lbs === 400 ? "400_600" : "";
-        if (key) tierMap[key] = Number(w.surcharge_per_item);
-      }
-    }
-
-    for (const h of heavyItems) {
-      const surcharge = tierMap[h.tier] ?? 0;
-      if (surcharge > 0 && h.count > 0) {
-        const amt = surcharge * h.count;
-        heavyItemSurcharge += amt;
-        const label = h.tier === "250_400" ? "250–400 lbs" : "400–600 lbs";
-        breakdown.push({ label: `Heavy items (${h.count} × ${label})`, amount: amt });
-      }
+    if (zoneData && zoneData.surcharge > 0) {
+      zoneSurcharge = zoneData.surcharge;
+      breakdown.push({ label: `Zone 2 Surcharge (${zoneData.zone_name})`, amount: zoneSurcharge });
     }
   }
 
@@ -356,15 +304,13 @@ export async function calculatePerDelivery(opts: {
     }
   }
 
-  const totalPrice = basePrice + zoneSurcharge + distanceOverage + heavyItemSurcharge + servicesPrice + afterHoursSurcharge;
+  const totalPrice = basePrice + zoneSurcharge + servicesPrice + afterHoursSurcharge;
 
   return {
     basePrice,
     overagePrice: 0,
     servicesPrice,
     zoneSurcharge,
-    distanceOverage,
-    heavyItemSurcharge,
     afterHoursSurcharge,
     volumeDiscount: 0,
     totalPrice,
@@ -384,7 +330,7 @@ export async function detectZone(rateCardId: string, distanceKm: number, pricing
     .eq("pricing_tier", pricingTier)
     .order("zone_number", { ascending: true });
 
-  if (!zones || zones.length === 0) return { zone: 1, zoneName: "GTA", surcharge: 0 };
+  if (!zones || zones.length === 0) return { zone: 1, zoneName: "GTA Core", surcharge: 0 };
 
   for (const z of zones) {
     const min = z.distance_min_km ?? 0;

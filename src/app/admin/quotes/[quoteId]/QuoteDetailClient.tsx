@@ -169,10 +169,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-h3-lg font-bold text-[var(--tx)]">
+            <h1 className="text-[18px] font-bold text-[var(--tx)]">
               Quote {quote.quote_id}
             </h1>
-            <p className="text-caption text-[var(--tx3)]">
+            <p className="text-[11px] text-[var(--tx3)]">
               {toTitleCase(quote.service_type?.replace(/_/g, " "))} &middot; Created{" "}
               {new Date(quote.created_at).toLocaleDateString("en-CA", {
                 month: "short",
@@ -184,7 +184,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`text-label font-bold tracking-wider uppercase px-2.5 py-1 rounded-full ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
+            className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
           >
             {toTitleCase(quote.status)}
           </span>
@@ -192,7 +192,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 text-caption font-semibold text-[var(--tx3)] hover:text-[var(--red)] px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--red)]/40 transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--red)] px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--red)]/40 transition-colors"
             >
               <Trash2 className="w-3 h-3" /> Delete
             </button>
@@ -203,14 +203,14 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 type="button"
                 onClick={handleDeleteDraft}
                 disabled={deleting}
-                className="flex items-center gap-1.5 text-caption font-bold text-[var(--red)] bg-[var(--red)]/10 hover:bg-[var(--red)]/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--red)] bg-[var(--red)]/10 hover:bg-[var(--red)]/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
               >
                 {deleting ? "Deleting…" : "Confirm Delete"}
               </button>
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="text-caption font-medium text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors"
+                className="text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors"
               >
                 Cancel
               </button>
@@ -219,7 +219,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           <button
             type="button"
             onClick={() => router.push(`/admin/quotes/${quote.quote_id}/edit`)}
-            className="flex items-center gap-1.5 text-caption font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40"
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -228,7 +228,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               href={quote.quote_url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 text-caption font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)]"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)]"
             >
               <ExternalLink className="w-3 h-3" /> Client View
             </a>
@@ -241,27 +241,27 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div className="lg:col-span-2 space-y-0">
           {/* Quote Summary */}
           <div className="pb-6">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
               Quote Summary
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                   Client
                 </span>
-                <p className="text-body font-medium text-[var(--tx)]">
+                <p className="text-[13px] font-medium text-[var(--tx)]">
                   {contact?.name ?? "—"}
                 </p>
-                <p className="text-caption text-[var(--tx3)]">{contact?.email ?? "—"}</p>
+                <p className="text-[11px] text-[var(--tx3)]">{contact?.email ?? "—"}</p>
                 {contact?.phone && (
-                  <p className="text-caption text-[var(--tx3)]">{contact.phone}</p>
+                  <p className="text-[11px] text-[var(--tx3)]">{contact.phone}</p>
                 )}
               </div>
               <div>
-                <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                   Move Date
                 </span>
-                <p className="text-body font-medium text-[var(--tx)]">
+                <p className="text-[13px] font-medium text-[var(--tx)]">
                   {quote.move_date
                     ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                         weekday: "short",
@@ -273,19 +273,19 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </p>
               </div>
               <div>
-                <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                   Route
                 </span>
-                <p className="text-caption text-[var(--tx)]">{quote.from_address}</p>
-                <p className="text-caption text-[var(--tx3)]">→ {quote.to_address}</p>
+                <p className="text-[11px] text-[var(--tx)]">{quote.from_address}</p>
+                <p className="text-[11px] text-[var(--tx3)]">→ {quote.to_address}</p>
                 {quote.distance_km && (
-                  <p className="text-label text-[var(--tx3)]/60 mt-0.5">
+                  <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
                     {quote.distance_km} km
                   </p>
                 )}
               </div>
               <div>
-                <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                   Amount
                 </span>
                 {(() => {
@@ -297,10 +297,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     const hi = Math.max(...prices);
                     return (
                       <>
-                        <p className="text-h3-lg font-bold text-[var(--gold)] font-heading">
+                        <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
                           {fmtCurrency(lo)}–{fmtCurrency(hi)}
                         </p>
-                        <span className="text-section text-[var(--tx3)]">
+                        <span className="text-[9px] text-[var(--tx3)]">
                           +{fmtCurrency(Math.round(lo * HST))}–{fmtCurrency(Math.round(hi * HST))} HST (13%)
                         </span>
                       </>
@@ -309,10 +309,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                   const base = quote.custom_price ?? 0;
                   return (
                     <>
-                      <p className="text-h3-lg font-bold text-[var(--gold)] font-heading">
+                      <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
                         {fmtCurrency(base)}
                       </p>
-                      <span className="text-section text-[var(--tx3)]">
+                      <span className="text-[9px] text-[var(--tx3)]">
                         +{fmtCurrency(Math.round(base * HST))} HST (13%)
                       </span>
                     </>
@@ -325,10 +325,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               <div className="border-t border-[var(--brd)]/30 pt-3 flex flex-wrap gap-4">
                 {quote.truck_primary && (
                   <div>
-                    <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                       Vehicle
                     </span>
-                    <p className="text-caption font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)]">
                       {toTitleCase(quote.truck_primary)}
                       {quote.truck_secondary ? ` + ${toTitleCase(quote.truck_secondary)}` : ""}
                     </p>
@@ -336,20 +336,20 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 )}
                 {(quote.est_crew_size ?? factors?.est_crew_size) && (
                   <div>
-                    <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                       Crew
                     </span>
-                    <p className="text-caption font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)]">
                       {quote.est_crew_size ?? factors?.est_crew_size} movers
                     </p>
                   </div>
                 )}
                 {quote.est_hours && (
                   <div>
-                    <span className="text-section font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
                       Est. Hours
                     </span>
-                    <p className="text-caption font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)]">
                       {quote.est_hours}h
                     </p>
                   </div>
@@ -361,14 +361,14 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           {/* Client Engagement */}
           <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                 Client Engagement
               </h2>
-              <span className={`text-label font-bold ${signal.color}`}>{signal.label}</span>
+              <span className={`text-[10px] font-bold ${signal.color}`}>{signal.label}</span>
             </div>
 
             {engagement.length === 0 && legacyEvents.length === 0 ? (
-              <p className="text-caption text-[var(--tx3)] italic">
+              <p className="text-[11px] text-[var(--tx3)] italic">
                 No engagement recorded yet. The client has not opened this quote.
               </p>
             ) : (() => {
@@ -406,21 +406,21 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                         </div>
                         <div className="flex-1 min-w-0 -mt-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-caption font-medium text-[var(--tx)]">
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
                               {cfg.label}
                             </span>
                             {detail && (
-                              <span className="text-label text-[var(--tx3)]">
+                              <span className="text-[10px] text-[var(--tx3)]">
                                 ({detail})
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-section text-[var(--tx3)]/60">
+                            <span className="text-[9px] text-[var(--tx3)]/60">
                               {timeAgo(ev.at)}
                             </span>
                             {ev.duration != null && (
-                              <span className="text-section text-[var(--tx3)]/60">
+                              <span className="text-[9px] text-[var(--tx3)]/60">
                                 · {fmtDuration(ev.duration)} on page
                               </span>
                             )}
@@ -443,7 +443,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     <button
                       type="button"
                       onClick={() => setEngagementExpanded((prev) => !prev)}
-                      className="flex items-center gap-1.5 mt-2 py-1.5 px-2.5 rounded-lg text-label font-medium text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                      className="flex items-center gap-1.5 mt-2 py-1.5 px-2.5 rounded-lg text-[10px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
                     >
                       <ChevronDown
                         className={`w-3 h-3 transition-transform ${engagementExpanded ? "rotate-180" : ""}`}
@@ -463,10 +463,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div className="space-y-0">
           {/* Timeline — card treatment for prominence */}
           <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] p-4 mb-5">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">
               Timeline
             </h2>
-            <div className="space-y-2.5 text-caption">
+            <div className="space-y-2.5 text-[11px]">
               <div className="flex items-center gap-2.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-[var(--tx3)]" />
                 <span className="text-[var(--tx3)] flex-1">Created</span>
@@ -540,8 +540,8 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
 
           {/* Move Details */}
           <div className="pb-5">
-            <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h2>
-            <div className="space-y-2 text-caption">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h2>
+            <div className="space-y-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-[var(--tx3)]">Service</span>
                 <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.service_type?.replace(/_/g, " "))}</span>
@@ -588,10 +588,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           {/* Engagement Stats */}
           {engagement.length > 0 && (
             <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-              <h2 className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
                 Engagement Stats
               </h2>
-              <div className="space-y-2 text-caption">
+              <div className="space-y-2 text-[11px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Page Views</span>
                   <span className="text-[var(--tx)] font-medium">

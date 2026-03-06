@@ -80,24 +80,24 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
     <ModalOverlay open={open} onClose={handleClose} title="Add Team Member" maxWidth="sm">
       <form onSubmit={(e) => { e.preventDefault(); handleAdd(); }} className="p-5 space-y-4">
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Search crew member</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Search crew member</label>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Type name to search…"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select member</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select member</label>
           <div className="max-h-32 overflow-y-auto flex flex-wrap gap-2 p-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
             {filteredCrew.map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setSelectedMember(selectedMember === m ? null : m)}
-                className={`px-3 py-1.5 rounded-lg text-caption font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                   selectedMember === m
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                     : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
@@ -109,11 +109,11 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           </div>
         </div>
         <div>
-          <label className="block text-label font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assign to team</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assign to team</label>
           <select
             value={selectedTeamId}
             onChange={(e) => setSelectedTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-body text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="">Choose team…</option>
             {teams.filter((t) => t.active).map((t) => (
@@ -125,14 +125,14 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!selectedMember || !selectedTeamId || saving}
-            className="flex-1 px-4 py-2.5 rounded-lg text-caption font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
           >
             {saving ? "Adding…" : "Add to Team"}
           </button>

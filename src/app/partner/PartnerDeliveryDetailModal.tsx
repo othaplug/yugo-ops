@@ -207,10 +207,10 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
         {/* Header */}
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between shrink-0">
           <div className="min-w-0">
-            <h2 className="font-hero text-h1 font-bold text-[var(--tx)] truncate">
+            <h2 className="font-hero text-[26px] font-bold text-[var(--tx)] truncate">
               {d.customer_name || d.delivery_number}
             </h2>
-            <p className="text-caption text-[var(--tx3)] font-mono">{d.delivery_number}</p>
+            <p className="text-[11px] text-[var(--tx3)] font-mono">{d.delivery_number}</p>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={copyLink} className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors" title="Copy tracking link">
@@ -225,7 +225,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             )}
-            <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-ui font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors">
+            <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors">
               Share
             </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">
@@ -252,7 +252,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
             <button
               key={t.key}
               onClick={() => setActiveSection(t.key)}
-              className={`px-3 py-2.5 text-ui font-semibold border-b-2 transition-colors -mb-px ${
+              className={`px-3 py-2.5 text-[12px] font-semibold border-b-2 transition-colors -mb-px ${
                 activeSection === t.key
                   ? "border-[#C9A962] text-[#C9A962]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
@@ -268,26 +268,26 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           {activeSection === "details" && (
             <div className="space-y-4">
               <div className="border-b border-[var(--brd)]/30 pb-4">
-                <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Status</div>
-                <span className="text-body font-semibold text-[var(--tx)]">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Status</div>
+                <span className="text-[13px] font-semibold text-[var(--tx)]">
                   {liveStage ? (CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : toTitleCase(d.status || "")}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 gap-3 border-b border-[var(--brd)]/30 pb-4">
                 <div>
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
-                  <div className="text-body text-[var(--tx)]">{d.delivery_address || "—"}</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
+                  <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "—"}</div>
                 </div>
                 {d.pickup_address && (
                   <div>
-                    <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
-                    <div className="text-body text-[var(--tx)]">{d.pickup_address}</div>
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
+                    <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Date & time</div>
-                  <div className="text-body font-semibold text-[var(--tx)]">
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Date & time</div>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">
                     {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "—"}
                     {d.time_slot && ` · ${d.time_slot}`}
                   </div>
@@ -296,8 +296,8 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
               {itemsDisplay.length > 0 && (
                 <div>
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Items</div>
-                  <ul className="text-body text-[var(--tx)] space-y-0.5">
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Items</div>
+                  <ul className="text-[13px] text-[var(--tx)] space-y-0.5">
                     {itemsDisplay.map((item, i) => (
                       <li key={i} className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#C9A962] flex-shrink-0" />
@@ -317,15 +317,15 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                 </div>
                 <div>
-                  <div className="text-body font-semibold text-[var(--tx)]">
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">
                     {liveStage ? (STAGE_LABELS[liveStage] || CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : "Crew assigned"}
                   </div>
-                  <div className="text-caption text-[var(--tx3)]">
+                  <div className="text-[11px] text-[var(--tx3)]">
                     {crewPosition ? "Live GPS tracking active" : "Waiting for crew location…"}
                   </div>
                 </div>
                 {crewPosition && (
-                  <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-label font-semibold bg-[rgba(45,159,90,0.1)] text-[#2D9F5A]">
+                  <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[rgba(45,159,90,0.1)] text-[#2D9F5A]">
                     <span className="w-2 h-2 rounded-full bg-[#2D9F5A] animate-pulse" />
                     Live
                   </span>
@@ -358,19 +358,19 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </div>
-                  <p className="text-body text-[var(--tx3)]">Crew location not yet available.</p>
-                  <p className="text-caption text-[#aaa] mt-0.5">Location updates appear here once the crew starts.</p>
+                  <p className="text-[13px] text-[var(--tx3)]">Crew location not yet available.</p>
+                  <p className="text-[11px] text-[#aaa] mt-0.5">Location updates appear here once the crew starts.</p>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--brd)]/30">
                 <div>
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
-                  <div className="text-ui text-[var(--tx)] truncate">{d.delivery_address || "—"}</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
+                  <div className="text-[12px] text-[var(--tx)] truncate">{d.delivery_address || "—"}</div>
                 </div>
                 <div>
-                  <div className="text-section font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
-                  <div className="text-ui font-semibold text-[var(--tx)]">{Math.round(progressPercent)}%</div>
+                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
+                  <div className="text-[12px] font-semibold text-[var(--tx)]">{Math.round(progressPercent)}%</div>
                 </div>
               </div>
             </div>
@@ -379,17 +379,17 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           {activeSection === "messages" && (
             <div className="space-y-3">
               {notes.length === 0 && (
-                <p className="text-body text-[var(--tx3)] text-center py-4">No messages yet. Add a note below.</p>
+                <p className="text-[13px] text-[var(--tx3)] text-center py-4">No messages yet. Add a note below.</p>
               )}
               {notes.map((n, i) => (
                 <div key={n.id} className={`py-3 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-caption font-semibold text-[var(--tx)]">{n.author_name}</span>
-                    <span className="text-label text-[var(--tx3)]">
+                    <span className="text-[11px] font-semibold text-[var(--tx)]">{n.author_name}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">
                       {new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </span>
                   </div>
-                  <p className="text-body text-[var(--tx)] whitespace-pre-wrap">{n.content}</p>
+                  <p className="text-[13px] text-[var(--tx)] whitespace-pre-wrap">{n.content}</p>
                 </div>
               ))}
               <div ref={notesEndRef} />
@@ -399,12 +399,12 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   onChange={(e) => setNewNote(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendNote())}
                   placeholder="Add a note…"
-                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--brd)] text-body text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
                 <button
                   onClick={sendNote}
                   disabled={!newNote.trim() || sendingNote}
-                  className="px-3 py-2 rounded-lg text-ui font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50 transition-colors"
+                  className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50 transition-colors"
                 >
                   {sendingNote ? "…" : "Send"}
                 </button>
@@ -415,14 +415,14 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           {activeSection === "photos" && (
             <div>
               {photosLoading ? (
-                <p className="text-ui text-[var(--tx3)] text-center py-4">Loading…</p>
+                <p className="text-[12px] text-[var(--tx3)] text-center py-4">Loading…</p>
               ) : photos.length === 0 ? (
                 <div className="text-center py-12 border-t border-[var(--brd)]/30 pt-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   </div>
-                  <p className="text-body text-[var(--tx3)]">No photos yet.</p>
-                  <p className="text-caption text-[#aaa] mt-0.5">Crew photos will appear here after delivery.</p>
+                  <p className="text-[13px] text-[var(--tx3)]">No photos yet.</p>
+                  <p className="text-[11px] text-[#aaa] mt-0.5">Crew photos will appear here after delivery.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">

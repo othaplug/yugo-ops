@@ -80,7 +80,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <div className="h-16 px-5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <YugoLogo size={18} variant="gold" />
-                <span className="text-section font-bold tracking-[2px] uppercase text-[var(--gold)]/60 ml-1">Crew</span>
+                <span className="text-[9px] font-bold tracking-[2px] uppercase text-[var(--gold)]/60 ml-1">Crew</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -105,7 +105,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-ui font-medium transition-all ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
                         active
                           ? "bg-[var(--gold)]/10 text-[var(--gold)] font-semibold shadow-sm"
                           : "text-[var(--tx2)] hover:bg-[var(--card)] hover:text-[var(--tx)]"
@@ -125,24 +125,24 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <div className="shrink-0 px-3 py-3 border-t border-[var(--brd)]">
               <div className="flex items-center gap-3 px-2 mb-3">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-label font-bold text-white shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">
                   {crewMember?.name && (
-                    <div className="text-ui font-semibold text-[var(--tx)] truncate">{crewMember.name}</div>
+                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{crewMember.name}</div>
                   )}
                   {crewMember?.teamName && (
-                    <div className="text-label text-[var(--tx3)] truncate">{crewMember.teamName}</div>
+                    <div className="text-[10px] text-[var(--tx3)] truncate">{crewMember.teamName}</div>
                   )}
                 </div>
               </div>
               <form action="/api/crew/logout" method="POST" className="w-full">
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-caption font-medium text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)] border border-[var(--brd)] transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)] border border-[var(--brd)] transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                   Sign out
@@ -171,7 +171,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   </svg>
                 </button>
                 {isJobPage && (
-                  <span className="text-caption font-semibold text-[var(--gold)] uppercase tracking-[1.5px]">Active Job</span>
+                  <span className="text-[11px] font-semibold text-[var(--gold)] uppercase tracking-[1.5px]">Active Job</span>
                 )}
               </div>
               <div className="flex-shrink-0">

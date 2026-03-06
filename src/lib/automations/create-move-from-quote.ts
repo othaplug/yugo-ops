@@ -221,7 +221,6 @@ export async function createMoveFromQuote(
       to_access: quote.to_access,
       access_notes: accessNotes,
       scheduled_date: quote.move_date,
-      preferred_time: quote.preferred_time ?? null,
       amount: totalWithTax,
 
       quote_id: quote.id,

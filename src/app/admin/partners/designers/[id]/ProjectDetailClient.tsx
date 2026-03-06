@@ -111,11 +111,11 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="font-heading text-h2-sm font-bold text-[var(--tx)]">{project.name}</h1>
-            <div className="text-ui text-[var(--tx3)] mt-1">
+            <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{project.name}</h1>
+            <div className="text-[12px] text-[var(--tx3)] mt-1">
               {project.designer} · {project.address}
             </div>
-            <div className="text-caption text-[var(--gold)] font-semibold mt-1">
+            <div className="text-[11px] text-[var(--gold)] font-semibold mt-1">
               Install: {project.installDate}
               {project.budget && ` · Quote: ${project.budget}`}
             </div>
@@ -124,20 +124,20 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             <button
               type="button"
               onClick={() => setDesignerModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
             >
               View designer
             </button>
             <button
               type="button"
               onClick={() => setEditModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
             >
               Edit project
             </button>
             <Link
               href="/admin/deliveries/new"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               + New delivery
             </Link>
@@ -148,19 +148,19 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Line items</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Line items</div>
           <div className="text-xl font-bold font-heading">{project.vendors.length}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Completed</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Completed</div>
           <div className="text-xl font-bold font-heading text-[var(--grn)]">{doneCount}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Delayed</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Delayed</div>
           <div className="text-xl font-bold font-heading text-[var(--red)]">{lateCount}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3">
-          <div className="text-section font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</div>
+          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</div>
           <div className={`text-xl font-bold font-heading ${isComplete ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>
             {isComplete ? "Complete" : "In progress"}
           </div>
@@ -174,7 +174,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             <button
               type="button"
               onClick={markComplete}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold bg-[var(--grn)] text-white hover:opacity-90 transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:opacity-90 transition-all"
             >
               Mark project complete
             </button>
@@ -182,7 +182,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
               <button
                 type="button"
                 onClick={completeAllLines}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-label font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
               >
                 Complete all lines
               </button>
@@ -193,10 +193,10 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
 
       {/* Progress bar */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <h3 className="font-heading text-body font-bold text-[var(--tx)] mb-3">Project progress</h3>
+        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Project progress</h3>
         <div className="flex items-center gap-3">
           <AnimatedProgressBar percent={project.percent} />
-          <span className={`text-body font-bold shrink-0 ${isComplete ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>
+          <span className={`text-[13px] font-bold shrink-0 ${isComplete ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>
             {project.percent}%
           </span>
         </div>
@@ -205,8 +205,8 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
       {/* Line items table with editable status */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h3 className="font-heading text-body font-bold text-[var(--tx)]">Line items</h3>
-          <Link href="/admin/deliveries" className="text-label font-semibold text-[var(--gold)] hover:underline">
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Line items</h3>
+          <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
             View all deliveries →
           </Link>
         </div>
@@ -215,7 +215,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             <thead>
               <tr>
                 {["Vendor", "Items", "Status", "ETA", "Notes"].map((h) => (
-                  <th key={h} className="text-left text-section font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">
+                  <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">
                     {h}
                   </th>
                 ))}
@@ -227,21 +227,21 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
                   key={i}
                   className={`border-b border-[var(--brd)] last:border-0 ${i % 2 === 1 ? "bg-[var(--bg)]/30" : ""}`}
                 >
-                  <td className="px-4 py-2.5 text-caption font-semibold text-[var(--tx)]">{v.vendor}</td>
-                  <td className="px-4 py-2.5 text-caption text-[var(--tx2)]">{v.items}</td>
+                  <td className="px-4 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{v.vendor}</td>
+                  <td className="px-4 py-2.5 text-[11px] text-[var(--tx2)]">{v.items}</td>
                   <td className="px-4 py-2.5">
                     <select
                       value={v.status}
                       onChange={(e) => updateVendorStatus(i, e.target.value as ProjectVendor["status"])}
-                      className={`text-label font-semibold bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 cursor-pointer focus:border-[var(--gold)] outline-none ${STATUS_COLORS[v.status]}`}
+                      className={`text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 cursor-pointer focus:border-[var(--gold)] outline-none ${STATUS_COLORS[v.status]}`}
                     >
                       {STATUS_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
                   </td>
-                  <td className="px-4 py-2.5 text-label text-[var(--tx3)]">{v.eta}</td>
-                  <td className="px-4 py-2.5 text-label text-[var(--tx3)]">{v.notes || "—"}</td>
+                  <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)]">{v.eta}</td>
+                  <td className="px-4 py-2.5 text-[10px] text-[var(--tx3)]">{v.notes || "—"}</td>
                 </tr>
               ))}
             </tbody>
