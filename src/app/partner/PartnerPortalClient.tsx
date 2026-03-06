@@ -214,7 +214,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "calendar", label: "Calendar" },
         { key: "tracking", label: "Live Map" },
         { key: "invoices", label: "Invoices" },
-        { key: "billing", label: "Billing" },
+        { key: "billing", label: "Monthly Report" },
       ];
 
   return (
@@ -299,7 +299,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                       { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
                       { icon: "M3 4h18v18H3z rx='2'", lines: true, color: "#8B5CF6", bg: "#F5F3FF", title: "Schedule & Calendar", desc: "View upcoming deliveries in calendar view, schedule new ones" },
                       { icon: "M18 5 6 12 18 19", share: true, color: "#C9A962", bg: "#FFFBF0", title: "Share Tracking Links", desc: "Send live tracking links to your end clients via email" },
-                      { icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", color: "#059669", bg: "#ECFDF5", title: "Invoices & Billing", desc: "View invoices, billing history, and SLA performance" },
+                      { icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", color: "#059669", bg: "#ECFDF5", title: "Invoices & Monthly Report", desc: "View invoices, monthly performance, and SLA report" },
                     ].map((item) => (
                       <div key={item.title} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: item.bg }}>
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.color}15` }}>
@@ -570,7 +570,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <PartnerInvoicesTab invoices={data.invoices} />
           )}
           {activeTab === "billing" && data && (
-            <PartnerBillingTab data={data} orgName={orgName} />
+            <PartnerBillingTab data={data} orgName={orgName} onViewInvoices={() => setActiveTab("invoices")} />
           )}
           {activeTab === "active" && data && (
             <PartnerRealtorTab

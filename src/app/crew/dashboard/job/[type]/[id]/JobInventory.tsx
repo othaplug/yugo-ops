@@ -46,6 +46,10 @@ export default function JobInventory({
   const { toast } = useToast();
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
   const [verifiedRooms, setVerifiedRooms] = useState<Set<string>>(new Set());
+  const [verifiedIdsLoading, setVerifiedIdsLoading] = useState<Set<string>>(new Set());
+  const [verifiedIdsUnloading, setVerifiedIdsUnloading] = useState<Set<string>>(new Set());
+  const [verifiedRoomsLoading, setVerifiedRoomsLoading] = useState<Set<string>>(new Set());
+  const [verifiedRoomsUnloading, setVerifiedRoomsUnloading] = useState<Set<string>>(new Set());
   const [customRooms, setCustomRooms] = useState<string[]>([]);
   const [addExtraOpen, setAddExtraOpen] = useState(false);
   const [extraDesc, setExtraDesc] = useState("");
@@ -55,17 +59,30 @@ export default function JobInventory({
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
 
   const isUnloading = ["unloading", "arrived_at_destination", "delivering", "completed"].includes(currentStatus);
+  const isCompleted = currentStatus === "completed";
 
   useEffect(() => {
     if (jobType !== "move") return;
-    fetch(`/api/crew/inventory/${jobId}/verifications?stage=${isUnloading ? "unloading" : "loading"}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.verifiedIds) setVerifiedIds(new Set(d.verifiedIds));
-        if (d.verifiedRooms) setVerifiedRooms(new Set(d.verifiedRooms));
-      })
-      .catch(() => {});
-  }, [jobId, jobType, isUnloading]);
+    if (isCompleted) {
+      fetch(`/api/crew/inventory/${jobId}/verifications?stage=all`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.verifiedIdsLoading) setVerifiedIdsLoading(new Set(d.verifiedIdsLoading));
+          if (d.verifiedIdsUnloading) setVerifiedIdsUnloading(new Set(d.verifiedIdsUnloading));
+          if (d.verifiedRoomsLoading) setVerifiedRoomsLoading(new Set(d.verifiedRoomsLoading));
+          if (d.verifiedRoomsUnloading) setVerifiedRoomsUnloading(new Set(d.verifiedRoomsUnloading));
+        })
+        .catch(() => {});
+    } else {
+      fetch(`/api/crew/inventory/${jobId}/verifications?stage=${isUnloading ? "unloading" : "loading"}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.verifiedIds) setVerifiedIds(new Set(d.verifiedIds));
+          if (d.verifiedRooms) setVerifiedRooms(new Set(d.verifiedRooms));
+        })
+        .catch(() => {});
+    }
+  }, [jobId, jobType, isUnloading, isCompleted]);
 
   const isPremierNoInventory = jobType === "move" && moveType === "residential" && inventory.length === 0;
   const roomsToConfirm = [...DEFAULT_ROOMS, ...customRooms];
@@ -80,15 +97,27 @@ export default function JobInventory({
   }).length;
   const totalCount = isPremierNoInventory ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
 
+  const completedFullyVerifiedCount = isCompleted && verifiableCount > 0
+    ? allItemsWithId.filter((item) => {
+        const id = "id" in item ? item.id : "";
+        return typeof id === "string" && !id.startsWith("noid-") && verifiedIdsLoading.has(id) && verifiedIdsUnloading.has(id);
+      }).length
+    : 0;
+
   useEffect(() => {
-    if (isPremierNoInventory) {
+    if (isCompleted && isPremierNoInventory) {
+      const both = roomsToConfirm.filter((room) => verifiedRoomsLoading.has(room) && verifiedRoomsUnloading.has(room)).length;
+      onCountChange?.(both, roomsToConfirm.length);
+    } else if (isCompleted && verifiableCount > 0) {
+      onCountChange?.(completedFullyVerifiedCount, verifiableCount);
+    } else if (isPremierNoInventory) {
       onCountChange?.(verifiedRooms.size, roomsToConfirm.length);
     } else if (verifiableCount > 0) {
       onCountChange?.(verifiedCount, verifiableCount);
     } else {
       onCountChange?.(0, totalCount);
     }
-  }, [isPremierNoInventory, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange]);
+  }, [isPremierNoInventory, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange, isCompleted, completedFullyVerifiedCount]);
 
   const toggleRoomVerify = async (room: string) => {
     if (verifiedRooms.has(room)) return;
@@ -155,9 +184,19 @@ export default function JobInventory({
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)]">
-          {isPremierNoInventory ? "Room Confirmation" : isUnloading ? "Unloading Verification" : "Inventory"}
+          {isCompleted
+            ? "Inventory verified (pickup & delivery)"
+            : isPremierNoInventory
+              ? "Room Confirmation"
+              : isUnloading
+                ? "Unloading Verification"
+                : "Inventory"}
         </h2>
-        {isPremierNoInventory ? (
+        {isCompleted && verifiableCount > 0 ? (
+          <span className="text-[11px] text-[var(--tx3)]">{completedFullyVerifiedCount} of {verifiableCount} verified at both</span>
+        ) : isCompleted && isPremierNoInventory ? (
+          <span className="text-[11px] text-[var(--tx3)]">{roomsToConfirm.filter((r) => verifiedRoomsLoading.has(r) && verifiedRoomsUnloading.has(r)).length} of {roomsToConfirm.length} rooms</span>
+        ) : isPremierNoInventory ? (
           <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
         ) : verifiableCount > 0 ? (
           <span className="text-[11px] text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
@@ -167,22 +206,35 @@ export default function JobInventory({
         <div className="space-y-1.5 mb-3">
           {roomsToConfirm.map((room) => {
             const verified = verifiedRooms.has(room);
+            const verifiedAtPickup = verifiedRoomsLoading.has(room);
+            const verifiedAtDelivery = verifiedRoomsUnloading.has(room);
+            const bothVerified = verifiedAtPickup && verifiedAtDelivery;
             return (
               <label
                 key={room}
-                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${!readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""} ${
-                  verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
+                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${!readOnly && !isCompleted ? "cursor-pointer hover:border-[var(--gold)]/40" : ""} ${
+                  isCompleted ? (bothVerified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]") : verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={verified}
-                  onChange={() => !readOnly && toggleRoomVerify(room)}
-                  disabled={readOnly}
-                  className="rounded border-[var(--brd)]"
-                />
-                <span className="text-[13px] text-[var(--tx)]">{room}</span>
-                {verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>}
+                {!isCompleted && (
+                  <input
+                    type="checkbox"
+                    checked={verified}
+                    onChange={() => !readOnly && toggleRoomVerify(room)}
+                    disabled={readOnly}
+                    className="rounded border-[var(--brd)]"
+                  />
+                )}
+                {isCompleted && <span className="w-4" />}
+                <span className="text-[13px] text-[var(--tx)] flex-1">{room}</span>
+                {isCompleted ? (
+                  <span className="flex items-center gap-2 text-[10px] font-medium">
+                    <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Pickup {verifiedAtPickup ? "✓" : "—"}</span>
+                    <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Delivery {verifiedAtDelivery ? "✓" : "—"}</span>
+                  </span>
+                ) : (
+                  verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>
+                )}
               </label>
             );
           })}
@@ -234,14 +286,23 @@ export default function JobInventory({
                   const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
                   const hasId = typeof id === "string" && !id.startsWith("noid-");
                   const verified = hasId ? verifiedIds.has(id) : false;
+                  const verifiedAtPickup = hasId && verifiedIdsLoading.has(id);
+                  const verifiedAtDelivery = hasId && verifiedIdsUnloading.has(id);
+                  const bothVerified = verifiedAtPickup && verifiedAtDelivery;
                   return (
                     <label
                       key={id}
                       className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${
-                        verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
-                      } ${hasId && !readOnly ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
+                        isCompleted
+                          ? bothVerified
+                            ? "bg-[var(--grn)]/10 border-[var(--grn)]/30"
+                            : "bg-[var(--bg)] border-[var(--brd)]"
+                          : verified
+                            ? "bg-[var(--grn)]/10 border-[var(--grn)]/30"
+                            : "bg-[var(--bg)] border-[var(--brd)]"
+                      } ${hasId && !readOnly && !isCompleted ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
                     >
-                      {hasId ? (
+                      {!isCompleted && hasId ? (
                         <input
                           type="checkbox"
                           checked={verified}
@@ -249,12 +310,25 @@ export default function JobInventory({
                           disabled={readOnly}
                           className="rounded border-[var(--brd)]"
                         />
+                      ) : !isCompleted ? (
+                        <span className="w-4" />
                       ) : (
                         <span className="w-4" />
                       )}
                       <span className="text-[13px] text-[var(--tx)] flex-1">{rawName}</span>
                       <span className="text-[11px] text-[var(--tx3)] tabular-nums w-6 text-right">{qty}</span>
-                      {verified && <span className="text-[var(--grn)]">&#10003;</span>}
+                      {isCompleted ? (
+                        <span className="flex items-center gap-2 text-[10px] font-medium">
+                          <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
+                            Pickup {verifiedAtPickup ? "✓" : "—"}
+                          </span>
+                          <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
+                            Delivery {verifiedAtDelivery ? "✓" : "—"}
+                          </span>
+                        </span>
+                      ) : (
+                        verified && <span className="text-[var(--grn)]">&#10003;</span>
+                      )}
                     </label>
                   );
                 })}

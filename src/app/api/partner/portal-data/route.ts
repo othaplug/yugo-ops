@@ -57,10 +57,9 @@ export async function GET() {
 
   const DONE_STATUSES = new Set(["cancelled", "rejected", "delivered", "completed"]);
 
-  // Today: deliveries scheduled for today that are active (include confirmed + accepted)
+  // Today: deliveries scheduled for today (include pending_approval so partner requests show)
   const todayDeliveries = dels.filter((d) => {
     const s = (d.status || "").toLowerCase();
-    if (s === "pending_approval") return false;
     if (DONE_STATUSES.has(s)) return false;
     return d.scheduled_date?.slice(0, 10) === todayStr;
   });

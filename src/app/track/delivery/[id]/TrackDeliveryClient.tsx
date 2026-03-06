@@ -100,13 +100,14 @@ export default function TrackDeliveryClient({
     ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { timeZone: "America/Toronto", weekday: "long", month: "long", day: "numeric" })
     : null;
 
-  const showMap = !loading && (hasActiveTracking || crewLoc || (pickup && dropoff));
+  const hasMapCoords = !!(pickup && dropoff) || !!crewLoc || hasActiveTracking;
+  const showMapSection = !loading;
   const crewHasStarted = hasActiveTracking;
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: CREAM, color: FOREST }} data-theme="light">
-      {/* Map area — full-width at top when live (stays dark for map contrast). Blur until crew starts. */}
-      {showMap && (
+      {/* Map area — always shown after load. Real map when coords available; blur + "Live signal off" when crew not started. */}
+      {showMapSection && (
         <div className={`relative ${isFullscreen ? "fixed inset-0 z-50" : "h-[340px] sm:h-[420px]"} bg-[#1A1A1A]`}>
           {/* Overlay: stage card — only when crew has started (live signal on) */}
           {crewHasStarted && liveStage && (
@@ -148,8 +149,15 @@ export default function TrackDeliveryClient({
             )}
           </button>
 
-          <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
-          {/* Blur overlay when crew have not started — live signal off */}
+          {hasMapCoords ? (
+            <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/80">
+              <span className="text-[14px] font-semibold text-white">Live signal off</span>
+              <span className="text-[12px] mt-1">Tracking begins when your crew starts the job</span>
+            </div>
+          )}
+          {/* Blur overlay when crew have not started — live signal off (kept as requested) */}
           {!crewHasStarted && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
               <span className="text-[14px] font-semibold text-white">Live signal off</span>
@@ -161,14 +169,14 @@ export default function TrackDeliveryClient({
 
       <div className="max-w-[560px] mx-auto px-5 py-6 md:py-8">
         {/* Logo */}
-        {!showMap && (
+        {!showMapSection && (
           <div className="text-center mb-8">
             <Link href="/tracking">
               <YugoLogo size={22} variant="gold" />
             </Link>
           </div>
         )}
-        {showMap && (
+        {showMapSection && (
           <div className="mb-6 pt-2">
             <Link href="/tracking">
               <YugoLogo size={16} variant="gold" />
@@ -239,7 +247,7 @@ export default function TrackDeliveryClient({
         )}
 
         {/* Waiting state (no tracking yet) */}
-        {!showMap && !isCompleted && !loading && (
+        {!crewHasStarted && !isCompleted && !loading && (
           <div className="border-t border-[var(--brd)]/30 pt-6 pb-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
@@ -284,50 +292,44 @@ export default function TrackDeliveryClient({
           </div>
         )}
 
-        {/* Details — only show addresses/item list when crew has started (live signal on) */}
+        {/* Details — addresses and items always visible; live tracking activates when crew starts */}
         <div className="pt-6 border-t border-[var(--brd)]/30 space-y-4">
           <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Delivery Details</h3>
-          {!crewHasStarted ? (
-            <p className="text-[12px] opacity-75" style={{ color: FOREST }}>Live signal off — address and details will appear when your crew starts the job.</p>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
-                  <div className="text-[13px]" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
-                </div>
-                {delivery.pickup_address && (
-                  <div>
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
-                    <div className="text-[13px]" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
-                  </div>
-                )}
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
-                  <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
-                    {delivery.scheduled_date || "—"} {(delivery.delivery_window || delivery.time_slot) ? `· ${delivery.delivery_window || delivery.time_slot}` : ""}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
-                  <div className="text-[13px] font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery to</div>
+              <div className="text-[13px]" style={{ color: FOREST }}>{delivery.delivery_address || "—"}</div>
+            </div>
+            {delivery.pickup_address && (
+              <div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Pickup from</div>
+                <div className="text-[13px]" style={{ color: FOREST }}>{delivery.pickup_address || "—"}</div>
               </div>
+            )}
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Date & window</div>
+              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                {delivery.scheduled_date || "—"} {(delivery.delivery_window || delivery.time_slot) ? `· ${delivery.delivery_window || delivery.time_slot}` : ""}
+              </div>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Items</div>
+              <div className="text-[13px] font-semibold" style={{ color: FOREST }}>{itemsCount} item{itemsCount !== 1 ? "s" : ""}</div>
+            </div>
+          </div>
 
-              {itemsCount > 0 && (
-                <div className="pt-4 border-t border-[var(--brd)]/30">
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
-                  <ul className="text-[13px] space-y-1">
-                    {(delivery.items as string[]).map((item: string, i: number) => (
-                      <li key={i} className="flex items-center gap-2" style={{ color: FOREST }}>
-                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
+          {itemsCount > 0 && (
+            <div className="pt-4 border-t border-[var(--brd)]/30">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item list</div>
+              <ul className="text-[13px] space-y-1">
+                {(delivery.items as string[]).map((item: string, i: number) => (
+                  <li key={i} className="flex items-center gap-2" style={{ color: FOREST }}>
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 

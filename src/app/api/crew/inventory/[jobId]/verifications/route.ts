@@ -21,6 +21,29 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  const returnBothStages = stage === "all" || stage === "both";
+
+  if (returnBothStages) {
+    const { data: verifications } = await admin
+      .from("inventory_verifications")
+      .select("move_inventory_id, room, item_name, stage")
+      .eq("job_id", jobId)
+      .in("stage", ["loading", "unloading"]);
+
+    const loading = (verifications || []).filter((v) => v.stage === "loading");
+    const unloading = (verifications || []).filter((v) => v.stage === "unloading");
+
+    const toIds = (list: typeof verifications) => new Set((list || []).filter((v) => v.move_inventory_id).map((v) => v.move_inventory_id!));
+    const toRooms = (list: typeof verifications) => new Set((list || []).filter((v) => v.room && !v.move_inventory_id).map((v) => v.room!));
+
+    return NextResponse.json({
+      verifiedIdsLoading: Array.from(toIds(loading)),
+      verifiedIdsUnloading: Array.from(toIds(unloading)),
+      verifiedRoomsLoading: Array.from(toRooms(loading)),
+      verifiedRoomsUnloading: Array.from(toRooms(unloading)),
+    });
+  }
+
   const { data: verifications } = await admin
     .from("inventory_verifications")
     .select("move_inventory_id, room, item_name, stage")
