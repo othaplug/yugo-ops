@@ -59,7 +59,18 @@ export default function NotificationDropdown() {
               </div>
             ) : (
               notifications.map((notif) => {
-                const href = notif.link ?? (notif.icon === "dollar" ? "/admin/invoices" : notif.icon === "mail" ? "/admin/messages" : "/admin/deliveries");
+                const href = notif.link ?? (
+                  notif.icon === "dollar" ? "/admin/invoices" :
+                  notif.icon === "mail" ? "/admin/messages" :
+                  "/admin/deliveries"
+                );
+                const isApprovalRequest = notif.title.toLowerCase().includes("awaiting approval") || notif.title.toLowerCase().includes("delivery request");
+                const isBooking = notif.title.toLowerCase().includes("booking quote") || notif.title.toLowerCase().includes("quote");
+                const typeTag = isApprovalRequest
+                  ? { label: "Approval", color: "#6B8CFF", bg: "rgba(107,140,255,0.12)" }
+                  : isBooking
+                  ? { label: "Booking", color: "var(--gold)", bg: "var(--gdim)" }
+                  : null;
                 return (
                   <button
                     key={notif.id}
@@ -75,13 +86,28 @@ export default function NotificationDropdown() {
                       !notif.read ? "bg-[var(--gdim)]" : ""
                     }`}
                   >
-                    {!notif.read && (
-                      <div className="w-2 h-2 rounded-full bg-[var(--gold)] mt-1.5 flex-shrink-0" />
-                    )}
-                    <div className="flex-shrink-0 text-[var(--tx2)]"><Icon name={notif.icon} className="w-[18px] h-[18px]" /></div>
+                    <div className="flex-shrink-0 mt-0.5">
+                      {!notif.read && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-50" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 text-[var(--tx2)]"><Icon name={notif.icon} className="w-[16px] h-[16px]" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[11px] ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
-                        {notif.title}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className={`text-[11px] leading-snug ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                          {notif.title}
+                        </div>
+                        {typeTag && (
+                          <span
+                            className="shrink-0 text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                            style={{ color: typeTag.color, backgroundColor: typeTag.bg }}
+                          >
+                            {typeTag.label}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[9px] text-[var(--tx3)] mt-0.5">{notif.time}</div>
                     </div>

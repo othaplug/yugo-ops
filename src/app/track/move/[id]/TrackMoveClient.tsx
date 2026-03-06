@@ -25,6 +25,13 @@ import YugoLogo from "@/components/YugoLogo";
 import TipScreen from "@/components/tracking/TipScreen";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 
+function shortAddress(addr: string | null | undefined): string {
+  if (!addr) return "—";
+  const parts = addr.split(",").map((s) => s.trim());
+  // Keep street + city only: "507 King St E, Toronto, Ontario M5A 1M3, Canada" → "507 King St E, Toronto"
+  return parts.slice(0, 2).join(", ");
+}
+
 type SquareCard = {
   attach: (selector: string) => Promise<void>;
   tokenize: () => Promise<{ status: string; token?: string; errors?: { message: string }[] }>;
@@ -685,14 +692,47 @@ export default function TrackMoveClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>From</div>
-                  <div className="text-[13px] font-medium mt-0.5" style={{ color: FOREST }}>{move.from_address || "—"}</div>
+              <style>{`
+                @keyframes slideInFrom {
+                  from { opacity: 0; transform: translateY(-6px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideInTo {
+                  from { opacity: 0; transform: translateY(6px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes drawLine {
+                  from { transform: scaleY(0); opacity: 0; }
+                  to   { transform: scaleY(1); opacity: 1; }
+                }
+                .addr-from { animation: slideInFrom 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+                .addr-line { animation: drawLine 0.35s ease 0.2s both; transform-origin: top; }
+                .addr-to   { animation: slideInTo 0.45s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+              `}</style>
+              <div className="flex gap-3 items-stretch">
+                {/* Connector spine */}
+                <div className="flex flex-col items-center pt-1 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full mt-0.5" style={{ backgroundColor: GOLD }} />
+                  <div
+                    className="addr-line w-px flex-1 my-1"
+                    style={{ background: `linear-gradient(to bottom, ${GOLD}70, ${GOLD}20)` }}
+                  />
+                  <div className="w-1.5 h-1.5 rounded-sm rotate-45" style={{ backgroundColor: `${GOLD}90` }} />
                 </div>
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>To</div>
-                  <div className="text-[13px] font-medium mt-0.5" style={{ color: FOREST }}>{move.to_address || move.delivery_address || "—"}</div>
+                {/* Address text */}
+                <div className="flex flex-col gap-3 min-w-0 flex-1">
+                  <div className="addr-from min-w-0">
+                    <div className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: FOREST }}>From</div>
+                    <div className="text-[13px] font-medium mt-0.5 leading-snug" style={{ color: FOREST }}>
+                      {shortAddress(move.from_address)}
+                    </div>
+                  </div>
+                  <div className="addr-to min-w-0">
+                    <div className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: FOREST }}>To</div>
+                    <div className="text-[13px] font-medium mt-0.5 leading-snug" style={{ color: FOREST }}>
+                      {shortAddress(move.to_address || move.delivery_address)}
+                    </div>
+                  </div>
                 </div>
               </div>
 

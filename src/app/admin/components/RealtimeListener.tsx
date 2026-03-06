@@ -65,12 +65,24 @@ export default function RealtimeListener() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, (payload) => {
         if (payload.eventType === "INSERT") {
-          const row = payload.new as { delivery_number?: string };
-          createNotification(addNotification, {
-            title: `New delivery created: ${row.delivery_number || "—"}`,
-            icon: "party",
-            link: "/admin/deliveries",
-          });
+          const row = payload.new as { delivery_number?: string; status?: string; category?: string; customer_name?: string; created_by_source?: string };
+          if (row.status === "pending_approval" || row.created_by_source === "partner_portal") {
+            const categoryLabel = row.category
+              ? row.category.charAt(0).toUpperCase() + row.category.slice(1)
+              : "Partner";
+            const label = row.customer_name ? ` for ${row.customer_name}` : row.delivery_number ? ` ${row.delivery_number}` : "";
+            createNotification(addNotification, {
+              title: `New ${categoryLabel} delivery request${label} awaiting approval`,
+              icon: "clipboard",
+              link: "/admin/deliveries",
+            });
+          } else {
+            createNotification(addNotification, {
+              title: `New delivery created: ${row.delivery_number || "—"}`,
+              icon: "party",
+              link: "/admin/deliveries",
+            });
+          }
         } else if (payload.eventType === "UPDATE") {
           const row = payload.new as { stage?: string; delivery_number?: string };
           const prev = payload.old as { stage?: string };
@@ -82,6 +94,17 @@ export default function RealtimeListener() {
             });
           }
         }
+        router.refresh();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "quotes" }, (payload) => {
+        const row = payload.new as { quote_number?: string; client_name?: string; total?: number; move_type?: string };
+        const who = row.client_name ? ` — ${row.client_name}` : "";
+        const type = row.move_type ? ` (${row.move_type.replace(/_/g, " ")})` : "";
+        createNotification(addNotification, {
+          title: `New booking quote${who}${type}`,
+          icon: "dollar",
+          link: row.quote_number ? `/admin/quotes/${row.quote_number}` : "/admin/quotes",
+        });
         router.refresh();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "tracking_sessions" }, () => {

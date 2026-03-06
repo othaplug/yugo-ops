@@ -97,6 +97,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     id: "category",
     label: "Category",
     accessor: (d) => d.category || "Delivery",
+    render: (d) => <span>{toTitleCase(d.category || "Delivery")}</span>,
     sortable: true,
     searchable: true,
   },
@@ -255,22 +256,36 @@ export default function AllProjectsView({
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 
-      {/* Pending approval strip */}
+      {/* Pending approval banner */}
       {pendingApproval.length > 0 && (
-        <div className="mb-5 border-t border-amber-500/30 bg-amber-500/5 pt-4 pb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-[12px] font-semibold text-amber-300">
-              {pendingApproval.length} partner request{pendingApproval.length > 1 ? "s" : ""} awaiting approval
-            </span>
+        <div className="mb-5 rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #1A2744 0%, #142038 100%)", border: "1px solid rgba(99,140,255,0.22)" }}>
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="flex items-center gap-3">
+              {/* Pulsing indicator */}
+              <div className="relative shrink-0">
+                <span className="absolute inset-0 rounded-full bg-[#6B8CFF]/30 animate-ping" />
+                <span className="relative w-2 h-2 rounded-full bg-[#6B8CFF] block" />
+              </div>
+              {/* Bell icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B8CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-80">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span className="text-[12px] font-semibold" style={{ color: "#A8BFFF" }}>
+                <span className="font-bold" style={{ color: "#FFFFFF" }}>{pendingApproval.length}</span>
+                {" "}partner request{pendingApproval.length > 1 ? "s" : ""} awaiting approval
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setMainTab("partners"); setStatusFilter("pending_approval"); }}
+              className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full transition-all hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: "#6B8CFF", color: "#0D1B3E" }}
+            >
+              Review
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => { setMainTab("partners"); setStatusFilter("pending_approval"); }}
-            className="text-[11px] font-bold text-amber-400 hover:underline"
-          >
-            View all
-          </button>
+          {/* Subtle bottom accent line */}
+          <div className="h-px" style={{ background: "linear-gradient(to right, transparent, #6B8CFF40, transparent)" }} />
         </div>
       )}
 

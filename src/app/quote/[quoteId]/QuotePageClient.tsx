@@ -1060,7 +1060,7 @@ function ValuationProtectionCard({
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div>
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+        <h2 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
           Your Protection
         </h2>
         <p className="text-[11px] mb-4" style={{ color: `${FOREST}55` }}>
@@ -1069,24 +1069,24 @@ function ValuationProtectionCard({
 
         <div className="space-y-5">
           {/* Description */}
-          <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}85` }}>
+          <p className="text-[13px] leading-relaxed" style={{ color: `${FOREST}85` }}>
             {tierData.damage_process}
           </p>
 
           {tierData.rate_per_pound != null && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px]" style={{ color: `${FOREST}70` }}>
-              <span>Rate: <b style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound)}/lb</b></span>
-              {tierData.max_per_item && <span>Per item: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</b></span>}
-              {tierData.max_per_shipment && <span>Per shipment: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</b></span>}
-              {tierData.deductible === 0 && <span style={{ color: GOLD }}>Zero deductible</span>}
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px]" style={{ color: `${FOREST}70` }}>
+              <span>Rate: <b className="text-[13px]" style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound)}/lb</b></span>
+              {tierData.max_per_item && <span>Per item: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</b></span>}
+              {tierData.max_per_shipment && <span>Per shipment: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</b></span>}
+              {tierData.deductible === 0 && <span className="text-[13px]" style={{ color: GOLD }}>Zero deductible</span>}
             </div>
           )}
 
           {!tierData.rate_per_pound && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px]" style={{ color: `${FOREST}70` }}>
-              <span>Per item: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</b></span>
-              <span>Per shipment: <b style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</b></span>
-              <span style={{ color: GOLD }}>Zero deductible</span>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px]" style={{ color: `${FOREST}70` }}>
+              <span>Per item: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</b></span>
+              <span>Per shipment: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</b></span>
+              <span className="text-[13px]" style={{ color: GOLD }}>Zero deductible</span>
             </div>
           )}
 

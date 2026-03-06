@@ -508,19 +508,21 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               {/* Schedule */}
               <section className="space-y-3">
                 <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Schedule</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-4">
+                <div className="grid grid-cols-1 gap-y-3">
                   <FormField label="Date" required>
                     <input type="date" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} className={fieldInput} />
                   </FormField>
-                  <FormField label="Delivery window">
-                    <select value={form.delivery_window} onChange={(e) => set("delivery_window", e.target.value)} className={fieldInput}>
-                      <option value="">Select window…</option>
-                      {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
-                    </select>
-                  </FormField>
-                  <FormField label="Preferred time">
-                    <input type="time" value={form.preferred_time} onChange={(e) => set("preferred_time", e.target.value)} className={fieldInput} />
-                  </FormField>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FormField label="Delivery window">
+                      <select value={form.delivery_window} onChange={(e) => set("delivery_window", e.target.value)} className={fieldInput}>
+                        <option value="">Select window…</option>
+                        {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+                      </select>
+                    </FormField>
+                    <FormField label="Preferred time">
+                      <input type="time" value={form.preferred_time} onChange={(e) => set("preferred_time", e.target.value)} className={fieldInput} />
+                    </FormField>
+                  </div>
                 </div>
               </section>
 
@@ -731,6 +733,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   }
 
   function renderPricePreview() {
+    const hst = pricing ? Math.round(pricing.totalPrice * 0.13) : 0;
+    const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
       <div className="rounded-xl border border-[#C9A962]/30 bg-[#FFFDF7] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
@@ -748,9 +752,17 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 </span>
               </div>
             ))}
-            <div className="border-t border-[#C9A962]/20 pt-2 mt-2 flex justify-between">
-              <span className="text-[14px] font-bold text-[#1A1A1A]">Total</span>
-              <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(pricing.totalPrice)}</span>
+            <div className="flex justify-between text-[13px] pt-1">
+              <span className="text-[#888]">Subtotal</span>
+              <span className="font-semibold text-[#1A1A1A]">{fmtCurrency(pricing.totalPrice)}</span>
+            </div>
+            <div className="flex justify-between text-[13px]">
+              <span className="text-[#888]">HST (13%)</span>
+              <span className="font-semibold text-[#1A1A1A]">{fmtCurrency(hst)}</span>
+            </div>
+            <div className="border-t border-[#C9A962]/20 pt-2 mt-1 flex justify-between">
+              <span className="text-[14px] font-bold text-[#1A1A1A]">Total incl. HST</span>
+              <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
               <div className="text-[11px] text-[#888] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>

@@ -421,7 +421,7 @@ export default function DataTable<T>({
                     >
                       {col.render
                         ? col.render(row)
-                        : String(col.accessor(row) ?? "—")}
+                        : <span className="capitalize">{String(col.accessor(row) ?? "—")}</span>}
                     </td>
                   ))}
                 </tr>
