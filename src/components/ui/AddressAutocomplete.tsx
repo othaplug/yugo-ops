@@ -40,6 +40,16 @@ interface MapboxFeature {
   properties?: Record<string, unknown>;
 }
 
+/** For Canadian addresses, omit "Canada" / "CA" from the displayed address. */
+function formatAddressForDisplay(placeName: string, country: string): string {
+  let out = (placeName || "").trim();
+  if (!out) return out;
+  const c = country.trim();
+  if (c !== "Canada" && c !== "CA") return out;
+  out = out.replace(/,?\s*Canada\s*$/i, "").replace(/,?\s*CA\s*$/i, "").trim();
+  return out.replace(/,+\s*$/, "").trim() || placeName;
+}
+
 function mapboxFeatureToAddressResult(f: MapboxFeature): AddressResult {
   const [lng, lat] = f.geometry?.coordinates ?? [0, 0];
   const ctx = f.context ?? [];
@@ -50,7 +60,8 @@ function mapboxFeatureToAddressResult(f: MapboxFeature): AddressResult {
   const province = getCtx("region.") || getCtxShort("region.") || "";
   const postalCode = getCtx("postcode.") || "";
   const city = getCtx("place.") || getCtx("locality.") || "";
-  const fullAddress = f.place_name || f.text || "";
+  const rawPlaceName = f.place_name || f.text || "";
+  const fullAddress = formatAddressForDisplay(rawPlaceName, country);
 
   // Mapbox often has "address" type with text = street name; no separate street_number
   const streetName = f.place_type?.includes("address") ? (f.text || fullAddress) : fullAddress;
@@ -235,22 +246,29 @@ export default function AddressAutocomplete({
           {loading && suggestions.length === 0 ? (
             <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
           ) : (
-            suggestions.map((f, i) => (
-              <li
-                key={f.id}
-                role="option"
-                aria-selected={i === highlightIdx}
-                className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
-                  i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
-                }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  select(f);
-                }}
-              >
-                {f.place_name}
-              </li>
-            ))
+            suggestions.map((f, i) => {
+              const ctx = f.context ?? [];
+              const getCtx = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.text ?? "";
+              const getCtxShort = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.short_code ?? "";
+              const country = getCtx("country.") || getCtxShort("country.") || "";
+              const displayText = formatAddressForDisplay(f.place_name || f.text || "", country);
+              return (
+                <li
+                  key={f.id}
+                  role="option"
+                  aria-selected={i === highlightIdx}
+                  className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
+                    i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
+                  }`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    select(f);
+                  }}
+                >
+                  {displayText}
+                </li>
+              );
+            })
           )}
         </ul>
       )}
