@@ -18,6 +18,7 @@ import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
 import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
+import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import YugoLogo from "@/components/YugoLogo";
 
 interface Props {
@@ -233,6 +234,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       ];
 
   return (
+    <PartnerNotificationProvider orgId={orgId}>
     <PartnerChangePasswordGate>
     <div className={`min-h-screen ${partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"}`} data-theme={partnerTheme}>
       {/* Header */}
@@ -243,25 +245,11 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           <span className="text-[13px] text-[var(--tx3)] font-medium hidden sm:inline ml-1.5">{orgName}</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <button
-              onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              {data && data.todayDeliveries.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#C9A962]" />
-              )}
-            </button>
-            {notifOpen && (
-              <NotificationsDropdown
-                todayDeliveries={data?.todayDeliveries || []}
-                upcomingDeliveries={data?.upcomingDeliveries || []}
-                onClose={() => setNotifOpen(false)}
-                onViewDelivery={(d) => { setDetailTarget(d); setNotifOpen(false); }}
-              />
-            )}
-          </div>
+          <PartnerNotificationBell
+            open={notifOpen}
+            onToggle={() => setNotifOpen(!notifOpen)}
+            onClose={() => setNotifOpen(false)}
+          />
           <button
             onClick={() => setSettingsOpen(true)}
             className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
@@ -675,6 +663,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       />
     </div>
     </PartnerChangePasswordGate>
+    </PartnerNotificationProvider>
   );
 }
 
@@ -773,68 +762,98 @@ function ReferralForm() {
   );
 }
 
-function NotificationsDropdown({
-  todayDeliveries,
-  upcomingDeliveries,
-  onClose,
-  onViewDelivery,
-}: {
-  todayDeliveries: Delivery[];
-  upcomingDeliveries: Delivery[];
-  onClose: () => void;
-  onViewDelivery: (d: Delivery) => void;
-}) {
-  const inProgress = todayDeliveries.filter((d) => {
-    const s = (d.status || "").toLowerCase().replace(/-/g, "_");
-    return ["dispatched", "in_transit", "in_transit_to_destination"].includes(s);
-  });
-  const upcoming3 = upcomingDeliveries.slice(0, 3);
-  const hasItems = inProgress.length > 0 || todayDeliveries.length > 0 || upcoming3.length > 0;
+function PartnerNotificationBell({ open, onToggle, onClose }: { open: boolean; onToggle: () => void; onClose: () => void }) {
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = usePartnerNotifications();
+  const ref = { current: null as HTMLDivElement | null };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full mt-2 z-50 w-[320px] bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--brd)]">
-          <h3 className="text-[13px] font-bold text-[var(--tx)]">Notifications</h3>
-        </div>
-        <div className="max-h-[320px] overflow-y-auto">
-          {!hasItems && (
-            <div className="px-4 py-6 text-center text-[13px] text-[var(--tx3)]">All caught up!</div>
-          )}
-          {inProgress.map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-                <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-              </div>
-              <p className="text-[11px] text-[var(--tx3)] mt-0.5 ml-4">Delivery in progress</p>
-            </button>
-          ))}
-          {todayDeliveries.filter((d) => !inProgress.includes(d)).slice(0, 3).map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-                <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-              </div>
-              <p className="text-[11px] text-[var(--tx3)] mt-0.5 ml-4">Scheduled today · {d.time_slot || "No time set"}</p>
-            </button>
-          ))}
-          {upcoming3.map((d) => (
-            <button key={d.id} type="button" onClick={() => onViewDelivery(d)} className="w-full text-left px-4 py-3 hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[var(--gold)] flex-shrink-0" />
-                <span className="text-[12px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-              </div>
-              <p className="text-[11px] text-[var(--tx3)] mt-0.5 ml-4">
-                Upcoming · {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}
-              </p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
+    <div className="relative" ref={(el) => { ref.current = el; }}>
+      <button
+        onClick={onToggle}
+        className="relative p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        {unreadCount > 0 && (
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full bg-[#C9A962] text-white text-[8px] font-bold flex items-center justify-center px-1">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={onClose} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-[340px] bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden animate-fade-up">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
+              <h3 className="text-[13px] font-bold text-[var(--tx)]">Notifications</h3>
+              {unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="text-[10px] font-semibold text-[#C9A962] hover:underline">
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div className="max-h-[420px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">All caught up!</div>
+              ) : (
+                notifications.map((notif) => (
+                  <button
+                    key={notif.id}
+                    type="button"
+                    onClick={() => {
+                      markAsRead(notif.id);
+                      if (notif.link) window.location.href = notif.link;
+                      onClose();
+                    }}
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--bg)] cursor-pointer transition-colors w-full text-left ${
+                      !notif.read ? "bg-[#C9A962]/5" : ""
+                    }`}
+                  >
+                    <div className="flex-shrink-0 mt-0.5 w-4 flex items-center justify-center">
+                      {!notif.read && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A962] opacity-50" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C9A962]" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 mt-0.5 text-[var(--tx3)]">
+                      <PartnerNotifIcon name={notif.icon} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[11px] leading-snug ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                        {notif.title}
+                      </div>
+                      {notif.body && (
+                        <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                          {notif.body}
+                        </div>
+                      )}
+                      <div className="text-[9px] text-[var(--tx3)]/60 mt-1">{notif.time}</div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
+}
+
+function PartnerNotifIcon({ name }: { name: string }) {
+  const props = { width: 14, height: 14, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  switch (name) {
+    case "check": return <svg {...props}><path d="M20 6 9 17l-5-5" /></svg>;
+    case "truck": return <svg {...props}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /></svg>;
+    case "x": return <svg {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
+    case "dollar": return <svg {...props}><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
+    case "clipboard": return <svg {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>;
+    case "calendar": return <svg {...props}><rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+    case "alertTriangle": return <svg {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
+    default: return <svg {...props}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>;
+  }
 }
 
 function MaterialsTab() {

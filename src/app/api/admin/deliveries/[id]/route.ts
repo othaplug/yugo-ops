@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import { createPartnerNotification } from "@/lib/notifications";
+
+const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
+  confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
+  dispatched: { title: (l) => `Crew dispatched for: ${l}`, icon: "truck" },
+  in_transit: { title: (l) => `Delivery in transit: ${l}`, icon: "truck" },
+  completed: { title: (l) => `Delivery completed: ${l}`, icon: "check" },
+  delivered: { title: (l) => `Delivery completed: ${l}`, icon: "check" },
+  cancelled: { title: (l) => `Delivery cancelled: ${l}`, icon: "x" },
+};
 
 export async function PATCH(
   req: NextRequest,
@@ -16,6 +26,12 @@ export async function PATCH(
 
   const body = await req.json();
   const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("deliveries")
+    .select("status, organization_id, delivery_number, customer_name")
+    .eq("id", id)
+    .single();
 
   const allowedFields = [
     "customer_name", "customer_email", "customer_phone",
@@ -48,6 +64,22 @@ export async function PATCH(
       { error: error.message || "Failed to update delivery" },
       { status: 500 },
     );
+  }
+
+  // Send partner notification if status changed
+  const newStatus = (body.status || "").toLowerCase();
+  const oldStatus = (existing?.status || "").toLowerCase();
+  const orgId = data?.organization_id || existing?.organization_id;
+  if (newStatus && newStatus !== oldStatus && orgId && STATUS_NOTIFICATIONS[newStatus]) {
+    const notifConfig = STATUS_NOTIFICATIONS[newStatus];
+    const label = data?.customer_name || data?.delivery_number || existing?.customer_name || existing?.delivery_number || "your delivery";
+    createPartnerNotification({
+      orgId,
+      title: notifConfig.title(label),
+      icon: notifConfig.icon,
+      link: `/partner`,
+      deliveryId: id,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, delivery: data });

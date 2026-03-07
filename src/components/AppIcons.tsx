@@ -36,6 +36,9 @@ export const Icon = ({ name, className }: { name: string; className?: string }) 
     case "hotel": return <svg {...props}><path d="M3 21h18" /><path d="M3 10h18" /><path d="M5 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2" /><path d="M3 21V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v13" /><path d="M7 14v4" /><path d="M11 14v4" /><path d="M15 14v4" /><path d="M19 14v4" /></svg>;
     case "image": return <svg {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>;
     case "handshake": return <svg {...props}><path d="m11 12 2.22 2.22a4 4 0 0 1-5.66 5.66L5 17" /><path d="m14 9 2.22-2.22a4 4 0 0 1 5.66 5.66L17 12" /><path d="m5 12 2.22 2.22a4 4 0 0 0 5.66-5.66L12 9" /><path d="m17 12-2.22 2.22a4 4 0 0 1-5.66-5.66L12 14" /></svg>;
+    case "eye": return <svg {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
+    case "clock": return <svg {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+    case "flag": return <svg {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>;
     case "target": return <svg {...props}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
     case "calendar": return <svg {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
     case "mapPin": return <svg {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>;

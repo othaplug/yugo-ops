@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export type Notification = {
+type PartnerNotification = {
   id: string;
   icon: string;
   title: string;
@@ -12,22 +12,18 @@ export type Notification = {
   read: boolean;
   link?: string | null;
   source_type?: string | null;
-  source_id?: string | null;
-  event_slug?: string | null;
   created_at?: string;
 };
 
-type NotificationContextType = {
-  notifications: Notification[];
+type PartnerNotificationContextType = {
+  notifications: PartnerNotification[];
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
-  addNotification: (notif: Omit<Notification, "id" | "read"> & { id?: string } | { id: string; title: string; icon?: string; body?: string | null; link?: string | null; source_type?: string | null; created_at?: string; is_read?: boolean }) => void;
 };
 
 function formatRelativeTime(iso: string): string {
-  const d = new Date(iso);
-  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (sec < 60) return "Just now";
   if (sec < 120) return "1 min ago";
   if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
@@ -36,7 +32,7 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(sec / 86400)} days ago`;
 }
 
-function mapDbToNotification(row: {
+function mapRow(row: {
   id: string;
   title: string;
   body?: string | null;
@@ -45,10 +41,8 @@ function mapDbToNotification(row: {
   is_read?: boolean;
   read?: boolean;
   source_type?: string | null;
-  source_id?: string | null;
-  event_slug?: string | null;
   created_at?: string;
-}): Notification {
+}): PartnerNotification {
   return {
     id: row.id,
     icon: row.icon || "bell",
@@ -58,29 +52,27 @@ function mapDbToNotification(row: {
     read: row.is_read ?? row.read ?? false,
     link: row.link,
     source_type: row.source_type,
-    source_id: row.source_id,
-    event_slug: row.event_slug,
     created_at: row.created_at,
   };
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const PartnerNotificationContext = createContext<PartnerNotificationContextType | undefined>(undefined);
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export function PartnerNotificationProvider({ orgId: _orgId, children }: { orgId: string; children: ReactNode }) {
+  const [notifications, setNotifications] = useState<PartnerNotification[]>([]);
   const supabase = createClient();
 
-  useEffect(() => {
-    const loadNotifications = async () => {
-      const res = await fetch("/api/admin/notifications");
-      if (res.ok) {
-        const data = await res.json();
-        const rows = data.notifications || [];
-        setNotifications(rows.map(mapDbToNotification));
-      }
-    };
-    loadNotifications();
+  const loadNotifications = useCallback(async () => {
+    const res = await fetch("/api/partner/notifications");
+    if (res.ok) {
+      const data = await res.json();
+      setNotifications((data.notifications || []).map(mapRow));
+    }
   }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   // Supabase Realtime: listen for new in_app_notifications rows for current user
   useEffect(() => {
@@ -91,7 +83,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (!user) return;
 
       channel = supabase
-        .channel("admin-notif-realtime")
+        .channel("partner-notifications-realtime")
         .on(
           "postgres_changes",
           {
@@ -109,11 +101,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               link?: string | null;
               is_read?: boolean;
               source_type?: string | null;
-              source_id?: string | null;
-              event_slug?: string | null;
               created_at?: string;
             };
-            setNotifications((prev) => [mapDbToNotification(row), ...prev.filter((n) => n.id !== row.id)]);
+            setNotifications((prev) => [mapRow(row), ...prev.filter((n) => n.id !== row.id)]);
           }
         )
         .subscribe();
@@ -143,7 +133,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = useCallback(async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    await fetch("/api/admin/notifications", {
+    await fetch("/api/partner/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, read: true }),
@@ -151,45 +141,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
-    if (unreadIds.length === 0) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await fetch("/api/admin/notifications", {
+    await fetch("/api/partner/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ all: true }),
     });
-  }, [notifications]);
-
-  const addNotification = useCallback(
-    (
-      notif:
-        | (Omit<Notification, "id" | "read"> & { id?: string })
-        | { id: string; title: string; icon?: string; body?: string | null; link?: string | null; source_type?: string | null; created_at?: string; is_read?: boolean }
-    ) => {
-      const n: Notification =
-        "created_at" in notif && notif.created_at
-          ? mapDbToNotification(notif as Parameters<typeof mapDbToNotification>[0])
-          : {
-              ...(notif as Omit<Notification, "id" | "read">),
-              id: (notif as { id?: string }).id ?? crypto.randomUUID(),
-              read: false,
-              time: (notif as { time?: string }).time || "Just now",
-            };
-      setNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)]);
-    },
-    []
-  );
+  }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}>
+    <PartnerNotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead }}>
       {children}
-    </NotificationContext.Provider>
+    </PartnerNotificationContext.Provider>
   );
 }
 
-export function useNotifications() {
-  const context = useContext(NotificationContext);
-  if (!context) throw new Error("useNotifications must be used within NotificationProvider");
-  return context;
+export function usePartnerNotifications() {
+  const ctx = useContext(PartnerNotificationContext);
+  if (!ctx) throw new Error("usePartnerNotifications must be used within PartnerNotificationProvider");
+  return ctx;
 }

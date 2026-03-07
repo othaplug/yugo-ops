@@ -7,8 +7,8 @@ import { useNotifications } from "./NotificationContext";
 import { usePendingChangeRequests } from "./PendingChangeRequestsContext";
 
 async function createNotification(
-  addNotification: (n: { id: string; title: string; icon?: string; link?: string; created_at?: string }) => void,
-  payload: { title: string; body?: string; icon?: string; link?: string }
+  addNotification: (n: { id: string; title: string; body?: string | null; icon?: string; link?: string; source_type?: string | null; created_at?: string }) => void,
+  payload: { title: string; body?: string; icon?: string; link?: string; source_type?: string; source_id?: string }
 ) {
   const res = await fetch("/api/admin/notifications", {
     method: "POST",
@@ -34,9 +34,10 @@ export default function RealtimeListener() {
         if (payload.eventType === "INSERT") {
           const row = payload.new as { move_code?: string; client_name?: string };
           createNotification(addNotification, {
-            title: `New move created: ${row.move_code || "—"}`,
+            title: `New move created: ${row.move_code || "\u2014"}`,
             icon: "party",
             link: "/admin/deliveries",
+            source_type: "move",
           });
         } else if (payload.eventType === "UPDATE") {
           const row = payload.new as { status?: string; move_code?: string };
@@ -45,9 +46,10 @@ export default function RealtimeListener() {
             const s = (row.status || "").toLowerCase();
             if (s === "completed" || s === "delivered" || s === "done") {
               createNotification(addNotification, {
-                title: `Move ${row.move_code || "—"} completed`,
-                icon: "truck",
+                title: `Move ${row.move_code || "\u2014"} completed`,
+                icon: "check",
                 link: "/admin/deliveries",
+                source_type: "move",
               });
             }
           }
@@ -55,9 +57,10 @@ export default function RealtimeListener() {
           const currPaid = (payload.new as { payment_marked_paid?: boolean })?.payment_marked_paid;
           if (!prevPaid && currPaid) {
             createNotification(addNotification, {
-              title: `Move ${(payload.new as { move_code?: string }).move_code || "—"} marked paid`,
+              title: `Move ${(payload.new as { move_code?: string }).move_code || "\u2014"} marked paid`,
               icon: "dollar",
               link: "/admin/invoices",
+              source_type: "payment",
             });
           }
         }
@@ -76,12 +79,14 @@ export default function RealtimeListener() {
               title: `New ${categoryLabel} delivery request${from}${forCustomer} awaiting approval`,
               icon: "clipboard",
               link: "/admin/deliveries",
+              source_type: "delivery",
             });
           } else {
             createNotification(addNotification, {
-              title: `New delivery created: ${row.delivery_number || "—"}`,
+              title: `New delivery created: ${row.delivery_number || "\u2014"}`,
               icon: "party",
               link: "/admin/deliveries",
+              source_type: "delivery",
             });
           }
         } else if (payload.eventType === "UPDATE") {
@@ -89,9 +94,10 @@ export default function RealtimeListener() {
           const prev = payload.old as { stage?: string };
           if (row.stage && prev?.stage !== row.stage && (row.stage || "").toLowerCase() === "completed") {
             createNotification(addNotification, {
-              title: `Delivery ${row.delivery_number || "—"} completed`,
-              icon: "truck",
+              title: `Delivery ${row.delivery_number || "\u2014"} completed`,
+              icon: "check",
               link: "/admin/deliveries",
+              source_type: "delivery",
             });
           }
         }
@@ -99,12 +105,13 @@ export default function RealtimeListener() {
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "quotes" }, (payload) => {
         const row = payload.new as { quote_number?: string; client_name?: string; total?: number; move_type?: string };
-        const who = row.client_name ? ` — ${row.client_name}` : "";
+        const who = row.client_name ? ` \u2014 ${row.client_name}` : "";
         const type = row.move_type ? ` (${row.move_type.replace(/_/g, " ")})` : "";
         createNotification(addNotification, {
           title: `New booking quote${who}${type}`,
           icon: "dollar",
           link: row.quote_number ? `/admin/quotes/${row.quote_number}` : "/admin/quotes",
+          source_type: "quote",
         });
         router.refresh();
       })
@@ -117,9 +124,10 @@ export default function RealtimeListener() {
           const prev = payload.old as { status?: string };
           if (row.status === "paid" && prev?.status !== "paid") {
             createNotification(addNotification, {
-              title: `Invoice ${row.invoice_number || "—"} paid`,
+              title: `Invoice ${row.invoice_number || "\u2014"} paid`,
               icon: "dollar",
               link: "/admin/invoices",
+              source_type: "payment",
             });
           }
         }
@@ -133,6 +141,7 @@ export default function RealtimeListener() {
           title: "New client change request",
           icon: "clipboard",
           link: "/admin/change-requests",
+          source_type: "move",
         });
         refetchPendingChangeRequests();
         router.refresh();
@@ -142,6 +151,7 @@ export default function RealtimeListener() {
           title: "New crew expense submitted",
           icon: "dollar",
           link: "/admin/crew",
+          source_type: "payment",
         });
         router.refresh();
       })
