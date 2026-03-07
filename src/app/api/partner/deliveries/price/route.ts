@@ -40,27 +40,6 @@ export async function POST(req: NextRequest) {
         pricingTier,
         lookup,
       });
-
-      // Per-stop zone surcharges for day-rate bookings
-      if (Array.isArray(body.stops_zones)) {
-        for (const sz of body.stops_zones) {
-          if (sz.zone && sz.zone >= 2) {
-            const zoneResult = await detectZone(rateCardId, sz.zone === 2 ? 50 : sz.zone === 3 ? 85 : 110, pricingTier, lookup);
-            if (zoneResult.surcharge > 0) {
-              result.zoneSurcharge += zoneResult.surcharge;
-              result.totalPrice += zoneResult.surcharge;
-              result.breakdown.push({
-                label: `Zone ${zoneResult.zone} surcharge (stop ${sz.stop_number})`,
-                amount: zoneResult.surcharge,
-              });
-            }
-          }
-        }
-        if (num_stops > 0) {
-          result.effectivePerStop = Math.round(result.totalPrice / num_stops);
-        }
-      }
-
       return NextResponse.json(result);
     }
 

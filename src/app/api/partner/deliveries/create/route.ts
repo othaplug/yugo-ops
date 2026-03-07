@@ -72,10 +72,6 @@ export async function POST(req: NextRequest) {
       end_customer_name: (body.end_customer_name || customerName).trim() || null,
       end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,
       end_customer_email: (body.end_customer_email || body.customer_email || "").trim() || null,
-      // Day-rate booking: stop-level details & recommendation tracking
-      stops_detail: Array.isArray(body.stops_detail) ? body.stops_detail : [],
-      recommended_vehicle: body.recommended_vehicle || null,
-      recommended_day_type: body.recommended_day_type || null,
     };
 
     console.log("[delivery-create] inserting for org:", primaryOrgId, "status: pending_approval, date:", scheduledDate);
