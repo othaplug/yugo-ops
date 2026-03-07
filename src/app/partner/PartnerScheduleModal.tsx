@@ -5,11 +5,13 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { Plus, Trash2, Truck, Send, Calendar, DollarSign } from "lucide-react";
+import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
+import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Office", "Other"];
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
-const VEHICLE_TYPES = [
+const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string }[] = [
   { value: "sprinter", label: "Cargo Van (Sprinter)", capacity: "370 cu ft" },
   { value: "16ft", label: "16ft Truck", capacity: "800 cu ft" },
   { value: "20ft", label: "20ft Truck", capacity: "1,100 cu ft" },
@@ -60,13 +62,13 @@ interface ServiceOption {
 }
 
 export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreated, initialDate = "" }: Props) {
-  // Step state
-  const [step, setStep] = useState<"type" | "config" | "details" | "review">("type");
-  const [bookingType, setBookingType] = useState<"day_rate" | "per_delivery" | null>(null);
+  // Step state: day_rate = config then day_flow (DeliveryDayForm); per_delivery = config | details | review
+  const [bookingType, setBookingType] = useState<"day_rate" | "per_delivery">("day_rate");
+  const [step, setStep] = useState<"config" | "day_flow" | "details" | "review">("config");
 
   // Day rate fields
-  const [vehicleType, setVehicleType] = useState("sprinter");
-  const [dayType, setDayType] = useState<"full_day" | "half_day">("full_day");
+  const [vehicleType, setVehicleType] = useState<VehicleType>("sprinter");
+  const [dayType, setDayType] = useState<DayType>("full_day");
   const [numStops, setNumStops] = useState(6);
 
   // Per-delivery fields
@@ -290,17 +292,36 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="font-hero text-[26px] sm:text-[30px] font-bold text-[#1A1A1A]">Schedule Delivery</h2>
-            {step !== "type" && (
+            {/* Toggle: Day Rate | Per Delivery — only when on config step */}
+            {step === "config" && (
+              <div className="flex gap-1 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setBookingType("day_rate")}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "day_rate" ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}
+                >
+                  Day Rate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingType("per_delivery")}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "per_delivery" ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}
+                >
+                  Per Delivery
+                </button>
+              </div>
+            )}
+            {step !== "config" && step !== "day_flow" && bookingType === "per_delivery" && (
               <div className="flex gap-1.5 mt-1">
-                {(["type", "config", "details", "review"] as const).map((s, i) => (
-                  <div key={s} className={`h-1 rounded-full transition-all ${i <= ["type", "config", "details", "review"].indexOf(step) ? "bg-[#C9A962] w-8" : "bg-[#E8E4DF] w-4"}`} />
+                {(["config", "details", "review"] as const).map((s, i) => (
+                  <div key={s} className={`h-1 rounded-full transition-all ${i <= ["config", "details", "review"].indexOf(step) ? "bg-[#C9A962] w-8" : "bg-[#E8E4DF] w-4"}`} />
                 ))}
               </div>
             )}
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666]" aria-label="Close">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666] shrink-0" aria-label="Close">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
@@ -310,34 +331,20 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{error}</div>
           )}
 
-          {/* ════ Step 1: Booking Type ════ */}
-          {step === "type" && (
-            <div className="space-y-4">
-              <p className="text-[13px] text-[#666]">How would you like to book?</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setBookingType("day_rate"); setStep("config"); }}
-                  className="p-5 rounded-xl border-2 border-[#E8E4DF] hover:border-[#C9A962] transition-all text-left group"
-                >
-                  <Calendar className="w-7 h-7 text-[#C9A962] mb-2.5" />
-                  <div className="text-[15px] font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Day Rate</div>
-                  <p className="text-[11px] text-[#888] mt-1">Dedicated vehicle + crew for the day. Best for 4+ stops.</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setBookingType("per_delivery"); setStep("config"); }}
-                  className="p-5 rounded-xl border-2 border-[#E8E4DF] hover:border-[#C9A962] transition-all text-left group"
-                >
-                  <Send className="w-7 h-7 text-[#C9A962] mb-2.5" />
-                  <div className="text-[15px] font-bold text-[#1A1A1A] group-hover:text-[#8B6914]">Per Delivery</div>
-                  <p className="text-[11px] text-[#888] mt-1">Individual delivery priced per service. Best for 1-3 stops.</p>
-                </button>
-              </div>
-            </div>
+          {/* ════ Day rate: after config, show DeliveryDayForm (date → stops → delivery day → review) ════ */}
+          {step === "day_flow" && bookingType === "day_rate" && (
+            <DeliveryDayForm
+              orgId={orgId}
+              orgType={orgType}
+              initialDate={form.scheduled_date}
+              initialVehicle={vehicleType}
+              initialDayType={dayType}
+              onSuccess={onCreated}
+              onBackToConfig={() => setStep("config")}
+            />
           )}
 
-          {/* ════ Step 2: Configuration ════ */}
+          {/* ════ Step 1 (Day Rate) or Config (Per Delivery): Vehicle / Delivery type ════ */}
           {step === "config" && bookingType === "day_rate" && (
             <div className="space-y-5">
               <section className="space-y-3">
@@ -347,7 +354,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                     <button
                       key={v.value}
                       type="button"
-                      onClick={() => setVehicleType(v.value)}
+                      onClick={() => setVehicleType(v.value as VehicleType)}
                       className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${vehicleType === v.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
                     >
                       <Truck className={`w-4 h-4 mb-1 ${vehicleType === v.value ? "text-[#C9A962]" : "text-[#999]"}`} />
@@ -633,13 +640,13 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           )}
         </div>
 
-        {/* Footer buttons */}
-        {step !== "type" && (
+        {/* Footer buttons — hidden when day_rate flow (DeliveryDayForm has its own) */}
+        {step !== "day_flow" && (
           <div className="sticky bottom-0 bg-white border-t border-[#E8E4DF] px-4 sm:px-6 py-3 flex gap-3 shrink-0">
             <button
               type="button"
               onClick={() => {
-                if (step === "config") { setStep("type"); setBookingType(null); }
+                if (step === "config") setBookingType((b) => (b === "day_rate" ? "per_delivery" : "day_rate"));
                 else if (step === "details") setStep("config");
                 else if (step === "review") setStep("details");
               }}
@@ -660,7 +667,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               <button
                 type="button"
                 onClick={() => {
-                  if (step === "config") setStep("details");
+                  if (step === "config" && bookingType === "day_rate") setStep("day_flow");
+                  else if (step === "config" && bookingType === "per_delivery") setStep("details");
                   else if (step === "details") { setStep("review"); fetchPricing(); }
                 }}
                 className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B8862E] transition-colors"
