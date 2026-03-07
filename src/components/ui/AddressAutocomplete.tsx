@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export interface AddressResult {
   fullAddress: string;
@@ -99,9 +100,36 @@ export default function AddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const isInternalUpdate = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const updateDropdownRect = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setDropdownRect(null);
+      return;
+    }
+    updateDropdownRect();
+  }, [open, updateDropdownRect]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onScrollOrResize = () => updateDropdownRect();
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open, updateDropdownRect]);
 
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -244,41 +272,50 @@ export default function AddressAutocomplete({
         aria-controls="address-suggestions"
         role="combobox"
       />
-      {open && (suggestions.length > 0 || loading) && (
-        <ul
-          id="address-suggestions"
-          role="listbox"
-          className="absolute z-[100] left-0 right-0 mt-1 py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg max-h-[280px] overflow-y-auto"
-        >
-          {loading && suggestions.length === 0 ? (
-            <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
-          ) : (
-            suggestions.map((f, i) => {
-              const ctx = f.context ?? [];
-              const getCtx = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.text ?? "";
-              const getCtxShort = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.short_code ?? "";
-              const country = getCtx("country.") || getCtxShort("country.") || "";
-              const displayText = formatAddressForDisplay(f.place_name || f.text || "", country);
-              return (
-                <li
-                  key={f.id}
-                  role="option"
-                  aria-selected={i === highlightIdx}
-                  className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
-                    i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
-                  }`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    select(f);
-                  }}
-                >
-                  {displayText}
-                </li>
-              );
-            })
-          )}
-        </ul>
-      )}
+      {open && (suggestions.length > 0 || loading) && dropdownRect &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <ul
+            id="address-suggestions"
+            role="listbox"
+            className="fixed py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg max-h-[280px] overflow-y-auto"
+            style={{
+              top: dropdownRect.top,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              zIndex: 9999,
+            }}
+          >
+            {loading && suggestions.length === 0 ? (
+              <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
+            ) : (
+              suggestions.map((f, i) => {
+                const ctx = f.context ?? [];
+                const getCtx = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.text ?? "";
+                const getCtxShort = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.short_code ?? "";
+                const country = getCtx("country.") || getCtxShort("country.") || "";
+                const displayText = formatAddressForDisplay(f.place_name || f.text || "", country);
+                return (
+                  <li
+                    key={f.id}
+                    role="option"
+                    aria-selected={i === highlightIdx}
+                    className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
+                      i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
+                    }`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      select(f);
+                    }}
+                  >
+                    {displayText}
+                  </li>
+                );
+              })
+            )}
+          </ul>,
+          document.body
+        )}
     </div>
   );
 }

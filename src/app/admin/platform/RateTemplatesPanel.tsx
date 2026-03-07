@@ -460,6 +460,143 @@ function CreateTemplateModal({
   );
 }
 
+/* ─── Edit Template Name Modal ─── */
+
+function EditTemplateNameModal({
+  template,
+  onSaved,
+  onClose,
+}: {
+  template: RateTemplate;
+  onSaved: () => void;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(template.template_name);
+  const [description, setDescription] = useState(template.description ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast("Template name is required", "x");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/rate-templates/${template.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template_name: trimmed, description: description.trim() || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast("Template updated", "check");
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <ModalOverlay open onClose={onClose} title="Edit template name" maxWidth="sm">
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="block text-[10px] font-semibold text-[var(--tx2)] mb-1.5">Template Name</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Furniture & Design"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-[var(--tx2)] mb-1.5">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
+/* ─── Delete Template Confirmation Modal ─── */
+
+function DeleteTemplateModal({
+  template,
+  onDeleted,
+  onClose,
+}: {
+  template: RateTemplate;
+  onDeleted: () => void;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/rate-templates/${template.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        if (res.status === 409) {
+          setError(json.error || "Partners are still using this template.");
+          return;
+        }
+        throw new Error(json.error);
+      }
+      toast("Template deleted", "check");
+      onDeleted();
+      onClose();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to delete", "x");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <ModalOverlay open onClose={onClose} title="Delete template" maxWidth="sm">
+      <div className="p-5 space-y-4">
+        <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
+          Delete <strong className="text-[var(--tx)]">{template.template_name}</strong>? This can only be done if no partners are assigned to this template.
+        </p>
+        {error && (
+          <p className="text-[11px] text-[var(--red)] bg-[var(--rdim)] rounded-lg p-3">{error}</p>
+        )}
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]" disabled={deleting}>
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--red)] text-white disabled:opacity-50 hover:opacity-90"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
 /* ─── View Partners Modal ─── */
 
 function ViewPartnersModal({ templateName, partners, onClose }: { templateName: string; partners: any[]; onClose: () => void }) {
@@ -496,6 +633,8 @@ export default function RateTemplatesPanel() {
   const [loading, setLoading] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<TemplateRates | null>(null);
   const [viewingPartnersFor, setViewingPartnersFor] = useState<TemplateRates | null>(null);
+  const [editingNameFor, setEditingNameFor] = useState<RateTemplate | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<RateTemplate | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -583,6 +722,14 @@ export default function RateTemplatesPanel() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-heading font-bold text-[15px] text-[var(--tx)]">{t.template_name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingNameFor(t)}
+                    className="text-[10px] text-[var(--tx3)] hover:text-[var(--gold)] hover:underline"
+                    title="Edit template name"
+                  >
+                    Edit name
+                  </button>
                   <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
                     {t.is_active ? "Active" : "Inactive"}
                   </span>
@@ -613,6 +760,12 @@ export default function RateTemplatesPanel() {
                   className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-all"
                 >
                   Duplicate
+                </button>
+                <button
+                  onClick={() => setDeletingTemplate(t)}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--red)] hover:border-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+                >
+                  Delete
                 </button>
               </div>
             </div>
@@ -650,6 +803,22 @@ export default function RateTemplatesPanel() {
           existingTemplates={templates}
           onCreated={fetchTemplates}
           onClose={() => setCreateOpen(false)}
+        />
+      )}
+
+      {editingNameFor && (
+        <EditTemplateNameModal
+          template={editingNameFor}
+          onSaved={fetchTemplates}
+          onClose={() => setEditingNameFor(null)}
+        />
+      )}
+
+      {deletingTemplate && (
+        <DeleteTemplateModal
+          template={deletingTemplate}
+          onDeleted={fetchTemplates}
+          onClose={() => setDeletingTemplate(null)}
         />
       )}
     </div>

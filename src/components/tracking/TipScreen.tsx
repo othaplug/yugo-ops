@@ -144,7 +144,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
     return (
       <>
         <ConfettiEffect />
-        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay" style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay" style={{ backgroundColor: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)" }}>
           <div
             className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
             style={{ backgroundColor: CREAM }}
@@ -194,7 +194,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
   return (
     <div
       className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      style={{ backgroundColor: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)" }}
     >
       <div
         className="w-full max-w-[420px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"

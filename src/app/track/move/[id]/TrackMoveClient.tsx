@@ -899,7 +899,7 @@ export default function TrackMoveClient({
 
       {/* Tip Modal */}
       {tipModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => !tipSubmitting && setTipModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md bg-white/30 p-4" onClick={() => !tipSubmitting && setTipModalOpen(false)}>
           <div
             className="w-full max-w-sm rounded-2xl border-2 shadow-xl bg-white overflow-hidden"
             style={{ borderColor: `${FOREST}20` }}
@@ -990,7 +990,7 @@ export default function TrackMoveClient({
 
       {/* Change Request Modal */}
       {changeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
           <div className="w-full max-w-md rounded-xl border bg-white p-5" style={{ borderColor: `${FOREST}20` }}>
             <h3 className="mb-3 text-[16px] font-bold font-heading" style={{ color: WINE }}>Request a Change</h3>
             <p className="mb-4 text-[12px] leading-relaxed opacity-80" style={{ color: FOREST }}>

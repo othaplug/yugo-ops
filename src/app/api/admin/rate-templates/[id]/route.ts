@@ -48,12 +48,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const { template_name, description, verticals_covered, is_active, rates } = body;
 
-  // Update template meta
-  if (template_name !== undefined || description !== undefined || verticals_covered !== undefined || is_active !== undefined) {
-    const { error } = await db
-      .from("rate_card_templates")
-      .update({ template_name, description, verticals_covered, is_active, updated_at: new Date().toISOString() })
-      .eq("id", id);
+  // Update template meta (only send defined fields so we don't clear others)
+  const meta: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (template_name !== undefined) meta.template_name = template_name;
+  if (description !== undefined) meta.description = description;
+  if (verticals_covered !== undefined) meta.verticals_covered = verticals_covered;
+  if (is_active !== undefined) meta.is_active = is_active;
+  if (Object.keys(meta).length > 1) {
+    const { error } = await db.from("rate_card_templates").update(meta).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
