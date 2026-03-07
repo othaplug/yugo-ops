@@ -141,6 +141,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : features.showProjects ? "projects" : "today");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
+  const [scheduleModalKey, setScheduleModalKey] = useState(0);
   const [shareTarget, setShareTarget] = useState<Delivery | null>(null);
   const [detailTarget, setDetailTarget] = useState<Delivery | null>(null);
   const [editTarget, setEditTarget] = useState<Delivery | null>(null);
@@ -431,7 +432,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <div className="flex flex-wrap gap-2.5 mb-6">
           {features.canCreateDelivery && (
             <button
-              onClick={() => setScheduleOpen(true)}
+              onClick={() => { setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -561,7 +562,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               onShare={(d) => setShareTarget(d)}
               onDetailClick={(d) => setDetailTarget(d)}
               onEditClick={(d) => setEditTarget(d)}
-              onScheduleDelivery={() => setScheduleOpen(true)}
+              onScheduleDelivery={() => { setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
               orgType={orgType}
             />
           )}
@@ -580,6 +581,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               deliveries={data.allDeliveries}
               onSelectDate={(date) => {
                 setScheduleInitialDate(date);
+                setScheduleModalKey((k) => k + 1);
                 setScheduleOpen(true);
               }}
             />
@@ -619,6 +621,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       {/* Modals */}
       {scheduleOpen && (
         <PartnerScheduleModal
+          key={scheduleModalKey}
           orgId={orgId}
           orgType={orgType}
           initialDate={scheduleInitialDate}
