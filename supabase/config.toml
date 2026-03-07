@@ -80,6 +80,3 @@ enable_signup = false
 
 [analytics]
 enabled = false
-
-# project_id is used to identify the project
-project_id = "yugo-ops"

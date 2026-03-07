@@ -410,23 +410,57 @@ export default function TrackDeliveryClient({
         )}
 
         {/* ── Item List ── */}
-        {itemsCount > 0 && (
-          <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
-            <div className="px-5 py-3 border-b" style={{ borderColor: `${FOREST}08` }}>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}50` }}>Item list</div>
-            </div>
-            <ul className="px-5 py-3 space-y-2">
-              {(delivery.items as string[]).map((item: string, i: number) => (
-                <li key={i} className="flex items-center gap-2.5 text-[13px]" style={{ color: FOREST }}>
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}10` }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+        {itemsCount > 0 && (() => {
+          const grouped: Record<string, string[]> = {};
+          (delivery.items as string[]).forEach((raw: string) => {
+            const colonIdx = raw.indexOf(":");
+            const room = colonIdx > -1 ? raw.slice(0, colonIdx).trim() : "Items";
+            const name = colonIdx > -1 ? raw.slice(colonIdx + 1).trim() : raw.trim();
+            if (!grouped[room]) grouped[room] = [];
+            grouped[room].push(name);
+          });
+          const rooms = Object.keys(grouped);
+
+          return (
+            <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4" style={{ borderColor: `${FOREST}08`, backgroundColor: "white" }}>
+              <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: `${FOREST}06` }}>
+                <div className="text-[9px] font-bold tracking-[0.16em] uppercase" style={{ color: `${FOREST}40` }}>Items</div>
+                <div
+                  className="text-[9px] font-semibold tabular-nums px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${FOREST}06`, color: `${FOREST}50` }}
+                >
+                  {itemsCount}
+                </div>
+              </div>
+
+              <div className="divide-y" style={{ borderColor: `${FOREST}05` }}>
+                {rooms.map((room) => (
+                  <div key={room} className="px-5 py-3.5">
+                    <div
+                      className="text-[9px] font-bold tracking-[0.12em] uppercase mb-2.5"
+                      style={{ color: GOLD }}
+                    >
+                      {room}
+                    </div>
+                    <div className="space-y-2">
+                      {grouped[room].map((name, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div
+                            className="w-1 h-1 rounded-full shrink-0"
+                            style={{ backgroundColor: `${FOREST}25` }}
+                          />
+                          <span className="text-[13px] font-medium" style={{ color: FOREST }}>
+                            {name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Live Tracking Card (collapsible with embedded map) ── */}
         {!isCompleted && (
