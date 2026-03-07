@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { FOREST, GOLD } from "@/lib/client-theme";
 
 const CLIENT_SETTINGS_KEY = "yugo-client-settings";
 const CLIENT_THEME_KEY = "yugo-client-theme";
 
 type ClientSettings = {
   reduceMotion?: boolean;
+};
+
+type ExistingClaim = {
+  id: string;
+  claim_number: string;
+  status: string;
 };
 
 function getSettings(): ClientSettings {
@@ -33,24 +39,20 @@ function getTheme(): "light" | "dark" {
   return (localStorage.getItem(CLIENT_THEME_KEY) as "light" | "dark") || "light";
 }
 
-function applyTheme(t: "light" | "dark") {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(CLIENT_THEME_KEY, t);
-  document.documentElement.setAttribute("data-theme", t);
-}
-
-export default function ClientSettingsMenu() {
+export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
   const [open, setOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
+  const [claimStatusOpen, setClaimStatusOpen] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
   const [settings, setSettingsState] = useState<ClientSettings>({});
   const ref = useRef<HTMLDivElement>(null);
 
-  // Claim form state
   const [claimDesc, setClaimDesc] = useState("");
   const [claimDate, setClaimDate] = useState("");
   const [claimPhotos, setClaimPhotos] = useState<File[]>([]);
   const [claimSubmitted, setClaimSubmitted] = useState(false);
+
+  const [existingClaim, setExistingClaim] = useState<ExistingClaim | null>(null);
 
   useEffect(() => {
     const s = getSettings();
@@ -60,17 +62,23 @@ export default function ClientSettingsMenu() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/claims/status?moveId=${encodeURIComponent(moveId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.claim) setExistingClaim(data.claim);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [moveId, claimSubmitted]);
+
+  useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  const toggleTheme = (t: "light" | "dark") => {
-    setThemeState(t);
-    applyTheme(t);
-  };
 
   const updateSetting = <K extends keyof ClientSettings>(key: K, val: ClientSettings[K]) => {
     const next = { ...settings, [key]: val };
@@ -122,29 +130,6 @@ export default function ClientSettingsMenu() {
             </div>
 
             <div className="py-2">
-              {/* Appearance */}
-              <div className="px-4 py-2.5">
-                <div className="text-[9px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
-                  Appearance
-                </div>
-                <div className="flex gap-1.5">
-                  {(["light", "dark"] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => toggleTheme(t)}
-                      className="flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all"
-                      style={{
-                        backgroundColor: theme === t ? GOLD : "transparent",
-                        color: theme === t ? "#1A1A1A" : (theme === "dark" ? "#999" : "#666"),
-                        border: `1px solid ${theme === t ? GOLD : (theme === "dark" ? "#444" : "#E7E5E4")}`,
-                      }}
-                    >
-                      {t === "light" ? "Light" : "Dark"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Reduce motion */}
               <div className="px-4 py-2.5 flex items-center justify-between">
                 <span className="text-[11px] font-medium" style={{ color: theme === "dark" ? "#CCC" : FOREST }}>
@@ -182,6 +167,26 @@ export default function ClientSettingsMenu() {
                   Submit a claim
                 </span>
               </button>
+
+              {/* View claim status — only when a claim exists */}
+              {existingClaim && (
+                <>
+                  <button
+                    onClick={() => { setOpen(false); setClaimStatusOpen(true); }}
+                    className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors"
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme === "dark" ? "#222" : "#F8F7F4")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span className="text-[11px] font-semibold" style={{ color: GOLD }}>
+                      View claim status
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -375,6 +380,131 @@ export default function ClientSettingsMenu() {
           </div>
         </div>
       )}
+
+      {/* Claim Status Modal */}
+      {claimStatusOpen && existingClaim && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
+          style={{ minHeight: "100dvh" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setClaimStatusOpen(false); }}
+        >
+          <div
+            className="rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden"
+            style={{ backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF" }}
+          >
+            <div
+              className="px-6 pt-6 pb-4 border-b flex items-center justify-between"
+              style={{ borderColor: theme === "dark" ? "#333" : "#E7E5E4" }}
+            >
+              <div>
+                <h3 className="text-[16px] font-bold" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
+                  Claim Status
+                </h3>
+                <p className="text-[11px] mt-0.5 font-mono font-semibold" style={{ color: GOLD }}>
+                  {existingClaim.claim_number}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setClaimStatusOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                style={{
+                  backgroundColor: theme === "dark" ? "#333" : "#F5F5F3",
+                  color: theme === "dark" ? "#999" : "#666",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: claimStatusColor(existingClaim.status).bg }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={claimStatusColor(existingClaim.status).fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {existingClaim.status === "resolved" || existingClaim.status === "settled" ? (
+                      <polyline points="20 6 9 17 4 12" />
+                    ) : existingClaim.status === "denied" ? (
+                      <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+                    ) : (
+                      <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>
+                    )}
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[13px] font-bold" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
+                    {claimStatusLabel(existingClaim.status)}
+                  </div>
+                  <div className="text-[11px] mt-0.5" style={{ color: theme === "dark" ? "#888" : "#999" }}>
+                    {claimStatusDescription(existingClaim.status)}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="rounded-xl p-4"
+                style={{ backgroundColor: theme === "dark" ? "#222" : "#FAF7F2" }}
+              >
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+                  What happens next
+                </div>
+                <p className="text-[12px] leading-relaxed" style={{ color: theme === "dark" ? "#AAA" : "#666" }}>
+                  {existingClaim.status === "resolved" || existingClaim.status === "settled"
+                    ? "Your claim has been resolved. If you have any questions, please contact us."
+                    : existingClaim.status === "denied"
+                    ? "Your claim was reviewed and could not be approved. Contact us if you have questions."
+                    : "Our team is reviewing your claim. You'll receive an email update once a decision is made, typically within 3 business days."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setClaimStatusOpen(false)}
+                className="w-full mt-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
+}
+
+function claimStatusColor(status: string) {
+  switch (status) {
+    case "resolved": case "settled": return { bg: "#22C55E18", fg: "#22C55E" };
+    case "denied": return { bg: "#EF444418", fg: "#EF4444" };
+    case "in_review": case "investigating": return { bg: `${GOLD}18`, fg: GOLD };
+    default: return { bg: `${GOLD}12`, fg: GOLD };
+  }
+}
+
+function claimStatusLabel(status: string) {
+  switch (status) {
+    case "submitted": return "Claim Submitted";
+    case "in_review": return "Under Review";
+    case "investigating": return "Being Investigated";
+    case "resolved": case "settled": return "Resolved";
+    case "denied": return "Denied";
+    default: return "In Progress";
+  }
+}
+
+function claimStatusDescription(status: string) {
+  switch (status) {
+    case "submitted": return "Your claim has been received and is awaiting review.";
+    case "in_review": return "Our team is currently reviewing your claim.";
+    case "investigating": return "We're investigating the details of your claim.";
+    case "resolved": case "settled": return "Your claim has been resolved.";
+    case "denied": return "Your claim was not approved after review.";
+    default: return "Your claim is being processed.";
+  }
 }

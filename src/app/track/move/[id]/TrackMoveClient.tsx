@@ -477,7 +477,7 @@ export default function TrackMoveClient({
               BETA
             </span>
           </div>
-          <ClientSettingsMenu />
+          <ClientSettingsMenu moveId={move.id} />
         </div>
       </header>
 

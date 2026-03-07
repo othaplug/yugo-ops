@@ -192,6 +192,17 @@ type MoveWithType = Move & { _type: string };
 function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[] {
   return [
     {
+      id: "move_code",
+      label: "Move ID",
+      accessor: (m) => m.move_code || "",
+      render: (m) => (
+        <span className="text-[11px] font-mono font-bold text-[var(--gold)] whitespace-nowrap">
+          {m.move_code || "—"}
+        </span>
+      ),
+      minWidth: "90px",
+    },
+    {
       id: "date",
       label: "Date",
       accessor: (m) => m.scheduled_date || "",

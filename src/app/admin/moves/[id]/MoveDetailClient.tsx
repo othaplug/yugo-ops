@@ -182,13 +182,20 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <div className="glass rounded-xl p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-            <button
-              type="button"
-              onClick={() => setContactModalOpen(true)}
-              className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
-            >
-              {move.client_name}
-            </button>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setContactModalOpen(true)}
+                className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
+              >
+                {move.client_name}
+              </button>
+              {move.move_code && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-wide bg-[var(--gdim)]/60 text-[var(--gold)] border border-[var(--gold)]/20">
+                  {move.move_code}
+                </span>
+              )}
+            </div>
             {move.coordinator_name && (
               <span className="text-[11px] text-[var(--tx2)]">
                 Coordinator: {move.coordinator_name}

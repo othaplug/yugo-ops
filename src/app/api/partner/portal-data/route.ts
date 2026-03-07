@@ -29,8 +29,6 @@ export async function GET() {
     .in("id", orgIds);
   const orgNames = (orgNamesRes.data || []).map((o) => o.name).filter(Boolean);
 
-  const deliverySelect = "id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price";
-
   const [
     byOrgIdRes,
     byClientNameRes,
@@ -41,7 +39,7 @@ export async function GET() {
   ] = await Promise.all([
     admin
       .from("deliveries")
-      .select(deliverySelect)
+      .select("*")
       .in("organization_id", orgIds)
       .order("scheduled_date", { ascending: true })
       .order("created_at", { ascending: false }),
@@ -49,7 +47,7 @@ export async function GET() {
     orgNames.length > 0
       ? admin
           .from("deliveries")
-          .select(deliverySelect)
+          .select("*")
           .is("organization_id", null)
           .in("client_name", orgNames)
           .order("scheduled_date", { ascending: true })
