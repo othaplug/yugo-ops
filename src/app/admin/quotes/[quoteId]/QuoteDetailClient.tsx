@@ -184,8 +184,8 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3">
+        <div>
           <button
             type="button"
             onClick={() => router.push("/admin/quotes")}
@@ -193,11 +193,16 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
+        </div>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[18px] font-bold text-[var(--tx)]">
-              Quote {quote.quote_id}
+            <p className="text-[11px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-0.5">
+              Quote
+            </p>
+            <h1 className="text-[22px] md:text-[24px] font-bold text-[var(--tx)] tracking-tight">
+              {quote.quote_id}
             </h1>
-            <p className="text-[11px] text-[var(--tx3)]">
+            <p className="text-[11px] text-[var(--tx3)] mt-1">
               {toTitleCase(quote.service_type?.replace(/_/g, " "))} &middot; Created{" "}
               {new Date(quote.created_at).toLocaleDateString("en-CA", {
                 month: "short",
@@ -206,8 +211,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               })}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
           <span
             className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
           >
@@ -268,6 +272,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               <ExternalLink className="w-3 h-3" /> Client View
             </a>
           )}
+          </div>
         </div>
       </div>
 
