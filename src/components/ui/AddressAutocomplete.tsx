@@ -112,11 +112,18 @@ export default function AddressAutocomplete({
     try {
       const params = new URLSearchParams({ q: query, limit: "8" });
       if (countryBias) params.set("country", countryBias);
-      const res = await fetch(`/api/mapbox/geocode?${params}`);
+      const res = await fetch(`/api/mapbox/geocode?${params}`, { credentials: "include" });
       const data = await res.json();
+      if (!res.ok) {
+        console.warn("[AddressAutocomplete] geocode failed:", res.status, data?.error ?? data);
+        setSuggestions([]);
+        setHighlightIdx(-1);
+        return;
+      }
       setSuggestions((data.features ?? []) as MapboxFeature[]);
       setHighlightIdx(-1);
-    } catch {
+    } catch (e) {
+      console.warn("[AddressAutocomplete] geocode error:", e);
       setSuggestions([]);
     } finally {
       setLoading(false);
