@@ -1006,225 +1006,280 @@ function ValuationProtectionCard({
   const dispActive = VALUATION_DISPLAY[activeTierSlug] ?? { label: activeTierSlug, shortLabel: activeTierSlug };
   const dispUpgrade = upgradeTarget ? (VALUATION_DISPLAY[upgradeTarget] ?? null) : null;
 
+  const hasRatePerPound = tierData.rate_per_pound != null;
+
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
-      <div>
-        <h2 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
-          Your Protection
-        </h2>
-        <p className="text-[11px] mb-4" style={{ color: `${FOREST}55` }}>
-          {dispActive.label} &mdash; {upgradeSelected ? "Upgraded" : "Included"}
-        </p>
 
-        <div className="space-y-5">
-          {/* Description */}
-          <p className="text-[13px] leading-relaxed" style={{ color: `${FOREST}85` }}>
+      {/* Section header */}
+      <h2 className="text-[10px] font-bold tracking-[0.16em] uppercase mb-5" style={{ color: WINE }}>
+        Your Protection
+      </h2>
+
+      {/* Active protection card */}
+      <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
+
+        {/* Shield badge header */}
+        <div className="px-5 py-4 flex items-center gap-3.5" style={{ borderBottom: `1px solid ${FOREST}08` }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}10` }}>
+            <Shield className="w-[18px] h-[18px]" style={{ color: GOLD }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
+            <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
+              {upgradeSelected ? "Upgraded" : "Included with your move"}
+            </div>
+          </div>
+          {isHighest && (
+            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: `${GOLD}10`, color: GOLD }}>
+              <Check className="w-3 h-3" /> Highest
+            </span>
+          )}
+        </div>
+
+        {/* Coverage highlights — clean grid */}
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {hasRatePerPound ? (
+              <>
+                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Coverage Rate</div>
+                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound ?? 0)}<span className="text-[11px] font-semibold" style={{ color: `${FOREST}50` }}>/lb</span></div>
+                </div>
+                {tierData.deductible === 0 && (
+                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${GOLD}06` }}>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
+                    <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0</div>
+                  </div>
+                )}
+                {tierData.max_per_item && (
+                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                    <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</div>
+                  </div>
+                )}
+                {tierData.max_per_shipment && (
+                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
+                    <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</div>
+                </div>
+                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
+                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</div>
+                </div>
+                <div className="rounded-xl px-3.5 py-3 col-span-2" style={{ backgroundColor: `${GOLD}06` }}>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
+                  <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0 — Zero deductible</div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* How it works — one clear sentence */}
+          <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}60` }}>
             {tierData.damage_process}
           </p>
+        </div>
 
-          {tierData.rate_per_pound != null && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px]" style={{ color: `${FOREST}70` }}>
-              <span>Rate: <b className="text-[13px]" style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound)}/lb</b></span>
-              {tierData.max_per_item && <span>Per item: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</b></span>}
-              {tierData.max_per_shipment && <span>Per shipment: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</b></span>}
-              {tierData.deductible === 0 && <span className="text-[13px]" style={{ color: GOLD }}>Zero deductible</span>}
-            </div>
+        {/* Expandable details */}
+        <div className="px-5 pb-4 space-y-0.5">
+          <button
+            onClick={() => setCoversOpen((p) => !p)}
+            className="flex items-center justify-between w-full py-2.5 text-left group"
+          >
+            <span className="text-[12px] font-semibold" style={{ color: FOREST }}>What&apos;s covered</span>
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${coversOpen ? "rotate-180" : ""}`} style={{ color: `${FOREST}30` }} />
+          </button>
+          {coversOpen && (
+            <ul className="pb-3 space-y-2 pl-1">
+              {tierData.covers.map((c, i) => (
+                <li key={i} className="text-[12px] flex items-start gap-2.5" style={{ color: `${FOREST}70` }}>
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: GOLD }} />
+                  {c}
+                </li>
+              ))}
+            </ul>
           )}
 
-          {!tierData.rate_per_pound && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px]" style={{ color: `${FOREST}70` }}>
-              <span>Per item: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</b></span>
-              <span>Per shipment: <b className="text-[13px]" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</b></span>
-              <span className="text-[13px]" style={{ color: GOLD }}>Zero deductible</span>
-            </div>
+          <div className="h-px" style={{ backgroundColor: `${FOREST}06` }} />
+
+          <button
+            onClick={() => setExcludesOpen((p) => !p)}
+            className="flex items-center justify-between w-full py-2.5 text-left"
+          >
+            <span className="text-[12px] font-semibold" style={{ color: FOREST }}>Exclusions</span>
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${excludesOpen ? "rotate-180" : ""}`} style={{ color: `${FOREST}30` }} />
+          </button>
+          {excludesOpen && (
+            <ul className="pb-3 space-y-2 pl-1">
+              {tierData.excludes.map((e, i) => (
+                <li key={i} className="text-[12px] flex items-start gap-2.5" style={{ color: `${FOREST}50` }}>
+                  <X className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: `${FOREST}25` }} />
+                  {e}
+                </li>
+              ))}
+            </ul>
           )}
+        </div>
+      </div>
 
-          {/* Expandable: What's covered */}
-          <div>
-            <button
-              onClick={() => setCoversOpen((p) => !p)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold w-full text-left"
-              style={{ color: FOREST }}
-            >
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${coversOpen ? "rotate-180" : ""}`} style={{ color: GOLD }} />
-              What&apos;s covered
-            </button>
-            {coversOpen && (
-              <ul className="mt-2 space-y-1.5 pl-5">
-                {tierData.covers.map((c, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-2" style={{ color: `${FOREST}75` }}>
-                    <Check className="w-3 h-3 mt-0.5 shrink-0" style={{ color: GOLD }} />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Expandable: What's not covered */}
-          <div>
-            <button
-              onClick={() => setExcludesOpen((p) => !p)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold w-full text-left"
-              style={{ color: FOREST }}
-            >
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${excludesOpen ? "rotate-180" : ""}`} style={{ color: GOLD }} />
-              What&apos;s not covered
-            </button>
-            {excludesOpen && (
-              <ul className="mt-2 space-y-1.5 pl-5">
-                {tierData.excludes.map((e, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-2" style={{ color: `${FOREST}55` }}>
-                    <span className="w-3 text-center shrink-0 text-[10px]" style={{ color: `${FOREST}35` }}>&ndash;</span>
-                    {e}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Highest level confirmation */}
-          {isHighest && (
-            <div className="flex items-center gap-2 pt-1">
-              <Check className="w-4 h-4" style={{ color: GOLD }} />
-              <p className="text-[11px] font-semibold" style={{ color: GOLD }}>
-                You have the highest level of protection.
-              </p>
-            </div>
-          )}
-
-          {/* Upgrade card */}
-          {!isHighest && upgradeData && upgradeTierData && dispUpgrade && (
-            <div
-              className="rounded-xl border p-4"
-              style={{
-                borderColor: upgradeSelected ? GOLD : `${FOREST}15`,
-                backgroundColor: upgradeSelected ? `${GOLD}06` : `${FOREST}03`,
-              }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-bold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
-                    Upgrade Your Protection
-                  </p>
-                  <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
-                    {dispUpgrade.label} &mdash; {fmtPrice(upgradeData.price)}
-                  </p>
-                  <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-                    {upgradeTierData.rate_description}
-                  </p>
-                  {upgradeData.assumed_shipment_value > 0 && (
-                    <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}45` }}>
-                      Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
-                    </p>
-                  )}
+      {/* Upgrade card */}
+      {!isHighest && upgradeData && upgradeTierData && dispUpgrade && (
+        <div
+          className="mt-4 rounded-2xl border overflow-hidden transition-colors duration-200"
+          style={{
+            borderColor: upgradeSelected ? GOLD : `${FOREST}12`,
+            backgroundColor: upgradeSelected ? `${GOLD}04` : "white",
+          }}
+        >
+          <div className="px-5 py-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: upgradeSelected ? `${GOLD}15` : `${WINE}08` }}>
+                <Shield className="w-[18px] h-[18px]" style={{ color: upgradeSelected ? GOLD : WINE }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
+                  {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
                 </div>
+                <div className="text-[14px] font-semibold mb-0.5" style={{ color: FOREST }}>
+                  {dispUpgrade.label}
+                </div>
+                <div className="text-[12px] mb-2" style={{ color: `${FOREST}60` }}>
+                  {upgradeTierData.rate_description}
+                </div>
+                {upgradeData.assumed_shipment_value > 0 && (
+                  <div className="text-[11px]" style={{ color: `${FOREST}45` }}>
+                    Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: `${FOREST}08` }}>
+              <div className="text-[18px] font-bold" style={{ color: FOREST }}>
+                {fmtPrice(upgradeData.price)}
+              </div>
+              <button
+                onClick={onToggleUpgrade}
+                className="px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                style={{
+                  backgroundColor: upgradeSelected ? "white" : GOLD,
+                  color: upgradeSelected ? FOREST : "white",
+                  border: upgradeSelected ? `1px solid ${FOREST}20` : "1px solid transparent",
+                }}
+              >
+                {upgradeSelected ? "Remove upgrade" : "Add to my move"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High-value item declarations */}
+      <div className="mt-4 rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="text-[13px] font-semibold" style={{ color: FOREST }}>High-Value Items</div>
+          </div>
+          <p className="text-[11px] mb-3" style={{ color: `${FOREST}50` }}>
+            Items valued over {fmtPrice(declThreshold)} can be individually declared for additional coverage.
+          </p>
+
+          {declarations.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {declarations.map((d, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl px-3.5 py-2.5" style={{ backgroundColor: `${FOREST}04` }}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="text-[12px] font-semibold truncate" style={{ color: FOREST }}>{d.item_name}</div>
+                    <div className="text-[11px] shrink-0" style={{ color: `${FOREST}45` }}>{fmtPrice(d.declared_value)}</div>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="text-[11px] font-semibold" style={{ color: GOLD }}>{fmtPrice(d.fee)}</span>
+                    <button onClick={() => onRemoveDeclaration(i)} className="p-1 rounded-lg hover:bg-black/5 transition-colors">
+                      <X className="w-3.5 h-3.5" style={{ color: `${FOREST}30` }} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="text-right text-[11px] font-semibold pt-1" style={{ color: GOLD }}>
+                Total declaration fees: {fmtPrice(declarations.reduce((s, d) => s + d.fee, 0))}
+              </div>
+            </div>
+          )}
+
+          {!declFormOpen ? (
+            <button
+              onClick={() => setDeclFormOpen(true)}
+              className="flex items-center gap-2 text-[12px] font-semibold transition-opacity hover:opacity-70"
+              style={{ color: GOLD }}
+            >
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${GOLD}10` }}>
+                <Plus className="w-3.5 h-3.5" />
+              </div>
+              Declare an item
+            </button>
+          ) : (
+            <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: `${FOREST}12` }}>
+              <div>
+                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Item name</label>
+                <input
+                  value={declName}
+                  onChange={(e) => setDeclName(e.target.value)}
+                  placeholder="e.g. Steinway Piano"
+                  className="w-full px-3.5 py-2.5 rounded-xl border text-[13px] outline-none transition-colors"
+                  style={{ borderColor: `${FOREST}15`, color: FOREST }}
+                  onFocus={(e) => (e.target.style.borderColor = GOLD)}
+                  onBlur={(e) => (e.target.style.borderColor = `${FOREST}15`)}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Estimated value (CAD)</label>
+                <input
+                  value={declValue}
+                  onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
+                  placeholder="15,000"
+                  className="w-full px-3.5 py-2.5 rounded-xl border text-[13px] outline-none transition-colors"
+                  style={{ borderColor: `${FOREST}15`, color: FOREST }}
+                  onFocus={(e) => (e.target.style.borderColor = GOLD)}
+                  onBlur={(e) => (e.target.style.borderColor = `${FOREST}15`)}
+                />
+                {declValue && parseFloat(declValue) > 0 && parseFloat(declValue) < 50000 && (
+                  <p className="text-[11px] mt-1.5 font-medium" style={{ color: GOLD }}>
+                    Coverage fee: {fmtPrice(calcFee(parseFloat(declValue)))}
+                  </p>
+                )}
+                {declValue && parseFloat(declValue) >= 50000 && (
+                  <p className="text-[11px] mt-1.5 font-medium" style={{ color: WINE }}>
+                    For items over $50,000, contact Yugo directly for custom coverage.
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 pt-1">
                 <button
-                  onClick={onToggleUpgrade}
-                  className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold transition-colors"
-                  style={{
-                    backgroundColor: upgradeSelected ? FOREST : GOLD,
-                    color: "#FFFFFF",
-                  }}
+                  onClick={() => { setDeclFormOpen(false); setDeclName(""); setDeclValue(""); }}
+                  className="px-4 py-2 rounded-xl text-[12px] font-medium border transition-colors"
+                  style={{ borderColor: `${FOREST}15`, color: `${FOREST}60` }}
                 >
-                  {upgradeSelected ? "Remove" : "Add to my move"}
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDeclaration}
+                  disabled={!declName.trim() || !declValue || parseFloat(declValue) <= 0 || parseFloat(declValue) >= 50000}
+                  className="px-5 py-2 rounded-xl text-[12px] font-bold text-white disabled:opacity-30 transition-colors"
+                  style={{ backgroundColor: GOLD }}
+                >
+                  Add
                 </button>
               </div>
             </div>
           )}
-
-          {/* High-value item declarations */}
-          <div className="pt-2 border-t" style={{ borderColor: `${FOREST}10` }}>
-            <p className="text-[11px] font-semibold mb-1" style={{ color: FOREST }}>
-              Have a high-value item?
-            </p>
-            <p className="text-[10px] mb-3" style={{ color: `${FOREST}55` }}>
-              Items over {fmtPrice(declThreshold)} need individual coverage.
-            </p>
-
-            {declarations.length > 0 && (
-              <div className="space-y-2 mb-3">
-                {declarations.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2 text-[11px]" style={{ backgroundColor: `${FOREST}05` }}>
-                    <div>
-                      <span className="font-medium" style={{ color: FOREST }}>{d.item_name}</span>
-                      <span className="mx-1.5" style={{ color: `${FOREST}35` }}>&mdash;</span>
-                      <span style={{ color: `${FOREST}70` }}>{fmtPrice(d.declared_value)}</span>
-                      <span className="mx-1.5" style={{ color: `${FOREST}35` }}>&rarr;</span>
-                      <span style={{ color: GOLD }}>Fee: {fmtPrice(d.fee)}</span>
-                    </div>
-                    <button onClick={() => onRemoveDeclaration(i)} className="p-1 rounded hover:bg-black/5">
-                      <X className="w-3 h-3" style={{ color: `${FOREST}40` }} />
-                    </button>
-                  </div>
-                ))}
-                <div className="text-right text-[11px] font-semibold" style={{ color: GOLD }}>
-                  Declaration fees: {fmtPrice(declarations.reduce((s, d) => s + d.fee, 0))}
-                </div>
-              </div>
-            )}
-
-            {!declFormOpen ? (
-              <button
-                onClick={() => setDeclFormOpen(true)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold"
-                style={{ color: GOLD }}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Declare a high-value item
-              </button>
-            ) : (
-              <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: `${FOREST}15` }}>
-                <div>
-                  <label className="block text-[10px] font-semibold mb-1" style={{ color: `${FOREST}70` }}>Item name</label>
-                  <input
-                    value={declName}
-                    onChange={(e) => setDeclName(e.target.value)}
-                    placeholder="e.g. Steinway Piano"
-                    className="w-full px-3 py-2 rounded-lg border text-[12px]"
-                    style={{ borderColor: `${FOREST}20`, color: FOREST }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold mb-1" style={{ color: `${FOREST}70` }}>Estimated value (CAD)</label>
-                  <input
-                    value={declValue}
-                    onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
-                    placeholder="15000"
-                    className="w-full px-3 py-2 rounded-lg border text-[12px]"
-                    style={{ borderColor: `${FOREST}20`, color: FOREST }}
-                  />
-                  {declValue && parseFloat(declValue) > 0 && (
-                    <p className="text-[10px] mt-1" style={{ color: GOLD }}>
-                      Coverage fee: {fmtPrice(calcFee(parseFloat(declValue)))}
-                    </p>
-                  )}
-                  {declValue && parseFloat(declValue) >= 50000 && (
-                    <p className="text-[10px] mt-1 font-medium" style={{ color: WINE }}>
-                      For items over $50,000, contact Yugo directly for custom coverage arrangements.
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setDeclFormOpen(false); setDeclName(""); setDeclValue(""); }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium border"
-                    style={{ borderColor: `${FOREST}20`, color: `${FOREST}60` }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAddDeclaration}
-                    disabled={!declName.trim() || !declValue || parseFloat(declValue) <= 0 || parseFloat(declValue) >= 50000}
-                    className="px-4 py-1.5 rounded-lg text-[11px] font-bold text-white disabled:opacity-40"
-                    style={{ backgroundColor: GOLD }}
-                  >
-                    Add declaration
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </section>

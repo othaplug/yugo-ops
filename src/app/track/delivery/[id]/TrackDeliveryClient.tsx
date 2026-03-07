@@ -146,7 +146,7 @@ export default function TrackDeliveryClient({
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
 
-  /* ── Fullscreen map overlay (only when user clicks expand inside the card) ── */
+  /* ── Fullscreen map overlay ── */
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 bg-[#1A1A1A]">
@@ -165,19 +165,23 @@ export default function TrackDeliveryClient({
           </div>
         )}
         {crewHasStarted && displayEta != null && (
-          <div className="absolute top-4 right-16 z-20 rounded-2xl px-4 py-2.5 shadow-2xl" style={{ backgroundColor: GOLD }}>
+          <div className="absolute top-4 right-[88px] z-20 rounded-2xl px-4 py-2.5 shadow-2xl" style={{ backgroundColor: GOLD }}>
             <div className="text-[22px] font-bold text-[#1A1A1A] leading-none tabular-nums">{displayEta}</div>
             <div className="text-[9px] font-semibold text-[#1A1A1A]/60 uppercase tracking-wider">min</div>
           </div>
         )}
+
+        {/* Minimize / close button — prominent pill */}
         <button
           type="button"
           onClick={() => setIsFullscreen(false)}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border transition-all hover:scale-105"
-          style={{ borderColor: `${FOREST}20`, color: FOREST }}
+          className="absolute top-4 right-4 z-20 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-sm border shadow-2xl transition-all active:scale-95 hover:bg-white"
+          style={{ borderColor: `${FOREST}15`, color: FOREST }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <span className="text-[12px] font-bold">Minimize</span>
         </button>
+
         {hasMapCoords ? (
           <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
         ) : (
@@ -405,6 +409,25 @@ export default function TrackDeliveryClient({
           </div>
         )}
 
+        {/* ── Item List ── */}
+        {itemsCount > 0 && (
+          <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
+            <div className="px-5 py-3 border-b" style={{ borderColor: `${FOREST}08` }}>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}50` }}>Item list</div>
+            </div>
+            <ul className="px-5 py-3 space-y-2">
+              {(delivery.items as string[]).map((item: string, i: number) => (
+                <li key={i} className="flex items-center gap-2.5 text-[13px]" style={{ color: FOREST }}>
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}10` }}>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                  </div>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* ── Live Tracking Card (collapsible with embedded map) ── */}
         {!isCompleted && (
           <div
@@ -415,67 +438,105 @@ export default function TrackDeliveryClient({
             <button
               type="button"
               onClick={() => setMapExpanded((v) => !v)}
-              className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-black/[0.02]"
+              className="w-full text-left transition-colors hover:bg-black/[0.015] active:bg-black/[0.03]"
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300"
-                  style={{ backgroundColor: crewHasStarted ? "#22C55E15" : `${GOLD}15` }}
-                >
-                  {crewHasStarted ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <div className="text-[14px] font-semibold flex items-center gap-2" style={{ color: FOREST }}>
-                    Live Tracking
-                    {crewHasStarted && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-                        ACTIVE
+              {/* Mini map preview strip when collapsed */}
+              {!mapExpanded && (
+                <div className="relative h-[56px] bg-[#1E1E1E] overflow-hidden">
+                  <div className="absolute inset-0" style={{ filter: "blur(2px) brightness(0.6) saturate(0.4)" }}>
+                    {hasMapCoords && (
+                      <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
+                    )}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 z-10">
+                    {crewHasStarted ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-sm shadow-lg" style={{ color: "#22C55E" }}>
+                        <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" /></span>
+                        Tap to view live map
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-white/90 backdrop-blur-sm shadow-lg" style={{ color: `${FOREST}90` }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Tap to preview route
                       </span>
                     )}
                   </div>
-                  <div className="text-[12px]" style={{ color: `${FOREST}70` }}>
-                    {crewHasStarted
-                      ? displayEta != null
-                        ? `~${displayEta} min away`
-                        : crewName
-                          ? `${crewName} is en route`
-                          : "Crew is on the way"
-                      : scheduledDate
-                        ? scheduledDate
-                        : "Activates when your crew begins"}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between px-5 py-3.5">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300"
+                    style={{ backgroundColor: crewHasStarted ? "#22C55E12" : `${GOLD}12` }}
+                  >
+                    {crewHasStarted ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-semibold flex items-center gap-2" style={{ color: FOREST }}>
+                      Live Tracking
+                      {crewHasStarted && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px]" style={{ color: `${FOREST}60` }}>
+                      {crewHasStarted
+                        ? displayEta != null
+                          ? `~${displayEta} min away`
+                          : crewName
+                            ? `${crewName} is en route`
+                            : "Crew is on the way"
+                        : scheduledDate
+                          ? scheduledDate
+                          : "Activates when your crew begins"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!mapExpanded && (
+                    <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: `${FOREST}35` }}>
+                      {crewHasStarted ? "View" : "Preview"}
+                    </span>
+                  )}
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300"
+                    style={{ backgroundColor: mapExpanded ? `${FOREST}08` : `${GOLD}12` }}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={mapExpanded ? FOREST : GOLD}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      className="transition-transform duration-300"
+                      style={{ transform: mapExpanded ? "rotate(180deg)" : "rotate(0deg)", opacity: mapExpanded ? 0.5 : 0.8 }}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
                   </div>
                 </div>
               </div>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={FOREST}
-                strokeWidth="2"
-                strokeLinecap="round"
-                className="shrink-0 opacity-40 transition-transform duration-300"
-                style={{ transform: mapExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
             </button>
 
             {/* Collapsible map body */}
             <div
               className="transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
-              style={{ maxHeight: mapExpanded ? 320 : 0, opacity: mapExpanded ? 1 : 0 }}
+              style={{ maxHeight: mapExpanded ? 340 : 0, opacity: mapExpanded ? 1 : 0 }}
             >
-              <div className="relative h-[280px] bg-[#1A1A1A]">
+              <div className="relative h-[300px] bg-[#1A1A1A]">
                 {/* Map layer — blurred when crew hasn't started */}
                 <div
                   className="absolute inset-0 transition-[filter] duration-700"
@@ -533,32 +594,14 @@ export default function TrackDeliveryClient({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
-                  className="absolute bottom-3 right-3 z-20 p-2 rounded-lg bg-white/90 backdrop-blur-sm border transition-all hover:scale-105"
+                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-sm border shadow-lg transition-all hover:scale-105 active:scale-95"
                   style={{ borderColor: `${FOREST}15`, color: FOREST }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  <span className="text-[11px] font-bold">Expand</span>
                 </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ── Item List ── */}
-        {itemsCount > 0 && (
-          <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
-            <div className="px-5 py-3 border-b" style={{ borderColor: `${FOREST}08` }}>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}50` }}>Item list</div>
-            </div>
-            <ul className="px-5 py-3 space-y-2">
-              {(delivery.items as string[]).map((item: string, i: number) => (
-                <li key={i} className="flex items-center gap-2.5 text-[13px]" style={{ color: FOREST }}>
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}10` }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
-                  </div>
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 

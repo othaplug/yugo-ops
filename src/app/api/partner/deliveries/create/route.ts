@@ -74,13 +74,20 @@ export async function POST(req: NextRequest) {
       end_customer_email: (body.end_customer_email || body.customer_email || "").trim() || null,
     };
 
+    console.log("[delivery-create] inserting for org:", primaryOrgId, "status: pending_approval, date:", scheduledDate);
+
     const { data: created, error: dbError } = await admin
       .from("deliveries")
       .insert(insertPayload as Record<string, never>)
       .select("id, delivery_number")
       .single();
 
-    if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+    if (dbError) {
+      console.error("[delivery-create] INSERT failed:", dbError.message, dbError.code, dbError.details);
+      return NextResponse.json({ error: dbError.message }, { status: 500 });
+    }
+
+    console.log("[delivery-create] SUCCESS:", created?.id, created?.delivery_number);
 
     // If day-rate with stops, insert stop details
     if (body.booking_type === "day_rate" && Array.isArray(body.stops) && created) {
@@ -100,6 +107,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, delivery: created });
   } catch (err: unknown) {
+    console.error("[delivery-create] EXCEPTION:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create delivery" },
       { status: 500 },

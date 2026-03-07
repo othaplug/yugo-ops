@@ -32,12 +32,12 @@ export async function GET() {
   const deliverySelect = "id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, items, category, crew_id, created_at, quoted_price, total_price, admin_adjusted_price";
 
   const [
-    { data: byOrgId },
-    { data: byClientName },
-    { data: recentMoves },
-    { data: invoices },
-    { data: referrals },
-    { data: galleryProjects },
+    byOrgIdRes,
+    byClientNameRes,
+    recentMovesRes,
+    invoicesRes,
+    referralsRes,
+    galleryProjectsRes,
   ] = await Promise.all([
     admin
       .from("deliveries")
@@ -54,7 +54,7 @@ export async function GET() {
           .in("client_name", orgNames)
           .order("scheduled_date", { ascending: true })
           .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
     admin
       .from("moves")
       .select("id, move_code, client_name, status, stage, scheduled_date, scheduled_time, from_address, to_address, crew_id")
@@ -68,11 +68,26 @@ export async function GET() {
       .order("created_at", { ascending: false }),
     orgType === "realtor"
       ? admin.from("referrals").select("*").in("organization_id", orgIds).order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
     (orgType === "designer" || orgType === "gallery")
       ? admin.from("gallery_projects").select("*").in("gallery_org_id", orgIds).order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
   ]);
+
+  // Surface any query errors so they're not silently swallowed
+  if (byOrgIdRes.error) console.error("[portal-data] deliveries byOrgId query failed:", byOrgIdRes.error.message, { orgIds });
+  if (byClientNameRes.error) console.error("[portal-data] deliveries byClientName query failed:", byClientNameRes.error.message);
+  if (recentMovesRes.error) console.error("[portal-data] moves query failed:", recentMovesRes.error.message);
+  if (invoicesRes.error) console.error("[portal-data] invoices query failed:", invoicesRes.error.message);
+
+  const byOrgId = byOrgIdRes.data;
+  const byClientName = byClientNameRes.data;
+  const recentMoves = recentMovesRes.data;
+  const invoices = invoicesRes.data;
+  const referrals = referralsRes.data;
+  const galleryProjects = galleryProjectsRes.data;
+
+  console.log("[portal-data] orgIds:", orgIds, "byOrgId count:", byOrgId?.length ?? "null", "byClientName count:", byClientName?.length ?? "null");
 
   // Merge org_id matched + client_name fallback, dedup by id
   const seenIds = new Set<string>();
