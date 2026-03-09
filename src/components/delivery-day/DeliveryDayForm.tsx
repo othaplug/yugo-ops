@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
 import {
-  Calendar, Clock, Sun, Sunset, MapPin, Plus, Trash2, Truck,
-  AlertTriangle, ChevronRight, DollarSign, X, ArrowLeft,
+  Clock, Sun, Sunset, MapPin, Plus, Trash2,
+  AlertTriangle, ChevronRight, DollarSign, X, ArrowLeft, Sparkles,
 } from "lucide-react";
 import {
   ITEM_CATALOG, SIZE_LABELS, VEHICLE_OPTIONS, TIME_WINDOW_CHOICES,
   type StopDetail, type ItemSize, type VehicleType, type DayType, type TimeWindow,
   recommendTruck, recommendDayType, detectZoneFromCoords, getItemSummary, createEmptyStop,
 } from "@/lib/delivery-day-booking";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER, countDigitsInRange, getPhoneCursorPosition } from "@/lib/phone";
 
 interface ServiceOption { slug: string; service_name: string; price_min: number; price_max: number | null; price_unit: string }
 interface PriceResult {
@@ -27,6 +27,16 @@ interface DeliveryDayFormProps {
   initialDate?: string;
   initialVehicle?: VehicleType;
   initialDayType?: DayType;
+  /** Partner default address to pre-fill pickup (e.g. from organizations.default_pickup_address). */
+  initialPickupAddress?: string;
+  /** Override create API URL (e.g. for admin: "/api/admin/deliveries/create"). */
+  createApiUrl?: string;
+  /** Extra payload merged into create request body (e.g. { organization_id } for admin). */
+  extraCreatePayload?: Record<string, unknown>;
+  /** Override price API URL when using admin flow (e.g. "/api/admin/deliveries/price"). */
+  priceApiUrl?: string;
+  /** Extra body for price request (e.g. { organization_id } for admin). */
+  priceRequestExtra?: Record<string, unknown>;
   onSuccess: () => void;
   onBackToConfig: () => void;
 }
@@ -44,15 +54,23 @@ const TW_ICONS: Record<TimeWindow, typeof Sun> = { morning: Sun, afternoon: Suns
 
 export default function DeliveryDayForm({
   orgId, orgType, initialDate = "", initialVehicle = "sprinter", initialDayType = "full_day",
+  initialPickupAddress = "",
+  createApiUrl = "/api/partner/deliveries/create",
+  extraCreatePayload = {},
+  priceApiUrl = "/api/partner/deliveries/price",
+  priceRequestExtra = {},
   onSuccess, onBackToConfig,
 }: DeliveryDayFormProps) {
   const [step, setStep] = useState(1);
   const [scheduledDate, setScheduledDate] = useState(initialDate);
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("morning");
-  const [pickupAddress, setPickupAddress] = useState("");
-  const [pickupRaw, setPickupRaw] = useState("");
+  const [pickupAddress, setPickupAddress] = useState(initialPickupAddress);
+  const [pickupRaw, setPickupRaw] = useState(initialPickupAddress);
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [stops, setStops] = useState<StopDetail[]>([createEmptyStop()]);
+  const MIN_STOPS = 3;
+  const [stops, setStops] = useState<StopDetail[]>(
+    Array.from({ length: MIN_STOPS }, () => createEmptyStop())
+  );
   const [itemSelectorOpen, setItemSelectorOpen] = useState<number | null>(null);
   const [itemCategory, setItemCategory] = useState<ItemSize>("large");
   const [recVehicle, setRecVehicle] = useState<VehicleType>(initialVehicle);
@@ -64,6 +82,8 @@ export default function DeliveryDayForm({
   const [availableServices, setAvailableServices] = useState<ServiceOption[]>(DEFAULT_SERVICES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const stopPhoneRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const nextPhoneCursorRef = useRef<{ idx: number; pos: number } | null>(null);
 
   useEffect(() => {
     if (!orgId) return;
@@ -91,20 +111,26 @@ export default function DeliveryDayForm({
       })),
     );
     const stopsZones = stops.map((s, i) => ({ stop_number: i + 1, zone: s.zone }));
+    // Count oversized/heavy items across all stops for pricing surcharge
+    const oversizedCount = stops.reduce((acc, s) =>
+      acc + s.items.filter((it) => it.size === "oversized").reduce((sum, it) => sum + it.quantity, 0), 0);
+    const priceBody = {
+      booking_type: "day_rate",
+      vehicle_type: selectedVehicle,
+      day_type: selectedDayType,
+      num_stops: stops.length,
+      services: allServices,
+      is_after_hours: false,
+      is_weekend: false,
+      stops_zones: stopsZones,
+      oversized_count: oversizedCount,
+      ...priceRequestExtra,
+    };
     try {
-      const res = await fetch("/api/partner/deliveries/price", {
+      const res = await fetch(priceApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          booking_type: "day_rate",
-          vehicle_type: selectedVehicle,
-          day_type: selectedDayType,
-          num_stops: stops.length,
-          services: allServices,
-          is_after_hours: false,
-          is_weekend: false,
-          stops_zones: stopsZones,
-        }),
+        body: JSON.stringify(priceBody),
       });
       const data = await res.json();
       if (res.ok) setPricing(data);
@@ -114,22 +140,41 @@ export default function DeliveryDayForm({
     } finally {
       setPricingLoading(false);
     }
-  }, [stops, selectedVehicle, selectedDayType]);
+  }, [stops, selectedVehicle, selectedDayType, priceApiUrl, priceRequestExtra]);
 
   useEffect(() => {
-    if (step === 3) {
-      const t = setTimeout(fetchPricing, 350);
-      return () => clearTimeout(t);
-    }
+    if (step !== 3) return;
+    setPricing(null);
+    setPricingLoading(true);
+    const t = setTimeout(() => { fetchPricing(); }, 350);
+    return () => clearTimeout(t);
   }, [fetchPricing, step]);
 
   const updateStop = (idx: number, u: Partial<StopDetail>) =>
     setStops((p) => p.map((s, i) => (i === idx ? { ...s, ...u } : s)));
   const addStop = () => setStops((p) => [...p, createEmptyStop()]);
   const removeStop = (idx: number) => {
+    if (stops.length <= MIN_STOPS) return;
     setStops((p) => p.filter((_, i) => i !== idx));
     if (itemSelectorOpen === idx) setItemSelectorOpen(null);
   };
+
+  const handleStopPhoneChange = useCallback((idx: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const raw = input.value.replace(/\D/g, "").slice(-10);
+    const formatted = formatPhone(raw);
+    updateStop(idx, { customerPhone: formatted });
+    const digitCountBeforeCursor = countDigitsInRange(input.value, 0, input.selectionStart ?? 0);
+    nextPhoneCursorRef.current = { idx, pos: getPhoneCursorPosition(formatted, digitCountBeforeCursor) };
+  }, []);
+
+  useLayoutEffect(() => {
+    const cur = nextPhoneCursorRef.current;
+    if (cur !== null && stopPhoneRefs.current[cur.idx]) {
+      stopPhoneRefs.current[cur.idx]!.setSelectionRange(cur.pos, cur.pos);
+      nextPhoneCursorRef.current = null;
+    }
+  });
 
   const handleStopAddress = (idx: number, r: AddressResult) => {
     const u: Partial<StopDetail> = { address: r.fullAddress, lat: r.lat, lng: r.lng };
@@ -219,32 +264,43 @@ export default function DeliveryDayForm({
         .filter(([, v]) => v.enabled)
         .map(([slug, v]) => ({ slug, quantity: v.quantity })),
     );
+    const payload = {
+      customer_name: stops[0]?.customerName || "Day Rate Delivery",
+      pickup_address: pickupAddress,
+      delivery_address: stops[0]?.address || "",
+      scheduled_date: scheduledDate,
+      delivery_window: timeWindow,
+      booking_type: "day_rate",
+      vehicle_type: selectedVehicle,
+      day_type: selectedDayType,
+      num_stops: stops.length,
+      recommended_vehicle: recVehicle,
+      recommended_day_type: recDayType,
+      stops_detail: stopsPayload,
+      stops: stopsPayload.map((s) => ({
+        address: s.address,
+        zone: s.zone,
+        customer_name: s.customer_name,
+        customer_phone: s.customer_phone,
+        items_description: Array.isArray(s.items) ? s.items.map((i) => `${i.quantity > 1 ? `${i.quantity}x ` : ""}${i.name} (${i.size})`).join(", ") : null,
+        services_selected: s.services,
+        special_instructions: s.instructions,
+      })),
+      items: itemsList,
+      base_price: pricing?.basePrice || 0,
+      overage_price: pricing?.overagePrice || 0,
+      services_price: pricing?.servicesPrice || 0,
+      zone_surcharge: pricing?.zoneSurcharge || 0,
+      after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
+      total_price: pricing?.totalPrice || 0,
+      services_selected: svcList,
+      ...extraCreatePayload,
+    };
     try {
-      const res = await fetch("/api/partner/deliveries/create", {
+      const res = await fetch(createApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: stops[0]?.customerName || "Day Rate Delivery",
-          pickup_address: pickupAddress,
-          delivery_address: stops[0]?.address || "",
-          scheduled_date: scheduledDate,
-          delivery_window: timeWindow,
-          booking_type: "day_rate",
-          vehicle_type: selectedVehicle,
-          day_type: selectedDayType,
-          num_stops: stops.length,
-          recommended_vehicle: recVehicle,
-          recommended_day_type: recDayType,
-          stops_detail: stopsPayload,
-          items: itemsList,
-          base_price: pricing?.basePrice || 0,
-          overage_price: pricing?.overagePrice || 0,
-          services_price: pricing?.servicesPrice || 0,
-          zone_surcharge: pricing?.zoneSurcharge || 0,
-          after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
-          total_price: pricing?.totalPrice || 0,
-          services_selected: svcList,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create delivery");
@@ -286,8 +342,7 @@ export default function DeliveryDayForm({
       {step === 1 && (
         <div className="space-y-5">
           <div className="text-center py-2">
-            <Calendar className="w-8 h-8 text-[#C9A962] mx-auto mb-2" />
-            <h3 className="text-[16px] font-bold text-[#1A1A1A]">When do you need delivery?</h3>
+            <h3 className="text-[20px] font-bold text-[#1A1A1A]">When do you need delivery?</h3>
           </div>
           <section className="space-y-2">
             <label className="block text-[11px] font-semibold tracking-wider uppercase text-[#888]">Date</label>
@@ -347,7 +402,7 @@ export default function DeliveryDayForm({
                   <span className="w-5 h-5 rounded-full bg-[#C9A962] text-white text-[10px] font-bold flex items-center justify-center">{idx + 1}</span>
                   Stop {idx + 1}
                 </h4>
-                {stops.length > 1 && (
+                {stops.length > MIN_STOPS && (
                   <button type="button" onClick={() => removeStop(idx)} className="text-[#888] hover:text-red-500 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -373,10 +428,11 @@ export default function DeliveryDayForm({
                   className={fieldInput}
                 />
                 <input
+                  ref={(el) => { stopPhoneRefs.current[idx] = el; }}
+                  type="tel"
                   value={stop.customerPhone}
-                  onChange={(e) => updateStop(idx, { customerPhone: e.target.value })}
-                  onBlur={() => stop.customerPhone && updateStop(idx, { customerPhone: formatPhone(stop.customerPhone) })}
-                  placeholder="Phone"
+                  onChange={handleStopPhoneChange(idx)}
+                  placeholder={PHONE_PLACEHOLDER}
                   className={fieldInput}
                 />
               </div>
@@ -519,17 +575,17 @@ export default function DeliveryDayForm({
       {step === 3 && (
         <div className="space-y-5">
           <div className="rounded-xl border-2 border-[#C9A962]/30 bg-[#FFFDF7] p-5 space-y-4">
-            <h3 className="text-[15px] font-bold text-[#1A1A1A] flex items-center gap-2">
-              <Truck className="w-5 h-5 text-[#C9A962]" /> YOUR DELIVERY DAY
-            </h3>
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#C9A962]/10">
-              <Truck className="w-4 h-4 text-[#8B6914]" />
+            <h3 className="text-[15px] font-bold text-[#1A1A1A] tracking-tight">Your delivery day</h3>
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-[#C9A962]/12 to-[#8B6914]/8 border border-[#C9A962]/20">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#C9A962]/15 text-[#8B6914]">
+                <Sparkles className="w-4 h-4" strokeWidth={1.8} />
+              </div>
               <span className="text-[13px] font-semibold text-[#8B6914]">
-                RECOMMENDED: {VEHICLE_OPTIONS.find((v) => v.value === recVehicle)?.label ?? recVehicle}
+                Recommended: {VEHICLE_OPTIONS.find((v) => v.value === recVehicle)?.label ?? recVehicle}
               </span>
             </div>
             <p className="text-[12px] text-[#666]">
-              Based on {stops.length} stop{stops.length !== 1 ? "s" : ""} · {summary.totalItems} item{summary.totalItems !== 1 ? "s" : ""}
+              {stops.length} stop{stops.length !== 1 ? "s" : ""} · {summary.totalItems} item{summary.totalItems !== 1 ? "s" : ""}
             </p>
             {pricingLoading && <div className="text-[12px] text-[#888]">Calculating price…</div>}
             {pricing && (
@@ -580,10 +636,10 @@ export default function DeliveryDayForm({
                   </button>
                 ))}
               </div>
-              {selectedDayType === "half_day" && stops.length > 3 && (
+              {selectedDayType === "half_day" && stops.length > MIN_STOPS && (
                 <p className="text-[11px] text-amber-600 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  Half day includes 3 stops. You have {stops.length} — overages will be higher.
+                  Half day is optimized for {MIN_STOPS} stops. You have {stops.length} — please confirm with Yugo if additional time may be needed.
                 </p>
               )}
             </div>
@@ -617,7 +673,7 @@ export default function DeliveryDayForm({
               </h4>
               <p className="text-[12px] text-[#666] truncate">{stop.address || "—"}</p>
               {stop.zone != null && <p className="text-[10px] text-[#888]">Zone {stop.zone} · {stop.zoneName}</p>}
-              {stop.customerName && <p className="text-[11px] text-[#666]">{stop.customerName}{stop.customerPhone ? ` · ${stop.customerPhone}` : ""}</p>}
+              {stop.customerName && <p className="text-[11px] text-[#666]">{stop.customerName}{stop.customerPhone ? ` · ${formatPhone(stop.customerPhone)}` : ""}</p>}
               {stop.items.length > 0 && (
                 <p className="text-[11px] text-[#888]">Items: {stop.items.map((i) => `${i.quantity > 1 ? `${i.quantity}x ` : ""}${i.name}`).join(", ")}</p>
               )}

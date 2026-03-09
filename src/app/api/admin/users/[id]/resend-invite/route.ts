@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { inviteUserEmail, inviteUserEmailText, trackingLinkEmail } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 function generatePassword(length = 12): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
@@ -25,6 +26,7 @@ export async function POST(
     const adminEmail = (adminUser?.email ?? "").trim().toLowerCase();
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
+    const emailFrom = await getEmailFrom();
 
     if (id.startsWith("inv-")) {
       const invId = id.replace("inv-", "");
@@ -44,7 +46,7 @@ export async function POST(
       const roleLabel = inv.role === "admin" ? "Admin" : inv.role === "manager" ? "Manager" : "Dispatcher";
       const resend = getResend();
       const { error: sendError } = await resend.emails.send({
-        from: "Yugo+ <notifications@opsplus.co>",
+        from: emailFrom,
         to: inv.email,
         subject: "You're invited to YUGO+ — Log in to continue setup",
         html: inviteUserEmail({ name: inv.name || "", email: inv.email, roleLabel, tempPassword, loginUrl }),
@@ -94,7 +96,7 @@ export async function POST(
       const moveCode = getMoveCode(move);
       const jobIdDisplay = formatJobId(moveCode, "move");
       const { error: sendError } = await resend.emails.send({
-        from: "Yugo+ <notifications@opsplus.co>",
+        from: emailFrom,
         to: email,
         subject: `Track your move — ${jobIdDisplay}`,
         html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: jobIdDisplay }),
@@ -112,7 +114,7 @@ export async function POST(
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
 
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: email,
       subject: "You're invited to YUGO+ — Log in to continue setup",
       html: inviteUserEmail({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),

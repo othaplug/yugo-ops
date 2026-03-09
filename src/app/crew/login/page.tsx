@@ -6,7 +6,7 @@ import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
-const DISPATCH_PHONE = "(647) 370-4525";
+const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
 type LoginContext = {
   hasDevice: boolean;

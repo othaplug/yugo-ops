@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 
@@ -33,6 +34,7 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
   const [name, setName] = useState(initial.client_name || "");
   const [email, setEmail] = useState(initial.client_email || "");
   const [phone, setPhone] = useState(initial.client_phone ? formatPhone(initial.client_phone) : "");
+  const phoneInput = usePhoneInput(phone, setPhone);
   const [preferred, setPreferred] = useState(initial.preferred_contact || "email");
   const [sendTrackingLink, setSendTrackingLink] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -93,7 +95,7 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
         </div>
         <div>
           <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
-          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => setPhone(formatPhone(phone))} placeholder="(123) 456-7890" className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+          <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
         </div>
         <div>
           <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>

@@ -50,6 +50,8 @@ interface QuoteInput {
   special_equipment?: string[];
   // B2B
   delivery_type?: string;
+  // Recommended tier (coordinator's manual selection)
+  recommended_tier?: "essentials" | "premier" | "estate";
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -1035,11 +1037,19 @@ async function calcSpecialty(
   sb: SupabaseAdmin,
   input: QuoteInput,
   config: Map<string, string>,
+  distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
   const projectBase = SPECIALTY_BASE[input.project_type ?? "custom"] ?? 500;
   const hours = input.timeline_hours ?? 4;
   let price = Math.round(projectBase * (hours / 4));
+
+  // Distance surcharge (same formula as residential)
+  const distBaseKm = cfgNum(config, "distance_base_km", 30);
+  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
+  const distKm = distInfo?.distance_km ?? 0;
+  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
+  price += distanceSurcharge;
 
   if (input.custom_crating_pieces && input.custom_crating_pieces > 0) {
     price += 300 * input.custom_crating_pieces;
@@ -1085,6 +1095,7 @@ async function calcSpecialty(
     factors: {
       project_base: projectBase,
       timeline_hours: hours,
+      distance_surcharge: distanceSurcharge,
       crating_surcharge: (input.custom_crating_pieces ?? 0) * 300,
       climate_surcharge: input.climate_control ? 150 : 0,
     },
@@ -1235,7 +1246,7 @@ export async function POST(req: NextRequest) {
       break;
     }
     case "specialty": {
-      const res = await calcSpecialty(sb, input, config, addonResult);
+      const res = await calcSpecialty(sb, input, config, distInfo, addonResult);
       custom_price = res.custom_price;
       factors = res.factors;
       break;
@@ -1391,6 +1402,7 @@ export async function POST(req: NextRequest) {
       est_truck_size: labour?.truckSize ?? null,
       truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
+      recommended_tier: input.recommended_tier || "premier",
     });
 
     if (insertErr) {

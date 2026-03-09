@@ -53,7 +53,9 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
   const [projectMgmtFee, setProjectMgmtFee] = useState("");
 
   const selectedPartner = partners.find((p) => p.id === partnerId);
-  const totalEstimated = (parseFloat(estimatedBudget) || 0) + (parseFloat(projectMgmtFee) || 0);
+  const subtotal = (parseFloat(estimatedBudget) || 0) + (parseFloat(projectMgmtFee) || 0);
+  const hst = Math.round(subtotal * 0.13 * 100) / 100;
+  const totalEstimated = subtotal + hst;
 
   const addPhase = () => setPhases([...phases, { phase_name: "", description: "", scheduled_date: "", items_expected: "" }]);
   const removePhase = (i: number) => setPhases(phases.filter((_, idx) => idx !== i));
@@ -289,8 +291,16 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[var(--brd)]">
-              <div className="flex justify-between text-[13px]">
+            <div className="pt-3 border-t border-[var(--brd)] space-y-1.5">
+              <div className="flex justify-between text-[12px]">
+                <span className="text-[var(--tx3)]">Subtotal</span>
+                <span className="text-[var(--tx)]">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-[12px]">
+                <span className="text-[var(--tx3)]">HST (13%)</span>
+                <span className="text-[var(--tx)]">{formatCurrency(hst)}</span>
+              </div>
+              <div className="flex justify-between text-[13px] pt-1.5 border-t border-[var(--brd)]">
                 <span className="text-[var(--tx2)] font-medium">Total Estimated</span>
                 <span className="font-bold text-[var(--tx)]">{formatCurrency(totalEstimated)}</span>
               </div>
@@ -330,8 +340,9 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
               <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Budget</div>
               <Row label="Estimated Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "—"} />
               <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
+              <Row label="HST (13%)" value={formatCurrency(hst)} />
               <div className="flex justify-between text-[13px] font-bold pt-2 border-t border-[var(--brd)] mt-2">
-                <span className="text-[var(--tx)]">Total</span>
+                <span className="text-[var(--tx)]">Total (incl. HST)</span>
                 <span className="text-[var(--gold)]">{formatCurrency(totalEstimated)}</span>
               </div>
             </div>

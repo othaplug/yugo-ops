@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
+import { getEmailFrom } from "@/lib/email/send";
 import { formatJobId } from "@/lib/move-code";
 
 interface ExtraItemNotifyPayload {
@@ -44,8 +45,9 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     const resend = getResend();
     const jobLabel = formatJobId(entityCode, jobType);
 
+    const emailFrom = await getEmailFrom();
     await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: adminEmail,
       subject: `Extra Item Request — ${jobLabel}`,
       html: `

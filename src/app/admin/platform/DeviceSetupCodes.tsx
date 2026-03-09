@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import ModalOverlay from "../components/ModalOverlay";
+import { PHONE_PLACEHOLDER, formatPhone } from "@/lib/phone";
 
 interface Truck {
   id: string;
@@ -26,11 +27,24 @@ interface SetupCode {
   created_at: string;
 }
 
+interface RegisteredDevice {
+  id: string;
+  device_id: string;
+  device_name: string;
+  truck_id: string | null;
+  default_team_id: string | null;
+  phone: string | null;
+  is_active: boolean;
+  last_active_at: string | null;
+  registered_at: string;
+}
+
 export default function DeviceSetupCodes() {
   const { toast } = useToast();
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [codes, setCodes] = useState<SetupCode[]>([]);
+  const [devices, setDevices] = useState<RegisteredDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [addTruckModalOpen, setAddTruckModalOpen] = useState(false);
@@ -50,12 +64,15 @@ export default function DeviceSetupCodes() {
 
   const fetchData = () => {
     setLoading(true);
-    fetch("/api/admin/device-setup-codes")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.trucks) setTrucks(data.trucks);
-        if (data.teams) setTeams(data.teams);
-        if (data.codes) setCodes(data.codes);
+    Promise.all([
+      fetch("/api/admin/device-setup-codes").then((r) => r.json()),
+      fetch("/api/admin/registered-devices").then((r) => r.json()),
+    ])
+      .then(([codeData, devData]) => {
+        if (codeData.trucks) setTrucks(codeData.trucks);
+        if (codeData.teams) setTeams(codeData.teams);
+        if (codeData.codes) setCodes(codeData.codes);
+        if (Array.isArray(devData)) setDevices(devData);
       })
       .catch(() => toast("Failed to load", "x"))
       .finally(() => setLoading(false));
@@ -354,6 +371,82 @@ export default function DeviceSetupCodes() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Registered Devices (tablets) ── */}
+      {devices.length > 0 && (
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)] flex items-center gap-2">
+              <Icon name="phone" className="w-[14px] h-[14px]" /> Registered Tablets
+            </h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+              Set the phone number for each tablet. Customers can call this number directly from the live tracking page.
+            </p>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            {devices.filter((d) => d.is_active).map((dev) => (
+              <div key={dev.id} className="border border-[var(--brd)] rounded-lg px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold text-[var(--tx)]">{dev.device_name}</div>
+                    <div className="text-[10px] text-[var(--tx3)]">
+                      {dev.truck_id ? `Truck: ${truckMap.get(dev.truck_id) || "—"}` : ""}
+                      {dev.truck_id && dev.default_team_id ? " · " : ""}
+                      {dev.default_team_id ? `Team: ${teamMap.get(dev.default_team_id) || "—"}` : ""}
+                      {dev.last_active_at ? ` · Last active ${formatDate(dev.last_active_at)}` : ""}
+                    </div>
+                  </div>
+                  {dev.phone && (
+                    <span className="text-[11px] font-medium text-[var(--gold)] shrink-0">{formatPhone(dev.phone)}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    defaultValue={dev.phone || ""}
+                    placeholder={PHONE_PLACEHOLDER}
+                    onBlur={async (e) => {
+                      const phone = e.target.value.trim();
+                      if (phone === (dev.phone || "")) return;
+                      try {
+                        const res = await fetch("/api/admin/registered-devices", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ id: dev.id, phone }),
+                        });
+                        if (res.ok) {
+                          setDevices((prev) => prev.map((d) => d.id === dev.id ? { ...d, phone } : d));
+                          toast("Tablet phone saved", "check");
+                        } else {
+                          toast("Failed to save phone", "x");
+                        }
+                      } catch {
+                        toast("Failed to save phone", "x");
+                      }
+                    }}
+                    className="flex-1 px-3 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                  />
+                  <span className="text-[9px] text-[var(--tx3)] shrink-0">Auto-saves on blur</span>
+                </div>
+              </div>
+            ))}
+            {devices.filter((d) => !d.is_active).length > 0 && (
+              <details className="pt-2 border-t border-[var(--brd)]">
+                <summary className="text-[10px] font-semibold text-[var(--tx3)] cursor-pointer hover:text-[var(--tx)] transition-colors">
+                  {devices.filter((d) => !d.is_active).length} inactive device(s)
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {devices.filter((d) => !d.is_active).map((dev) => (
+                    <div key={dev.id} className="text-[11px] text-[var(--tx3)] px-3 py-2 rounded bg-[var(--bg)] border border-[var(--brd)]">
+                      {dev.device_name} — inactive
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         </div>
       )}

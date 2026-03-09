@@ -1,12 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { getResend } from "@/lib/resend";
+import { getEmailFrom } from "@/lib/email/send";
 import { twilioClient } from "@/lib/twilio";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { formatCurrency } from "@/lib/format-currency";
 import {
   bookingConfirmationEmail,
   internalBookingAlertEmail,
+  essentialsConfirmationEmail,
+  premierConfirmationEmail,
+  estateConfirmationEmail,
+  type TierConfirmationParams,
 } from "@/lib/email-templates";
 
 /* ═══════════════════════════════════════════════════════════
@@ -229,7 +235,7 @@ export async function runPostPaymentActions(
       },
     },
 
-    /* ── 2. Client confirmation email ── */
+    /* ── 2. Client confirmation email (tier-specific) ── */
     {
       name: "client_confirmation_email",
       critical: true,
@@ -237,24 +243,67 @@ export async function runPostPaymentActions(
         if (!clientEmail) return;
 
         const resend = getResend();
-        const html = bookingConfirmationEmail({
+        const tier = selectedTier ?? "premier";
+
+        const TRUCK_DISPLAY: Record<string, string> = {
+          sprinter: "Extended Sprinter Van",
+          "16ft": "16ft Climate-Protected Truck",
+          "20ft": "20ft Dedicated Moving Truck",
+          "24ft": "24ft Full-Size Moving Truck",
+          "26ft": "26ft Maximum-Capacity Truck",
+        };
+        const truckKey = (move.truck_info as string) || (quote.truck_primary as string) || "";
+        const truckDisplayName = TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+
+        const tierData = tier && quote.tiers
+          ? (quote.tiers as Record<string, { includes: string[] }>)[tier]
+          : null;
+        const includes = tierData?.includes ?? [];
+        const crewSize = (move.crew_size as number) || (quote.est_crew_size as number) || 3;
+        const timeWindow = (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
+
+        const confirmParams: TierConfirmationParams = {
           clientName,
           moveCode: input.moveCode,
           moveDate: quote.move_date,
+          timeWindow,
           fromAddress: quote.from_address,
           toAddress: quote.to_address,
           tierLabel,
           serviceLabel,
+          crewSize,
+          truckDisplayName,
           totalWithTax,
           depositPaid: depositAmount,
           balanceRemaining: balanceAmount,
           trackingUrl,
-        });
+          includes,
+          coordinatorName: (move.coordinator_name as string) || null,
+          coordinatorPhone: (move.coordinator_phone as string) || null,
+          coordinatorEmail: (move.coordinator_email as string) || null,
+        };
+
+        const templateFns: Record<string, (p: TierConfirmationParams) => string> = {
+          essentials: essentialsConfirmationEmail,
+          premier: premierConfirmationEmail,
+          estate: estateConfirmationEmail,
+        };
+        const templateFn = templateFns[tier] ?? premierConfirmationEmail;
+
+        const subjects: Record<string, string> = {
+          essentials: `Your Yugo move is confirmed — ${input.moveCode}`,
+          premier: `Your Yugo Premier move is confirmed — ${input.moveCode}`,
+          estate: `Welcome to your Yugo Estate experience — ${input.moveCode}`,
+        };
+        const subject = subjects[tier] ?? `Booking confirmed — ${input.moveCode}`;
+
+        const html = templateFn(confirmParams);
+        const emailFrom = await getEmailFrom();
 
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: clientEmail,
-          subject: `Booking confirmed — ${input.moveCode}`,
+          subject,
           html,
           headers: {
             Precedence: "auto",
@@ -308,6 +357,7 @@ export async function runPostPaymentActions(
         if (!adminEmail) return;
 
         const resend = getResend();
+        const isEstate = (selectedTier ?? "") === "estate";
         const html = internalBookingAlertEmail({
           clientName,
           clientEmail,
@@ -323,11 +373,36 @@ export async function runPostPaymentActions(
           paymentId: input.paymentId,
         });
 
+        const subjectPrefix = isEstate ? "🏆 Estate booking" : "New booking";
+        const emailFrom2 = await getEmailFrom();
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom2,
           to: adminEmail,
-          subject: `New booking: ${clientName} — ${tierLabel || serviceLabel} — $${totalWithTax}`,
+          subject: `${subjectPrefix}: ${clientName} — ${tierLabel || serviceLabel} — $${totalWithTax}`,
           html,
+        });
+      },
+    },
+
+    /* ── 4b. Estate-specific: notify all admins to assign coordinator ── */
+    {
+      name: "estate_coordinator_notification",
+      critical: false,
+      fn: async () => {
+        const tier = selectedTier ?? "";
+        if (tier !== "estate") return;
+
+        const { notifyAdmins } = await import("@/lib/notifications/dispatch");
+        const dateLabel = quote.move_date
+          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+          : "TBD";
+
+        await notifyAdmins("quote_accepted", {
+          subject: `Estate booking: ${clientName} — ${dateLabel} — ${formatCurrency(totalWithTax)}`,
+          description: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
+          moveId: input.moveId,
+          clientName,
+          amount: totalWithTax,
         });
       },
     },

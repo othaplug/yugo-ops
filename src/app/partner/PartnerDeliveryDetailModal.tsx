@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
+import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -37,6 +38,19 @@ interface Delivery {
   quoted_price?: number | null;
   total_price?: number | null;
   admin_adjusted_price?: number | null;
+  booking_type?: string | null;
+  num_stops?: number | null;
+  stops_detail?: { address: string; customer_name?: string | null; customer_phone?: string | null; items?: { name: string; size: string; quantity: number }[]; instructions?: string | null; zone?: number | null }[] | null;
+}
+
+interface DeliveryStop {
+  id: string;
+  stop_number: number;
+  address: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  items_description: string | null;
+  special_instructions: string | null;
 }
 
 interface Props {
@@ -70,7 +84,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const [newNote, setNewNote] = useState("");
   const [sendingNote, setSendingNote] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeSection, setActiveSection] = useState<"details" | "tracking" | "messages" | "photos">("details");
+  const [stops, setStops] = useState<DeliveryStop[]>([]);
+  const [stopsLoading, setStopsLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState<"details" | "tracking" | "messages" | "photos" | "pod">("details");
   const [crewPosition, setCrewPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [mapData, setMapData] = useState<{
     center: { lat: number; lng: number };
@@ -94,7 +110,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           const data = await res.json();
           if (data?.liveStage != null) setLiveStage(data.liveStage);
         }
-      } catch {}
+      } catch (err) { console.error("Failed to poll crew status:", err); }
     };
     poll();
     const id = setInterval(poll, 10000);
@@ -109,11 +125,41 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           const data = await res.json();
           setPhotos(data.photos || []);
         }
-      } catch {}
+      } catch (err) { console.error("Failed to load delivery photos:", err); }
       setPhotosLoading(false);
     };
     load();
   }, [d.id]);
+
+  useEffect(() => {
+    if (d.booking_type !== "day_rate") return;
+    setStopsLoading(true);
+    fetch(`/api/partner/deliveries/${d.id}/stops`)
+      .then((res) => (res.ok ? res.json() : { stops: [] }))
+      .then((data) => {
+        const apiStops = Array.isArray(data.stops) ? data.stops : [];
+        if (apiStops.length > 0) {
+          setStops(apiStops);
+        } else if (Array.isArray(d.stops_detail) && d.stops_detail.length > 0) {
+          // Fallback: use stops_detail stored on the delivery itself
+          setStops(
+            d.stops_detail.map((s, i) => ({
+              id: `local-${i}`,
+              stop_number: i + 1,
+              address: s.address || "",
+              customer_name: s.customer_name ?? null,
+              customer_phone: s.customer_phone ?? null,
+              items_description: Array.isArray(s.items) && s.items.length > 0
+                ? s.items.map((it) => `${it.quantity > 1 ? `${it.quantity}x ` : ""}${it.name}`).join(", ")
+                : null,
+              special_instructions: s.instructions ?? null,
+            }))
+          );
+        }
+      })
+      .catch((err) => { console.error("Failed to fetch delivery stops:", err); setStops([]); })
+      .finally(() => setStopsLoading(false));
+  }, [d.id, d.booking_type, d.stops_detail]);
 
   useEffect(() => {
     const load = async () => {
@@ -123,7 +169,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           const data = await res.json();
           setNotes(data.notes || []);
         }
-      } catch {}
+      } catch (err) { console.error("Failed to load delivery notes:", err); }
     };
     load();
   }, [d.id]);
@@ -149,7 +195,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
             });
           }
         }
-      } catch {}
+      } catch (err) { console.error("Failed to poll crew status for map:", err); }
     };
     poll();
     const id = setInterval(poll, 8000);
@@ -171,7 +217,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
         setNewNote("");
         setTimeout(() => notesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       }
-    } catch {}
+    } catch (err) { console.error("Failed to send delivery note:", err); }
     setSendingNote(false);
   };
 
@@ -187,7 +233,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    } catch (err) { console.error("Failed to copy tracking link:", err); }
   };
 
   const stageIdx = DELIVERY_STAGES.indexOf(liveStage || "");
@@ -197,11 +243,14 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const items = Array.isArray(d.items) ? d.items : [];
   const itemsDisplay = items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean);
 
-  const sectionTabs: { key: "details" | "tracking" | "messages" | "photos"; label: string }[] = [
+  const isDelivered = ["delivered", "completed"].includes((d.status || "").toLowerCase());
+
+  const sectionTabs: { key: "details" | "tracking" | "messages" | "photos" | "pod"; label: string }[] = [
     { key: "details", label: "Details" },
     ...(d.crew_id ? [{ key: "tracking" as const, label: "Tracking" }] : []),
     { key: "messages", label: `Messages${notes.length > 0 ? ` (${notes.length})` : ""}` },
     { key: "photos", label: `Photos${photos.length > 0 ? ` (${photos.length})` : ""}` },
+    ...(isDelivered ? [{ key: "pod" as const, label: "PoD" }] : []),
   ];
 
   return (
@@ -278,15 +327,57 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               </div>
 
               <div className="grid grid-cols-1 gap-3 border-b border-[var(--brd)]/30 pb-4">
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
-                  <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "—"}</div>
-                </div>
-                {d.pickup_address && (
-                  <div>
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
-                    <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
-                  </div>
+                {d.booking_type === "day_rate" ? (
+                  <>
+                    {d.pickup_address && (
+                      <div>
+                        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
+                        <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
+                      </div>
+                    )}
+                    {stopsLoading ? (
+                      <div className="text-[12px] text-[var(--tx3)]">Loading stops…</div>
+                    ) : stops.length > 0 ? (
+                      <div>
+                        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
+                          {stops.length} stop{stops.length !== 1 ? "s" : ""}
+                        </div>
+                        <ul className="space-y-3">
+                          {stops.map((stop) => (
+                            <li key={stop.id} className="flex gap-2">
+                              <span className="text-[10px] font-bold text-[#C9A962] shrink-0 pt-0.5">{stop.stop_number}.</span>
+                              <div>
+                                <div className="text-[13px] font-medium text-[var(--tx)]">{stop.address || "—"}</div>
+                                {stop.customer_name && <div className="text-[11px] text-[var(--tx3)]">{stop.customer_name}</div>}
+                                {stop.items_description && <div className="text-[11px] text-[var(--tx3)]">{stop.items_description}</div>}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
+                        <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "—"}</div>
+                        {d.num_stops && d.num_stops > 1 && (
+                          <div className="text-[11px] text-[var(--tx3)] mt-0.5">{d.num_stops} stops total</div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
+                      <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "—"}</div>
+                    </div>
+                    {d.pickup_address && (
+                      <div>
+                        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
+                        <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div>
                   <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Date & time</div>
@@ -480,6 +571,10 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 </div>
               )}
             </div>
+          )}
+
+          {activeSection === "pod" && (
+            <ProofOfDeliverySection jobId={d.id} jobType="delivery" />
           )}
         </div>
       </div>

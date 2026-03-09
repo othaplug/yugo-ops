@@ -18,6 +18,7 @@ import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
+import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
@@ -128,16 +129,28 @@ function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementT
 
 interface Crew { id: string; name: string; members?: string[] }
 
+export interface DeliveryStop {
+  id: string;
+  stop_number: number;
+  address: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  items_description: string | null;
+  special_instructions: string | null;
+}
+
 export default function DeliveryDetailClient({
   delivery: initialDelivery,
   clientEmail,
   organizations = [],
   crews = [],
+  stops = null,
 }: {
   delivery: any;
   clientEmail?: string | null;
   organizations?: { id: string; name: string; type: string }[];
   crews?: Crew[];
+  stops?: DeliveryStop[] | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -419,6 +432,11 @@ export default function DeliveryDetailClient({
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
                   <Hash className="w-2.5 h-2.5" />{delivery.delivery_number}
                 </span>
+                {delivery.booking_type === "day_rate" && (
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                    Day Rate{delivery.num_stops != null ? ` · ${delivery.num_stops} stops` : ""}
+                  </span>
+                )}
                 <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
                 {delivery.special_handling && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
@@ -547,9 +565,11 @@ export default function DeliveryDetailClient({
           {/* ─── Seamless sections below map ─── */}
           <div className="mt-6 space-y-0">
 
-            {/* Route */}
+            {/* Route / Day rate stops */}
             <div className="pb-5">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Route</div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+                {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}` : "Route"}
+              </div>
               <div className="space-y-0">
                 {/* Pickup */}
                 <div className="flex items-start gap-3.5">
@@ -563,17 +583,36 @@ export default function DeliveryDetailClient({
                     {delivery.pickup_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
                   </div>
                 </div>
-                {/* Drop-off */}
-                <div className="flex items-start gap-3.5">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                {/* Day rate: list each stop */}
+                {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? (
+                  stops.map((stop, i) => (
+                    <div key={stop.id} className="flex items-start gap-3.5">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                        {i < stops.length - 1 && <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />}
+                      </div>
+                      <div className="flex-1 min-w-0 pb-4">
+                        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Stop {stop.stop_number}</div>
+                        <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "—"}</div>
+                        {stop.customer_name && <div className="text-[11px] text-[var(--tx3)] mt-0.5">{stop.customer_name}</div>}
+                        {stop.items_description && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{stop.items_description}</div>}
+                        {stop.special_instructions && <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">Note: {stop.special_instructions}</div>}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  /* Single drop-off */
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
+                      <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
+                      {delivery.delivery_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
-                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
-                    {delivery.delivery_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -604,6 +643,14 @@ export default function DeliveryDetailClient({
             <div className="border-t border-[var(--brd)]/30 pt-5">
               <IncidentsSection jobId={delivery.id} jobType="delivery" />
             </div>
+
+            {/* Proof of Delivery */}
+            {isDone(delivery.status) && (
+              <div className="border-t border-[var(--brd)]/30 pt-5">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
+                <ProofOfDeliverySection jobId={delivery.id} jobType="delivery" />
+              </div>
+            )}
 
             {/* Instructions — seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">

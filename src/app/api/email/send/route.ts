@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { requireStaff } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -14,8 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     const r = getResend();
+    const emailFrom = await getEmailFrom();
     const { data, error } = await r.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to,
       subject,
       html,

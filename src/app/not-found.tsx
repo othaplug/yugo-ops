@@ -16,7 +16,7 @@ export default function NotFound() {
             ← Go Home
           </Link>
           <a
-            href={`mailto:${process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@yugo.co"}`}
+            href={`mailto:${process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@helloyugo.com"}`}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[12px] font-semibold border border-[#2A2A2A] text-[#B0ADA8] hover:border-[#C9A962] hover:text-[#E8E5E0] transition-all"
           >
             Contact Us

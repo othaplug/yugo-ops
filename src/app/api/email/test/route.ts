@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { requireAdmin } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 /**
  * Test endpoint to verify Resend is working.
@@ -36,8 +37,9 @@ export async function POST(req: NextRequest) {
     }
 
     const resend = new Resend(apiKey);
+    const emailFrom = await getEmailFrom();
     const { data, error } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: email,
       subject: "YUGO+ Test Email",
       html: `<p>If you received this, Resend is working correctly.</p>`,

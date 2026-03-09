@@ -18,6 +18,7 @@ import PricingControlPanel from "./PricingControlPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PHONE_PLACEHOLDER } from "@/lib/phone";
 
 const TABS = [
   { id: "pricing", label: "Pricing" },
@@ -325,6 +326,7 @@ interface Team {
   label: string;
   memberIds: string[];
   active: boolean;
+  phone?: string;
 }
 
 interface CrewPortalMember {
@@ -361,26 +363,31 @@ function BusinessInfoSection() {
     fetch("/api/admin/business-config")
       .then((r) => r.json())
       .then((d) => { if (d && typeof d === "object" && !d.error) setConfig(d); })
-      .catch(() => {})
+      .catch((err) => console.error("[BusinessInfo] fetch failed", err))
       .finally(() => setLoading(false));
   }, []);
+
+  const ALL_KEYS = [
+    "company_name", "company_legal_name", "company_phone", "company_email",
+    "company_address", "company_hst_number", "business_hours", "after_hours_contact",
+    "company_website", "dispatch_phone",
+    "notifications_from_email", "admin_notification_email",
+    "company_social_instagram", "company_social_facebook",
+    "company_social_twitter", "company_social_linkedin",
+    "company_review_url",
+  ];
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const payload: Record<string, string> = {};
+      for (const k of ALL_KEYS) {
+        if (config[k] !== undefined) payload[k] = config[k];
+      }
       const res = await fetch("/api/admin/business-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          company_name: config.company_name,
-          company_legal_name: config.company_legal_name,
-          company_phone: config.company_phone,
-          company_email: config.company_email,
-          company_address: config.company_address,
-          company_hst_number: config.company_hst_number,
-          business_hours: config.business_hours,
-          after_hours_contact: config.after_hours_contact,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) { toast("Failed to save", "x"); return; }
       toast("Business info saved", "check");
@@ -390,16 +397,22 @@ function BusinessInfoSection() {
 
   if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
-  const fields = [
-    { key: "company_name", label: "Company Name", placeholder: "YUGO+" },
-    { key: "company_legal_name", label: "Legal Name", placeholder: "OHELLO Inc." },
-    { key: "company_phone", label: "Phone", placeholder: "(647) 370-4525" },
-    { key: "company_email", label: "Email", placeholder: "info@helloyugo.com" },
-    { key: "company_address", label: "Address", placeholder: "50 Carroll St, Toronto" },
-    { key: "company_hst_number", label: "HST Number", placeholder: "" },
-    { key: "business_hours", label: "Business Hours", placeholder: "Mon-Sat 7:00 AM - 8:00 PM" },
-    { key: "after_hours_contact", label: "After-Hours Contact", placeholder: "" },
-  ];
+  const inputCls = "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none";
+  const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
+  const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/60 mb-3 flex items-center gap-1.5";
+
+  const inp = (key: string, label: string, placeholder: string, type = "text") => (
+    <div key={key}>
+      <label className={labelCls}>{label}</label>
+      <input
+        type={type}
+        value={config[key] || ""}
+        onChange={(e) => setConfig((prev) => ({ ...prev, [key]: e.target.value }))}
+        placeholder={placeholder}
+        className={inputCls}
+      />
+    </div>
+  );
 
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
@@ -407,23 +420,68 @@ function BusinessInfoSection() {
         <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="building" className="w-[14px] h-[14px]" /> Business Information
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, and emails</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code.</p>
       </div>
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {fields.map((f) => (
-            <div key={f.key}>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{f.label}</label>
-              <input
-                type="text"
-                value={config[f.key] || ""}
-                onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
-              />
-            </div>
-          ))}
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-6">
+
+        {/* Core company details */}
+        <div>
+          <div className={subheadCls}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Company Details
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {inp("company_name", "Company Name", "YUGO+")}
+            {inp("company_legal_name", "Legal Name", "OHELLO Inc.")}
+            {inp("company_address", "Address", "50 Carroll St, Toronto")}
+            {inp("company_hst_number", "HST / Tax Number", "123456789RT0001")}
+            {inp("company_website", "Website", "https://helloyugo.com", "url")}
+          </div>
         </div>
+
+        {/* Contact info */}
+        <div className="pt-4 border-t border-[var(--brd)]/30">
+          <div className={subheadCls}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Contact &amp; Hours
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {inp("company_phone", "Main Phone", PHONE_PLACEHOLDER, "tel")}
+            {inp("dispatch_phone", "Dispatch Phone", PHONE_PLACEHOLDER, "tel")}
+            {inp("company_email", "Company Email", "info@helloyugo.com", "email")}
+            {inp("after_hours_contact", "After-Hours Contact", "Emergency phone or email")}
+            {inp("business_hours", "Business Hours", "Mon-Sat 7:00 AM - 8:00 PM")}
+          </div>
+        </div>
+
+        {/* Notification emails */}
+        <div className="pt-4 border-t border-[var(--brd)]/30">
+          <div className={subheadCls}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Configuration
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@opsplus.co", "email")}
+            {inp("admin_notification_email", "Admin Notification Email", "admin@helloyugo.com", "email")}
+          </div>
+          <p className="text-[10px] text-[var(--tx3)] mt-2">The &quot;From&quot; email must be verified in your email provider (Resend). Admin notification email receives payment failures, tips, etc.</p>
+        </div>
+
+        {/* Social media & reviews */}
+        <div className="pt-4 border-t border-[var(--brd)]/30">
+          <div className={subheadCls}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Social &amp; Reviews
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {inp("company_review_url", "Google Review URL", "https://g.page/r/your-review-link", "url")}
+            {inp("company_social_instagram", "Instagram URL", "https://instagram.com/yourpage", "url")}
+            {inp("company_social_facebook", "Facebook URL", "https://facebook.com/yourpage", "url")}
+            {inp("company_social_twitter", "X (Twitter) URL", "https://x.com/yourpage", "url")}
+            {inp("company_social_linkedin", "LinkedIn URL", "https://linkedin.com/company/yourco", "url")}
+          </div>
+        </div>
+
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Business Info"}
         </button>
@@ -574,9 +632,9 @@ function FeatureTogglesSection() {
 <iframe
   src="${appUrl}/widget/quote"
   width="100%"
-  height="680"
+  height="720"
   frameborder="0"
-  style="border:none;border-radius:12px;max-width:480px;"
+  style="border:none;border-radius:12px;"
   title="Get a Quote - YUGO+"
 ></iframe>`;
 
@@ -1111,6 +1169,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         {visibleTabs.map((t) => (
           <Link
             key={t.id}
+            id={`tab-${t.id}`}
             href={`/admin/platform?tab=${t.id}`}
             className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
               activeTab === t.id
@@ -1421,7 +1480,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal access (who can log in on tablet)</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal Access (who can log in on tablet)</div>
                     {crewPortalMembers.filter((m) => m.team_id === team.id && m.is_active).length === 0 ? (
                       <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add Portal Access” above.</p>
                     ) : (
@@ -1454,6 +1513,25 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                             </li>
                           ))}
                       </ul>
+                    )}
+                  </div>
+                  {/* Tablet phone — linked to the crew's registered device */}
+                  <div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Tablet Phone (customer-facing)</div>
+                    <p className="text-[10px] text-[var(--tx3)] mb-2">
+                      The phone number is linked to this team&apos;s registered tablet. Customers on the live tracking page call this number directly.
+                      {" "}<button type="button" onClick={() => { const el = document.getElementById("tab-devices"); if (el) el.click(); }} className="text-[var(--gold)] font-semibold hover:underline">Manage in Devices tab &rarr;</button>
+                    </p>
+                    {team.phone ? (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <span className="text-[13px] font-medium text-[var(--tx)]">{team.phone}</span>
+                        <span className="text-[9px] text-[var(--tx3)] ml-auto">from tablet</span>
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 bg-[var(--bg)] border border-dashed border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx3)]">
+                        No tablet phone set &mdash; customers will see &quot;Call Dispatch&quot; instead.
+                      </div>
                     )}
                   </div>
                   <div className="pt-2 border-t border-[var(--brd)]">

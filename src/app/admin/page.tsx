@@ -76,7 +76,8 @@ export default async function AdminPage() {
   }));
 
   const changeTasks: ActionTask[] = (pendingChangesResult?.data || []).map((r: Record<string, unknown>) => {
-    const move = r.moves as { client_name?: string; move_code?: string } | null;
+    const moveRaw = r.moves as unknown;
+    const move = Array.isArray(moveRaw) ? (moveRaw[0] as { client_name?: string; move_code?: string } | undefined) ?? null : (moveRaw as { client_name?: string; move_code?: string } | null);
     const typeLabel = String(r.type || "change").replace(/_/g, " ");
     return {
       id: String(r.id),

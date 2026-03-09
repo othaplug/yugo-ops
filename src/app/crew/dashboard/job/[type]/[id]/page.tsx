@@ -17,7 +17,7 @@ import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 
-const DISPATCH_PHONE = "(647) 370-4525";
+const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
 type TabId = "status" | "details" | "items" | "photos";
 

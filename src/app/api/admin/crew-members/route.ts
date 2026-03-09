@@ -5,6 +5,7 @@ import { normalizePhone } from "@/lib/phone";
 import { hashCrewPin } from "@/lib/crew-token";
 import { getResend } from "@/lib/resend";
 import { crewPortalInviteEmail, crewPortalInviteEmailText } from "@/lib/email-templates";
+import { getEmailFrom } from "@/lib/email/send";
 
 const CREW_MEMBERS_SELECT = "id, name, phone, email, role, team_id, is_active, avatar_initials, created_at";
 const CREW_MEMBERS_SELECT_NO_EMAIL = "id, name, phone, role, team_id, is_active, avatar_initials, created_at";
@@ -113,8 +114,9 @@ export async function POST(req: NextRequest) {
         const origin = requestUrl.origin || (await import("@/lib/email-base-url")).getEmailBaseUrl();
         const loginUrl = `${origin.replace(/\/$/, "")}/crew/login`;
         const resend = getResend();
+        const emailFrom = await getEmailFrom();
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: emailTrimmed,
           subject: "You're invited to the YUGO+ Crew Portal",
           html: crewPortalInviteEmail({

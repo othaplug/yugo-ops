@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
+import { createClient } from "@/lib/supabase/client";
 import {
   BarChart,
   Bar,
@@ -154,6 +156,24 @@ export default function ProfitabilityClient() {
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Realtime: refresh when moves or invoices are updated
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("profitability-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, fetchData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, fetchData)
+      .subscribe();
+
+    // Polling fallback every 60s
+    const interval = setInterval(fetchData, 60_000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [fetchData]);
 
   /* ------------ derived ------------ */
@@ -330,6 +350,13 @@ export default function ProfitabilityClient() {
         <div>
           <h1 className="text-lg font-heading font-bold text-[var(--tx)]">Profitability</h1>
           <p className="text-[11px] text-[var(--tx3)]">Revenue, costs, and margin analysis — owner only</p>
+          <Link
+            href="/admin/finance/forecast"
+            className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            View Revenue Forecast →
+          </Link>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2 py-1.5">

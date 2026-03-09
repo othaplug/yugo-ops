@@ -1,17 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
-
-const TYPES = [
-  { value: "retail", label: "Retail" },
-  { value: "designer", label: "Designer" },
-  { value: "hospitality", label: "Hospitality" },
-  { value: "gallery", label: "Gallery" },
-  { value: "realtor", label: "Realtor" },
-];
+import { PARTNER_SEGMENT_GROUPS } from "@/lib/partner-type";
 
 interface EditPartnerModalProps {
   open: boolean;
@@ -29,6 +23,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   const [contactName, setContactName] = useState(client.contact_name || "");
   const [email, setEmail] = useState(client.email || "");
   const [phone, setPhone] = useState(client.phone ? formatPhone(client.phone) : "");
+  const phoneInput = usePhoneInput(phone, setPhone);
 
   useEffect(() => {
     if (open) {
@@ -93,9 +88,15 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             onChange={(e) => setType(e.target.value)}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
-            {TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
+            {PARTNER_SEGMENT_GROUPS.flatMap((seg) =>
+              seg.groups.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.verticals.map((v) => (
+                    <option key={v.value} value={v.value}>{v.label}</option>
+                  ))}
+                </optgroup>
+              ))
+            )}
           </select>
         </div>
         )}
@@ -125,11 +126,11 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
           <input
+            ref={phoneInput.ref}
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            onBlur={() => setPhone(formatPhone(phone))}
-            placeholder="(123) 456-7890"
+            onChange={phoneInput.onChange}
+            placeholder={PHONE_PLACEHOLDER}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

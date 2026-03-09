@@ -3,6 +3,7 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(
   req: NextRequest,
@@ -56,8 +57,9 @@ export async function POST(
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: emailTrimmed,
       subject: "You're invited to YUGO+ Partner Portal",
       html: invitePartnerEmail({

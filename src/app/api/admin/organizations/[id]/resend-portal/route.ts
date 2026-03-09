@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getResend } from "@/lib/resend";
 import { welcomeEmail } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(
   req: NextRequest,
@@ -55,8 +56,9 @@ export async function POST(
       portalUrl,
     });
 
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: toEmail,
       subject: `Welcome to YUGO+ — ${org.name}`,
       html,

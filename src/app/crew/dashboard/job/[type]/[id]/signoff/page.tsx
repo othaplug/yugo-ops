@@ -49,6 +49,20 @@ interface PhotoItem {
   note?: string;
 }
 
+interface ItemCondition {
+  item_name: string;
+  condition: "pristine" | "minor_scuff" | "pre_existing_damage" | "new_damage";
+  notes: string;
+  photo_url?: string;
+}
+
+const CONDITION_OPTIONS = [
+  { value: "pristine" as const, label: "Pristine", color: "#22C55E" },
+  { value: "minor_scuff" as const, label: "Minor Scuff", color: "#F59E0B" },
+  { value: "pre_existing_damage" as const, label: "Pre-existing", color: "#6B7280" },
+  { value: "new_damage" as const, label: "New Damage", color: "#EF4444" },
+];
+
 function StarIcon({ filled, size = 28 }: { filled: boolean; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -142,7 +156,7 @@ export default function ClientSignOffPage({
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
 
-  // Phase: 1=items, 2=experience+NPS, 3=signature, 4=thank you, 5=skip form
+  // Phase: 1=item conditions, 2=items confirmation, 3=experience+NPS, 4=signature, 5=thank you, 6=skip form
   const [phase, setPhase] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<{ id: string } | null>(null);
@@ -152,6 +166,10 @@ export default function ClientSignOffPage({
 
   const [jobPhotos, setJobPhotos] = useState<PhotoItem[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
+
+  // Item conditions (Prompt 75)
+  const [itemConditions, setItemConditions] = useState<ItemCondition[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<string[]>([]);
 
   // Phase 1
   const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
@@ -217,16 +235,27 @@ export default function ClientSignOffPage({
     let cancelled = false;
     const load = async () => {
       try {
-        const [signoffRes, photosRes] = await Promise.all([
+        const [signoffRes, photosRes, inventoryRes] = await Promise.all([
           fetch(`/api/crew/signoff/${id}?jobType=${jobType}`),
           fetch(`/api/crew/photos/${id}?jobType=${jobType}`),
+          fetch(`/api/crew/signoff/${id}/inventory?jobType=${jobType}`),
         ]);
         if (cancelled) return;
         const signoffData = signoffRes.ok ? await signoffRes.json() : null;
         const photosData = photosRes.ok ? await photosRes.json() : { photos: [] };
+        const invData = inventoryRes.ok ? await inventoryRes.json() : { items: [] };
         if (signoffData?.id) setExisting(signoffData);
         const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
         setJobPhotos(photos);
+        const items: string[] = invData?.items || [];
+        setInventoryItems(items);
+        if (items.length > 0) {
+          setItemConditions(items.map((name: string) => ({
+            item_name: name,
+            condition: "pristine" as const,
+            notes: "",
+          })));
+        }
       } catch {
         // continue with empty state
       } finally {
@@ -323,6 +352,7 @@ export default function ClientSignOffPage({
             itemsLeftBehind.trim() ? `Items not received / left behind: ${itemsLeftBehind.trim()}` : null,
             exceptions.trim() || null,
           ].filter(Boolean).join("\n\n") || null,
+          itemConditions: itemConditions.length > 0 ? itemConditions : undefined,
         }),
       });
       const data = await res.json();
@@ -335,7 +365,7 @@ export default function ClientSignOffPage({
         setSubmitting(false);
         return;
       }
-      setPhase(4);
+      setPhase(5);
     } catch {
       setError("Connection error");
     }
@@ -363,6 +393,15 @@ export default function ClientSignOffPage({
       setSkipSubmitting(false);
     }
   };
+
+  const updateItemCondition = (index: number, field: keyof ItemCondition, value: string) => {
+    setItemConditions((prev) => prev.map((ic, i) => i === index ? { ...ic, [field]: value } : ic));
+  };
+
+  const hasNewDamage = itemConditions.some((ic) => ic.condition === "new_damage");
+  const itemConditionsValid = itemConditions.length === 0 || itemConditions.every(
+    (ic) => ic.condition !== "new_damage" || (ic.notes.trim().length > 0)
+  );
 
   if (loading) {
     return (
@@ -401,13 +440,15 @@ export default function ClientSignOffPage({
     );
   }
 
-  const phase1Valid =
+  const phase1Valid = itemConditionsValid && (itemConditions.length === 0 || true);
+
+  const phase2Valid =
     (jobPhotos.length === 0 || photosReviewedByClient) &&
     inventoryReviewedByClient &&
     walkthroughConductedByClient &&
     ((allItemsReceived && conditionAccepted) || exceptions.trim().length > 0 || itemsLeftBehind.trim().length > 0);
 
-  const phase2Valid =
+  const phase3Valid =
     !!rating &&
     noIssuesDuringMove &&
     noDamages &&
@@ -418,7 +459,7 @@ export default function ClientSignOffPage({
     propertyLeftClean &&
     npsScore !== null;
 
-  const STEP_LABELS = ["Items", "Experience", "Sign"];
+  const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
 
   return (
     <main className="min-h-screen" style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}>
@@ -456,8 +497,8 @@ export default function ClientSignOffPage({
           <div className="w-14" />
         </div>
 
-        {/* Step progress (phases 1–3) */}
-        {phase >= 1 && phase <= 3 && (
+        {/* Step progress (phases 1–4) */}
+        {phase >= 1 && phase <= 4 && (
           <div className="flex items-center gap-1.5 mb-8">
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
@@ -496,12 +537,101 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 1: Items Confirmation ── */}
+        {/* ── Phase 1: Item Condition Assessment ── */}
         {phase === 1 && (
           <div className="phase-enter">
             <div className="mb-7">
               <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 1 of 3
+                Step 1 of 4
+              </p>
+              <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
+                Item Condition
+              </h1>
+              <p className="text-[13px] mt-1.5 leading-snug" style={{ color: MUTED }}>
+                Assess the condition of each item at delivery.
+              </p>
+            </div>
+
+            {itemConditions.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-[13px]" style={{ color: MUTED }}>No inventory items found for this job.</p>
+                <p className="text-[11px] mt-1" style={{ color: MUTED }}>You can continue to the next step.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-6">
+                {itemConditions.map((ic, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl border bg-white" style={{ borderColor: ic.condition === "new_damage" ? "#FCA5A5" : BORDER }}>
+                    <div className="text-[13px] font-semibold mb-2.5" style={{ color: INK }}>{ic.item_name}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
+                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                      {CONDITION_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => updateItemCondition(idx, "condition", opt.value)}
+                          className="px-3 py-2 rounded-xl text-[11px] font-semibold border transition-all"
+                          style={{
+                            borderColor: ic.condition === opt.value ? opt.color : BORDER,
+                            backgroundColor: ic.condition === opt.value ? `${opt.color}15` : "transparent",
+                            color: ic.condition === opt.value ? opt.color : MUTED,
+                          }}
+                        >
+                          {ic.condition === opt.value ? "● " : "○ "}{opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {ic.condition === "new_damage" && (
+                      <div className="mt-2">
+                        <textarea
+                          value={ic.notes}
+                          onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
+                          placeholder="Describe the damage (required)…"
+                          className="w-full p-3 rounded-xl border bg-white text-[12px] outline-none"
+                          style={{ color: INK, borderColor: "#FCA5A5" }}
+                          rows={2}
+                        />
+                      </div>
+                    )}
+                    {ic.condition !== "new_damage" && (
+                      <input
+                        type="text"
+                        value={ic.notes}
+                        onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
+                        placeholder="Optional notes…"
+                        className="w-full px-3 py-2 rounded-xl border bg-white text-[12px] outline-none mt-1"
+                        style={{ color: INK, borderColor: BORDER }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {hasNewDamage && (
+              <div className="p-3.5 rounded-xl mb-4" style={{ backgroundColor: "#FEF2F2", border: "1px solid #FCA5A5" }}>
+                <p className="text-[11px] font-semibold text-red-700">
+                  New damage detected — this will be flagged for a potential claim.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setPhase(2)}
+              disabled={!phase1Valid}
+              className="w-full py-3.5 rounded-full font-semibold text-[14px] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            >
+              Continue to Confirmation
+            </button>
+          </div>
+        )}
+
+        {/* ── Phase 2: Items Confirmation ── */}
+        {phase === 2 && (
+          <div className="phase-enter">
+            <div className="mb-7">
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+                Step 2 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 Items Confirmation
@@ -582,8 +712,8 @@ export default function ClientSignOffPage({
             </div>
 
             <button
-              onClick={() => setPhase(2)}
-              disabled={!phase1Valid}
+              onClick={() => setPhase(3)}
+              disabled={!phase2Valid}
               className="w-full py-3.5 rounded-full font-semibold text-[14px] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
@@ -592,12 +722,12 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 2: Experience + NPS ── */}
-        {phase === 2 && (
+        {/* ── Phase 3: Experience + NPS ── */}
+        {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
               <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 2 of 3
+                Step 3 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 How was your experience?
@@ -730,8 +860,8 @@ export default function ClientSignOffPage({
             />
 
             <button
-              onClick={() => setPhase(3)}
-              disabled={!phase2Valid}
+              onClick={() => setPhase(4)}
+              disabled={!phase3Valid}
               className="w-full py-3.5 rounded-full font-semibold text-[14px] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
@@ -740,12 +870,12 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 3: Signature ── */}
-        {phase === 3 && (
+        {/* ── Phase 4: Signature ── */}
+        {phase === 4 && (
           <div className="phase-enter">
             <div className="mb-7">
               <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 3 of 3
+                Step 4 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 Sign to confirm
@@ -849,8 +979,8 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 4: Thank You ── */}
-        {phase === 4 && (
+        {/* ── Phase 5: Thank You ── */}
+        {phase === 5 && (
           <div className="phase-enter text-center py-12">
             {/* Animated success ring */}
             <div className="relative inline-flex items-center justify-center mb-7">
@@ -894,8 +1024,8 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 5: Skip Form ── */}
-        {phase === 5 && (
+        {/* ── Phase 6: Skip Form ── */}
+        {phase === 6 && (
           <div className="phase-enter">
             <div className="mb-7">
               <h1 className="font-hero text-[28px] font-semibold" style={{ color: INK }}>Skip Sign-Off</h1>
@@ -970,12 +1100,12 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* Skip link — visible in phases 1–3 */}
-        {phase >= 1 && phase <= 3 && (
+        {/* Skip link — visible in phases 1–4 */}
+        {phase >= 1 && phase <= 4 && (
           <p className="text-center mt-8">
             <button
               type="button"
-              onClick={() => setPhase(5)}
+              onClick={() => setPhase(6)}
               className="text-[11px] transition-colors hover:text-[#C9A962]"
               style={{ color: MUTED }}
             >

@@ -12,6 +12,8 @@ import PartnerLiveMapTab from "./tabs/PartnerLiveMapTab";
 import PartnerRealtorTab from "./tabs/PartnerRealtorTab";
 import PartnerProjectsTab from "./tabs/PartnerProjectsTab";
 import PartnerB2BProjectsTab from "./tabs/PartnerB2BProjectsTab";
+import PartnerRecurringTab from "./tabs/PartnerRecurringTab";
+import PartnerAnalyticsTab from "./tabs/PartnerAnalyticsTab";
 import PartnerScheduleModal from "./PartnerScheduleModal";
 import PartnerShareModal from "./PartnerShareModal";
 import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
@@ -20,6 +22,8 @@ import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import YugoLogo from "@/components/YugoLogo";
+import Link from "next/link";
+import { Package, CalendarDays } from "lucide-react";
 
 interface Props {
   orgId: string;
@@ -79,6 +83,12 @@ interface Delivery {
   quoted_price?: number | null;
   total_price?: number | null;
   admin_adjusted_price?: number | null;
+  booking_type?: string | null;
+  vehicle_type?: string | null;
+  num_stops?: number | null;
+  delivery_type?: string | null;
+  zone?: number | null;
+  stops_detail?: { address: string; customer_name?: string | null; customer_phone?: string | null; items?: { name: string; size: string; quantity: number }[]; instructions?: string | null; zone?: number | null }[] | null;
 }
 
 interface Move {
@@ -142,6 +152,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
   const [scheduleModalKey, setScheduleModalKey] = useState(0);
+  const [bookServiceModalOpen, setBookServiceModalOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<Delivery | null>(null);
   const [detailTarget, setDetailTarget] = useState<Delivery | null>(null);
   const [editTarget, setEditTarget] = useState<Delivery | null>(null);
@@ -232,6 +243,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "tracking", label: "Live Map" },
         { key: "invoices", label: "Invoices" },
         { key: "billing", label: "Monthly Report" },
+        { key: "recurring", label: "Recurring" },
+        { key: "analytics", label: "Analytics" },
       ];
 
   return (
@@ -428,17 +441,128 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           )}
         </div>
 
-        {/* Primary Actions */}
-        <div className="flex flex-wrap gap-2.5 mb-6">
-          {features.canCreateDelivery && (
+        {/* Overdue Invoice Banner */}
+        {data && (() => {
+          const overdueInvoices = (data.invoices || []).filter((inv) => {
+            if (!inv.due_date) return false;
+            const status = (inv.status || "").toLowerCase();
+            if (status === "paid" || status === "void" || status === "cancelled") return false;
+            const due = new Date(inv.due_date + "T23:59:59");
+            return due < new Date();
+          });
+          if (overdueInvoices.length === 0) return null;
+          const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+          return (
+            <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/8 border border-red-500/20 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-red-600 dark:text-red-400">
+                  You have {overdueInvoices.length} overdue invoice{overdueInvoices.length > 1 ? "s" : ""} totaling {formatCurrency(totalOverdue)}
+                </div>
+                <div className="text-[11px] text-red-500/70 dark:text-red-400/60 mt-0.5">
+                  New bookings are paused until outstanding invoices are paid. Please contact us or settle your balance to resume scheduling.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("invoices")}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors"
+              >
+                View Invoices
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* Primary Action — Book a service: single pill button */}
+        {features.canCreateDelivery && !(data && (data.invoices || []).some((inv) => {
+          if (!inv.due_date) return false;
+          const status = (inv.status || "").toLowerCase();
+          if (status === "paid" || status === "void" || status === "cancelled") return false;
+          return new Date(inv.due_date + "T23:59:59") < new Date();
+        })) && (
+          <div className="mb-6">
             <button
-              onClick={() => { setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
+              type="button"
+              onClick={() => setBookServiceModalOpen(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full text-[15px] font-semibold text-white shadow-lg shadow-[#C9A962]/30 hover:shadow-xl hover:shadow-[#C9A962]/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              style={{ background: "linear-gradient(135deg, #D4B96A 0%, #C9A962 40%, #8B6914 100%)", letterSpacing: "0.01em" }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Schedule Delivery
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Book a service</span>
             </button>
-          )}
+            {/* Book service choice — bottom sheet on mobile, modal on desktop */}
+            {bookServiceModalOpen && (
+              <div
+                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm"
+                onClick={() => setBookServiceModalOpen(false)}
+              >
+                <div
+                  className="bg-[var(--card)] rounded-t-[24px] sm:rounded-[24px] shadow-2xl w-full sm:max-w-[420px] overflow-hidden"
+                  style={{ boxShadow: "0 -8px 40px rgba(0,0,0,0.18)" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-center pt-3 pb-0 sm:hidden">
+                    <div className="w-9 h-1 rounded-full bg-[var(--brd)]" />
+                  </div>
+                  <div className="px-6 pt-5 pb-2">
+                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Services</div>
+                    <h3 className="text-[20px] font-bold text-[var(--tx)]">Book a service</h3>
+                    <p className="text-[12px] text-[var(--tx3)] mt-0.5">Choose the type of booking you need</p>
+                  </div>
+                  <div className="px-4 pt-2 pb-3 space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
+                      className="w-full text-left flex items-center gap-4 p-4 rounded-2xl transition-all group hover:scale-[1.01] active:scale-[0.99]"
+                      style={{ background: "linear-gradient(135deg, rgba(45,106,79,0.05), rgba(45,106,79,0.10))", border: "1.5px solid rgba(45,106,79,0.2)" }}
+                    >
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #2D6A4F, #1F4D39)" }}>
+                        <Package className="w-5 h-5 text-white" strokeWidth={1.75} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[14px] font-bold text-[var(--tx)]">Schedule Delivery</div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Single pickup to single drop · Best for 1–3 items</div>
+                      </div>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#2D6A4F]/10 text-[#2D6A4F] flex-shrink-0 group-hover:bg-[#2D6A4F]/20 transition-colors">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </div>
+                    </button>
+                    <Link
+                      href="/partner/book-day-rate"
+                      onClick={() => setBookServiceModalOpen(false)}
+                      className="w-full text-left flex items-center gap-4 p-4 rounded-2xl transition-all group hover:scale-[1.01] active:scale-[0.99] block"
+                      style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.05), rgba(201,169,98,0.10))", border: "1.5px solid rgba(201,169,98,0.25)" }}
+                    >
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #D4B96A, #8B6914)" }}>
+                        <CalendarDays className="w-5 h-5 text-white" strokeWidth={1.75} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[14px] font-bold text-[var(--tx)]">Book Day Rate</div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Dedicated truck + crew for the day · Best for 4+ stops</div>
+                      </div>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#C9A962]/10 text-[#C9A962] flex-shrink-0 group-hover:bg-[#C9A962]/20 transition-colors">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </div>
+                    </Link>
+                  </div>
+                  <div className="px-6 pb-6 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setBookServiceModalOpen(false)}
+                      className="w-full py-3 rounded-full text-[13px] font-semibold text-[var(--tx3)] border border-[var(--brd)] hover:bg-[var(--bg)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2.5 mb-6">
           {!features.showReferrals && (
             <>
               {features.showProjects && data && data.allDeliveries.length > 0 && (
@@ -584,6 +708,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                 setScheduleModalKey((k) => k + 1);
                 setScheduleOpen(true);
               }}
+              onDeliveryClick={(d) => setDetailTarget(d as Delivery)}
             />
           )}
           {activeTab === "tracking" && (
@@ -594,6 +719,12 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           )}
           {activeTab === "billing" && data && (
             <PartnerBillingTab data={data} orgName={orgName} onViewInvoices={() => setActiveTab("invoices")} />
+          )}
+          {activeTab === "recurring" && (
+            <PartnerRecurringTab orgId={orgId} />
+          )}
+          {activeTab === "analytics" && (
+            <PartnerAnalyticsTab orgId={orgId} orgName={orgName} />
           )}
           {activeTab === "active" && data && (
             <PartnerRealtorTab
@@ -674,26 +805,35 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
       <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Performance</div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6">
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
-          <div className="text-[30px] sm:text-[34px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
           <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
-          <div className="text-[30px] sm:text-[34px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[#22C55E] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
+        </div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Satisfaction</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{(data as DashboardData & { satisfactionScore?: number | null })?.satisfactionScore ?? "—"}</div>
+          <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
+        </div>
+        <div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Rate</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{(data as DashboardData & { damageRate?: number })?.damageRate ?? 0}%</div>
+          <div className="text-[11px] text-[var(--tx3)] mt-0.5">Industry: 3-5%</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Claims</div>
-          <div className="text-[30px] sm:text-[34px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
-          <div className="text-[11px] text-[var(--tx3)] mt-0.5">Lifetime</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
-          <div className="text-[30px] sm:text-[34px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (
             <div className="text-[11px] text-[var(--tx3)] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
           )}

@@ -107,6 +107,7 @@ export function TrackLiveMapMapbox({
   clientLat,
   clientLng,
   speed,
+  lastLocationAt,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -118,11 +119,26 @@ export function TrackLiveMapMapbox({
   clientLat?: number | null;
   clientLng?: number | null;
   speed?: number | null;
+  lastLocationAt?: string | null;
 }) {
   const hasPosition = crew != null;
   const animatedCrew = useAnimatedPosition(
     crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
   );
+
+  // Last known location freshness
+  const isLocationStale = lastLocationAt
+    ? (Date.now() - new Date(lastLocationAt).getTime()) > 5 * 60 * 1000  // >5 min
+    : false;
+  const lastSeenLabel = lastLocationAt
+    ? (() => {
+        const sec = Math.floor((Date.now() - new Date(lastLocationAt).getTime()) / 1000);
+        if (sec < 60) return "Just now";
+        if (sec < 120) return "1 min ago";
+        if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+        return `${Math.floor(sec / 3600)}h ago`;
+      })()
+    : null;
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [completedCoords, setCompletedCoords] = useState<[number, number][] | null>(null);
   const [remainingCoords, setRemainingCoords] = useState<[number, number][] | null>(null);
@@ -284,12 +300,17 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      {/* Crew — Car icon (red, with pulse) */}
+      {/* Crew — Car icon (red/gold when stale, with pulse) */}
       {hasPosition && animatedCrew && (
         <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
           <div className="relative" style={{ transition: "transform 0.1s linear" }}>
-            <div className="absolute -inset-2 rounded-full bg-[#DC2626] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
-            <div className="w-10 h-10 rounded-full bg-[#DC2626] border-2 border-white shadow-lg flex items-center justify-center">
+            {!isLocationStale && (
+              <div className="absolute -inset-2 rounded-full bg-[#DC2626] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
+            )}
+            <div
+              className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
+              style={{ backgroundColor: isLocationStale ? YUGO_GOLD : "#DC2626" }}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17h2m10 0h2M3 9l2-5h14l2 5"/>
                 <path d="M3 9v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/>
@@ -297,13 +318,47 @@ export function TrackLiveMapMapbox({
                 <circle cx="17" cy="17" r="1.5" fill="#FFFFFF" stroke="none"/>
               </svg>
             </div>
-            {speed != null && speed > 0 && (
+            {speed != null && speed > 0 && !isLocationStale && (
               <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
               </div>
             )}
+            {isLocationStale && lastSeenLabel && (
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#C9A962] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                {lastSeenLabel}
+              </div>
+            )}
           </div>
         </Marker>
+      )}
+
+      {/* Last known location badge (when stale) */}
+      {isLocationStale && hasPosition && lastSeenLabel && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "12px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+            style={{
+              background: "rgba(20,20,20,0.82)",
+              backdropFilter: "blur(8px)",
+              color: YUGO_GOLD,
+              border: `1px solid ${YUGO_GOLD}40`,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={YUGO_GOLD} strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Last known location · {lastSeenLabel}
+          </div>
+        </div>
       )}
 
     </Map>

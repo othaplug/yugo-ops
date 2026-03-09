@@ -4,12 +4,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
 import { requireAuth } from "@/lib/api-auth";
+import { VERTICAL_LABELS } from "@/lib/partner-type";
+import { getEmailFrom } from "@/lib/email/send";
 
 function generateTempPassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
   let p = "";
   for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
   return p;
+}
+
+async function resolveTemplateId(admin: ReturnType<typeof createAdminClient>, templateSlug: string | null): Promise<string | null> {
+  if (!templateSlug) return null;
+  const { data } = await admin
+    .from("rate_card_templates")
+    .select("id")
+    .eq("template_slug", templateSlug)
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -23,8 +36,7 @@ export async function POST(req: NextRequest) {
     const partnerLoginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
 
     if (persona === "partner") {
-      // Partner: create org + auth user + partner_users; optionally send invite
-      const { name, type, contact_name, email, phone, address, send_portal_access } = body;
+      const { name, type, contact_name, email, phone, address, send_portal_access, template_slug } = body;
       if (!name || typeof name !== "string" || !email || typeof email !== "string") {
         return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
       }
@@ -35,16 +47,11 @@ export async function POST(req: NextRequest) {
       const contactNameTrimmed = (contact_name || "").trim();
       const phoneTrimmed = (phone || "").trim();
       const addressTrimmed = (address || "").trim();
-      const typeVal = type || "retail";
-      const typeLabels: Record<string, string> = {
-        retail: "Retail",
-        designer: "Designer",
-        hospitality: "Hospitality",
-        gallery: "Gallery",
-        realtor: "Realtor",
-      };
-      const typeLabel = typeLabels[String(typeVal)] || typeVal;
+      const typeVal = type || "furniture_retailer";
+      const typeLabel = VERTICAL_LABELS[String(typeVal)] || typeVal;
       const tempPassword = generateTempPassword();
+
+      const templateId = await resolveTemplateId(admin, template_slug || null);
 
       const { data: existingOrg } = await admin
         .from("organizations")
@@ -55,6 +62,16 @@ export async function POST(req: NextRequest) {
 
       let orgId: string;
       let userId: string;
+
+      const orgFields = {
+        name: nameTrimmed,
+        type: typeVal,
+        contact_name: contactNameTrimmed,
+        email: emailTrimmed,
+        phone: phoneTrimmed,
+        address: addressTrimmed,
+        ...(templateId ? { template_id: templateId } : {}),
+      };
 
       if (existingOrg?.user_id) {
         const { data: existingUsers } = await admin.auth.admin.listUsers();
@@ -68,17 +85,7 @@ export async function POST(req: NextRequest) {
         });
         userId = existing.id;
         orgId = existingOrg.id;
-        await admin
-          .from("organizations")
-          .update({
-            name: nameTrimmed,
-            type: typeVal,
-            contact_name: contactNameTrimmed,
-            email: emailTrimmed,
-            phone: phoneTrimmed,
-            address: addressTrimmed,
-          })
-          .eq("id", orgId);
+        await admin.from("organizations").update(orgFields).eq("id", orgId);
       } else if (existingOrg) {
         const { data: existingUsers } = await admin.auth.admin.listUsers();
         const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
@@ -99,18 +106,7 @@ export async function POST(req: NextRequest) {
           userId = newUser!.user.id;
         }
         orgId = existingOrg.id;
-        await admin
-          .from("organizations")
-          .update({
-            user_id: userId,
-            name: nameTrimmed,
-            type: typeVal,
-            contact_name: contactNameTrimmed,
-            email: emailTrimmed,
-            phone: phoneTrimmed,
-            address: addressTrimmed,
-          })
-          .eq("id", orgId);
+        await admin.from("organizations").update({ user_id: userId, ...orgFields }).eq("id", orgId);
         await admin.from("partner_users").upsert({ user_id: userId, org_id: orgId }, { onConflict: "user_id,org_id" });
       } else {
         const { data: existingUsers } = await admin.auth.admin.listUsers();
@@ -134,12 +130,7 @@ export async function POST(req: NextRequest) {
         const { data: newOrg, error: orgError } = await admin
           .from("organizations")
           .insert({
-            name: nameTrimmed,
-            type: typeVal,
-            contact_name: contactNameTrimmed,
-            email: emailTrimmed,
-            phone: phoneTrimmed,
-            address: addressTrimmed,
+            ...orgFields,
             health: "good",
             user_id: userId,
           })
@@ -160,8 +151,9 @@ export async function POST(req: NextRequest) {
           tempPassword,
           loginUrl: partnerLoginUrl,
         };
+        const emailFrom = await getEmailFrom();
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: emailTrimmed,
           subject: `You're invited to YUGO+ — ${nameTrimmed}`,
           html: invitePartnerEmail(inviteParams),

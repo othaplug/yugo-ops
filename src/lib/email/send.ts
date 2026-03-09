@@ -38,7 +38,9 @@ import {
   BalanceChargeFailedAdminData,
 } from "./lifecycle-templates";
 
-const FROM_ADDRESS = "Yugo+ <notifications@opsplus.co>";
+import { getNotificationsFromEmail } from "@/lib/config";
+
+const DEFAULT_FROM = "Yugo+ <notifications@opsplus.co>";
 
 export type TemplateName =
   | "quote-residential"
@@ -170,10 +172,23 @@ function renderTemplate(template: string, data: unknown): string {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/**
+ * Returns the configured "From" address for outbound emails.
+ * Reads from platform_config with a fallback to the hardcoded default.
+ */
+export async function getEmailFrom(): Promise<string> {
+  try {
+    return await getNotificationsFromEmail();
+  } catch {
+    return DEFAULT_FROM;
+  }
+}
+
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
   const html = opts.html ?? renderTemplate(opts.template!, opts.data);
 
   const resend = getResend();
+  const fromAddr = opts.from ?? await getEmailFrom();
 
   const tags = [...(opts.tags ?? [])];
   if (opts.template) {
@@ -181,7 +196,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
   }
 
   const { data: result, error } = await resend.emails.send({
-    from: opts.from ?? FROM_ADDRESS,
+    from: fromAddr,
     to: [opts.to],
     subject: opts.subject,
     html,

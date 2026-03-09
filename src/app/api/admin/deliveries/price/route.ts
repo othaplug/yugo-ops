@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { organization_id, booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend } = body;
+    const { organization_id, booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend, oversized_count } = body;
 
     if (!organization_id) return NextResponse.json({ error: "organization_id required" }, { status: 400 });
 
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
         isWeekend: !!is_weekend,
         pricingTier,
         lookup,
+        oversizedCount: oversized_count || 0,
       });
       return NextResponse.json(result);
     }

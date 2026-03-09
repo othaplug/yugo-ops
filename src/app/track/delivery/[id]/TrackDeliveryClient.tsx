@@ -64,6 +64,87 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
+function PostDeliveryRating({ deliveryId, token }: { deliveryId: string; token: string }) {
+  const [rating, setRating] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [existingRating, setExistingRating] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/track/delivery/${deliveryId}/rating?token=${encodeURIComponent(token)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d?.satisfaction_rating) {
+          setExistingRating(d.satisfaction_rating);
+          setRating(d.satisfaction_rating);
+          setSubmitted(true);
+        }
+      })
+      .catch((err) => { console.error("Failed to load existing delivery rating:", err); });
+  }, [deliveryId, token]);
+
+  const handleSubmit = async () => {
+    if (!rating) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/track/delivery/${deliveryId}/rating`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, rating, comment: comment.trim() || null }),
+      });
+      if (res.ok) setSubmitted(true);
+    } catch (err) { console.error("Failed to submit delivery rating:", err); }
+    setSubmitting(false);
+  };
+
+  if (submitted) {
+    return (
+      <div className="text-center py-6">
+        <div className="flex justify-center gap-1 mb-2">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <svg key={n} width="22" height="22" viewBox="0 0 24 24" fill={n <= (rating || 0) ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          ))}
+        </div>
+        <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Thank you for your feedback!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>Rate Your Delivery</h3>
+      <div className="flex justify-center gap-2">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" onClick={() => setRating(n)} className="transition-transform hover:scale-110">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill={rating != null && n <= rating ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Leave a comment (optional)…"
+        className="w-full p-3 rounded-xl border text-[13px] outline-none resize-none"
+        style={{ borderColor: `${FOREST}20`, color: FOREST }}
+        rows={2}
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={!rating || submitting}
+        className="w-full py-3 rounded-full font-semibold text-[14px] text-white disabled:opacity-40 transition-all hover:opacity-90"
+        style={{ backgroundColor: FOREST }}
+      >
+        {submitting ? "Submitting…" : "Submit Feedback"}
+      </button>
+    </div>
+  );
+}
+
 export default function TrackDeliveryClient({
   delivery,
   token,
@@ -78,6 +159,8 @@ export default function TrackDeliveryClient({
   const [liveStage, setLiveStage] = useState<string | null>(delivery.stage || null);
   const [crewLoc, setCrewLoc] = useState<CrewPos>(null);
   const [crewName, setCrewName] = useState<string | null>(null);
+  const [crewPhone, setCrewPhone] = useState<string | null>(null);
+  const [dispatchPhone, setDispatchPhone] = useState<string | null>(null);
   const defaultCenter = initialDropoff || initialPickup || { lat: 43.665, lng: -79.385 };
   const [center, setCenter] = useState<Coord>(defaultCenter);
   const [pickup, setPickup] = useState<Coord | null>(initialPickup || null);
@@ -110,11 +193,13 @@ export default function TrackDeliveryClient({
         if (data.crew) setCrewLoc(data.crew);
         else setCrewLoc(null);
         if (data.crewName) setCrewName(data.crewName);
+        if (data.crewPhone) setCrewPhone(data.crewPhone);
+        if (data.dispatchPhone) setDispatchPhone(data.dispatchPhone);
         if (data.center?.lat != null) setCenter(data.center);
         if (data.pickup) setPickup(data.pickup);
         if (data.dropoff) setDropoff(data.dropoff);
         setHasActiveTracking(!!data.hasActiveTracking);
-      } catch {}
+      } catch (err) { console.error("Failed to poll delivery crew status:", err); }
     };
     poll();
     const id = setInterval(poll, 5_000);
@@ -395,16 +480,28 @@ export default function TrackDeliveryClient({
                 <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{crewName}</div>
                 <div className="text-[11px]" style={{ color: `${FOREST}70` }}>Your delivery crew</div>
               </div>
-              {crewHasStarted ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-                  LIVE
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ backgroundColor: `${FOREST}08`, color: `${FOREST}70` }}>
-                  Assigned
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {(crewPhone || dispatchPhone) && (
+                  <a
+                    href={`tel:${(crewPhone || dispatchPhone || "").replace(/[^\d+]/g, "")}`}
+                    className="shrink-0 flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-[10px] font-semibold transition-colors"
+                    style={{ borderColor: `${GOLD}40`, color: FOREST }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    {crewPhone ? "Call" : "Dispatch"}
+                  </a>
+                )}
+                {crewHasStarted ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                    LIVE
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ backgroundColor: `${FOREST}08`, color: `${FOREST}70` }}>
+                    Assigned
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -635,6 +732,36 @@ export default function TrackDeliveryClient({
                   <span className="text-[11px] font-bold">Expand</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Post-delivery rating + tipping */}
+        {isCompleted && (
+          <div className="rounded-2xl border p-5 mb-5 anim-slide-up anim-delay-5" style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}>
+            <PostDeliveryRating deliveryId={delivery.id} token={token} />
+            <div className="border-t pt-4 mt-4" style={{ borderColor: `${FOREST}08` }}>
+              <h3 className="text-[14px] font-bold mb-2" style={{ color: FOREST }}>Tip Your Crew</h3>
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15, 20].map((amt) => (
+                  <a
+                    key={amt}
+                    href={`/track/tip/${delivery.id}?amount=${amt}&token=${encodeURIComponent(token)}`}
+                    className="px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors hover:opacity-80"
+                    style={{ borderColor: `${GOLD}40`, color: GOLD }}
+                  >
+                    ${amt}
+                  </a>
+                ))}
+                <a
+                  href={`/track/tip/${delivery.id}?token=${encodeURIComponent(token)}`}
+                  className="px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors hover:opacity-80"
+                  style={{ borderColor: `${GOLD}40`, color: GOLD }}
+                >
+                  Custom
+                </a>
+              </div>
+              <p className="text-[10px] mt-2 opacity-50" style={{ color: FOREST }}>100% goes to your crew</p>
             </div>
           </div>
         )}

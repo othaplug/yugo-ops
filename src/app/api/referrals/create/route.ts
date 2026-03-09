@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getResend } from "@/lib/resend";
 import { referralReceivedEmail } from "@/lib/email-templates";
 import { requireAuth } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAuth();
@@ -44,13 +45,14 @@ export async function POST(req: NextRequest) {
     if (emailToSend) {
       if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_your_api_key_here") {
         const resend = getResend();
+        const emailFrom = await getEmailFrom();
         const html = referralReceivedEmail({
           agentName: name,
           clientName: client_name || "",
           property: property || "",
         });
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: emailToSend,
           subject: "Referral received — YUGO+",
           html,

@@ -6,7 +6,8 @@ import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { Plus, Trash2, FileText, Home, Building2, ArrowUpRight, Gem, Star, Truck } from "lucide-react";
 
@@ -115,6 +116,7 @@ export default function CreateMoveForm({
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const clientPhoneInput = usePhoneInput(clientPhone, setClientPhone);
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromLat, setFromLat] = useState<number | null>(null);
@@ -207,6 +209,7 @@ export default function CreateMoveForm({
   const [b2bSourceBusiness, setB2bSourceBusiness] = useState("");
   const [b2bEndCustomerName, setB2bEndCustomerName] = useState("");
   const [b2bEndCustomerPhone, setB2bEndCustomerPhone] = useState("");
+  const b2bPhoneInput = usePhoneInput(b2bEndCustomerPhone, setB2bEndCustomerPhone);
   const [b2bDeliveryType, setB2bDeliveryType] = useState("");
   const [b2bItemDetails, setB2bItemDetails] = useState("");
   const [b2bNumberOfItems, setB2bNumberOfItems] = useState("1");
@@ -615,7 +618,7 @@ export default function CreateMoveForm({
                           >
                             {c.name}
                             {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
-                            {c.phone && <span className="text-[var(--tx3)] ml-1">— {c.phone}</span>}
+                            {c.phone && <span className="text-[var(--tx3)] ml-1">— {formatPhone(c.phone)}</span>}
                           </button>
                         ))}
                       </>
@@ -650,12 +653,12 @@ export default function CreateMoveForm({
               </Field>
               <Field label="Phone">
                 <input
+                  ref={clientPhoneInput.ref}
                   type="tel"
                   name="client_phone"
                   value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  onBlur={() => setClientPhone(formatPhone(clientPhone))}
-                  placeholder="(123) 456-7890"
+                  onChange={clientPhoneInput.onChange}
+                  placeholder={PHONE_PLACEHOLDER}
                   className={fieldInput}
                 />
               </Field>
@@ -842,7 +845,7 @@ export default function CreateMoveForm({
                   <input value={b2bEndCustomerName} onChange={(e) => setB2bEndCustomerName(e.target.value)} placeholder="Person receiving the delivery" className={fieldInput} />
                 </Field>
                 <Field label="End Customer Phone">
-                  <input type="tel" value={b2bEndCustomerPhone} onChange={(e) => setB2bEndCustomerPhone(e.target.value)} onBlur={() => setB2bEndCustomerPhone(formatPhone(b2bEndCustomerPhone))} placeholder="(123) 456-7890" className={fieldInput} />
+                  <input ref={b2bPhoneInput.ref} type="tel" value={b2bEndCustomerPhone} onChange={b2bPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                 </Field>
               </div>
               <div className="grid sm:grid-cols-2 gap-3">

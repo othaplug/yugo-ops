@@ -1,6 +1,7 @@
 import { emailLayout } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
+import { formatPhone } from "@/lib/phone";
 
 /* ═══════════════════════════════════════════════════════════
    Pre-Move, Post-Move, Review & Lifecycle Email Templates
@@ -137,7 +138,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
     ${d.coordinatorName ? `
       <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
         <div style="font-size:11px;color:#C9A962;font-weight:600">Your Coordinator</div>
-        <div style="font-size:13px;color:#E8E5E0;margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${d.coordinatorPhone}` : ""}</div>
+        <div style="font-size:13px;color:#E8E5E0;margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
         <div style="font-size:11px;color:#999;margin-top:2px">Available by phone or text for any last-minute questions.</div>
       </div>
     ` : ""}
@@ -288,7 +289,7 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
       <div style="font-size:13px;color:#B8B5B0;line-height:1.7">
         <div>Your coordinator is standing by to resolve this personally:</div>
         ${d.coordinatorName ? `<div style="color:#E8E5E0;font-weight:600;margin-top:8px">${d.coordinatorName}</div>` : ""}
-        ${d.coordinatorPhone ? `<div style="color:#C9A962;margin-top:4px">${d.coordinatorPhone}</div>` : ""}
+        ${d.coordinatorPhone ? `<div style="color:#C9A962;margin-top:4px">${formatPhone(d.coordinatorPhone)}</div>` : ""}
         ${d.coordinatorEmail ? `<div style="color:#C9A962;margin-top:4px">${d.coordinatorEmail}</div>` : ""}
       </div>
     </div>
@@ -326,7 +327,7 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone || "—"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "—"}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "—"}</td></tr>
       </table>
     </div>
@@ -740,7 +741,7 @@ export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): 
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone || "&mdash;"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "&mdash;"}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "&mdash;"}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Balance:</td><td style="color:#D14343;font-weight:600;padding:4px 0">${formatCurrency(d.balanceAmount)}</td></tr>
       </table>

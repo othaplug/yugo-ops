@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { Plus, Trash2, Truck, Send, Calendar, DollarSign } from "lucide-react";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
@@ -117,6 +118,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const [pricingError, setPricingError] = useState("");
 
   const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+  const setCustomerPhone = useCallback((v: string) => setForm((f) => ({ ...f, customer_phone: v })), []);
+  const schedulePhoneInput = usePhoneInput(form.customer_phone, setCustomerPhone);
 
   useEffect(() => {
     if (initialDate) setForm((f) => ({ ...f, scheduled_date: initialDate }));
@@ -130,7 +133,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       .then((d) => {
         if (d.services) setAvailableServices(d.services);
       })
-      .catch(() => {});
+      .catch((err) => { console.error("Failed to load available delivery services:", err); });
   }, [orgId, bookingType]);
 
   // Live pricing calculation
@@ -496,7 +499,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                     <input type="email" value={form.customer_email} onChange={(e) => set("customer_email", e.target.value)} placeholder="email@example.com" className={fieldInput} />
                   </FormField>
                   <FormField label="Phone">
-                    <input type="tel" value={form.customer_phone} onChange={(e) => set("customer_phone", e.target.value)} onBlur={() => form.customer_phone && set("customer_phone", formatPhone(form.customer_phone))} placeholder="(123) 456-7890" className={fieldInput} />
+                    <input ref={schedulePhoneInput.ref} type="tel" value={form.customer_phone} onChange={schedulePhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                   </FormField>
                 </div>
               </section>

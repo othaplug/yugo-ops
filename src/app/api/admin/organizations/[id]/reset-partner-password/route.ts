@@ -3,6 +3,7 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { partnerPasswordResetEmail, partnerPasswordResetEmailText } from "@/lib/email-templates";
+import { getEmailFrom } from "@/lib/email/send";
 
 /**
  * Set a new temporary password for a partner portal user and email it to them.
@@ -64,8 +65,9 @@ export async function POST(
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/partner/login`;
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: email,
       subject: "Your YUGO+ Partner Portal password has been reset",
       html: partnerPasswordResetEmail({

@@ -6,9 +6,27 @@ import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code";
 
+const TYPE_ICONS: Record<string, string> = {
+  Move: "truck",
+  Quote: "fileText",
+  Delivery: "package",
+  Client: "users",
+  Invoice: "dollarSign",
+  Contact: "users",
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  Move: "var(--blue)",
+  Quote: "var(--grn)",
+  Delivery: "var(--gold)",
+  Client: "var(--pur)",
+  Invoice: "var(--grn)",
+  Contact: "var(--org)",
+};
+
 export default function SearchBox() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ type: string; name: string; href: string }[]>([]);
+  const [results, setResults] = useState<{ type: string; name: string; sub?: string; href: string }[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -30,7 +48,7 @@ export default function SearchBox() {
       return;
     }
     const term = q.toLowerCase();
-    const all: { type: string; name: string; href: string }[] = [];
+    const all: { type: string; name: string; sub?: string; href: string }[] = [];
 
     const [
       { data: deliveries },
@@ -39,35 +57,78 @@ export default function SearchBox() {
       { data: moves },
       { data: quotes },
     ] = await Promise.all([
-      supabase.from("deliveries").select("id, delivery_number, customer_name, client_name"),
-      supabase.from("organizations").select("id, name, contact_name, email"),
+      supabase.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, dropoff_address"),
+      supabase.from("organizations").select("id, name, contact_name, email, address, phone"),
       supabase.from("invoices").select("id, invoice_number, client_name, amount"),
       supabase.from("moves").select("id, move_code, client_name, from_address, to_address, status"),
-      supabase.from("quotes").select("id, quote_id, client_name, status, service_type"),
+      supabase.from("quotes").select("id, quote_id, client_name, status, service_type, from_address, to_address"),
     ]);
 
-    (moves || []).forEach((m) => {
-      const s = `${m.move_code || ""} ${m.client_name || ""} ${m.from_address || ""} ${m.to_address || ""}`.toLowerCase();
-      if (s.includes(term)) all.push({ type: "Move", name: `${m.move_code || "Move"} — ${m.client_name}`, href: getMoveDetailPath(m) });
-    });
-    (quotes || []).forEach((q) => {
-      const s = `${q.quote_id || ""} ${q.client_name || ""}`.toLowerCase();
-      if (s.includes(term)) all.push({ type: "Quote", name: `${q.quote_id || "Quote"} — ${q.client_name}`, href: `/admin/quotes/${q.quote_id || q.id}` });
-    });
-    (deliveries || []).forEach((d) => {
-      const s = `${d.delivery_number} ${d.customer_name} ${d.client_name}`.toLowerCase();
-      if (s.includes(term)) all.push({ type: "Delivery", name: `${d.delivery_number} — ${d.customer_name}`, href: getDeliveryDetailPath(d) });
-    });
+    // Clients / organizations (highest priority - show first)
     (clients || []).forEach((c) => {
-      const s = `${c.name} ${c.contact_name || ""} ${c.email || ""}`.toLowerCase();
-      if (s.includes(term)) all.push({ type: "Client", name: c.name, href: `/admin/clients/${c.id}` });
-    });
-    (invoices || []).forEach((i) => {
-      const s = `${i.invoice_number} ${i.client_name}`.toLowerCase();
-      if (s.includes(term)) all.push({ type: "Invoice", name: `${i.invoice_number} — ${i.client_name}`, href: `/admin/invoices` });
+      const s = `${c.name} ${c.contact_name || ""} ${c.email || ""} ${c.address || ""} ${c.phone || ""}`.toLowerCase();
+      if (s.includes(term)) {
+        all.push({
+          type: "Client",
+          name: c.name,
+          sub: c.contact_name || c.email || undefined,
+          href: `/admin/clients/${c.id}`,
+        });
+      }
     });
 
-    setResults(all.slice(0, 10));
+    // Moves
+    (moves || []).forEach((m) => {
+      const s = `${m.move_code || ""} ${m.client_name || ""} ${m.from_address || ""} ${m.to_address || ""}`.toLowerCase();
+      if (s.includes(term)) {
+        all.push({
+          type: "Move",
+          name: `${m.move_code || "Move"} — ${m.client_name}`,
+          sub: m.from_address ? `${m.from_address?.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined,
+          href: getMoveDetailPath(m),
+        });
+      }
+    });
+
+    // Quotes
+    (quotes || []).forEach((q) => {
+      const s = `${q.quote_id || ""} ${q.client_name || ""} ${q.from_address || ""} ${q.to_address || ""}`.toLowerCase();
+      if (s.includes(term)) {
+        all.push({
+          type: "Quote",
+          name: `${q.quote_id || "Quote"} — ${q.client_name}`,
+          sub: q.service_type?.replace(/_/g, " "),
+          href: `/admin/quotes/${q.quote_id || q.id}`,
+        });
+      }
+    });
+
+    // Deliveries
+    (deliveries || []).forEach((d) => {
+      const s = `${d.delivery_number} ${d.customer_name || ""} ${d.client_name || ""} ${d.pickup_address || ""} ${d.dropoff_address || ""}`.toLowerCase();
+      if (s.includes(term)) {
+        all.push({
+          type: "Delivery",
+          name: `${d.delivery_number} — ${d.customer_name || d.client_name || "Delivery"}`,
+          sub: d.client_name || undefined,
+          href: getDeliveryDetailPath(d),
+        });
+      }
+    });
+
+    // Invoices
+    (invoices || []).forEach((i) => {
+      const s = `${i.invoice_number} ${i.client_name}`.toLowerCase();
+      if (s.includes(term)) {
+        all.push({
+          type: "Invoice",
+          name: `${i.invoice_number} — ${i.client_name}`,
+          href: `/admin/invoices`,
+        });
+      }
+    });
+
+    setResults(all.slice(0, 12));
     setOpen(all.length > 0);
   }, [supabase]);
 
@@ -82,21 +143,13 @@ export default function SearchBox() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, search]);
 
-  const TYPE_ICONS: Record<string, string> = {
-    Move: "truck",
-    Quote: "fileText",
-    Delivery: "package",
-    Client: "users",
-    Invoice: "dollarSign",
-  };
-
   return (
     <div ref={ref} className="relative flex-1 min-w-0">
-      <div className="flex items-center gap-2 h-9 bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 w-full focus-within:border-[var(--gold)] transition-colors duration-200">
+      <div className="flex items-center gap-2 h-9 bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 w-full transition-colors duration-200">
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search moves, quotes, clients..."
+          placeholder="Search moves, quotes, clients, addresses..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
@@ -113,29 +166,40 @@ export default function SearchBox() {
         )}
       </div>
       {open && results.length > 0 && (
-        <div className="absolute left-0 w-full sm:w-[420px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
+        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
           <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
             {results.length} result{results.length !== 1 ? "s" : ""}
           </div>
-          {results.map((r) => (
+          {results.map((r, idx) => (
             <div
-              key={r.href + r.name}
+              key={r.href + r.name + idx}
               onClick={() => { router.push(r.href); setOpen(false); setQuery(""); }}
-              className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[var(--brd)]/50 last:border-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors duration-200"
+              className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[var(--brd)]/40 last:border-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors duration-150"
             >
-              <div className="w-6 h-6 rounded-md flex items-center justify-center bg-[var(--bg)] border border-[var(--brd)]/40 shrink-0">
-                <Icon name={TYPE_ICONS[r.type] || "search"} className="w-3 h-3 text-[var(--tx3)]" />
-              </div>
+              <Icon
+                name={TYPE_ICONS[r.type] || "search"}
+                className="w-3.5 h-3.5 shrink-0"
+                style={{ color: TYPE_COLORS[r.type] || "var(--tx3)" }}
+              />
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
-                <div className="text-[9px] text-[var(--tx3)]">{r.type}</div>
+                {r.sub && <div className="text-[9px] text-[var(--tx3)] truncate">{r.sub}</div>}
               </div>
+              <span
+                className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
+                style={{
+                  color: TYPE_COLORS[r.type] || "var(--tx3)",
+                  backgroundColor: `${TYPE_COLORS[r.type]}18` || "var(--gdim)",
+                }}
+              >
+                {r.type}
+              </span>
             </div>
           ))}
         </div>
       )}
       {open && query.length >= 2 && results.length === 0 && (
-        <div className="absolute left-0 w-full sm:w-[420px] top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up px-4 py-6 text-center">
+        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up px-4 py-6 text-center">
           <div className="text-[12px] text-[var(--tx3)]">No results for &ldquo;{query}&rdquo;</div>
         </div>
       )}

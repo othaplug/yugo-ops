@@ -10,6 +10,7 @@ import EditPartnerModal from "./EditPartnerModal";
 import DeliverySummaryModal from "./DeliverySummaryModal";
 import PortalAccessSection from "./PortalAccessSection";
 import PartnerRateCardTab from "./PartnerRateCardTab";
+import AdminPartnerAnalytics from "./AdminPartnerAnalytics";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
@@ -76,7 +77,7 @@ export default function ClientDetailClient({
   const [resendPortalLoading, setResendPortalLoading] = useState(false);
   const [summaryDelivery, setSummaryDelivery] = useState<typeof deliveries[0] | null>(null);
   const [summaryInvoice, setSummaryInvoice] = useState<typeof allInvoices[0] | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "rate-card">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "rate-card" | "analytics">("overview");
 
   useEffect(() => {
     if (searchParams.get("edit") === "1") setEditModalOpen(true);
@@ -211,7 +212,7 @@ export default function ClientDetailClient({
       {/* Tab bar — partners only */}
       {!isClient && isAdmin && (
         <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0">
-          {(["overview", "rate-card"] as const).map((tab) => (
+          {(["overview", "rate-card", "analytics"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -221,7 +222,7 @@ export default function ClientDetailClient({
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
               }`}
             >
-              {tab === "overview" ? "Overview" : "Rate Card"}
+              {tab === "overview" ? "Overview" : tab === "rate-card" ? "Rate Card" : "Analytics"}
             </button>
           ))}
         </div>
@@ -230,6 +231,11 @@ export default function ClientDetailClient({
       {/* Rate Card tab content */}
       {!isClient && isAdmin && activeTab === "rate-card" && (
         <PartnerRateCardTab orgId={client.id} orgName={client.name || ""} />
+      )}
+
+      {/* Analytics tab content */}
+      {!isClient && isAdmin && activeTab === "analytics" && (
+        <AdminPartnerAnalytics orgId={client.id} orgName={client.name || ""} />
       )}
 
       {/* Overview content — hidden when rate card tab active */}

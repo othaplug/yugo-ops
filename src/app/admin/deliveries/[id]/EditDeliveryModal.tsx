@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
@@ -69,6 +70,8 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState(delivery?.crew_id || "");
+  const [customerPhone, setCustomerPhone] = useState(delivery?.customer_phone ? formatPhone(delivery.customer_phone) : "");
+  const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -81,6 +84,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
       setDeliveryAddress(delivery.delivery_address ?? "");
       setQuotedPrice(formatNumberInput(effectivePrice) || "");
       setCrewId(delivery.crew_id || "");
+      setCustomerPhone(delivery.customer_phone ? formatPhone(delivery.customer_phone) : "");
     }
   }, [open, delivery]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -106,7 +110,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
         body: JSON.stringify({
           customer_name: form.get("customer_name"),
           customer_email: form.get("customer_email") || null,
-          customer_phone: normalizePhone(String(form.get("customer_phone") || "")) || null,
+          customer_phone: normalizePhone(customerPhone) || null,
           delivery_address: deliveryAddress || form.get("delivery_address"),
           pickup_address: pickupAddress || form.get("pickup_address"),
           scheduled_date: form.get("scheduled_date"),
@@ -186,7 +190,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             </div>
             <div>
               <label className={labelCls}>Phone</label>
-              <input name="customer_phone" type="tel" defaultValue={delivery.customer_phone ? formatPhone(delivery.customer_phone) : ""} placeholder="(647) 555-0123" className={inputCls} />
+              <input ref={customerPhoneInput.ref} type="tel" value={customerPhone} onChange={customerPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={inputCls} />
             </div>
           </div>
         </div>

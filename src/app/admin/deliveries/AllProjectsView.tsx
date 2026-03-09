@@ -8,8 +8,16 @@ import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatMoveDate } from "@/lib/date-format";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
+import { formatCurrency } from "@/lib/format-currency";
+import RecurringSchedulesView from "./RecurringSchedulesView";
 
-const PARTNER_TYPES = ["all", "retail", "designer", "hospitality", "gallery"] as const;
+const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
+  { key: "all", label: "All", categories: [] },
+  { key: "furniture_design", label: "Furniture & Design", categories: ["retail", "designer", "furniture_retailer", "interior_designer", "cabinetry", "flooring", "b2b"] },
+  { key: "art_specialty", label: "Art & Specialty", categories: ["gallery", "art_gallery", "antique_dealer"] },
+  { key: "hospitality", label: "Hospitality", categories: ["hospitality"] },
+  { key: "medical_technical", label: "Medical & Technical", categories: ["medical_equipment", "av_technology", "appliances"] },
+];
 const STATUS_OPTIONS = [
   { value: "", label: "All status" },
   { value: "pending_approval", label: "Pending Approval" },
@@ -32,6 +40,12 @@ interface Delivery {
   time_slot: string;
   status: string;
   category: string;
+  booking_type?: string | null;
+  vehicle_type?: string | null;
+  num_stops?: number | null;
+  total_price?: number | null;
+  delivery_type?: string | null;
+  zone?: number | null;
 }
 
 const DELIVERY_STATUS_STYLE: Record<string, string> = {
@@ -47,6 +61,19 @@ const DELIVERY_STATUS_STYLE: Record<string, string> = {
   cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
 };
 
+function deliveryTypeLabel(d: Delivery): string {
+  return d.booking_type === "day_rate" ? "Day Rate" : "Delivery";
+}
+
+function deliveryDetailsLabel(d: Delivery): string {
+  if (d.booking_type === "day_rate") {
+    const parts = [d.vehicle_type || "", d.num_stops != null ? `${d.num_stops} stops` : ""].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "—";
+  }
+  const parts = [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : "", d.zone != null ? `Z${d.zone}` : ""].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "—";
+}
+
 const deliveryColumns: ColumnDef<Delivery>[] = [
   {
     id: "date",
@@ -61,6 +88,35 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     sortable: true,
     searchable: true,
     exportAccessor: (d) => `${formatMoveDate(d.scheduled_date)} ${d.time_slot || ""}`,
+  },
+  {
+    id: "type",
+    label: "Type",
+    accessor: (d) => deliveryTypeLabel(d),
+    render: (d) =>
+      d.booking_type === "day_rate" ? (
+        <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
+      ) : (
+        <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
+      ),
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "details",
+    label: "Details",
+    accessor: (d) => deliveryDetailsLabel(d),
+    render: (d) => <span className="text-[12px] text-[var(--tx2)]">{deliveryDetailsLabel(d)}</span>,
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "price",
+    label: "Price",
+    accessor: (d) => d.total_price ?? 0,
+    render: (d) => (d.total_price != null && d.total_price > 0 ? formatCurrency(d.total_price) : "—"),
+    sortable: true,
+    align: "right",
   },
   {
     id: "status",
@@ -118,7 +174,8 @@ export default function AllDeliveriesView({
   today: string;
 }) {
   const router = useRouter();
-  const [partnerType, setPartnerType] = useState<(typeof PARTNER_TYPES)[number]>("all");
+  const [activeView, setActiveView] = useState<"deliveries" | "recurring">("deliveries");
+  const [partnerType, setPartnerType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -129,7 +186,12 @@ export default function AllDeliveriesView({
 
   const filteredDeliveries = useMemo(() => {
     let list = [...deliveries];
-    if (partnerType !== "all") list = list.filter((d) => (d.category || "").toLowerCase() === partnerType.toLowerCase());
+    if (partnerType !== "all") {
+      const filter = PARTNER_TYPE_FILTERS.find((f) => f.key === partnerType);
+      if (filter && filter.categories.length > 0) {
+        list = list.filter((d) => filter.categories.includes((d.category || "").toLowerCase()));
+      }
+    }
     if (statusFilter) list = list.filter((d) => (d.status || "").toLowerCase() === statusFilter.toLowerCase());
     if (dateFrom) list = list.filter((d) => (d.scheduled_date || "") >= dateFrom);
     if (dateTo) list = list.filter((d) => (d.scheduled_date || "") <= dateTo);
@@ -158,6 +220,29 @@ export default function AllDeliveriesView({
 
   return (
     <>
+      {/* View tabs */}
+      <div className="flex gap-0 border-b border-[var(--brd)]/30 mb-5 -mx-1">
+        {([
+          { key: "deliveries" as const, label: "All Deliveries" },
+          { key: "recurring" as const, label: "Recurring Schedules" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveView(t.key)}
+            className={`px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
+              activeView === t.key
+                ? "border-[var(--gold)] text-[var(--gold)]"
+                : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeView === "recurring" && <RecurringSchedulesView />}
+
+      {activeView === "deliveries" && (<>
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Deliveries</h1>
@@ -206,13 +291,7 @@ export default function AllDeliveriesView({
 
       {/* Partner type pills */}
       <div className="flex flex-wrap gap-1.5 mb-4 pt-5 border-t border-[var(--brd)]/30">
-        {([
-          { key: "all" as const, label: "All" },
-          { key: "retail" as const, label: "Retail" },
-          { key: "designer" as const, label: "Designers" },
-          { key: "hospitality" as const, label: "Hospitality" },
-          { key: "gallery" as const, label: "Gallery" },
-        ]).map((t) => (
+        {PARTNER_TYPE_FILTERS.map((t) => (
           <button
             key={t.key}
             onClick={() => setPartnerType(t.key)}
@@ -285,6 +364,7 @@ export default function AllDeliveriesView({
           emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}
         />
       </div>
+      </>)}
     </>
   );
 }

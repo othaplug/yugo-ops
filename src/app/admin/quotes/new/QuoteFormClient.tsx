@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { formatPhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
 import { Home, Building2, ArrowUpRight, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Search, Plus, Minus, Users, Clock, Truck } from "lucide-react";
 
@@ -225,6 +226,8 @@ export default function QuoteFormClient({
   const [arrivalWindow, setArrivalWindow] = useState("morning");
   const [moveSize, setMoveSize] = useState("2br");
 
+  const phoneInput = usePhoneInput(phone, setPhone);
+
   // Specialty items
   const [specialtyItems, setSpecialtyItems] = useState<{ type: string; qty: number }[]>([]);
 
@@ -252,6 +255,9 @@ export default function QuoteFormClient({
   const [timelineHours, setTimelineHours] = useState(4);
   const [cratingPieces, setCratingPieces] = useState(0);
   const [climateControl, setClimateControl] = useState(false);
+
+  // Recommended tier (coordinator judgment)
+  const [recommendedTier, setRecommendedTier] = useState<"essentials" | "premier" | "estate">("premier");
 
   // Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
@@ -387,7 +393,7 @@ export default function QuoteFormClient({
         if (d.firstName) setFirstName(d.firstName);
         if (d.lastName) setLastName(d.lastName);
         if (d.email) setEmail(d.email);
-        if (d.phone) setPhone(d.phone);
+        if (d.phone) setPhone(formatPhone(d.phone));
         if (d.squareFootage) setSqft(d.squareFootage);
         if (d.workstationCount) setWsCount(d.workstationCount);
         setHubspotBanner(`Pre-filled from HubSpot Deal #${d.jobNo || hubspotDealId}`);
@@ -523,9 +529,10 @@ export default function QuoteFormClient({
       arrival_window: arrivalWindow || undefined,
       hubspot_deal_id: hubspotDealId || undefined,
       selected_addons: Array.from(selectedAddons.values()),
+      recommended_tier: recommendedTier,
       client_name: clientName || undefined,
       client_email: email || undefined,
-      client_phone: phone || undefined,
+      client_phone: phone ? normalizePhone(phone) : undefined,
     };
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
@@ -570,7 +577,7 @@ export default function QuoteFormClient({
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
-    selectedAddons, moveSize, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
+    selectedAddons, recommendedTier, moveSize, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     hasReception, timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
     firstName, lastName, email, phone,
@@ -791,7 +798,7 @@ export default function QuoteFormClient({
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@email.com" className={fieldInput} />
                   </Field>
                   <Field label="Phone">
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(416) 555-1234" className={fieldInput} />
+                    <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                   </Field>
                 </div>
               </div>
@@ -871,6 +878,38 @@ export default function QuoteFormClient({
                     </Field>
                   )}
                 </div>
+
+                {serviceType === "local_move" && (
+                  <div className="mt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Field label="Recommend Tier">
+                          <select
+                            value={recommendedTier}
+                            onChange={(e) => setRecommendedTier(e.target.value as "essentials" | "premier" | "estate")}
+                            className={fieldInput}
+                          >
+                            <option value="essentials">Essentials</option>
+                            <option value="premier">Premier</option>
+                            <option value="estate">Estate</option>
+                          </select>
+                        </Field>
+                      </div>
+                      {recommendedTier !== "estate" && (
+                        <button
+                          type="button"
+                          onClick={() => setRecommendedTier("estate")}
+                          className="mt-4 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors whitespace-nowrap"
+                        >
+                          White glove lead? Select Estate &rarr;
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-[var(--tx3)] mt-1">
+                      The recommended tier highlights that package on the client&apos;s quote page and email.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
@@ -1401,7 +1440,7 @@ export default function QuoteFormClient({
                 {quoteResult ? (
                   <>
                     {quoteResult.tiers ? (
-                      <TiersDisplay tiers={quoteResult.tiers} />
+                      <TiersDisplay tiers={quoteResult.tiers} recommendedTier={recommendedTier} />
                     ) : quoteResult.custom_price ? (
                       <SinglePriceDisplay price={quoteResult.custom_price} label={toTitleCase(serviceType)} />
                     ) : null}
@@ -1579,7 +1618,7 @@ export default function QuoteFormClient({
 
 // ─── Sub-Components ─────────────────────────────
 
-function TiersDisplay({ tiers }: { tiers: Record<string, TierResult> }) {
+function TiersDisplay({ tiers, recommendedTier = "premier" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
   const tierOrder = ["essentials", "premier", "estate"] as const;
   const tierColors = {
     essentials: { bg: "bg-[var(--bg)]", border: "border-[var(--brd)]", accent: "text-[var(--tx)]" },
@@ -1594,13 +1633,13 @@ function TiersDisplay({ tiers }: { tiers: Record<string, TierResult> }) {
         const t = tiers[name];
         if (!t) return null;
         const c = tierColors[name];
-        const isPremier = name === "premier";
+        const isRecommended = name === recommendedTier;
         return (
           <div key={name} className={`rounded-xl border-2 ${c.border} ${c.bg} p-5 space-y-2`}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
-                {isPremier && (
+                {isRecommended && (
                   <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                     Recommended
                   </span>

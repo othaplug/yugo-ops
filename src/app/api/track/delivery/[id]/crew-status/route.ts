@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
+import { getDispatchPhone } from "@/lib/config";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -71,6 +72,31 @@ export async function GET(
       }
     }
 
+    // Resolve crew tablet phone: registered_devices (tablet linked to team) > crews.phone > dispatch
+    let crewPhone: string | null = null;
+    if (delivery.crew_id) {
+      const { data: device } = await admin
+        .from("registered_devices")
+        .select("phone")
+        .eq("default_team_id", delivery.crew_id)
+        .eq("is_active", true)
+        .not("phone", "is", null)
+        .order("last_active_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (device?.phone) {
+        crewPhone = device.phone;
+      } else {
+        const { data: crewRow } = await admin
+          .from("crews")
+          .select("phone")
+          .eq("id", delivery.crew_id)
+          .maybeSingle();
+        if (crewRow?.phone) crewPhone = crewRow.phone;
+      }
+    }
+    const dispatchPhone = await getDispatchPhone();
+
     const center = crew
       ? { lat: crew.current_lat, lng: crew.current_lng }
       : { lat: 43.665, lng: -79.385 };
@@ -87,6 +113,8 @@ export async function GET(
         center,
         liveStage,
         hasActiveTracking: !!ts?.is_active,
+        crewPhone: crewPhone || null,
+        dispatchPhone,
         pickup,
         dropoff,
         scheduledDate: delivery.scheduled_date || null,

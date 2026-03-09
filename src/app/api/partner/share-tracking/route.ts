@@ -4,6 +4,7 @@ import { requirePartner } from "@/lib/partner-auth";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getResend } from "@/lib/resend";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
   const { orgIds, error } = await requirePartner();
@@ -39,8 +40,9 @@ export async function POST(req: NextRequest) {
       }
 
       const resend = getResend();
+      const emailFrom = await getEmailFrom();
       const { error: sendError } = await resend.emails.send({
-        from: "Yugo+ <notifications@opsplus.co>",
+        from: emailFrom,
         to: recipient,
         subject: `Track your delivery — ${delivery.delivery_number}`,
         html: `

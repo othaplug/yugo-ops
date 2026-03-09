@@ -5,6 +5,7 @@ import { changeRequestNotificationEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { getEmailFrom } from "@/lib/email/send";
 
 /** Parse and apply approved change request to move data globally */
 async function applyApprovedChange(
@@ -195,8 +196,9 @@ export async function PATCH(
           portalUrl: trackUrl,
           feeCents: feeCentsFinal,
         });
+        const emailFrom = await getEmailFrom();
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: move.client_email,
           subject: `Your change request has been ${status === "approved" ? "approved" : "declined"}`,
           html,

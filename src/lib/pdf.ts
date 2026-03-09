@@ -840,6 +840,186 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
   return doc;
 }
 
+/* ─── Proof of Delivery PDF ─── */
+
+export interface PoDPDFData {
+  deliveryNumber: string;
+  date: string;
+  address: string;
+  gpsLat?: number | null;
+  gpsLng?: number | null;
+  crewMembers: string[];
+  partnerName?: string | null;
+  items: { name: string; condition: string; notes?: string }[];
+  signerName: string;
+  signedAt: string;
+  satisfactionRating?: number | null;
+  satisfactionComment?: string | null;
+  signatureDataUrl?: string | null;
+}
+
+export function generatePoDPDF(data: PoDPDFData) {
+  const doc = new jsPDF();
+  const gold: [number, number, number] = [201, 169, 98];
+  const dark: [number, number, number] = [13, 13, 13];
+  const gray: [number, number, number] = [120, 120, 120];
+  const green: [number, number, number] = [34, 197, 94];
+  const red: [number, number, number] = [239, 68, 68];
+
+  doc.setFillColor(...gold);
+  doc.rect(0, 0, 210, 3, "F");
+
+  doc.setFontSize(28);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text("YUGO", 20, 26);
+  doc.setFontSize(10);
+  doc.setTextColor(...gray);
+  doc.text("Proof of Delivery", 20, 33);
+
+  if (data.partnerName) {
+    doc.setFontSize(9);
+    doc.setTextColor(...gold);
+    doc.text(data.partnerName, 130, 22);
+  }
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(20, 38, 190, 38);
+
+  let y = 48;
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text(`Delivery: ${data.deliveryNumber}`, 20, y);
+  y += 6;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...gray);
+  doc.text(`Date: ${data.date}`, 20, y);
+  y += 5;
+  doc.text(`Location: ${data.address || "—"}`, 20, y);
+  y += 5;
+  if (data.gpsLat != null && data.gpsLng != null) {
+    doc.text(`GPS: ${Number(data.gpsLat).toFixed(4)}, ${Number(data.gpsLng).toFixed(4)}`, 20, y);
+    y += 5;
+  }
+  if (data.crewMembers.length > 0) {
+    doc.text(`Crew: ${data.crewMembers.join(", ")}`, 20, y);
+    y += 5;
+  }
+  y += 5;
+
+  // Items delivered
+  if (data.items.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gold);
+    doc.text("ITEMS DELIVERED", 20, y);
+    y += 6;
+
+    const conditionColors: Record<string, [number, number, number]> = {
+      pristine: green,
+      minor_scuff: [245, 158, 11],
+      pre_existing_damage: gray,
+      new_damage: red,
+    };
+    const conditionLabels: Record<string, string> = {
+      pristine: "Pristine",
+      minor_scuff: "Minor Scuff",
+      pre_existing_damage: "Pre-existing",
+      new_damage: "NEW DAMAGE",
+    };
+
+    const body = data.items.map((item, i) => [
+      String(i + 1),
+      item.name,
+      conditionLabels[item.condition] || item.condition,
+      item.notes || "",
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Item", "Condition", "Notes"]],
+      body,
+      theme: "plain",
+      headStyles: { fillColor: [245, 243, 240], textColor: dark, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8, cellPadding: 3 },
+      columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 60 }, 2: { cellWidth: 35 } },
+      alternateRowStyles: { fillColor: [252, 251, 249] },
+      didParseCell: (hookData) => {
+        if (hookData.section === "body" && hookData.column.index === 2) {
+          const val = (hookData.row.raw as string[])?.[2]?.toLowerCase().replace(/\s/g, "_");
+          const color = conditionColors[val];
+          if (color) (hookData.cell.styles as { textColor?: number[] }).textColor = color;
+        }
+      },
+    });
+    y = (doc as any).lastAutoTable?.finalY + 8;
+  }
+
+  // Signature
+  if (y > 200) { doc.addPage(); y = 20; }
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...gold);
+  doc.text("CUSTOMER SIGNATURE", 20, y);
+  y += 6;
+
+  if (data.signatureDataUrl && data.signatureDataUrl.startsWith("data:image")) {
+    try {
+      doc.addImage(data.signatureDataUrl, "PNG", 20, y, 80, 25);
+      y += 28;
+    } catch {
+      y += 2;
+    }
+  }
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...dark);
+  doc.setFontSize(9);
+  doc.text(`Signed by: ${data.signerName}`, 20, y);
+  y += 5;
+  doc.text(`Date: ${data.signedAt}`, 20, y);
+  y += 8;
+
+  // Satisfaction
+  if (data.satisfactionRating != null) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gold);
+    doc.text("SATISFACTION", 20, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    const stars = "★".repeat(data.satisfactionRating) + "☆".repeat(5 - data.satisfactionRating);
+    doc.text(`${stars} (${data.satisfactionRating}/5)`, 20, y);
+    y += 5;
+    if (data.satisfactionComment) {
+      doc.setTextColor(...gray);
+      const lines = doc.splitTextToSize(`"${data.satisfactionComment}"`, 170);
+      doc.text(lines, 20, y);
+      y += lines.length * 4 + 3;
+    }
+  }
+
+  // Footer
+  if (y > 265) { doc.addPage(); }
+  doc.setDrawColor(220, 220, 220);
+  doc.line(20, 272, 190, 272);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...gray);
+  doc.text("This is an official Proof of Delivery document. Retain for your records.", 20, 278);
+  doc.text(`Generated ${new Date().toLocaleString("en-US")} • YUGO • withyugo.com`, 20, 283);
+
+  doc.setFillColor(...gold);
+  doc.rect(0, 294, 210, 3, "F");
+
+  return doc;
+}
+
 export interface EODReportForPDF {
   id: string;
   team_id: string;
@@ -867,7 +1047,8 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
 
   let y = 40;
   reports.forEach((r, idx) => {
-    const crewName = (r.crews as { name?: string })?.name || "Team";
+    const crewObj = Array.isArray(r.crews) ? r.crews[0] : r.crews;
+    const crewName = (crewObj as { name?: string } | undefined)?.name || "Team";
     if (y > 260) {
       doc.addPage();
       y = 20;

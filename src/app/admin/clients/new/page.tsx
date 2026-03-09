@@ -8,7 +8,7 @@ export default async function NewClientPage({
 }) {
   const params = await searchParams;
   const isPartner = params.type === "partner";
-  const partnerType = params.partnerType || "retail";
+  const partnerType = params.partnerType || "furniture_retailer";
   const pageTitle = isPartner ? "Add Partner" : "Add Client";
 
   return (

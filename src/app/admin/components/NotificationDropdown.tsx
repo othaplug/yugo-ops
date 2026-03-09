@@ -91,8 +91,8 @@ export default function NotificationDropdown() {
                       setOpen(false);
                       router.push(href);
                     }}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--brd)] last:border-b-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors w-full text-left bg-transparent border-t-0 border-x-0 ${
-                      !notif.read ? "bg-[var(--gdim)]" : ""
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--brd)] last:border-b-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors w-full text-left border-t-0 border-x-0 ${
+                      !notif.read ? "bg-[var(--gdim)]" : "bg-transparent"
                     }`}
                   >
                     {/* Unread dot */}
@@ -111,7 +111,7 @@ export default function NotificationDropdown() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className={`text-[11px] leading-snug ${!notif.read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                        <div className={`text-[11px] leading-snug ${!notif.read ? "font-bold text-[var(--tx)]" : "font-normal text-[var(--tx2)]"}`}>
                           {notif.title}
                         </div>
                         {tag && (

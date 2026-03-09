@@ -24,12 +24,27 @@ export default async function PlatformPage() {
     autoInvoicing: toggles.auto_invoicing,
   };
 
-  let crewsResult = await db.from("crews").select("id, name, members, active").order("name");
+  let crewsResult = await db.from("crews").select("id, name, members, active, phone").order("name");
   if (crewsResult.error && String(crewsResult.error.message).includes("active")) {
     crewsResult = await db.from("crews").select("id, name, members").order("name") as typeof crewsResult;
   }
   const crews = crewsResult.data || [];
-  const initialTeams = crews.map((c: { id: string; name: string; members?: unknown[]; active?: boolean }) => ({
+
+  // Look up tablet phone numbers from registered_devices for each team
+  const { data: activeDevices } = await db
+    .from("registered_devices")
+    .select("default_team_id, phone")
+    .eq("is_active", true)
+    .not("phone", "is", null)
+    .order("last_active_at", { ascending: false });
+  const devicePhoneByTeam: Record<string, string> = {};
+  for (const dev of activeDevices || []) {
+    if (dev.default_team_id && dev.phone && !devicePhoneByTeam[dev.default_team_id]) {
+      devicePhoneByTeam[dev.default_team_id] = dev.phone;
+    }
+  }
+
+  const initialTeams = crews.map((c: { id: string; name: string; members?: unknown[]; active?: boolean; phone?: string }) => ({
     id: c.id,
     label: c.name,
     memberIds: (Array.isArray(c.members) ? c.members : []).map((m: unknown) => {
@@ -39,6 +54,7 @@ export default async function PlatformPage() {
       return String(m).trim();
     }).filter(Boolean),
     active: typeof (c as { active?: boolean }).active === "boolean" ? (c as { active: boolean }).active : true,
+    phone: devicePhoneByTeam[c.id] || (c as { phone?: string }).phone || "",
   }));
 
   return (

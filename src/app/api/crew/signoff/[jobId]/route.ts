@@ -78,6 +78,7 @@ export async function POST(
   const preExistingConditionsNoted = body.preExistingConditionsNoted === true;
   const claimsProcessExplained = false;
   const photosReviewedByClient = body.photosReviewedByClient === true;
+  const itemConditions = Array.isArray(body.itemConditions) ? body.itemConditions : [];
 
   if (!signedBy || !signatureDataUrl) {
     return NextResponse.json({ error: "Name and signature required" }, { status: 400 });
@@ -183,6 +184,7 @@ export async function POST(
       escalation_reason: escalationReasons.length > 0 ? escalationReasons.join("; ") : null,
       feedback_note: feedbackNote,
       exceptions,
+      item_conditions: itemConditions.length > 0 ? itemConditions : [],
     })
     .select("id, signed_at")
     .single();
@@ -242,6 +244,60 @@ export async function POST(
         .from("client_sign_offs")
         .update({ discrepancy_flags: flags })
         .eq("id", inserted.id);
+    }
+  } catch {}
+
+  // Create Proof of Delivery record
+  const hasNewDamage = itemConditions.some((ic: { condition: string }) => ic.condition === "new_damage");
+  try {
+    const { data: jobPhotos } = await admin
+      .from("job_photos")
+      .select("storage_path, category, note, taken_at")
+      .eq("job_id", entityId)
+      .eq("job_type", jobType);
+
+    const photosByCategory = (cat: string) =>
+      (jobPhotos || [])
+        .filter((p) => p.category === cat)
+        .map((p) => ({ url: p.storage_path, caption: p.note, timestamp: p.taken_at }));
+
+    const crewMemberNames: string[] = [];
+    if (payload.teamId) {
+      const { data: members } = await admin
+        .from("crew_members")
+        .select("first_name, last_name")
+        .eq("crew_id", payload.teamId)
+        .eq("is_active", true);
+      for (const m of members || []) {
+        crewMemberNames.push(`${m.first_name} ${(m.last_name || "").charAt(0)}.`);
+      }
+    }
+
+    await admin.from("proof_of_delivery").insert({
+      move_id: jobType === "move" ? entityId : null,
+      delivery_id: jobType === "delivery" ? entityId : null,
+      photos_pickup: photosByCategory("pre_move_condition"),
+      photos_transit: photosByCategory("in_transit"),
+      photos_delivery: photosByCategory("delivery_placement"),
+      item_conditions: itemConditions,
+      signature_data: signatureDataUrl,
+      signer_name: signedBy,
+      signed_at: inserted.signed_at,
+      satisfaction_rating: satisfactionRating >= 1 && satisfactionRating <= 5 ? satisfactionRating : null,
+      satisfaction_comment: feedbackNote,
+      crew_members: crewMemberNames,
+      gps_lat: signedLat,
+      gps_lng: signedLng,
+    });
+
+    if (hasNewDamage) {
+      await admin.from("status_events").insert({
+        entity_type: jobType,
+        entity_id: entityId,
+        event_type: "new_damage_reported",
+        description: `New damage reported on ${itemConditions.filter((ic: { condition: string }) => ic.condition === "new_damage").length} item(s) during PoD`,
+        icon: "alert-triangle",
+      });
     }
   } catch {}
 

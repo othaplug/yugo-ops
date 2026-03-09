@@ -15,20 +15,8 @@ type Client = {
   type: string;
   contact_name: string | null;
   email: string | null;
-  deliveries_per_month?: string | number | null;
   outstanding_balance?: number | null;
 };
-
-type TabId = "partners" | "move-clients";
-
-const PARTNER_TYPE_OPTIONS = [
-  { value: "", label: "All types" },
-  { value: "retail", label: "Retail" },
-  { value: "hospitality", label: "Hospitality" },
-  { value: "designer", label: "Designer" },
-  { value: "gallery", label: "Gallery" },
-  { value: "realtor", label: "Realtor" },
-];
 
 const MOVE_STATUS_OPTIONS = [
   { value: "", label: "All" },
@@ -52,31 +40,15 @@ export default function ClientsPageClient({
   clients: Client[];
   moveClientData: Map<string, { move_type: string; scheduled_date: string | null; status: string; estimate: number }>;
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("partners");
-  const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [balanceFilter, setBalanceFilter] = useState("");
 
-  const partners = useMemo(() => initialClients.filter((c) => c.type !== "b2c"), [initialClients]);
-  const moveClients = useMemo(() => initialClients.filter((c) => c.type === "b2c"), [initialClients]);
-
   const router = useRouter();
-
-  const filteredPartners = useMemo(() => {
-    let list = [...partners];
-    if (typeFilter) list = list.filter((c) => c.type === typeFilter);
-    if (balanceFilter) {
-      const hasBal = (c: Client) => (c.outstanding_balance ?? 0) > 0;
-      if (balanceFilter === "has") list = list.filter(hasBal);
-      if (balanceFilter === "none") list = list.filter((c) => !hasBal(c));
-    }
-    return list;
-  }, [partners, typeFilter, balanceFilter]);
 
   type MoveClientRow = Client & { move_type: string; move_date: string | null; move_status: string; estimate: number };
 
-  const filteredMoveClients = useMemo((): MoveClientRow[] => {
-    let list: MoveClientRow[] = moveClients.map((c) => {
+  const filteredClients = useMemo((): MoveClientRow[] => {
+    let list: MoveClientRow[] = initialClients.map((c) => {
       const moveData = moveClientData.get(c.id);
       return {
         ...c,
@@ -93,58 +65,9 @@ export default function ClientsPageClient({
       if (balanceFilter === "none") list = list.filter((c) => !hasBal(c));
     }
     return list;
-  }, [moveClients, moveClientData, statusFilter, balanceFilter]);
+  }, [initialClients, moveClientData, statusFilter, balanceFilter]);
 
-  const partnerColumns: ColumnDef<Client>[] = [
-    {
-      id: "name", label: "Client",
-      accessor: (c) => c.name || "",
-      render: (c) => {
-        const hasBalance = (c.outstanding_balance ?? 0) > 0;
-        const isActive = Number(c.deliveries_per_month ?? 0) > 0;
-        return (
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-[var(--tx)]">{c.name}</span>
-            {hasBalance && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>}
-            {!hasBalance && isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
-          </div>
-        );
-      },
-    },
-    {
-      id: "type", label: "Type",
-      accessor: (c) => c.type,
-      render: (c) => <span className="text-[11px] capitalize text-[var(--tx2)]">{c.type}</span>,
-    },
-    {
-      id: "contact", label: "Contact",
-      accessor: (c) => c.contact_name || c.email || "",
-      render: (c) => (
-        <div>
-          <div className="text-[10px] text-[var(--tx)]">{c.contact_name}</div>
-          <div className="text-[10px] text-[var(--tx3)]">{c.email}</div>
-        </div>
-      ),
-    },
-    {
-      id: "avg", label: "Avg/Month",
-      accessor: (c) => Number(c.deliveries_per_month) || 0,
-      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.deliveries_per_month ?? "—"}</span>,
-      align: "right",
-    },
-    {
-      id: "owing", label: "Owing",
-      accessor: (c) => c.outstanding_balance ?? 0,
-      render: (c) => (
-        <span className="text-[11px] text-[var(--tx)]">
-          {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
-        </span>
-      ),
-      align: "right",
-    },
-  ];
-
-  const moveClientColumns: ColumnDef<MoveClientRow>[] = [
+  const columns: ColumnDef<MoveClientRow>[] = [
     {
       id: "name", label: "Client",
       accessor: (c) => c.name || "",
@@ -204,9 +127,8 @@ export default function ClientsPageClient({
     },
   ];
 
-  const hasActiveFilters = !!(typeFilter || statusFilter || balanceFilter);
+  const hasActiveFilters = !!(statusFilter || balanceFilter);
   const clearFilters = () => {
-    setTypeFilter("");
     setStatusFilter("");
     setBalanceFilter("");
   };
@@ -231,81 +153,52 @@ export default function ClientsPageClient({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-[var(--bg2)] border border-[var(--brd)] rounded-xl mb-4 w-fit">
-        <button
-          onClick={() => setActiveTab("partners")}
-          className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
-            activeTab === "partners" ? "bg-[var(--card)] text-[var(--gold)] border border-[var(--brd)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
-          }`}
+      {/* Section context banner */}
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <div className="flex items-center gap-3">
+          <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+            B2C Move Clients
+          </div>
+          <p className="text-[11px] text-[var(--tx3)] hidden sm:block">
+            Residential &amp; commercial move clients
+          </p>
+        </div>
+        <Link
+          href="/admin/partners"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all whitespace-nowrap"
         >
-          Partners
-        </button>
-        <button
-          onClick={() => setActiveTab("move-clients")}
-          className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
-            activeTab === "move-clients" ? "bg-[var(--card)] text-[var(--gold)] border border-[var(--brd)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
-          }`}
-        >
-          Move Clients
-        </button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          B2B Partners
+        </Link>
       </div>
 
-      {/* Filter bar */}
       <div className="mb-4">
         <FilterBar
-          filters={
-            activeTab === "partners"
-              ? [
-                  { key: "type", label: "Type", value: typeFilter, options: PARTNER_TYPE_OPTIONS, onChange: setTypeFilter },
-                  { key: "balance", label: "Balance", value: balanceFilter, options: BALANCE_OPTIONS, onChange: setBalanceFilter },
-                ]
-              : [
-                  { key: "status", label: "Status", value: statusFilter, options: MOVE_STATUS_OPTIONS, onChange: setStatusFilter },
-                  { key: "balance", label: "Balance", value: balanceFilter, options: BALANCE_OPTIONS, onChange: setBalanceFilter },
-                ]
-          }
+          filters={[
+            { key: "status", label: "Status", value: statusFilter, options: MOVE_STATUS_OPTIONS, onChange: setStatusFilter },
+            { key: "balance", label: "Balance", value: balanceFilter, options: BALANCE_OPTIONS, onChange: setBalanceFilter },
+          ]}
           hasActiveFilters={hasActiveFilters}
           onClear={clearFilters}
         />
       </div>
 
-      {/* Data tables */}
-      {activeTab === "partners" ? (
-        <DataTable
-          data={filteredPartners}
-          columns={partnerColumns}
-          keyField="id"
-          tableId="clients-partners"
-          searchable
-          searchPlaceholder="Search partners…"
-          pagination
-          defaultPerPage={50}
-          exportable
-          exportFilename="yugo-partners"
-          columnToggle
-          onRowClick={(c) => router.push(`/admin/clients/${c.id}`)}
-          emptyMessage="No partners yet"
-          emptySubtext="Add a client to get started"
-        />
-      ) : (
-        <DataTable
-          data={filteredMoveClients}
-          columns={moveClientColumns}
-          keyField="id"
-          tableId="clients-move"
-          searchable
-          searchPlaceholder="Search clients…"
-          pagination
-          defaultPerPage={50}
-          exportable
-          exportFilename="yugo-move-clients"
-          columnToggle
-          onRowClick={(c) => router.push(`/admin/clients/${c.id}`)}
-          emptyMessage="No move clients yet"
-          emptySubtext="Add a client to get started"
-        />
-      )}
+      <DataTable
+        data={filteredClients}
+        columns={columns}
+        keyField="id"
+        tableId="clients-move"
+        searchable
+        searchPlaceholder="Search clients…"
+        pagination
+        defaultPerPage={50}
+        exportable
+        exportFilename="yugo-move-clients"
+        columnToggle
+        onRowClick={(c) => router.push(`/admin/clients/${c.id}`)}
+        emptyMessage="No move clients yet"
+        emptySubtext="Add a client to get started"
+      />
     </div>
   );
 }

@@ -244,11 +244,34 @@ export default function PartnersManagement() {
             className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           >
             <option value="all">All Types</option>
-            <option value="retail">Retail</option>
-            <option value="designer">Designer</option>
-            <option value="hospitality">Hospitality</option>
-            <option value="gallery">Gallery</option>
-            <option value="realtor">Realtor</option>
+            <optgroup label="Furniture & Design">
+              <option value="furniture_retailer">Furniture Retailer</option>
+              <option value="interior_designer">Interior Designer</option>
+              <option value="cabinetry">Cabinetry</option>
+              <option value="flooring">Flooring</option>
+            </optgroup>
+            <optgroup label="Art & Specialty">
+              <option value="art_gallery">Art Gallery</option>
+              <option value="antique_dealer">Antique Dealer</option>
+            </optgroup>
+            <optgroup label="Hospitality & Commercial">
+              <option value="hospitality">Hospitality</option>
+            </optgroup>
+            <optgroup label="Medical & Technical">
+              <option value="medical_equipment">Medical Equipment</option>
+              <option value="av_technology">AV / Technology</option>
+              <option value="appliances">Appliances</option>
+            </optgroup>
+            <optgroup label="Referral Partners">
+              <option value="realtor">Realtor</option>
+              <option value="property_manager">Property Manager</option>
+              <option value="developer">Developer</option>
+            </optgroup>
+            <optgroup label="Legacy">
+              <option value="retail">Retail (legacy)</option>
+              <option value="designer">Designer (legacy)</option>
+              <option value="gallery">Gallery (legacy)</option>
+            </optgroup>
           </select>
           <select
             value={filterAccess}

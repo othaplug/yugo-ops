@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 interface Props {
   delivery: {
@@ -15,6 +17,7 @@ interface Props {
 export default function PartnerShareModal({ delivery, onClose }: Props) {
   const [method, setMethod] = useState<"email" | "sms">("email");
   const [recipient, setRecipient] = useState("");
+  const phoneInput = usePhoneInput(recipient, setRecipient);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +34,7 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
         body: JSON.stringify({
           delivery_id: delivery.id,
           method,
-          recipient: recipient.trim(),
+          recipient: method === "sms" && recipient.trim() ? normalizePhone(recipient) : recipient.trim(),
         }),
       });
       const data = await res.json();
@@ -96,9 +99,10 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
               </div>
 
               <input
+                ref={method === "sms" ? phoneInput.ref : undefined}
                 value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder={method === "email" ? "Email address" : "Phone number"}
+                onChange={method === "sms" ? phoneInput.onChange : (e) => setRecipient(e.target.value)}
+                placeholder={method === "email" ? "Email address" : PHONE_PLACEHOLDER}
                 type={method === "email" ? "email" : "tel"}
                 className="w-full px-3 py-2.5 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors mb-4"
               />

@@ -49,9 +49,10 @@ export async function calculateDayRate(opts: {
   isWeekend: boolean;
   pricingTier: "standard" | "partner";
   lookup?: RateCardLookup;
+  oversizedCount?: number;
 }): Promise<DeliveryPriceResult> {
   const db = createAdminClient();
-  const { rateCardId, vehicleType, dayType, numStops, services, isAfterHours, isWeekend, pricingTier } = opts;
+  const { rateCardId, vehicleType, dayType, numStops, services, isAfterHours, isWeekend, pricingTier, oversizedCount = 0 } = opts;
   const lookup = opts.lookup || { rateCardId, templateId: null };
 
   const breakdown: PriceBreakdownItem[] = [];
@@ -169,7 +170,19 @@ export async function calculateDayRate(opts: {
     }
   }
 
-  const totalPrice = basePrice + overagePrice + servicesPrice + afterHoursSurcharge;
+  // 5. Oversized / heavy item surcharge ($85 per oversized item)
+  let oversizedSurcharge = 0;
+  if (oversizedCount > 0) {
+    const OVERSIZED_SURCHARGE_PER_ITEM = 85;
+    oversizedSurcharge = oversizedCount * OVERSIZED_SURCHARGE_PER_ITEM;
+    breakdown.push({
+      label: `Heavy/oversized items (${oversizedCount} × $${OVERSIZED_SURCHARGE_PER_ITEM})`,
+      amount: oversizedSurcharge,
+      detail: "Piano, safe, marble table, etc.",
+    });
+  }
+
+  const totalPrice = basePrice + overagePrice + servicesPrice + afterHoursSurcharge + oversizedSurcharge;
   const effectivePerStop = numStops > 0 ? Math.round(totalPrice / numStops) : totalPrice;
 
   return {

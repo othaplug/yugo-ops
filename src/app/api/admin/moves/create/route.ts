@@ -4,6 +4,7 @@ import { getResend } from "@/lib/resend";
 import { moveNotificationEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
@@ -228,8 +229,9 @@ export async function POST(req: NextRequest) {
           trackUrl,
         });
 
+        const emailFrom = await getEmailFrom();
         const sendResult = await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: emailTrimmed,
           subject: `Your move has been created — track your move`,
           html,

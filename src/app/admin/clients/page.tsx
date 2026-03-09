@@ -9,9 +9,10 @@ export default async function ClientsPage() {
   const { data: clients } = await db
     .from("organizations")
     .select("*")
+    .eq("type", "b2c")
     .order("name");
 
-  const b2cIds = (clients ?? []).filter((c) => c.type === "b2c").map((c) => c.id);
+  const b2cIds = (clients ?? []).map((c) => c.id);
   const { data: moves } = b2cIds.length > 0
     ? await db
         .from("moves")
@@ -32,7 +33,5 @@ export default async function ClientsPage() {
     }
   }
 
-  const moveClientData = latestByOrg;
-
-  return <ClientsPageClient clients={clients || []} moveClientData={moveClientData} />;
+  return <ClientsPageClient clients={clients || []} moveClientData={latestByOrg} />;
 }

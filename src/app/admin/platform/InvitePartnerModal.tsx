@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
+import {
+  type PartnerProfile,
+  PARTNER_SEGMENT_GROUPS,
+  VERTICAL_TO_TEMPLATE_SLUG,
+} from "@/lib/partner-type";
 
 function generatePassword(length = 12): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
@@ -14,6 +20,11 @@ function generatePassword(length = 12): string {
   return pwd;
 }
 
+const DEFAULT_VERTICAL_BY_PROFILE: Record<PartnerProfile, string> = {
+  delivery: "furniture_retailer",
+  referral: "realtor",
+};
+
 interface InvitePartnerModalProps {
   open: boolean;
   onClose: () => void;
@@ -22,11 +33,13 @@ interface InvitePartnerModalProps {
 export default function InvitePartnerModal({ open, onClose }: InvitePartnerModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState("retail");
+  const [profile, setProfile] = useState<PartnerProfile>("delivery");
+  const [type, setType] = useState("furniture_retailer");
   const [name, setName] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const phoneInput = usePhoneInput(phone, setPhone);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -40,6 +53,11 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
       return () => clearTimeout(t);
     }
   }, [success, onClose]);
+
+  const handleProfileChange = (p: PartnerProfile) => {
+    setProfile(p);
+    setType(DEFAULT_VERTICAL_BY_PROFILE[p]);
+  };
 
   const handleGeneratePassword = useCallback(() => {
     setPassword(generatePassword());
@@ -69,6 +87,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
           email: email.trim(),
           phone: normalizePhone(phone).trim() || undefined,
           password,
+          template_slug: VERTICAL_TO_TEMPLATE_SLUG[type] || null,
         }),
       });
       const data = await res.json();
@@ -80,7 +99,8 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
       setEmail("");
       setPhone("");
       setPassword("");
-      setType("retail");
+      setProfile("delivery");
+      setType("furniture_retailer");
       setSuccess(true);
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed to send invitation", "x");
@@ -88,6 +108,8 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
       setLoading(false);
     }
   };
+
+  const activeSegments = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile === profile);
 
   return (
     <ModalOverlay open={open} onClose={onClose} title="Invite Partner">
@@ -104,17 +126,43 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
       ) : (
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type *</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Profile *</label>
+            <div className="flex gap-3 mb-1">
+              {PARTNER_SEGMENT_GROUPS.map((seg) => (
+                <label key={seg.profile} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="profile"
+                    checked={profile === seg.profile}
+                    onChange={() => handleProfileChange(seg.profile)}
+                    className="accent-[var(--gold)]"
+                  />
+                  <span className="text-[13px] text-[var(--tx)]">{seg.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--tx3)]">
+              {PARTNER_SEGMENT_GROUPS.find((s) => s.profile === profile)?.description}
+            </p>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vertical *</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
-              <option value="retail">Retail</option>
-              <option value="designer">Designer</option>
-              <option value="hospitality">Hospitality</option>
-              <option value="gallery">Gallery</option>
-              <option value="realtor">Realtor</option>
+              {activeSegments.flatMap((seg) =>
+                seg.groups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.verticals.map((v) => (
+                      <option key={v.value} value={v.value}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              )}
             </select>
           </div>
           <div>
@@ -188,11 +236,11 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
             <input
+              ref={phoneInput.ref}
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onBlur={() => setPhone(formatPhone(phone))}
-              placeholder="(123) 456-7890"
+              onChange={phoneInput.onChange}
+              placeholder={PHONE_PLACEHOLDER}
               className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>

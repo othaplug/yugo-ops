@@ -27,6 +27,8 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/quote/")) return true;
   if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
+  if (pathname.startsWith("/widget/")) return true;
+  if (pathname.startsWith("/claim/")) return true;
   if (pathname.startsWith("/api/contracts/")) return true;
   if (pathname.startsWith("/api/quotes/")) return true;
   if (pathname.startsWith("/api/payments/")) return true;
@@ -36,7 +38,12 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/api/tracking/checkpoint")) return true;
   if (pathname.startsWith("/api/tracking/location")) return true;
   if (pathname.startsWith("/api/tracking/start")) return true;
+  if (pathname.startsWith("/api/tracking/lookup")) return true;
   if (pathname.startsWith("/api/crew/")) return true;
+  if (pathname.startsWith("/api/cron/")) return true;
+  if (pathname.startsWith("/api/widget/")) return true;
+  if (pathname.startsWith("/api/webhooks/")) return true;
+  if (pathname.startsWith("/api/claims/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
   if (/\.(svg|png|jpg|ico|css|js|woff2?)$/.test(pathname)) return true;

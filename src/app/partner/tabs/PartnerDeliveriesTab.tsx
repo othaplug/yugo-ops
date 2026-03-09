@@ -30,6 +30,12 @@ interface Delivery {
   category: string | null;
   crew_id: string | null;
   created_at: string;
+  booking_type?: string | null;
+  vehicle_type?: string | null;
+  num_stops?: number | null;
+  total_price?: number | null;
+  delivery_type?: string | null;
+  zone?: number | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -216,12 +222,19 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-[15px] font-bold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</h3>
             <span className="text-[10px] text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
+            {d.booking_type === "day_rate" ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
+            )}
           </div>
           <p className="text-[12px] text-[#888] mt-0.5 truncate">
-            {d.delivery_address || "Address TBD"}
+            {d.booking_type === "day_rate"
+              ? [d.vehicle_type ? `${d.vehicle_type}` : null, d.num_stops != null ? `${d.num_stops} stops` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"
+              : [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : null, d.zone != null ? `Z${d.zone}` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"}
             {d.scheduled_date && ` — ${new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
             {d.time_slot && `, ${d.time_slot}`}
           </p>
@@ -288,6 +301,24 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           <div>
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Time</div>
             <div className="text-[#1A1A1A] font-medium mt-0.5">{d.time_slot}</div>
+          </div>
+        )}
+        {d.booking_type === "day_rate" && d.num_stops != null && d.num_stops > 0 && (
+          <div>
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Stops</div>
+            <div className="text-[#1A1A1A] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
+          </div>
+        )}
+        {d.booking_type === "day_rate" && d.vehicle_type && (
+          <div>
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Vehicle</div>
+            <div className="text-[#1A1A1A] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
+          </div>
+        )}
+        {d.total_price != null && d.total_price > 0 && (
+          <div>
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Price</div>
+            <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (

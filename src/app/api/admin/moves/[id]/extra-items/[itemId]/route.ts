@@ -5,6 +5,7 @@ import { extraItemApprovalEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { getEmailFrom } from "@/lib/email/send";
 
 /** PATCH: Approve or reject an extra item */
 export async function PATCH(
@@ -49,8 +50,9 @@ export async function PATCH(
           portalUrl: trackUrl,
           feeCents,
         });
+        const emailFrom = await getEmailFrom();
         await resend.emails.send({
-          from: "Yugo+ <notifications@opsplus.co>",
+          from: emailFrom,
           to: move.client_email,
           subject: "Your extra item has been approved",
           html,

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
+import { getAdminNotificationEmail } from "@/lib/config";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 
@@ -113,8 +114,7 @@ export async function POST(req: NextRequest) {
       icon: "dollar",
     });
 
-    // Send admin notification email (non-blocking)
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.YUGO_ADMIN_EMAIL || "admin@helloyugo.com";
+    const adminEmail = await getAdminNotificationEmail();
     sendEmail({
       to: adminEmail,
       subject: `Tip received: $${amountDollars.toFixed(2)} from ${move.client_name || "client"} for ${crewName || "crew"}`,

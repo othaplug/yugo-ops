@@ -70,17 +70,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const supabase = createClient();
 
-  useEffect(() => {
-    const loadNotifications = async () => {
-      const res = await fetch("/api/admin/notifications");
-      if (res.ok) {
-        const data = await res.json();
-        const rows = data.notifications || [];
-        setNotifications(rows.map(mapDbToNotification));
-      }
-    };
-    loadNotifications();
+  const loadNotifications = useCallback(async () => {
+    const res = await fetch("/api/admin/notifications");
+    if (res.ok) {
+      const data = await res.json();
+      const rows = data.notifications || [];
+      setNotifications(rows.map(mapDbToNotification));
+    }
   }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  // Polling fallback every 30s to catch any missed realtime events
+  useEffect(() => {
+    const interval = setInterval(loadNotifications, 30_000);
+    return () => clearInterval(interval);
+  }, [loadNotifications]);
 
   // Supabase Realtime: listen for new in_app_notifications rows for current user
   useEffect(() => {

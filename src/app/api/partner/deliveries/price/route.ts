@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend } = body;
+    const { booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend, oversized_count } = body;
 
     const db = createAdminClient();
 
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         isWeekend: !!is_weekend,
         pricingTier,
         lookup,
+        oversizedCount: oversized_count || 0,
       });
 
       if (Array.isArray(body.stops_zones)) {

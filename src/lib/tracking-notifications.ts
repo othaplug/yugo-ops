@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
+import { getEmailFrom } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatJobId } from "@/lib/move-code";
@@ -169,10 +170,11 @@ export async function notifyOnCheckpoint(
   if (cfg.notifyPartner && partnerEmail && !toSend.includes(partnerEmail)) toSend.push(partnerEmail);
   if (toSend.length === 0) return;
 
+  const emailFrom = await getEmailFrom();
   for (const to of toSend) {
     try {
       await resend.emails.send({
-        from: "Yugo+ <notifications@opsplus.co>",
+        from: emailFrom,
         to,
         subject,
         html,

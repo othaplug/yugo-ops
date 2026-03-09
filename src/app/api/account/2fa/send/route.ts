@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { verificationCodeEmail } from "@/lib/email-templates";
+import { getEmailFrom } from "@/lib/email/send";
 
 function generateCode(): string {
   const arr = new Uint8Array(6);
@@ -33,8 +34,9 @@ export async function POST() {
     });
 
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: user.email,
       subject: "Your YUGO+ login code",
       html: verificationCodeEmail({ code, purpose: "2fa" }),

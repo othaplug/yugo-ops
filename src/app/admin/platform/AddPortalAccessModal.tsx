@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 interface Team {
   id: string;
@@ -40,6 +42,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const phoneInput = usePhoneInput(phone, setPhone);
   const [pin, setPin] = useState("");
   const [teamId, setTeamId] = useState("");
   const [role, setRole] = useState<"lead" | "specialist" | "driver">("specialist");
@@ -61,7 +64,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    const trimmedPhone = phone.replace(/\D/g, "");
+    const trimmedPhone = normalizePhone(phone);
     if (!trimmedName || trimmedPhone.length < 10) {
       toast("Name and a valid phone number (10+ digits) are required", "x");
       return;
@@ -81,7 +84,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: trimmedName,
-          phone: trimmedPhone.length === 10 ? "+1" + trimmedPhone : trimmedPhone,
+          phone: trimmedPhone ? "+1" + trimmedPhone : "",
           pin,
           role,
           team_id: teamId,
@@ -132,10 +135,11 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>
           <input
+            ref={phoneInput.ref}
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-            placeholder="6475550123"
+            onChange={phoneInput.onChange}
+            placeholder={PHONE_PLACEHOLDER}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

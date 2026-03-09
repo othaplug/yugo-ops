@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function GET() {
   try {
+    const { error: authError } = await requireStaff();
+    if (authError) return authError;
+
     const supabase = createAdminClient();
     const { data: claims, error } = await supabase
       .from("claims")
@@ -21,6 +25,9 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const { error: authError } = await requireStaff();
+    if (authError) return authError;
+
     const body = await req.json();
     const { id, ...updates } = body;
 

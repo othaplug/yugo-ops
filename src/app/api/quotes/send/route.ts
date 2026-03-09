@@ -132,6 +132,7 @@ export async function POST(req: NextRequest) {
         customPrice: quote.custom_price ? Number(quote.custom_price) : null,
         coordinatorName,
         coordinatorPhone,
+        recommendedTier: quote.recommended_tier ?? "premier",
       },
     });
 

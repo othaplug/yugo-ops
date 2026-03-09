@@ -6,6 +6,11 @@ import Link from "next/link";
 import { generateEODReportPDF } from "@/lib/pdf";
 import { toTitleCase } from "@/lib/format-text";
 
+function getCrewName(crews: unknown): string {
+  const crew = Array.isArray(crews) ? crews[0] : crews;
+  return (crew as { name?: string } | undefined)?.name || "Team";
+}
+
 function formatDateShort(d: string) {
   const [y, m, day] = d.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -133,7 +138,7 @@ export default function ReportsClient({
     const headers = ["Date", "Team", "Job ID", "Client", "Type", "Duration (min)", "Sign-off", "Damage", "Generated"];
     const rows: string[][] = [headers];
     filteredReports.forEach((r) => {
-      const crewName = (r.crews as { name?: string })?.name || "Team";
+      const crewName = getCrewName(r.crews);
       (r.jobs || []).forEach((j) => {
         rows.push([
           r.report_date,
@@ -173,7 +178,7 @@ export default function ReportsClient({
       params.set("teamId", report.team_id);
       params.set("reportDate", report.report_date);
     }
-    const crewNameFromReport = (report.crews as { name?: string })?.name ?? undefined;
+    const crewNameFromReport = getCrewName(report.crews) || undefined;
     const fallbackJob = {
       displayId: job?.displayId ?? job?.jobId?.slice(0, 8) ?? "—",
       clientName: job?.clientName ?? "—",
@@ -215,7 +220,7 @@ export default function ReportsClient({
   const teamNames = useMemo(() => {
     const map = new Map<string, string>();
     reports.forEach((r) => {
-      const name = (r.crews as { name?: string })?.name || "Team";
+      const name = getCrewName(r.crews);
       map.set(r.team_id, name);
     });
     return map;
@@ -354,7 +359,7 @@ export default function ReportsClient({
             >
               <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <h2 className="font-heading text-[17px] font-semibold text-[var(--tx)]">
-                  {(r.crews as { name?: string })?.name || "Team"}
+                  {getCrewName(r.crews)}
                 </h2>
                 <span className="text-[12px] text-[var(--tx3)]">
                   {r.generated_at ? new Date(r.generated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}

@@ -3,6 +3,7 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteUserEmail, inviteUserEmailText } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAdmin();
@@ -94,10 +95,11 @@ export async function POST(req: NextRequest) {
     const loginUrl = `${getEmailBaseUrl()}/login?welcome=1`;
 
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: emailTrimmed,
-      replyTo: "Yugo+ <notifications@opsplus.co>",
+      replyTo: emailFrom,
       subject: "You're invited to YUGO+ — Log in to continue setup",
       html: inviteUserEmail({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
       text: inviteUserEmailText({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),

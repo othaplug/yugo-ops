@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 const VALUATION_INFO: Record<string, { label: string; desc: string }> = {
   released: {
@@ -60,6 +62,7 @@ export default function ClaimSubmissionClient() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const phoneInput = usePhoneInput(clientPhone, setClientPhone);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -83,7 +86,7 @@ export default function ClaimSubmissionClient() {
         setMoveInfo(data.move);
         setClientName(data.move.client_name || "");
         setClientEmail(data.move.client_email || "");
-        setClientPhone(data.move.client_phone || "");
+        setClientPhone(data.move.client_phone ? formatPhone(data.move.client_phone) : "");
         setStep(1);
       }
     } catch {
@@ -143,7 +146,7 @@ export default function ClaimSubmissionClient() {
           moveId: moveInfo.id,
           clientName,
           clientEmail,
-          clientPhone,
+          clientPhone: clientPhone.trim() ? normalizePhone(clientPhone) : "",
           valuationTier: moveInfo.valuation_tier || "released",
           wasUpgraded: moveInfo.was_upgraded || false,
           items: items.map((i) => ({
@@ -426,9 +429,11 @@ export default function ClaimSubmissionClient() {
             <div>
               <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Phone</label>
               <input
+                ref={phoneInput.ref}
                 type="tel"
                 value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
+                onChange={phoneInput.onChange}
+                placeholder={PHONE_PLACEHOLDER}
                 className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
                 style={{ borderColor: "#e8e0d8" }}
               />

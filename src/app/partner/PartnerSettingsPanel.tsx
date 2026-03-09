@@ -49,6 +49,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
     default_time_slot: "morning",
     auto_share_tracking: false,
     default_special_handling: "",
+    customer_notifications: false,
+    notification_message: "",
   });
   const [prefsSaved, setPrefsSaved] = useState(false);
 
@@ -109,8 +111,18 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
     setTimeout(() => setPrefsSaved(false), 2000);
   };
 
-  const saveDeliveryPrefs = () => {
+  const saveDeliveryPrefs = async () => {
     localStorage.setItem("partner-delivery-prefs", JSON.stringify(deliveryPrefs));
+    try {
+      await fetch("/api/partner/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_notifications_enabled: deliveryPrefs.customer_notifications,
+          customer_notification_message: deliveryPrefs.notification_message || null,
+        }),
+      });
+    } catch {}
     setPrefsSaved(true);
     setTimeout(() => setPrefsSaved(false), 2000);
   };
@@ -391,6 +403,33 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${deliveryPrefs.auto_share_tracking ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </div>
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
+                <div>
+                  <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">End Customer Notifications</div>
+                  <div className="text-[11px] text-[var(--tx3,#888)]">Allow Yugo to send delivery tracking updates directly to your customers on your behalf</div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={deliveryPrefs.customer_notifications}
+                  onClick={() => setDeliveryPrefs((p) => ({ ...p, customer_notifications: !p.customer_notifications }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${deliveryPrefs.customer_notifications ? "bg-[#C9A962]" : "bg-[var(--brd,#D1D5DB)]"}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${deliveryPrefs.customer_notifications ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+              {deliveryPrefs.customer_notifications && (
+                <div>
+                  <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Custom notification message</label>
+                  <input
+                    type="text"
+                    value={deliveryPrefs.notification_message || ""}
+                    onChange={(e) => setDeliveryPrefs((p) => ({ ...p, notification_message: e.target.value }))}
+                    placeholder="Add a custom note to delivery notifications"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  />
+                </div>
+              )}
               <div>
                 <label className="text-[11px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider block mb-1.5">Default Special Handling Note</label>
                 <textarea

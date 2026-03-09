@@ -122,7 +122,7 @@ export default function TrackMoveClient({
       .then((data) => {
         if (!cancelled && data?.items) setDashboardInventory({ items: data.items || [], extraItems: data.extraItems || [] });
       })
-      .catch(() => {});
+      .catch((err) => { console.error("Failed to load move inventory:", err); });
     return () => { cancelled = true; };
   }, [move.id, token]);
 
@@ -167,7 +167,7 @@ export default function TrackMoveClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moveId: move.id, token, action: "prompt_shown" }),
-      }).catch(() => {});
+      }).catch((err) => { console.error("Failed to record tip prompt shown:", err); });
     }
   }, [tippingEnabled, move.status, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id, move.id, token]);
 
@@ -197,7 +197,7 @@ export default function TrackMoveClient({
           router.refresh();
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.error("Failed to record payment after Square redirect:", err); });
   }, [paymentSuccess, showPaymentSuccess, move.id, token, router]);
 
   const handleBackToDashboard = () => {
@@ -256,8 +256,8 @@ export default function TrackMoveClient({
           if ("scheduled_date" in data) setLiveScheduledDate(data.scheduled_date ?? null);
           if ("arrival_window" in data) setLiveArrivalWindow(data.arrival_window ?? null);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error("Failed to poll move crew status:", err);
       }
     };
     poll();
@@ -561,7 +561,7 @@ export default function TrackMoveClient({
               </div>
               <div className="mt-4 flex items-center justify-center gap-2.5">
                 <a
-                  href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
+                  href={process.env.NEXT_PUBLIC_REVIEW_URL || "https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-4 transition-all hover:opacity-90 active:scale-95 tracking-wide shadow-sm"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 
 export interface AddressResult {
@@ -100,16 +100,28 @@ export default function AddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; maxHeight?: number; above?: boolean } | null>(null);
   const isInternalUpdate = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onRawChangeRef = useRef(onRawChange);
+  onRawChangeRef.current = onRawChange;
+  const listboxId = useId();
 
   const updateDropdownRect = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const spaceAbove = rect.top - 8;
+    const showAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
+    if (showAbove) {
+      const maxH = Math.min(280, spaceAbove);
+      setDropdownRect({ top: rect.top - maxH - 4, left: rect.left, width: rect.width, maxHeight: maxH, above: true });
+    } else {
+      const maxH = Math.min(280, Math.max(120, spaceBelow));
+      setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width, maxHeight: maxH, above: false });
+    }
   }, []);
 
   useLayoutEffect(() => {
@@ -159,7 +171,10 @@ export default function AddressAutocomplete({
   }, [countryBias]);
 
   useEffect(() => {
-    if (isInternalUpdate.current) return;
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
     if (inputRef.current && inputRef.current.value !== value) {
       inputRef.current.value = value ?? "";
     }
@@ -170,7 +185,7 @@ export default function AddressAutocomplete({
     const handle = () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       const raw = inputRef.current?.value?.trim() ?? "";
-      onRawChange?.(raw);
+      onRawChangeRef.current?.(raw);
       if (raw.length < 2) {
         setSuggestions([]);
         setOpen(false);
@@ -192,7 +207,7 @@ export default function AddressAutocomplete({
       input.removeEventListener("focus", () => {});
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [fetchSuggestions, suggestions.length, onRawChange]);
+  }, [fetchSuggestions, suggestions.length]);
 
   useEffect(() => {
     const onBlur = () => {
@@ -269,21 +284,25 @@ export default function AddressAutocomplete({
         autoComplete="off"
         aria-autocomplete="list"
         aria-expanded={open}
-        aria-controls="address-suggestions"
+        aria-controls={listboxId}
         role="combobox"
       />
       {open && (suggestions.length > 0 || loading) && dropdownRect &&
         typeof document !== "undefined" &&
         createPortal(
           <ul
-            id="address-suggestions"
+            id={listboxId}
             role="listbox"
-            className="fixed py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg max-h-[280px] overflow-y-auto"
+            className="fixed py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg overflow-y-auto"
             style={{
               top: dropdownRect.top,
               left: dropdownRect.left,
               width: dropdownRect.width,
+              maxHeight: dropdownRect.maxHeight ?? 280,
               zIndex: 9999,
+              boxShadow: dropdownRect.above
+                ? "0 -4px 20px rgba(0,0,0,0.12)"
+                : "0 4px 20px rgba(0,0,0,0.12)",
             }}
           >
             {loading && suggestions.length === 0 ? (

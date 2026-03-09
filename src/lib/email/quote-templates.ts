@@ -85,6 +85,7 @@ export interface QuoteTemplateData {
   customPrice?: number | null;
   coordinatorName?: string | null;
   coordinatorPhone?: string | null;
+  recommendedTier?: string | null;
 }
 
 /* ─── Building blocks ─── */
@@ -168,8 +169,10 @@ function detailsCard(rows: [string, string][]): string {
   `;
 }
 
-function tierCards(tiers: Record<string, QuoteTier>): string {
+function tierCards(tiers: Record<string, QuoteTier>, recommendedTier?: string | null): string {
   const order = ["essentials", "premier", "estate"];
+  const rec = recommendedTier || "premier";
+
   const tierBgs: Record<string, string> = {
     essentials: CARD,
     premier: "#181510",
@@ -185,8 +188,11 @@ function tierCards(tiers: Record<string, QuoteTier>): string {
     premier: GOLD,
     estate: WINE,
   };
-  const badges: Record<string, string> = {
-    premier: `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:700;background:${GOLD};color:${BG};margin-left:8px;letter-spacing:0.5px;vertical-align:middle">POPULAR</span>`,
+
+  const badgeLabels: Record<string, Record<string, string>> = {
+    essentials: { essentials: "", premier: "Upgrade available", estate: "Premium option" },
+    premier: { essentials: "", premier: "RECOMMENDED", estate: "For the ultimate experience" },
+    estate: { essentials: "", premier: "", estate: "RECOMMENDED FOR YOU" },
   };
 
   return order
@@ -195,19 +201,44 @@ function tierCards(tiers: Record<string, QuoteTier>): string {
       const t = tiers[key];
       const label = TIER_LABELS[key] ?? t.label ?? key;
       const accent = tierAccents[key] ?? TX3;
+      const isRec = key === rec;
+      const badgeText = badgeLabels[rec]?.[key] ?? "";
+
+      const padding = isRec ? "24px" : "16px";
+      const priceFontSize = isRec ? "32px" : "22px";
+      const borderWidth = isRec ? "2px" : "1px";
+      const borderColor = isRec
+        ? (key === "estate" ? WINE : GOLD)
+        : (tierBorders[key] ?? CARD_BORDER);
+
+      const badge = badgeText
+        ? `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:700;background:${isRec ? (key === "estate" ? WINE : GOLD) : `${TX3}33`};color:${isRec ? BG : TX2};margin-left:8px;letter-spacing:0.5px;vertical-align:middle">${badgeText}</span>`
+        : "";
+
+      const includesHtml = isRec
+        ? (t.includes || []).filter(Boolean).map((i) => `<span style="color:${GOLD}">&#10003;</span> ${i}`).join("<br/>")
+        : "";
+
       return `
-        <div style="background:${tierBgs[key] ?? CARD};border:1px solid ${tierBorders[key] ?? CARD_BORDER};border-radius:12px;padding:20px;margin-bottom:14px">
+        <div style="background:${tierBgs[key] ?? CARD};border:${borderWidth} solid ${borderColor};border-radius:12px;padding:${padding};margin-bottom:14px">
           <div style="font-size:9px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">
-            ${label}${badges[key] ?? ""}
+            ${label}${badge}
           </div>
-          <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;color:${TX};margin-bottom:12px">${formatCurrency(t.price)}</div>
-          <div style="font-size:11px;color:${TX2};line-height:1.8">
-            ${(t.includes || []).filter(Boolean).map((i) => `<span style="color:${GOLD}">&#10003;</span> ${i}`).join("<br/>")}
-          </div>
+          <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:${priceFontSize};font-weight:400;color:${TX};margin-bottom:${isRec ? "12px" : "4px"}">${formatCurrency(t.price)}</div>
+          ${includesHtml ? `<div style="font-size:11px;color:${TX2};line-height:1.8">${includesHtml}</div>` : ""}
         </div>
       `;
     })
     .join("");
+}
+
+function estateRecommendationNote(recommendedTier: string | null | undefined): string {
+  if (recommendedTier !== "estate") return "";
+  return `
+    <div style="background:${CARD};border:1px solid ${WINE}44;border-radius:10px;padding:14px 18px;margin:0 0 20px">
+      <span style="font-size:12px;color:${TX2};line-height:1.6">Based on your home and belongings, we recommend our <strong style="color:${TX}">Estate</strong> package for complete peace of mind.</span>
+    </div>
+  `;
 }
 
 function priceCard(label: string, price: number, note: string): string {
@@ -259,7 +290,8 @@ function residentialTemplate(d: QuoteTemplateData): string {
     ${bodyText("We have prepared your personalized moving quote with three flat-rate packages. Choose the level of service that fits your needs &mdash; every option includes professional movers, a dedicated truck, and full protection.")}
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
-    ${d.tiers ? tierCards(d.tiers) : ""}
+    ${d.tiers ? tierCards(d.tiers, d.recommendedTier) : ""}
+    ${estateRecommendationNote(d.recommendedTier)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Quote & Book")}
     ${whyYugoBlock()}
@@ -285,7 +317,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
     ${expiryNote(d.expiresAt)}
     ${detailsCard(rows)}
     ${price ? priceCard("Flat Rate", price, "+ HST &middot; No hidden fees") : ""}
-    ${d.tiers ? tierCards(d.tiers) : ""}
+    ${d.tiers ? tierCards(d.tiers, d.recommendedTier) : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Quote & Book")}
     ${whyYugoBlock()}

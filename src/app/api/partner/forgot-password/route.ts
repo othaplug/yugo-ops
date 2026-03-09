@@ -3,6 +3,7 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { partnerPasswordResetEmail, partnerPasswordResetEmailText } from "@/lib/email-templates";
 import { rateLimit } from "@/lib/rate-limit";
+import { getEmailFrom } from "@/lib/email/send";
 
 /** Generate a random temporary password (alphanumeric, 12 chars). */
 function generateTempPassword(): string {
@@ -87,8 +88,9 @@ export async function POST(req: NextRequest) {
     const loginUrl = `${getEmailBaseUrl()}/partner/login`;
     const name = (authUser.user_metadata?.full_name as string) || email.split("@")[0] || "";
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: email,
       subject: "Your YUGO+ Partner Portal password has been reset",
       html: partnerPasswordResetEmail({

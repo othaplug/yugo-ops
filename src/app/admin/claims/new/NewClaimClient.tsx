@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 interface MoveOption {
   id: string;
@@ -64,6 +66,8 @@ export default function NewClaimClient({
   const [description, setDescription] = useState("");
   const [items, setItems] = useState<ClaimItem[]>([emptyItem()]);
 
+  const phoneInput = usePhoneInput(clientPhone, setClientPhone);
+
   const selectedMove = moves.find((m) => m.id === selectedJobId);
   const selectedDelivery = deliveries.find((d) => d.id === selectedJobId);
 
@@ -110,7 +114,7 @@ export default function NewClaimClient({
           deliveryId: jobType === "delivery" ? selectedJobId || null : null,
           clientName: clientName.trim(),
           clientEmail: clientEmail.trim().toLowerCase(),
-          clientPhone: clientPhone.trim() || null,
+          clientPhone: clientPhone.trim() ? normalizePhone(clientPhone) : null,
           valuationTier,
           description: description.trim(),
           items: validItems.map((i) => ({
@@ -236,10 +240,11 @@ export default function NewClaimClient({
           <div>
             <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Phone</label>
             <input
+              ref={phoneInput.ref}
               type="tel"
               value={clientPhone}
-              onChange={(e) => setClientPhone(e.target.value)}
-              placeholder="(416) 555-1234"
+              onChange={phoneInput.onChange}
+              placeholder={PHONE_PLACEHOLDER}
               className="w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] outline-none"
             />
           </div>

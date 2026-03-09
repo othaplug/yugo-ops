@@ -24,13 +24,14 @@ const NAV = [
     { name: "Realtors", icon: "handshake", href: "/admin/partners/realtors" },
   ]},
   { label: "Moves", items: [
-    { name: "Quotes", icon: "fileText", href: "/admin/quotes" },
     { name: "All Moves", icon: "package", href: "/admin/moves" },
+    { name: "Quotes", icon: "fileText", href: "/admin/quotes", badge: "pending_quotes" },
   ]},
   { label: "Finance", items: [
     { name: "Invoices", icon: "fileText", href: "/admin/invoices" },
     { name: "Revenue", icon: "dollarSign", href: "/admin/revenue" },
     { name: "Tips", icon: "dollarSign", href: "/admin/tips" },
+    { name: "Profitability", icon: "dollarSign", href: "/admin/finance/profitability", ownerOnly: true },
   ]},
   { label: "CRM", items: [
     { name: "Contacts", icon: "users", href: "/admin/clients" },
@@ -41,16 +42,41 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingDeliveriesCount, setPendingDeliveriesCount] = useState(0);
+  const [pendingQuotesCount, setPendingQuotesCount] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
+
+    // Fetch pending deliveries count
     supabase
       .from("deliveries")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending_approval")
-      .then(({ count }) => setPendingCount(count || 0))
+      .then(({ count }) => setPendingDeliveriesCount(count || 0))
       .then(undefined, () => {});
+
+    // Fetch pending quotes count (sent but not yet accepted)
+    supabase
+      .from("quotes")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "sent")
+      .is("accepted_at", null)
+      .then(({ count }) => setPendingQuotesCount(count || 0))
+      .then(undefined, () => {});
+
+    // Fetch current user role for owner-only items
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("platform_users")
+        .select("role")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => setUserRole(data?.role ?? null))
+        .then(undefined, () => {});
+    });
   }, [pathname]);
 
   return (
@@ -67,9 +93,16 @@ export default function Sidebar() {
             {section.label}
           </div>
           {section.items.map((item) => {
-            const isActive = pathname === item.href || 
+            const ownerOnly = (item as { ownerOnly?: boolean }).ownerOnly;
+            if (ownerOnly && userRole !== "owner") return null;
+
+            const isActive = pathname === item.href ||
               (item.href !== "/admin" && pathname.startsWith(item.href));
-            const badgeCount = (item as { badge?: string }).badge === "pending_deliveries" ? pendingCount : 0;
+
+            let badgeCount = 0;
+            if ((item as { badge?: string }).badge === "pending_deliveries") badgeCount = pendingDeliveriesCount;
+            if ((item as { badge?: string }).badge === "pending_quotes") badgeCount = pendingQuotesCount;
+
             return (
               <Link
                 key={`${section.label}-${item.name}`}
@@ -77,8 +110,8 @@ export default function Sidebar() {
                 // @ts-expect-error -- viewTransition is experimental and not yet typed
                 viewTransition
                 className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-lg text-[11px] font-medium border-l-2 -ml-px
-                  ${isActive 
-                    ? "bg-[var(--gdim)] text-[var(--gold)] border-[var(--gold)] font-semibold shadow-[0_0_0_1px_rgba(201,169,98,0.18),0_2px_8px_rgba(0,0,0,0.25)]" 
+                  ${isActive
+                    ? "bg-[var(--gdim)] text-[var(--gold)] border-[var(--gold)] font-semibold shadow-[0_0_0_1px_rgba(201,169,98,0.18),0_2px_8px_rgba(0,0,0,0.25)]"
                     : "text-[var(--tx2)] border-transparent"
                   }`}
               >

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 
@@ -30,6 +31,7 @@ export default function PartnerProfileSettings() {
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const phoneInput = usePhoneInput(phone, setPhone);
 
   useEffect(() => {
     fetch("/api/partner/profile")
@@ -120,11 +122,11 @@ export default function PartnerProfileSettings() {
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
           <input
+            ref={phoneInput.ref}
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            onBlur={() => setPhone(formatPhone(phone))}
-            placeholder="(123) 456-7890"
+            onChange={phoneInput.onChange}
+            placeholder={PHONE_PLACEHOLDER}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
           />
         </div>

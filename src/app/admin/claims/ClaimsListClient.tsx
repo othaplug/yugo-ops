@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
+import { createClient } from "@/lib/supabase/client";
 
 interface Claim {
   id: string;
@@ -56,9 +57,56 @@ function statusLabel(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function ClaimsListClient({ claims, stats }: { claims: Claim[]; stats: Stats }) {
+export default function ClaimsListClient({ claims: initialClaims, stats: initialStats }: { claims: Claim[]; stats: Stats }) {
+  const [claims, setClaims] = useState<Claim[]>(initialClaims);
+  const [stats, setStats] = useState<Stats>(initialStats);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+
+  // Realtime + polling for new claims
+  useEffect(() => {
+    const supabase = createClient();
+
+    const refreshClaims = async () => {
+      const { data } = await supabase
+        .from("claims")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) {
+        const allClaims = data as Claim[];
+        setClaims(allClaims);
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        setStats({
+          openCount: allClaims.filter((c) => ["submitted", "under_review"].includes(c.status)).length,
+          reviewCount: allClaims.filter((c) => c.status === "under_review").length,
+          resolvedCount: allClaims.filter((c) =>
+            ["approved", "partially_approved", "denied", "settled", "closed"].includes(c.status) &&
+            c.resolved_at && c.resolved_at >= thirtyDaysAgo
+          ).length,
+          totalPaidOut: allClaims
+            .filter((c) => c.approved_amount && c.resolved_at && c.resolved_at >= thirtyDaysAgo)
+            .reduce((sum, c) => sum + (c.approved_amount || 0), 0),
+        });
+      }
+    };
+
+    // Supabase realtime
+    const channel = supabase
+      .channel("claims-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "claims" }, () => {
+        refreshClaims();
+      })
+      .subscribe();
+
+    // Polling fallback every 30s
+    const interval = setInterval(refreshClaims, 30_000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     let list = claims;

@@ -14,13 +14,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "file and claimId are required" }, { status: 400 });
     }
 
+    const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "pdf"];
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json({ error: `File type not allowed. Accepted: ${ALLOWED_EXTENSIONS.join(", ")}` }, { status: 400 });
+    }
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "File size exceeds 10MB limit" }, { status: 400 });
+    }
+
+    const VALID_PHOTO_TYPES = ["damage", "before", "after", "receipt", "other"];
+    if (!VALID_PHOTO_TYPES.includes(photoType)) {
+      return NextResponse.json({ error: `Invalid photoType. Accepted: ${VALID_PHOTO_TYPES.join(", ")}` }, { status: 400 });
+    }
+
+    const VALID_UPLOADED_BY = ["client", "admin", "crew"];
+    if (!VALID_UPLOADED_BY.includes(uploadedBy)) {
+      return NextResponse.json({ error: `Invalid uploadedBy. Accepted: ${VALID_UPLOADED_BY.join(", ")}` }, { status: 400 });
+    }
+
     const supabase = createAdminClient();
 
     const { data: claim } = await supabase.from("claims").select("id").eq("id", claimId).maybeSingle();
     if (!claim) return NextResponse.json({ error: "Claim not found" }, { status: 404 });
 
     const buf = Buffer.from(await file.arrayBuffer());
-    const ext = file.name.split(".").pop() || "jpg";
     const storagePath = `${claimId}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage

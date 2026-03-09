@@ -3,12 +3,25 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
+import { VERTICAL_LABELS } from "@/lib/partner-type";
+import { getEmailFrom } from "@/lib/email/send";
+
+async function resolveTemplateId(admin: ReturnType<typeof createAdminClient>, templateSlug: string | null): Promise<string | null> {
+  if (!templateSlug) return null;
+  const { data } = await admin
+    .from("rate_card_templates")
+    .select("id")
+    .eq("template_slug", templateSlug)
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
+}
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAdmin();
   if (authError) return authError;
   try {
-    const { type, name, contact_name, email, phone, password } = await req.json();
+    const { type, name, contact_name, email, phone, password, template_slug } = await req.json();
 
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
       return NextResponse.json({ error: "Company name and email are required" }, { status: 400 });
@@ -21,11 +34,12 @@ export async function POST(req: NextRequest) {
     const nameTrimmed = (name || "").trim();
     const contactNameTrimmed = (contact_name || "").trim();
     const phoneTrimmed = (phone || "").trim();
-    const typeVal = type || "retail";
-    const typeLabels: Record<string, string> = { retail: "Retail", designer: "Designer", hospitality: "Hospitality", gallery: "Gallery", realtor: "Realtor" };
-    const typeLabel = typeLabels[String(typeVal)] || typeVal;
+    const typeVal = type || "furniture_retailer";
+    const typeLabel = VERTICAL_LABELS[String(typeVal)] || typeVal;
 
     const admin = createAdminClient();
+
+    const templateId = await resolveTemplateId(admin, template_slug || null);
 
     // If email is already linked to a user, do not add again — return error
     const { data: existingAuthUsers } = await admin.auth.admin.listUsers();
@@ -45,11 +59,18 @@ export async function POST(req: NextRequest) {
     let orgId: string;
     let userId: string;
 
+    const orgFields = {
+      name: nameTrimmed,
+      type: typeVal,
+      contact_name: contactNameTrimmed,
+      email: emailTrimmed,
+      phone: phoneTrimmed,
+      ...(templateId ? { template_id: templateId } : {}),
+    };
+
     if (existingOrg?.user_id) {
-      // Partner org already has a user linked — cannot re-add
       return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
     } else if (existingOrg) {
-      // Org exists but no user — create auth user and link (existingUser already returned above)
       const { data: newUser, error: createError } = await admin.auth.admin.createUser({
         email: emailTrimmed,
         password,
@@ -63,23 +84,14 @@ export async function POST(req: NextRequest) {
       orgId = existingOrg.id;
       await admin
         .from("organizations")
-        .update({
-          user_id: userId,
-          name: nameTrimmed,
-          type: typeVal,
-          contact_name: contactNameTrimmed,
-          email: emailTrimmed,
-          phone: phoneTrimmed,
-        })
+        .update({ user_id: userId, ...orgFields })
         .eq("id", orgId);
 
-      // Upsert partner_users
       await admin.from("partner_users").upsert(
         { user_id: userId, org_id: orgId },
         { onConflict: "user_id" }
       );
     } else {
-      // New partner — create auth user and org (existingUser already returned above)
       const { data: newUser, error: createError } = await admin.auth.admin.createUser({
         email: emailTrimmed,
         password,
@@ -94,11 +106,7 @@ export async function POST(req: NextRequest) {
       const { data: newOrg, error: orgError } = await admin
         .from("organizations")
         .insert({
-          name: nameTrimmed,
-          type: typeVal,
-          contact_name: contactNameTrimmed,
-          email: emailTrimmed,
-          phone: phoneTrimmed,
+          ...orgFields,
           health: "good",
           user_id: userId,
         })
@@ -118,10 +126,11 @@ export async function POST(req: NextRequest) {
 
     const inviteParams = { contactName: contactNameTrimmed, companyName: nameTrimmed, email: emailTrimmed, typeLabel, tempPassword: password, loginUrl };
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: emailTrimmed,
-      replyTo: "Yugo+ <notifications@opsplus.co>",
+      replyTo: emailFrom,
       subject: "You're invited to YUGO+ — Log in to continue setup",
       html: invitePartnerEmail(inviteParams),
       text: invitePartnerEmailText(inviteParams),

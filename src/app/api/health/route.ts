@@ -35,7 +35,8 @@ export async function GET() {
   return NextResponse.json(
     {
       ok,
-      env: isProduction && issues.length ? { missing: issues } : undefined,
+      ...(isProduction && issues.length ? { issues: issues.length } : {}),
+      ...(!isProduction && issues.length ? { missing: issues } : {}),
     },
     { status }
   );

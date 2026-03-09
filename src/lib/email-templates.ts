@@ -3,13 +3,15 @@ import { formatCurrency } from "./format-currency";
 import { formatPhone } from "./phone";
 
 function emailFooter(loginUrl?: string) {
-  const url = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
+  const baseUrl = loginUrl ? loginUrl.replace(/\/login.*$/, "") : getEmailBaseUrl();
+  void baseUrl; // loginUrl-derived base is used for tracking links; learn more always goes to public site
+  const learnMoreUrl = `${getEmailBaseUrl()}/about`;
   const logoUrl = getEmailLogoUrl();
   return `
     <div style="font-size:10px;color:#999;text-align:left;margin-top:32px;padding-top:20px;border-top:1px solid #2A2A2A">
       <img src="${logoUrl}" alt="YUGO" width="52" height="14" style="display:inline-block;vertical-align:middle;border:0;height:14px;width:auto" />
       <span style="color:#888;margin:0 6px">·</span>
-      <a href="${url}" style="color:#C9A962;text-decoration:none">Learn more</a>
+      <a href="${learnMoreUrl}" style="color:#C9A962;text-decoration:none">Learn more</a>
       <div style="margin-top:6px;font-size:9px;color:#888">Powered by YUGO+</div>
     </div>
   `;
@@ -412,7 +414,7 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by YUGO+ | Learn more: ${baseUrl}`;
+Powered by YUGO+ | Learn more: ${baseUrl}/about`;
 }
 
 export function invitePartnerEmail(params: {
@@ -466,7 +468,7 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by YUGO+ | Learn more: ${baseUrl}`;
+Powered by YUGO+ | Learn more: ${baseUrl}/about`;
 }
 
 export function partnerPasswordResetEmail(params: {
@@ -516,7 +518,7 @@ Log in: ${loginUrl}
 
 For security, we recommend changing this password after you sign in. If you didn't request this, contact your admin.
 
-Powered by YUGO+ | Learn more: ${baseUrl}`;
+Powered by YUGO+ | Learn more: ${baseUrl}/about`;
 }
 
 function darkEmailWrapper(html: string) {
@@ -708,6 +710,254 @@ export function bookingConfirmationEmail(params: {
   `);
 }
 
+/* ═══════════════════════════════════════════════════════
+   TIER-SPECIFIC BOOKING CONFIRMATION EMAILS (Prompt 80)
+   ═══════════════════════════════════════════════════════ */
+
+export interface TierConfirmationParams {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  timeWindow: string;
+  fromAddress: string;
+  toAddress: string;
+  tierLabel: string;
+  serviceLabel: string;
+  crewSize: number;
+  truckDisplayName: string;
+  totalWithTax: number;
+  depositPaid: number;
+  balanceRemaining: number;
+  trackingUrl: string;
+  includes: string[];
+  coordinatorName?: string | null;
+  coordinatorPhone?: string | null;
+  coordinatorEmail?: string | null;
+  crewNames?: string | null;
+}
+
+function confirmDateDisplay(dateStr: string | null): string {
+  if (!dateStr) return "To be confirmed";
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function essentialsConfirmationEmail(p: TierConfirmationParams): string {
+  const dateStr = confirmDateDisplay(p.moveDate);
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Confirmed</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your Yugo move is confirmed${p.clientName ? `, ${p.clientName}` : ""}.</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your move is confirmed. Here are your details:
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Move Details</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">Essentials</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed flat rate)</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What to Expect</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
+        <div>&middot; Our crew will arrive within your time window</div>
+        <div>&middot; All moving blankets, equipment, and floor protection included</div>
+        <div>&middot; You&apos;ll receive a reminder 48 hours before your move</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What to Prepare</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
+        <div>&middot; Have boxes packed and sealed</div>
+        <div>&middot; Clear pathways for the crew</div>
+        <div>&middot; Confirm elevator booking if applicable</div>
+      </div>
+    </div>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&#10003; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(p.depositPaid)}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">Balance remaining:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(p.balanceRemaining)}</td></tr>
+      </table>
+    </div>
+
+    <p style="font-size:11px;color:#666;margin:0 0 16px;text-align:center">
+      Questions? Reply to this email or call us anytime.
+    </p>
+  `);
+}
+
+export function premierConfirmationEmail(p: TierConfirmationParams): string {
+  const dateStr = confirmDateDisplay(p.moveDate);
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Great choice${p.clientName ? `, ${p.clientName}` : ""} &mdash; your Premier move is confirmed.</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Everything is set. No surprises &mdash; just a smooth, professional move.
+    </p>
+
+    <div style="background:#1E1E1E;border:1px solid #C9A96233;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Your Premier Move</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Premier</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed &mdash; no surprises)</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What&apos;s Included</div>
+      <div style="font-size:12px;color:#B8B5B0;line-height:2">
+        ${(p.includes || []).map((inc) => `<div><span style="color:#C9A962">&#10003;</span> ${inc}</div>`).join("")}
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Before Your Move</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
+        <div>&middot; You&apos;ll receive a reminder 48 hours before</div>
+        <div>&middot; A day-before SMS with your crew details and ETA window</div>
+        <div>&middot; Our team will handle disassembly &mdash; just let us know which pieces need it</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Your Tracking Page</div>
+      <div style="font-size:13px;color:#B8B5B0;line-height:1.6">
+        Follow your move in real-time on move day:
+      </div>
+    </div>
+
+    <a href="${p.trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px;text-align:center">
+      Track Your Move &rarr;
+    </a>
+
+    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&#10003; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(p.depositPaid)}</td></tr>
+        <tr><td style="color:#666;padding:3px 0">Balance remaining:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(p.balanceRemaining)}</td></tr>
+      </table>
+    </div>
+
+    <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;text-align:center">
+      Looking forward to a smooth move.<br/>
+      <strong style="color:#E8E5E0">&mdash; The Yugo Team</strong>
+    </p>
+  `);
+}
+
+export function estateConfirmationEmail(p: TierConfirmationParams): string {
+  const dateStr = confirmDateDisplay(p.moveDate);
+  const coordName = p.coordinatorName || "Your coordinator";
+  const DIV = `<div style="width:100%;height:1px;background:linear-gradient(to right,transparent,#C9A96244,transparent);margin:24px 0"></div>`;
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Estate Experience</div>
+    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;margin:0 0 12px;color:#F5F5F3;line-height:1.3">
+      Welcome to your Yugo Estate experience${p.clientName ? `, ${p.clientName}` : ""}.
+    </h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.7;margin:0 0 28px">
+      Thank you for entrusting Yugo with your move. Your Estate experience has been confirmed, and every detail is being prepared with care.
+    </p>
+
+    ${DIV}
+
+    <div style="margin-bottom:4px">
+      <div style="font-size:9px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Your Estate Move</div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr><td style="color:#666;padding:6px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${dateStr}</td></tr>
+        <tr><td style="color:#666;padding:6px 0">Time:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${p.timeWindow} &mdash; your crew will arrive promptly</td></tr>
+        <tr><td style="color:#666;padding:6px 0">Origin:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${p.fromAddress}</td></tr>
+        <tr><td style="color:#666;padding:6px 0">Destination:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${p.toAddress}</td></tr>
+        ${p.crewNames ? `<tr><td style="color:#666;padding:6px 0">Your Crew:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${p.crewNames}</td></tr>` : ""}
+        <tr><td style="color:#666;padding:6px 0">Your Vehicle:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${p.truckDisplayName}</td></tr>
+        <tr><td style="color:#666;padding:6px 0">Your Coordinator:</td><td style="color:#E8E5E0;font-weight:600;padding:6px 0;text-align:right">${coordName}</td></tr>
+      </table>
+    </div>
+
+    ${DIV}
+
+    <div style="margin-bottom:4px">
+      <div style="font-size:9px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Your Estate Experience Includes</div>
+      <div style="font-size:12px;color:#B8B5B0;line-height:2.2">
+        ${(p.includes || []).map((inc) => `<div><span style="color:#C9A962">&#10022;</span> ${inc}</div>`).join("")}
+      </div>
+    </div>
+
+    ${DIV}
+
+    <div style="margin-bottom:4px">
+      <div style="font-size:9px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">What Happens Next</div>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:0 0 16px">
+        Within the next 24 hours, your coordinator ${coordName} will reach out personally to:
+      </p>
+      <div style="font-size:13px;color:#B8B5B0;line-height:2">
+        <div>&middot; Schedule your pre-move walkthrough (in-person or virtual)</div>
+        <div>&middot; Confirm any items requiring special handling</div>
+        <div>&middot; Review your timeline and any access requirements</div>
+        <div>&middot; Answer every question you have</div>
+      </div>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:16px 0 0">
+        72 hours before your move, you&apos;ll receive a detailed itinerary with crew names, vehicle details, and your move-day timeline.
+      </p>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:8px 0 0">
+        On move day, ${coordName} will be available by phone throughout the entire process.
+      </p>
+    </div>
+
+    ${DIV}
+
+    <div style="margin-bottom:4px">
+      <div style="font-size:9px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Your Move Tracker</div>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 12px">Follow every step in real-time:</p>
+    </div>
+
+    <a href="${p.trackingUrl}" style="display:block;background:#5C1A33;color:#FFFFFF;padding:16px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:20px;text-align:center;letter-spacing:0.5px">
+      Track Your Move &rarr;
+    </a>
+
+    ${DIV}
+
+    <div style="text-align:center;margin-bottom:4px">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#C9A962;margin-bottom:4px">Investment: ${formatCurrency(p.totalWithTax)}</div>
+      <div style="font-size:11px;color:#666">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</div>
+      <div style="margin-top:8px;font-size:12px">
+        <span style="color:#2D9F5A;font-weight:600">&#10003; Deposit paid: ${formatCurrency(p.depositPaid)}</span>
+        <span style="color:#666;margin:0 8px">&middot;</span>
+        <span style="color:#C9A962;font-weight:600">Balance: ${formatCurrency(p.balanceRemaining)}</span>
+      </div>
+    </div>
+
+    ${DIV}
+
+    <div style="text-align:center;margin-bottom:8px">
+      <p style="font-size:14px;color:#B8B5B0;font-style:italic;margin:0 0 16px">It&apos;s our privilege to handle your move.</p>
+      ${p.coordinatorName ? `
+        <div style="font-size:13px;color:#E8E5E0;font-weight:600">${p.coordinatorName}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">Move Coordinator, Yugo</div>
+        ${p.coordinatorPhone ? `<div style="font-size:11px;color:#C9A962;margin-top:4px">${formatPhone(p.coordinatorPhone)}</div>` : ""}
+        ${p.coordinatorEmail ? `<div style="font-size:11px;color:#C9A962;margin-top:2px">${p.coordinatorEmail}</div>` : ""}
+      ` : ""}
+    </div>
+  `);
+}
+
 export function internalBookingAlertEmail(params: {
   clientName: string;
   clientEmail: string;
@@ -754,7 +1004,7 @@ export function internalBookingAlertEmail(params: {
         <tr><td style="color:#666;padding:4px 0;width:100px">Move:</td><td style="color:#C9A962;font-weight:600;padding:4px 0">${moveCode}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${clientName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${clientPhone || "—"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${clientPhone ? formatPhone(clientPhone) : "—"}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;padding:4px 0">${dateDisplay}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Route:</td><td style="color:#E8E5E0;padding:4px 0">${fromAddress} &rarr; ${toAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0">${formatCurrency(totalWithTax)}</td></tr>

@@ -25,23 +25,26 @@ function roundToNearest5(n: number): number {
 
 function SkippedBanner({ onDone }: { onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 1500);
+    const t = setTimeout(onDone, 2000);
     return () => clearTimeout(t);
   }, [onDone]);
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-[150] pb-10 px-4 flex justify-center"
-      style={{ pointerEvents: "none" }}
-    >
-      <div
-        className="w-full max-w-[400px] rounded-[20px] shadow-xl px-7 py-5 text-center"
-        style={{ backgroundColor: CREAM, pointerEvents: "auto" }}
-      >
-        <p className="text-[16px] font-semibold" style={{ color: FOREST }}>No problem!</p>
-        <p className="text-[13px] mt-1 opacity-60" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
+    <>
+      <div className="fixed inset-0 z-[149]" style={{ backgroundColor: CREAM }} />
+      <div className="fixed inset-0 z-[150] flex items-center justify-center px-4">
+        <div className="w-full max-w-[400px] text-center">
+          <div
+            className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-5"
+            style={{ background: `linear-gradient(135deg, ${GOLD}, #8B7332)` }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          </div>
+          <p className="text-[20px] font-semibold" style={{ color: FOREST }}>No problem!</p>
+          <p className="text-[14px] mt-2 opacity-60" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -127,8 +130,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
   const handleSkip = useCallback(async () => {
     setPhase("skipped");
     fetch("/api/tips/skip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moveId, token }) }).catch(() => {});
-    setTimeout(onSkip, 900);
-  }, [moveId, token, onSkip]);
+  }, [moveId, token]);
 
   useEffect(() => {
     if (phase !== "success") return;
@@ -165,7 +167,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
               </p>
               <div className="mt-6 flex flex-col gap-2.5">
                 <a
-                  href="https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"
+                  href={process.env.NEXT_PUBLIC_REVIEW_URL || "https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center gap-2 rounded-full font-semibold text-[13px] py-3 px-6 transition-all hover:opacity-90 active:scale-[0.98]"
@@ -187,7 +189,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
 
   /* ── Skipped ── auto-dismiss after 1.5 s ── */
   if (phase === "skipped") {
-    return <SkippedBanner onDone={onComplete} />;
+    return <SkippedBanner onDone={onSkip} />;
   }
 
   /* ── Main tip screen ── */

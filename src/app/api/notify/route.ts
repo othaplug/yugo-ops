@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatJobId } from "@/lib/move-code";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireAuth();
@@ -83,8 +84,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: toEmail,
       subject,
       html,

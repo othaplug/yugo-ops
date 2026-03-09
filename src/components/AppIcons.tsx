@@ -1,12 +1,14 @@
 "use client";
 
+import React from "react";
+
 const iconClass = "w-[15px] h-[15px] shrink-0 stroke-[1.75] stroke-current";
 const iconClassSm = "w-[14px] h-[14px] shrink-0 stroke-[1.75] stroke-current";
 const iconClassLg = "w-[18px] h-[18px] shrink-0 stroke-[1.75] stroke-current";
 
-export const Icon = ({ name, className }: { name: string; className?: string }) => {
+export const Icon = ({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) => {
   const cls = className || iconClass;
-  const props = { className: cls, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const props = { className: cls, style, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   switch (name) {
     case "search": return <svg {...props}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>;
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5" /></svg>;

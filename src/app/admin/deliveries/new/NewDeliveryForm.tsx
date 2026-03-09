@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import BackButton from "../../components/BackButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -62,6 +63,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
   const [pickupAddress, setPickupAddress] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [scheduledDate, setScheduledDate] = useState(dateFromUrl);
@@ -203,10 +205,24 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Project Type">
               <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
-                <option value="retail">Retail</option>
-                <option value="designer">Designer</option>
-                <option value="hospitality">Hospitality</option>
-                <option value="gallery">Art Gallery</option>
+                <optgroup label="Furniture & Design">
+                  <option value="furniture_retailer">Furniture Retailer</option>
+                  <option value="interior_designer">Interior Designer</option>
+                  <option value="cabinetry">Cabinetry</option>
+                  <option value="flooring">Flooring</option>
+                </optgroup>
+                <optgroup label="Art & Specialty">
+                  <option value="art_gallery">Art Gallery</option>
+                  <option value="antique_dealer">Antique Dealer</option>
+                </optgroup>
+                <optgroup label="Hospitality & Commercial">
+                  <option value="hospitality">Hospitality</option>
+                </optgroup>
+                <optgroup label="Medical & Technical">
+                  <option value="medical_equipment">Medical Equipment</option>
+                  <option value="av_technology">AV / Technology</option>
+                  <option value="appliances">Appliances</option>
+                </optgroup>
               </select>
             </Field>
             <Field label="Client / Partner">
@@ -250,11 +266,11 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             </Field>
             <Field label="Phone">
               <input
+                ref={customerPhoneInput.ref}
                 type="tel"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                onBlur={() => customerPhone && setCustomerPhone(formatPhone(customerPhone))}
-                placeholder="(123) 456-7890"
+                onChange={customerPhoneInput.onChange}
+                placeholder={PHONE_PLACEHOLDER}
                 className={fieldInput}
               />
             </Field>

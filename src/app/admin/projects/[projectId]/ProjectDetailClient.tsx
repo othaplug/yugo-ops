@@ -60,7 +60,17 @@ interface InventoryItem {
   photo_urls: string[] | null;
   storage_location: string | null;
   delivered_date: string | null;
+  handled_by: "yugo" | "vendor_direct" | "other_carrier" | null;
+  vendor_tracking_number: string | null;
+  vendor_carrier: string | null;
+  expected_delivery_date: string | null;
 }
+
+const HANDLER_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  yugo: { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]", label: "YUGO" },
+  vendor_direct: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "VENDOR" },
+  other_carrier: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "CARRIER" },
+};
 
 interface TimelineEntry {
   id: string;
@@ -464,6 +474,9 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
   const [newItemVendor, setNewItemVendor] = useState("");
   const [newItemPhase, setNewItemPhase] = useState("");
   const [newItemQty, setNewItemQty] = useState("1");
+  const [newItemHandledBy, setNewItemHandledBy] = useState<string>("yugo");
+  const [newItemCarrier, setNewItemCarrier] = useState("");
+  const [newItemTrackingNum, setNewItemTrackingNum] = useState("");
   const [search, setSearch] = useState("");
 
   // Receive item form
@@ -481,12 +494,18 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
         vendor: newItemVendor || null,
         phase_id: newItemPhase || null,
         quantity: parseInt(newItemQty) || 1,
+        handled_by: newItemHandledBy || "yugo",
+        vendor_carrier: newItemCarrier || null,
+        vendor_tracking_number: newItemTrackingNum || null,
       }),
     });
     setNewItemName("");
     setNewItemVendor("");
     setNewItemPhase("");
     setNewItemQty("1");
+    setNewItemHandledBy("yugo");
+    setNewItemCarrier("");
+    setNewItemTrackingNum("");
     setShowAddItem(false);
     onRefresh();
   };
@@ -538,6 +557,17 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               {data.phases.map((p) => <option key={p.id} value={p.id}>{p.phase_name}</option>)}
             </select>
             <input type="number" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)} placeholder="Qty" min="1" className={fieldInput} />
+            <select value={newItemHandledBy} onChange={(e) => setNewItemHandledBy(e.target.value)} className={fieldInput}>
+              <option value="yugo">Yugo (white-glove)</option>
+              <option value="vendor_direct">Vendor Direct</option>
+              <option value="other_carrier">Other Carrier</option>
+            </select>
+            {newItemHandledBy !== "yugo" && (
+              <>
+                <input value={newItemCarrier} onChange={(e) => setNewItemCarrier(e.target.value)} placeholder="Carrier (e.g., FedEx, DHL)" className={fieldInput} />
+                <input value={newItemTrackingNum} onChange={(e) => setNewItemTrackingNum(e.target.value)} placeholder="Tracking number" className={fieldInput} />
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <button onClick={addItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
@@ -585,33 +615,54 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-[var(--brd)]">
-                {["Item", "Phase", "Vendor", "Qty", "Status", "Received", "Storage", "Photos", "Actions"].map((h) => (
+                {["Item", "Vendor", "Handled By", "Status", "Tracking", "Received", "Actions"].map((h) => (
                   <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h === "Actions" ? "" : h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => {
-                const phase = data.phases.find((p) => p.id === item.phase_id);
+                const handler = item.handled_by || "yugo";
+                const badge = HANDLER_BADGE[handler] || HANDLER_BADGE.yugo;
                 return (
                   <tr key={item.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--gdim)]/20">
-                    <td className="px-2 py-2.5 text-[12px] font-medium text-[var(--tx)]">{item.item_name}</td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{phase?.phase_name || "—"}</td>
+                    <td className="px-2 py-2.5">
+                      <div className="text-[12px] font-medium text-[var(--tx)]">{item.item_name}</div>
+                      {item.quantity > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
+                    </td>
                     <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.vendor || "—"}</td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.quantity}</td>
+                    <td className="px-2 py-2.5">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                    </td>
                     <td className="px-2 py-2.5">
                       <span className={`text-[10px] font-semibold capitalize ${INV_STATUS_COLORS[item.status] || ""}`}>{item.status.replace(/_/g, " ")}</span>
                     </td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.storage_location || "—"}</td>
-                    <td className="px-2 py-2.5">
-                      {item.photo_urls?.length ? (
-                        <Camera size={14} className="text-[var(--gold)]" />
-                      ) : <span className="text-[var(--tx3)]">—</span>}
+                    <td className="px-2 py-2.5 text-[11px]">
+                      {handler === "yugo" ? (
+                        <span className="text-[var(--tx3)]">—</span>
+                      ) : item.vendor_tracking_number ? (
+                        <a
+                          href={item.vendor_carrier?.toLowerCase().includes("fedex") ? `https://www.fedex.com/fedextrack/?trknbr=${item.vendor_tracking_number}` : item.vendor_carrier?.toLowerCase().includes("dhl") ? `https://www.dhl.com/en/express/tracking.html?AWB=${item.vendor_tracking_number}` : item.vendor_carrier?.toLowerCase().includes("ups") ? `https://www.ups.com/track?tracknum=${item.vendor_tracking_number}` : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--gold)] hover:underline font-mono"
+                        >
+                          {item.vendor_tracking_number.slice(0, 12)}{item.vendor_tracking_number.length > 12 ? "…" : ""}
+                        </a>
+                      ) : (
+                        <span className="text-[var(--tx3)]">No tracking</span>
+                      )}
                     </td>
+                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : item.expected_delivery_date ? `ETA ${new Date(item.expected_delivery_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "—"}</td>
                     <td className="px-2 py-2.5">
-                      {item.status === "expected" && (
-                        <button onClick={() => setShowReceiveItem(item.id)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Receive</button>
+                      {handler === "yugo" && item.status !== "delivered" && item.status !== "installed" && (
+                        <span className="text-[10px] text-[var(--tx3)]">Auto-tracked</span>
+                      )}
+                      {handler !== "yugo" && item.status === "expected" && (
+                        <button onClick={() => setShowReceiveItem(item.id)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Update</button>
+                      )}
+                      {handler === "yugo" && (item.status === "delivered" || item.status === "installed") && (
+                        <span className="text-[10px] text-emerald-500 font-semibold">View PoD</span>
                       )}
                     </td>
                   </tr>
@@ -619,6 +670,31 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               })}
             </tbody>
           </table>
+
+          {/* Upsell for non-Yugo items */}
+          {(() => {
+            const nonYugoCount = filtered.filter((i) => i.handled_by && i.handled_by !== "yugo").length;
+            if (nonYugoCount === 0) return null;
+            return (
+              <div className="mt-6 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-5">
+                <div className="flex items-start gap-3">
+                  <Package className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold text-[var(--tx)]">{nonYugoCount} item{nonYugoCount > 1 ? "s" : ""} tracked manually this month</div>
+                    <p className="text-[11px] text-[var(--tx3)] mt-1">
+                      Want guaranteed white-glove handling with real-time tracking, photo documentation, and proof of delivery?
+                    </p>
+                    <Link
+                      href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}`}
+                      className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                    >
+                      <Truck size={13} /> Schedule these with Yugo
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
@@ -738,10 +814,14 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
 
 /* ─── INVOICE TAB ─── */
 function InvoiceTab({ data }: { data: ProjectData }) {
-  const completedDeliveries = data.deliveries.filter((d) => d.status === "delivered" || d.status === "completed");
-  const deliveryTotal = completedDeliveries.reduce((s, d) => s + (d.total_price || 0), 0);
+  const activeDeliveries = data.deliveries.filter((d) => d.status !== "cancelled");
+  const deliveryTotal = activeDeliveries.reduce((s, d) => s + (d.total_price || 0), 0);
+  // Use estimated budget if no delivery prices are set yet
+  const effectiveDeliveryTotal = deliveryTotal > 0 ? deliveryTotal : (data.estimated_budget || 0);
   const mgmtFee = data.project_mgmt_fee || 0;
-  const grandTotal = deliveryTotal + mgmtFee;
+  const subtotal = effectiveDeliveryTotal + mgmtFee;
+  const hst = Math.round(subtotal * 0.13);
+  const grandTotal = subtotal + hst;
 
   return (
     <div>
@@ -757,16 +837,26 @@ function InvoiceTab({ data }: { data: ProjectData }) {
             </tr>
           </thead>
           <tbody>
-            {completedDeliveries.map((d) => {
+            {activeDeliveries.length > 0 ? activeDeliveries.map((d) => {
               const phase = data.phases.find((p) => p.id === d.phase_id);
+              const isCompleted = d.status === "delivered" || d.status === "completed";
               return (
                 <tr key={d.id} className="border-b border-[var(--brd)]/50">
                   <td className="px-2 py-2.5 text-[12px] text-[var(--gold)] font-medium">{d.delivery_number}</td>
-                  <td className="px-2 py-2.5 text-[12px] text-[var(--tx)]">{phase ? `${phase.phase_name} delivery` : "Delivery"}</td>
+                  <td className="px-2 py-2.5 text-[12px] text-[var(--tx)]">
+                    {phase ? `${phase.phase_name} delivery` : "Delivery"}
+                    {!isCompleted && <span className="ml-1.5 text-[9px] font-semibold capitalize text-[var(--tx3)] opacity-60">({d.status})</span>}
+                  </td>
                   <td className="px-2 py-2.5 text-[12px] font-medium text-[var(--tx)]">{d.total_price ? formatCurrency(d.total_price) : "—"}</td>
                 </tr>
               );
-            })}
+            }) : data.estimated_budget ? (
+              <tr className="border-b border-[var(--brd)]/50">
+                <td className="px-2 py-2.5 text-[12px] text-[var(--tx3)]">—</td>
+                <td className="px-2 py-2.5 text-[12px] text-[var(--tx)]">Estimated Delivery Cost</td>
+                <td className="px-2 py-2.5 text-[12px] font-medium text-[var(--tx)]">{formatCurrency(data.estimated_budget)}</td>
+              </tr>
+            ) : null}
             {mgmtFee > 0 && (
               <tr className="border-b border-[var(--brd)]/50">
                 <td className="px-2 py-2.5 text-[12px] text-[var(--tx3)]">—</td>
@@ -776,15 +866,23 @@ function InvoiceTab({ data }: { data: ProjectData }) {
             )}
           </tbody>
           <tfoot>
+            <tr>
+              <td className="px-2 py-2 text-[12px] text-[var(--tx3)]" colSpan={2}>Subtotal</td>
+              <td className="px-2 py-2 text-[12px] font-medium text-[var(--tx)]">{formatCurrency(subtotal)}</td>
+            </tr>
+            <tr>
+              <td className="px-2 py-2 text-[12px] text-[var(--tx3)]" colSpan={2}>HST (13%)</td>
+              <td className="px-2 py-2 text-[12px] font-medium text-[var(--tx)]">{formatCurrency(hst)}</td>
+            </tr>
             <tr className="border-t-2 border-[var(--brd)]">
-              <td className="px-2 py-3 text-[13px] font-bold text-[var(--tx)]" colSpan={2}>TOTAL</td>
+              <td className="px-2 py-3 text-[13px] font-bold text-[var(--tx)]" colSpan={2}>TOTAL (incl. HST)</td>
               <td className="px-2 py-3 text-[13px] font-bold text-[var(--gold)]">{formatCurrency(grandTotal)}</td>
             </tr>
           </tfoot>
         </table>
 
-        {completedDeliveries.length === 0 && (
-          <div className="text-center py-8 text-[var(--tx3)] text-[12px]">No completed deliveries to invoice yet</div>
+        {activeDeliveries.length === 0 && !data.estimated_budget && (
+          <div className="text-center py-8 text-[var(--tx3)] text-[12px]">No deliveries linked to this project yet</div>
         )}
       </div>
     </div>

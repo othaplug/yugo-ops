@@ -3,14 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
-import { normalizePhone } from "@/lib/phone";
+import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import {
+  type PartnerProfile,
+  PARTNER_SEGMENT_GROUPS,
+  VERTICAL_TO_TEMPLATE_SLUG,
+} from "@/lib/partner-type";
 
 type Persona = "client" | "partner";
 
+const DEFAULT_VERTICAL_BY_PROFILE: Record<PartnerProfile, string> = {
+  delivery: "furniture_retailer",
+  referral: "realtor",
+};
+
 export default function NewClientForm({
   defaultPersona = "client",
-  defaultPartnerType = "retail",
+  defaultPartnerType = "furniture_retailer",
 }: {
   defaultPersona?: Persona;
   defaultPartnerType?: string;
@@ -19,9 +30,17 @@ export default function NewClientForm({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [persona, setPersona] = useState<Persona>(defaultPersona);
+  const [profile, setProfile] = useState<PartnerProfile>("delivery");
   const [partnerType, setPartnerType] = useState(defaultPartnerType);
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const phoneInput = usePhoneInput(phone, setPhone);
   const [sendPortalAccess, setSendPortalAccess] = useState(true);
+
+  const handleProfileChange = (p: PartnerProfile) => {
+    setProfile(p);
+    setPartnerType(DEFAULT_VERTICAL_BY_PROFILE[p]);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,14 +52,15 @@ export default function NewClientForm({
       persona,
       name: form.get("name"),
       email: form.get("email"),
-      phone: normalizePhone(String(form.get("phone") || "")) || "",
+      phone: normalizePhone(phone) || "",
       address: address || form.get("address") || "",
     };
 
     if (persona === "partner") {
-      payload.type = form.get("type") || partnerType;
+      payload.type = partnerType;
       payload.contact_name = form.get("contact_name");
       payload.send_portal_access = sendPortalAccess;
+      payload.template_slug = VERTICAL_TO_TEMPLATE_SLUG[partnerType] || null;
     }
 
     try {
@@ -72,6 +92,8 @@ export default function NewClientForm({
   const partnerButtonLabel = loading ? "Creating..." : sendPortalAccess ? "Create + Send Portal Access" : "Create Partner";
   const clientButtonLabel = loading ? "Creating..." : "Create";
 
+  const activeSegments = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile === profile);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Field label="Type">
@@ -101,20 +123,47 @@ export default function NewClientForm({
 
       {persona === "partner" ? (
         <>
-          <Field label="Partner Type">
+          <Field label="Partner Profile">
+            <div className="flex gap-2">
+              {PARTNER_SEGMENT_GROUPS.map((seg) => (
+                <label key={seg.profile} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="profile"
+                    checked={profile === seg.profile}
+                    onChange={() => handleProfileChange(seg.profile)}
+                    className="accent-[var(--gold)]"
+                  />
+                  <span className="text-sm">{seg.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--tx3)] mt-1">
+              {PARTNER_SEGMENT_GROUPS.find((s) => s.profile === profile)?.description}
+            </p>
+          </Field>
+
+          <Field label="Vertical">
             <select
               name="type"
               value={partnerType}
               onChange={(e) => setPartnerType(e.target.value)}
               className="field-input"
             >
-              <option value="retail">Retail</option>
-              <option value="designer">Designer</option>
-              <option value="hospitality">Hospitality</option>
-              <option value="gallery">Gallery</option>
-              <option value="realtor">Realtor</option>
+              {activeSegments.flatMap((seg) =>
+                seg.groups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.verticals.map((v) => (
+                      <option key={v.value} value={v.value}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              )}
             </select>
           </Field>
+
           <Field label="Company Name">
             <input name="name" required placeholder="e.g. Roche Bobois" className="field-input" />
           </Field>
@@ -125,7 +174,7 @@ export default function NewClientForm({
             <input name="email" type="email" required placeholder="email@company.com" className="field-input" />
           </Field>
           <Field label="Phone">
-            <input name="phone" placeholder="416-555-0100" className="field-input" />
+            <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className="field-input" />
           </Field>
           <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Yorkville Ave" label="Address" className="field-input" />
           <input type="hidden" name="address" value={address} />
@@ -157,7 +206,7 @@ export default function NewClientForm({
             <input name="email" type="email" required placeholder="email@example.com" className="field-input" />
           </Field>
           <Field label="Phone">
-            <input name="phone" type="tel" placeholder="(123) 456-7890" className="field-input" />
+            <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className="field-input" />
           </Field>
           <AddressAutocomplete value={address} onRawChange={setAddress} onChange={(r) => setAddress(r.fullAddress)} placeholder="123 Main St" label="Address" className="field-input" />
           <input type="hidden" name="address" value={address} />

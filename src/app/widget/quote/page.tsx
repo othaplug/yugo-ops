@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function WidgetQuotePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#FAF7F2" }}>
+    <div className="min-h-screen flex items-start justify-center p-4 sm:p-6 sm:pt-10" style={{ background: "#FAF7F2" }}>
       <QuoteWidgetClient />
     </div>
   );

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { emailLayout } from "@/lib/email-templates";
+import { Resend } from "resend";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -49,6 +53,47 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       event_description: `Status changed to "${body.status}"`,
       user_id: body.user_id || null,
     });
+
+    if (body.status === "proposed") {
+      try {
+        const { data: project } = await db
+          .from("projects")
+          .select("project_name, project_number, estimated_budget, project_mgmt_fee, organizations:partner_id(name, email, contact_name)")
+          .eq("id", id)
+          .single();
+        const orgRaw = project?.organizations as unknown;
+        const org = Array.isArray(orgRaw) ? (orgRaw[0] as { name: string; email: string | null; contact_name: string | null } | undefined) ?? null : (orgRaw as { name: string; email: string | null; contact_name: string | null } | null);
+        if (org?.email && process.env.RESEND_API_KEY) {
+          const baseUrl = getEmailBaseUrl();
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const emailFrom = await getEmailFrom();
+          const budget = (project?.estimated_budget || 0) + (project?.project_mgmt_fee || 0);
+          const html = emailLayout(`
+            <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">New Project Proposal</div>
+            <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${project?.project_name}</h1>
+            <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
+              Hi${org.contact_name ? ` ${org.contact_name}` : ""},<br/><br/>
+              A new project proposal has been created for <strong style="color:#C9A962">${org.name}</strong>.
+              ${budget > 0 ? `The estimated budget is <strong style="color:#C9A962">$${budget.toLocaleString()}</strong>.` : ""}
+            </p>
+            <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
+              Log in to your partner portal to review the details.
+            </p>
+            <a href="${baseUrl}/partner" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+              View Project
+            </a>
+          `);
+          await resend.emails.send({
+            from: emailFrom,
+            to: org.email,
+            subject: `New Project Proposal: ${project?.project_name} (${project?.project_number})`,
+            html,
+          });
+        }
+      } catch (e) {
+        console.error("Failed to send proposal email:", e);
+      }
+    }
   }
 
   return NextResponse.json(data);

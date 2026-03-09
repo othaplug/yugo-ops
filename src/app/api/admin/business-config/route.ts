@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
+import { invalidateConfigCache } from "@/lib/config";
 
 const BUSINESS_KEYS = [
+  // Company info
   "company_name", "company_legal_name", "company_phone", "company_email",
   "company_address", "company_hst_number", "business_hours", "after_hours_contact",
+  "company_website", "dispatch_phone",
+  // Notification / email
+  "notifications_from_email", "admin_notification_email",
+  // Social media
+  "company_social_instagram", "company_social_facebook",
+  "company_social_twitter", "company_social_linkedin",
+  // Review & reputation
+  "company_review_url",
+  // Quoting
   "quote_expiry_days", "default_deposit_pct", "minimum_deposit", "quote_id_prefix",
   "auto_followup_enabled", "followup_max_attempts",
+  // Feature toggles
   "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades",
 ];
 
@@ -45,6 +57,8 @@ export async function PATCH(req: NextRequest) {
       .from("platform_config")
       .upsert({ key, value: String(value) }, { onConflict: "key" });
   }
+
+  invalidateConfigCache();
 
   return NextResponse.json({ ok: true, updated: updates.length });
 }

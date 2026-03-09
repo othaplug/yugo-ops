@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toTitleCase } from "@/lib/format-text";
+import { formatPhone } from "@/lib/phone";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -294,7 +295,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 </p>
                 <p className="text-[11px] text-[var(--tx3)]">{contact?.email ?? "—"}</p>
                 {contact?.phone && (
-                  <p className="text-[11px] text-[var(--tx3)]">{contact.phone}</p>
+                  <p className="text-[11px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
                 )}
               </div>
               <div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import type { Project } from "../projectsData";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import ModalOverlay from "../../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
@@ -23,6 +24,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
   const [designerCompany, setDesignerCompany] = useState(project.designerCompany || "");
   const [designerEmail, setDesignerEmail] = useState(project.designerEmail || "");
   const [designerPhone, setDesignerPhone] = useState(project.designerPhone ? formatPhone(project.designerPhone) : "");
+  const designerPhoneInput = usePhoneInput(designerPhone, setDesignerPhone);
 
   useEffect(() => {
     if (open) {
@@ -131,11 +133,11 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Designer phone</label>
             <input
+              ref={designerPhoneInput.ref}
               type="tel"
               value={designerPhone}
-              onChange={(e) => setDesignerPhone(e.target.value)}
-              onBlur={() => setDesignerPhone(formatPhone(designerPhone))}
-              placeholder="(123) 456-7890"
+              onChange={designerPhoneInput.onChange}
+              placeholder={PHONE_PLACEHOLDER}
               className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             />
           </div>

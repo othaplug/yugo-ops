@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
     const deliveryNumber = `DLV-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
+    const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
     const items = Array.isArray(body.items)
       ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())
       : typeof body.items === "string"
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       stops_detail: Array.isArray(body.stops_detail) ? body.stops_detail : [],
       recommended_vehicle: body.recommended_vehicle || null,
       recommended_day_type: body.recommended_day_type || null,
+      tracking_code: trackingCode,
     };
 
     console.log("[delivery-create] inserting for org:", primaryOrgId, "status: pending_approval, date:", scheduledDate);

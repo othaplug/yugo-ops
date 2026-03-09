@@ -6,6 +6,7 @@ import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getMoveCode, formatJobId, getTrackMoveSlug } from "@/lib/move-code";
 import { requireStaff } from "@/lib/api-auth";
+import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(
   req: NextRequest,
@@ -38,8 +39,9 @@ export async function POST(
     const jobIdDisplay = formatJobId(moveCode, "move");
 
     const resend = getResend();
+    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
-      from: "Yugo+ <notifications@opsplus.co>",
+      from: emailFrom,
       to: email,
       subject: `Track your move — ${jobIdDisplay}`,
       html: trackingLinkEmail({

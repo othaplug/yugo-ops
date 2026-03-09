@@ -66,6 +66,7 @@ export interface Quote {
   valuation_upgraded: boolean | null;
   valuation_upgrade_cost: number | null;
   declaration_total: number | null;
+  recommended_tier: string | null;
 }
 
 export interface ValuationTier {

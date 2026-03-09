@@ -10,6 +10,7 @@ import {
   Lock,
   Zap,
   Truck,
+  Package,
   Users,
   Sparkles,
   Wrench,
@@ -86,14 +87,14 @@ const INCLUSIONS_ESSENTIALS: Inclusion[] = [
 
 const INCLUSIONS_PREMIER: Inclusion[] = [
   { icon: Wrench, label: "Furniture disassembly & reassembly", description: "We take it apart and put it back together" },
-  { icon: Sparkles, label: "Basic cleaning of origin", description: "We leave your old place move-out ready" },
+  { icon: Sparkles, label: "Debris & packaging removal", description: "We clear away all packing materials and debris post-move" },
 ];
 
 const INCLUSIONS_ESTATE: Inclusion[] = [
   { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
   { icon: Shirt, label: "White glove item handling", description: "Art, antiques, and fragile items individually wrapped" },
   { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
-  { icon: Sparkles, label: "Full cleaning of both properties", description: "Professional clean at origin and destination" },
+  { icon: Sparkles, label: "Post-move property restoration", description: "Removal of all packaging, debris, and unwanted materials from both locations" },
 ];
 
 export default function QuotePageClient({
@@ -581,6 +582,7 @@ export default function QuotePageClient({
             tiers={tiers}
             selectedTier={selectedTier}
             onSelectTier={handleSelectTier}
+            recommendedTier={quote.recommended_tier || "premier"}
           />
         ) : quote.service_type === "long_distance" ? (
           <LongDistanceLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
@@ -610,6 +612,7 @@ export default function QuotePageClient({
             selectedAddons={selectedAddons}
             basePrice={basePrice}
             addonTotal={addonTotal}
+            valuationCost={valuationCost}
             tax={tax}
             grandTotal={grandTotal}
             deposit={deposit}
@@ -872,7 +875,7 @@ const InclusionsShowcase = React.forwardRef<
     : "Licensed, insured, background-checked movers";
 
   const dynamicItems: Inclusion[] = [
-    { icon: Truck, label: truckLine, description: "Climate-protected, equipped for your move" },
+    { icon: Package, label: truckLine, description: "Climate-protected, equipped for your move" },
     { icon: Users, label: `Professional crew${crewSize ? ` of ${crewSize}` : ""}`, description: crewLine },
   ];
 
@@ -1331,6 +1334,7 @@ function AddOnsSection({
   selectedAddons,
   basePrice,
   addonTotal,
+  valuationCost,
   tax,
   grandTotal,
   deposit,
@@ -1344,6 +1348,7 @@ function AddOnsSection({
   selectedAddons: Map<string, AddonSelection>;
   basePrice: number;
   addonTotal: number;
+  valuationCost: number;
   tax: number;
   grandTotal: number;
   deposit: number;
@@ -1534,33 +1539,39 @@ function AddOnsSection({
       )}
 
       {/* Running total bar */}
-      {addonTotal > 0 && (selectedTierData || basePrice > 0) && (
+      {(addonTotal > 0 || valuationCost > 0) && (selectedTierData || basePrice > 0) && (
         <div
-          className="mt-5 p-4 rounded-xl border text-center"
+          className="mt-5 p-4 rounded-xl border"
           style={{ borderColor: GOLD, backgroundColor: "#FFFDF8" }}
         >
-          <div
-            className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1 text-[12px]"
-            style={{ color: FOREST }}
-          >
-            <span>
-              Base: <b>{fmtPrice(basePrice)}</b>
-            </span>
-            <span style={{ color: `${FOREST}40` }}>+</span>
-            <span>
-              Add-ons: <b style={{ color: GOLD }}>{fmtPrice(addonTotal)}</b>
-            </span>
-            <span style={{ color: `${FOREST}40` }}>+</span>
-            <span>
-              HST: <b>{fmtPrice(tax)}</b>
-            </span>
-            <span style={{ color: `${FOREST}40` }}>=</span>
-            <span className="text-[14px] font-bold" style={{ color: WINE }}>
-              Total: {fmtPrice(grandTotal)}
-            </span>
+          <div className="space-y-1.5 mb-2">
+            <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+              <span>Base price</span>
+              <b>{fmtPrice(basePrice)}</b>
+            </div>
+            {addonTotal > 0 && (
+              <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+                <span>Add-ons</span>
+                <b style={{ color: GOLD }}>{fmtPrice(addonTotal)}</b>
+              </div>
+            )}
+            {valuationCost > 0 && (
+              <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+                <span>Protection upgrade</span>
+                <b style={{ color: WINE }}>{fmtPrice(valuationCost)}</b>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-[12px]" style={{ color: `${FOREST}70` }}>
+              <span>HST (13%)</span>
+              <span>{fmtPrice(tax)}</span>
+            </div>
+            <div className="flex items-center justify-between pt-1.5 border-t" style={{ borderColor: `${FOREST}10` }}>
+              <span className="text-[13px] font-bold" style={{ color: FOREST }}>Total</span>
+              <span className="text-[15px] font-bold" style={{ color: WINE }}>{fmtPrice(grandTotal)}</span>
+            </div>
           </div>
-          <p className="text-[11px] mt-1" style={{ color: GOLD }}>
-            {fmtPrice(deposit)} deposit to book
+          <p className="text-[11px] text-center pt-1 border-t" style={{ color: GOLD, borderColor: `${GOLD}20` }}>
+            {fmtPrice(deposit)} deposit to confirm · Balance due on move day
           </p>
         </div>
       )}

@@ -1,133 +1,338 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import YugoLogo from "@/components/YugoLogo";
+import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 
+/* ── Palette ── */
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
 const GOLD = "#B8962E";
 const CREAM = "#FAF7F2";
 
-const SIZES = [
-  { key: "studio", label: "Studio", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "1br", label: "1 Bed", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "2br", label: "2 Bed", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "3br", label: "3 Bed", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "4br", label: "4 Bed", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "5br_plus", label: "5+", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
+/* ── Move types ── */
+const MOVE_TYPES = [
+  { key: "residential", label: "Residential", desc: "Home or apartment", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
+  { key: "office", label: "Office / Commercial", desc: "Business relocation", icon: "M4 21V3a1 1 0 011-1h14a1 1 0 011 1v18M3 21h18M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1" },
+  { key: "special_event", label: "Special Event", desc: "One-off or unique move", icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
+] as const;
+
+/* ── Residential sizes ── */
+const HOME_SIZES = [
+  { key: "studio", label: "Studio" },
+  { key: "1br", label: "1 Bedroom" },
+  { key: "2br", label: "2 Bedrooms" },
+  { key: "3br", label: "3 Bedrooms" },
+  { key: "4br", label: "4 Bedrooms" },
+  { key: "5br_plus", label: "5+ Bedrooms" },
 ];
 
-const SIZE_LABELS: Record<string, string> = {
-  studio: "Studio",
-  "1br": "1 Bedroom",
-  "2br": "2 Bedroom",
-  "3br": "3 Bedroom",
-  "4br": "4 Bedroom",
-  "5br_plus": "5+ Bedroom",
+const OFFICE_SIZES = [
+  { key: "small", label: "Small (< 1,500 sqft)" },
+  { key: "medium", label: "Medium (1,500 – 5,000 sqft)" },
+  { key: "large", label: "Large (5,000+ sqft)" },
+];
+
+const BUILDING_TYPES = [
+  { key: "apartment", label: "Apartment" },
+  { key: "condo", label: "Condo" },
+  { key: "house", label: "House" },
+  { key: "townhouse", label: "Townhouse" },
+];
+
+const ACCESS_OPTIONS = [
+  { key: "ground", label: "Ground Floor" },
+  { key: "elevator", label: "Elevator" },
+  { key: "stairs_2", label: "Stairs — 2nd Floor" },
+  { key: "stairs_3", label: "Stairs — 3rd Floor" },
+  { key: "stairs_4", label: "Stairs — 4th+ Floor" },
+  { key: "loading_dock", label: "Loading Dock" },
+];
+
+/* ── Estimated boxes per home size ── */
+const BOX_ESTIMATES: Record<string, number> = {
+  studio: 12, "1br": 25, "2br": 38, "3br": 52, "4br": 68, "5br_plus": 95,
+  small: 20, medium: 40, large: 70,
 };
 
-interface Estimate {
-  low: number;
-  high: number;
-  factors: string[];
-  moveSize: string;
-  fromPostal: string;
-  toPostal: string;
-  moveDate: string | null;
-  disabled?: boolean;
-  message?: string;
+/* ── Furniture catalog ── */
+interface CatalogItem {
+  id: string;
+  name: string;
+  fragile: boolean;
 }
 
+const FURNITURE_CATALOG: Record<string, CatalogItem[]> = {
+  "Living Room": [
+    { id: "sofa_2", name: "2-Seater Sofa", fragile: false },
+    { id: "sofa_3", name: "3-Seater Sofa", fragile: false },
+    { id: "sectional", name: "Sectional Sofa", fragile: false },
+    { id: "armchair", name: "Armchair", fragile: false },
+    { id: "coffee_table", name: "Coffee Table", fragile: true },
+    { id: "tv_stand", name: "TV Stand", fragile: false },
+    { id: "tv_small", name: 'TV (32–50")', fragile: true },
+    { id: "tv_large", name: 'TV (55"+)', fragile: true },
+    { id: "bookshelf", name: "Bookshelf", fragile: false },
+    { id: "floor_lamp", name: "Floor Lamp", fragile: true },
+    { id: "rug_large", name: "Area Rug", fragile: false },
+  ],
+  Bedroom: [
+    { id: "bed_queen", name: "Queen Bed + Mattress", fragile: false },
+    { id: "bed_king", name: "King Bed + Mattress", fragile: false },
+    { id: "bed_single", name: "Single / Twin Bed", fragile: false },
+    { id: "dresser", name: "Dresser", fragile: false },
+    { id: "nightstand", name: "Nightstand", fragile: false },
+    { id: "wardrobe", name: "Wardrobe / Armoire", fragile: true },
+    { id: "desk", name: "Desk", fragile: false },
+    { id: "mirror_lg", name: "Large Mirror", fragile: true },
+  ],
+  "Dining Room": [
+    { id: "dining_table_4", name: "Dining Table (4-seat)", fragile: true },
+    { id: "dining_table_6", name: "Dining Table (6-8 seat)", fragile: true },
+    { id: "dining_chairs_4", name: "Dining Chairs (set of 4)", fragile: false },
+    { id: "buffet", name: "Buffet / Sideboard", fragile: false },
+    { id: "china_cabinet", name: "China Cabinet", fragile: true },
+  ],
+  "Kitchen & Laundry": [
+    { id: "fridge", name: "Refrigerator", fragile: false },
+    { id: "washer", name: "Washer", fragile: false },
+    { id: "dryer", name: "Dryer", fragile: false },
+    { id: "dishwasher", name: "Dishwasher", fragile: false },
+    { id: "kitchen_island", name: "Kitchen Island / Cart", fragile: false },
+  ],
+  "Home Office": [
+    { id: "office_desk", name: "Office Desk", fragile: false },
+    { id: "office_chair", name: "Office Chair", fragile: false },
+    { id: "filing_cabinet", name: "Filing Cabinet", fragile: false },
+    { id: "monitor", name: "Computer Monitor", fragile: true },
+    { id: "printer", name: "Printer", fragile: true },
+  ],
+  "Special Items": [
+    { id: "piano_upright", name: "Piano (Upright)", fragile: true },
+    { id: "piano_grand", name: "Piano (Grand)", fragile: true },
+    { id: "pool_table", name: "Pool Table", fragile: true },
+    { id: "exercise_equip", name: "Exercise Equipment", fragile: false },
+    { id: "outdoor_set", name: "Outdoor Furniture Set", fragile: false },
+    { id: "bbq", name: "BBQ / Grill", fragile: false },
+    { id: "artwork_lg", name: "Large Artwork / Painting", fragile: true },
+    { id: "safe", name: "Safe / Heavy Box", fragile: false },
+  ],
+};
+
+/* ── Types ── */
+interface InventoryEntry {
+  itemId: string;
+  name: string;
+  qty: number;
+  fragile: boolean;
+}
+
+interface DateEstimate {
+  date: string;
+  dayOfWeek: number;
+  dayName: string;
+  dayShort: string;
+  monthDay: string;
+  am: number;
+  pm: number;
+  available: boolean;
+}
+
+/* ── Component ── */
 export default function QuoteWidgetClient() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("left");
 
+  // Step 0 — move type + size
+  const [moveType, setMoveType] = useState("");
   const [moveSize, setMoveSize] = useState("");
+  const [officeSize, setOfficeSize] = useState("");
+
+  // Step 1 — locations & access
   const [fromPostal, setFromPostal] = useState("");
   const [toPostal, setToPostal] = useState("");
+  const [buildingTypeFrom, setBuildingTypeFrom] = useState("apartment");
+  const [buildingTypeTo, setBuildingTypeTo] = useState("apartment");
+  const [accessFrom, setAccessFrom] = useState("ground");
+  const [accessTo, setAccessTo] = useState("ground");
+
+  // Step 2 — inventory
+  const [inventory, setInventory] = useState<InventoryEntry[]>([]);
+  const [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
+
+  // Step 3 — date + results
   const [moveDate, setMoveDate] = useState("");
-  const [flexible, setFlexible] = useState(false);
-  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [preferredTime, setPreferredTime] = useState<"am" | "pm">("am");
+  const [dateEstimates, setDateEstimates] = useState<DateEstimate[]>([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState<"am" | "pm">("am");
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState(false);
+  const [calendarOffset, setCalendarOffset] = useState(0);
 
+  // Step 4 — lead capture
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const phoneInput = usePhoneInput(phone, setPhone);
+  const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [leadNumber, setLeadNumber] = useState("");
 
-  const goNext = useCallback(() => {
-    setDirection("left");
-    setStep((s) => s + 1);
+  // reCAPTCHA
+  const recaptchaLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (recaptchaLoadedRef.current) return;
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!siteKey) return;
+    recaptchaLoadedRef.current = true;
+    const s = document.createElement("script");
+    s.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+    s.async = true;
+    document.head.appendChild(s);
   }, []);
 
-  const goBack = useCallback(() => {
-    setDirection("right");
-    setStep((s) => s - 1);
+  const getRecaptchaToken = useCallback(async (): Promise<string | null> => {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!siteKey || !(window as any).grecaptcha) return null; // eslint-disable-line @typescript-eslint/no-explicit-any
+    try {
+      return await (window as any).grecaptcha.execute(siteKey, { action: "submit_lead" }); // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch {
+      return null;
+    }
   }, []);
 
-  const fetchEstimate = useCallback(async () => {
+  /* ── Navigation ── */
+  const goNext = useCallback(() => { setDirection("left"); setStep((s) => s + 1); }, []);
+  const goBack = useCallback(() => { setDirection("right"); setStep((s) => s - 1); }, []);
+
+  /* ── Postal formatting ── */
+  const formatPostal = (val: string) => {
+    const clean = val.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (clean.length <= 3) return clean;
+    return clean.slice(0, 3) + " " + clean.slice(3, 6);
+  };
+
+  /* ── Inventory helpers ── */
+  const totalItems = inventory.reduce((sum, e) => sum + e.qty, 0);
+  const sizeKey = moveType === "office" ? officeSize : moveSize;
+  const estimatedBoxes = BOX_ESTIMATES[sizeKey] || 30;
+
+  const toggleRoom = (room: string) => {
+    setExpandedRooms((prev) => ({ ...prev, [room]: !prev[room] }));
+  };
+
+  const updateItem = (itemId: string, itemName: string, fragile: boolean, delta: number) => {
+    setInventory((prev) => {
+      const idx = prev.findIndex((e) => e.itemId === itemId);
+      if (idx >= 0) {
+        const newQty = Math.max(0, prev[idx]!.qty + delta);
+        if (newQty === 0) return prev.filter((_, i) => i !== idx);
+        return prev.map((e, i) => (i === idx ? { ...e, qty: newQty } : e));
+      }
+      if (delta > 0) return [...prev, { itemId, name: itemName, qty: 1, fragile }];
+      return prev;
+    });
+  };
+
+  const getItemQty = (itemId: string) => inventory.find((e) => e.itemId === itemId)?.qty || 0;
+
+  /* ── Fetch estimates for calendar ── */
+  const fetchEstimates = useCallback(async (startDate?: string) => {
     setEstimateLoading(true);
     setEstimateError(false);
     try {
-      const res = await fetch("/api/widget/estimate", {
+      const res = await fetch("/api/widget/estimate-range", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          moveType: moveType || "residential",
           moveSize,
-          fromPostalCode: fromPostal,
-          toPostalCode: toPostal,
-          moveDate: moveDate || null,
+          officeSize,
+          fromPostal: fromPostal.replace(/\s/g, ""),
+          toPostal: toPostal.replace(/\s/g, ""),
+          buildingTypeFrom,
+          buildingTypeTo,
+          accessFrom,
+          accessTo,
+          itemCount: totalItems || 0,
+          startDate: startDate || moveDate || undefined,
+          days: 14,
         }),
       });
-      if (!res.ok) {
-        setEstimate(null);
-        setEstimateError(true);
-        return;
-      }
+      if (!res.ok) { setEstimateError(true); return; }
       const data = await res.json();
-      if (data.disabled) {
-        setEstimate({ ...data, low: 0, high: 0, factors: [] });
-      } else if (typeof data.low !== "number" || typeof data.high !== "number") {
-        setEstimate(null);
-        setEstimateError(true);
-      } else {
-        setEstimate(data);
+      if (!data.estimates || !Array.isArray(data.estimates)) { setEstimateError(true); return; }
+      setDateEstimates(data.estimates);
+      if (!selectedDate && data.estimates.length > 0) {
+        const target = moveDate || data.estimates[0].date;
+        setSelectedDate(target);
       }
     } catch {
-      setEstimate(null);
       setEstimateError(true);
     } finally {
       setEstimateLoading(false);
     }
-  }, [moveSize, fromPostal, toPostal, moveDate]);
+  }, [moveType, moveSize, officeSize, fromPostal, toPostal, buildingTypeFrom, buildingTypeTo, accessFrom, accessTo, totalItems, moveDate, selectedDate]);
 
-  const handleDateNext = useCallback(() => {
+  const handleGoToResults = useCallback(() => {
     goNext();
-    fetchEstimate();
-  }, [goNext, fetchEstimate]);
+    fetchEstimates();
+  }, [goNext, fetchEstimates]);
 
+  const handleCalendarNav = (dir: -1 | 1) => {
+    const newOffset = Math.max(0, calendarOffset + dir * 7);
+    setCalendarOffset(newOffset);
+    if (dateEstimates.length > 0 && newOffset + 7 > dateEstimates.length) {
+      const lastDate = dateEstimates[dateEstimates.length - 1]!.date;
+      const d = new Date(lastDate + "T12:00:00");
+      d.setDate(d.getDate() + 1);
+      fetchEstimates(d.toISOString().split("T")[0]);
+    }
+  };
+
+  const visibleDates = dateEstimates.slice(calendarOffset, calendarOffset + 7);
+
+  const selectedEstimate = dateEstimates.find((e) => e.date === selectedDate);
+  const selectedPrice = selectedEstimate ? (selectedTime === "am" ? selectedEstimate.am : selectedEstimate.pm) : 0;
+
+  /* ── Submit lead ── */
   const handleSubmitLead = useCallback(async () => {
     if (!name.trim() || !email.trim()) return;
     setSubmitting(true);
     try {
+      const recaptchaToken = await getRecaptchaToken();
       const res = await fetch("/api/widget/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
-          phone: phone.trim() || null,
+          phone: phone.trim() ? normalizePhone(phone) : null,
+          moveType,
           moveSize,
+          officeSize: moveType === "office" ? officeSize : undefined,
           fromPostal,
           toPostal,
-          moveDate: moveDate || null,
-          flexibleDate: flexible,
-          estimateLow: estimate?.low,
-          estimateHigh: estimate?.high,
-          factors: estimate?.factors,
+          buildingTypeFrom,
+          buildingTypeTo,
+          accessFrom,
+          accessTo,
+          moveDate: selectedDate || moveDate || null,
+          preferredTime: selectedTime,
+          flexibleDate: !moveDate,
+          estimateLow: Math.round(selectedPrice * 0.9),
+          estimateHigh: Math.round(selectedPrice * 1.1),
+          selectedPrice,
+          factors: selectedEstimate ? [] : [],
+          inventoryItems: inventory,
+          estimatedBoxes,
+          comments: comments.trim() || null,
+          recaptchaToken,
         }),
       });
       const data = await res.json();
@@ -135,40 +340,40 @@ export default function QuoteWidgetClient() {
         setSubmitted(true);
         setLeadNumber(data.leadNumber || "");
       }
-    } catch {
-      // silently fail
-    } finally {
+    } catch { /* silent */ } finally {
       setSubmitting(false);
     }
-  }, [name, email, phone, moveSize, fromPostal, toPostal, moveDate, flexible, estimate]);
+  }, [name, email, phone, moveType, moveSize, officeSize, fromPostal, toPostal, buildingTypeFrom, buildingTypeTo, accessFrom, accessTo, selectedDate, moveDate, selectedTime, selectedPrice, selectedEstimate, inventory, estimatedBoxes, comments, getRecaptchaToken]);
 
-  const formatPostal = (val: string) => {
-    const clean = val.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-    if (clean.length <= 3) return clean;
-    return clean.slice(0, 3) + " " + clean.slice(3, 6);
-  };
+  /* ── Validation ── */
+  const canProceedStep0 = moveType !== "" && (
+    (moveType === "residential" && moveSize !== "") ||
+    (moveType === "office" && officeSize !== "") ||
+    moveType === "special_event"
+  );
+  const canProceedStep1 = fromPostal.replace(/\s/g, "").length >= 3 && toPostal.replace(/\s/g, "").length >= 3;
 
+  /* ── Formatting ── */
   const fmtCurrency = (n: number) => `$${n.toLocaleString()}`;
 
-  const canProceedStep1 = moveSize !== "";
-  const canProceedStep2 = fromPostal.replace(/\s/g, "").length >= 3 && toPostal.replace(/\s/g, "").length >= 3;
-
-  const inputClass = "w-full px-4 py-3.5 rounded-xl border text-[14px] outline-none transition-all duration-200 bg-white placeholder:text-[#B5AFA5]";
+  const inputClass = "w-full px-4 py-3 rounded-xl border text-[14px] outline-none transition-all duration-200 bg-white placeholder:text-[#B5AFA5]";
+  const selectClass = "w-full px-4 py-3 rounded-xl border text-[14px] outline-none transition-all duration-200 bg-white appearance-none cursor-pointer";
+  const labelClass = "block text-[10px] font-bold tracking-[0.14em] uppercase mb-1.5";
 
   return (
-    <div className="w-full max-w-[480px] mx-auto">
+    <div className="w-full max-w-[960px] mx-auto">
       <div
         className="rounded-2xl overflow-hidden"
         style={{
           backgroundColor: "white",
-          boxShadow: "0 8px 40px rgba(44,62,45,0.08), 0 1px 3px rgba(44,62,45,0.04)",
-          border: `1px solid ${FOREST}0A`,
+          boxShadow: "0 12px 60px rgba(44,62,45,0.10), 0 2px 6px rgba(44,62,45,0.04)",
+          border: `1px solid ${FOREST}08`,
         }}
       >
-        {/* Header */}
-        <div className="px-6 pt-6 pb-3 flex items-center justify-between">
-          <YugoLogo size={16} variant="gold" onLightBackground hidePlus={false} />
-          {step > 0 && step < 4 && !submitted && (
+        {/* ── Header ── */}
+        <div className="px-6 sm:px-8 pt-6 pb-3 flex items-center justify-between">
+          <YugoLogo size={18} variant="gold" onLightBackground hidePlus={false} />
+          {step > 0 && !submitted && (
             <button
               onClick={goBack}
               className="flex items-center gap-1 text-[12px] font-semibold tracking-wide uppercase transition-opacity hover:opacity-70"
@@ -180,67 +385,205 @@ export default function QuoteWidgetClient() {
           )}
         </div>
 
-        {/* Progress bar */}
+        {/* ── Progress ── */}
         {!submitted && (
-          <div className="px-6 pb-5">
+          <div className="px-6 sm:px-8 pb-5">
             <div className="flex gap-1.5">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className="h-[3px] rounded-full flex-1 transition-all duration-500"
-                  style={{
-                    backgroundColor: i <= step ? GOLD : `${FOREST}10`,
-                  }}
+                  style={{ backgroundColor: i <= step ? GOLD : `${FOREST}10` }}
                 />
               ))}
             </div>
           </div>
         )}
 
-        {/* Steps */}
-        <div className="relative overflow-hidden min-h-[300px]">
+        {/* ── Steps ── */}
+        <div className="relative overflow-hidden">
 
-          {/* Step 0: Home Size */}
+          {/* ═══════ Step 0: Move Type + Size ═══════ */}
           {step === 0 && (
             <StepContainer direction={direction}>
-              <div className="px-6 pb-7">
-                <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1.5" style={{ color: WINE }}>Step 1</div>
-                <h2 className="text-[22px] font-bold mb-1" style={{ color: FOREST }}>How big is your home?</h2>
-                <p className="text-[13px] mb-6" style={{ color: `${FOREST}90` }}>Select the size of your current home.</p>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {SIZES.map((s) => {
-                    const active = moveSize === s.key;
+              <div className="px-6 sm:px-8 pb-8">
+                <StepLabel n={1} />
+                <h2 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: FOREST }}>Tell us about your move</h2>
+                <p className="text-[13px] mb-6" style={{ color: `${FOREST}80` }}>Select the type and size of your move.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                  {MOVE_TYPES.map((t) => {
+                    const active = moveType === t.key;
                     return (
                       <button
-                        key={s.key}
-                        onClick={() => setMoveSize(s.key)}
-                        className="py-4 px-3 rounded-xl text-[13px] font-semibold border transition-all duration-200"
+                        key={t.key}
+                        onClick={() => { setMoveType(t.key); setMoveSize(""); setOfficeSize(""); }}
+                        className="p-4 rounded-xl border text-left transition-all duration-200"
                         style={{
                           borderColor: active ? GOLD : `${FOREST}12`,
                           backgroundColor: active ? `${GOLD}08` : "white",
-                          color: active ? FOREST : `${FOREST}80`,
                           boxShadow: active ? `0 0 0 1px ${GOLD}` : "none",
                         }}
                       >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={active ? GOLD : `${FOREST}40`}
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="mx-auto mb-1.5"
-                        >
-                          <path d={s.icon} />
-                          <polyline points="9 22 9 12 15 12 15 22" />
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? GOLD : `${FOREST}40`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2">
+                          <path d={t.icon} />
                         </svg>
-                        {s.label}
+                        <div className="text-[14px] font-semibold" style={{ color: active ? FOREST : `${FOREST}90` }}>{t.label}</div>
+                        <div className="text-[11px] mt-0.5" style={{ color: `${FOREST}50` }}>{t.desc}</div>
                       </button>
                     );
                   })}
                 </div>
+
+                {moveType === "residential" && (
+                  <div>
+                    <div className={labelClass} style={{ color: `${FOREST}60` }}>Size of home</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {HOME_SIZES.map((s) => {
+                        const active = moveSize === s.key;
+                        return (
+                          <button
+                            key={s.key}
+                            onClick={() => setMoveSize(s.key)}
+                            className="py-3 px-3 rounded-xl text-[13px] font-medium border transition-all duration-200"
+                            style={{
+                              borderColor: active ? GOLD : `${FOREST}12`,
+                              backgroundColor: active ? `${GOLD}08` : "white",
+                              color: active ? FOREST : `${FOREST}70`,
+                              boxShadow: active ? `0 0 0 1px ${GOLD}` : "none",
+                            }}
+                          >
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {moveType === "office" && (
+                  <div>
+                    <div className={labelClass} style={{ color: `${FOREST}60` }}>Office size</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {OFFICE_SIZES.map((s) => {
+                        const active = officeSize === s.key;
+                        return (
+                          <button
+                            key={s.key}
+                            onClick={() => setOfficeSize(s.key)}
+                            className="py-3 px-4 rounded-xl text-[13px] font-medium border transition-all duration-200"
+                            style={{
+                              borderColor: active ? GOLD : `${FOREST}12`,
+                              backgroundColor: active ? `${GOLD}08` : "white",
+                              color: active ? FOREST : `${FOREST}70`,
+                              boxShadow: active ? `0 0 0 1px ${GOLD}` : "none",
+                            }}
+                          >
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {moveType === "special_event" && (
+                  <div className="rounded-xl p-4 border" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
+                    <p className="text-[13px]" style={{ color: `${FOREST}80` }}>
+                      Special event moves include art installations, trade shows, estate clearances, and more.
+                      Fill in your details and a coordinator will provide a custom quote.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  onClick={goNext}
+                  disabled={!canProceedStep0}
+                  className="w-full mt-6 py-3.5 rounded-xl text-[13px] font-bold text-white tracking-wide uppercase transition-all duration-200 disabled:opacity-30"
+                  style={{ backgroundColor: FOREST }}
+                >
+                  Continue
+                </button>
+              </div>
+            </StepContainer>
+          )}
+
+          {/* ═══════ Step 1: Locations & Property ═══════ */}
+          {step === 1 && (
+            <StepContainer direction={direction}>
+              <div className="px-6 sm:px-8 pb-8">
+                <StepLabel n={2} />
+                <h2 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: FOREST }}>Locations & property details</h2>
+                <p className="text-[13px] mb-6" style={{ color: `${FOREST}80` }}>Postal codes and access details help us give you an accurate estimate.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* From */}
+                  <div className="space-y-3">
+                    <div className="text-[11px] font-bold tracking-[0.12em] uppercase px-1 pb-1 border-b" style={{ color: WINE, borderColor: `${WINE}15` }}>Moving from</div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Postal code</div>
+                      <input
+                        type="text"
+                        value={fromPostal}
+                        onChange={(e) => setFromPostal(formatPostal(e.target.value))}
+                        placeholder="M4M 1A1"
+                        maxLength={7}
+                        className={inputClass}
+                        style={{ borderColor: `${FOREST}12`, color: FOREST }}
+                      />
+                    </div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Building type</div>
+                      <SelectWrapper>
+                        <select value={buildingTypeFrom} onChange={(e) => setBuildingTypeFrom(e.target.value)} className={selectClass} style={{ borderColor: `${FOREST}12`, color: FOREST }}>
+                          {BUILDING_TYPES.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
+                        </select>
+                      </SelectWrapper>
+                    </div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Access</div>
+                      <SelectWrapper>
+                        <select value={accessFrom} onChange={(e) => setAccessFrom(e.target.value)} className={selectClass} style={{ borderColor: `${FOREST}12`, color: FOREST }}>
+                          {ACCESS_OPTIONS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                        </select>
+                      </SelectWrapper>
+                    </div>
+                  </div>
+
+                  {/* To */}
+                  <div className="space-y-3">
+                    <div className="text-[11px] font-bold tracking-[0.12em] uppercase px-1 pb-1 border-b" style={{ color: WINE, borderColor: `${WINE}15` }}>Moving to</div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Postal code</div>
+                      <input
+                        type="text"
+                        value={toPostal}
+                        onChange={(e) => setToPostal(formatPostal(e.target.value))}
+                        placeholder="M5V 2T6"
+                        maxLength={7}
+                        className={inputClass}
+                        style={{ borderColor: `${FOREST}12`, color: FOREST }}
+                      />
+                    </div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Building type</div>
+                      <SelectWrapper>
+                        <select value={buildingTypeTo} onChange={(e) => setBuildingTypeTo(e.target.value)} className={selectClass} style={{ borderColor: `${FOREST}12`, color: FOREST }}>
+                          {BUILDING_TYPES.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
+                        </select>
+                      </SelectWrapper>
+                    </div>
+                    <div>
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Access</div>
+                      <SelectWrapper>
+                        <select value={accessTo} onChange={(e) => setAccessTo(e.target.value)} className={selectClass} style={{ borderColor: `${FOREST}12`, color: FOREST }}>
+                          {ACCESS_OPTIONS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                        </select>
+                      </SelectWrapper>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   onClick={goNext}
                   disabled={!canProceedStep1}
@@ -253,190 +596,340 @@ export default function QuoteWidgetClient() {
             </StepContainer>
           )}
 
-          {/* Step 1: Locations */}
-          {step === 1 && (
-            <StepContainer direction={direction}>
-              <div className="px-6 pb-7">
-                <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1.5" style={{ color: WINE }}>Step 2</div>
-                <h2 className="text-[22px] font-bold mb-1" style={{ color: FOREST }}>Where are you moving?</h2>
-                <p className="text-[13px] mb-6" style={{ color: `${FOREST}90` }}>Postal code or first 3 characters is enough.</p>
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-[10px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: `${FOREST}60` }}>Moving from</label>
-                    <input
-                      type="text"
-                      value={fromPostal}
-                      onChange={(e) => setFromPostal(formatPostal(e.target.value))}
-                      placeholder="M4M 1A1"
-                      maxLength={7}
-                      className={inputClass}
-                      style={{ borderColor: `${FOREST}12`, color: FOREST }}
-                      onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                      onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: `${FOREST}60` }}>Moving to</label>
-                    <input
-                      type="text"
-                      value={toPostal}
-                      onChange={(e) => setToPostal(formatPostal(e.target.value))}
-                      placeholder="M5V 2T6"
-                      maxLength={7}
-                      className={inputClass}
-                      style={{ borderColor: `${FOREST}12`, color: FOREST }}
-                      onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                      onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={goNext}
-                  disabled={!canProceedStep2}
-                  className="w-full mt-6 py-3.5 rounded-xl text-[13px] font-bold text-white tracking-wide uppercase transition-all duration-200 disabled:opacity-30"
-                  style={{ backgroundColor: FOREST }}
-                >
-                  Continue
-                </button>
-              </div>
-            </StepContainer>
-          )}
-
-          {/* Step 2: Move Date */}
+          {/* ═══════ Step 2: Inventory ═══════ */}
           {step === 2 && (
             <StepContainer direction={direction}>
-              <div className="px-6 pb-7">
-                <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1.5" style={{ color: WINE }}>Step 3</div>
-                <h2 className="text-[22px] font-bold mb-1" style={{ color: FOREST }}>When are you moving?</h2>
-                <p className="text-[13px] mb-6" style={{ color: `${FOREST}90` }}>Pick a date or skip if you&rsquo;re flexible.</p>
-                <input
-                  type="date"
-                  value={moveDate}
-                  onChange={(e) => setMoveDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className={inputClass}
-                  style={{ borderColor: `${FOREST}12`, color: moveDate ? FOREST : "#B5AFA5" }}
-                  onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                  onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
-                />
-                <label className="flex items-center gap-2.5 mt-3.5 cursor-pointer select-none">
-                  <div
-                    className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors"
-                    style={{
-                      borderColor: flexible ? GOLD : `${FOREST}20`,
-                      backgroundColor: flexible ? GOLD : "transparent",
-                    }}
-                  >
-                    {flexible && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    )}
+              <div className="px-6 sm:px-8 pb-8">
+                <StepLabel n={3} />
+                <h2 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: FOREST }}>Your belongings</h2>
+                <p className="text-[13px] mb-5" style={{ color: `${FOREST}80` }}>
+                  Add furniture items for a more accurate estimate, or skip to continue.
+                </p>
+
+                {/* Summary bar */}
+                <div className="flex items-center justify-between rounded-xl p-4 mb-5 border" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: `${FOREST}50` }}>Estimated boxes</div>
+                    <div className="text-[20px] font-bold" style={{ color: FOREST }}>{estimatedBoxes}</div>
+                    <div className="text-[11px]" style={{ color: `${FOREST}50` }}>Based on home size</div>
                   </div>
-                  <input type="checkbox" checked={flexible} onChange={(e) => setFlexible(e.target.checked)} className="sr-only" />
-                  <span className="text-[13px]" style={{ color: `${FOREST}90` }}>I&rsquo;m flexible on the date</span>
-                </label>
-                <button
-                  onClick={handleDateNext}
-                  className="w-full mt-6 py-3.5 rounded-xl text-[13px] font-bold tracking-wide uppercase transition-all duration-200"
-                  style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
-                >
-                  Get My Estimate
-                </button>
+                  <div className="text-right">
+                    <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: `${FOREST}50` }}>Furniture items</div>
+                    <div className="text-[20px] font-bold" style={{ color: totalItems > 0 ? WINE : `${FOREST}30` }}>{totalItems}</div>
+                    <div className="text-[11px]" style={{ color: `${FOREST}50` }}>Added so far</div>
+                  </div>
+                </div>
+
+                {/* Furniture catalog */}
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                  {Object.entries(FURNITURE_CATALOG).map(([room, items]) => {
+                    const isExpanded = expandedRooms[room];
+                    const roomCount = items.reduce((s, it) => s + getItemQty(it.id), 0);
+                    return (
+                      <div key={room} className="border rounded-xl overflow-hidden" style={{ borderColor: `${FOREST}10` }}>
+                        <button
+                          onClick={() => toggleRoom(room)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                        >
+                          <span className="text-[13px] font-semibold" style={{ color: FOREST }}>{room}</span>
+                          <span className="flex items-center gap-2">
+                            {roomCount > 0 && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${WINE}10`, color: WINE }}>
+                                {roomCount}
+                              </span>
+                            )}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </span>
+                        </button>
+                        {isExpanded && (
+                          <div className="px-4 pb-3 space-y-1.5 border-t" style={{ borderColor: `${FOREST}06` }}>
+                            {items.map((item) => {
+                              const qty = getItemQty(item.id);
+                              return (
+                                <div key={item.id} className="flex items-center justify-between py-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[13px]" style={{ color: `${FOREST}90` }}>{item.name}</span>
+                                    {item.fragile && (
+                                      <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
+                                        Fragile
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => updateItem(item.id, item.name, item.fragile, -1)}
+                                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-[16px] font-medium transition-colors hover:bg-gray-50"
+                                      style={{ borderColor: `${FOREST}15`, color: qty > 0 ? FOREST : `${FOREST}20` }}
+                                      disabled={qty === 0}
+                                    >
+                                      −
+                                    </button>
+                                    <span className="w-6 text-center text-[13px] font-semibold" style={{ color: qty > 0 ? FOREST : `${FOREST}25` }}>
+                                      {qty}
+                                    </span>
+                                    <button
+                                      onClick={() => updateItem(item.id, item.name, item.fragile, 1)}
+                                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-[16px] font-medium transition-colors hover:bg-gray-50"
+                                      style={{ borderColor: `${FOREST}15`, color: FOREST }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button
+                    onClick={handleGoToResults}
+                    className="py-3.5 rounded-xl text-[13px] font-bold tracking-wide uppercase transition-all duration-200 border"
+                    style={{ borderColor: `${FOREST}15`, color: FOREST, backgroundColor: "white" }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={handleGoToResults}
+                    className="py-3.5 rounded-xl text-[13px] font-bold text-white tracking-wide uppercase transition-all duration-200"
+                    style={{ backgroundColor: FOREST }}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
             </StepContainer>
           )}
 
-          {/* Step 3: Estimate + Lead Capture */}
+          {/* ═══════ Step 3: Results + Lead Capture ═══════ */}
           {step === 3 && !submitted && (
             <StepContainer direction={direction}>
-              <div className="px-6 pb-7">
+              <div className="px-6 sm:px-8 pb-8">
                 {estimateLoading ? (
-                  <div className="text-center py-10">
-                    <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: GOLD, borderTopColor: "transparent" }} />
-                    <p className="text-[14px] font-medium" style={{ color: `${FOREST}70` }}>Calculating your estimate…</p>
+                  <div className="text-center py-16">
+                    <div className="w-12 h-12 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: GOLD, borderTopColor: "transparent" }} />
+                    <p className="text-[15px] font-medium" style={{ color: `${FOREST}70` }}>Finding the best prices…</p>
                   </div>
-                ) : estimate?.disabled ? (
-                  <div className="text-center py-10">
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${GOLD}12` }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
+                ) : estimateError ? (
+                  <div className="text-center py-16">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${WINE}08` }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                     </div>
-                    <p className="text-[15px] font-semibold mb-2" style={{ color: FOREST }}>{estimate.message || "Contact us for a quote"}</p>
-                    <p className="text-[13px]" style={{ color: `${FOREST}60` }}>We&rsquo;ll respond within 2 hours.</p>
+                    <p className="text-[15px] font-semibold mb-2" style={{ color: FOREST }}>Unable to calculate estimate</p>
+                    <button
+                      onClick={() => fetchEstimates()}
+                      className="mt-2 px-5 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wide transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: CREAM, color: FOREST }}
+                    >
+                      Try Again
+                    </button>
                   </div>
-                ) : estimate && typeof estimate.low === "number" ? (
+                ) : (
                   <>
-                    <div className="text-center mb-5">
-                      <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-2" style={{ color: `${FOREST}50` }}>Your Estimated Move</div>
-                      <p className="text-[38px] font-extrabold leading-none mb-2" style={{ color: WINE }}>
-                        {fmtCurrency(estimate.low)} – {fmtCurrency(estimate.high)}
-                      </p>
-                      <p className="text-[13px] font-medium" style={{ color: `${FOREST}80` }}>
-                        {SIZE_LABELS[moveSize] || moveSize} &middot; {fromPostal.toUpperCase()} &rarr; {toPostal.toUpperCase()}
-                      </p>
-                      {moveDate && (
-                        <p className="text-[12px] mt-1" style={{ color: `${FOREST}50` }}>
-                          {new Date(moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })}
-                          {estimate.factors.includes("Peak season") && (
-                            <span className="ml-1.5 inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide" style={{ backgroundColor: `${WINE}10`, color: WINE }}>
-                              peak season
-                            </span>
-                          )}
-                        </p>
-                      )}
+                    <StepLabel n={4} />
+                    <h2 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: FOREST }}>Choose your move date</h2>
+                    <p className="text-[13px] mb-5" style={{ color: `${FOREST}80` }}>
+                      Prices vary by day and time. Select a date to see your estimate.
+                    </p>
+
+                    {/* ── Date picker trigger ── */}
+                    <div className="mb-5">
+                      <div className={labelClass} style={{ color: `${FOREST}60` }}>Preferred move date</div>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={moveDate}
+                          onChange={(e) => {
+                            setMoveDate(e.target.value);
+                            setSelectedDate(e.target.value);
+                            setCalendarOpen(false);
+                            fetchEstimates(e.target.value);
+                          }}
+                          min={new Date().toISOString().split("T")[0]}
+                          className={inputClass}
+                          style={{ borderColor: `${FOREST}12`, color: moveDate ? FOREST : "#B5AFA5", paddingRight: "44px" }}
+                        />
+                        <button
+                          onClick={() => setCalendarOpen(!calendarOpen)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors hover:bg-gray-100"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="4" rx="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
-                    {estimate.factors.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 justify-center mb-5">
-                        {estimate.factors.map((f) => (
-                          <span key={f} className="px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ backgroundColor: CREAM, color: `${FOREST}70` }}>
-                            {f}
-                          </span>
-                        ))}
+                    {/* ── Emirates-style calendar strip ── */}
+                    <div className="mb-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: `${FOREST}50` }}>Prices by date</span>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => handleCalendarNav(-1)}
+                            disabled={calendarOffset === 0}
+                            className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-20"
+                            style={{ borderColor: `${FOREST}12` }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                          </button>
+                          <button
+                            onClick={() => handleCalendarNav(1)}
+                            className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors"
+                            style={{ borderColor: `${FOREST}12` }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2" strokeLinecap="round"><polyline points="9 6 15 12 9 18" /></svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {visibleDates.map((d) => {
+                          const isSelected = d.date === selectedDate;
+                          const isWeekend = d.dayOfWeek === 0 || d.dayOfWeek === 6;
+                          return (
+                            <button
+                              key={d.date}
+                              onClick={() => { setSelectedDate(d.date); setMoveDate(d.date); }}
+                              className="rounded-xl p-2 sm:p-3 text-center transition-all duration-200 border"
+                              style={{
+                                borderColor: isSelected ? GOLD : `${FOREST}08`,
+                                backgroundColor: isSelected ? `${GOLD}10` : isWeekend ? `${WINE}04` : "white",
+                                boxShadow: isSelected ? `0 0 0 2px ${GOLD}` : "none",
+                              }}
+                            >
+                              <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: isWeekend ? WINE : `${FOREST}50` }}>
+                                {d.dayShort}
+                              </div>
+                              <div className="text-[11px] sm:text-[12px] font-semibold mb-1.5" style={{ color: FOREST }}>
+                                {d.monthDay}
+                              </div>
+                              <div className="space-y-1">
+                                <div
+                                  className="text-[8px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
+                                  style={{
+                                    backgroundColor: isSelected && selectedTime === "am" ? GOLD : `${FOREST}06`,
+                                    color: isSelected && selectedTime === "am" ? "white" : `${FOREST}60`,
+                                  }}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedDate(d.date); setMoveDate(d.date); setSelectedTime("am"); }}
+                                >
+                                  AM
+                                  <div className="text-[10px] sm:text-[11px] font-bold" style={{ color: isSelected && selectedTime === "am" ? "white" : FOREST }}>
+                                    {fmtCurrency(d.am)}
+                                  </div>
+                                </div>
+                                <div
+                                  className="text-[8px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
+                                  style={{
+                                    backgroundColor: isSelected && selectedTime === "pm" ? GOLD : `${FOREST}06`,
+                                    color: isSelected && selectedTime === "pm" ? "white" : `${FOREST}60`,
+                                  }}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedDate(d.date); setMoveDate(d.date); setSelectedTime("pm"); }}
+                                >
+                                  PM
+                                  <div className="text-[10px] sm:text-[11px] font-bold" style={{ color: isSelected && selectedTime === "pm" ? "white" : FOREST }}>
+                                    {fmtCurrency(d.pm)}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex items-center justify-center gap-4 mt-3">
+                        <span className="flex items-center gap-1.5 text-[10px]" style={{ color: `${FOREST}50` }}>
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GOLD }} /> Selected
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[10px]" style={{ color: `${FOREST}50` }}>
+                          <span className="w-2.5 h-2.5 rounded-full border" style={{ borderColor: `${FOREST}20` }} /> Available
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[10px]" style={{ color: `${FOREST}50` }}>
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: `${WINE}15` }} /> Weekend
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ── Selected price display ── */}
+                    {selectedEstimate && (
+                      <div className="rounded-xl p-5 mb-5 border text-center" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
+                        <div className="text-[10px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: `${FOREST}50` }}>
+                          Your estimated price
+                        </div>
+                        <div className="text-[38px] sm:text-[44px] font-extrabold leading-none mb-1" style={{ color: WINE }}>
+                          {fmtCurrency(selectedPrice)}
+                        </div>
+                        <div className="text-[13px] font-medium mb-2" style={{ color: `${FOREST}70` }}>
+                          {selectedEstimate.monthDay} ({selectedEstimate.dayName}) &middot; {selectedTime.toUpperCase()} slot
+                        </div>
+                        <div className="text-[11px]" style={{ color: `${FOREST}45` }}>
+                          Includes all standard protection, wrapping & road charges
+                        </div>
                       </div>
                     )}
 
-                    <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
-                      <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}80` }}>
-                        This is a ballpark range. Enter your details below to receive your exact <strong style={{ color: FOREST }}>guaranteed price</strong>.
+                    {/* ── Disclaimer ── */}
+                    <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: `${FOREST}04`, borderColor: `${FOREST}08` }}>
+                      <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}65` }}>
+                        <strong style={{ color: FOREST }}>Disclaimer:</strong> These are estimates based on the details you provided.
+                        For the most accurate, guaranteed pricing, please fill in your details below. A move coordinator will
+                        review your information and reach out with an exact quote if there are any differences or changes.
                       </p>
                     </div>
 
-                    <div className="space-y-2.5">
+                    {/* ── Lead capture ── */}
+                    <div className="space-y-2.5 mb-4">
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Your name"
+                        placeholder="Full name"
                         className={inputClass}
                         style={{ borderColor: `${FOREST}12`, color: FOREST }}
-                        onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                        onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
                       />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email address"
-                        className={inputClass}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email address"
+                          className={inputClass}
+                          style={{ borderColor: `${FOREST}12`, color: FOREST }}
+                        />
+                        <input
+                          ref={phoneInput.ref}
+                          type="tel"
+                          value={phone}
+                          onChange={phoneInput.onChange}
+                          placeholder={`${PHONE_PLACEHOLDER} (optional)`}
+                          className={inputClass}
+                          style={{ borderColor: `${FOREST}12`, color: FOREST }}
+                        />
+                      </div>
+                      <textarea
+                        value={comments}
+                        onChange={(e) => setComments(e.target.value)}
+                        placeholder="Additional comments or special requirements (optional)"
+                        rows={3}
+                        className={`${inputClass} resize-none`}
                         style={{ borderColor: `${FOREST}12`, color: FOREST }}
-                        onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                        onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
-                      />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Phone (optional)"
-                        className={inputClass}
-                        style={{ borderColor: `${FOREST}12`, color: FOREST }}
-                        onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                        onBlur={(e) => (e.target.style.borderColor = `${FOREST}12`)}
                       />
                     </div>
 
                     <button
                       onClick={handleSubmitLead}
                       disabled={!name.trim() || !email.trim() || submitting}
-                      className="w-full mt-5 py-3.5 rounded-xl text-[13px] font-bold tracking-wide uppercase transition-all duration-200 disabled:opacity-30"
+                      className="w-full py-3.5 rounded-xl text-[13px] font-bold tracking-wide uppercase transition-all duration-200 disabled:opacity-30"
                       style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                     >
                       {submitting ? "Submitting…" : "Get My Guaranteed Quote"}
@@ -444,60 +937,58 @@ export default function QuoteWidgetClient() {
 
                     <p className="text-center text-[10px] mt-3 flex items-center justify-center gap-1.5" style={{ color: `${FOREST}40` }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                      No spam. Your detailed quote within 2 hours.
+                      No spam. Your exact guaranteed quote within 2 hours.
+                    </p>
+                    <p className="text-center text-[9px] mt-2" style={{ color: `${FOREST}25` }}>
+                      Protected by reCAPTCHA
                     </p>
                   </>
-                ) : (
-                  <div className="text-center py-10">
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${WINE}08` }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                    </div>
-                    <p className="text-[15px] font-semibold mb-2" style={{ color: FOREST }}>
-                      {estimateError ? "Unable to calculate estimate" : "Something went wrong"}
-                    </p>
-                    <button
-                      onClick={fetchEstimate}
-                      className="mt-2 px-5 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wide transition-opacity hover:opacity-80"
-                      style={{ backgroundColor: CREAM, color: FOREST }}
-                    >
-                      Try Again
-                    </button>
-                  </div>
                 )}
               </div>
             </StepContainer>
           )}
 
-          {/* Submitted confirmation */}
+          {/* ═══════ Submitted confirmation ═══════ */}
           {submitted && (
             <StepContainer direction="left">
-              <div className="px-6 pb-8 text-center">
+              <div className="px-6 sm:px-8 pb-8 text-center">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#E8F5E9" }}>
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <h2 className="text-[22px] font-bold mb-2" style={{ color: FOREST }}>You&rsquo;re all set!</h2>
+                <h2 className="text-[24px] font-bold mb-2" style={{ color: FOREST }}>You&rsquo;re all set!</h2>
                 <p className="text-[14px] leading-relaxed mb-4" style={{ color: `${FOREST}80` }}>
                   We&rsquo;ll send your exact guaranteed price to <strong style={{ color: FOREST }}>{email}</strong> within 2 hours.
                 </p>
                 {leadNumber && (
-                  <p className="text-[11px] font-mono" style={{ color: `${FOREST}40` }}>Reference: {leadNumber}</p>
+                  <p className="text-[11px] font-mono mb-4" style={{ color: `${FOREST}40` }}>Reference: {leadNumber}</p>
                 )}
-                {estimate && typeof estimate.low === "number" && estimate.low > 0 && (
-                  <div className="mt-5 rounded-xl p-4 border" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: `${FOREST}50` }}>Your ballpark</p>
-                    <p className="text-[22px] font-bold" style={{ color: WINE }}>
-                      {fmtCurrency(estimate.low)} – {fmtCurrency(estimate.high)}
-                    </p>
+                {selectedPrice > 0 && (
+                  <div className="rounded-xl p-5 border mx-auto max-w-sm" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: `${FOREST}50` }}>Your estimated price</div>
+                    <div className="text-[28px] font-bold mb-1" style={{ color: WINE }}>
+                      {fmtCurrency(selectedPrice)}
+                    </div>
+                    {selectedEstimate && (
+                      <div className="text-[12px]" style={{ color: `${FOREST}60` }}>
+                        {selectedEstimate.monthDay} ({selectedEstimate.dayName}) &middot; {selectedTime.toUpperCase()}
+                      </div>
+                    )}
                   </div>
                 )}
+                <div className="mt-6 rounded-xl p-4 border" style={{ backgroundColor: `${FOREST}04`, borderColor: `${FOREST}08` }}>
+                  <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}65` }}>
+                    A YUGO+ move coordinator will review your details and send a detailed, guaranteed quote.
+                    No surprises — that&rsquo;s the YUGO+ promise.
+                  </p>
+                </div>
               </div>
             </StepContainer>
           )}
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <div className="px-6 pb-5 pt-1">
           <div className="flex items-center justify-center gap-1.5" style={{ opacity: 0.3 }}>
             <span className="text-[9px] font-medium" style={{ color: FOREST }}>Powered by</span>
@@ -505,6 +996,16 @@ export default function QuoteWidgetClient() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Sub-components ── */
+
+function StepLabel({ n }: { n: number }) {
+  return (
+    <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1.5" style={{ color: WINE }}>
+      Step {n}
     </div>
   );
 }
@@ -528,6 +1029,21 @@ function StepContainer({ children, direction }: { children: React.ReactNode; dir
         }
       `}</style>
       {children}
+    </div>
+  );
+}
+
+function SelectWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="#2C3E2D80" strokeWidth="2" strokeLinecap="round"
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
     </div>
   );
 }

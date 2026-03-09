@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("deliveries")
-    .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, category, created_at, updated_at")
+    .select("id, delivery_number, customer_name, client_name, status, stage, scheduled_date, time_slot, delivery_address, pickup_address, category, created_at, updated_at, booking_type, vehicle_type, num_stops, total_price, delivery_type, zone")
     .in("organization_id", orgIds)
     .order("scheduled_date", { ascending: false })
     .order("created_at", { ascending: false })

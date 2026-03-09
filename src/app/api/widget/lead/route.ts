@@ -10,17 +10,49 @@ const SIZE_LABELS: Record<string, string> = {
   "3br": "3 Bedroom",
   "4br": "4 Bedroom",
   "5br_plus": "5+ Bedroom",
+  small: "Small Office",
+  medium: "Medium Office",
+  large: "Large Office",
 };
+
+const MOVE_TYPE_LABELS: Record<string, string> = {
+  residential: "Residential",
+  office: "Office / Commercial",
+  special_event: "Special Event",
+};
+
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  const secret = process.env.RECAPTCHA_SECRET_KEY;
+  if (!secret) return true;
+  try {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${secret}&response=${token}`,
+    });
+    const data = await res.json();
+    return data.success && (data.score ?? 1) >= 0.3;
+  } catch {
+    return true;
+  }
+}
 
 function confirmationEmailHtml(data: {
   name: string;
+  moveType: string;
   moveSize: string;
   fromPostal: string;
   toPostal: string;
-  low: number;
-  high: number;
+  selectedPrice: number;
+  moveDate: string | null;
+  preferredTime: string | null;
 }): string {
   const sizeLabel = SIZE_LABELS[data.moveSize] || data.moveSize;
+  const typeLabel = MOVE_TYPE_LABELS[data.moveType] || data.moveType;
+  const dateStr = data.moveDate
+    ? new Date(data.moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
+    : "Flexible";
+  const timeStr = data.preferredTime ? data.preferredTime.toUpperCase() : "";
   return `
 <!DOCTYPE html>
 <html>
@@ -36,13 +68,14 @@ function confirmationEmailHtml(data: {
       Your YUGO+ quote is being prepared. We'll send your exact guaranteed price within 2 hours.
     </p>
     <div style="background:#FAF7F2;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="font-size:13px;color:#888;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Your Ballpark Estimate</p>
-      <p style="font-size:28px;font-weight:700;color:#722F37;margin:0 0 8px;">
-        $${data.low.toLocaleString()} – $${data.high.toLocaleString()}
+      <p style="font-size:13px;color:#888;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Your Estimated Price</p>
+      <p style="font-size:32px;font-weight:700;color:#722F37;margin:0 0 8px;">
+        $${data.selectedPrice.toLocaleString()}
       </p>
       <p style="font-size:14px;color:#555;margin:0;">
-        ${sizeLabel} · ${data.fromPostal.toUpperCase()} → ${data.toPostal.toUpperCase()}
+        ${typeLabel} · ${sizeLabel} · ${data.fromPostal.toUpperCase()} → ${data.toPostal.toUpperCase()}
       </p>
+      ${data.moveDate ? `<p style="font-size:13px;color:#888;margin:4px 0 0;">${dateStr}${timeStr ? ` · ${timeStr}` : ""}</p>` : ""}
     </div>
     <p style="font-size:13px;color:#888;line-height:1.5;margin:0;">
       A YUGO+ coordinator will review your details and send a detailed, guaranteed quote shortly.
@@ -60,10 +93,44 @@ function confirmationEmailHtml(data: {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phone, moveSize, fromPostal, toPostal, moveDate, flexibleDate, estimateLow, estimateHigh, factors } = body;
+    const {
+      name, email, phone,
+      moveType, moveSize, officeSize,
+      fromPostal, toPostal,
+      buildingTypeFrom, buildingTypeTo,
+      accessFrom, accessTo,
+      moveDate, preferredTime, flexibleDate,
+      estimateLow, estimateHigh, selectedPrice,
+      factors, inventoryItems, estimatedBoxes,
+      comments, recaptchaToken,
+    } = body;
 
-    if (!name || !email || !moveSize || !fromPostal || !toPostal) {
-      return NextResponse.json({ error: "name, email, moveSize, fromPostal, and toPostal are required" }, { status: 400 });
+    if (!name || !email || !fromPostal || !toPostal) {
+      return NextResponse.json({ error: "name, email, fromPostal, and toPostal are required" }, { status: 400 });
+    }
+
+    const trimmedName = String(name).trim();
+    const trimmedEmail = String(email).trim();
+    const trimmedPhone = phone ? String(phone).trim() : null;
+
+    if (trimmedName.length === 0 || trimmedName.length > 200) {
+      return NextResponse.json({ error: "name must be between 1 and 200 characters" }, { status: 400 });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+
+    if (trimmedPhone && trimmedPhone.length > 30) {
+      return NextResponse.json({ error: "Phone must be 30 characters or fewer" }, { status: 400 });
+    }
+
+    if (recaptchaToken) {
+      const valid = await verifyRecaptcha(recaptchaToken);
+      if (!valid) {
+        return NextResponse.json({ error: "reCAPTCHA verification failed" }, { status: 403 });
+      }
     }
 
     const supabase = createAdminClient();
@@ -71,7 +138,7 @@ export async function POST(req: NextRequest) {
     const { data: existingContact } = await supabase
       .from("contacts")
       .select("id")
-      .eq("email", email.toLowerCase())
+      .eq("email", trimmedEmail.toLowerCase())
       .maybeSingle();
 
     let contactId = existingContact?.id;
@@ -79,9 +146,9 @@ export async function POST(req: NextRequest) {
       const { data: newContact } = await supabase
         .from("contacts")
         .insert({
-          name,
-          email: email.toLowerCase(),
-          phone: phone || null,
+          name: trimmedName,
+          email: trimmedEmail.toLowerCase(),
+          phone: trimmedPhone || null,
           lead_source: "widget",
           postal_code: fromPostal,
         })
@@ -90,15 +157,17 @@ export async function POST(req: NextRequest) {
       contactId = newContact?.id;
     }
 
+    const effectiveSize = moveType === "office" ? officeSize : moveSize;
+
     const { data: lead, error } = await supabase
       .from("quote_requests")
       .insert({
         lead_number: "",
-        name,
-        email: email.toLowerCase(),
-        phone: phone || null,
+        name: trimmedName,
+        email: trimmedEmail.toLowerCase(),
+        phone: trimmedPhone || null,
         source: "widget",
-        move_size: moveSize,
+        move_size: effectiveSize || null,
         from_postal: fromPostal,
         to_postal: toPostal,
         move_date: moveDate || null,
@@ -116,24 +185,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to save lead" }, { status: 500 });
     }
 
-    const sizeLabel = SIZE_LABELS[moveSize] || moveSize;
+    const sizeLabel = SIZE_LABELS[effectiveSize] || effectiveSize || "Custom";
+    const typeLabel = MOVE_TYPE_LABELS[moveType] || moveType || "Move";
+    const itemCount = Array.isArray(inventoryItems) ? inventoryItems.reduce((s: number, i: { qty?: number }) => s + (i.qty || 0), 0) : 0;
 
     sendEmail({
-      to: email.toLowerCase(),
+      to: trimmedEmail.toLowerCase(),
       subject: "Your YUGO+ Quote Is Being Prepared",
       html: confirmationEmailHtml({
-        name,
-        moveSize,
+        name: trimmedName,
+        moveType: moveType || "residential",
+        moveSize: effectiveSize || "custom",
         fromPostal,
         toPostal,
-        low: estimateLow || 0,
-        high: estimateHigh || 0,
+        selectedPrice: selectedPrice || 0,
+        moveDate: moveDate || null,
+        preferredTime: preferredTime || null,
       }),
     }).catch(() => {});
 
+    const priceStr = selectedPrice ? `$${selectedPrice.toLocaleString()}` : "N/A";
+    const extras = [
+      buildingTypeFrom && `From: ${buildingTypeFrom}/${accessFrom}`,
+      buildingTypeTo && `To: ${buildingTypeTo}/${accessTo}`,
+      itemCount > 0 && `${itemCount} furniture items`,
+      estimatedBoxes && `~${estimatedBoxes} boxes`,
+      preferredTime && `Preferred: ${preferredTime.toUpperCase()}`,
+      comments && `Note: ${comments.slice(0, 100)}`,
+    ].filter(Boolean).join(" | ");
+
     notifyAdmins("quote_requested", {
-      subject: `New Widget Lead: ${name}`,
-      body: `New widget lead: ${name}, ${sizeLabel}, $${estimateLow?.toLocaleString() || "?"}-$${estimateHigh?.toLocaleString() || "?"} range. ${fromPostal.toUpperCase()} → ${toPostal.toUpperCase()}`,
+      subject: `New Widget Lead: ${trimmedName}`,
+      body: `${typeLabel} · ${sizeLabel} · ${priceStr} · ${fromPostal.toUpperCase()} → ${toPostal.toUpperCase()}${extras ? `\n${extras}` : ""}`,
     }).catch(() => {});
 
     return NextResponse.json({
