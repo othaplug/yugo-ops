@@ -208,7 +208,7 @@ export default function PartnerBillingTab({
       {/* Service Level Performance */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[26px] font-bold text-[var(--tx)] font-hero">Service Level Performance</h3>
+          <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero">Service Level Performance</h3>
           <button
             onClick={exportReport}
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#C9A962] hover:text-[#8B6914] transition-colors"
@@ -228,7 +228,7 @@ export default function PartnerBillingTab({
 
       {/* Monthly Performance Table — sort, pagination, search, filter (same as admin tables) */}
       <div>
-        <h3 className="text-[26px] font-bold text-[var(--tx)] font-hero mb-3">Monthly Performance</h3>
+        <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero mb-3">Monthly Performance</h3>
         <FilterBar
           filters={[
             {
@@ -282,7 +282,7 @@ export default function PartnerBillingTab({
       {/* Revenue breakdown */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[26px] font-bold text-[var(--tx)] font-hero">Revenue Summary</h3>
+          <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero">Revenue Summary</h3>
           {onViewInvoices && (
             <button
               type="button"
@@ -296,15 +296,15 @@ export default function PartnerBillingTab({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Total Billed</div>
-            <div className="text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(totalRevenue)}</div>
+            <div className="text-[24px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(totalRevenue)}</div>
           </div>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Paid</div>
-            <div className="text-[30px] font-bold text-[#2D9F5A] mt-1 font-hero">{formatCurrency(totalPaid)}</div>
+            <div className="text-[24px] font-bold text-[#2D9F5A] mt-1 font-hero">{formatCurrency(totalPaid)}</div>
           </div>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
             <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Outstanding</div>
-            <div className="text-[30px] font-bold text-[var(--red)] mt-1 font-hero">{formatCurrency(data.outstandingAmount)}</div>
+            <div className="text-[24px] font-bold text-[var(--red)] mt-1 font-hero">{formatCurrency(data.outstandingAmount)}</div>
             {data.outstandingDueDate && (
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">
                 Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -319,11 +319,15 @@ export default function PartnerBillingTab({
 
 function SLACircle({ value, label, sublabel, accent }: { value: string; label: string; sublabel: string; accent?: boolean }) {
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 flex flex-col items-center text-center">
-      <div className={`w-[80px] h-[80px] rounded-full border-4 flex items-center justify-center ${accent ? "border-[var(--gold)]" : "border-[var(--brd)]"}`}>
-        <span className={`text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} font-hero`}>{value}</span>
+    <div className={`rounded-xl p-5 flex flex-col items-center text-center transition-colors ${
+      accent ? "bg-[var(--gold)]/[0.06] border border-[var(--gold)]/20" : "bg-[var(--card)] border border-[var(--brd)]"
+    }`}>
+      <div className={`w-[76px] h-[76px] rounded-full flex items-center justify-center ${
+        accent ? "bg-[var(--gold)]/10 ring-2 ring-[var(--gold)]/30" : "bg-[var(--bg)] ring-2 ring-[var(--brd)]"
+      }`}>
+        <span className={`text-[24px] font-bold font-hero ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</span>
       </div>
-      <div className="text-[11px] font-semibold text-[var(--tx)] mt-3">{label}</div>
+      <div className="text-[12px] font-semibold text-[var(--tx)] mt-3">{label}</div>
       <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sublabel}</div>
     </div>
   );
@@ -347,7 +351,7 @@ function ComparisonCard({
       <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">{label}</div>
       <div className="flex items-baseline justify-between mt-2">
         <div>
-          <span className="text-[30px] font-bold text-[var(--tx)] font-hero">{yugoValue}</span>
+          <span className="text-[24px] font-bold text-[var(--tx)] font-hero">{yugoValue}</span>
           <div className="mt-0.5 flex items-center gap-1.5">
             <YugoLogo size={12} variant="black" />
             {yugoSublabel && (

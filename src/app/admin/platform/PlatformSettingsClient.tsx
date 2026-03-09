@@ -883,6 +883,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [staffRoster, setStaffRoster] = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [showInactiveStaff, setShowInactiveStaff] = useState(false);
+  const [showAllActiveStaff, setShowAllActiveStaff] = useState(false);
   const [addStaffName, setAddStaffName] = useState("");
   const [addStaffRole, setAddStaffRole] = useState("mover");
   const [addStaffSaving, setAddStaffSaving] = useState(false);
@@ -1250,7 +1251,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <>
                 <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees ({staffRoster.filter((s) => s.is_active).length})</div>
                 <div className="space-y-1.5">
-                  {staffRoster.filter((s) => s.is_active).map((s) => {
+                  {(showAllActiveStaff ? staffRoster.filter((s) => s.is_active) : staffRoster.filter((s) => s.is_active).slice(0, 8)).map((s) => {
                     const memberOfTeams = teams.filter((t) => t.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
                     return (
                       <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
@@ -1297,6 +1298,24 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     );
                   })}
                 </div>
+                {!showAllActiveStaff && staffRoster.filter((s) => s.is_active).length > 8 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllActiveStaff(true)}
+                    className="w-full mt-2 py-2 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] border border-dashed border-[var(--brd)] rounded-lg hover:border-[var(--gold)]/30 transition-colors"
+                  >
+                    Show all {staffRoster.filter((s) => s.is_active).length} employees
+                  </button>
+                )}
+                {showAllActiveStaff && staffRoster.filter((s) => s.is_active).length > 8 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllActiveStaff(false)}
+                    className="w-full mt-2 py-2 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                  >
+                    Show fewer
+                  </button>
+                )}
               </>
             )}
 

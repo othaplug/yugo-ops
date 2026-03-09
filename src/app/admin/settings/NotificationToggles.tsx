@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Icon } from "@/components/AppIcons";
 
 interface NotifEvent {
   id: string;
@@ -31,10 +32,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   system: "System",
 };
 
-const CHANNEL_ICONS: Record<string, string> = {
-  email: "✉",
-  sms: "💬",
-  push: "🔔",
+const CHANNEL_ICON_NAMES: Record<string, string> = {
+  email: "mail",
+  sms: "messageSquare",
+  push: "bell",
 };
 
 export default function NotificationToggles() {
@@ -140,7 +141,7 @@ export default function NotificationToggles() {
                   : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]"
               }`}
             >
-              <span>{CHANNEL_ICONS[ch]}</span>
+              <Icon name={CHANNEL_ICON_NAMES[ch] ?? "bell"} style={{ width: 14, height: 14 }} />
               All {ch.charAt(0).toUpperCase() + ch.slice(1)}: {on ? "ON" : "OFF"}
             </button>
           );
@@ -172,7 +173,7 @@ export default function NotificationToggles() {
                         }`}
                         title={`Email: ${pref.email_enabled ? "ON" : "OFF"}`}
                       >
-                        ✉
+                        <Icon name="mail" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" />
                       </button>
                     )}
                     {event.supports_sms && (
@@ -186,7 +187,7 @@ export default function NotificationToggles() {
                         }`}
                         title={`SMS: ${pref.sms_enabled ? "ON" : "OFF"}`}
                       >
-                        💬
+                        <Icon name="messageSquare" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" />
                       </button>
                     )}
                     {event.supports_push && (
@@ -200,7 +201,7 @@ export default function NotificationToggles() {
                         }`}
                         title={`Push: ${pref.push_enabled ? "ON" : "OFF"}`}
                       >
-                        🔔
+                        <Icon name="bell" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" />
                       </button>
                     )}
                   </div>

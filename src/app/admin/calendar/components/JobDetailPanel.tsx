@@ -2,6 +2,7 @@
 
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { Icon } from "@/components/AppIcons";
 import Link from "next/link";
 
 interface Props {
@@ -73,8 +74,8 @@ export default function JobDetailPanel({ event, onClose }: Props) {
           {(event.crewName || event.truckName) && (
             <div>
               <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">Assignment</div>
-              {event.crewName && <div className="text-[13px] text-[var(--tx)]">👥 {event.crewName}</div>}
-              {event.truckName && <div className="text-[13px] text-[var(--tx)]">🚛 {event.truckName}</div>}
+              {event.crewName && <div className="flex items-center gap-1.5 text-[13px] text-[var(--tx)]"><Icon name="users" className="w-3.5 h-3.5 shrink-0 stroke-[1.75] stroke-current text-[var(--tx3)]" /> {event.crewName}</div>}
+              {event.truckName && <div className="flex items-center gap-1.5 text-[13px] text-[var(--tx)]"><Icon name="truck" className="w-3.5 h-3.5 shrink-0 stroke-[1.75] stroke-current text-[var(--tx3)]" /> {event.truckName}</div>}
             </div>
           )}
 

@@ -649,7 +649,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <button
               type="button"
               onClick={() => {
-                if (step === "config") setBookingType((b) => (b === "day_rate" ? "per_delivery" : "day_rate"));
+                if (step === "config") onClose();
                 else if (step === "details") setStep("config");
                 else if (step === "review") setStep("details");
               }}

@@ -228,7 +228,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                 <span>Checking availability...</span>
               ) : conflict.hasConflict ? (
                 <div>
-                  <div className="font-bold mb-1">❌ CONFLICT — {crewName} is booked</div>
+                  <div className="font-bold mb-1">CONFLICT — {crewName} is booked</div>
                   <div className="text-[10px] opacity-80">{conflict.message}</div>
                   {conflict.availableSlots.length > 0 && (
                     <div className="mt-2 text-[10px]">
@@ -263,7 +263,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                 </div>
               ) : (
                 <div>
-                  <span className="font-bold">✅ {crewName} is available</span>
+                  <span className="font-bold">{crewName} is available</span>
                   <span className="ml-2 opacity-70">{formatTime12(startTime)} – {formatTime12(endTime)}</span>
                 </div>
               )}

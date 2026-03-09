@@ -5,6 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { logAudit } from "@/lib/audit";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -180,6 +181,15 @@ export async function POST(req: NextRequest) {
         syncDealStage(dealId, "quote_sent").catch(() => {});
       }
     }
+
+    logAudit({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: "send_quote",
+      resourceType: "quote",
+      resourceId: quoteId,
+      details: { method: body.method ?? "email" },
+    });
 
     return NextResponse.json({ success: true, emailId: result.id });
   } catch (err) {

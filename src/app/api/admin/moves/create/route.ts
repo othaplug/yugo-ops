@@ -5,6 +5,7 @@ import { moveNotificationEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
+import { logAudit } from "@/lib/audit";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
@@ -250,6 +251,15 @@ export async function POST(req: NextRequest) {
         console.error("Failed to send move-created email:", emailErr);
       }
     }
+
+    logAudit({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: "edit_move",
+      resourceType: "move",
+      resourceId: moveId,
+      details: { action: "create", move_code: move.move_code },
+    });
 
     return NextResponse.json({
       ok: true,

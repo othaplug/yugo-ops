@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
+import { logAudit } from "@/lib/audit";
 
 // ═══════════════════════════════════════════════
 // Types
@@ -1149,7 +1150,7 @@ async function calcB2bOneoff(
 // ═══════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAuth();
+  const { user: authUser, error: authErr } = await requireAuth();
   if (authErr) return authErr;
 
   // ?preview=true → run all pricing logic but skip the DB insert
@@ -1454,6 +1455,15 @@ export async function POST(req: NextRequest) {
     upgrades: valuationUpgrades,
     tiers: valTiers ?? [],
   };
+
+  logAudit({
+    userId: authUser?.id,
+    userEmail: authUser?.email,
+    action: "send_quote",
+    resourceType: "quote",
+    resourceId: response.quote_id as string | undefined,
+    details: { service_type: input.service_type, preview: isPreview },
+  });
 
   return NextResponse.json(response);
 }

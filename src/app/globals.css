@@ -26,7 +26,7 @@
   --prdim: rgba(201,169,98,.08);
   --red: #D14343;
   --rdim: rgba(209,67,67,.06);
-  --btn-text-on-accent: #0D0D0D;
+  --btn-text-on-accent: #FFFFFF;
   --font-heading: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
   /* Instrument Serif only; serif = generic fallback if font file doesn't load */
   --font-hero: 'Instrument Serif', serif;
@@ -65,7 +65,7 @@ html {
 
 body {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   background: var(--bg);
   color: var(--tx);
@@ -756,12 +756,13 @@ input[type="time"] {
 
 /* Primary - liquid gold glass */
 .btn-p {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
-  color: #0D0D0D;
+  background: linear-gradient(135deg, #A68B3C 0%, #8B7332 100%);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.25) inset,
-    0 -1px 0 rgba(0,0,0,0.2) inset,
-    0 2px 8px rgba(201,169,98,0.25),
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 -1px 0 rgba(0,0,0,0.25) inset,
+    0 2px 8px rgba(140,110,47,0.3),
     0 1px 3px rgba(0,0,0,0.15);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -771,15 +772,15 @@ input[type="time"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%);
   pointer-events: none;
 }
 .btn-p:hover {
-  background: linear-gradient(135deg, #d4b46b 0%, var(--gold) 100%);
+  background: linear-gradient(135deg, #B8962E 0%, #A68B3C 100%);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.3) inset,
-    0 -1px 0 rgba(0,0,0,0.2) inset,
-    0 4px 16px rgba(201,169,98,0.35),
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.25) inset,
+    0 4px 16px rgba(140,110,47,0.4),
     0 2px 6px rgba(0,0,0,0.2);
   transform: translateY(-1px);
 }
@@ -825,10 +826,13 @@ input[type="time"] {
   box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 4px 12px rgba(0,0,0,0.1);
 }
 [data-theme="light"] .btn-p {
+  background: linear-gradient(135deg, #8C6E2F 0%, #7A5E25 100%);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.35) inset,
+    0 1px 0 rgba(255,255,255,0.2) inset,
     0 -1px 0 rgba(0,0,0,0.15) inset,
-    0 2px 8px rgba(166,133,62,0.3),
+    0 2px 8px rgba(120,90,30,0.3),
     0 1px 3px rgba(0,0,0,0.1);
 }
 

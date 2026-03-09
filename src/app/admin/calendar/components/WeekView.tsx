@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { Icon } from "@/components/AppIcons";
 
 const HOUR_HEIGHT = 40;
 const DAY_START_HOUR = 6;
@@ -47,7 +48,7 @@ function getHeight(start: string | null, end: string | null, dur: number | null)
   return 1.5 * HOUR_HEIGHT;
 }
 
-const TYPE_ICONS: Record<string, string> = { move: "🚚", delivery: "📦", project_phase: "🎨", blocked: "🚫" };
+const TYPE_ICON_MAP: Record<string, string> = { move: "truck", delivery: "package", project_phase: "palette", blocked: "lock" };
 
 export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick, onDayClick }: Props) {
   const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);
@@ -141,8 +142,8 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                       style={{
                         top,
                         height: Math.max(height, 20),
-                        borderLeft: `2px solid ${ev.color}`,
-                        background: `${ev.color}18`,
+                        borderLeft: `3px solid ${ev.color}`,
+                        background: `${ev.color}25`,
                       }}
                     >
                       <div className="p-0.5 flex items-center gap-0.5">
@@ -150,8 +151,9 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                         <span className="text-[8px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
                       </div>
                       {height > 25 && (
-                        <div className="text-[7px] text-[var(--tx3)] truncate px-0.5">
-                          {TYPE_ICONS[ev.type]} {ev.description}
+                        <div className="flex items-center gap-0.5 text-[7px] text-[var(--tx3)] truncate px-0.5">
+                          <Icon name={TYPE_ICON_MAP[ev.type] || "calendar"} className="w-2.5 h-2.5 shrink-0 stroke-[1.75] stroke-current" />
+                          <span className="truncate">{ev.description}</span>
                         </div>
                       )}
                     </button>

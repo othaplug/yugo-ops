@@ -1,7 +1,8 @@
 "use client";
 
 import type { CalendarEvent } from "@/lib/calendar/types";
-import { formatTime12, JOB_COLORS, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { Icon } from "@/components/AppIcons";
 
 interface Props {
   event: CalendarEvent;
@@ -10,11 +11,11 @@ interface Props {
   onDragStart?: (e: CalendarEvent) => void;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  move: "🚚",
-  delivery: "📦",
-  project_phase: "🎨",
-  blocked: "🚫",
+const TYPE_ICON_MAP: Record<string, string> = {
+  move: "truck",
+  delivery: "package",
+  project_phase: "palette",
+  blocked: "lock",
 };
 
 export default function JobCard({ event, compact, onClick, onDragStart }: Props) {
@@ -36,17 +37,17 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         onClick={() => onClick?.(event)}
         draggable={!!onDragStart}
         onDragStart={() => onDragStart?.(event)}
-        className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] truncate transition-colors cursor-pointer hover:brightness-125 ${
+        className={`w-full text-left flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[10px] truncate transition-all cursor-pointer hover:brightness-125 ${
           isCompleted ? "opacity-50" : ""
         } ${isCancelled ? "line-through opacity-40" : ""}`}
-        style={{ borderLeft: `2px solid ${event.color}`, background: `${event.color}15` }}
+        style={{ borderLeft: `3px solid ${event.color}`, background: `${event.color}22` }}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${isInProgress ? "animate-pulse" : ""}`}
           style={{ backgroundColor: dotColor }}
         />
-        <span className="truncate text-[var(--tx)]">
-          {timeStr && <span className="text-[var(--tx3)] mr-1">{timeStr}</span>}
+        <span className="truncate font-semibold text-[var(--tx)]">
+          {timeStr && <span className="text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
           {event.name}
         </span>
       </button>
@@ -62,7 +63,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       className={`w-full text-left p-2 rounded-lg transition-all cursor-pointer hover:brightness-110 ${
         isCompleted ? "opacity-50" : ""
       } ${isCancelled ? "opacity-40" : ""}`}
-      style={{ borderLeft: `3px solid ${event.color}`, background: `${event.color}12` }}
+      style={{ borderLeft: `4px solid ${event.color}`, background: `${event.color}20` }}
     >
       <div className="flex items-center gap-1.5 mb-0.5">
         <span
@@ -73,12 +74,12 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
           <span className="text-[10px] text-[var(--tx3)] font-medium">{timeStr}</span>
         )}
         <span className="text-[8px] text-[var(--tx3)]/50">·</span>
-        <span className={`text-[11px] font-bold text-[var(--tx)] truncate ${isCancelled ? "line-through" : ""}`}>
+        <span className={`text-[12px] font-bold text-[var(--tx)] truncate ${isCancelled ? "line-through" : ""}`}>
           {event.name}
         </span>
       </div>
-      <div className="flex items-center gap-1 text-[9px] text-[var(--tx3)] pl-3.5">
-        <span>{TYPE_ICONS[event.type] || ""}</span>
+      <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)] pl-3.5">
+        <Icon name={TYPE_ICON_MAP[event.type] || "calendar"} className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current" />
         <span className="truncate">{event.description}</span>
         {event.crewName && (
           <>

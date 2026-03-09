@@ -225,6 +225,7 @@ export default function QuoteFormClient({
   const [preferredTime, setPreferredTime] = useState("");
   const [arrivalWindow, setArrivalWindow] = useState("morning");
   const [moveSize, setMoveSize] = useState("2br");
+  const [clientBoxCount, setClientBoxCount] = useState("");
 
   const phoneInput = usePhoneInput(phone, setPhone);
 
@@ -537,6 +538,7 @@ export default function QuoteFormClient({
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
       base.move_size = moveSize;
+      if (clientBoxCount) base.client_box_count = Number(clientBoxCount);
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
@@ -577,7 +579,7 @@ export default function QuoteFormClient({
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
-    selectedAddons, recommendedTier, moveSize, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
+    selectedAddons, recommendedTier, moveSize, clientBoxCount, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     hasReception, timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
     firstName, lastName, email, phone,
@@ -874,6 +876,20 @@ export default function QuoteFormClient({
                     <Field label="Move Size">
                       <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
                         {MOVE_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                  {(serviceType === "local_move" || serviceType === "long_distance") && (
+                    <Field label="Number of Boxes">
+                      <select value={clientBoxCount} onChange={(e) => setClientBoxCount(e.target.value)} className={fieldInput}>
+                        <option value="">Not specified</option>
+                        <option value="5">1-5 boxes</option>
+                        <option value="10">5-10 boxes</option>
+                        <option value="20">10-20 boxes</option>
+                        <option value="30">20-30 boxes</option>
+                        <option value="40">30-40 boxes</option>
+                        <option value="50">40-50 boxes</option>
+                        <option value="60">50+ boxes</option>
                       </select>
                     </Field>
                   )}

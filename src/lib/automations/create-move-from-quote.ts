@@ -222,6 +222,7 @@ export async function createMoveFromQuote(
       access_notes: accessNotes,
       scheduled_date: quote.move_date,
       amount: totalWithTax,
+      estimate: basePrice,
 
       quote_id: quote.id,
       hubspot_deal_id: quote.hubspot_deal_id,

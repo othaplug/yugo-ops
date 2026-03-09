@@ -1074,7 +1074,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         <button
           onClick={handleRegenerate}
           disabled={generating}
-          className="w-full py-3 rounded-xl bg-[var(--gold)] text-[#0D0D0D] text-sm font-semibold hover:bg-[var(--gold)]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="btn-p w-full py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <RefreshCw size={16} className={generating ? "animate-spin" : ""} />
           {generating ? "Generating…" : "Re-Generate Quote"}
@@ -1152,7 +1152,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <button
               onClick={handleSendUpdate}
               disabled={linking}
-              className="flex-1 py-3 rounded-xl bg-[var(--gold)] text-[#0D0D0D] text-sm font-semibold hover:bg-[var(--gold)]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="btn-p flex-1 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Send size={16} />
               {linking ? "Sending…" : "Send Updated Quote to Client"}

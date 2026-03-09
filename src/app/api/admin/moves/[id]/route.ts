@@ -3,18 +3,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
+import { logAudit } from "@/lib/audit";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { user: authUser, error: authErr } = await requireAdmin();
   if (authErr) return authErr;
   try {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
     const markedBy = body.marked_by as string;
+
+    const auditAfter = (details?: Record<string, unknown>) =>
+      logAudit({
+        userId: authUser?.id,
+        userEmail: authUser?.email,
+        action: "move_status_change",
+        resourceType: "move",
+        resourceId: id,
+        details: { action, ...details },
+      });
 
     if (action === "mark_paid") {
       if (!markedBy?.trim()) {
@@ -47,6 +58,7 @@ export async function PATCH(
         icon: "dollar",
       });
 
+      auditAfter({ status: "paid", markedBy: markedBy.trim() });
       return NextResponse.json(move);
     }
 
@@ -80,6 +92,7 @@ export async function PATCH(
         icon: "dollar",
       });
 
+      auditAfter({ status: "paid", method: "etransfer" });
       return NextResponse.json(move);
     }
 

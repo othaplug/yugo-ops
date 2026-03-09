@@ -261,7 +261,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             onClick={() => router.push(`/admin/quotes/${quote.quote_id}/edit`)}
             className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40"
           >
-            <Pencil className="w-3 h-3" /> Edit
+            <Pencil className="w-3 h-3" /> Edit All Details
           </button>
           {quote.quote_url && (
             <a

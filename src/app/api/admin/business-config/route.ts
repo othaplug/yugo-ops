@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { invalidateConfigCache } from "@/lib/config";
+import { logAudit } from "@/lib/audit";
 
 const BUSINESS_KEYS = [
   // Company info
@@ -42,7 +43,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { error: authErr } = await requireRole("manager");
+  const { user, error: authErr } = await requireRole("manager");
   if (authErr) return authErr;
 
   const body = await req.json();
@@ -59,6 +60,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   invalidateConfigCache();
+
+  logAudit({
+    userId: user?.id,
+    userEmail: user?.email,
+    action: "config_change",
+    resourceType: "config",
+    details: { keys: updates.map(([k]) => k) },
+  });
 
   return NextResponse.json({ ok: true, updated: updates.length });
 }

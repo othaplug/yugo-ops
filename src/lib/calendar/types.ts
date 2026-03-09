@@ -7,14 +7,14 @@ export type BlockType = JobType | "maintenance" | "training" | "break" | "blocke
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
 
 export const JOB_COLORS = {
-  move: "#B8962E",
-  delivery: "#2C3E2D",
-  project_phase: "#5C1A33",
-  blocked: "#666666",
-  maintenance: "#666666",
-  training: "#555555",
-  break: "#555555",
-  time_off: "#777777",
+  move: "#C9A962",
+  delivery: "#4A9E6B",
+  project_phase: "#9B5DE5",
+  blocked: "#6B7280",
+  maintenance: "#6B7280",
+  training: "#64748B",
+  break: "#64748B",
+  time_off: "#78716C",
 } as const;
 
 export const STATUS_DOT_COLORS: Record<string, string> = {

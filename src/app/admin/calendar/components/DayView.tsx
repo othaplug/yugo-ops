@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, JOB_COLORS, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { Icon } from "@/components/AppIcons";
 
 const HOUR_HEIGHT = 60;
 const DAY_START_HOUR = 6;
@@ -34,7 +35,7 @@ function getHeight(start: string | null, end: string | null, durationHours: numb
   return 1.5 * HOUR_HEIGHT;
 }
 
-const TYPE_ICONS: Record<string, string> = { move: "🚚", delivery: "📦", project_phase: "🎨", blocked: "🚫" };
+const TYPE_ICON_MAP: Record<string, string> = { move: "truck", delivery: "package", project_phase: "palette", blocked: "lock" };
 
 export default function DayView({ date, todayKey, events, crews, onEventClick, onEmptyClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -166,8 +167,8 @@ export default function DayView({ date, todayKey, events, crews, onEventClick, o
                       style={{
                         top,
                         height: Math.max(height, 30),
-                        borderLeft: `3px solid ${ev.color}`,
-                        background: `linear-gradient(135deg, ${ev.color}18, ${ev.color}08)`,
+                        borderLeft: `4px solid ${ev.color}`,
+                        background: `linear-gradient(135deg, ${ev.color}25, ${ev.color}10)`,
                       }}
                     >
                       <div className="p-1.5 h-full flex flex-col">
@@ -175,8 +176,9 @@ export default function DayView({ date, todayKey, events, crews, onEventClick, o
                           <span className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`} style={{ backgroundColor: dotColor }} />
                           <span className="text-[11px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
                         </div>
-                        <div className="text-[9px] text-[var(--tx3)] truncate">
-                          {TYPE_ICONS[ev.type] || ""} {ev.description}
+                        <div className="flex items-center gap-1 text-[9px] text-[var(--tx3)] truncate">
+                          <Icon name={TYPE_ICON_MAP[ev.type] || "calendar"} className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current" />
+                          <span className="truncate">{ev.description}</span>
                         </div>
                         {height > 60 && ev.truckName && (
                           <div className="text-[8px] text-[var(--tx3)]/60 mt-0.5 truncate">

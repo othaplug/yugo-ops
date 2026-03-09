@@ -487,68 +487,72 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <button
               type="button"
               onClick={() => setBookServiceModalOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full text-[15px] font-semibold text-white shadow-lg shadow-[#C9A962]/30 hover:shadow-xl hover:shadow-[#C9A962]/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-              style={{ background: "linear-gradient(135deg, #D4B96A 0%, #C9A962 40%, #8B6914 100%)", letterSpacing: "0.01em" }}
+              className="btn-p w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl text-[16px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
               <span>Book a service</span>
             </button>
-            {/* Book service choice — bottom sheet on mobile, modal on desktop */}
+
             {bookServiceModalOpen && (
               <div
-                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
                 onClick={() => setBookServiceModalOpen(false)}
               >
                 <div
-                  className="bg-[var(--card)] rounded-t-[24px] sm:rounded-[24px] shadow-2xl w-full sm:max-w-[420px] overflow-hidden"
-                  style={{ boxShadow: "0 -8px 40px rgba(0,0,0,0.18)" }}
+                  className="bg-[var(--card)] rounded-t-[28px] sm:rounded-[28px] shadow-2xl w-full sm:max-w-[480px] overflow-hidden"
+                  style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.25)" }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-center pt-3 pb-0 sm:hidden">
-                    <div className="w-9 h-1 rounded-full bg-[var(--brd)]" />
+                    <div className="w-10 h-1 rounded-full bg-[var(--brd)]" />
                   </div>
-                  <div className="px-6 pt-5 pb-2">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Services</div>
-                    <h3 className="text-[20px] font-bold text-[var(--tx)]">Book a service</h3>
-                    <p className="text-[12px] text-[var(--tx3)] mt-0.5">Choose the type of booking you need</p>
+
+                  <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+                    <div>
+                      <h3 className="text-[22px] font-bold text-[var(--tx)]">Book a service</h3>
+                      <p className="text-[13px] text-[var(--tx3)] mt-1">Select the service that fits your needs</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBookServiceModalOpen(false)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors shrink-0"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                   </div>
-                  <div className="px-4 pt-2 pb-3 space-y-3">
+
+                  <div className="px-5 pb-4 grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
-                      className="w-full text-left flex items-center gap-4 p-4 rounded-2xl transition-all group hover:scale-[1.01] active:scale-[0.99]"
-                      style={{ background: "linear-gradient(135deg, rgba(45,106,79,0.05), rgba(45,106,79,0.10))", border: "1.5px solid rgba(45,106,79,0.2)" }}
+                      className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[#2D6A4F]/40 bg-[var(--bg)] hover:bg-[#2D6A4F]/[0.04] transition-all group"
                     >
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #2D6A4F, #1F4D39)" }}>
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, #2D6A4F, #1F4D39)" }}>
                         <Package className="w-5 h-5 text-white" strokeWidth={1.75} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[14px] font-bold text-[var(--tx)]">Schedule Delivery</div>
-                        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Single pickup to single drop · Best for 1–3 items</div>
-                      </div>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#2D6A4F]/10 text-[#2D6A4F] flex-shrink-0 group-hover:bg-[#2D6A4F]/20 transition-colors">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Schedule Delivery</div>
+                      <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Single pickup to single drop-off. Best for 1-3 items.</div>
+                      <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[#2D6A4F] group-hover:gap-2 transition-all">
+                        Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </div>
                     </button>
                     <Link
                       href="/partner/book-day-rate"
                       onClick={() => setBookServiceModalOpen(false)}
-                      className="w-full text-left flex items-center gap-4 p-4 rounded-2xl transition-all group hover:scale-[1.01] active:scale-[0.99] block"
-                      style={{ background: "linear-gradient(135deg, rgba(201,169,98,0.05), rgba(201,169,98,0.10))", border: "1.5px solid rgba(201,169,98,0.25)" }}
+                      className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
                     >
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #D4B96A, #8B6914)" }}>
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, #A68B3C, #8B7332)" }}>
                         <CalendarDays className="w-5 h-5 text-white" strokeWidth={1.75} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[14px] font-bold text-[var(--tx)]">Book Day Rate</div>
-                        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Dedicated truck + crew for the day · Best for 4+ stops</div>
-                      </div>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#C9A962]/10 text-[#C9A962] flex-shrink-0 group-hover:bg-[#C9A962]/20 transition-colors">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
+                      <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
+                      <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
+                        Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </div>
                     </Link>
                   </div>
-                  <div className="px-6 pb-6 pt-1">
+
+                  <div className="px-5 pb-6 pt-1 sm:hidden">
                     <button
                       type="button"
                       onClick={() => setBookServiceModalOpen(false)}

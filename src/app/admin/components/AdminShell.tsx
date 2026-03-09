@@ -42,6 +42,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "B2B Partners",
     items: [
+      { href: "/admin/partners", label: "All Partners", Icon: Icons.users, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "All Deliveries", Icon: Icons.truck, minRole: "coordinator" },
       { href: "/admin/projects", label: "Projects", Icon: Icons.clipboardList, minRole: "admin" },
       { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },

@@ -70,7 +70,7 @@ export default function NewDeliveryChoiceClient({
           onClick={() => setChoice("single")}
           className="text-left p-5 rounded-xl border-2 border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all bg-[var(--card)]"
         >
-          <span className="text-[24px] mb-3 block" aria-hidden>📦</span>
+          <span className="w-10 h-10 mb-3 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]" aria-hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.55 4.24" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg></span>
           <h3 className="text-[15px] font-bold text-[var(--tx)] mb-1">Single Delivery</h3>
           <p className="text-[12px] text-[var(--tx3)] mb-2">Per-delivery pricing from partner rate card</p>
           <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)]">Create →</span>
@@ -80,7 +80,7 @@ export default function NewDeliveryChoiceClient({
           onClick={() => setChoice("day_rate")}
           className="text-left p-5 rounded-xl border-2 border-[var(--brd)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all bg-[var(--card)]"
         >
-          <span className="text-[24px] mb-3 block" aria-hidden>📅</span>
+          <span className="w-10 h-10 mb-3 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]" aria-hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></span>
           <h3 className="text-[15px] font-bold text-[var(--tx)] mb-1">Day Rate</h3>
           <p className="text-[12px] text-[var(--tx3)] mb-2">Multi-stop day rate pricing</p>
           <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)]">Create →</span>
