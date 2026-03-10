@@ -79,7 +79,7 @@ export default function ResidentialLayout({
             >
               {badgeText && (
                 <div
-                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
+                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
                   style={{ backgroundColor: tierKey === "estate" ? WINE : GOLD }}
                 >
                   {badgeText}
@@ -100,11 +100,11 @@ export default function ResidentialLayout({
                         </div>
                       ) : null;
                     })()}
-                    <div className="text-left min-w-0">
+                    <div className="text-left min-w-0 pr-2">
                       <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
                         {meta.label}
                       </h3>
-                      <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
+                      <p className="text-[12px] mt-2 leading-relaxed" style={{ color: `${FOREST}70` }}>
                         {meta.tagline}
                       </p>
                     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -461,15 +462,18 @@ export default function PartnerRecurringTab({ orgId }: Props) {
         </ul>
       </div>
 
-      {/* Modals */}
-      {(createOpen || editTarget) && (
-        <ScheduleModal
-          orgId={orgId}
-          existing={editTarget}
-          onClose={() => { setCreateOpen(false); setEditTarget(null); }}
-          onSaved={load}
-        />
-      )}
+      {/* Modals — portal to body so modal isn't clipped by ancestor overflow-hidden */}
+      {(createOpen || editTarget) &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <ScheduleModal
+            orgId={orgId}
+            existing={editTarget}
+            onClose={() => { setCreateOpen(false); setEditTarget(null); }}
+            onSaved={load}
+          />,
+          document.body
+        )}
     </div>
   );
 }
