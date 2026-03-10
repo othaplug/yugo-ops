@@ -164,13 +164,26 @@ export async function GET() {
   const completedRefs = refs.filter((r) => r.status === "completed" || r.status === "booked");
   const totalEarned = completedRefs.reduce((s, r) => s + Number(r.commission || 0), 0);
 
+  // Damage claims: count claims linked to this partner's deliveries or moves
+  const deliveryIds = dels.map((d) => d.id);
+  const moveIds = (recentMoves || []).map((m) => m.id);
+  let damageClaims = 0;
+  if (deliveryIds.length > 0) {
+    const { count: c1 } = await admin.from("claims").select("id", { count: "exact", head: true }).in("delivery_id", deliveryIds);
+    damageClaims += c1 ?? 0;
+  }
+  if (moveIds.length > 0) {
+    const { count: c2 } = await admin.from("claims").select("id", { count: "exact", head: true }).in("move_id", moveIds);
+    damageClaims += c2 ?? 0;
+  }
+
   return NextResponse.json({
     orgType,
     deliveriesCount: dels.length,
     movesCount: (recentMoves || []).length,
     completedThisMonth,
     onTimeRate,
-    damageClaims: 0,
+    damageClaims,
     outstandingAmount,
     outstandingDueDate,
     todayDeliveries,

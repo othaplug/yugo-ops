@@ -23,7 +23,6 @@ import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
-import { Package, CalendarDays } from "lucide-react";
 
 interface Props {
   orgId: string;
@@ -487,9 +486,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <button
               type="button"
               onClick={() => setBookServiceModalOpen(true)}
-              className="btn-p w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl text-[16px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-semibold tracking-wide border border-[var(--gold)]/40 bg-[var(--gold)]/10 backdrop-blur-md hover:bg-[var(--gold)]/20 active:scale-[0.98] transition-all duration-200 text-[var(--tx)]"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
               <span>Book a service</span>
             </button>
 
@@ -527,9 +525,6 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                       onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
                       className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[#2D6A4F]/40 bg-[var(--bg)] hover:bg-[#2D6A4F]/[0.04] transition-all group"
                     >
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, #2D6A4F, #1F4D39)" }}>
-                        <Package className="w-5 h-5 text-white" strokeWidth={1.75} />
-                      </div>
                       <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Schedule Delivery</div>
                       <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Single pickup to single drop-off. Best for 1-3 items.</div>
                       <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[#2D6A4F] group-hover:gap-2 transition-all">
@@ -541,9 +536,6 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                       onClick={() => setBookServiceModalOpen(false)}
                       className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
                     >
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, #A68B3C, #8B7332)" }}>
-                        <CalendarDays className="w-5 h-5 text-white" strokeWidth={1.75} />
-                      </div>
                       <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
                       <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
                       <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
@@ -625,7 +617,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
         {/* Tabs — fixed min-widths so counts (e.g. Today (0)) don't cause layout shift */}
         <div className="overflow-hidden mb-4">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
+          <div className="flex flex-wrap justify-center gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
             {tabs.map((t) => {
               const hasCount = /\(\d+\)$/.test(t.label);
               return (

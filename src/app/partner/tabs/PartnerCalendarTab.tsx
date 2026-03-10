@@ -128,10 +128,17 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
       if (!d.scheduled_date) return;
       const key = d.scheduled_date.slice(0, 10);
       if (!key.startsWith(String(yearView))) return;
+      const status = (d.status || "").toLowerCase();
+      if (statusFilter && status !== statusFilter) return;
+      if (typeFilter) {
+        const bt = d.booking_type || d.delivery_type || "";
+        if (typeFilter === "day_rate" && bt !== "day_rate") return;
+        if (typeFilter === "per_delivery" && bt === "day_rate") return;
+      }
       heat[key] = (heat[key] || 0) + 1;
     });
     return heat;
-  }, [deliveries, yearView]);
+  }, [deliveries, yearView, statusFilter, typeFilter]);
 
   const navigate = useCallback((dir: number) => {
     if (view === "month") {
@@ -497,13 +504,13 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
                     const startMins = timeToMinutes(startTime);
                     const dur = d.estimated_duration_hours || 1.5;
                     const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-                    const height = Math.max(dur * HOUR_HEIGHT, 18);
+                    const height = Math.max(dur * HOUR_HEIGHT, 22);
                     const style = getStatusStyle(d.status || "pending");
                     return (
-                      <button key={d.id} type="button" onClick={(e) => { e.stopPropagation(); onDeliveryClick?.(d); }} className="absolute left-0.5 right-0.5 rounded overflow-hidden text-left hover:brightness-95 cursor-pointer" style={{ top, height: Math.max(height, 18), borderLeft: `2px solid ${style.border}`, background: `${style.border}15` }}>
-                        <div className="p-0.5 flex items-center gap-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase()) ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
-                          <span className="text-[7px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                      <button key={d.id} type="button" onClick={(e) => { e.stopPropagation(); onDeliveryClick?.(d); }} className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-95 cursor-pointer shadow-sm" style={{ top, height: Math.max(height, 22), borderLeft: `4px solid ${style.border}`, background: `${style.border}25` }}>
+                        <div className="p-1 flex items-center gap-1">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase()) ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
+                          <span className="text-[8px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
                         </div>
                       </button>
                     );
@@ -534,11 +541,12 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
   const YearHeatMap = () => {
     const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
     const getColor = (count: number): string => {
-      if (count === 0) return "#F5F3F0";
-      if (count === 1) return "rgba(44,62,45,0.2)";
-      if (count <= 3) return "rgba(44,62,45,0.45)";
-      return "rgba(44,62,45,0.75)";
+      if (count === 0) return "transparent";
+      if (count === 1) return "rgba(44,62,45,0.35)";
+      if (count <= 3) return "rgba(44,62,45,0.6)";
+      return "rgba(44,62,45,0.9)";
     };
+    const emptyCellBg = "bg-[#F0EDE8] dark:bg-[var(--card)]";
 
     const totalDeliveries = Object.values(yearHeat).reduce((s, c) => s + c, 0);
 
@@ -559,12 +567,12 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
                 <button type="button" onClick={() => { setMonthYear({ year: yearView, month: mIdx }); setView("month"); }} className="text-[11px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] mb-1.5 hover:text-[#2C3E2D] dark:hover:text-[var(--gold)] transition-colors">
                   {name}
                 </button>
-                <div className="grid grid-cols-7 gap-[2px]">
+                <div className="grid grid-cols-7 gap-[2px] min-w-0">
                   {DAY_LABELS.map((d, i) => (
-                    <div key={`h-${i}`} className="text-[6px] text-[#CCC] dark:text-[var(--tx3)]/30 text-center">{d}</div>
+                    <div key={`h-${i}`} className="text-[6px] font-semibold text-[#888] dark:text-[var(--tx3)]/60 text-center">{d}</div>
                   ))}
                   {cells.map((day, i) => {
-                    if (day === null) return <div key={`e-${i}`} className="w-full aspect-square" />;
+                    if (day === null) return <div key={`e-${i}`} className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] ${emptyCellBg}`} />;
                     const dk = `${yearView}-${String(mIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     const count = yearHeat[dk] || 0;
                     const isToday = dk === todayKey;
@@ -573,8 +581,8 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
                         key={dk}
                         type="button"
                         onClick={() => switchToDay(dk)}
-                        className={`w-full aspect-square rounded-[2px] transition-colors hover:ring-1 hover:ring-[#2C3E2D]/40 ${isToday ? "ring-1 ring-[#C9A962]" : ""}`}
-                        style={{ backgroundColor: getColor(count) }}
+                        className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] transition-colors hover:ring-2 hover:ring-[#2C3E2D]/50 dark:hover:ring-[var(--gold)]/50 ${count === 0 ? emptyCellBg : ""} ${isToday ? "ring-2 ring-[#C9A962] dark:ring-[var(--gold)]" : ""}`}
+                        style={count > 0 ? { backgroundColor: getColor(count) } : undefined}
                         title={count > 0 ? `${dk}: ${count} deliver${count > 1 ? "ies" : "y"}` : dk}
                       />
                     );
@@ -587,12 +595,12 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
 
         {/* Summary */}
         <div className="mt-6 text-center">
-          <div className="flex items-center gap-2 justify-center mb-2">
-            <span className="text-[9px] text-[#999]">Less</span>
+          <div className="flex items-center gap-2 justify-center mb-2 flex-wrap">
+            <span className="text-[9px] text-[#666] dark:text-[var(--tx3)]">Less</span>
             {[0, 1, 2, 4].map((n) => (
-              <div key={n} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: getColor(n) }} />
+              <div key={n} className={`w-4 h-4 rounded-[3px] ${n === 0 ? emptyCellBg : ""}`} style={n > 0 ? { backgroundColor: getColor(n) } : undefined} />
             ))}
-            <span className="text-[9px] text-[#999]">More</span>
+            <span className="text-[9px] text-[#666] dark:text-[var(--tx3)]">More</span>
           </div>
           <div className="text-[12px] text-[#666] dark:text-[var(--tx3)] font-medium">
             {yearView} Total: <span className="text-[#2C3E2D] dark:text-[var(--gold)] font-bold">{totalDeliveries} deliveries</span>
