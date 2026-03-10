@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -30,8 +31,9 @@ export async function GET() {
     .maybeSingle();
   if (move) return NextResponse.json({ role: "client" });
 
-  // partner_users → partner (use limit(1) so multiple orgs per user don't make .single() fail)
-  const { data: partnerRows } = await supabase
+  // partner_users → partner: use admin client so RLS/cookies don't hide the row (e.g. first login after invite)
+  const admin = createAdminClient();
+  const { data: partnerRows } = await admin
     .from("partner_users")
     .select("user_id")
     .eq("user_id", user.id)

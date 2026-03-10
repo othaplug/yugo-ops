@@ -2,6 +2,7 @@
 
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { toTitleCase, formatAddressForDisplay } from "@/lib/format-text";
 import { Icon } from "@/components/AppIcons";
 import Link from "next/link";
 
@@ -25,7 +26,9 @@ export default function JobDetailPanel({ event, onClose }: Props) {
     ? event.end
       ? `${formatTime12(event.start)} – ${formatTime12(event.end)}`
       : formatTime12(event.start)
-    : "Not scheduled";
+    : event.date
+      ? "Time not set"
+      : "Not scheduled";
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
@@ -46,11 +49,11 @@ export default function JobDetailPanel({ event, onClose }: Props) {
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize"
                 style={{ backgroundColor: `${dotColor}20`, color: dotColor }}
               >
-                {event.calendarStatus.replace(/_/g, " ")}
+                {toTitleCase(event.calendarStatus)}
               </span>
             </div>
             <h2 className="text-[18px] font-bold text-[var(--tx)]">{event.name}</h2>
-            <p className="text-[12px] text-[var(--tx3)] mt-0.5">{event.description}</p>
+            <p className="text-[12px] text-[var(--tx3)] mt-0.5">{toTitleCase(event.description)}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] transition-colors">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -85,17 +88,17 @@ export default function JobDetailPanel({ event, onClose }: Props) {
               <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">Location</div>
               {event.fromAddress && (
                 <div className="text-[12px] text-[var(--tx)]">
-                  <span className="text-[var(--tx3)]">From:</span> {event.fromAddress}
+                  <span className="text-[var(--tx3)]">From:</span> {formatAddressForDisplay(event.fromAddress)}
                 </div>
               )}
               {event.toAddress && (
                 <div className="text-[12px] text-[var(--tx)]">
-                  <span className="text-[var(--tx3)]">To:</span> {event.toAddress}
+                  <span className="text-[var(--tx3)]">To:</span> {formatAddressForDisplay(event.toAddress)}
                 </div>
               )}
               {event.deliveryAddress && (
                 <div className="text-[12px] text-[var(--tx)]">
-                  <span className="text-[var(--tx3)]">Deliver to:</span> {event.deliveryAddress}
+                  <span className="text-[var(--tx3)]">Deliver to:</span> {formatAddressForDisplay(event.deliveryAddress)}
                 </div>
               )}
             </div>
@@ -106,7 +109,7 @@ export default function JobDetailPanel({ event, onClose }: Props) {
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">Details</div>
             {event.moveSize && <div className="text-[12px] text-[var(--tx)]">Size: {event.moveSize}</div>}
             {event.itemCount && <div className="text-[12px] text-[var(--tx)]">Items: {event.itemCount}</div>}
-            {event.category && <div className="text-[12px] text-[var(--tx)] capitalize">Category: {event.category}</div>}
+            {event.category && <div className="text-[12px] text-[var(--tx)]">Category: {toTitleCase(event.category)}</div>}
           </div>
 
           {/* Link to detail */}

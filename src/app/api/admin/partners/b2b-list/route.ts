@@ -10,7 +10,7 @@ export async function GET() {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("organizations")
-      .select("id, name, type, contact_name, email, phone, status, created_at")
+      .select("id, name, type, contact_name, email, phone, created_at")
       .not("type", "eq", "b2c")
       .order("name");
 

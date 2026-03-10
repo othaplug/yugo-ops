@@ -3,17 +3,20 @@ import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import RealtorsTable from "./RealtorsTable";
 import RealtorsMetrics from "./RealtorsMetrics";
+import RealtorPartnersSection from "./RealtorPartnersSection";
 
 export default async function RealtorsPage() {
   const db = createAdminClient();
-  const [refRes, orgRes, realtorsRes, movesRes] = await Promise.all([
+  const [refRes, orgRes, realtorsRes, movesRes, realtorOrgsRes] = await Promise.all([
     db.from("referrals").select("*").order("created_at", { ascending: false }),
     db.from("organizations").select("id, name"),
     db.from("realtors").select("id, agent_name, email, brokerage, created_at").order("agent_name"),
     db.from("moves").select("id, client_name"),
+    db.from("organizations").select("id, name, contact_name, email").eq("type", "realtor").order("name"),
   ]);
   const referrals = refRes.data ?? [];
   const orgs = orgRes.data ?? [];
+  const realtorPartners = realtorOrgsRes.data ?? [];
   const realtors = realtorsRes.data ?? [];
   const moves = movesRes.data ?? [];
 
@@ -83,6 +86,7 @@ export default async function RealtorsPage() {
         commissionPrev={commissionLastMonth}
         realtorsPrev={realtorsPrev}
       />
+      <RealtorPartnersSection partners={realtorPartners} />
       <RealtorsTable
         referrals={all}
         clientNameToId={clientNameToId}

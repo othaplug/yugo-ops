@@ -4,6 +4,7 @@ import { requirePartner } from "@/lib/partner-auth";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import type { CalendarEvent, CalendarStatus, YearHeatData } from "@/lib/calendar/types";
 import { JOB_COLORS } from "@/lib/calendar/types";
+import { toTitleCase } from "@/lib/format-text";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
       type: "delivery",
       blockType: "delivery",
       name: d.customer_name || d.client_name || d.delivery_number || "Delivery",
-      description: `${itemCount ? itemCount + "pc " : ""}${d.delivery_type || d.category || ""} Delivery`.trim(),
+      description: `${itemCount ? itemCount + "pc " : ""}${toTitleCase(d.delivery_type || d.category || "")} Delivery`.trim(),
       date: dk,
       start: d.scheduled_start || d.time_slot || null,
       end: d.scheduled_end || null,
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
       fromAddress: d.pickup_address || null,
       toAddress: null,
       deliveryAddress: d.delivery_address || null,
-      category: d.category || d.delivery_type || null,
+      category: (d.category || d.delivery_type) ? toTitleCase(String(d.category || d.delivery_type)) : null,
       moveSize: null,
       itemCount: itemCount || null,
       scheduleBlockId: null,

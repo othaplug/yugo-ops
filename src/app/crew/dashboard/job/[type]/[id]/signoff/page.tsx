@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use } from "react";
+import YugoLogo from "@/components/YugoLogo";
 
 const GOLD = "#C9A962";
 const FOREST = "#2A3D2E";
@@ -493,7 +494,7 @@ export default function ClientSignOffPage({
           >
             <ChevronLeft size={15} /> Back
           </Link>
-          <YugoWordmark />
+          <YugoLogo size={22} variant="gold" onLightBackground />
           <div className="w-14" />
         </div>
 

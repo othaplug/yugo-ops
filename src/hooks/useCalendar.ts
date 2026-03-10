@@ -47,6 +47,8 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
   const [heatData, setHeatData] = useState<YearHeatData>({});
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ moves: number; deliveries: number; phases?: number } | null>(null);
+  const [diagnostics, setDiagnostics] = useState<{ movesError?: string; deliveriesError?: string } | null>(null);
 
   const [filters, setFilters] = useState<CalendarFilters>({ crewId: "", type: "", status: "" });
 
@@ -208,6 +210,8 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
     events, eventsByDate, crews, heatData,
     loading,
     fetchError,
+    counts,
+    diagnostics,
     filters, setFilters,
     todayKey,
     headerLabel,

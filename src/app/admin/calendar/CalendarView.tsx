@@ -83,6 +83,19 @@ export default function CalendarView() {
         </div>
       )}
 
+      {!cal.loading && !cal.fetchError && (cal.diagnostics?.movesError || cal.diagnostics?.deliveriesError) && (
+        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm space-y-1">
+          {cal.diagnostics.movesError && <div>Moves: {cal.diagnostics.movesError}</div>}
+          {cal.diagnostics.deliveriesError && <div>Deliveries: {cal.diagnostics.deliveriesError}</div>}
+        </div>
+      )}
+
+      {!cal.loading && !cal.fetchError && cal.counts && cal.view !== "year" && (
+        <div className="mx-6 mt-2 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[11px] text-[var(--tx3)]">
+          In range: {cal.counts.moves} moves, {cal.counts.deliveries} deliveries, {cal.counts.phases ?? 0} project phases
+        </div>
+      )}
+
       {!cal.loading && (
         <>
           {cal.view === "month" && (

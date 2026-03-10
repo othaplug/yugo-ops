@@ -4,6 +4,7 @@ import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import type { CalendarEvent, YearHeatData, CalendarStatus } from "@/lib/calendar/types";
 import { JOB_COLORS } from "@/lib/calendar/types";
 import { requireStaff } from "@/lib/api-auth";
+import { toTitleCase } from "@/lib/format-text";
 
 export const dynamic = "force-dynamic";
 
@@ -66,13 +67,17 @@ export async function GET(req: NextRequest) {
     const endDate = String(end).slice(0, 10);
 
     const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult] = await Promise.allSettled([
-      db.from("moves")
-        .select("id, move_code, client_name, move_size, move_type, status, calendar_status, calendar_color, scheduled_date, scheduled_time, scheduled_start, scheduled_end, estimated_hours, crew_id, assigned_truck_id, from_address, to_address, crews(name), fleet_vehicles(display_name)")
-        .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
+      db
+        .from("moves")
+        .select("id, move_code, client_name, move_type, status, scheduled_date, scheduled_time, estimated_hours, crew_id, from_address, to_address")
+        .gte("scheduled_date", startDate)
+        .lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
-      db.from("deliveries")
-        .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, calendar_status, calendar_color, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, assigned_truck_id, pickup_address, delivery_address, item_count, items, crews(name), fleet_vehicles(display_name)")
-        .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
+      db
+        .from("deliveries")
+        .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, crew_id, pickup_address, delivery_address, items")
+        .gte("scheduled_date", startDate)
+        .lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
       db.from("project_phases")
         .select("id, project_id, phase_name, phase_order, status, scheduled_date, projects!inner(project_number, start_date)")
@@ -90,90 +95,101 @@ export async function GET(req: NextRequest) {
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
 
-    if (movesResult.status === "rejected" || (movesResult.status === "fulfilled" && movesResult.value?.error)) {
-      console.error("[admin/calendar] moves query failed:", movesResult.status === "rejected" ? movesResult.reason : movesResult.value?.error);
+    const diagnostics: { movesError?: string; deliveriesError?: string } = {};
+    if (movesResult.status === "rejected") {
+      diagnostics.movesError = String(movesResult.reason);
+      console.error("[admin/calendar] moves query rejected:", movesResult.reason);
+    } else if (movesResult.status === "fulfilled" && movesResult.value?.error) {
+      diagnostics.movesError = (movesResult.value.error as { message?: string })?.message ?? JSON.stringify(movesResult.value.error);
+      console.error("[admin/calendar] moves query error:", movesResult.value.error);
     }
-    if (deliveriesResult.status === "rejected" || (deliveriesResult.status === "fulfilled" && deliveriesResult.value?.error)) {
-      console.error("[admin/calendar] deliveries query failed:", deliveriesResult.status === "rejected" ? deliveriesResult.reason : deliveriesResult.value?.error);
+    if (deliveriesResult.status === "rejected") {
+      diagnostics.deliveriesError = String(deliveriesResult.reason);
+      console.error("[admin/calendar] deliveries query rejected:", deliveriesResult.reason);
+    } else if (deliveriesResult.status === "fulfilled" && deliveriesResult.value?.error) {
+      diagnostics.deliveriesError = (deliveriesResult.value.error as { message?: string })?.message ?? JSON.stringify(deliveriesResult.value.error);
+      console.error("[admin/calendar] deliveries query error:", deliveriesResult.value.error);
     }
 
     const events: CalendarEvent[] = [];
+    const crewListForLookup = (crews || []) as { id: string; name: string }[];
+
+    function toDateKey(d: string | Date | null | undefined): string | null {
+      if (d == null) return null;
+      if (typeof d === "string") return d.slice(0, 10);
+      if (d instanceof Date) return d.toISOString().slice(0, 10);
+      return null;
+    }
 
     for (const m of moves || []) {
-      const dk = (m.scheduled_date as string)?.slice(0, 10);
+      const dk = toDateKey(m.scheduled_date as string | Date | null);
       if (!dk) continue;
       if (crewFilter && m.crew_id !== crewFilter) continue;
       if (typeFilter && typeFilter !== "move") continue;
-      if (statusFilter && (m.calendar_status || m.status) !== statusFilter) continue;
+      if (statusFilter && (m.status || "scheduled") !== statusFilter) continue;
 
-      const crewRaw = m.crews as unknown;
-      const crewData = Array.isArray(crewRaw) ? (crewRaw[0] as { name: string } | undefined) ?? null : (crewRaw as { name: string } | null);
-      const truckRaw = (m as { fleet_vehicles?: unknown }).fleet_vehicles as unknown;
-      const truckData = Array.isArray(truckRaw) ? (truckRaw[0] as { display_name: string } | undefined) ?? null : (truckRaw as { display_name: string } | null);
+      const crew = m.crew_id ? crewListForLookup.find((c) => c.id === m.crew_id) : null;
       events.push({
         id: m.id,
         type: "move",
         blockType: "move",
         name: m.client_name || "Move",
-        description: `${m.move_size || ""} ${m.move_type === "office" ? "Office" : ""} Move`.trim(),
+        description: `${toTitleCase(m.move_type || "")} Move`.trim(),
         date: dk,
-        start: m.scheduled_start || m.scheduled_time || null,
-        end: m.scheduled_end || null,
+        start: m.scheduled_time || null,
+        end: null,
         durationHours: m.estimated_hours || null,
         crewId: m.crew_id || null,
-        crewName: crewData?.name || null,
-        truckId: m.assigned_truck_id || null,
-        truckName: truckData?.display_name || null,
+        crewName: crew?.name || null,
+        truckId: null,
+        truckName: null,
         status: m.status || "scheduled",
-        calendarStatus: (m.calendar_status || "scheduled") as CalendarStatus,
-        color: m.calendar_color || JOB_COLORS.move,
+        calendarStatus: (m.status || "scheduled") as CalendarStatus,
+        color: JOB_COLORS.move,
         href: getMoveDetailPath(m),
         clientName: m.client_name || null,
         fromAddress: m.from_address || null,
         toAddress: m.to_address || null,
         deliveryAddress: null,
         category: m.move_type || "residential",
-        moveSize: m.move_size || null,
+        moveSize: null,
         itemCount: null,
         scheduleBlockId: null,
       });
     }
 
     for (const d of deliveries || []) {
-      const dk = (d.scheduled_date as string)?.slice(0, 10);
+      const dk = toDateKey(d.scheduled_date as string | Date | null);
       if (!dk) continue;
       if (crewFilter && d.crew_id !== crewFilter) continue;
       if (typeFilter && typeFilter !== "delivery") continue;
-      if (statusFilter && (d.calendar_status || d.status) !== statusFilter) continue;
+      if (statusFilter && (d.status || "scheduled") !== statusFilter) continue;
 
-      const crewRawD = d.crews as unknown;
-      const crewData = Array.isArray(crewRawD) ? (crewRawD[0] as { name: string } | undefined) ?? null : (crewRawD as { name: string } | null);
-      const truckRawD = (d as { fleet_vehicles?: unknown }).fleet_vehicles as unknown;
-      const truckData = Array.isArray(truckRawD) ? (truckRawD[0] as { display_name: string } | undefined) ?? null : (truckRawD as { display_name: string } | null);
-      const itemCount = d.item_count || (Array.isArray(d.items) ? d.items.length : null);
+      const crewD = d.crew_id ? crewListForLookup.find((c) => c.id === d.crew_id) : null;
+      const itemCount = Array.isArray(d.items) ? d.items.length : null;
       events.push({
         id: d.id,
         type: "delivery",
         blockType: "delivery",
         name: d.client_name || d.customer_name || d.delivery_number || "Delivery",
-        description: `${itemCount ? itemCount + "pc " : ""}${d.delivery_type || d.category || ""} Delivery`.trim(),
+        description: `${itemCount ? itemCount + "pc " : ""}${toTitleCase(d.delivery_type || d.category || "")} Delivery`.trim(),
         date: dk,
-        start: d.scheduled_start || d.time_slot || null,
-        end: d.scheduled_end || null,
-        durationHours: d.estimated_duration_hours || null,
+        start: d.time_slot || null,
+        end: null,
+        durationHours: null,
         crewId: d.crew_id || null,
-        crewName: crewData?.name || null,
-        truckId: d.assigned_truck_id || null,
-        truckName: truckData?.display_name || null,
+        crewName: crewD?.name || null,
+        truckId: null,
+        truckName: null,
         status: d.status || "pending",
-        calendarStatus: (d.calendar_status || "scheduled") as CalendarStatus,
-        color: d.calendar_color || JOB_COLORS.delivery,
+        calendarStatus: (d.status || "scheduled") as CalendarStatus,
+        color: JOB_COLORS.delivery,
         href: getDeliveryDetailPath(d),
         clientName: d.client_name || d.customer_name || null,
         fromAddress: d.pickup_address || null,
         toAddress: null,
         deliveryAddress: d.delivery_address || null,
-        category: d.category || d.delivery_type || null,
+        category: (d.category || d.delivery_type) ? toTitleCase(String(d.category || d.delivery_type)) : null,
         moveSize: null,
         itemCount: itemCount || null,
         scheduleBlockId: null,
@@ -181,7 +197,7 @@ export async function GET(req: NextRequest) {
     }
 
     for (const p of phases || []) {
-      const dk = (p.scheduled_date as string)?.slice(0, 10);
+      const dk = toDateKey(p.scheduled_date as string | Date | null);
       if (!dk) continue;
       if (typeFilter && typeFilter !== "project_phase") continue;
 
@@ -244,7 +260,7 @@ export async function GET(req: NextRequest) {
         fromAddress: null,
         toAddress: null,
         deliveryAddress: null,
-        category: b.block_type,
+        category: toTitleCase(b.block_type),
         moveSize: null,
         itemCount: null,
         scheduleBlockId: b.id,
@@ -272,7 +288,8 @@ export async function GET(req: NextRequest) {
       events,
       crews: crewList,
       blocks: blocks || [],
-      _counts: { moves: movesCount, deliveries: deliveriesCount },
+      _counts: { moves: movesCount, deliveries: deliveriesCount, phases: (phases || []).length },
+      _diagnostics: Object.keys(diagnostics).length ? diagnostics : undefined,
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

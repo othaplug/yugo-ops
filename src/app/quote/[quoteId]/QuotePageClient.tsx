@@ -5,6 +5,7 @@ import {
   Check,
   Ruler,
   Shield,
+  ShieldCheck,
   Star,
   Clock,
   Lock,
@@ -12,11 +13,12 @@ import {
   Truck,
   Package,
   Users,
-  Sparkles,
   Wrench,
   Radar,
   Camera,
   Shirt,
+  Trash2,
+  Home,
   ChevronDown,
   Plus,
   X,
@@ -82,19 +84,19 @@ const INCLUSIONS_ESSENTIALS: Inclusion[] = [
   { icon: Wrench, label: "All equipment included", description: "Dollies, straps, tools — nothing extra to rent" },
   { icon: Radar, label: "Real-time GPS tracking", description: "Follow your move live from any device" },
   { icon: Lock, label: "Guaranteed flat price", description: "The price you see is the price you pay" },
-  { icon: Sparkles, label: "Zero-damage commitment", description: "Your belongings, protected and insured" },
+  { icon: ShieldCheck, label: "Zero-damage commitment", description: "Your belongings, protected and insured" },
 ];
 
 const INCLUSIONS_PREMIER: Inclusion[] = [
   { icon: Wrench, label: "Furniture disassembly & reassembly", description: "We take it apart and put it back together" },
-  { icon: Sparkles, label: "Debris & packaging removal", description: "We clear away all packing materials and debris post-move" },
+  { icon: Trash2, label: "Debris & packaging removal", description: "We clear away all packing materials and debris post-move" },
 ];
 
 const INCLUSIONS_ESTATE: Inclusion[] = [
   { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
   { icon: Shirt, label: "White glove item handling", description: "Art, antiques, and fragile items individually wrapped" },
   { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
-  { icon: Sparkles, label: "Post-move property restoration", description: "Removal of all packaging, debris, and unwanted materials from both locations" },
+  { icon: Home, label: "Post-move property restoration", description: "Removal of all packaging, debris, and unwanted materials from both locations" },
 ];
 
 export default function QuotePageClient({

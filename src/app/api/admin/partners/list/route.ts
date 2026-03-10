@@ -1,22 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function GET() {
-  const { error: authError } = await requireAdmin();
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
     const admin = createAdminClient();
 
-    const { data: orgs } = await supabase
+    // Use admin client so RLS doesn't hide B2B orgs from staff (session client would return 0 rows)
+    const { data: orgs, error: orgsError } = await admin
       .from("organizations")
       .select("id, name, type, contact_name, email, phone, created_at, user_id")
       .not("type", "eq", "b2c")
       .order("name");
 
+    if (orgsError) return NextResponse.json({ error: orgsError.message }, { status: 400 });
     if (!orgs || orgs.length === 0) return NextResponse.json({ partners: [] });
 
     const orgIds = orgs.map((o) => o.id);
@@ -56,8 +56,8 @@ export async function GET() {
     });
 
     const [{ count: deliveriesCount }, { count: movesCount }] = await Promise.all([
-      supabase.from("deliveries").select("organization_id", { count: "exact", head: true }).in("organization_id", orgIds),
-      supabase.from("moves").select("organization_id", { count: "exact", head: true }).in("organization_id", orgIds),
+      admin.from("deliveries").select("organization_id", { count: "exact", head: true }).in("organization_id", orgIds),
+      admin.from("moves").select("organization_id", { count: "exact", head: true }).in("organization_id", orgIds),
     ]);
 
     const partners = orgs.map((org) => ({
@@ -67,6 +67,7 @@ export async function GET() {
       contact_name: org.contact_name,
       email: org.email,
       phone: org.phone,
+      status: "active",
       created_at: org.created_at,
       portal_users: puByOrg[org.id] || [],
       has_portal_access: (puByOrg[org.id] || []).length > 0,

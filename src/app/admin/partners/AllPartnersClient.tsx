@@ -17,13 +17,14 @@ interface Partner {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  b2b: "B2B",
   retail: "Retail",
   designer: "Designer",
   hospitality: "Hospitality",
   gallery: "Art Gallery",
   realtor: "Realtor",
 };
+
+const TYPE_TAB_KEYS = ["all", "retail", "designer", "hospitality", "gallery", "realtor"] as const;
 
 function getTypeLabel(type: string): string {
   return TYPE_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : "Other");
@@ -91,16 +92,24 @@ const columns: ColumnDef<Partner>[] = [
 export default function AllPartnersClient() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
+      setFetchError(null);
       try {
-        const res = await fetch("/api/admin/partners/b2b-list");
+        const res = await fetch("/api/admin/partners/list");
         const json = await res.json();
+        if (!res.ok) {
+          setFetchError(json?.error || res.statusText || "Failed to load partners");
+          setPartners([]);
+          return;
+        }
         setPartners(Array.isArray(json.partners) ? json.partners : []);
-      } catch {
+      } catch (e) {
+        setFetchError(e instanceof Error ? e.message : "Failed to load partners");
         setPartners([]);
       } finally {
         setLoading(false);
@@ -115,6 +124,9 @@ export default function AllPartnersClient() {
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: partners.length };
+    for (const key of TYPE_TAB_KEYS) {
+      if (key !== "all") counts[key] = 0;
+    }
     for (const p of partners) {
       const t = p.type || "other";
       counts[t] = (counts[t] || 0) + 1;
@@ -124,10 +136,12 @@ export default function AllPartnersClient() {
 
   const typeTabs = useMemo(() => {
     const allTab = { key: "all", label: "All Partners" };
-    const types = Array.from(new Set(partners.map((p) => p.type || "other").filter(Boolean))).sort();
-    const typeTabsList = types.map((key) => ({ key, label: getTypeLabel(key) }));
+    const typeTabsList = TYPE_TAB_KEYS.filter((k) => k !== "all").map((key) => ({
+      key,
+      label: getTypeLabel(key),
+    }));
     return [allTab, ...typeTabsList];
-  }, [partners]);
+  }, []);
 
   if (loading) {
     return (
@@ -146,6 +160,11 @@ export default function AllPartnersClient() {
         </div>
       </div>
 
+      {fetchError && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+          {fetchError}
+        </div>
+      )}
       <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-1 border-b border-[var(--brd)]/30">
         {typeTabs.map((t) => (
           <button

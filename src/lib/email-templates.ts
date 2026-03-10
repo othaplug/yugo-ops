@@ -471,6 +471,34 @@ For security, you'll be asked to create a new password when you first sign in. I
 Powered by YUGO+ | Learn more: ${baseUrl}/about`;
 }
 
+/** Email when an existing YUGO user is added to a partner (no new account, no temp password). */
+export function addedToPartnerEmail(params: { contactName: string; companyName: string; loginUrl: string }) {
+  const { contactName, companyName, loginUrl } = params;
+  return `
+    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px;border:1px solid #2A2A2A">
+      ${emailLogo()}
+      <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Portal access added</div>
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">You&apos;ve been added to ${companyName}</h1>
+      <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
+        Your account now has access to <strong style="color:#C9A962">${companyName}</strong> on the YUGO+ Partner Portal. Log in with your existing password to view deliveries and manage requests.
+      </p>
+      <a href="${loginUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+        Log in to Partner Portal
+      </a>
+      ${emailFooter(loginUrl)}
+    </div>
+  `;
+}
+
+export function addedToPartnerEmailText(params: { contactName: string; companyName: string; loginUrl: string }) {
+  const { companyName, loginUrl } = params;
+  return `Portal access added
+
+You've been added to ${companyName} on the YUGO+ Partner Portal. Log in with your existing password to view deliveries and manage requests.
+
+Log in: ${loginUrl}`;
+}
+
 export function partnerPasswordResetEmail(params: {
   contactName: string;
   companyName: string;

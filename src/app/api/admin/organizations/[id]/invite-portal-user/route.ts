@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
-import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
+import { invitePartnerEmail, invitePartnerEmailText, addedToPartnerEmail, addedToPartnerEmailText } from "@/lib/email-templates";
 import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(
@@ -17,9 +17,6 @@ export async function POST(
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
-    if (!password || typeof password !== "string" || password.length < 8) {
-      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
     }
 
     const emailTrimmed = email.trim().toLowerCase();
@@ -42,8 +39,41 @@ export async function POST(
 
     const { data: { users } } = await admin.auth.admin.listUsers();
     const existing = users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
-    if (existing) return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
 
+    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
+    const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
+    const resend = getResend();
+    const emailFrom = await getEmailFrom();
+
+    if (existing) {
+      const { data: existingLink } = await admin
+        .from("partner_users")
+        .select("user_id")
+        .eq("user_id", existing.id)
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (existingLink) {
+        return NextResponse.json(
+          { error: "This user already has portal access for this partner." },
+          { status: 400 }
+        );
+      }
+      await admin.from("partner_users").upsert({ user_id: existing.id, org_id: orgId }, { onConflict: "user_id,org_id" });
+      const { error: sendError } = await resend.emails.send({
+        from: emailFrom,
+        to: emailTrimmed,
+        subject: `You've been added to ${org.name} on YUGO+ Partner Portal`,
+        html: addedToPartnerEmail({ contactName: nameTrimmed, companyName: org.name, loginUrl }),
+        text: addedToPartnerEmailText({ contactName: nameTrimmed, companyName: org.name, loginUrl }),
+        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+      });
+      if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
     const { data: newUser, error: createError } = await admin.auth.admin.createUser({
       email: emailTrimmed,
       password,
@@ -54,10 +84,6 @@ export async function POST(
 
     await admin.from("partner_users").upsert({ user_id: newUser.user.id, org_id: orgId }, { onConflict: "user_id,org_id" });
 
-    const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-    const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
-    const resend = getResend();
-    const emailFrom = await getEmailFrom();
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: emailTrimmed,

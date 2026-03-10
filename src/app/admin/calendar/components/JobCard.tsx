@@ -2,6 +2,7 @@
 
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { toTitleCase } from "@/lib/format-text";
 import { Icon } from "@/components/AppIcons";
 
 interface Props {
@@ -80,7 +81,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       </div>
       <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)] pl-3.5">
         <Icon name={TYPE_ICON_MAP[event.type] || "calendar"} className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current" />
-        <span className="truncate">{event.description}</span>
+        <span className="truncate">{toTitleCase(event.description)}</span>
         {event.crewName && (
           <>
             <span>·</span>

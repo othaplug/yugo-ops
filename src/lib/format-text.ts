@@ -20,3 +20,14 @@ export function formatAccessForDisplay(access: string | null | undefined): strin
   if (!access || !access.trim()) return null;
   return toTitleCase(access.trim());
 }
+
+/**
+ * Format address for display: omit "Canada" / "CA" at the end for Canadian addresses.
+ * "203 Bentworth Ave, North York, Ontario M6A 1P9, Canada" → "203 Bentworth Ave, North York, Ontario M6A 1P9"
+ */
+export function formatAddressForDisplay(address: string | null | undefined): string {
+  if (!address || !address.trim()) return "";
+  let out = address.trim();
+  out = out.replace(/,?\s*Canada\s*$/i, "").replace(/,?\s*CA\s*$/i, "").trim();
+  return out.replace(/,+\s*$/, "").trim() || address.trim();
+}
