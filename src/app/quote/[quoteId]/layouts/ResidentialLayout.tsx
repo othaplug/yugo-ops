@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Check, Shield, Crown, Gem, ChevronDown, type LucideIcon } from "lucide-react";
+import { Check, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
 import {
   type Quote,
   type TierData,
@@ -31,17 +30,6 @@ export default function ResidentialLayout({
   onSelectTier,
   recommendedTier = "premier",
 }: Props) {
-  const [expandedTiers, setExpandedTiers] = useState<Set<string>>(() => new Set(TIER_ORDER));
-
-  const toggleExpand = (tierKey: string) => {
-    setExpandedTiers((prev) => {
-      const next = new Set(prev);
-      if (next.has(tierKey)) next.delete(tierKey);
-      else next.add(tierKey);
-      return next;
-    });
-  };
-
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
@@ -63,14 +51,13 @@ export default function ResidentialLayout({
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {TIER_ORDER.map((tierKey) => {
           const t = tiers[tierKey];
           if (!t) return null;
           const meta = TIER_META[tierKey];
           const isSelected = selectedTier === tierKey;
           const isRecommended = tierKey === recommendedTier;
-          const isExpanded = expandedTiers.has(tierKey);
 
           const badgeText =
             recommendedTier === "estate" && tierKey === "estate"
@@ -82,7 +69,7 @@ export default function ResidentialLayout({
           return (
             <div
               key={tierKey}
-              className={`relative rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+              className={`relative rounded-2xl border-2 transition-all duration-300 flex flex-col ${
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               }`}
               style={{
@@ -92,32 +79,28 @@ export default function ResidentialLayout({
             >
               {badgeText && (
                 <div
-                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white"
+                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
                   style={{ backgroundColor: tierKey === "estate" ? WINE : GOLD }}
                 >
                   {badgeText}
                 </div>
               )}
 
-              <div className="p-5 md:p-6">
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(tierKey)}
-                  className="w-full flex items-center justify-between"
-                >
+              <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
+                <div className="flex items-start justify-between gap-3 flex-shrink-0">
                   <div className="flex items-center gap-3">
                     {(() => {
                       const TierIcon = TIER_ICONS[tierKey];
                       return TierIcon ? (
                         <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: `${meta.accent}10` }}
                         >
                           <TierIcon className="w-5 h-5" style={{ color: meta.accent }} strokeWidth={1.5} />
                         </div>
                       ) : null;
                     })()}
-                    <div className="text-left">
+                    <div className="text-left min-w-0">
                       <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
                         {meta.label}
                       </h3>
@@ -126,27 +109,17 @@ export default function ResidentialLayout({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-hero text-[28px] md:text-[34px] font-normal" style={{ color: meta.accent }}>
-                      {fmtPrice(t.price)}
-                    </span>
-                    <ChevronDown
-                      className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                      style={{ color: `${FOREST}50` }}
-                    />
-                  </div>
-                </button>
+                  <span className="font-hero text-[24px] md:text-[28px] font-normal flex-shrink-0" style={{ color: meta.accent }}>
+                    {fmtPrice(t.price)}
+                  </span>
+                </div>
 
-                <div
-                  className={`transition-all duration-300 overflow-hidden ${
-                    isExpanded ? "max-h-[600px] opacity-100 mt-4" : "max-h-0 opacity-0"
-                  }`}
-                >
+                <div className="mt-4 flex flex-col flex-1 min-h-0">
                   <p className="text-[11px] mb-3" style={{ color: `${FOREST}60` }}>
                     +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
                   </p>
 
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 flex-1">
                     {t.includes.map((inc, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
@@ -158,7 +131,7 @@ export default function ResidentialLayout({
                   <button
                     type="button"
                     onClick={() => onSelectTier(tierKey)}
-                    className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all ${
+                    className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all flex-shrink-0 ${
                       isSelected ? "text-white shadow-md" : "border-2 hover:shadow-sm"
                     }`}
                     style={
@@ -180,7 +153,7 @@ export default function ResidentialLayout({
                     )}
                   </button>
 
-                  <p className="text-center text-[10px] mt-2.5" style={{ color: GOLD }}>
+                  <p className="text-center text-[10px] mt-2.5 flex-shrink-0" style={{ color: GOLD }}>
                     {fmtPrice(t.deposit)} deposit to book
                   </p>
                 </div>

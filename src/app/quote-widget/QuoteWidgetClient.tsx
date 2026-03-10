@@ -217,6 +217,7 @@ export default function QuoteWidgetClient() {
   const [selectedTime, setSelectedTime] = useState<"am" | "pm">("am");
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState(false);
+  const [estimateErrorMessage, setEstimateErrorMessage] = useState<string | null>(null);
   const [calendarOffset, setCalendarOffset] = useState(0);
 
   // Step 4 — lead capture
@@ -292,34 +293,48 @@ export default function QuoteWidgetClient() {
   const fetchEstimates = useCallback(async (startDate?: string) => {
     setEstimateLoading(true);
     setEstimateError(false);
+    setEstimateErrorMessage(null);
     try {
+      const from = (fromPostal || "").replace(/\s/g, "").toUpperCase();
+      const to = (toPostal || "").replace(/\s/g, "").toUpperCase();
+      const body = {
+        moveType: moveType || "residential",
+        moveSize: moveType === "office" ? undefined : (moveSize || "2br"),
+        officeSize: moveType === "office" ? (officeSize || "medium") : undefined,
+        fromPostal: from,
+        toPostal: to,
+        buildingTypeFrom: buildingTypeFrom || "apartment",
+        buildingTypeTo: buildingTypeTo || "apartment",
+        accessFrom: accessFrom || "ground",
+        accessTo: accessTo || "ground",
+        itemCount: totalItems || 0,
+        startDate: startDate || moveDate || undefined,
+        days: 14,
+      };
       const res = await fetch("/api/widget/estimate-range", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          moveType: moveType || "residential",
-          moveSize,
-          officeSize,
-          fromPostal: fromPostal.replace(/\s/g, ""),
-          toPostal: toPostal.replace(/\s/g, ""),
-          buildingTypeFrom,
-          buildingTypeTo,
-          accessFrom,
-          accessTo,
-          itemCount: totalItems || 0,
-          startDate: startDate || moveDate || undefined,
-          days: 14,
-        }),
+        body: JSON.stringify(body),
       });
-      if (!res.ok) { setEstimateError(true); return; }
-      const data = await res.json();
-      if (!data.estimates || !Array.isArray(data.estimates)) { setEstimateError(true); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof data?.error === "string" ? data.error : res.status === 400 ? "Please check your postal codes and move size." : "Something went wrong. Please try again.";
+        setEstimateErrorMessage(msg);
+        setEstimateError(true);
+        return;
+      }
+      if (!data.estimates || !Array.isArray(data.estimates)) {
+        setEstimateErrorMessage("Invalid response. Please try again.");
+        setEstimateError(true);
+        return;
+      }
       setDateEstimates(data.estimates);
       if (!selectedDate && data.estimates.length > 0) {
         const target = moveDate || data.estimates[0].date;
         setSelectedDate(target);
       }
     } catch {
+      setEstimateErrorMessage("Network error. Please check your connection and try again.");
       setEstimateError(true);
     } finally {
       setEstimateLoading(false);
@@ -855,6 +870,9 @@ export default function QuoteWidgetClient() {
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                     </div>
                     <p className="text-[15px] font-semibold mb-2" style={{ color: FOREST }}>Unable to calculate estimate</p>
+                    {estimateErrorMessage && (
+                      <p className="text-[13px] mb-4 max-w-sm mx-auto" style={{ color: `${FOREST}99` }}>{estimateErrorMessage}</p>
+                    )}
                     <button
                       onClick={() => fetchEstimates()}
                       className="mt-2 px-5 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wide transition-opacity hover:opacity-80"
