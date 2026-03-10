@@ -246,6 +246,13 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "analytics", label: "Analytics" },
       ];
 
+  const hasOverdueInvoices = data && (data.invoices || []).some((inv) => {
+    if (!inv.due_date) return false;
+    const status = (inv.status || "").toLowerCase();
+    if (status === "paid" || status === "void" || status === "cancelled") return false;
+    return new Date(inv.due_date + "T23:59:59") < new Date();
+  });
+
   return (
     <PartnerNotificationProvider orgId={orgId}>
     <PartnerChangePasswordGate>
@@ -475,92 +482,18 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           );
         })()}
 
-        {/* Primary Action — Book a service: single pill button */}
-        {features.canCreateDelivery && !(data && (data.invoices || []).some((inv) => {
-          if (!inv.due_date) return false;
-          const status = (inv.status || "").toLowerCase();
-          if (status === "paid" || status === "void" || status === "cancelled") return false;
-          return new Date(inv.due_date + "T23:59:59") < new Date();
-        })) && (
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => setBookServiceModalOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-semibold tracking-wide border border-[var(--gold)]/40 bg-[var(--gold)]/10 backdrop-blur-md hover:bg-[var(--gold)]/20 active:scale-[0.98] transition-all duration-200 text-[var(--tx)]"
-            >
-              <span>Book a service</span>
-            </button>
-
-            {bookServiceModalOpen && (
-              <div
-                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
-                onClick={() => setBookServiceModalOpen(false)}
-              >
-                <div
-                  className="bg-[var(--card)] rounded-t-[28px] sm:rounded-[28px] shadow-2xl w-full sm:max-w-[480px] overflow-hidden"
-                  style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.25)" }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-center pt-3 pb-0 sm:hidden">
-                    <div className="w-10 h-1 rounded-full bg-[var(--brd)]" />
-                  </div>
-
-                  <div className="px-6 pt-6 pb-4 flex items-start justify-between">
-                    <div>
-                      <h3 className="text-[22px] font-bold text-[var(--tx)]">Book a service</h3>
-                      <p className="text-[13px] text-[var(--tx3)] mt-1">Select the service that fits your needs</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setBookServiceModalOpen(false)}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors shrink-0"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-
-                  <div className="px-5 pb-4 grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
-                      className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[#2D6A4F]/40 bg-[var(--bg)] hover:bg-[#2D6A4F]/[0.04] transition-all group"
-                    >
-                      <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Schedule Delivery</div>
-                      <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Single pickup to single drop-off. Best for 1-3 items.</div>
-                      <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[#2D6A4F] group-hover:gap-2 transition-all">
-                        Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                      </div>
-                    </button>
-                    <Link
-                      href="/partner/book-day-rate"
-                      onClick={() => setBookServiceModalOpen(false)}
-                      className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
-                    >
-                      <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
-                      <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
-                      <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
-                        Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                      </div>
-                    </Link>
-                  </div>
-
-                  <div className="px-5 pb-6 pt-1 sm:hidden">
-                    <button
-                      type="button"
-                      onClick={() => setBookServiceModalOpen(false)}
-                      className="w-full py-3 rounded-full text-[13px] font-semibold text-[var(--tx3)] border border-[var(--brd)] hover:bg-[var(--bg)] transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
         <div className="flex flex-wrap gap-2.5 mb-6">
           {!features.showReferrals && (
             <>
+              {features.canCreateDelivery && !hasOverdueInvoices && (
+                <button
+                  type="button"
+                  onClick={() => setBookServiceModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white border border-[#2D6A4F] hover:bg-[#245c42] hover:border-[#245c42] transition-colors"
+                >
+                  <span>Book a service</span>
+                </button>
+              )}
               {features.showProjects && data && data.allDeliveries.length > 0 && (
                 <button
                   onClick={() => setShareTarget(data.allDeliveries[0])}
@@ -587,6 +520,73 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             </>
           )}
         </div>
+
+        {/* Book a service modal */}
+        {bookServiceModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setBookServiceModalOpen(false)}
+          >
+            <div
+              className="bg-[var(--card)] rounded-t-[28px] sm:rounded-[28px] shadow-2xl w-full sm:max-w-[480px] overflow-hidden"
+              style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.25)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center pt-3 pb-0 sm:hidden">
+                <div className="w-10 h-1 rounded-full bg-[var(--brd)]" />
+              </div>
+
+              <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+                <div>
+                  <h3 className="text-[22px] font-bold text-[var(--tx)]">Book a service</h3>
+                  <p className="text-[13px] text-[var(--tx3)] mt-1">Select the service that fits your needs</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBookServiceModalOpen(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors shrink-0"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              <div className="px-5 pb-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
+                  className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[#2D6A4F]/40 bg-[var(--bg)] hover:bg-[#2D6A4F]/[0.04] transition-all group"
+                >
+                  <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Schedule Delivery</div>
+                  <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Single pickup to single drop-off. Best for 1-3 items.</div>
+                  <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[#2D6A4F] group-hover:gap-2 transition-all">
+                    Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </div>
+                </button>
+                <Link
+                  href="/partner/book-day-rate"
+                  onClick={() => setBookServiceModalOpen(false)}
+                  className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
+                >
+                  <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
+                  <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
+                  <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
+                    Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </div>
+                </Link>
+              </div>
+
+              <div className="px-5 pb-6 pt-1 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setBookServiceModalOpen(false)}
+                  className="w-full py-3 rounded-full text-[13px] font-semibold text-[var(--tx3)] border border-[var(--brd)] hover:bg-[var(--bg)] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* API error */}
         {portalError && (

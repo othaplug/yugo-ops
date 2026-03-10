@@ -15,7 +15,6 @@ const CREAM = "#FAF7F2";
 const MOVE_TYPES = [
   { key: "residential", label: "Residential", desc: "Home or apartment", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
   { key: "office", label: "Office / Commercial", desc: "Business relocation", icon: "M4 21V3a1 1 0 011-1h14a1 1 0 011 1v18M3 21h18M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1" },
-  { key: "special_event", label: "Special Event", desc: "One-off or unique move", icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
 ] as const;
 
 /* ── Residential sizes ── */
@@ -120,6 +119,52 @@ const FURNITURE_CATALOG: Record<string, CatalogItem[]> = {
   ],
 };
 
+/** Office / commercial belongings (used when move type is Office) */
+const OFFICE_FURNITURE_CATALOG: Record<string, CatalogItem[]> = {
+  "Desks & Workstations": [
+    { id: "office_desk_single", name: "Single Desk", fragile: false },
+    { id: "office_desk_l", name: "L-Shaped Desk", fragile: false },
+    { id: "office_desk_standing", name: "Standing Desk", fragile: false },
+    { id: "workstation_cubicle", name: "Cubicle / Workstation", fragile: false },
+    { id: "reception_desk", name: "Reception Desk", fragile: false },
+  ],
+  "Seating": [
+    { id: "office_chair_task", name: "Task Chair", fragile: false },
+    { id: "office_chair_exec", name: "Executive Chair", fragile: false },
+    { id: "guest_chair", name: "Guest / Visitor Chair", fragile: false },
+    { id: "conference_chair", name: "Conference Chair", fragile: false },
+    { id: "sofa_office", name: "Office Sofa / Lounge", fragile: false },
+  ],
+  "Storage & Filing": [
+    { id: "filing_cabinet_2", name: "2-Drawer Filing Cabinet", fragile: false },
+    { id: "filing_cabinet_4", name: "4-Drawer Filing Cabinet", fragile: false },
+    { id: "lateral_file", name: "Lateral File Cabinet", fragile: false },
+    { id: "storage_shelf", name: "Storage / Bookcase", fragile: false },
+    { id: "locker", name: "Storage Locker", fragile: false },
+  ],
+  "Meeting & Common Areas": [
+    { id: "conference_table_small", name: "Conference Table (4–6 seat)", fragile: true },
+    { id: "conference_table_large", name: "Conference Table (8+ seat)", fragile: true },
+    { id: "whiteboard", name: "Whiteboard / Display", fragile: true },
+    { id: "tv_display", name: "TV / Display Screen", fragile: true },
+    { id: "credenza", name: "Credenza / Sideboard", fragile: false },
+  ],
+  "Tech & Equipment": [
+    { id: "monitor_single", name: "Computer Monitor", fragile: true },
+    { id: "monitor_multi", name: "Dual / Multi Monitor Setup", fragile: true },
+    { id: "printer_desk", name: "Desktop Printer", fragile: true },
+    { id: "printer_floor", name: "Floor Printer / Copier", fragile: true },
+    { id: "server_rack", name: "Server / Network Cabinet", fragile: true },
+  ],
+  "Office Special Items": [
+    { id: "safe_office", name: "Safe", fragile: false },
+    { id: "plan_file", name: "Plan File / Blueprint Cabinet", fragile: false },
+    { id: "reception_seating", name: "Reception Seating Set", fragile: false },
+    { id: "break_room_table", name: "Break Room Table", fragile: false },
+    { id: "artwork_office", name: "Artwork / Signage", fragile: true },
+  ],
+};
+
 /* ── Types ── */
 interface InventoryEntry {
   itemId: string;
@@ -160,6 +205,8 @@ export default function QuoteWidgetClient() {
   // Step 2 — inventory
   const [inventory, setInventory] = useState<InventoryEntry[]>([]);
   const [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
+  const [otherItems, setOtherItems] = useState<{ name: string; qty: number }[]>([]);
+  const [specialHandling, setSpecialHandling] = useState("");
 
   // Step 3 — date + results
   const [moveDate, setMoveDate] = useState("");
@@ -331,6 +378,8 @@ export default function QuoteWidgetClient() {
           factors: selectedEstimate ? [] : [],
           inventoryItems: inventory,
           estimatedBoxes,
+          otherItems: otherItems.filter((r) => r.name.trim()).map((r) => ({ name: r.name.trim(), qty: Math.max(1, r.qty || 1) })),
+          specialHandling: specialHandling.trim() || null,
           comments: comments.trim() || null,
           recaptchaToken,
         }),
@@ -343,13 +392,12 @@ export default function QuoteWidgetClient() {
     } catch { /* silent */ } finally {
       setSubmitting(false);
     }
-  }, [name, email, phone, moveType, moveSize, officeSize, fromPostal, toPostal, buildingTypeFrom, buildingTypeTo, accessFrom, accessTo, selectedDate, moveDate, selectedTime, selectedPrice, selectedEstimate, inventory, estimatedBoxes, comments, getRecaptchaToken]);
+  }, [name, email, phone, moveType, moveSize, officeSize, fromPostal, toPostal, buildingTypeFrom, buildingTypeTo, accessFrom, accessTo, selectedDate, moveDate, selectedTime, selectedPrice, selectedEstimate, inventory, estimatedBoxes, otherItems, specialHandling, comments, getRecaptchaToken]);
 
   /* ── Validation ── */
   const canProceedStep0 = moveType !== "" && (
     (moveType === "residential" && moveSize !== "") ||
-    (moveType === "office" && officeSize !== "") ||
-    moveType === "special_event"
+    (moveType === "office" && officeSize !== "")
   );
   const canProceedStep1 = fromPostal.replace(/\s/g, "").length >= 3 && toPostal.replace(/\s/g, "").length >= 3;
 
@@ -487,15 +535,6 @@ export default function QuoteWidgetClient() {
                   </div>
                 )}
 
-                {moveType === "special_event" && (
-                  <div className="rounded-xl p-4 border" style={{ backgroundColor: CREAM, borderColor: `${FOREST}08` }}>
-                    <p className="text-[13px]" style={{ color: `${FOREST}80` }}>
-                      Special event moves include art installations, trade shows, estate clearances, and more.
-                      Fill in your details and a coordinator will provide a custom quote.
-                    </p>
-                  </div>
-                )}
-
                 <button
                   onClick={goNext}
                   disabled={!canProceedStep0}
@@ -611,7 +650,7 @@ export default function QuoteWidgetClient() {
                   <div>
                     <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: `${FOREST}50` }}>Estimated boxes</div>
                     <div className="text-[20px] font-bold" style={{ color: FOREST }}>{estimatedBoxes}</div>
-                    <div className="text-[11px]" style={{ color: `${FOREST}50` }}>Based on home size</div>
+                    <div className="text-[11px]" style={{ color: `${FOREST}50` }}>{moveType === "office" ? "Based on office size" : "Based on home size"}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: `${FOREST}50` }}>Furniture items</div>
@@ -620,9 +659,9 @@ export default function QuoteWidgetClient() {
                   </div>
                 </div>
 
-                {/* Furniture catalog */}
+                {/* Furniture catalog — residential vs office */}
                 <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                  {Object.entries(FURNITURE_CATALOG).map(([room, items]) => {
+                  {Object.entries(moveType === "office" ? OFFICE_FURNITURE_CATALOG : FURNITURE_CATALOG).map(([room, items]) => {
                     const isExpanded = expandedRooms[room];
                     const roomCount = items.reduce((s, it) => s + getItemQty(it.id), 0);
                     return (
@@ -685,6 +724,100 @@ export default function QuoteWidgetClient() {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Other items (not on the list) */}
+                <div className="mt-4 border rounded-xl overflow-hidden" style={{ borderColor: `${FOREST}10` }}>
+                  <button
+                    onClick={() => setExpandedRooms((prev) => ({ ...prev, "Other items": !prev["Other items"] }))}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                  >
+                    <span className="text-[13px] font-semibold" style={{ color: FOREST }}>Other items</span>
+                    <span className="flex items-center gap-2">
+                      {otherItems.length > 0 && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${WINE}10`, color: WINE }}>
+                          {otherItems.length}
+                        </span>
+                      )}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedRooms["Other items"] ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  </button>
+                  {expandedRooms["Other items"] && (
+                    <div className="px-4 pb-3 pt-1 border-t space-y-2" style={{ borderColor: `${FOREST}06` }}>
+                      <p className="text-[11px]" style={{ color: `${FOREST}70` }}>Add items not in the list above (e.g. custom furniture, specific pieces).</p>
+                      {otherItems.map((row, idx) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={row.name}
+                            onChange={(e) => setOtherItems((prev) => prev.map((r, i) => i === idx ? { ...r, name: e.target.value } : r))}
+                            placeholder="Item name"
+                            className="flex-1 px-3 py-2 rounded-lg border text-[13px]"
+                            style={{ borderColor: `${FOREST}15` }}
+                          />
+                          <input
+                            type="number"
+                            min={1}
+                            value={row.qty || 1}
+                            onChange={(e) => setOtherItems((prev) => prev.map((r, i) => i === idx ? { ...r, qty: Math.max(1, parseInt(e.target.value, 10) || 1) } : r))}
+                            className="w-14 px-2 py-2 rounded-lg border text-[13px] text-center"
+                            style={{ borderColor: `${FOREST}15` }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setOtherItems((prev) => prev.filter((_, i) => i !== idx))}
+                            className="p-2 rounded-lg border transition-colors hover:bg-gray-50"
+                            style={{ borderColor: `${FOREST}15` }}
+                            aria-label="Remove"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setOtherItems((prev) => [...prev, { name: "", qty: 1 }])}
+                        className="text-[12px] font-semibold flex items-center gap-1"
+                        style={{ color: FOREST }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        Add item
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Special handling (glass, marble, etc.) */}
+                <div className="mt-2 border rounded-xl overflow-hidden" style={{ borderColor: `${FOREST}10` }}>
+                  <button
+                    onClick={() => setExpandedRooms((prev) => ({ ...prev, "Special handling": !prev["Special handling"] }))}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                  >
+                    <span className="text-[13px] font-semibold" style={{ color: FOREST }}>Special handling</span>
+                    <span className="flex items-center gap-2">
+                      {specialHandling.trim() && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>Filled</span>
+                      )}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedRooms["Special handling"] ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  </button>
+                  {expandedRooms["Special handling"] && (
+                    <div className="px-4 pb-3 pt-1 border-t" style={{ borderColor: `${FOREST}06` }}>
+                      <p className="text-[11px] mb-2" style={{ color: `${FOREST}70` }}>List any items that need extra care (e.g. glass, marble, antiques, artwork). We’ll factor this into your quote.</p>
+                      <textarea
+                        value={specialHandling}
+                        onChange={(e) => setSpecialHandling(e.target.value)}
+                        placeholder="e.g. Glass dining table, marble top, large mirror..."
+                        rows={3}
+                        className="w-full px-3 py-2.5 rounded-lg border text-[13px] resize-y"
+                        style={{ borderColor: `${FOREST}15` }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-6">

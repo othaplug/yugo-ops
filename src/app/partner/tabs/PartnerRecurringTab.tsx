@@ -121,16 +121,16 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] shadow-2xl border border-[var(--brd)] overflow-y-auto max-h-[90vh]">
-        <div className="px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[90vh] flex flex-col">
+        <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {err && <div className="text-[12px] text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
 
           <div>
@@ -273,7 +273,7 @@ function ScheduleModal({
           </div>
         </div>
 
-        <div className="px-5 pb-5 flex gap-2">
+        <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-[var(--card)]">
           <button
             type="button"
             onClick={onClose}

@@ -31,10 +31,15 @@ export default function ResidentialLayout({
   onSelectTier,
   recommendedTier = "premier",
 }: Props) {
-  const [expandedTier, setExpandedTier] = useState<string>(recommendedTier);
+  const [expandedTiers, setExpandedTiers] = useState<Set<string>>(() => new Set(TIER_ORDER));
 
   const toggleExpand = (tierKey: string) => {
-    setExpandedTier((prev) => (prev === tierKey ? "" : tierKey));
+    setExpandedTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(tierKey)) next.delete(tierKey);
+      else next.add(tierKey);
+      return next;
+    });
   };
 
   return (
@@ -65,7 +70,7 @@ export default function ResidentialLayout({
           const meta = TIER_META[tierKey];
           const isSelected = selectedTier === tierKey;
           const isRecommended = tierKey === recommendedTier;
-          const isExpanded = expandedTier === tierKey;
+          const isExpanded = expandedTiers.has(tierKey);
 
           const badgeText =
             recommendedTier === "estate" && tierKey === "estate"

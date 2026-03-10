@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
@@ -98,19 +97,20 @@ export default function AllPartnersClient() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("organizations")
-        .select("id, name, type, contact_name, email, phone, status, created_at")
-        .in("type", ["retail", "designer", "hospitality", "gallery", "realtor"])
-        .order("name");
-      setPartners(data || []);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/admin/partners/b2b-list");
+        const json = await res.json();
+        setPartners(Array.isArray(json.partners) ? json.partners : []);
+      } catch {
+        setPartners([]);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [supabase]);
+  }, []);
 
   const filtered = useMemo(
     () => (activeTab === "all" ? partners : partners.filter((p) => p.type === activeTab)),

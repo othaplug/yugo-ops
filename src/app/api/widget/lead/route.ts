@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
       moveDate, preferredTime, flexibleDate,
       estimateLow, estimateHigh, selectedPrice,
       factors, inventoryItems, estimatedBoxes,
+      otherItems, specialHandling,
       comments, recaptchaToken,
     } = body;
 
@@ -159,6 +160,11 @@ export async function POST(req: NextRequest) {
 
     const effectiveSize = moveType === "office" ? officeSize : moveSize;
 
+    const otherItemsPayload = Array.isArray(otherItems)
+      ? otherItems.filter((i: { name?: string }) => i?.name && String(i.name).trim()).map((i: { name: string; qty?: number }) => ({ name: String(i.name).trim(), qty: Math.max(1, Number(i.qty) || 1) }))
+      : [];
+    const specialHandlingStr = specialHandling && String(specialHandling).trim() ? String(specialHandling).trim() : null;
+
     const { data: lead, error } = await supabase
       .from("quote_requests")
       .insert({
@@ -176,6 +182,8 @@ export async function POST(req: NextRequest) {
         widget_estimate_high: estimateHigh || null,
         estimate_factors: factors || [],
         contact_id: contactId || null,
+        ...(otherItemsPayload.length > 0 && { other_items: otherItemsPayload }),
+        ...(specialHandlingStr && { special_handling: specialHandlingStr }),
       })
       .select("id, lead_number")
       .single();
@@ -205,12 +213,18 @@ export async function POST(req: NextRequest) {
     }).catch(() => {});
 
     const priceStr = selectedPrice ? `$${selectedPrice.toLocaleString()}` : "N/A";
+    const otherItemsLabel = otherItemsPayload.length > 0
+      ? `Other items: ${otherItemsPayload.map((i: { name: string; qty: number }) => `${i.name}${i.qty > 1 ? ` (×${i.qty})` : ""}`).join(", ")}`
+      : "";
+    const specialHandlingLabel = specialHandlingStr ? `Special handling: ${specialHandlingStr.slice(0, 80)}${specialHandlingStr.length > 80 ? "…" : ""}` : "";
     const extras = [
       buildingTypeFrom && `From: ${buildingTypeFrom}/${accessFrom}`,
       buildingTypeTo && `To: ${buildingTypeTo}/${accessTo}`,
       itemCount > 0 && `${itemCount} furniture items`,
       estimatedBoxes && `~${estimatedBoxes} boxes`,
       preferredTime && `Preferred: ${preferredTime.toUpperCase()}`,
+      otherItemsLabel,
+      specialHandlingLabel,
       comments && `Note: ${comments.slice(0, 100)}`,
     ].filter(Boolean).join(" | ");
 

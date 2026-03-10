@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const BASE_RATES: Record<string, { low: number; high: number }> = {
-  studio: { low: 499, high: 699 },
-  "1br": { low: 699, high: 999 },
-  "2br": { low: 999, high: 1399 },
-  "3br": { low: 1399, high: 1999 },
-  "4br": { low: 1999, high: 2799 },
-  "5br_plus": { low: 2799, high: 3999 },
+  studio: { low: 349, high: 499 },
+  "1br": { low: 499, high: 699 },
+  "2br": { low: 649, high: 899 },
+  "3br": { low: 899, high: 1249 },
+  "4br": { low: 1199, high: 1649 },
+  "5br_plus": { low: 1599, high: 2199 },
 };
 
 export const OFFICE_BASE_RATES: Record<string, { low: number; high: number }> = {
-  small: { low: 999, high: 1499 },
-  medium: { low: 1499, high: 2499 },
-  large: { low: 2499, high: 3999 },
+  small: { low: 749, high: 1099 },
+  medium: { low: 1099, high: 1799 },
+  large: { low: 1799, high: 2799 },
 };
 
 export const TIER_MAP: Record<string, number> = {
@@ -134,7 +134,7 @@ export function calculateWidgetPrice(input: WidgetEstimateInput): SingleEstimate
   const total = midpoint * tierMult * bldgMult * accMult * seasonMult * weekendMult * timeMult * inventoryMult;
   const price = Math.round(total / 10) * 10;
 
-  return { price: Math.max(399, price), factors };
+  return { price: Math.max(299, price), factors };
 }
 
 export async function POST(req: NextRequest) {
