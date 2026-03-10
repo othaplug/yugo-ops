@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -265,10 +266,12 @@ function ScheduleModal({
 
           <div>
             <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Default Pickup Address</label>
-            <input
+            <AddressAutocomplete
               value={pickupAddress}
-              onChange={(e) => setPickupAddress(e.target.value)}
+              onRawChange={setPickupAddress}
+              onChange={(r) => setPickupAddress(r.fullAddress)}
               placeholder="e.g. 123 Warehouse Rd, Toronto"
+              country="CA"
               className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
             />
           </div>
