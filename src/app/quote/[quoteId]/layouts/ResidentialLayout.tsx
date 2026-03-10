@@ -51,7 +51,7 @@ export default function ResidentialLayout({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
         {TIER_ORDER.map((tierKey) => {
           const t = tiers[tierKey];
           if (!t) return null;
@@ -69,7 +69,7 @@ export default function ResidentialLayout({
           return (
             <div
               key={tierKey}
-              className={`relative rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden min-w-0 ${
+              className={`relative rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden ${
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               }`}
               style={{
@@ -79,14 +79,14 @@ export default function ResidentialLayout({
             >
               {badgeText && (
                 <div
-                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
+                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
                   style={{ backgroundColor: tierKey === "estate" ? WINE : GOLD }}
                 >
                   {badgeText}
                 </div>
               )}
 
-              <div className="p-6 md:p-7 flex flex-col flex-1 min-h-0">
+              <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {(() => {
@@ -104,7 +104,7 @@ export default function ResidentialLayout({
                       <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
                         {meta.label}
                       </h3>
-                      <p className="text-[12px] mt-1.5 leading-snug line-clamp-2" style={{ color: `${FOREST}70` }}>
+                      <p className="text-[13px] mt-2 leading-relaxed" style={{ color: `${FOREST}70` }}>
                         {meta.tagline}
                       </p>
                     </div>
