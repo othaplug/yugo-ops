@@ -62,30 +62,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "start and end required" }, { status: 400 });
     }
 
-    const [
-      { data: moves },
-      { data: deliveries },
-      { data: phases },
-      { data: blocks },
-      { data: crews },
-    ] = await Promise.all([
+    const startDate = String(start).slice(0, 10);
+    const endDate = String(end).slice(0, 10);
+
+    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult] = await Promise.allSettled([
       db.from("moves")
         .select("id, move_code, client_name, move_size, move_type, status, calendar_status, calendar_color, scheduled_date, scheduled_time, scheduled_start, scheduled_end, estimated_hours, crew_id, assigned_truck_id, from_address, to_address, crews(name), fleet_vehicles(display_name)")
-        .gte("scheduled_date", start).lte("scheduled_date", end)
+        .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
       db.from("deliveries")
         .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, calendar_status, calendar_color, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, assigned_truck_id, pickup_address, delivery_address, item_count, items, crews(name), fleet_vehicles(display_name)")
-        .gte("scheduled_date", start).lte("scheduled_date", end)
+        .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
       db.from("project_phases")
         .select("id, project_id, phase_name, phase_order, status, scheduled_date, projects!inner(project_number, start_date)")
-        .gte("scheduled_date", start).lte("scheduled_date", end)
+        .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
         .not("status", "eq", "skipped"),
       db.from("crew_schedule_blocks")
         .select("*")
-        .gte("block_date", start).lte("block_date", end),
+        .gte("block_date", startDate).lte("block_date", endDate),
       db.from("crews").select("id, name, members"),
     ]);
+
+    const moves = movesResult.status === "fulfilled" && !movesResult.value.error ? movesResult.value.data : null;
+    const deliveries = deliveriesResult.status === "fulfilled" && !deliveriesResult.value.error ? deliveriesResult.value.data : null;
+    const phases = phasesResult.status === "fulfilled" && !phasesResult.value.error ? phasesResult.value.data : null;
+    const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
+    const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
+
+    if (movesResult.status === "rejected" || (movesResult.status === "fulfilled" && movesResult.value?.error)) {
+      console.error("[admin/calendar] moves query failed:", movesResult.status === "rejected" ? movesResult.reason : movesResult.value?.error);
+    }
+    if (deliveriesResult.status === "rejected" || (deliveriesResult.status === "fulfilled" && deliveriesResult.value?.error)) {
+      console.error("[admin/calendar] deliveries query failed:", deliveriesResult.status === "rejected" ? deliveriesResult.reason : deliveriesResult.value?.error);
+    }
 
     const events: CalendarEvent[] = [];
 
@@ -98,7 +108,7 @@ export async function GET(req: NextRequest) {
 
       const crewRaw = m.crews as unknown;
       const crewData = Array.isArray(crewRaw) ? (crewRaw[0] as { name: string } | undefined) ?? null : (crewRaw as { name: string } | null);
-      const truckRaw = m.fleet_vehicles as unknown;
+      const truckRaw = (m as { fleet_vehicles?: unknown }).fleet_vehicles as unknown;
       const truckData = Array.isArray(truckRaw) ? (truckRaw[0] as { display_name: string } | undefined) ?? null : (truckRaw as { display_name: string } | null);
       events.push({
         id: m.id,
@@ -138,7 +148,7 @@ export async function GET(req: NextRequest) {
 
       const crewRawD = d.crews as unknown;
       const crewData = Array.isArray(crewRawD) ? (crewRawD[0] as { name: string } | undefined) ?? null : (crewRawD as { name: string } | null);
-      const truckRawD = d.fleet_vehicles as unknown;
+      const truckRawD = (d as { fleet_vehicles?: unknown }).fleet_vehicles as unknown;
       const truckData = Array.isArray(truckRawD) ? (truckRawD[0] as { display_name: string } | undefined) ?? null : (truckRawD as { display_name: string } | null);
       const itemCount = d.item_count || (Array.isArray(d.items) ? d.items.length : null);
       events.push({
@@ -252,7 +262,18 @@ export async function GET(req: NextRequest) {
       memberCount: Array.isArray(c.members) ? c.members.length : 0,
     }));
 
-    return NextResponse.json({ events, crews: crewList, blocks: blocks || [] });
+    const movesCount = (moves || []).length;
+    const deliveriesCount = (deliveries || []).length;
+    if (movesCount === 0 && deliveriesCount === 0 && (phases || []).length === 0) {
+      console.warn("[admin/calendar] No jobs in range", { startDate, endDate });
+    }
+
+    return NextResponse.json({
+      events,
+      crews: crewList,
+      blocks: blocks || [],
+      _counts: { moves: movesCount, deliveries: deliveriesCount },
+    });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

@@ -46,6 +46,7 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
   const [crews, setCrews] = useState<{ id: string; name: string; memberCount: number }[]>([]);
   const [heatData, setHeatData] = useState<YearHeatData>({});
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<CalendarFilters>({ crewId: "", type: "", status: "" });
 
@@ -58,6 +59,7 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const baseUrl = role === "admin" ? "/api/admin/calendar" : "/api/partner/calendar";
 
@@ -65,6 +67,7 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
         const res = await fetch(`${baseUrl}?view=year&year=${yearView}`);
         const data = await res.json();
         setHeatData(data.heat || {});
+        setFetchError(!res.ok || data.error ? (data.error || res.statusText || "Failed to load") : null);
         setLoading(false);
         return;
       }
@@ -78,10 +81,18 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
 
       const res = await fetch(`${baseUrl}?${params}`);
       const data = await res.json();
-      setEvents(data.events || []);
+      if (!res.ok || data.error) {
+        setFetchError(data.error || res.statusText || "Failed to load calendar");
+        setEvents([]);
+      } else {
+        setFetchError(null);
+        setEvents(data.events || []);
+      }
       if (data.crews) setCrews(data.crews);
     } catch (e) {
       console.error("Calendar fetch error:", e);
+      setFetchError("Calendar failed to load");
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -196,6 +207,7 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
     monthYear, weekAnchor, yearView,
     events, eventsByDate, crews, heatData,
     loading,
+    fetchError,
     filters, setFilters,
     todayKey,
     headerLabel,

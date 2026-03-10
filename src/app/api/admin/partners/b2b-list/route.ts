@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 
-const B2B_TYPES = ["retail", "designer", "hospitality", "gallery", "realtor"];
-
 export async function GET() {
   const { error: authError } = await requireStaff();
   if (authError) return authError;
@@ -13,7 +11,7 @@ export async function GET() {
     const { data, error } = await admin
       .from("organizations")
       .select("id, name, type, contact_name, email, phone, status, created_at")
-      .in("type", B2B_TYPES)
+      .not("type", "eq", "b2c")
       .order("name");
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

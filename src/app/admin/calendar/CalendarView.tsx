@@ -77,6 +77,12 @@ export default function CalendarView() {
         </div>
       )}
 
+      {!cal.loading && cal.fetchError && (
+        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
+          {cal.fetchError}
+        </div>
+      )}
+
       {!cal.loading && (
         <>
           {cal.view === "month" && (

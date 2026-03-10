@@ -304,9 +304,10 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   font-family: var(--font-heading);
 }
 
-/* Instrument Serif for hero text - Yugo logo, Welcome back, etc */
+/* Instrument Serif for hero text - Yugo logo, Welcome back, etc. Normal weight for lighter look. */
 .font-hero {
   font-family: var(--font-hero);
+  font-weight: 400 !important;
 }
 
 .field-input {
@@ -1033,5 +1034,10 @@ div.mapboxgl-ctrl-attrib {
 }
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out;
+}
+
+/* Tier tagline on quote package cards - force 10px (overrides cached/custom classes) */
+[data-tier-tagline] {
+  font-size: 10px !important;
 }
 

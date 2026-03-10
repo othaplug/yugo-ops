@@ -104,7 +104,7 @@ export default function ResidentialLayout({
                       <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
                         {meta.label}
                       </h3>
-                      <p className="text-[13px] mt-2 leading-relaxed" style={{ color: `${FOREST}70` }}>
+                      <p data-tier-tagline className="mt-2 leading-relaxed" style={{ color: `${FOREST}70`, fontSize: '10px' }}>
                         {meta.tagline}
                       </p>
                     </div>

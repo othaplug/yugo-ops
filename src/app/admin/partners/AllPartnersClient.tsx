@@ -16,22 +16,18 @@ interface Partner {
   created_at: string;
 }
 
-const PARTNER_TYPES = [
-  { key: "all", label: "All Partners" },
-  { key: "retail", label: "Retail" },
-  { key: "designer", label: "Designers" },
-  { key: "hospitality", label: "Hospitality" },
-  { key: "gallery", label: "Art Gallery" },
-  { key: "realtor", label: "Realtors" },
-];
-
 const TYPE_LABELS: Record<string, string> = {
+  b2b: "B2B",
   retail: "Retail",
   designer: "Designer",
   hospitality: "Hospitality",
   gallery: "Art Gallery",
   realtor: "Realtor",
 };
+
+function getTypeLabel(type: string): string {
+  return TYPE_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : "Other");
+}
 
 const columns: ColumnDef<Partner>[] = [
   {
@@ -50,8 +46,8 @@ const columns: ColumnDef<Partner>[] = [
     label: "Type",
     accessor: (p) => p.type,
     render: (p) => (
-      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)] capitalize">
-        {TYPE_LABELS[p.type] || p.type}
+      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)]">
+        {getTypeLabel(p.type || "")}
       </span>
     ),
   },
@@ -119,8 +115,18 @@ export default function AllPartnersClient() {
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: partners.length };
-    for (const p of partners) counts[p.type] = (counts[p.type] || 0) + 1;
+    for (const p of partners) {
+      const t = p.type || "other";
+      counts[t] = (counts[t] || 0) + 1;
+    }
     return counts;
+  }, [partners]);
+
+  const typeTabs = useMemo(() => {
+    const allTab = { key: "all", label: "All Partners" };
+    const types = Array.from(new Set(partners.map((p) => p.type || "other").filter(Boolean))).sort();
+    const typeTabsList = types.map((key) => ({ key, label: getTypeLabel(key) }));
+    return [allTab, ...typeTabsList];
   }, [partners]);
 
   if (loading) {
@@ -141,7 +147,7 @@ export default function AllPartnersClient() {
       </div>
 
       <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-1 border-b border-[var(--brd)]/30">
-        {PARTNER_TYPES.map((t) => (
+        {typeTabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -168,7 +174,7 @@ export default function AllPartnersClient() {
         selectable
         onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
         emptyMessage="No partners found"
-        emptySubtext={activeTab !== "all" ? `No ${TYPE_LABELS[activeTab] || activeTab} partners yet` : undefined}
+        emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}
       />
     </div>
   );
