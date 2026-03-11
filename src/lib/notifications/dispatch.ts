@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
+import { twilioClient } from "@/lib/twilio";
 
 interface NotificationData {
   subject?: string;
@@ -39,7 +40,7 @@ export async function sendNotification(
 
   const { data: platformUser } = await supabase
     .from("platform_users")
-    .select("email, name")
+    .select("email, name, phone")
     .eq("user_id", recipientUserId)
     .single();
 
@@ -78,6 +79,47 @@ export async function sendNotification(
       }
     } catch {
       results.push = false;
+    }
+  }
+
+  if (smsEnabled) {
+    const phoneRaw =
+      platformUser?.phone ??
+      (await supabase.auth.admin.getUserById(recipientUserId).then((r) => r.data?.user?.phone ?? null));
+    const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
+    const hasTwilio =
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      twilioFrom;
+
+    if (phoneRaw && hasTwilio) {
+      const digits = (phoneRaw as string).replace(/\D/g, "");
+      if (digits.length >= 10) {
+        const toE164 = digits.startsWith("1") && digits.length === 11 ? `+${digits}` : `+1${digits.slice(-10)}`;
+        const fromDigits = (twilioFrom as string).replace(/\D/g, "");
+        const fromE164 = fromDigits.startsWith("1")
+          ? `+${fromDigits}`
+          : `+1${fromDigits}`;
+        const title = buildNotificationTitle(eventSlug, data);
+        const body = buildNotificationBody(eventSlug, data);
+        const smsBody = [title, body].filter(Boolean).join(": ").slice(0, 1600);
+
+        try {
+          await twilioClient.messages.create({
+            to: toE164,
+            from: fromE164,
+            body: smsBody,
+          });
+          results.sms = true;
+        } catch (err) {
+          console.error("[dispatch] SMS send failed:", err);
+          results.sms = false;
+        }
+      } else {
+        results.sms = false;
+      }
+    } else {
+      results.sms = false;
     }
   }
 
