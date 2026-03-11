@@ -547,7 +547,7 @@ export default function QuotePageClient({
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-5 md:px-6">
+      <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE BADGE ═══ */}
         <div className="-mt-5 relative z-10 mb-8">
           <div

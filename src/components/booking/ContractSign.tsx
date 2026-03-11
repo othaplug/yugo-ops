@@ -674,13 +674,13 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 electronic signature. For our complete Terms of Service and Privacy Policy,
                 visit{" "}
                 <a
-                  href="https://yugo.ca/terms"
+                  href="https://yugoplus.com/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline hover:opacity-80 transition-opacity"
                   style={{ color: GOLD }}
                 >
-                  yugo.ca/terms
+                  yugoplus.com/terms
                 </a>.
               </p>
             </div>

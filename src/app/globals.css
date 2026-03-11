@@ -1036,8 +1036,13 @@ div.mapboxgl-ctrl-attrib {
   animation: slide-in-right 0.25s ease-out;
 }
 
-/* Tier tagline on quote package cards - force 11px (overrides cached/custom classes) */
+/* Tier tagline on quote package cards - 11px mobile, 12px md+ for readability */
 [data-tier-tagline] {
   font-size: 11px !important;
+}
+@media (min-width: 768px) {
+  [data-tier-tagline] {
+    font-size: 12px !important;
+  }
 }
 

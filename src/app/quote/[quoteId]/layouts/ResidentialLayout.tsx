@@ -51,7 +51,7 @@ export default function ResidentialLayout({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl md:max-w-6xl lg:max-w-7xl mx-auto">
         {TIER_ORDER.map((tierKey) => {
           const t = tiers[tierKey];
           if (!t) return null;
@@ -88,7 +88,7 @@ export default function ResidentialLayout({
 
               <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     {(() => {
                       const TierIcon = TIER_ICONS[tierKey];
                       return TierIcon ? (
@@ -100,19 +100,17 @@ export default function ResidentialLayout({
                         </div>
                       ) : null;
                     })()}
-                    <div className="text-left min-w-0 flex-1">
-                      <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
-                        {meta.label}
-                      </h3>
-                      <p data-tier-tagline className="mt-2 leading-relaxed" style={{ color: `${FOREST}70`, fontSize: '11px' }}>
-                        {meta.tagline}
-                      </p>
-                    </div>
+                    <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
+                      {meta.label}
+                    </h3>
                   </div>
                   <span className="font-hero text-[24px] md:text-[28px] font-normal flex-shrink-0" style={{ color: meta.accent }}>
                     {fmtPrice(t.price)}
                   </span>
                 </div>
+                <p data-tier-tagline className="mt-2 w-full leading-relaxed text-[11px] md:text-[12px]" style={{ color: `${FOREST}70` }}>
+                  {meta.tagline}
+                </p>
 
                 <div className="mt-4 flex flex-col flex-1 min-h-0">
                   <p className="text-[11px] mb-3" style={{ color: `${FOREST}60` }}>
