@@ -1,36 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-
-function useTheme() {
-  const [theme, setThemeState] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const stored = document.documentElement.getAttribute("data-theme");
-    if (stored === "light") setThemeState("light");
-  }, []);
-
-  const toggle = useCallback(() => {
-    setThemeState((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      try { localStorage.setItem("yugo-theme", next); } catch { /* ok */ }
-      return next;
-    });
-  }, []);
-
-  return { theme, toggle };
-}
+import { useTheme } from "./ThemeContext";
 
 export default function ProfileDropdown({ user }: { user: any }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

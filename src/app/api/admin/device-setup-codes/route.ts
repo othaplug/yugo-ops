@@ -20,7 +20,7 @@ export async function GET() {
   const admin = createAdminClient();
 
   const [trucksRes, crewsRes, codesRes] = await Promise.all([
-    admin.from("trucks").select("id, name").order("name"),
+    admin.from("trucks").select("id, name, phone").order("name"),
     admin.from("crews").select("id, name").order("name"),
     admin.from("device_setup_codes").select("id, code, truck_id, default_team_id, device_name, expires_at, used_at, created_at").order("created_at", { ascending: false }).limit(20),
   ]);

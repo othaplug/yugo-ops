@@ -168,13 +168,15 @@ export async function GET(req: NextRequest) {
     skipped: !followupEnabled,
   };
 
+  const statusNotAcceptedOrExpired = ["draft", "sent", "viewed", "declined"];
+
   if (!followupEnabled) {
     // Still process expired quotes even when follow-ups are disabled
     const { data: expiredQuotes } = await supabase
       .from("quotes")
       .select("quote_id")
       .lt("expires_at", now.toISOString())
-      .not("status", "in", '("accepted","expired")');
+      .in("status", statusNotAcceptedOrExpired);
 
     if (expiredQuotes && expiredQuotes.length > 0) {
       const expiredIds = expiredQuotes.map((q) => q.quote_id);
@@ -186,6 +188,45 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, ...results });
+  }
+
+  const dryRun = req.nextUrl.searchParams.get("dry_run") === "1";
+  if (dryRun) {
+    const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: rule1Count } = await supabase
+      .from("quotes")
+      .select("quote_id", { count: "exact", head: true })
+      .eq("status", "sent")
+      .lt("sent_at", cutoff24h)
+      .is("viewed_at", null)
+      .is("followup_1_sent", null);
+    const cutoff48h = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+    const { count: rule2Count } = maxAttempts >= 2
+      ? await supabase
+          .from("quotes")
+          .select("quote_id", { count: "exact", head: true })
+          .eq("status", "viewed")
+          .lt("viewed_at", cutoff48h)
+          .is("accepted_at", null)
+          .is("followup_2_sent", null)
+      : { count: 0 };
+    const cutoff5d = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: rule3Count } = maxAttempts >= 3
+      ? await supabase
+          .from("quotes")
+          .select("quote_id", { count: "exact", head: true })
+          .in("status", ["viewed", "sent"])
+          .lt("viewed_at", cutoff5d)
+          .is("accepted_at", null)
+          .is("followup_3_sent", null)
+      : { count: 0 };
+    return NextResponse.json({
+      ok: true,
+      dry_run: true,
+      auto_followup_enabled: followupEnabled,
+      followup_max_attempts: maxAttempts,
+      would_send: { followup1: rule1Count ?? 0, followup2: rule2Count ?? 0, followup3: rule3Count ?? 0 },
+    });
   }
 
   /* ═════════════════════════════════════════════════
@@ -380,7 +421,7 @@ export async function GET(req: NextRequest) {
     .from("quotes")
     .select("quote_id")
     .lt("expires_at", now.toISOString())
-    .not("status", "in", '("accepted","expired")');
+    .in("status", statusNotAcceptedOrExpired);
 
   if (expiredQuotes && expiredQuotes.length > 0) {
     const expiredIds = expiredQuotes.map((q) => q.quote_id);

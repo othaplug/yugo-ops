@@ -10,6 +10,7 @@ interface User {
   email: string;
   name: string | null;
   role: string;
+  phone?: string | null;
 }
 
 interface UserDetailModalProps {
@@ -28,6 +29,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
   const [role, setRole] = useState(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
+  const [phone, setPhone] = useState(user.phone ?? "");
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,6 +40,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     if (open) {
       setName(user.name || "");
       setRole(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
+      setPhone(user.phone ?? "");
     }
   }, [open, user]);
 
@@ -84,8 +87,9 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     e.preventDefault();
     setSaving(true);
     try {
-      const payload: { name?: string; role?: string } = { name: name.trim() };
+      const payload: { name?: string; role?: string; phone?: string | null } = { name: name.trim() };
       if (canEditRole) payload.role = role;
+      if (!user.id.startsWith("inv-")) payload.phone = phone.trim() || null;
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -96,6 +100,8 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       const updates: Partial<User> = { name: name.trim() };
       if (payload.role !== undefined) updates.role = payload.role;
       if (typeof data.role === "string") updates.role = data.role;
+      if (payload.phone !== undefined) updates.phone = payload.phone ?? null;
+      if (data.phone !== undefined) updates.phone = data.phone;
       onSaved?.(updates);
       toast("User updated", "check");
     } catch (err: unknown) {
@@ -167,6 +173,19 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             </div>
             <p className="text-[10px] text-[var(--tx3)] mt-1">Email cannot be changed</p>
           </div>
+          {!user.id.startsWith("inv-") && (
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (SMS)</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 5551234567"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">Used for SMS notifications (e.g. quote viewed, payment received). Use 10 or 11 digits.</p>
+          </div>
+          )}
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
             {isAdmin ? (

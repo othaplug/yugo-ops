@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { formatJobId } from "@/lib/move-code";
+import { emailLayout } from "@/lib/email-templates";
 
 interface ExtraItemNotifyPayload {
   jobId: string;
@@ -45,27 +46,24 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     const resend = getResend();
     const jobLabel = formatJobId(entityCode, jobType);
 
+    const inner = `
+      <div style="font-size:9px;font-weight:700;color:#B8962E;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Extra Item Request</div>
+      <div style="font-size:20px;font-weight:700;margin:0 0 12px;color:#F5F5F3;">Extra Item Request</div>
+      <p style="font-size:14px;color:#B0ADA8;margin:0 0 20px;">A new extra item request needs your approval.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:24px;">
+        <tr><td style="padding:8px 0;color:#666;font-size:13px;width:110px;">Job</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;font-weight:600;">${jobLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Requested by</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;">${byLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Item</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;">${description}${qtyLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Status</td><td style="padding:8px 0;color:#B8962E;font-size:13px;font-weight:600;">Pending Approval</td></tr>
+      </table>
+      <p style="font-size:12px;color:#666;margin-top:20px;">Review and approve or reject this request in the admin portal.</p>
+    `;
     const emailFrom = await getEmailFrom();
     await resend.emails.send({
       from: emailFrom,
       to: adminEmail,
       subject: `Extra Item Request — ${jobLabel}`,
-      html: `
-        <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px">
-          <div style="text-align:center;margin-bottom:28px">
-            <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO+</div>
-          </div>
-          <h1 style="font-size:20px;font-weight:700;margin:0 0 12px;color:#F5F5F3">Extra Item Request</h1>
-          <p style="font-size:14px;color:#B0ADA8;margin:0 0 20px">A new extra item request needs your approval.</p>
-          <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;width:110px">Job</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;font-weight:600">${jobLabel}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px">Requested by</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px">${byLabel}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px">Item</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px">${description}${qtyLabel}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px">Status</td><td style="padding:8px 0;color:#C9A962;font-size:13px;font-weight:600">Pending Approval</td></tr>
-          </table>
-          <p style="font-size:12px;color:#666;margin-top:20px">Review and approve or reject this request in the admin portal.</p>
-        </div>
-      `,
+      html: emailLayout(inner),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
   } catch {}

@@ -78,7 +78,23 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user: { id: string } | null = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data?.user ?? null;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/refresh\s*token|AuthApiError/i.test(msg)) {
+      await supabase.auth.signOut();
+      if (pathname.startsWith("/admin")) {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+      if (pathname.startsWith("/partner")) {
+        return NextResponse.redirect(new URL("/partner/login", request.url));
+      }
+    }
+    throw err;
+  }
 
   if (!user) {
     if (pathname.startsWith("/admin")) {

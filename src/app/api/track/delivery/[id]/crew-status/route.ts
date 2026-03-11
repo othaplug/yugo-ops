@@ -72,21 +72,27 @@ export async function GET(
       }
     }
 
-    // Resolve crew tablet phone: registered_devices (tablet linked to team) > crews.phone > dispatch
+    // Resolve crew phone: truck.phone (stable) > registered_devices.phone > crews.phone > dispatch
     let crewPhone: string | null = null;
     if (delivery.crew_id) {
       const { data: device } = await admin
         .from("registered_devices")
-        .select("phone")
+        .select("truck_id, phone")
         .eq("default_team_id", delivery.crew_id)
         .eq("is_active", true)
-        .not("phone", "is", null)
         .order("last_active_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (device?.phone) {
-        crewPhone = device.phone;
-      } else {
+      if (device?.truck_id) {
+        const { data: truck } = await admin
+          .from("trucks")
+          .select("phone")
+          .eq("id", device.truck_id)
+          .maybeSingle();
+        if (truck?.phone) crewPhone = truck.phone;
+      }
+      if (!crewPhone && device?.phone) crewPhone = device.phone;
+      if (!crewPhone) {
         const { data: crewRow } = await admin
           .from("crews")
           .select("phone")

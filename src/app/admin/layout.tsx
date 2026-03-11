@@ -9,7 +9,18 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user: { id: string; email?: string } | null = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data?.user ?? null;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/refresh\s*token|AuthApiError/i.test(msg)) {
+      await supabase.auth.signOut();
+      redirect("/login");
+    }
+    throw err;
+  }
 
   if (!user) {
     redirect("/login");

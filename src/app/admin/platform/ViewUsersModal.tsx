@@ -14,6 +14,7 @@ interface User {
   created_at: string | null;
   last_sign_in_at: string | null;
   status: "activated" | "inactive";
+  phone?: string | null;
 }
 
 interface ViewUsersModalProps {

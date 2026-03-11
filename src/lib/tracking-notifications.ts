@@ -4,6 +4,7 @@ import { getEmailFrom } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatJobId } from "@/lib/move-code";
+import { statusUpdateEmailHtml } from "@/lib/email-templates";
 
 export type TrackingStatus =
   | "en_route_to_pickup"
@@ -154,16 +155,16 @@ export async function notifyOnCheckpoint(
     ? `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`
     : `Your crew is on the way — ${formatJobId(moveCode || jobId, jobType)}`;
 
-  const html = `
-    <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;background:#0F0F0F;color:#E8E5E0;padding:36px;border-radius:14px">
-      <div style="text-align:center;margin-bottom:28px">
-        <div style="display:inline-flex;align-items:center;padding:8px 20px;border-radius:9999px;background:#0F0F0F;border:1px solid rgba(201,169,98,0.35);font-family:'Instrument Serif',Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#C9A962">YUGO+</div>
-      </div>
-      <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${cfg.clientMessage || "Status update"}</h1>
-      <p style="font-size:14px;color:#B0ADA8;margin-bottom:24px">${status === "completed" ? "Thank you for choosing YUGO+. We hope your move went smoothly." : "Your crew has updated the status of your job."}</p>
-      ${trackUrl ? `<a href="${trackUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">Track your job →</a>` : ""}
-    </div>
-  `;
+  const headline = cfg.clientMessage || "Status update";
+  const body = status === "completed"
+    ? "Thank you for choosing YUGO+. We hope your move went smoothly."
+    : "Your crew has updated the status of your job.";
+  const html = statusUpdateEmailHtml({
+    headline,
+    body,
+    ctaUrl: trackUrl,
+    ctaLabel: trackUrl ? "Track your job" : undefined,
+  });
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);

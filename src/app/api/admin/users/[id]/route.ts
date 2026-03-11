@@ -21,18 +21,21 @@ export async function PATCH(
     const { admin } = check;
     const { id } = await params;
 
-    if (id === check.user!.id) {
-      return NextResponse.json({ error: "Cannot edit your own user" }, { status: 400 });
-    }
-
     const body = await req.json();
     const updates: Record<string, unknown> = {};
 
     if (typeof body.name === "string") updates.name = body.name.trim();
     if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(body.role)) updates.role = body.role;
+    if (body.phone !== undefined) updates.phone = body.phone === "" || body.phone === null ? null : String(body.phone).trim();
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    const isSelf = id === check.user!.id;
+    const onlyPhone = Object.keys(updates).length === 1 && "phone" in updates;
+    if (isSelf && !onlyPhone) {
+      return NextResponse.json({ error: "Cannot edit your own user (you may update your phone only)" }, { status: 400 });
     }
 
     if (id.startsWith("inv-")) {
@@ -81,6 +84,7 @@ export async function PATCH(
         email,
         name,
         role,
+        ...(updates.phone !== undefined && { phone: updates.phone }),
       });
       if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 400 });
     }
@@ -89,7 +93,8 @@ export async function PATCH(
       await admin.auth.admin.updateUserById(id, { user_metadata: { full_name: body.name.trim() } });
     }
 
-    return NextResponse.json({ ok: true, ...(finalRole && { role: finalRole }) });
+    const finalPhone = updates.phone !== undefined ? (updates.phone as string | null) : undefined;
+    return NextResponse.json({ ok: true, ...(finalRole && { role: finalRole }), ...(finalPhone !== undefined && { phone: finalPhone }) });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
   }

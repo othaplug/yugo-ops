@@ -71,11 +71,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const supabase = createClient();
 
   const loadNotifications = useCallback(async () => {
-    const res = await fetch("/api/admin/notifications");
-    if (res.ok) {
-      const data = await res.json();
-      const rows = data.notifications || [];
-      setNotifications(rows.map(mapDbToNotification));
+    try {
+      const res = await fetch("/api/admin/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        const rows = data.notifications || [];
+        setNotifications(rows.map(mapDbToNotification));
+      }
+    } catch {
+      // Network error or server down: leave notifications unchanged so the app doesn't crash
     }
   }, []);
 

@@ -8,11 +8,11 @@ export async function GET() {
   try {
     const admin = createAdminClient();
 
-    const { data: platformUsers, error: puError } = await admin.from("platform_users").select("user_id, email, name, role, created_at");
+    const { data: platformUsers, error: puError } = await admin.from("platform_users").select("user_id, email, name, role, created_at, phone");
     if (puError) console.error("[admin/users] platform_users:", puError);
-    const platformMap = new Map<string, { email: string; name: string | null; role: string; created_at: string | null }>();
+    const platformMap = new Map<string, { email: string; name: string | null; role: string; created_at: string | null; phone: string | null }>();
     for (const p of platformUsers ?? []) {
-      platformMap.set(p.user_id, { email: p.email, name: p.name, role: p.role, created_at: p.created_at });
+      platformMap.set(p.user_id, { email: p.email, name: p.name, role: p.role, created_at: p.created_at, phone: p.phone ?? null });
     }
 
     const { data: pendingInvs } = await admin.from("invitations").select("id, email, name, role, created_at").eq("status", "pending");
@@ -44,6 +44,7 @@ export async function GET() {
       last_sign_in_at: string | null;
       status: "activated" | "pending" | "inactive";
       move_id?: string | null;
+      phone?: string | null;
     }> = [];
 
     // Internal team only: exclude partner users and client role
@@ -63,6 +64,7 @@ export async function GET() {
         created_at: p.created_at,
         last_sign_in_at: auth?.last_sign_in_at ?? null,
         status: auth?.last_sign_in_at ? "activated" : "pending",
+        phone: p.phone ?? null,
       });
     }
 

@@ -13,7 +13,7 @@ export async function GET() {
   const isAdmin = isSuperAdminEmail(user.email) || ["owner", "admin", "manager"].includes(platformUser?.role || "");
   if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { data, error } = await db.from("trucks").select("id, name, created_at").order("name");
+  const { data, error } = await db.from("trucks").select("id, name, phone, created_at").order("name");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data || []);
 }
@@ -61,9 +61,13 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const id = (body.id || body.truckId || "").toString().trim();
     const name = (body.name || "").toString().trim();
+    const phone = typeof body.phone === "string" ? body.phone.trim() || null : undefined;
     if (!id) return NextResponse.json({ error: "Truck id required" }, { status: 400 });
-    if (!name) return NextResponse.json({ error: "Truck name required" }, { status: 400 });
-    const { data, error } = await db.from("trucks").update({ name }).eq("id", id).select().single();
+    const updates: { name?: string; phone?: string | null } = {};
+    if (name !== undefined && name !== "") updates.name = name;
+    if (phone !== undefined) updates.phone = phone;
+    if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No updates (name or phone)" }, { status: 400 });
+    const { data, error } = await db.from("trucks").update(updates).eq("id", id).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (e) {

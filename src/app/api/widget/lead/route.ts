@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { getEmailLogoUrl } from "@/lib/email-templates";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 const SIZE_LABELS: Record<string, string> = {
   studio: "Studio",
@@ -37,6 +39,13 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
   }
 }
 
+const EMAIL_BG = "#0F0F0F";
+const EMAIL_GOLD = "#B8962E";
+const EMAIL_WINE = "#5C1A33";
+const EMAIL_TX = "#F5F5F3";
+const EMAIL_TX2 = "#B0ADA8";
+const EMAIL_BRD = "#2A2A2A";
+
 function confirmationEmailHtml(data: {
   name: string;
   moveType: string;
@@ -53,41 +62,48 @@ function confirmationEmailHtml(data: {
     ? new Date(data.moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
     : "Flexible";
   const timeStr = data.preferredTime ? data.preferredTime.toUpperCase() : "";
+  const logoUrl = getEmailLogoUrl();
+  const learnMoreUrl = `${getEmailBaseUrl()}/about`;
   return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#FAF7F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
-  <div style="text-align:center;margin-bottom:32px;">
-    <span style="font-size:20px;font-weight:700;color:#722F37;letter-spacing:1px;">YUGO+</span>
-  </div>
-  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-    <h1 style="font-size:22px;color:#1a1a1a;margin:0 0 8px;">Thanks, ${data.name}!</h1>
-    <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
-      Your YUGO+ quote is being prepared. We'll send your exact guaranteed price within 2 hours.
-    </p>
-    <div style="background:#FAF7F2;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="font-size:13px;color:#888;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Your Estimated Price</p>
-      <p style="font-size:32px;font-weight:700;color:#722F37;margin:0 0 8px;">
-        $${data.selectedPrice.toLocaleString()}
-      </p>
-      <p style="font-size:14px;color:#555;margin:0;">
-        ${typeLabel} · ${sizeLabel} · ${data.fromPostal.toUpperCase()} → ${data.toPostal.toUpperCase()}
-      </p>
-      ${data.moveDate ? `<p style="font-size:13px;color:#888;margin:4px 0 0;">${dateStr}${timeStr ? ` · ${timeStr}` : ""}</p>` : ""}
-    </div>
-    <p style="font-size:13px;color:#888;line-height:1.5;margin:0;">
-      A YUGO+ coordinator will review your details and send a detailed, guaranteed quote shortly.
-      No surprises — that's the YUGO+ promise.
-    </p>
-  </div>
-  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">
-    © ${new Date().getFullYear()} Yugo Moving · Toronto, ON
-  </p>
-</div>
-</body>
-</html>`;
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
+  <tr>
+    <td align="center" style="padding:32px 24px 24px;">
+      <img src="${logoUrl}" alt="YUGO" width="140" height="38" style="display:block;border:0;max-width:140px;height:auto;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:0 24px 32px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
+        <tr>
+          <td style="font-size:24px;font-weight:700;color:${EMAIL_TX};padding-bottom:8px;">Thanks, ${data.name}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your YUGO+ quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
+        </tr>
+        <tr>
+          <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;padding-bottom:8px;">Your Estimated Price</td></tr>
+              <tr><td style="font-size:28px;font-weight:700;color:${EMAIL_GOLD};padding-bottom:8px;">$${data.selectedPrice.toLocaleString()}</td></tr>
+              <tr><td style="font-size:13px;color:${EMAIL_TX2};">${typeLabel} &middot; ${sizeLabel} &middot; ${data.fromPostal.toUpperCase()} &rarr; ${data.toPostal.toUpperCase()}</td></tr>
+              ${data.moveDate ? `<tr><td style="font-size:12px;color:#666;padding-top:4px;">${dateStr}${timeStr ? ` &middot; ${timeStr}` : ""}</td></tr>` : ""}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A YUGO+ coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the YUGO+ promise.</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:16px 24px 32px;font-size:10px;color:#666;border-top:1px solid ${EMAIL_BRD};">
+      <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none;">Learn more</a>
+      <span style="color:${EMAIL_BRD};margin:0 8px;">&middot;</span>
+      Powered by YUGO+
+    </td>
+  </tr>
+</table>`;
 }
 
 export async function POST(req: NextRequest) {

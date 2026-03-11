@@ -63,10 +63,14 @@ export function PartnerNotificationProvider({ orgId: _orgId, children }: { orgId
   const supabase = createClient();
 
   const loadNotifications = useCallback(async () => {
-    const res = await fetch("/api/partner/notifications");
-    if (res.ok) {
-      const data = await res.json();
-      setNotifications((data.notifications || []).map(mapRow));
+    try {
+      const res = await fetch("/api/partner/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications((data.notifications || []).map(mapRow));
+      }
+    } catch {
+      // Network error: leave notifications unchanged so the app doesn't crash
     }
   }, []);
 

@@ -857,9 +857,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const tabParam = searchParams.get("tab") || "pricing";
   const activeTab: TabId = TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : "pricing";
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
-  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null }[]>([]);
+  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null; phone?: string | null }[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string; phone?: string | null } | null>(null);
   const [crewTracking, setCrewTracking] = useState(initialToggles.crewTracking);
   const [partnerPortal, setPartnerPortal] = useState(initialToggles.partnerPortal);
   const [autoInvoicing, setAutoInvoicing] = useState(initialToggles.autoInvoicing);

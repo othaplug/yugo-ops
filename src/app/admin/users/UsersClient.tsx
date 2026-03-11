@@ -18,6 +18,7 @@ interface User {
   last_sign_in_at: string | null;
   status: "activated" | "pending" | "inactive";
   move_id?: string | null;
+  phone?: string | null;
 }
 
 interface UsersClientProps {
