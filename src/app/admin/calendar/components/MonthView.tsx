@@ -63,7 +63,7 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
                   <span
                     className={`inline-flex items-center justify-center text-[12px] font-bold transition-colors ${
                       isToday
-                        ? "w-7 h-7 rounded-full bg-[var(--gold)] text-[#0D0D0D]"
+                        ? "w-7 h-7 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                         : "text-[var(--tx2)] hover:text-[var(--gold)]"
                     }`}
                   >

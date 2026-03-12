@@ -163,7 +163,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Full name"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -181,7 +181,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. 5551234567"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Used for SMS notifications (e.g. quote viewed, payment received). Use 10 or 11 digits.</p>
           </div>
@@ -198,7 +198,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 disabled={!canEditRole}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none disabled:opacity-60"
+                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none disabled:opacity-60"
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
@@ -223,7 +223,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password (min 8 chars)"
               minLength={8}
-              className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
             <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50">
               {resetting ? "Resetting…" : "Reset"}

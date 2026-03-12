@@ -94,7 +94,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="">Select an agent</option>
             {realtors.map((r) => (
@@ -115,7 +115,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="e.g. John Doe"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -125,7 +125,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             value={clientEmail}
             onChange={(e) => setClientEmail(e.target.value)}
             placeholder="client@example.com"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -135,7 +135,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
             onChange={(r) => setAddress(r.fullAddress)}
             placeholder="e.g. 123 Main St"
             label="Property address"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -143,7 +143,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           <select
             value={preferredContact}
             onChange={(e) => setPreferredContact(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             {PREFERRED_CONTACT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -155,7 +155,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           <select
             value={moveType}
             onChange={(e) => setMoveType(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             {MOVE_TYPE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>

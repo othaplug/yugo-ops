@@ -114,7 +114,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
 
   if (!open) return null;
 
-  const selectClass = "w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none";
+  const selectClass = "w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none";
   const inputClass = selectClass;
 
   return (

@@ -307,7 +307,7 @@ export default function PartnerB2BProjectsTab() {
 
             {showNoteForm && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 space-y-3">
-                <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder={noteType === "issue_flagged" ? "Describe the issue..." : "Add a note..."} rows={3} className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none" autoFocus />
+                <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder={noteType === "issue_flagged" ? "Describe the issue..." : "Add a note..."} rows={3} className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" autoFocus />
                 <div className="flex gap-2">
                   <button onClick={addNote} className={`px-4 py-2 rounded-lg text-[11px] font-semibold text-white ${noteType === "issue_flagged" ? "bg-red-500" : "bg-[#2D6A4F]"}`}>{noteType === "issue_flagged" ? "Submit Issue" : "Add Note"}</button>
                   <button onClick={() => setShowNoteForm(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>

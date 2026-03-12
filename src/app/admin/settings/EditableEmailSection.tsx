@@ -90,7 +90,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
-          className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+          className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
         />
         <button
           type="button"
@@ -126,7 +126,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="6-digit code"
                   maxLength={6}
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none font-mono tracking-widest"
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none font-mono tracking-widest"
                 />
               </div>
               <p className="text-[10px] text-[var(--tx3)]">Code sent to {currentEmail}. Check your inbox.</p>

@@ -398,7 +398,7 @@ export default function AdminPageClient({
           ) : (
             <div className="py-12 text-center">
               <div className="text-[13px] text-[var(--tx3)] mb-3">No jobs scheduled</div>
-              <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D]">
+              <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
                 Create a quote
               </Link>
             </div>
@@ -517,7 +517,7 @@ export default function AdminPageClient({
 
                     {/* Tooltip */}
                     {total > 0 && (
-                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[#1a1a1a] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
                         <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">{d.m} — ${total.toFixed(1)}K</p>
                         {d.moves > 0 && <p className="text-[8px] text-[var(--gold)]">Moves ${d.moves.toFixed(1)}K</p>}
                         {d.deliveries > 0 && <p className="text-[8px] text-[#3B82F6]">Deliveries ${d.deliveries.toFixed(1)}K</p>}

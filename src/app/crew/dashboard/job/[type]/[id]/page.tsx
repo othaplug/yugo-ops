@@ -533,7 +533,7 @@ export default function CrewJobPage({
               placeholder="Add a note..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-full bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[11px] focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full px-3.5 py-2 rounded-full bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[11px] focus:border-[var(--brd)] outline-none transition-colors"
             />
           )}
 
@@ -845,7 +845,7 @@ export default function CrewJobPage({
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
                   >
                     <option value="damage">Damage</option>
                     <option value="delay">Delay</option>
@@ -861,7 +861,7 @@ export default function CrewJobPage({
                     onChange={(e) => setReportDesc(e.target.value)}
                     placeholder="Describe what happened..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none resize-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none resize-none"
                   />
                 </div>
                 <div className="flex gap-3">

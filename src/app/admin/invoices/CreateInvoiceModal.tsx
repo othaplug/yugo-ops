@@ -94,7 +94,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
           <select
             value={organizationId}
             onChange={(e) => setOrganizationId(e.target.value)}
-            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="">Select client or partner…</option>
             {orgs.map((o) => (
@@ -114,7 +114,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
             onChange={(e) => setClientName(e.target.value)}
             placeholder="Client or partner name"
             required
-            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -130,7 +130,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
               min="1"
               step="0.01"
               required
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
         </div>

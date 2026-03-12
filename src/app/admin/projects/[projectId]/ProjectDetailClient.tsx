@@ -125,7 +125,7 @@ const INV_STATUS_COLORS: Record<string, string> = {
 };
 
 const TABS = ["Overview", "Phases", "Inventory", "Deliveries", "Timeline", "Invoice"];
-const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [data, setData] = useState<ProjectData | null>(null);

@@ -77,7 +77,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             onChange={(e) => setName(e.target.value)}
             placeholder={isClient ? "e.g. John Smith" : "e.g. Roche Bobois"}
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         {!isClient && (
@@ -86,7 +86,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             {PARTNER_SEGMENT_GROUPS.flatMap((seg) =>
               seg.groups.map((group) => (
@@ -108,7 +108,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder="e.g. Marie Dubois"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         )}
@@ -120,7 +120,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             onChange={(e) => setEmail(e.target.value)}
             placeholder="contact@company.com"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -131,7 +131,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div className="flex gap-2 pt-2">

@@ -98,7 +98,7 @@ export default function AdminInvoiceDetailModal({
               onChange={(e) => setAmount(e.target.value)}
               min="0"
               step="0.01"
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ export default function AdminInvoiceDetailModal({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function AdminInvoiceDetailModal({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{s.replace("-", " ")}</option>

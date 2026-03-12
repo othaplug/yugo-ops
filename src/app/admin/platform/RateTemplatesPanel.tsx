@@ -136,7 +136,7 @@ function TemplateRateEditor({
             step={1}
             value={val}
             onChange={(e) => setVal(table, id, field, e.target.value)}
-            className={`w-20 px-2 py-1 text-[11px] text-right rounded border focus:outline-none focus:border-[var(--gold)] bg-[var(--bgsub)] ${changed ? "border-[var(--gold)] text-[var(--gold)] font-semibold" : "border-[var(--brd)] text-[var(--tx)]"}`}
+            className={`w-20 px-2 py-1 text-[11px] text-right rounded border focus:outline-none focus:border-[var(--brd)] bg-[var(--bgsub)] ${changed ? "border-[var(--gold)] text-[var(--gold)] font-semibold" : "border-[var(--brd)] text-[var(--tx)]"}`}
           />
           {isPercent && <span className="text-[10px] text-[var(--tx3)]">%</span>}
         </div>
@@ -416,7 +416,7 @@ function CreateTemplateModal({
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="e.g. Furniture & Design"
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
           />
         </div>
         <div>
@@ -424,7 +424,7 @@ function CreateTemplateModal({
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            className="w-full px-3 py-2 text-[11px] font-mono bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[11px] font-mono bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx3)]"
           />
         </div>
         <div>
@@ -433,7 +433,7 @@ function CreateTemplateModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
           />
         </div>
         <div>
@@ -441,7 +441,7 @@ function CreateTemplateModal({
           <select
             value={copyFrom}
             onChange={(e) => setCopyFrom(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)]"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
           >
             <option value="">— Start blank —</option>
             {existingTemplates.map((t) => (
@@ -510,7 +510,7 @@ function EditTemplateNameModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Furniture & Design"
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
           />
         </div>
         <div>
@@ -519,7 +519,7 @@ function EditTemplateNameModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
           />
         </div>
         <div className="flex gap-2 pt-1">

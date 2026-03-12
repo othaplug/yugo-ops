@@ -64,7 +64,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
             onChange={(e) => setAgentName(e.target.value)}
             placeholder="e.g. Jane Smith"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -74,7 +74,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="agent@brokerage.com"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -84,7 +84,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
             value={brokerage}
             onChange={(e) => setBrokerage(e.target.value)}
             placeholder="e.g. Royal LePage"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div className="flex gap-2 pt-2">

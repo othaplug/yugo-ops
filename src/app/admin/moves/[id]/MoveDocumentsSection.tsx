@@ -198,7 +198,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 <select
                   value={linkInvoiceId}
                   onChange={(e) => setLinkInvoiceId(e.target.value)}
-                  className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] flex-1 focus:border-[var(--gold)] outline-none"
+                  className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] flex-1 focus:border-[var(--brd)] outline-none"
                 >
                   <option value="">Select invoice…</option>
                   {unlinkedInvoices.map((i) => (
@@ -282,19 +282,19 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     value={linkTitle}
                     onChange={(e) => setLinkTitle(e.target.value)}
                     placeholder="Title"
-                    className="w-32 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-32 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   />
                   <input
                     type="url"
                     value={linkUrl}
                     onChange={(e) => setLinkUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-40 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-40 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   />
                   <select
                     value={linkType}
                     onChange={(e) => setLinkType(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
                     {DOC_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>

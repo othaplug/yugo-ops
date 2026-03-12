@@ -86,7 +86,7 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Type name to search…"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -113,7 +113,7 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           <select
             value={selectedTeamId}
             onChange={(e) => setSelectedTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="">Choose team…</option>
             {teams.filter((t) => t.active).map((t) => (

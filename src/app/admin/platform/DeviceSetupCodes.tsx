@@ -387,7 +387,7 @@ export default function DeviceSetupCodes() {
                           toast("Failed to save phone", "x");
                         }
                       }}
-                      className="flex-1 px-3 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                      className="flex-1 px-3 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
                     />
                     <span className="text-[9px] text-[var(--tx3)] shrink-0">Auto-saves on blur</span>
                   </div>
@@ -412,7 +412,7 @@ export default function DeviceSetupCodes() {
                 value={editTruckName}
                 onChange={(e) => setEditTruckName(e.target.value)}
                 placeholder="e.g. Truck 1"
-                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
                 required
               />
             </div>
@@ -450,7 +450,7 @@ export default function DeviceSetupCodes() {
               <select
                 value={formTruckId}
                 onChange={(e) => setFormTruckId(e.target.value)}
-                className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+                className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
               >
                 <option value="">— None —</option>
                 {trucks.map((t) => (
@@ -471,7 +471,7 @@ export default function DeviceSetupCodes() {
             <select
               value={formTeamId}
               onChange={(e) => setFormTeamId(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
             >
               <option value="">— None —</option>
               {teams.map((t) => (
@@ -487,7 +487,7 @@ export default function DeviceSetupCodes() {
               value={formDeviceName}
               onChange={(e) => setFormDeviceName(e.target.value)}
               placeholder="e.g. Truck 1 iPad"
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -495,7 +495,7 @@ export default function DeviceSetupCodes() {
             <select
               value={formExpiresInHours}
               onChange={(e) => setFormExpiresInHours(Number(e.target.value))}
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
             >
               <option value={1}>1 hour</option>
               <option value={4}>4 hours</option>
@@ -538,7 +538,7 @@ export default function DeviceSetupCodes() {
               value={newTruckName}
               onChange={(e) => setNewTruckName(e.target.value)}
               placeholder="e.g. Truck 1"
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
               required
             />
           </div>

@@ -147,7 +147,7 @@ const TAX_RATE = 0.13;
 // ─── Helpers ────────────────────────────────────
 
 const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

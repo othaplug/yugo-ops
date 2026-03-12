@@ -150,7 +150,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             >
               {activeSegments.flatMap((seg) =>
                 seg.groups.map((group) => (
@@ -173,7 +173,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Roche Bobois"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -183,7 +183,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               placeholder="e.g. Marie Dubois"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -194,7 +194,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
               onChange={(e) => setEmail(e.target.value)}
               placeholder="contact@company.com"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -208,7 +208,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 pr-10 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-4 py-2.5 pr-10 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                 />
                 <button
                   type="button"
@@ -241,7 +241,7 @@ export default function InvitePartnerModal({ open, onClose }: InvitePartnerModal
               value={phone}
               onChange={phoneInput.onChange}
               placeholder={PHONE_PLACEHOLDER}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div className="flex gap-2 pt-2">

@@ -32,6 +32,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.setProperty("--tx3", "#999");
       root.setProperty("--brd", "#E0DDD8");
       root.setProperty("--gdim", "rgba(201,169,98,0.2)");
+      root.setProperty("--btn-text-on-accent", "#FFFFFF");
+      root.setProperty("--gold2", "#7A5E25");
     } else {
       root.setProperty("--bg", "#0F0F0F");
       root.setProperty("--bg2", "#1A1A1A");
@@ -40,6 +42,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.setProperty("--tx2", "#999");
       root.setProperty("--tx3", "#666");
       root.setProperty("--brd", "#2A2A2A");
+      root.setProperty("--btn-text-on-accent", "#FFFFFF");
+      root.setProperty("--gold2", "#B89A52");
     }
     localStorage.setItem("yugo-theme", theme);
   }, [theme]);

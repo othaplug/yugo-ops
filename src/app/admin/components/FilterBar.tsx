@@ -31,7 +31,7 @@ export default function FilterBar({ filters, onClear, hasActiveFilters, classNam
           <select
             value={f.value}
             onChange={(e) => f.onChange(e.target.value)}
-            className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[100px]"
+            className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[100px]"
           >
             {f.options.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>

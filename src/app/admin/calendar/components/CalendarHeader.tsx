@@ -68,7 +68,7 @@ export default function CalendarHeader({
         <select
           value={filters.crewId}
           onChange={(e) => onFiltersChange({ ...filters, crewId: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--gold)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
         >
           <option value="">All Teams</option>
           {crews.map((c) => (
@@ -78,7 +78,7 @@ export default function CalendarHeader({
         <select
           value={filters.type}
           onChange={(e) => onFiltersChange({ ...filters, type: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--gold)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
         >
           <option value="">All Types</option>
           <option value="move">Moves</option>
@@ -89,7 +89,7 @@ export default function CalendarHeader({
         <select
           value={filters.status}
           onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--gold)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>

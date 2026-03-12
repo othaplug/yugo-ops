@@ -353,7 +353,7 @@ export default function MessagesClient({
                     onKeyDown={(e) => handleKeyDown(e, openThread!)}
                     placeholder="Type a message… (Shift+Enter for new line)"
                     rows={1}
-                    className="flex-1 px-4 py-2.5 border border-[var(--brd)] rounded-lg text-[13px] bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)] resize-none overflow-y-auto"
+                    className="flex-1 px-4 py-2.5 border border-[var(--brd)] rounded-lg text-[13px] bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--brd)] resize-none overflow-y-auto"
                     style={{ minHeight: 40, maxHeight: 120 }}
                   />
                   <button

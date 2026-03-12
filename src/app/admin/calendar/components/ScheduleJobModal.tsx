@@ -151,7 +151,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
           {jobType === "blocked" && (
             <div>
               <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1.5 block">Reason</label>
-              <select value={blockReason} onChange={(e) => setBlockReason(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <select value={blockReason} onChange={(e) => setBlockReason(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="maintenance">Vehicle Maintenance</option>
                 <option value="training">Training</option>
                 <option value="break">Break</option>
@@ -168,7 +168,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
 
@@ -176,7 +176,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1.5 block">Start</label>
-              <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 {TIME_SLOTS_15MIN.map((t) => (
                   <option key={t} value={t}>{formatTime12(t)}</option>
                 ))}
@@ -184,7 +184,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             </div>
             <div>
               <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1.5 block">End</label>
-              <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+              <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 {TIME_SLOTS_15MIN.filter((t) => t > startTime).map((t) => (
                   <option key={t} value={t}>{formatTime12(t)}</option>
                 ))}
@@ -195,7 +195,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
           {/* Crew */}
           <div>
             <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1.5 block">Team</label>
-            <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+            <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
               <option value="">Select team...</option>
               {crews.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -210,7 +210,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none resize-none"
+              className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none resize-none"
               placeholder="Optional notes..."
             />
           </div>

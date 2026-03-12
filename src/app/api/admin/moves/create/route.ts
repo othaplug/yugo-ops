@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     }
 
-    const moveType = (body.move_type as string) === "office" ? "office" : "residential";
+    const rawMoveType = (body.move_type as string)?.trim()?.toLowerCase();
+    const allowedTypes = ["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const;
+    const moveType = allowedTypes.includes(rawMoveType as (typeof allowedTypes)[number]) ? rawMoveType : "residential";
     const clientName = (body.client_name as string)?.trim() || "";
     const clientEmail = (body.client_email as string)?.trim() || null;
     const clientPhone = (body.client_phone as string)?.trim() || null;
@@ -140,44 +142,41 @@ export async function POST(req: NextRequest) {
 
     const moveId = move.id;
 
-    // If no org was selected, create client and link to move
-    if (!organizationId) {
-      // Use placeholder email if none provided to avoid unique constraint on empty string
-      const orgEmail = (clientEmail || "").trim() || `client-${moveId}@placeholder.local`;
-      const { data: newOrg, error: orgError } = await db
-        .from("organizations")
-        .insert({
-          name: clientName,
-          type: "b2c",
-          contact_name: clientName,
-          email: orgEmail,
-          phone: clientPhone || "",
-          address: null,
-          health: "good",
-        })
-        .select("id")
-        .single();
-      if (!orgError && newOrg?.id) {
-        organizationId = newOrg.id;
-        await db.from("moves").update({ organization_id: organizationId }).eq("id", moveId);
+    try {
+      if (!organizationId) {
+        const orgEmail = (clientEmail || "").trim() || `client-${moveId}@placeholder.local`;
+        const { data: newOrg, error: orgError } = await db
+          .from("organizations")
+          .insert({
+            name: clientName,
+            type: "b2c",
+            contact_name: clientName,
+            email: orgEmail,
+            phone: clientPhone || "",
+            address: null,
+            health: "good",
+          })
+          .select("id")
+          .single();
+        if (!orgError && newOrg?.id) {
+          organizationId = newOrg.id;
+          await db.from("moves").update({ organization_id: organizationId }).eq("id", moveId);
+        }
       }
-    }
 
-    // Add inventory items
-    const inventory = Array.isArray(body.inventory) ? body.inventory : [];
-    for (const item of inventory) {
-      if (item?.room && item?.item_name) {
-        await db.from("move_inventory").insert({
-          move_id: moveId,
-          room: String(item.room),
-          item_name: String(item.item_name).trim(),
-        });
+      const inventory = Array.isArray(body.inventory) ? body.inventory : [];
+      for (const item of inventory) {
+        if (item?.room && item?.item_name) {
+          await db.from("move_inventory").insert({
+            move_id: moveId,
+            room: String(item.room),
+            item_name: String(item.item_name).trim(),
+          });
+        }
       }
-    }
 
-    // Upload documents
-    const bucket = "move-documents";
-    for (const file of docFiles) {
+      const bucket = "move-documents";
+      for (const file of docFiles) {
         if (file?.size && file.type) {
           const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
           const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -195,6 +194,9 @@ export async function POST(req: NextRequest) {
             });
           }
         }
+      }
+    } catch (postErr) {
+      console.error("Create move post-insert step failed (move was created):", postErr);
     }
 
     // Send client email (if email provided and Resend configured). Return emailSent + emailError so UI can show feedback.
@@ -252,14 +254,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    logAudit({
-      userId: user?.id,
-      userEmail: user?.email,
-      action: "edit_move",
-      resourceType: "move",
-      resourceId: moveId,
-      details: { action: "create", move_code: move.move_code },
-    });
+    try {
+      logAudit({
+        userId: user?.id,
+        userEmail: user?.email,
+        action: "edit_move",
+        resourceType: "move",
+        resourceId: moveId,
+        details: { action: "create", move_code: move.move_code },
+      });
+    } catch (auditErr) {
+      console.error("Create move audit log failed:", auditErr);
+    }
 
     return NextResponse.json({
       ok: true,

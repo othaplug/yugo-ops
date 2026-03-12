@@ -66,7 +66,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             required
           />
         </div>
@@ -77,7 +77,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
             onChange={(r) => setAddress(r.fullAddress)}
             placeholder="e.g. 42 Crescent Rd, Toronto"
             label="Address"
-            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -88,7 +88,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
               value={installDate}
               onChange={(e) => setInstallDate(e.target.value)}
               placeholder="e.g. Feb 15"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -98,7 +98,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
               placeholder="e.g. $285K"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
             type="text"
             value={designer}
             onChange={(e) => setDesigner(e.target.value)}
-            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -117,7 +117,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
             type="text"
             value={designerCompany}
             onChange={(e) => setDesignerCompany(e.target.value)}
-            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -127,7 +127,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
               type="email"
               value={designerEmail}
               onChange={(e) => setDesignerEmail(e.target.value)}
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
           <div>
@@ -138,7 +138,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
               value={designerPhone}
               onChange={designerPhoneInput.onChange}
               placeholder={PHONE_PLACEHOLDER}
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             />
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function EditProjectModal({ open, onClose, project, onSaved }: Ed
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none resize-none"
+            className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none resize-none"
           />
         </div>
         <div className="flex gap-2 pt-2">

@@ -108,7 +108,7 @@ function AdminCreateModal({
               onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
               onFocus={() => setOrgDropOpen(true)}
               placeholder="Search partners…"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
             />
             {orgDropOpen && filteredOrgs.length > 0 && (
               <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl max-h-[180px] overflow-y-auto">
@@ -126,7 +126,7 @@ function AdminCreateModal({
           <div>
             <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly GTA Deliveries"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none" />
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
           </div>
 
           <div>
@@ -134,7 +134,7 @@ function AdminCreateModal({
             <div className="flex gap-2">
               {["weekly", "biweekly", "monthly"].map((f) => (
                 <button key={f} type="button" onClick={() => setFrequency(f)}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--gold)] border-[var(--gold)] text-[#0D0D0D]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
                   {FREQ_LABELS[f]}
                 </button>
               ))}
@@ -149,7 +149,7 @@ function AdminCreateModal({
                 const active = daysOfWeek.includes(dow);
                 return (
                   <button key={dow} type="button" onClick={() => toggleDay(dow)}
-                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--gold)] border-[var(--gold)] text-[#0D0D0D]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
                     {day}
                   </button>
                 );
@@ -161,7 +161,7 @@ function AdminCreateModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Booking Type</label>
               <select value={bookingType} onChange={(e) => setBookingType(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="day_rate">Day Rate</option>
                 <option value="per_delivery">Per Delivery</option>
               </select>
@@ -170,7 +170,7 @@ function AdminCreateModal({
               <div>
                 <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Vehicle</label>
                 <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                   {Object.entries(VEHICLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
@@ -180,7 +180,7 @@ function AdminCreateModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Day Type</label>
               <select value={dayType} onChange={(e) => setDayType(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none">
+                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="full_day">Full Day</option>
                 <option value="half_day">Half Day</option>
               </select>
@@ -188,13 +188,13 @@ function AdminCreateModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Default Stops</label>
               <input type="number" value={numStops} onChange={(e) => setNumStops(e.target.value)} placeholder="e.g. 6" min={1}
-                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none" />
+                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
             </div>
           </div>
         </div>
         <div className="px-5 pb-5 flex gap-2">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
             {saving ? "Creating…" : "Create Schedule"}
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function RecurringSchedulesView() {
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
         >
           + New Schedule
         </button>
@@ -277,7 +277,7 @@ export default function RecurringSchedulesView() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or partner…"
-          className="w-full pl-8 pr-3 py-2 text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+          className="w-full pl-8 pr-3 py-2 text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
         />
       </div>
 

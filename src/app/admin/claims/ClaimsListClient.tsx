@@ -132,7 +132,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         </div>
         <Link
           href="/admin/claims/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
         >
           + New Claim
         </Link>
@@ -153,7 +153,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
           placeholder="Search claims..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none"
+          className="flex-1 px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none"
         />
         <select
           value={statusFilter}

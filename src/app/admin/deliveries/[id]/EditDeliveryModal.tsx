@@ -35,7 +35,7 @@ const TIME_OPTIONS = (() => {
    Styled sub-components
    ═══════════════════════════════════════════════════ */
 
-const inputCls = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/20 outline-none transition-all";
+const inputCls = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/20 outline-none transition-all";
 const selectCls = `${inputCls} appearance-none`;
 const labelCls = "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
 

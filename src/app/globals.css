@@ -329,8 +329,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   }
 }
 .field-input:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
+  border-color: var(--brd);
 }
 
 /* Partner portal (light theme) form inputs */
@@ -350,19 +349,21 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   .field-input-partner { font-size: 13px; padding: 8px 10px; }
 }
 .field-input-partner:focus {
-  border-color: #C9A962;
-  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.12);
+  border-color: #E8E4DF;
 }
 .field-input-partner::placeholder { color: #aaa; }
 
 /* Focus visible for keyboard accessibility (dark theme) */
 a:focus-visible,
 button:focus-visible,
-[role="button"]:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--brd);
   outline-offset: 2px;
 }
 

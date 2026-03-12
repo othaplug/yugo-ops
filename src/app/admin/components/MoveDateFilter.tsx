@@ -18,7 +18,7 @@ export default function MoveDateFilter({ value, onChange, className = "", label 
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-md px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px] min-h-[36px]"
+        className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-md px-2.5 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[120px] min-h-[36px]"
       >
         <option value="">All dates</option>
         {groups.map((group) => (

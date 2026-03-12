@@ -373,7 +373,7 @@ export default function DeliveryDetailClient({
                 placeholder={delivery.total_price ? String(delivery.total_price) : "Enter price"}
                 value={adjustedPrice}
                 onChange={(e) => setAdjustedPrice(e.target.value)}
-                className="w-full max-w-[200px] text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full max-w-[200px] text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
               />
             </div>
             {showRejectForm ? (
@@ -477,7 +477,7 @@ export default function DeliveryDetailClient({
                     defaultValue={delivery.status}
                     onBlur={() => setEditingStatus(false)}
                     onChange={(e) => handleStatusChange(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
                     {Object.entries(STATUS_LABELS).map(([val, label]) => (
                       <option key={val} value={val}>{label}</option>

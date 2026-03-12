@@ -13,7 +13,7 @@ interface Org {
 }
 
 const fieldInput =
-  "w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function AdminDayRateForm({ organizations }: { organizations: Org[] }) {
   const router = useRouter();

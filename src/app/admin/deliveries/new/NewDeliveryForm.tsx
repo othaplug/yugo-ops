@@ -42,7 +42,7 @@ const TIME_OPTIONS = (() => {
 })();
 
 const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function NewDeliveryForm({ organizations, crews = [] }: { organizations: Org[]; crews?: Crew[] }) {
   const router = useRouter();
@@ -409,7 +409,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             ))}
           </div>
           <label className="flex items-center gap-2.5 cursor-pointer mt-2">
-            <input type="checkbox" checked={specialHandling} onChange={(e) => setSpecialHandling(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]" />
+            <input type="checkbox" checked={specialHandling} onChange={(e) => setSpecialHandling(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]" />
             <span className="text-[12px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
           </label>
         </section>

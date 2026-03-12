@@ -248,7 +248,7 @@ export default function AllDeliveriesView({
         <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Deliveries</h1>
         <Link
           href="/admin/deliveries/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] transition-colors"
+          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
         >
           + New Delivery
         </Link>
@@ -297,7 +297,7 @@ export default function AllDeliveriesView({
             onClick={() => setPartnerType(t.key)}
             className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-colors ${
               partnerType === t.key
-                ? "bg-[var(--gold)] text-[#0D0D0D]"
+                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                 : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50 border border-[var(--brd)]/50"
             }`}
           >
@@ -316,13 +316,13 @@ export default function AllDeliveriesView({
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             Filters
-            {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[#0D0D0D] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
+            {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
           </button>
           <div className="hidden md:flex items-center gap-3 flex-1">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             >
               {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>

@@ -94,7 +94,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function CreateMoveForm({
   organizations,
@@ -343,21 +343,25 @@ export default function CreateMoveForm({
       return;
     }
 
-    // If no client selected, check for duplicate before creating
+    // If no client selected, check for duplicate before creating (proceed to create if check fails so API can respond)
     if (!organizationId) {
-      const checkRes = await fetch("/api/admin/clients/check-duplicate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_name: clientName.trim(),
-          client_email: clientEmail.trim(),
-          client_phone: normalizePhone(clientPhone),
-        }),
-      });
-      const checkData = await checkRes.json();
-      if (checkData.exists) {
-        alert(`Client already exists: ${checkData.org?.name || "Existing client"}. Please select them from the dropdown.`);
-        return;
+      try {
+        const checkRes = await fetch("/api/admin/clients/check-duplicate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client_name: clientName.trim(),
+            client_email: clientEmail.trim(),
+            client_phone: normalizePhone(clientPhone),
+          }),
+        });
+        const checkData = (await checkRes.json().catch(() => ({}))) as { exists?: boolean; org?: { name?: string }; error?: string };
+        if (checkRes.ok && checkData.exists) {
+          toast(`Client already exists: ${checkData.org?.name || "Existing client"}. Please select them from the dropdown.`, "x");
+          return;
+        }
+      } catch {
+        // Proceed to create; API will return 400 if duplicate
       }
     }
 
@@ -467,7 +471,10 @@ export default function CreateMoveForm({
 
       const res = await fetch("/api/admin/moves/create", { method: "POST", body: formData });
       const data = (await res.json().catch(() => ({}))) as { id?: string; move_code?: string; error?: string; emailSent?: boolean; emailError?: string };
-      if (!res.ok) throw new Error(data.error || `Failed to create move (${res.status})`);
+      if (!res.ok) {
+        toast(data.error || `Failed to create move (${res.status})`, "x");
+        return;
+      }
       if (data.emailSent) {
         toast("Move created. Client notified by email.", "mail");
       } else if (data.emailError) {
@@ -478,7 +485,7 @@ export default function CreateMoveForm({
       router.push(data.move_code ? `/admin/moves/${data.move_code}` : `/admin/moves/${data.id}`);
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create move");
+      toast(err instanceof Error ? err.message : "Failed to create move", "x");
     } finally {
       setLoading(false);
     }

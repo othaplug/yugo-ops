@@ -430,7 +430,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const newPrice = newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
   const livePrice = livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
-  const inputClass = "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-all";
+  const inputClass = "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "block text-[11px] font-semibold text-[var(--tx2)] mb-1.5";
 
   if (done) {
@@ -450,7 +450,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <button onClick={() => router.push("/admin/quotes")} className="px-5 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)]">
             Back to Quotes
           </button>
-          <button onClick={() => router.push(`/admin/quotes/${newQuoteId}/edit`)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[#0D0D0D] text-sm font-semibold hover:bg-[var(--gold)]/90">
+          <button onClick={() => router.push(`/admin/quotes/${newQuoteId}/edit`)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
             View New Quote
           </button>
         </div>

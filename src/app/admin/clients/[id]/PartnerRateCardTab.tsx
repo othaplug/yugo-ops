@@ -132,7 +132,7 @@ function EditOverrideModal({
             step={1}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)]"
+            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
             autoFocus
           />
         </div>
@@ -156,7 +156,7 @@ function EditOverrideModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Negotiated rate for Q1 2026"
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
           />
         </div>
 
@@ -220,7 +220,7 @@ function RateCardSettingsModal({
           <select
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)]"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
           >
             <option value="">— No template —</option>
             {templates.map((t) => (
@@ -258,7 +258,7 @@ function RateCardSettingsModal({
             type="number" min={0} max={100} step={1}
             value={discount}
             onChange={(e) => setDiscount(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--gold)] text-[var(--tx)]"
+            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
           />
           <p className="text-[9px] text-[var(--tx3)] mt-1">Applied to all template rates. Overridden cells use their custom value instead.</p>
         </div>

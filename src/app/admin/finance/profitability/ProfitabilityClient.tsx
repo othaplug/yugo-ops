@@ -613,7 +613,7 @@ export default function ProfitabilityClient() {
                   placeholder="Search by client or move ID..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
+                  className="w-full pl-8 pr-3 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--brd)]"
                 />
               </div>
               <span className="text-[10px] text-[var(--tx3)]">{filteredRows.length} moves</span>

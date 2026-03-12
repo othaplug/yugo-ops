@@ -132,7 +132,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any notes about today's setup..."
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)] outline-none"
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
             />
           </div>
           {error && (

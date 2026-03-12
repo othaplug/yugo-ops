@@ -128,7 +128,7 @@ export default function TruckAssignments() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
           <button
             onClick={() => setAddModalOpen(true)}
@@ -202,7 +202,7 @@ export default function TruckAssignments() {
                 <select
                   value={formTruckId}
                   onChange={(e) => setFormTruckId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
                 >
                   <option value="">Select truck</option>
                   {trucks
@@ -230,7 +230,7 @@ export default function TruckAssignments() {
                 <select
                   value={formTeamId}
                   onChange={(e) => setFormTeamId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--gold)] outline-none"
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
                 >
                   <option value="">Select team</option>
                   {teams.map((t) => (

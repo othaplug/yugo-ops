@@ -141,7 +141,7 @@ function ScheduleModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Weekly GTA Deliveries"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
             />
           </div>
 
@@ -217,7 +217,7 @@ function ScheduleModal({
                 <select
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                 >
                   {Object.entries(VEHICLE_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
@@ -229,7 +229,7 @@ function ScheduleModal({
                 <select
                   value={dayType}
                   onChange={(e) => setDayType(e.target.value)}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                 >
                   <option value="full_day">Full Day</option>
                   <option value="half_day">Half Day</option>
@@ -247,7 +247,7 @@ function ScheduleModal({
                 onChange={(e) => setNumStops(e.target.value)}
                 placeholder="e.g. 6"
                 min={1}
-                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
               />
             </div>
             <div>
@@ -255,7 +255,7 @@ function ScheduleModal({
               <select
                 value={timeWindow}
                 onChange={(e) => setTimeWindow(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
               >
                 {Object.entries(TIME_LABELS).map(([v, l]) => (
                   <option key={v} value={v}>{l}</option>
@@ -272,7 +272,7 @@ function ScheduleModal({
               onChange={(r) => setPickupAddress(r.fullAddress)}
               placeholder="e.g. 123 Warehouse Rd, Toronto"
               country="CA"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
             />
           </div>
         </div>

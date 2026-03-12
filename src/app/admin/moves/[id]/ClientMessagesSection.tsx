@@ -121,7 +121,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
             placeholder="Type a reply..."
             maxLength={2000}
             disabled={sending}
-            className="flex-1 rounded-md border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none disabled:opacity-50"
+            className="flex-1 rounded-md border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none disabled:opacity-50"
           />
           <button
             type="submit"

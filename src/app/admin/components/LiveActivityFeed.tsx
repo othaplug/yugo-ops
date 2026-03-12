@@ -58,25 +58,27 @@ function formatDesc(desc: string): string {
 
 export default function LiveActivityFeed({ initialEvents }: { initialEvents: ActivityEvent[] }) {
   const [events, setEvents] = useState<ActivityEvent[]>(initialEvents);
+  const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
   const [, setTick] = useState(0);
   const seenIds = useRef(new Set(initialEvents.map((e) => e.id)));
   const supabase = createClient();
 
-  const mergeEvents = useCallback((incoming: ActivityEvent[]) => {
+  const mergeEvents = useCallback((incoming: ActivityEvent[], onNewIds?: (ids: string[]) => void) => {
+    const newIds: string[] = [];
     setEvents((prev) => {
       const merged = [...prev];
-      let added = false;
       for (const e of incoming) {
         if (!seenIds.current.has(e.id)) {
           seenIds.current.add(e.id);
           merged.unshift(e);
-          added = true;
+          newIds.push(e.id);
         }
       }
-      if (!added) return prev;
+      if (newIds.length === 0) return prev;
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return merged.slice(0, 30);
     });
+    if (newIds.length > 0 && onNewIds) onNewIds(newIds);
   }, []);
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         { event: "INSERT", schema: "public", table: "status_events" },
         (payload) => {
           const row = payload.new as ActivityEvent;
-          if (row?.id) mergeEvents([row]);
+          if (row?.id) mergeEvents([row], (ids) => setUnreadIds((prev) => new Set([...prev, ...ids])));
         },
       )
       .subscribe();
@@ -105,7 +107,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
           .select("id, entity_type, entity_id, event_type, description, icon, created_at")
           .order("created_at", { ascending: false })
           .limit(12);
-        if (data?.length) mergeEvents(data);
+        if (data?.length) mergeEvents(data, (ids) => setUnreadIds((prev) => new Set([...prev, ...ids])));
       } catch {
         /* silent */
       }
@@ -137,23 +139,27 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
       </div>
       {visible.length > 0 ? (
         <div className="divide-y divide-[var(--brd)]/30">
-          {visible.map((e, idx) => (
-            <Link
-              key={`${e.id}-${idx}`}
-              href={getHref(e)}
-              className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
-            >
-              <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
-                <Icon name={getIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] text-[var(--tx)] leading-snug truncate">
-                  {formatDesc(e.description || e.event_type)}
+          {visible.map((e, idx) => {
+            const isUnread = unreadIds.has(e.id);
+            return (
+              <Link
+                key={`${e.id}-${idx}`}
+                href={getHref(e)}
+                onClick={() => setUnreadIds((prev) => { const n = new Set(prev); n.delete(e.id); return n; })}
+                className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
+              >
+                <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
+                  <Icon name={getIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
                 </div>
-                <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.created_at)}</div>
-              </div>
-            </Link>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <div className={`text-[11px] leading-snug truncate ${isUnread ? "font-semibold text-[var(--tx)]" : "text-[var(--tx)]"}`}>
+                    {formatDesc(e.description || e.event_type)}
+                  </div>
+                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.created_at)}</div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <p className="text-[11px] text-[var(--tx3)] py-3">No recent activity</p>

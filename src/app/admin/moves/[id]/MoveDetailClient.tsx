@@ -224,7 +224,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
               {editingCard === "status" ? (
                 <select
-                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[120px]"
+                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[120px]"
                   value={(() => {
                     const s = normalizeStatus(move.status) || move.status || "confirmed";
                     return s === "paid" ? "scheduled" : s;
@@ -374,7 +374,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 }
                 router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors"
             >
               <option value="">No crew assigned</option>
               {crews.map((c) => (
@@ -392,7 +392,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                       type="checkbox"
                       checked={assignedMembers.has(m)}
                       onChange={() => toggleMember(m)}
-                      className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                      className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]"
                     />
                     <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
                   </label>
@@ -435,7 +435,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             >
               <option value="">No vehicle assigned</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -453,7 +453,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
             >
               <option value="">None</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -474,7 +474,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               }}
               placeholder="e.g. Use truck #3 (newer lift gate)"
               rows={2}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-none"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none resize-none"
             />
           </div>
           <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">

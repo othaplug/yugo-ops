@@ -121,7 +121,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               const team = activeTeams.find((t) => (t.memberIds || []).some((m) => nameMatches(m, v)));
               if (team) setTeamId(team.id);
             }}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="">Choose team member…</option>
             {availableForPortal.map((n) => (
@@ -140,7 +140,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -152,7 +152,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="000000"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] font-mono text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] font-mono text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
         </div>
         <div>
@@ -160,7 +160,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="">Choose team…</option>
             {activeTeams.map((t) => (
@@ -173,7 +173,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "lead" | "specialist" | "driver")}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           >
             <option value="lead">Lead (shown first on tablet)</option>
             <option value="specialist">Specialist</option>

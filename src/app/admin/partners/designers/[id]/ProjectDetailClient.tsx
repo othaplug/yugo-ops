@@ -233,7 +233,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
                     <select
                       value={v.status}
                       onChange={(e) => updateVendorStatus(i, e.target.value as ProjectVendor["status"])}
-                      className={`text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 cursor-pointer focus:border-[var(--gold)] outline-none ${STATUS_COLORS[v.status]}`}
+                      className={`text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 cursor-pointer focus:border-[var(--brd)] outline-none ${STATUS_COLORS[v.status]}`}
                     >
                       {STATUS_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>

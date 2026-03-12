@@ -310,7 +310,7 @@ export default function ChangeRequestsClient({
               placeholder="0"
               value={approveFeeDollars}
               onChange={(e) => setApproveFeeDollars(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button

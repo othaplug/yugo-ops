@@ -317,7 +317,7 @@ export default function DataTable<T>({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/50 focus:border-[var(--gold)] outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/50 focus:border-[var(--brd)] outline-none transition-colors"
             />
           </div>
         )}
@@ -358,7 +358,7 @@ export default function DataTable<T>({
                           type="checkbox"
                           checked={!hiddenCols.has(col.id)}
                           onChange={() => toggleCol(col.id)}
-                          className="w-3.5 h-3.5 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)] accent-[var(--gold)]"
+                          className="w-3.5 h-3.5 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)] accent-[var(--gold)]"
                         />
                         {col.label}
                       </label>
@@ -587,7 +587,7 @@ export default function DataTable<T>({
               <select
                 value={perPage}
                 onChange={(e) => changePerPage(Number(e.target.value))}
-                className="text-[10px] bg-[var(--card)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                className="text-[10px] bg-[var(--card)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
               >
                 {perPageOptions.map((n) => (
                   <option key={n} value={n}>

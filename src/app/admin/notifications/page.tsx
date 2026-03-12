@@ -152,7 +152,7 @@ export default function AdminNotificationsPage() {
             placeholder="Search notifications..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none transition-colors"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[var(--brd)] focus:outline-none transition-colors"
           />
         </div>
 
@@ -179,7 +179,7 @@ export default function AdminNotificationsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="px-2 py-1.5 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] text-[var(--tx)] focus:border-[var(--gold)] focus:outline-none transition-colors"
+            className="px-2 py-1.5 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] text-[var(--tx)] focus:border-[var(--brd)] focus:outline-none transition-colors"
             title="From date"
           />
           <span className="text-[10px] text-[var(--tx3)]">to</span>
@@ -187,7 +187,7 @@ export default function AdminNotificationsPage() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="px-2 py-1.5 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] text-[var(--tx)] focus:border-[var(--gold)] focus:outline-none transition-colors"
+            className="px-2 py-1.5 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] text-[var(--tx)] focus:border-[var(--brd)] focus:outline-none transition-colors"
             title="To date"
           />
           {(dateFrom || dateTo) && (
@@ -249,7 +249,7 @@ export default function AdminNotificationsPage() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <div className={`text-[13px] leading-snug ${!notif.is_read ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                    <div className={`text-[13px] leading-snug ${!notif.is_read ? "font-bold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
                       {notif.title}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

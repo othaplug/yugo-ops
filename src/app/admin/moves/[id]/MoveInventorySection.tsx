@@ -326,7 +326,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                                       value={editItemName}
                                       onChange={(e) => setEditItemName(e.target.value)}
                                       placeholder="Item name"
-                                      className="w-full min-w-[120px] text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                                      className="w-full min-w-[120px] text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                                       autoFocus
                                     />
                                   ) : (
@@ -444,7 +444,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
                     <option value="">Select Room</option>
                     {DEFAULT_ROOMS.map((r) => (
@@ -459,7 +459,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                     onChange={(e) => setBulkText(e.target.value)}
                     placeholder={"Table x1, Couch x2\nCoffee Table"}
                     rows={3}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none resize-y"
+                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none resize-y"
                   />
                 </div>
                 {parsedBulkItems.length > 0 && (
@@ -475,7 +475,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             id={`bulk-${i}`}
                             checked={bulkSelected.has(i)}
                             onChange={() => toggleBulkItem(i)}
-                            className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                            className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]"
                           />
                           <label htmlFor={`bulk-${i}`} className="text-[12px] font-medium text-[var(--tx)] cursor-pointer flex-1">
                             {item}
@@ -501,7 +501,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
-                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
                     <option value="">Select Room</option>
                     {DEFAULT_ROOMS.map((r) => (
@@ -517,7 +517,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                     placeholder="e.g. Couch x2"
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
                   />
                 </div>
                 <div className="w-14">
@@ -528,7 +528,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                     max={99}
                     value={newItemQty}
                     onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   />
                 </div>
                 <button
@@ -585,7 +585,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
               placeholder="0"
               value={approveExtraFeeDollars}
               onChange={(e) => setApproveExtraFeeDollars(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none mb-4"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
