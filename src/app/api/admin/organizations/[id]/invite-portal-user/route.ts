@@ -62,7 +62,7 @@ export async function POST(
       const { error: sendError } = await resend.emails.send({
         from: emailFrom,
         to: emailTrimmed,
-        subject: `You've been added to ${org.name} on YUGO+ Partner Portal`,
+        subject: `You've been added to ${org.name} on Yugo+ Partner Portal`,
         html: addedToPartnerEmail({ contactName: nameTrimmed, companyName: org.name, loginUrl }),
         text: addedToPartnerEmailText({ contactName: nameTrimmed, companyName: org.name, loginUrl }),
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
@@ -87,7 +87,7 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: emailTrimmed,
-      subject: "You're invited to YUGO+ Partner Portal",
+      subject: "You're invited to Yugo+ Partner Portal",
       html: invitePartnerEmail({
         contactName: nameTrimmed,
         companyName: org.name,

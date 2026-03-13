@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
       from: emailFrom,
       to: emailTrimmed,
       replyTo: emailFrom,
-      subject: "You're invited to YUGO+ — Log in to continue setup",
+      subject: "You're invited to Yugo — Log in to continue setup",
       html: inviteUserEmail({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
       text: inviteUserEmailText({ name: nameTrimmed, email: emailTrimmed, roleLabel, tempPassword: password, loginUrl }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

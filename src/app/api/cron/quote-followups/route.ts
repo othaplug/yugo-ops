@@ -100,7 +100,7 @@ function chooseFollowUpVariant(
 
     if (eng.maxSessionSeconds < 30 && eng.pageViews <= 1) {
       return {
-        subject: "Your YUGO+ quote — quick summary",
+        subject: "Your Yugo quote — quick summary",
         template: "quote-followup-2-cold",
         extraData: { includeInlinePrices: true },
       };
@@ -123,7 +123,7 @@ function chooseFollowUpVariant(
 
   if (eng.pageViews === 0) {
     return {
-      subject: "Did you receive your YUGO+ quote?",
+      subject: "Did you receive your Yugo quote?",
       template: "quote-followup-3-unseen",
       extraData: {},
     };
@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
 
         const res = await sendEmail({
           to: contact.email,
-          subject: `Just checking in — your YUGO+ quote is ready`,
+          subject: `Just checking in — your Yugo quote is ready`,
           template: "quote-followup-1",
           data: {
             clientName: contact.name || "",

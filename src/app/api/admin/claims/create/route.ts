@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     sendEmail({
       to: clientEmail.toLowerCase(),
-      subject: `Claim ${claim.claim_number} Filed — YUGO+`,
+      subject: `Claim ${claim.claim_number} Filed — Yugo+`,
       html: claimCreatedHtml(claim.claim_number, clientName, items.length, totalClaimedValue),
     }).catch(() => {});
 

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await resend.emails.send({
       from: emailFrom,
       to: email,
-      subject: "YUGO+ Test Email",
+      subject: "Yugo+ Test Email",
       html: `<p>If you received this, Resend is working correctly.</p>`,
     });
 

@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
 
     sendEmail({
       to: trimmedEmail.toLowerCase(),
-      subject: "Your YUGO+ Quote Is Being Prepared",
+      subject: "Your Yugo Quote Is Being Prepared",
       html: confirmationEmailHtml({
         name: trimmedName,
         moveType: moveType || "residential",

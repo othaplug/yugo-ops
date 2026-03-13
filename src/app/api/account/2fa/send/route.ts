@@ -38,7 +38,7 @@ export async function POST() {
     await resend.emails.send({
       from: emailFrom,
       to: user.email,
-      subject: "Your YUGO+ login code",
+      subject: "Your Yugo+ login code",
       html: verificationCodeEmail({ code, purpose: "2fa" }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

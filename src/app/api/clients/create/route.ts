@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: `You're invited to YUGO+ — ${nameTrimmed}`,
+          subject: `You're invited to Yugo — ${nameTrimmed}`,
           html: invitePartnerEmail(inviteParams),
           text: invitePartnerEmailText(inviteParams),
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

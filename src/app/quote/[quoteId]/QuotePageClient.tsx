@@ -880,7 +880,7 @@ const InclusionsShowcase = React.forwardRef<
     : "Licensed, insured, background-checked movers";
 
   const dynamicItems: Inclusion[] = [
-    { icon: Package, label: truckLine, description: "Climate-protected, equipped for your move" },
+    { icon: Truck, label: truckLine, description: "Climate-protected, equipped for your move" },
     { icon: Users, label: `Professional crew${crewSize ? ` of ${crewSize}` : ""}`, description: crewLine },
   ];
 

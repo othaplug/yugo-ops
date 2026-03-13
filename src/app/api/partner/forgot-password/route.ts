@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: email,
-      subject: "Your YUGO+ Partner Portal password has been reset",
+      subject: "Your Yugo+ Partner Portal password has been reset",
       html: partnerPasswordResetEmail({
         contactName: name,
         companyName: org.name,

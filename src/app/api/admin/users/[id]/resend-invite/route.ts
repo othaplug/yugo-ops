@@ -48,7 +48,7 @@ export async function POST(
       const { error: sendError } = await resend.emails.send({
         from: emailFrom,
         to: inv.email,
-        subject: "You're invited to YUGO+ — Log in to continue setup",
+        subject: "You're invited to Yugo+ — Log in to continue setup",
         html: inviteUserEmail({ name: inv.name || "", email: inv.email, roleLabel, tempPassword, loginUrl }),
         text: inviteUserEmailText({ name: inv.name || "", email: inv.email, roleLabel, tempPassword, loginUrl }),
       });
@@ -116,7 +116,7 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: email,
-      subject: "You're invited to YUGO+ — Log in to continue setup",
+      subject: "You're invited to Yugo+ — Log in to continue setup",
       html: inviteUserEmail({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
       text: inviteUserEmailText({ name: name.trim() || "", email, roleLabel, tempPassword, loginUrl }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
