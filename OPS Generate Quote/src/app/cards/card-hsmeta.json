@@ -1,0 +1,10 @@
+{
+  "uid": "OPSGenerateQuote_card",
+  "type": "card",
+  "config": {
+    "name": "Generate Quote in OPS",
+    "location": "crm.record.sidebar",
+    "entrypoint": "/app/cards/NewCard.tsx",
+    "objectTypes": ["deals"]
+  }
+}

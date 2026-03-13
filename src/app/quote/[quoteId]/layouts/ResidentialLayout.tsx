@@ -30,6 +30,8 @@ export default function ResidentialLayout({
   onSelectTier,
   recommendedTier = "premier",
 }: Props) {
+  const raw = (recommendedTier ?? "premier").toString().toLowerCase().trim();
+  const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "premier";
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
@@ -42,7 +44,7 @@ export default function ResidentialLayout({
         </p>
       </div>
 
-      {recommendedTier === "estate" && (
+      {recTier === "estate" && (
         <div
           className="mb-6 rounded-xl px-5 py-3 text-center text-[12px] border"
           style={{ backgroundColor: `${WINE}08`, borderColor: `${WINE}30`, color: FOREST }}
@@ -57,12 +59,12 @@ export default function ResidentialLayout({
           if (!t) return null;
           const meta = TIER_META[tierKey];
           const isSelected = selectedTier === tierKey;
-          const isRecommended = tierKey === recommendedTier;
+          const isRecommended = tierKey === recTier;
 
           const badgeText =
-            recommendedTier === "estate" && tierKey === "estate"
+            recTier === "estate" && tierKey === "estate"
               ? "Recommended for You"
-              : recommendedTier === "premier" && tierKey === "premier"
+              : (recTier === "premier" && tierKey === "premier") || (recTier === "essentials" && tierKey === "essentials")
                 ? "Recommended"
                 : null;
 
@@ -79,8 +81,14 @@ export default function ResidentialLayout({
             >
               {badgeText && (
                 <div
-                  className="text-center py-1.5 text-[9px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
-                  style={{ backgroundColor: tierKey === "estate" ? WINE : GOLD }}
+                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
+                  style={{
+                    backgroundColor: tierKey === "estate" ? WINE : GOLD,
+                    minHeight: "28px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
                   {badgeText}
                 </div>

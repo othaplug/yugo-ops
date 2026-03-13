@@ -18,16 +18,11 @@ const SERVICE_TO_TEMPLATE: Record<string, string> = {
   b2b_delivery: "quote-specialty",
 };
 
-const SERVICE_SUBJECTS: Record<string, (name: string, extra?: string) => string> = {
-  local_move: (name) => `Your YUGO+ Moving Quote — ${name}`,
-  long_distance: (name) => `Your Long Distance Quote — ${name}`,
-  office_move: (_name, company) => `Relocation Proposal — ${company || "Your Office"}`,
-  single_item: (_name, item) => `Your Delivery Quote — ${item || "Your Item"}`,
-  white_glove: (name) => `Your White Glove Service Quote — ${name}`,
-  specialty: (name) => `Your Specialty Service Proposal — ${name}`,
-  b2b_oneoff: (name) => `Your Delivery Quote — ${name}`,
-  b2b_delivery: (name) => `Your Delivery Quote — ${name}`,
-};
+/** Subject for all quote emails: "FirstName, Your Move Quote is Here - QuoteID" */
+function quoteSubject(firstName: string, quoteId: string): string {
+  const namePart = firstName ? `${firstName}, ` : "";
+  return `${namePart}Your Move Quote is Here - ${quoteId}`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,7 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Contact has no email address. Enter the client email in the form and try again." }, { status: 400 });
     }
 
-    const clientName = (contact?.name?.trim() || bodyClientName?.trim()) || "";
+    const fullName = (contact?.name?.trim() || bodyClientName?.trim()) || "";
+    const firstName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
     const serviceType = quote.service_type as string;
     const template = SERVICE_TO_TEMPLATE[serviceType];
     if (!template) {
@@ -100,22 +96,14 @@ export async function POST(req: NextRequest) {
     const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
-    const subjectFn = SERVICE_SUBJECTS[serviceType] ?? ((n: string) => `Your YUGO+ Quote — ${n}`);
-    const extraSubject =
-      serviceType === "office_move"
-        ? (factors.company_name as string) ?? ""
-        : serviceType === "single_item"
-          ? (factors.item_description as string) ?? ""
-          : "";
-
-    const subject = subjectFn(clientName, extraSubject);
+    const subject = quoteSubject(firstName, quoteId);
 
     const result = await sendEmail({
       to: clientEmail,
       subject,
       template: template as TemplateName,
       data: {
-        clientName,
+        clientName: firstName,
         quoteId,
         quoteUrl,
         serviceType,

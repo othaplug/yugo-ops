@@ -689,9 +689,9 @@ export default function QuoteFormClient({
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-5 relative">
+      <div className="flex flex-col md:flex-row gap-5 relative">
         {/* ═══ LEFT PANEL — Form ═══ */}
-        <div className={`flex flex-col transition-all duration-300 ${previewOpen ? "lg:w-[60%]" : "lg:w-full"}`}>
+        <div className={`flex flex-col transition-all duration-300 max-w-4xl ${previewOpen ? "md:w-[60%]" : "md:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[var(--brd)]">
               <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
@@ -810,8 +810,8 @@ export default function QuoteFormClient({
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
                 <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
-                <div className="flex flex-col sm:flex-row gap-3 items-end">
-                  <div className="flex-1 min-w-0 w-full">
+                <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                  <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
                       value={fromAddress}
                       onRawChange={setFromAddress}
@@ -822,7 +822,7 @@ export default function QuoteFormClient({
                       className={fieldInput}
                     />
                   </div>
-                  <div className="w-full sm:w-[150px]">
+                  <div className="w-full min-[400px]:w-[150px] shrink-0">
                     <Field label="Access">
                       <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -830,8 +830,8 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 items-end">
-                  <div className="flex-1 min-w-0 w-full">
+                <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                  <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
                       value={toAddress}
                       onRawChange={setToAddress}
@@ -842,7 +842,7 @@ export default function QuoteFormClient({
                       className={fieldInput}
                     />
                   </div>
-                  <div className="w-full sm:w-[150px]">
+                  <div className="w-full min-[400px]:w-[150px] shrink-0">
                     <Field label="Access">
                       <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -1421,7 +1421,7 @@ export default function QuoteFormClient({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />
@@ -1429,7 +1429,7 @@ export default function QuoteFormClient({
           </button>
         )}
 
-        <div className={`transition-all duration-300 ${previewOpen ? "lg:w-[40%]" : "lg:w-0 lg:overflow-hidden lg:opacity-0 lg:pointer-events-none hidden lg:block"}`}>
+        <div className={`transition-all duration-300 ${previewOpen ? "md:w-[40%]" : "md:w-0 md:overflow-hidden md:opacity-0 md:pointer-events-none hidden md:block"}`}>
           <div className="sticky top-6 space-y-4">
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
@@ -1444,7 +1444,7 @@ export default function QuoteFormClient({
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(false)}
-                  className="hidden lg:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                  className="hidden md:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
                   title="Collapse preview"
                 >
                   <PanelRightClose className="w-4 h-4" />

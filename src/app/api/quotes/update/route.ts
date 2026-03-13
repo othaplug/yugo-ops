@@ -139,6 +139,8 @@ export async function POST(req: Request) {
     const contact = original.contacts as { name: string; email: string | null } | { name: string; email: string | null }[] | null;
     const contactObj = Array.isArray(contact) ? contact[0] ?? null : contact;
     const clientEmail = contactObj?.email;
+    const fullName = (contactObj?.name || "").trim();
+    const firstName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
 
     if (sendToClient && clientEmail) {
       const SERVICE_LABELS: Record<string, string> = {
@@ -153,12 +155,14 @@ export async function POST(req: Request) {
       const baseUrl = getEmailBaseUrl();
       const quoteUrl = `${baseUrl}/quote/${newQuoteId}`;
 
+      const subject = firstName ? `${firstName}, Your updated quote is ready - ${newQuoteId}` : `Your updated quote is ready - ${newQuoteId}`;
+
       sendEmail({
         to: clientEmail,
-        subject: `Your updated YUGO+ quote is ready — ${contactObj?.name || ""}`,
+        subject,
         template: "quote-updated",
         data: {
-          clientName: contactObj?.name || "",
+          clientName: fullName,
           quoteUrl,
           serviceLabel: SERVICE_LABELS[newQuote.service_type] ?? newQuote.service_type,
           changesSummary,

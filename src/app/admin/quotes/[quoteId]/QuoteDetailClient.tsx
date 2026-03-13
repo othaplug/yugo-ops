@@ -391,7 +391,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                       Est. Hours
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)]">
-                      {quote.est_hours}h
+                      ~{quote.est_hours}h
                     </p>
                   </div>
                 )}
@@ -608,7 +608,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               {quote.est_hours && (
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Est. Hours</span>
-                  <span className="text-[var(--tx)] font-medium">{quote.est_hours}h</span>
+                  <span className="text-[var(--tx)] font-medium">~{quote.est_hours}h</span>
                 </div>
               )}
               {quote.distance_km && (

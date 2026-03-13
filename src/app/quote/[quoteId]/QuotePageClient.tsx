@@ -584,7 +584,10 @@ export default function QuotePageClient({
             tiers={tiers}
             selectedTier={selectedTier}
             onSelectTier={handleSelectTier}
-            recommendedTier={quote.recommended_tier || "premier"}
+            recommendedTier={(() => {
+              const r = (quote.recommended_tier ?? "premier").toString().toLowerCase().trim();
+              return ["essentials", "premier", "estate"].includes(r) ? r : "premier";
+            })()}
           />
         ) : quote.service_type === "long_distance" ? (
           <LongDistanceLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />

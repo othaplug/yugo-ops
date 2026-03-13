@@ -7,6 +7,11 @@ import { formatPhone } from "@/lib/phone";
    Pre-Move, Post-Move, Review & Lifecycle Email Templates
    ═══════════════════════════════════════════════════════════ */
 
+/** First name only for email greetings (all client-facing emails). */
+function firstName(full: string | undefined): string {
+  return ((full || "").trim().split(/\s+/)[0]) || "";
+}
+
 function dateDisplay(dateStr: string | null | undefined): string {
   if (!dateStr) return "To be confirmed";
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
@@ -49,7 +54,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">3 Days To Go</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move is almost here${d.clientName ? `, ${d.clientName}` : ""}!</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move is almost here${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is scheduled for <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>. Here&apos;s a quick checklist to make sure everything goes smoothly.
     </p>
@@ -111,7 +116,7 @@ export interface PreMove24hrData {
 export function preMove24hrEmail(d: PreMove24hrData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Tomorrow&apos;s the Day</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your crew is ready${d.clientName ? `, ${d.clientName}` : ""}!</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your crew is ready${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Everything is set for your move tomorrow. Here are the details.
     </p>
@@ -164,7 +169,7 @@ export interface BalanceReceiptData {
 export function balanceReceiptEmail(d: BalanceReceiptData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Received</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance paid${d.clientName ? `, ${d.clientName}` : ""}!</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance paid${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We&apos;ve received your balance payment. Your account is now paid in full.
     </p>
@@ -198,7 +203,7 @@ export interface MoveCompleteData {
 export function moveCompleteEmail(d: MoveCompleteData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Complete</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">You&apos;re all moved in${d.clientName ? `, ${d.clientName}` : ""}!</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">You&apos;re all moved in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move has been completed. We hope everything went perfectly. All your move documents and receipts are available in your tracking portal.
     </p>
@@ -238,7 +243,7 @@ export interface ReviewRequestData {
 export function reviewRequestEmail(d: ReviewRequestData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Move?</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${d.clientName ? `, ${d.clientName}` : ""}!</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your review helps other families find a mover they can trust. It only takes 30 seconds.
     </p>
@@ -280,7 +285,7 @@ export interface LowSatisfactionData {
 export function lowSatisfactionEmail(d: LowSatisfactionData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We Want to Make It Right</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;re sorry${d.clientName ? `, ${d.clientName}` : ""}.</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;re sorry${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We understand your recent move didn&apos;t meet expectations, and we sincerely apologize. Your satisfaction is our priority and we want to make this right.
     </p>
@@ -351,7 +356,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Exclusive Offer</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Give $50, Get $50</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Hi${d.clientName ? ` ${d.clientName}` : ""}, thanks for moving with YUGO+! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
+      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with YUGO+! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
     </p>
 
     <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
@@ -387,7 +392,7 @@ export interface QuoteFollowup1Data {
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Quote Is Ready</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We sent your ${d.serviceLabel.toLowerCase()} quote yesterday but noticed you haven&apos;t had a chance to review it yet.
     </p>
@@ -426,7 +431,7 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Don&apos;t Miss Out</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We noticed you reviewed your ${d.serviceLabel.toLowerCase()} quote but haven&apos;t booked yet. We wanted to let you know that availability for <strong style="color:#E8E5E0">${moveDateStr}</strong> is limited.
     </p>
@@ -480,7 +485,7 @@ export interface CancellationConfirmData {
 export function cancellationConfirmEmail(d: CancellationConfirmData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Cancellation Confirmed</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move has been cancelled${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move has been cancelled${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We&apos;re sorry to see you go. Your move <strong style="color:#E8E5E0">${d.moveCode}</strong> has been cancelled.
     </p>
@@ -534,7 +539,7 @@ export interface QuoteUpdatedData {
 export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quote Updated</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your updated quote is ready${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your updated quote is ready${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We&apos;ve updated your ${d.serviceLabel.toLowerCase()} quote based on the changes discussed. Please review the updated pricing below.
     </p>
@@ -567,7 +572,7 @@ export interface BalanceReminder72hrData {
 export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your remaining balance is due${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your remaining balance is due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your remaining balance of <strong style="color:#C9A962">${formatCurrency(d.balanceAmount)}</strong> is due before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
     </p>
@@ -614,7 +619,7 @@ export interface BalanceReminder48hrData {
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your balance of ${formatCurrency(d.balanceAmount)} is due${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your balance of ${formatCurrency(d.balanceAmount)} is due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Choose how to pay your remaining balance before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
     </p>
@@ -668,7 +673,7 @@ export interface BalanceAutoChargeReceiptData {
 export function balanceAutoChargeReceiptEmail(d: BalanceAutoChargeReceiptData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Charged</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance payment received${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance payment received${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your card on file has been charged for the remaining balance on move <strong style="color:#C9A962">${d.moveCode}</strong>.
     </p>
@@ -701,7 +706,7 @@ export interface BalanceChargeFailedClientData {
 export function balanceChargeFailedClientEmail(d: BalanceChargeFailedClientData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Failed</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We couldn&apos;t process your payment${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We couldn&apos;t process your payment${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We attempted to charge your card on file for the remaining balance of <strong style="color:#D14343">${formatCurrency(d.balanceAmount)}</strong> on move <strong style="color:#C9A962">${d.moveCode}</strong>, but the payment was declined.
     </p>
@@ -761,7 +766,7 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Final Reminder</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${d.clientName ? `, ${d.clientName}` : ""}</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your ${d.serviceLabel.toLowerCase()} quote expires <strong style="color:#D14343">${expiryDate}</strong>. After that, we won&apos;t be able to guarantee the same pricing or availability.
     </p>

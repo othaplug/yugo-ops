@@ -184,8 +184,30 @@ export async function getEmailFrom(): Promise<string> {
   }
 }
 
+const INSTRUMENT_SERIF_LINK =
+  "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap";
+const EMAIL_DOC_BG = "#0A0A0A";
+
+/** Wraps email HTML fragment in full document with Instrument Serif so all client-facing emails can use the hero font. */
+function wrapClientEmailDocument(innerHtml: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
+</head>
+<body style="margin:0;padding:0;background:${EMAIL_DOC_BG};min-height:100vh">
+  ${innerHtml}
+</body>
+</html>`;
+}
+
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
-  const html = opts.html ?? renderTemplate(opts.template!, opts.data);
+  let html = opts.html ?? renderTemplate(opts.template!, opts.data);
+  if (!html.trimStart().startsWith("<!DOCTYPE")) {
+    html = wrapClientEmailDocument(html);
+  }
 
   const resend = getResend();
   const fromAddr = opts.from ?? await getEmailFrom();

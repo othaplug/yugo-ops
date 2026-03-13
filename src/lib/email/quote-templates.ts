@@ -35,10 +35,13 @@ function formatMoveSize(raw: string | null | undefined): string {
 
 /* ─── Shared layout wrapper ─── */
 
+const INSTRUMENT_SERIF_LINK =
+  "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap";
+
 function quoteEmailLayout(innerHtml: string): string {
   const base = getEmailBaseUrl();
   const logoUrl = `${base}/images/yugo-logo-gold.png`;
-  return `
+  const card = `
     <div style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;background:${BG};color:${TX};padding:0;border-radius:16px;overflow:hidden;border:1px solid ${CARD_BORDER}">
       <!-- Header -->
       <div style="text-align:center;padding:36px 36px 0">
@@ -56,6 +59,17 @@ function quoteEmailLayout(innerHtml: string): string {
       </div>
     </div>
   `;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
+</head>
+<body style="margin:0;padding:0;background:${BG};min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 0">
+  ${card}
+</body>
+</html>`;
 }
 
 /* ─── Types ─── */

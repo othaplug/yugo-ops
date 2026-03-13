@@ -393,20 +393,24 @@ async function calculateAddons(
 // Quote ID generation
 // ═══════════════════════════════════════════════
 
-async function generateQuoteId(sb: SupabaseAdmin, hubspotDealId?: string): Promise<string> {
-  if (hubspotDealId) return `YGO-${hubspotDealId}`;
+/** Max numeric part we treat as "our" sequence (30001, 30002, ...). Larger = legacy HubSpot-style IDs we ignore. */
+const QUOTE_ID_NUMERIC_MAX = 999_999;
 
+async function generateQuoteId(sb: SupabaseAdmin): Promise<string> {
   const { data } = await sb
     .from("quotes")
     .select("quote_id")
     .like("quote_id", "YGO-%")
     .order("created_at", { ascending: false })
-    .limit(1);
+    .limit(100);
 
   let next = 30001;
   if (data && data.length > 0) {
-    const num = parseInt(data[0].quote_id.replace("YGO-", ""), 10);
-    if (!isNaN(num)) next = num + 1;
+    const nums = data
+      .map((row) => parseInt(row.quote_id.replace("YGO-", ""), 10))
+      .filter((n) => !isNaN(n) && n <= QUOTE_ID_NUMERIC_MAX);
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    if (max >= 30001) next = max + 1;
   }
   return `YGO-${next}`;
 }
@@ -731,6 +735,8 @@ async function calcResidential(
 
   return {
     tiers,
+    minCrew,
+    estHours,
     factors: {
       base_rate: baseRate,
       distance_surcharge: distanceSurcharge,
@@ -1206,6 +1212,9 @@ export async function POST(req: NextRequest) {
   let tiers: Record<string, TierResult> | undefined;
   let custom_price: TierResult | undefined;
   let factors: FactorsObj = {};
+  /** For local moves: crew/hours shown to client (from base_rates). Used so ops matches client. */
+  let displayCrew: number | null = null;
+  let displayHours: number | null = null;
 
   const svcType = input.service_type;
 
@@ -1220,6 +1229,8 @@ export async function POST(req: NextRequest) {
       const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult);
       tiers = res.tiers;
       factors = res.factors;
+      displayCrew = res.minCrew;
+      displayHours = res.estHours;
       break;
     }
     case "office_move": {
@@ -1340,7 +1351,7 @@ export async function POST(req: NextRequest) {
     .eq("active", true)
     .order("tier_slug");
 
-  const quoteId = isPreview ? "PREVIEW" : await generateQuoteId(sb, input.hubspot_deal_id);
+  const quoteId = isPreview ? "PREVIEW" : await generateQuoteId(sb);
 
   const primaryPrice = tiers ? tiers.essentials.price : custom_price!.price;
   const depositAmount = tiers ? tiers.essentials.deposit : custom_price!.deposit;
@@ -1398,8 +1409,8 @@ export async function POST(req: NextRequest) {
       inventory_items: input.inventory_items ?? [],
       inventory_score: invResult.inventoryScore || null,
       inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
-      est_crew_size: labour?.crewSize ?? null,
-      est_hours: labour?.estimatedHours ?? null,
+      est_crew_size: displayCrew ?? labour?.crewSize ?? null,
+      est_hours: displayHours ?? labour?.estimatedHours ?? null,
       est_truck_size: labour?.truckSize ?? null,
       truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
