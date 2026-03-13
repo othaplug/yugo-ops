@@ -271,12 +271,28 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     if (data) setMove(data);
                     setEditingCard(null);
                     router.refresh();
-                    // Sync status to HubSpot deal (fire-and-forget)
+                    // Sync status to HubSpot deal (and keep deal fields in sync)
                     if (move.hubspot_deal_id) {
+                      const dealProps: Record<string, string> = { dealstage: v };
+                      const fullName = (move.client_name || "").trim();
+                      if (fullName) {
+                        const first = fullName.split(/\s+/)[0]?.trim();
+                        const last = fullName.split(/\s+/).slice(1).join(" ").trim();
+                        if (first) dealProps.firstname = first;
+                        if (last) dealProps.lastname = last;
+                      }
+                      if (move.from_address?.trim()) dealProps.pick_up_address = move.from_address.trim();
+                      const toAddr = move.to_address?.trim() || (move as { delivery_address?: string }).delivery_address?.trim();
+                      if (toAddr) dealProps.drop_off_address = toAddr;
+                      if ((move as { from_access?: string }).from_access?.trim()) dealProps.access_from = (move as { from_access?: string }).from_access!.trim();
+                      if ((move as { to_access?: string }).to_access?.trim()) dealProps.access_to = (move as { to_access?: string }).to_access!.trim();
+                      if (move.service_type?.trim()) dealProps.service_type = move.service_type.trim();
+                      if ((move as { move_size?: string }).move_size?.trim()) dealProps.move_size = (move as { move_size?: string }).move_size!.trim();
+                      if (move.scheduled_date?.trim()) dealProps.move_date = move.scheduled_date.trim();
                       fetch("/api/hubspot/update-deal", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ dealId: move.hubspot_deal_id, properties: { dealstage: v } }),
+                        body: JSON.stringify({ dealId: move.hubspot_deal_id, properties: dealProps }),
                       }).catch(() => {});
                     }
                   }}

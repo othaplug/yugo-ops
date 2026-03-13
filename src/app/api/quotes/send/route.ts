@@ -152,18 +152,31 @@ export async function POST(req: NextRequest) {
           (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
           quote.custom_price;
 
+        const fullName = (contact?.name?.trim() || bodyClientName?.trim()) || "";
+        const first = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
+        const last = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
+
+        const dealProps: Record<string, string> = {
+          quote_url: quoteUrl,
+        };
+        if (essentialsPrice != null) dealProps.amount = String(essentialsPrice);
+        if (first) dealProps.firstname = first;
+        if (last) dealProps.lastname = last;
+        if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
+        if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
+        if (quote.from_access?.trim()) dealProps.access_from = quote.from_access.trim();
+        if (quote.to_access?.trim()) dealProps.access_to = quote.to_access.trim();
+        if (quote.service_type?.trim()) dealProps.service_type = quote.service_type.trim();
+        if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim();
+        if (quote.move_date?.trim()) dealProps.move_date = quote.move_date.trim();
+
         fetch(`https://api.hubapi.com/crm/v3/objects/deals/${dealId}`, {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            properties: {
-              ...(essentialsPrice ? { amount: String(essentialsPrice) } : {}),
-              quote_url: quoteUrl,
-            },
-          }),
+          body: JSON.stringify({ properties: dealProps }),
         }).catch(() => {});
 
         syncDealStage(dealId, "quote_sent").catch(() => {});

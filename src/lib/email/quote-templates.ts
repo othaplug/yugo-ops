@@ -38,24 +38,45 @@ function formatMoveSize(raw: string | null | undefined): string {
 const INSTRUMENT_SERIF_LINK =
   "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap";
 
+/* Embedded @font-face so Instrument Serif loads in clients that block external stylesheets (e.g. Gmail). */
+const INSTRUMENT_SERIF_FACE = `
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zUTjnTLgNs.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjjH7Motmp5g.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}`;
+
 function quoteEmailLayout(innerHtml: string): string {
   const base = getEmailBaseUrl();
   const logoUrl = `${base}/images/yugo-logo-gold.png`;
+  /* Outer rounded wrapper: so the container housing everything has rounded corners, not a square frame. */
+  const roundedWrapperStyle = `max-width:560px;margin:0 auto;border-radius:20px;overflow:hidden;background:${BG};border:1px solid ${CARD_BORDER};box-sizing:border-box`;
   const card = `
-    <div style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;background:${BG};color:${TX};padding:0;border-radius:16px;overflow:hidden;border:1px solid ${CARD_BORDER}">
+    <div style="${roundedWrapperStyle};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${TX};padding:0">
       <!-- Header -->
       <div style="text-align:center;padding:36px 36px 0">
-        <img src="${logoUrl}" alt="YUGO" width="90" height="25" style="display:inline-block;max-width:90px;height:auto;border:0" />
+        <img src="${logoUrl}" alt="YUGO+" width="90" height="25" style="display:inline-block;max-width:90px;height:auto;border:0" />
         <div style="width:40px;height:1px;background:${GOLD};margin:16px auto 0"></div>
       </div>
       <!-- Body -->
       <div style="padding:28px 36px 36px">
         ${innerHtml}
       </div>
-      <!-- Footer -->
+      <!-- Footer: logo image (not text) so branding matches header -->
       <div style="border-top:1px solid ${CARD_BORDER};padding:24px 36px;text-align:center">
-        <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:13px;font-weight:600;letter-spacing:2px;color:${GOLD}">YUGO+</div>
-        <div style="font-size:10px;color:${TX3};margin-top:6px">The Art of Moving</div>
+        <img src="${logoUrl}" alt="YUGO+" width="80" height="22" style="display:inline-block;max-width:80px;height:auto;border:0" />
+        <div style="font-size:10px;color:${TX3};margin-top:8px">The Art of Moving</div>
       </div>
     </div>
   `;
@@ -65,8 +86,9 @@ function quoteEmailLayout(innerHtml: string): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
+  <style type="text/css">${INSTRUMENT_SERIF_FACE}</style>
 </head>
-<body style="margin:0;padding:0;background:${BG};min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 0">
+<body style="margin:0;padding:0;background:${BG};min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 0;box-sizing:border-box">
   ${card}
 </body>
 </html>`;

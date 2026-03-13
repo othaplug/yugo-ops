@@ -33,6 +33,16 @@ const ALLOWED_PROPERTIES = new Set([
   "contract_signed",
   "package_type",
   "dealstage",
+  // Deal fields synced from OPS (match get-deal / HubSpot deal property internal names)
+  "firstname",
+  "lastname",
+  "pick_up_address",
+  "drop_off_address",
+  "access_from",
+  "access_to",
+  "service_type",
+  "move_size",
+  "move_date",
 ]);
 
 export async function POST(req: NextRequest) {

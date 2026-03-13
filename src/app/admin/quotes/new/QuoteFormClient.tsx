@@ -639,25 +639,36 @@ export default function QuoteFormClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Send failed");
 
-      // Push quote data back to HubSpot deal
+      // Push quote data back to HubSpot deal (price + deal fields for left column)
       if (hubspotDealId && quoteResult) {
         const essentials = quoteResult.tiers?.essentials;
         const price = essentials?.price ?? quoteResult.custom_price?.price ?? null;
         const tax = essentials?.tax ?? quoteResult.custom_price?.tax ?? null;
         const total = essentials?.total ?? quoteResult.custom_price?.total ?? null;
 
+        const dealProps: Record<string, unknown> = {
+          amount: price,
+          total_price: total,
+          taxes: tax,
+          quote_url: `${window.location.origin}/quote/${quoteId}`,
+          dealstage: "quote_sent",
+        };
+        if (firstName?.trim()) dealProps.firstname = firstName.trim();
+        if (lastName?.trim()) dealProps.lastname = lastName.trim();
+        if (fromAddress?.trim()) dealProps.pick_up_address = fromAddress.trim();
+        if (toAddress?.trim()) dealProps.drop_off_address = toAddress.trim();
+        if (fromAccess?.trim()) dealProps.access_from = fromAccess.trim();
+        if (toAccess?.trim()) dealProps.access_to = toAccess.trim();
+        if (serviceType?.trim()) dealProps.service_type = serviceType.trim();
+        if (moveSize?.trim()) dealProps.move_size = moveSize.trim();
+        if (moveDate?.trim()) dealProps.move_date = moveDate.trim();
+
         fetch("/api/hubspot/update-deal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             dealId: hubspotDealId,
-            properties: {
-              amount: price,
-              total_price: total,
-              taxes: tax,
-              quote_url: `${window.location.origin}/quote/${quoteId}`,
-              dealstage: "quote_sent",
-            },
+            properties: dealProps,
           }),
         }).catch(() => {});
       }
