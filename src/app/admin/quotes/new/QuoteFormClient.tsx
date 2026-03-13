@@ -700,9 +700,10 @@ export default function QuoteFormClient({
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-5 relative">
+      {/* Side-by-side from 480px so preview is on the right even with sidebar (no dependency on hubspot_deal_id at paint) */}
+      <div className="flex flex-col min-[480px]:flex-row gap-5 relative">
         {/* ═══ LEFT PANEL — Form ═══ */}
-        <div className={`flex flex-col transition-all duration-300 max-w-4xl ${previewOpen ? "md:w-[60%]" : "md:w-full"}`}>
+        <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[var(--brd)]">
               <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
@@ -1432,7 +1433,7 @@ export default function QuoteFormClient({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            className="hidden min-[480px]:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />
@@ -1440,7 +1441,7 @@ export default function QuoteFormClient({
           </button>
         )}
 
-        <div className={`transition-all duration-300 ${previewOpen ? "md:w-[40%]" : "md:w-0 md:overflow-hidden md:opacity-0 md:pointer-events-none hidden md:block"}`}>
+        <div className={`transition-all duration-300 shrink-0 ${previewOpen ? "w-full min-[480px]:w-[40%] min-[480px]:min-w-[240px]" : "hidden min-[480px]:block min-[480px]:w-0 min-[480px]:overflow-hidden min-[480px]:opacity-0 pointer-events-none"}`}>
           <div className="sticky top-6 space-y-4">
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
@@ -1455,7 +1456,7 @@ export default function QuoteFormClient({
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(false)}
-                  className="hidden md:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                  className="hidden min-[480px]:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
                   title="Collapse preview"
                 >
                   <PanelRightClose className="w-4 h-4" />

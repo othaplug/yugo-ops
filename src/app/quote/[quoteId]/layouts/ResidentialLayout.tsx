@@ -53,7 +53,7 @@ export default function ResidentialLayout({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl md:max-w-6xl lg:max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl md:max-w-7xl lg:max-w-7xl xl:max-w-[84rem] mx-auto px-2">
         {TIER_ORDER.map((tierKey) => {
           const t = tiers[tierKey];
           if (!t) return null;
