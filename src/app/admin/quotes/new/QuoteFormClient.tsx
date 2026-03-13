@@ -492,7 +492,7 @@ export default function QuoteFormClient({
           slug: i.slug,
           name: i.name,
           quantity: i.quantity,
-          ...(i.isCustom && { weight_score: i.weight_score }),
+          weight_score: i.weight_score,
         }));
       }
     }
@@ -508,7 +508,7 @@ export default function QuoteFormClient({
           slug: i.slug,
           name: i.name,
           quantity: i.quantity,
-          ...(i.isCustom && { weight_score: i.weight_score }),
+          weight_score: i.weight_score,
         }));
       }
     }
@@ -681,21 +681,21 @@ export default function QuoteFormClient({
                         key={card.value}
                         type="button"
                         onClick={() => setServiceType(card.value)}
-                        className={`relative text-left px-3 py-2.5 rounded-xl border-2 transition-all ${
+                        className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-[#FAF7F2] dark:bg-[#2A2520] border-[#B8962E] shadow-sm"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:shadow-md hover:-translate-y-0.5"
+                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
+                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                         }`}
                       >
-                        <div className="flex items-start gap-2.5">
-                          <div className={`shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg ${sel ? "bg-[#B8962E]/15" : "bg-[var(--bg)]"}`}>
-                            <card.Icon className={`w-3.5 h-3.5 ${sel ? "text-[#B8962E]" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
+                        <div className="flex items-start gap-2">
+                          <div className={`shrink-0 mt-0.5 w-6 h-6 flex items-center justify-center rounded-md transition-colors ${sel ? "bg-white/20" : "bg-[var(--bg)]"}`}>
+                            <card.Icon className={`w-3.5 h-3.5 ${sel ? "text-white" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
                           </div>
-                          <div className="min-w-0">
-                            <div className={`text-[12px] leading-tight ${sel ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}>
                               {card.label}
                             </div>
-                            <div className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
+                            <div className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>
                               {card.desc}
                             </div>
                           </div>
@@ -848,18 +848,47 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                   )}
-                  {(serviceType === "local_move" || serviceType === "long_distance") && (
+                  {/* Box count moved into InventoryInput when inventory is shown */}
+                  {(serviceType === "local_move" || serviceType === "long_distance") && itemWeights.length === 0 && (
                     <Field label="Number of Boxes">
-                      <select value={clientBoxCount} onChange={(e) => setClientBoxCount(e.target.value)} className={fieldInput}>
-                        <option value="">Not specified</option>
-                        <option value="5">1-5 boxes</option>
-                        <option value="10">5-10 boxes</option>
-                        <option value="20">10-20 boxes</option>
-                        <option value="30">20-30 boxes</option>
-                        <option value="40">30-40 boxes</option>
-                        <option value="50">40-50 boxes</option>
-                        <option value="60">50+ boxes</option>
-                      </select>
+                      <div className="space-y-1.5">
+                        <select
+                          value={clientBoxCount === "" ? "" : (["5","10","20","30","40","50","75"].includes(clientBoxCount) ? clientBoxCount : "custom")}
+                          onChange={(e) => {
+                            if (e.target.value === "custom") {
+                              setClientBoxCount("");
+                            } else {
+                              setClientBoxCount(e.target.value);
+                            }
+                          }}
+                          className={fieldInput}
+                        >
+                          <option value="">Not specified</option>
+                          <option value="5">1–5 boxes</option>
+                          <option value="10">5–10 boxes</option>
+                          <option value="20">10–20 boxes</option>
+                          <option value="30">20–30 boxes</option>
+                          <option value="40">30–40 boxes</option>
+                          <option value="50">40–50 boxes</option>
+                          <option value="75">50–100 boxes</option>
+                          <option value="custom">Custom amount…</option>
+                        </select>
+                        {!["","5","10","20","30","40","50","75"].includes(clientBoxCount) && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={9999}
+                              value={clientBoxCount}
+                              onChange={(e) => setClientBoxCount(e.target.value)}
+                              placeholder="Enter exact count"
+                              className={`${fieldInput} focus:border-[var(--gold)]`}
+                              autoFocus
+                            />
+                            <span className="text-[11px] text-[var(--tx3)] shrink-0">boxes</span>
+                          </div>
+                        )}
+                      </div>
                     </Field>
                   )}
                 </div>
@@ -954,6 +983,8 @@ export default function QuoteFormClient({
                   fromAccess={fromAccess}
                   toAccess={toAccess}
                   showLabourEstimate={!!moveSize}
+                  boxCount={Number(clientBoxCount) || 0}
+                  onBoxCountChange={(n) => setClientBoxCount(n > 0 ? String(n) : "")}
                 />
                 </>
               )}
@@ -1297,7 +1328,7 @@ export default function QuoteFormClient({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="hidden min-[480px]:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            className="hidden min-[480px]:flex fixed right-0 top-24 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />

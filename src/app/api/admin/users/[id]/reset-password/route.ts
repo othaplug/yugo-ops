@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user: adminUser, error: authErr } = await requireAdmin();
+  const { user: adminUser, error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const rateLimitKey = `reset-pw:${adminUser?.id ?? req.headers.get("x-forwarded-for") ?? "anon"}`;

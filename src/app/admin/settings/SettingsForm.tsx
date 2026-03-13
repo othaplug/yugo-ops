@@ -5,42 +5,120 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "../components/Toast";
 
 export default function SettingsForm() {
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
   const { toast } = useToast();
 
   const handleChangePassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast("Password must be at least 6 characters", "x");
+    if (!currentPassword) {
+      toast("Please enter your current password", "x");
       return;
     }
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      toast("Error: " + error.message, "x");
-    } else {
-      toast("Password updated successfully", "check");
-      setNewPassword("");
+    if (!newPassword || newPassword.length < 6) {
+      toast("New password must be at least 6 characters", "x");
+      return;
     }
-    setLoading(false);
+    if (newPassword !== confirmPassword) {
+      toast("New passwords do not match", "x");
+      return;
+    }
+    if (newPassword === currentPassword) {
+      toast("New password must be different from your current password", "x");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Verify current password by re-authenticating
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) throw new Error("Unable to verify identity");
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast("Current password is incorrect", "x");
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message);
+
+      toast("Password updated successfully", "check");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update password", "x");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const fieldClass =
+    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors";
+
   return (
-    <div className="flex gap-2">
-      <input
-        type="password"
-        placeholder="New password (min 6 characters)..."
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors"
-      />
+    <div className="space-y-2.5">
+      <div>
+        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+          Current Password
+        </label>
+        <input
+          type="password"
+          placeholder="Enter your current password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          className={fieldClass}
+          autoComplete="current-password"
+        />
+      </div>
+      <div>
+        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+          New Password
+        </label>
+        <input
+          type="password"
+          placeholder="Min 6 characters"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className={fieldClass}
+          autoComplete="new-password"
+        />
+      </div>
+      <div>
+        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+          Confirm New Password
+        </label>
+        <input
+          type="password"
+          placeholder="Re-enter new password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
+          className={`${fieldClass} ${
+            confirmPassword && confirmPassword !== newPassword
+              ? "border-[var(--red)] focus:border-[var(--red)]"
+              : confirmPassword && confirmPassword === newPassword
+              ? "border-[var(--grn)] focus:border-[var(--grn)]"
+              : ""
+          }`}
+          autoComplete="new-password"
+        />
+        {confirmPassword && confirmPassword !== newPassword && (
+          <p className="text-[9px] text-[var(--red)] mt-1">Passwords do not match</p>
+        )}
+      </div>
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 whitespace-nowrap"
+        className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 mt-1"
       >
-        {loading ? "Updating..." : "Update"}
+        {loading ? "Updating..." : "Update Password"}
       </button>
     </div>
   );

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
 async function requireSuperAdmin() {
-  const { user, error } = await requireAdmin();
+  const { user, error } = await requireOwner();
   if (error) {
     const body = await error.json();
     return { error: body.error || "Forbidden", status: error.status as 401 | 403 };
@@ -25,7 +25,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
 
     if (typeof body.name === "string") updates.name = body.name.trim();
-    if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(body.role)) updates.role = body.role;
+    if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(body.role)) updates.role = body.role;
     if (body.phone !== undefined) updates.phone = body.phone === "" || body.phone === null ? null : String(body.phone).trim();
 
     if (Object.keys(updates).length === 0) {

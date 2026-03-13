@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
       if (itemsRaw) body.items = JSON.parse(itemsRaw);
       const inventoryScoreRaw = formData.get("inventory_score") as string;
       if (inventoryScoreRaw) body.inventory_score = parseFloat(inventoryScoreRaw) || null;
+      const boxCountRaw = formData.get("box_count") as string;
+      if (boxCountRaw) body.box_count = parseInt(boxCountRaw, 10) || 0;
       const assignedRaw = formData.get("assigned_members") as string;
       if (assignedRaw) body.assigned_members = JSON.parse(assignedRaw);
       const complexityRaw = formData.get("complexity_indicators") as string;
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
         items: Array.isArray(body.items) ? body.items : [],
         inventory_score: typeof body.inventory_score === "number" ? body.inventory_score : null,
+        client_box_count: typeof body.box_count === "number" && body.box_count > 0 ? body.box_count : null,
         ...(typeof body.inventory_score === "number" && body.inventory_score > 0
           ? (() => {
               const labour = estimateLabourFromScore(

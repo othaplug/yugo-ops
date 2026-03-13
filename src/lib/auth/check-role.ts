@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
-export type AppRole = "owner" | "admin" | "manager" | "dispatcher" | "coordinator" | "viewer" | "crew" | "partner" | "client";
+export type AppRole = "owner" | "admin" | "manager" | "dispatcher" | "coordinator" | "viewer" | "sales" | "crew" | "partner" | "client";
 
 const ROLE_LEVEL: Record<string, number> = {
   owner: 100,
@@ -12,6 +12,7 @@ const ROLE_LEVEL: Record<string, number> = {
   dispatcher: 50,
   coordinator: 40,
   viewer: 30,
+  sales: 25,
   crew: 20,
   partner: 10,
   client: 5,

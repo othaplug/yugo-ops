@@ -42,6 +42,7 @@ export const LIVE_STAGE_MAP: Record<string, number> = {
 
 /** Map crew tracking status to client display label */
 export const CREW_STATUS_TO_LABEL: Record<string, string> = {
+  booked: "Scheduled",
   en_route_to_pickup: "En Route to Pickup",
   arrived_at_pickup: "Arrived at Pickup",
   loading: "Loading",

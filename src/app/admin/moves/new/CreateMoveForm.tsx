@@ -160,6 +160,7 @@ export default function CreateMoveForm({
   const [specialtyItems, setSpecialtyItems] = useState<string[]>([]);
   const [customSpecialtyInput, setCustomSpecialtyInput] = useState("");
   const [boxesBins, setBoxesBins] = useState("");
+  const [boxCount, setBoxCount] = useState(0);
   const [addOns, setAddOns] = useState<Set<string>>(new Set());
 
   // Office-only state
@@ -292,7 +293,7 @@ export default function CreateMoveForm({
     }
   }, [crewId, crews]);
 
-  const inventoryScore = inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
+  const inventoryScore = inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0) + boxCount * 0.3;
 
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -373,8 +374,17 @@ export default function CreateMoveForm({
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
       formData.append("truck_primary", truckPrimary || "");
-      formData.append("items", JSON.stringify(inventoryItems));
+      formData.append("items", JSON.stringify(
+        inventoryItems.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          weight_score: i.weight_score,
+          ...(i.weightNote ? { weightNote: i.weightNote } : {}),
+        }))
+      ));
       formData.append("inventory_score", String(inventoryScore));
+      if (boxCount > 0) formData.append("box_count", String(boxCount));
       // Residential fields
       if (moveType === "residential") {
         formData.append("move_size", moveSize);
@@ -483,47 +493,55 @@ export default function CreateMoveForm({
         <form onSubmit={handleSubmit} className="p-5 space-y-0">
           {/* Move type selector */}
           <div>
-            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {([
-                { value: "residential", Icon: Home, label: "Residential", desc: "Local or long distance home move" },
-                { value: "office", Icon: Building2, label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-                { value: "single_item", Icon: ArrowUpRight, label: "Single Item", desc: "One item or small batch delivery" },
-                { value: "white_glove", Icon: Gem, label: "White Glove", desc: "Premium handling, assembly, placement" },
-                { value: "specialty", Icon: Star, label: "Specialty / Event", desc: "Art, piano, trade show, staging, estate" },
-                { value: "b2b_oneoff", Icon: Truck, label: "B2B One-Off", desc: "One-off delivery from a business source" },
-              ] as const).map((card) => {
-                const selected = moveType === card.value;
+            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Service Type</label>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+              {(["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const).map((val) => {
+                const META: Record<string, { Icon: React.ElementType; label: string; desc: string }> = {
+                  residential: { Icon: Home,        label: "Residential",        desc: "Local or long distance home move" },
+                  office:      { Icon: Building2,   label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
+                  single_item: { Icon: ArrowUpRight, label: "Single Item",        desc: "One item or small batch delivery" },
+                  white_glove: { Icon: Gem,          label: "White Glove",        desc: "Premium handling, assembly, placement" },
+                  specialty:   { Icon: Star,         label: "Specialty / Event",  desc: "Art, piano, trade show, staging, estate" },
+                  b2b_oneoff:  { Icon: Truck,        label: "B2B One-Off",        desc: "One-off delivery from a business source" },
+                };
+                const { Icon: CardIcon, label, desc } = META[val];
+                const sel = moveType === val;
                 return (
                   <button
-                    key={card.value}
+                    key={val}
                     type="button"
-                    onClick={() => setMoveType(card.value)}
-                    className={`relative text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                      selected
-                        ? "bg-[#FAF7F2] dark:bg-[#2A2520] border-[#B8962E] shadow-sm"
-                        : "bg-[var(--card)] border-[var(--brd)] hover:shadow-md hover:-translate-y-0.5"
+                    onClick={() => setMoveType(val)}
+                    className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
+                      sel
+                        ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
+                        : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`shrink-0 mt-0.5 w-8 h-8 flex items-center justify-center rounded-lg ${selected ? "bg-[#B8962E]/15" : "bg-[var(--bg)]"}`}>
-                        <card.Icon className={`w-4 h-4 ${selected ? "text-[#B8962E]" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
+                    <div className="flex items-start gap-2">
+                      <div className={`shrink-0 mt-0.5 w-6 h-6 flex items-center justify-center rounded-md transition-colors ${sel ? "bg-white/20" : "bg-[var(--bg)]"}`}>
+                        <CardIcon className={`w-3.5 h-3.5 ${sel ? "text-white" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
                       </div>
-                      <div className="min-w-0">
-                        <div className={`text-[13px] leading-tight tracking-tight ${selected ? "font-extrabold text-[#B8962E]" : "font-semibold text-[var(--tx)]"}`}>
-                          {card.label}
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}>
+                          {label}
                         </div>
-                        <div className={`text-[10px] mt-0.5 leading-snug ${selected ? "text-[#B8962E]/70" : "text-[var(--tx3)]"}`}>
-                          {card.desc}
+                        <div className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>
+                          {desc}
                         </div>
                       </div>
                     </div>
-                    {card.value === "b2b_oneoff" && (
-                      <div className="mt-1.5 text-[8px] text-[var(--tx3)] italic pl-[44px]">For recurring partners, use B2B Partners → Create Project</div>
-                    )}
                   </button>
                 );
               })}
+            </div>
+            {/* B2B recurring warning — fades in when b2b_oneoff is selected */}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${moveType === "b2b_oneoff" ? "max-h-12 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20 text-[10px] text-[var(--tx3)]">
+                <svg className="w-3 h-3 shrink-0 text-[var(--gold)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                For recurring partner deliveries, use <span className="font-semibold text-[var(--tx2)] mx-0.5">B2B Partners → Create Project</span> instead.
+              </div>
             </div>
           </div>
 
@@ -675,7 +693,9 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty") && (
+            <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          )}
 
           {/* Office: Company info */}
           <AnimatedSection show={moveType === "office"}>
@@ -804,7 +824,9 @@ export default function CreateMoveForm({
             </div>
           </AnimatedSection>
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "b2b_oneoff") && (
+            <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          )}
 
           {/* B2B One-Off: business info */}
           <AnimatedSection show={moveType === "b2b_oneoff"}>
@@ -1393,6 +1415,8 @@ export default function CreateMoveForm({
               fromAccess={fromAccess}
               toAccess={toAccess}
               showLabourEstimate={!!moveSize}
+              boxCount={boxCount}
+              onBoxCountChange={setBoxCount}
             />
           ) : (
             <div className="space-y-3">

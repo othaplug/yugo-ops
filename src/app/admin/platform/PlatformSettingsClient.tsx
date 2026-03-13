@@ -1922,7 +1922,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                       {u.status === "activated" ? "Active" : u.status === "pending" ? "Pending" : "Inactive"}
                     </span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
-                      {u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "coordinator" ? "Coordinator" : u.role === "viewer" ? "Viewer" : "Dispatcher"}
+                      {u.role === "owner" ? "Owner" : u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "coordinator" ? "Coordinator" : u.role === "viewer" ? "Viewer" : u.role === "sales" ? "Sales" : "Dispatcher"}
                     </span>
                     {u.last_sign_in_at && (
                       <span className="text-[9px] text-[var(--tx3)]">

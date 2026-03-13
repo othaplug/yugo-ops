@@ -28,7 +28,7 @@ interface UserDetailModalProps {
 export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, isMoveClient, moveId, onSaved, onDeleted }: UserDetailModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
-  const [role, setRole] = useState(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
+  const [role, setRole] = useState(["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher");
   const [phone, setPhone] = useState(user.phone ?? "");
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -39,7 +39,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
   useEffect(() => {
     if (open) {
       setName(user.name || "");
-      setRole(["admin", "manager", "dispatcher", "coordinator", "viewer", "client"].includes(user.role) ? user.role : "dispatcher");
+      setRole(["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher");
       setPhone(user.phone ?? "");
     }
   }, [open, user]);
@@ -205,6 +205,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 <option value="dispatcher">Dispatcher</option>
                 <option value="coordinator">Coordinator</option>
                 <option value="viewer">Viewer</option>
+                <option value="sales">Sales</option>
               </select>
             )}
           </div>

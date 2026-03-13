@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
         stage: "completed",
         completed_at: now,
         updated_at: now,
+        eta_tracking_active: false,
       })
       .eq("id", session.job_id);
     if (session.job_type === "move") {
@@ -134,6 +135,13 @@ export async function POST(req: NextRequest) {
       const { createReviewRequestIfEligible } = await import("@/lib/review-request-helper");
       createReviewRequestIfEligible(admin, session.job_id).catch((e) => console.error("[review] create failed:", e));
     }
+    // Send completed SMS to client/customer
+    const origin = process.env.NEXT_PUBLIC_APP_URL || "https://app.withyugo.com";
+    fetch(`${origin}/api/eta/send-completed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: session.job_id, jobType: session.job_type }),
+    }).catch((e) => console.error("[eta] send-completed failed:", e));
   } else if (enRouteStatuses.includes(status)) {
     await admin.from(table).update({ status: "in_progress", stage: status, updated_at: now }).eq("id", session.job_id);
     if (session.job_type === "move") {

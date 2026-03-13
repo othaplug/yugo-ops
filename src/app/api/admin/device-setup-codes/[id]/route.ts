@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
-/** DELETE: Remove a setup code (admin only) */
+/** DELETE: Remove a setup code (owner only) */
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const { id } = await params;

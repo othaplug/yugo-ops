@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { inviteUserEmail, inviteUserEmailText, trackingLinkEmail } from "@/lib/email-templates";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 import { getEmailFrom } from "@/lib/email/send";
 
 function generatePassword(length = 12): string {
@@ -18,7 +18,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user: adminUser, error: authErr } = await requireAdmin();
+  const { user: adminUser, error: authErr } = await requireOwner();
   if (authErr) return authErr;
   try {
     const { id } = await params;

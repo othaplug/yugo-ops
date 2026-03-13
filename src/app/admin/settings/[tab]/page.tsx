@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import SettingsForm from "../SettingsForm";
-import ThemeToggle from "../ThemeToggle";
+import AppearanceSettings from "../AppearanceSettings";
 import NotificationToggles from "../NotificationToggles";
 import Enable2FAButton from "../Enable2FAButton";
 import IntegrationHealthPanel from "../IntegrationHealthPanel";
 import PartnerProfileSettings from "../PartnerProfileSettings";
 import EditableEmailSection from "../EditableEmailSection";
 import LoginHistoryPanel from "../LoginHistoryPanel";
+import PersonalSettingsForm from "../PersonalSettingsForm";
 import { Icon } from "@/components/AppIcons";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
@@ -26,7 +27,7 @@ export default async function SettingsTabPage({
   const db = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: platformUser } = user
-    ? await db.from("platform_users").select("role, two_factor_enabled").eq("user_id", user.id).single()
+    ? await db.from("platform_users").select("role, two_factor_enabled, name, phone").eq("user_id", user.id).single()
     : { data: null };
   const { data: partnerUser } = user
     ? await db.from("partner_users").select("org_id").eq("user_id", user.id).single()
@@ -49,24 +50,39 @@ export default async function SettingsTabPage({
 
   if (tab === "personal") {
     return (
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="space-y-6">
         {isPartner ? (
           <PartnerProfileSettings />
         ) : (
           <>
-            <div className="px-5 py-5 border-b border-[var(--brd)] bg-[var(--bg2)]">
-              <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Personal Account</h2>
-              <p className="text-[12px] text-[var(--tx3)] mt-1.5">Manage your profile and credentials</p>
+            {/* Profile */}
+            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+                  <Icon name="user" className="w-[16px] h-[16px]" /> Profile
+                </h2>
+                <p className="text-[11px] text-[var(--tx3)] mt-0.5">Your name, contact details, and role</p>
+              </div>
+              <div className="px-5 py-5">
+                <PersonalSettingsForm
+                  initialName={platformUser?.name ?? ""}
+                  initialPhone={platformUser?.phone ?? ""}
+                  email={user?.email ?? ""}
+                  roleLabel={roleLabel}
+                />
+              </div>
             </div>
-            <div className="px-5 py-5 space-y-4">
-              <EditableEmailSection currentEmail={user?.email || ""} />
-              <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
-                <div className="text-[13px] text-[var(--tx)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5 inline-flex items-center gap-2">
-                  <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />
-                  {roleLabel}
-                </div>
-                <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change user roles</p>
+
+            {/* Email (separate card) */}
+            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
+                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+                  <Icon name="mail" className="w-[16px] h-[16px]" /> Email Address
+                </h2>
+                <p className="text-[11px] text-[var(--tx3)] mt-0.5">Changing your email will require verification</p>
+              </div>
+              <div className="px-5 py-5">
+                <EditableEmailSection currentEmail={user?.email || ""} />
               </div>
             </div>
           </>
@@ -87,11 +103,11 @@ export default async function SettingsTabPage({
           </div>
           <div className="px-5 py-5 space-y-4">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Change Password</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Change Password</label>
               <SettingsForm />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Two-Factor Authentication</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Two-Factor Authentication</label>
               <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
                 <span className="text-[12px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active — code sent to email on each login" : "2FA not enabled"}</span>
                 <Enable2FAButton enabled={platformUser?.two_factor_enabled} />
@@ -117,16 +133,8 @@ export default async function SettingsTabPage({
 
   if (tab === "appearance") {
     return (
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="paint" className="w-[16px] h-[16px]" /> Appearance
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Theme and display preferences</p>
-        </div>
-        <div className="px-5 py-5">
-          <ThemeToggle />
-        </div>
+      <div className="space-y-1">
+        <AppearanceSettings />
       </div>
     );
   }
@@ -149,10 +157,20 @@ export default async function SettingsTabPage({
 
   if (tab === "integrations") {
     const integrations = [
-      { key: "square", label: "Square", desc: "Invoicing & payment processing", icon: "creditCard" as const, connected: !!process.env.SQUARE_ACCESS_TOKEN, details: process.env.SQUARE_ENVIRONMENT === "production" ? "Mode: Production" : "Mode: Sandbox" },
-      { key: "resend", label: "Resend", desc: "Email notifications & campaigns", icon: "mail" as const, connected: !!process.env.RESEND_API_KEY },
-      { key: "twilio", label: "Twilio", desc: "SMS notifications & alerts", icon: "phone" as const, connected: !!process.env.TWILIO_ACCOUNT_SID },
-      { key: "mapbox", label: "Mapbox", desc: "Maps, geocoding & distance calculation", icon: "mapPin" as const, connected: !!process.env.MAPBOX_TOKEN || !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN },
+      // Payments
+      { key: "square", label: "Square", desc: "Invoicing & payment processing", icon: "creditCard" as const, connected: !!process.env.SQUARE_ACCESS_TOKEN, details: process.env.SQUARE_ENVIRONMENT === "production" ? "Mode: Production" : "Mode: Sandbox", category: "Payments" },
+      // Communications
+      { key: "resend", label: "Resend", desc: "Transactional email — quotes, invoices, confirmations", icon: "mail" as const, connected: !!process.env.RESEND_API_KEY, category: "Communications" },
+      { key: "twilio", label: "Twilio", desc: "SMS notifications, dispatch alerts & 2FA codes", icon: "phone" as const, connected: !!process.env.TWILIO_ACCOUNT_SID, category: "Communications" },
+      // Mapping
+      { key: "mapbox", label: "Mapbox", desc: "Maps, geocoding, live crew tracking & routing", icon: "mapPin" as const, connected: !!process.env.MAPBOX_TOKEN || !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN, category: "Mapping" },
+      // CRM
+      { key: "hubspot", label: "HubSpot", desc: "CRM — sync contacts, deals & pipeline from quotes", icon: "link" as const, connected: !!process.env.HUBSPOT_ACCESS_TOKEN, category: "CRM" },
+      // Accounting
+      { key: "quickbooks", label: "QuickBooks", desc: "Sync invoices and payments with your accounting software", icon: "creditCard" as const, connected: !!process.env.QUICKBOOKS_CLIENT_ID, category: "Accounting" },
+      // Automation
+      { key: "zapier", label: "Zapier", desc: "Automate workflows — connect Yugo to 6,000+ apps", icon: "plug" as const, connected: !!process.env.ZAPIER_WEBHOOK_SECRET, category: "Automation" },
+      { key: "slack", label: "Slack", desc: "Push move updates, crew alerts & booking notifications to Slack", icon: "messageSquare" as const, connected: !!process.env.SLACK_WEBHOOK_URL, category: "Automation" },
     ];
 
     return (

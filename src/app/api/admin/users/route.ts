@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, isSuperAdminEmail } from "@/lib/api-auth";
+import { isSuperAdminEmail } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
 export async function GET() {
-  const { error: authError } = await requireAdmin();
+  const { error: authError } = await requireOwner();
   if (authError) return authError;
   try {
     const admin = createAdminClient();

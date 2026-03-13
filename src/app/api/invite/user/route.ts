@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteUserEmail, inviteUserEmailText } from "@/lib/email-templates";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 import { getEmailFrom } from "@/lib/email/send";
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await requireAdmin();
+  const { error: authError } = await requireOwner();
   if (authError) return authError;
   try {
     const body = await req.json();
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const roleVal = ["admin", "manager", "dispatcher", "coordinator", "viewer"].includes(role) ? role : "dispatcher";
-    const roleLabels: Record<string, string> = { admin: "Admin", manager: "Manager", dispatcher: "Dispatcher", coordinator: "Coordinator", viewer: "Viewer" };
+    const roleVal = ["admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role) ? role : "dispatcher";
+    const roleLabels: Record<string, string> = { admin: "Admin", manager: "Manager", dispatcher: "Dispatcher", coordinator: "Coordinator", viewer: "Viewer", sales: "Sales" };
     const roleLabel = roleLabels[roleVal] || "Dispatcher";
 
     // If email is already linked to a user, do not add again — return error

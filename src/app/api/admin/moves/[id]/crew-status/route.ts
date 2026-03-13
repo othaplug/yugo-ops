@@ -16,13 +16,15 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, stage")
+      .select("id, stage, status")
       .eq("id", moveId)
       .single();
 
     if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    let liveStage: string | null = move.stage || null;
+    // When move is completed, always show "completed" — fixes stale stage (e.g. "booked") from manual completion
+    const moveCompleted = (move.status || "").toLowerCase() === "completed" || (move.status || "").toLowerCase() === "delivered";
+    let liveStage: string | null = moveCompleted ? "completed" : (move.stage || null);
     let sessionId: string | null = null;
     let hasActiveTracking = false;
 

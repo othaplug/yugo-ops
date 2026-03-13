@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 import { getPlatformToggles, getOfficeLocation } from "@/lib/platform-settings";
 
-/** GET: Return platform toggles + office location (admin only). */
+/** GET: Return platform toggles + office location (owner only). */
 export async function GET() {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
   try {
     const [toggles, office] = await Promise.all([getPlatformToggles(), getOfficeLocation()]);
@@ -21,9 +21,9 @@ export async function GET() {
   }
 }
 
-/** PATCH: Update platform toggles (admin only). */
+/** PATCH: Update platform toggles (owner only). */
 export async function PATCH(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
   try {
     const body = await req.json();

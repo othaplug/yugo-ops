@@ -94,6 +94,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
+  const [restartOverrideModal, setRestartOverrideModal] = useState<{ newStatus: string } | null>(null);
+  const [restartOverrideTyped, setRestartOverrideTyped] = useState("");
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
@@ -264,39 +266,15 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     const isCurrentlyCompleted = isMoveStatusCompleted(move.status);
                     const isRestarting = isCurrentlyCompleted && !["completed", "delivered", "cancelled"].includes(v.toLowerCase());
                     if (isRestarting) {
-                      const ok = window.confirm(
-                        "This move is completed. Changing status back will RESTART the move globally:\n\n" +
-                        "• Live stage will be cleared\n" +
-                        "• Any tracking session will be ended\n" +
-                        "• Crew will be able to start the job again from scratch\n\n" +
-                        "Continue?"
-                      );
-                      if (!ok) {
-                        setEditingCard(null);
-                        return;
-                      }
-                      try {
-                        const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ newStatus: v }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to restart");
-                        if (data.move) setMove(data.move);
-                        setEditingCard(null);
-                        router.refresh();
-                        toast("Move restarted", "check");
-                      } catch (err) {
-                        toast(err instanceof Error ? err.message : "Failed to restart", "alertTriangle");
-                      }
+                      setRestartOverrideModal({ newStatus: v });
+                      setRestartOverrideTyped("");
                       return;
                     }
                     const now = new Date().toISOString();
                     const updates: Record<string, unknown> = {
                       status: v,
                       updated_at: now,
-                      ...(v.toLowerCase() === "completed" && { completed_at: now }),
+                      ...(v.toLowerCase() === "completed" && { completed_at: now, stage: "completed" }),
                     };
                     const { data, error } = await supabase.from("moves").update(updates).eq("id", move.id).select().single();
                     if (error) {
@@ -580,6 +558,81 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           </button>
         </div>
       </ModalOverlay>
+
+      {restartOverrideModal && (
+        <ModalOverlay
+          open
+          onClose={() => {
+            setRestartOverrideModal(null);
+            setRestartOverrideTyped("");
+            setEditingCard(null);
+          }}
+          title="Admin override required"
+          maxWidth="sm"
+        >
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--tx2)]">
+              This move is completed. Changing status back to <strong>{getStatusLabel(restartOverrideModal.newStatus)}</strong> will RESTART the move globally:
+            </p>
+            <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
+              <li>Live stage will be cleared</li>
+              <li>Any tracking session will be ended</li>
+              <li>Crew will be able to start the job again from scratch</li>
+            </ul>
+            <p className="text-[11px] text-[var(--tx3)]">
+              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to confirm you are an admin and understand this action.
+            </p>
+            <input
+              type="text"
+              value={restartOverrideTyped}
+              onChange={(e) => setRestartOverrideTyped(e.target.value)}
+              placeholder="Type OVERRIDE"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              autoComplete="off"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRestartOverrideModal(null);
+                  setRestartOverrideTyped("");
+                  setEditingCard(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE"}
+                onClick={async () => {
+                  if (restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE") return;
+                  try {
+                    const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ newStatus: restartOverrideModal.newStatus }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed to restart");
+                    if (data.move) setMove(data.move);
+                    setRestartOverrideModal(null);
+                    setRestartOverrideTyped("");
+                    setEditingCard(null);
+                    router.refresh();
+                    toast("Move restarted", "check");
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Failed to restart", "alertTriangle");
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Override & restart
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
 
       {/* ─── Seamless info sections ─── */}
       <div className="mt-1 space-y-0">

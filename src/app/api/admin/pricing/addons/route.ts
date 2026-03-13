@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
 export async function GET() {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {

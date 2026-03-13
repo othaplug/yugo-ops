@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
 function generateCode(): string {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // exclude I, O for clarity
@@ -12,9 +12,9 @@ function generateCode(): string {
   return `${part1}-${part2}`;
 }
 
-/** GET: List trucks, teams, recent setup codes (admin only) */
+/** GET: List trucks, teams, recent setup codes (owner only) */
 export async function GET() {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const admin = createAdminClient();
@@ -32,9 +32,9 @@ export async function GET() {
   return NextResponse.json({ trucks, teams, codes });
 }
 
-/** POST: Create a new setup code (admin only) */
+/** POST: Create a new setup code (owner only) */
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   try {

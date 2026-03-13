@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Shield } from "lucide-react";
 
 const ROLE_LEVEL: Record<string, number> = {
-  owner: 100, admin: 80, manager: 60, dispatcher: 50, coordinator: 40, viewer: 30, crew: 20, partner: 10,
+  owner: 100, admin: 80, manager: 60, dispatcher: 50, coordinator: 40, viewer: 30, sales: 25, crew: 20, partner: 10,
 };
 
 interface SidebarItem {
@@ -34,7 +34,8 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Dashboard",
     items: [
       { href: "/admin", label: "Command Center", Icon: Icons.home, minRole: "coordinator" },
-      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar },
+      { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.truck, minRole: "dispatcher" },
+      { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, minRole: "sales" },
       { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin },
       { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
     ],
@@ -55,8 +56,8 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "Moves",
     items: [
-      { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes" },
-      { href: "/admin/widget-leads", label: "Widget Leads", Icon: Icons.zap, minRole: "coordinator" },
+      { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes", minRole: "sales" },
+      { href: "/admin/widget-leads", label: "Widget Leads", Icon: Icons.zap, minRole: "sales" },
       { href: "/admin/moves", label: "All Moves", Icon: Icons.truck },
     ],
   },
@@ -81,7 +82,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "Settings",
     items: [
-      { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "admin" },
+      { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "owner" },
       { href: "/admin/platform?tab=rate-templates", label: "Rate Templates", Icon: Icons.dollarSign, minRole: "owner" },
     ],
   },
@@ -313,7 +314,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
                   <Shield className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
                   Two-factor authentication is required for owner accounts.{" "}
-                  <Link href="/admin/platform?tab=users" className="underline font-bold hover:text-amber-300">
+                  <Link href="/admin/settings/security" className="underline font-bold hover:text-amber-300">
                     Enable 2FA
                   </Link>
                 </div>

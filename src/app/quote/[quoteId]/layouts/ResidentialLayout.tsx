@@ -17,15 +17,16 @@ const TIER_ICONS: Record<string, LucideIcon> = {
 };
 
 const ESSENTIALS_MISSING = [
+  "Basic disassembly & reassembly",
   "Enhanced Value Protection",
   "Pre-move walkthrough",
-  "Premium gloves handling",
+  "White glove handling",
   "Dedicated coordinator",
 ];
 
 const PREMIER_MISSING = [
   "Pre-move walkthrough",
-  "Premium gloves handling",
+  "White glove handling",
   "Dedicated coordinator",
 ];
 
@@ -96,12 +97,12 @@ export default function ResidentialLayout({
                 ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
               }}
             >
-              {badgeText && (
+              {badgeText ? (
                 <div
-                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
+                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
                   style={{
                     backgroundColor: tierKey === "estate" ? WINE : GOLD,
-                    minHeight: "28px",
+                    minHeight: "30px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -109,6 +110,8 @@ export default function ResidentialLayout({
                 >
                   {badgeText}
                 </div>
+              ) : (
+                <div aria-hidden style={{ minHeight: "30px", flexShrink: 0 }} />
               )}
 
               <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">

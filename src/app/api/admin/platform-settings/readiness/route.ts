@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireOwner } from "@/lib/auth/check-role";
 
 const DEFAULT_ITEMS = [
   { label: "Truck in good condition" },
@@ -12,7 +12,7 @@ const DEFAULT_ITEMS = [
 
 /** GET: Readiness checklist items from platform_settings */
 export async function GET() {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const admin = createAdminClient();
@@ -34,7 +34,7 @@ export async function GET() {
 
 /** PATCH: Update readiness checklist items */
 export async function PATCH(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireOwner();
   if (authErr) return authErr;
 
   const body = await req.json();

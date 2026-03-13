@@ -178,6 +178,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               <option value="dispatcher">Dispatcher</option>
               <option value="coordinator">Coordinator</option>
               <option value="viewer">Viewer</option>
+              <option value="sales">Sales</option>
             </select>
           </div>
           <div className="flex gap-2 pt-2">

@@ -45,7 +45,7 @@ export async function requireStaff() {
     .select("role")
     .eq("user_id", user!.id)
     .single();
-  const isStaff = ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer"].includes(platformUser?.role || "");
+  const isStaff = ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(platformUser?.role || "");
   if (!isStaff) {
     return { user: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

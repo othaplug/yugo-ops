@@ -14,8 +14,8 @@ export default async function PlatformPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: platformUser } = await db.from("platform_users").select("role").eq("user_id", user?.id).single();
   const isSuperAdmin = isSuperAdminEmail(user?.email);
-  const isAdmin = isSuperAdmin || ["owner", "admin", "manager"].includes(platformUser?.role || "");
-  if (!isAdmin) redirect("/admin");
+  const isOwner = isSuperAdmin || platformUser?.role === "owner";
+  if (!isOwner) redirect("/admin");
 
   const toggles = await getPlatformToggles();
   const initialToggles = {

@@ -27,8 +27,12 @@ interface UsersClientProps {
 
 function roleLabel(role: string) {
   if (role === "superadmin") return "Superadmin";
+  if (role === "owner") return "Owner";
   if (role === "admin") return "Admin";
   if (role === "manager") return "Manager";
+  if (role === "coordinator") return "Coordinator";
+  if (role === "viewer") return "Viewer";
+  if (role === "sales") return "Sales";
   if (role === "partner") return "Partner";
   if (role === "client") return "Move client";
   return "Dispatcher";
