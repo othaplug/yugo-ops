@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
       .update({
         status: session.job_type === "move" ? "completed" : "delivered",
         stage: "completed",
+        completed_at: now,
         updated_at: now,
       })
       .eq("id", session.job_id);

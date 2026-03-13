@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
-import { getEmailFrom } from "@/lib/email/send";
+import { getEmailFrom, sendEmail } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatJobId } from "@/lib/move-code";
@@ -128,13 +128,19 @@ export async function notifyOnCheckpoint(
   let partnerEmail: string | null = null;
   let trackUrl: string | undefined;
   let moveCode: string | undefined;
+  let moveFromAddress: string | undefined;
+  let moveToAddress: string | undefined;
+  let moveClientName: string | undefined;
 
   if (jobType === "move") {
-    const { data: move } = await admin.from("moves").select("id, client_email, move_code").eq("id", jobId).single();
+    const { data: move } = await admin.from("moves").select("id, client_email, move_code, from_address, to_address, client_name").eq("id", jobId).single();
     if (move) {
       clientEmail = move.client_email || null;
       trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
       moveCode = move.move_code || move.id;
+      moveFromAddress = move.from_address || undefined;
+      moveToAddress = move.to_address || undefined;
+      moveClientName = move.client_name || undefined;
     }
   } else {
     const { data: delivery } = await admin.from("deliveries").select("id, delivery_number, client_name, customer_email").eq("id", jobId).single();
@@ -171,8 +177,33 @@ export async function notifyOnCheckpoint(
   if (cfg.notifyPartner && partnerEmail && !toSend.includes(partnerEmail)) toSend.push(partnerEmail);
   if (toSend.length === 0) return;
 
+  // For move completion, send full "move complete" email (with portal/documents link) to client
+  if (status === "completed" && jobType === "move" && clientEmail && trackUrl) {
+    try {
+      await sendEmail({
+        to: clientEmail,
+        subject: `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`,
+        template: "move-complete",
+        data: {
+          clientName: moveClientName ?? "",
+          moveCode: moveCode || jobId,
+          fromAddress: moveFromAddress ?? "",
+          toAddress: moveToAddress ?? "",
+          completedDate: new Date().toISOString(),
+          trackingUrl: trackUrl,
+        },
+      });
+    } catch {}
+  }
+
+  // Generic status email: for moves we already sent move-complete to client, so only send to partner if any
+  const toSendGeneric =
+    status === "completed" && jobType === "move" && clientEmail
+      ? toSend.filter((e) => e !== clientEmail)
+      : toSend;
+
   const emailFrom = await getEmailFrom();
-  for (const to of toSend) {
+  for (const to of toSendGeneric) {
     try {
       await resend.emails.send({
         from: emailFrom,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { WebhooksHelper } from "square";
 
 const NOTIFICATION_URL = (() => {
@@ -41,10 +42,12 @@ export async function POST(req: NextRequest) {
       type?: string;
       data?: { object?: { invoice?: { id?: string } }; id?: string };
     };
-    const eventType = body.type;
+    const eventType = body.type ?? "unknown";
 
     const supabase = await createClient();
+    const admin = createAdminClient();
 
+    let logStatus: "processed" | "ignored" = "ignored";
     if (eventType === "invoice.payment_made" || eventType === "payment.completed") {
       const invoiceId = body.data?.object?.invoice?.id || body.data?.id;
 
@@ -68,13 +71,36 @@ export async function POST(req: NextRequest) {
             description: `${invoice.invoice_number} paid by ${invoice.client_name} ($${invoice.amount})`,
             icon: "check",
           });
+          logStatus = "processed";
         }
       }
     }
 
+    try {
+      await admin.from("webhook_logs").insert({
+        source: "square",
+        event_type: eventType,
+        payload: { type: body.type, id: body.data?.id },
+        status: logStatus,
+        error: null,
+      });
+    } catch (e) {
+      console.error("[webhooks/square] webhook_log insert failed:", e);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error("[webhooks/square] Error:", err);
+    try {
+      await createAdminClient().from("webhook_logs").insert({
+        source: "square",
+        event_type: "error",
+        payload: null,
+        status: "error",
+        error: message.slice(0, 500),
+      });
+    } catch (_) {}
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/charge-balance",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/cron/pre-move-emails",
       "schedule": "0 15 * * *"
     },
@@ -11,10 +15,6 @@
     {
       "path": "/api/cron/quote-followups",
       "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/charge-balance",
-      "schedule": "0 14 * * *"
     }
   ]
 }
