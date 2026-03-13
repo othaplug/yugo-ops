@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getTrackingUrl } from "@/lib/tracking-url";
+import { Boxes, Truck } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -58,8 +60,13 @@ interface InventoryItem {
   status: string;
   received_date: string | null;
   condition_on_receipt: string | null;
+  inspection_notes: string | null;
   photo_urls: string[] | null;
   storage_location: string | null;
+  handled_by: "yugo" | "vendor_direct" | "other_carrier" | null;
+  vendor_tracking_number: string | null;
+  vendor_carrier: string | null;
+  expected_delivery_date: string | null;
 }
 
 interface TimelineEntry {
@@ -98,8 +105,15 @@ const PHASE_STATUS_ICONS: Record<string, { color: string; label: string }> = {
   skipped: { color: "#aaa", label: "Skipped" },
 };
 
+const HANDLER_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  yugo: { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]", label: "YUGO" },
+  vendor_direct: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "VENDOR" },
+  other_carrier: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "CARRIER" },
+};
+
 const INV_STATUS_COLORS: Record<string, string> = {
   expected: "text-[#888]",
+  shipped: "text-amber-500",
   received: "text-blue-500",
   inspected: "text-blue-600",
   stored: "text-purple-500",
@@ -108,7 +122,11 @@ const INV_STATUS_COLORS: Record<string, string> = {
   installed: "text-emerald-600",
 };
 
-export default function PartnerB2BProjectsTab() {
+interface PartnerB2BProjectsTabProps {
+  onScheduleDelivery?: (suggestedItems?: string) => void;
+}
+
+export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2BProjectsTabProps = {}) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
@@ -119,6 +137,13 @@ export default function PartnerB2BProjectsTab() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteType, setNoteType] = useState("note_added");
+
+  // Vendor item update form
+  const [updateItemId, setUpdateItemId] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState("");
+  const [updateTracking, setUpdateTracking] = useState("");
+  const [updateCarrier, setUpdateCarrier] = useState("");
+  const [updateNotes, setUpdateNotes] = useState("");
 
   const loadProjects = useCallback(async () => {
     try {
@@ -150,6 +175,39 @@ export default function PartnerB2BProjectsTab() {
     setNoteText("");
     setShowNoteForm(false);
     viewProject(selectedProject.id);
+  };
+
+  const updateVendorItem = async () => {
+    if (!selectedProject || !updateItemId) return;
+    const payload: Record<string, unknown> = { item_id: updateItemId };
+    if (updateStatus) payload.status = updateStatus;
+    if (updateTracking !== undefined) payload.vendor_tracking_number = updateTracking || null;
+    if (updateCarrier !== undefined) payload.vendor_carrier = updateCarrier || null;
+    if (updateNotes !== undefined) payload.inspection_notes = updateNotes || null;
+    if (updateStatus === "received" || updateStatus === "delivered") {
+      const today = new Date().toISOString().slice(0, 10);
+      payload.received_date = today;
+      if (updateStatus === "delivered") payload.delivered_date = today;
+    }
+    await fetch(`/api/partner/projects/${selectedProject.id}/inventory`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setUpdateItemId(null);
+    setUpdateStatus("");
+    setUpdateTracking("");
+    setUpdateCarrier("");
+    setUpdateNotes("");
+    viewProject(selectedProject.id);
+  };
+
+  const openUpdateForm = (item: InventoryItem) => {
+    setUpdateItemId(item.id);
+    setUpdateStatus(item.status);
+    setUpdateTracking(item.vendor_tracking_number || "");
+    setUpdateCarrier(item.vendor_carrier || "");
+    setUpdateNotes(item.inspection_notes || "");
   };
 
   if (loading) {
@@ -242,25 +300,119 @@ export default function PartnerB2BProjectsTab() {
         {/* Inventory View */}
         {activeView === "inventory" && (
           <div className="space-y-2">
-            {p.inventory.length === 0 ? (
-              <div className="text-center py-8 text-[var(--tx3)] text-[13px]">No items tracked yet</div>
-            ) : p.inventory.map((item) => {
-              const phase = p.phases.find((ph) => ph.id === item.phase_id);
+            {/* Update vendor item form */}
+            {updateItemId && (() => {
+              const item = p.inventory.find((i) => i.id === updateItemId);
+              if (!item || (item.handled_by || "yugo") === "yugo") return null;
               return (
-                <div key={item.id} className="flex items-center justify-between py-3 px-4 bg-[var(--card)] border border-[var(--brd)] rounded-xl">
-                  <div>
-                    <div className="text-[13px] font-semibold text-[var(--tx)]">{item.item_name}</div>
-                    <div className="text-[11px] text-[var(--tx3)]">
-                      {item.vendor || "No vendor"}{phase ? ` · ${phase.phase_name}` : ""}
+                <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 mb-4 space-y-3">
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">Update: {item.item_name}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-[var(--tx3)] mb-1 block">Status</label>
+                      <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]">
+                        <option value="expected">Expected</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="received">Received</option>
+                        <option value="delivered">Delivered</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[var(--tx3)] mb-1 block">Carrier</label>
+                      <input value={updateCarrier} onChange={(e) => setUpdateCarrier(e.target.value)} placeholder="e.g., FedEx, DHL" className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[var(--tx3)] mb-1 block">Tracking number</label>
+                      <input value={updateTracking} onChange={(e) => setUpdateTracking(e.target.value)} placeholder="Tracking #" className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]" />
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className={`text-[10px] font-semibold capitalize ${INV_STATUS_COLORS[item.status] || "text-[#888]"}`}>{item.status.replace(/_/g, " ")}</div>
-                    {item.received_date && <div className="text-[10px] text-[var(--tx3)]">{new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>}
+                  <div>
+                    <label className="text-[10px] text-[var(--tx3)] mb-1 block">Notes</label>
+                    <textarea value={updateNotes} onChange={(e) => setUpdateNotes(e.target.value)} placeholder="e.g., Delayed — customs hold, expected +5 days" rows={2} className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={updateVendorItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Save</button>
+                    <button onClick={() => setUpdateItemId(null)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
                   </div>
                 </div>
               );
-            })}
+            })()}
+
+            {p.inventory.length === 0 ? (
+              <div className="text-center py-8 text-[var(--tx3)] text-[13px]">No items tracked yet</div>
+            ) : (
+              <>
+                {p.inventory.map((item) => {
+                  const phase = p.phases.find((ph) => ph.id === item.phase_id);
+                  const handler = item.handled_by || "yugo";
+                  const badge = HANDLER_BADGE[handler] || HANDLER_BADGE.yugo;
+                  const isVendor = handler !== "yugo";
+                  return (
+                    <div key={item.id} className="flex items-center justify-between py-3 px-4 bg-[var(--card)] border border-[var(--brd)] rounded-xl gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px] font-semibold text-[var(--tx)]">{item.item_name}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                        </div>
+                        <div className="text-[11px] text-[var(--tx3)]">
+                          {item.vendor || "No vendor"}{phase ? ` · ${phase.phase_name}` : ""}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`text-[10px] font-semibold capitalize ${INV_STATUS_COLORS[item.status] || "text-[#888]"}`}>{item.status.replace(/_/g, " ")}</div>
+                        {item.vendor_tracking_number ? (
+                          <a href={getTrackingUrl(item.vendor_carrier, item.vendor_tracking_number)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--gold)] hover:underline font-mono">
+                            {item.vendor_tracking_number.slice(0, 12)}{item.vendor_tracking_number.length > 12 ? "…" : ""}
+                          </a>
+                        ) : isVendor && (
+                          <span className="text-[10px] text-[var(--tx3)]">—</span>
+                        )}
+                        {(item.received_date || item.expected_delivery_date) && (
+                          <div className="text-[10px] text-[var(--tx3)]">
+                            {item.received_date
+                              ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              : item.expected_delivery_date
+                                ? `ETA ${new Date(item.expected_delivery_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                                : null}
+                          </div>
+                        )}
+                      </div>
+                      {isVendor && (
+                        <button onClick={() => openUpdateForm(item)} className="shrink-0 px-2 py-1 rounded text-[10px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10">
+                          Update
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Upsell for non-Yugo items */}
+                {(() => {
+                  const nonYugo = p.inventory.filter((i) => i.handled_by && i.handled_by !== "yugo");
+                  if (nonYugo.length === 0 || !onScheduleDelivery) return null;
+                  const suggestedItems = nonYugo.map((i) => i.item_name).join(", ");
+                  return (
+                    <div className="mt-6 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-5">
+                      <div className="flex items-start gap-3">
+                        <Boxes className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="text-[13px] font-semibold text-[var(--tx)]">{nonYugo.length} item{nonYugo.length > 1 ? "s" : ""} tracked manually this month</div>
+                          <p className="text-[11px] text-[var(--tx3)] mt-1">
+                            Want guaranteed white-glove handling with real-time tracking, photo documentation, and proof of delivery?
+                          </p>
+                          <button
+                            onClick={() => onScheduleDelivery(suggestedItems)}
+                            className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                          >
+                            <Truck size={13} /> Schedule these with Yugo
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
           </div>
         )}
 

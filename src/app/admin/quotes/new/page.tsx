@@ -17,7 +17,7 @@ export default async function NewQuotePage() {
       .select("key, value"),
     db
       .from("item_weights")
-      .select("slug, item_name, weight_score, category, is_common")
+      .select("slug, item_name, weight_score, category, room, is_common, display_order, active")
       .eq("active", true)
       .order("display_order"),
   ]);

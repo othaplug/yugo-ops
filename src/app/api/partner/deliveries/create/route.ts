@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
+import { generateDeliveryNumber } from "@/lib/delivery-number";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, userId, error } = await requirePartner();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
-    const deliveryNumber = `DLV-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
+    const deliveryNumber = generateDeliveryNumber();
     const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
     const items = Array.isArray(body.items)
       ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       services_price: body.services_price || 0,
       zone_surcharge: body.zone_surcharge || 0,
       after_hours_surcharge: body.after_hours_surcharge || 0,
-      total_price: body.total_price || 0,
+      total_price: body.total_price ?? body.quoted_price ?? 0,
       services_selected: body.services_selected || [],
       end_customer_name: (body.end_customer_name || customerName).trim() || null,
       end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,

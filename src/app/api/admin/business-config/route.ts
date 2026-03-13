@@ -20,7 +20,9 @@ const BUSINESS_KEYS = [
   "quote_expiry_days", "default_deposit_pct", "minimum_deposit", "quote_id_prefix",
   "auto_followup_enabled", "followup_max_attempts",
   // Feature toggles
-  "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades",
+  "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades", "sms_eta_enabled",
+  // Review requests
+  "auto_review_requests", "google_review_url",
 ];
 
 export async function GET() {

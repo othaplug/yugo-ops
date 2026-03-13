@@ -8,9 +8,10 @@ import { logAudit } from "@/lib/audit";
 // ═══════════════════════════════════════════════
 
 interface InventoryItem {
-  slug: string;
+  slug?: string;
   name?: string;
   quantity: number;
+  weight_score?: number; // For custom items not in item_weights
 }
 
 interface QuoteInput {
@@ -397,22 +398,34 @@ async function calculateAddons(
 const QUOTE_ID_NUMERIC_MAX = 999_999;
 
 async function generateQuoteId(sb: SupabaseAdmin): Promise<string> {
+  const { data: prefixRow } = await sb
+    .from("platform_config")
+    .select("value")
+    .eq("key", "quote_id_prefix")
+    .maybeSingle();
+  const prefix = (prefixRow?.value || "YGO-").trim() || "YGO-";
+  const likePattern = prefix.replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
+
   const { data } = await sb
     .from("quotes")
     .select("quote_id")
-    .like("quote_id", "YGO-%")
+    .like("quote_id", likePattern)
     .order("created_at", { ascending: false })
     .limit(100);
 
   let next = 30001;
   if (data && data.length > 0) {
     const nums = data
-      .map((row) => parseInt(row.quote_id.replace("YGO-", ""), 10))
+      .map((row) => {
+        const id = row.quote_id || "";
+        const numPart = id.startsWith(prefix) ? id.slice(prefix.length) : id;
+        return parseInt(numPart, 10);
+      })
       .filter((n) => !isNaN(n) && n <= QUOTE_ID_NUMERIC_MAX);
     const max = nums.length > 0 ? Math.max(...nums) : 0;
     if (max >= 30001) next = max + 1;
   }
-  return `YGO-${next}`;
+  return `${prefix}${next}`;
 }
 
 // ═══════════════════════════════════════════════
@@ -463,7 +476,7 @@ function residentialIncludes(minCrew: number, estHours: number, moveSize?: strin
     ...premier,
     "Full packing & unpacking",
     "Custom crating for fragile items",
-    "White glove handling",
+    "Premium gloves handling",
     "Dedicated move coordinator",
   ];
   return { essentials, premier, estate };
@@ -473,20 +486,70 @@ function residentialIncludes(minCrew: number, estHours: number, moveSize?: strin
 // Inventory volume modifier
 // ═══════════════════════════════════════════════
 
+/** Legacy slug → new slug map for quotes created before expand_inventory (85 items). */
+const LEGACY_SLUG_MAP: Record<string, string> = {
+  "bed-queen": "queen-bed-frame",
+  "bed-king": "king-bed-frame",
+  "bed-double": "double-bed-frame",
+  "bed-single": "single-twin-bed-frame",
+  sofa: "sofa-3-seater",
+  loveseat: "sofa-2-seater-loveseat",
+  sectional: "sectional-sofa",
+  dresser: "dresser-large",
+  wardrobe: "wardrobe-armoire",
+  "dining-table": "dining-table-6-seater",
+  "tv-stand": "tv-stand-entertainment-centre",
+  bookshelf: "bookshelf-large",
+  "desk-large": "office-desk-large",
+  "desk-small": "office-desk-small",
+  "accent-chair": "armchair-accent-chair",
+  "side-table": "side-end-table",
+  "lamp-floor": "floor-lamp",
+  "lamp-table": "table-lamp",
+  "tv-large": "tv-large-65",
+  "tv-small": "tv-mounted-flat",
+  ottoman: "ottoman-footstool",
+  fridge: "refrigerator",
+  "piano-grand": "piano-grand-baby-grand",
+  "safe-light": "safe-vault",
+  "safe-heavy": "safe-vault",
+  mirror: "mirror-large-full-length",
+  rug: "rug-large",
+  "shoe-rack": "shoe-rack-storage",
+  "small-table": "side-end-table",
+  monitor: "computer-monitor",
+};
+
 async function getItemWeight(sb: SupabaseAdmin, slugOrName: string): Promise<number> {
+  const trimmed = (slugOrName || "").trim();
+  if (!trimmed) return 1.0;
+
+  // Try exact slug first
   const { data } = await sb
     .from("item_weights")
     .select("weight_score")
-    .eq("slug", slugOrName)
+    .eq("slug", trimmed)
     .single();
   if (data) return Number(data.weight_score);
 
+  // Try legacy slug → new slug mapping (for old quotes)
+  const mapped = LEGACY_SLUG_MAP[trimmed];
+  if (mapped) {
+    const { data: mappedData } = await sb
+      .from("item_weights")
+      .select("weight_score")
+      .eq("slug", mapped)
+      .single();
+    if (mappedData) return Number(mappedData.weight_score);
+  }
+
+  // Fallback: fuzzy match by item_name (for custom items)
   const { data: byName } = await sb
     .from("item_weights")
     .select("weight_score")
-    .ilike("item_name", `%${slugOrName}%`)
+    .ilike("item_name", `%${trimmed.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`)
     .limit(1)
-    .single();
+    .maybeSingle();
   if (byName) return Number(byName.weight_score);
 
   return 1.0;
@@ -511,7 +574,10 @@ async function calcInventoryModifier(
   let itemScore = 0;
   let totalItems = 0;
   for (const item of inventoryItems) {
-    const weight = await getItemWeight(sb, item.slug || item.name || "");
+    const weight =
+      typeof item.weight_score === "number"
+        ? item.weight_score
+        : await getItemWeight(sb, item.slug || item.name || "");
     const qty = item.quantity || 1;
     itemScore += weight * qty;
     totalItems += qty;
@@ -997,7 +1063,7 @@ async function calcWhiteGlove(
       tax,
       total: price + tax,
       includes: [
-        "White glove premium handling",
+        "Premium gloves handling",
         "Professional 2-person crew",
         "Full assembly included",
         "Photo documentation (before/during/after)",
@@ -1204,9 +1270,28 @@ export async function POST(req: NextRequest) {
     : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0 };
 
   // Labour estimate (informational for coordinators)
-  const labour = invResult.inventoryScore > 0
-    ? estimateLabour(invResult.inventoryScore, distInfo?.distance_km ?? 0, input.from_access, input.to_access)
-    : null;
+  // When inventory is empty, derive from base_rates (move_size) so coordinators see sensible defaults
+  let labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
+  if (invResult.inventoryScore > 0) {
+    labour = estimateLabour(invResult.inventoryScore, distInfo?.distance_km ?? 0, input.from_access, input.to_access);
+  } else if (input.service_type === "local_move" || input.service_type === "long_distance") {
+    const { data: br } = await sb
+      .from("base_rates")
+      .select("min_crew, estimated_hours")
+      .eq("move_size", input.move_size ?? "2br")
+      .single();
+    const minCrew = br?.min_crew ?? 2;
+    const estHours = br?.estimated_hours ?? 3;
+    const truckSize = DEFAULT_TRUCK_BY_SIZE[input.move_size ?? "2br"]?.replace("-ft truck", "ft") ?? "16ft";
+    const lo = Math.max(2, Number(estHours) - 0.5);
+    const hi = Number(estHours) + 1;
+    labour = {
+      crewSize: minCrew,
+      estimatedHours: Number(estHours),
+      hoursRange: `${lo}–${hi} hours`,
+      truckSize,
+    };
+  }
 
   type FactorsObj = Record<string, unknown>;
   let tiers: Record<string, TierResult> | undefined;
@@ -1229,8 +1314,9 @@ export async function POST(req: NextRequest) {
       const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult);
       tiers = res.tiers;
       factors = res.factors;
-      displayCrew = res.minCrew;
-      displayHours = res.estHours;
+      // Use labour (inventory-based or base_rates fallback) when available so quote shows correct crew/hours
+      displayCrew = labour ? labour.crewSize : res.minCrew;
+      displayHours = labour ? labour.estimatedHours : res.estHours;
       break;
     }
     case "office_move": {
@@ -1316,6 +1402,19 @@ export async function POST(req: NextRequest) {
     const idx = custom_price.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter") || s.toLowerCase().includes("transport"));
     if (idx >= 0) custom_price.includes[idx] = fallbackTruckLine;
     else custom_price.includes.unshift(fallbackTruckLine);
+  }
+
+  // When labour exists (inventory-based or base_rates fallback), use it for tier includes so the public quote page shows crew/hours that match the estimate
+  if (labour && tiers) {
+    const crewLine = `${labour.crewSize} professional movers`;
+    const hoursLine = `${Math.round(labour.estimatedHours)}-hour window`;
+    for (const tierName of Object.keys(tiers)) {
+      const t = tiers[tierName];
+      const crewIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("professional movers"));
+      if (crewIdx >= 0) t.includes[crewIdx] = crewLine;
+      const hoursIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("-hour window"));
+      if (hoursIdx >= 0) t.includes[hoursIdx] = hoursLine;
+    }
   }
 
   // ── Valuation upgrades lookup ──

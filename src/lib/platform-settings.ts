@@ -75,6 +75,7 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   valuation_upgrades: "true",
   auto_followup_enabled: "true",
   followup_max_attempts: "3",
+  sms_eta_enabled: "false",
 };
 
 /**

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
+import { generateDeliveryNumber } from "@/lib/delivery-number";
 
 /** POST /api/admin/deliveries/create — Create delivery as admin (e.g. day rate with skip-approval). */
 export async function POST(req: NextRequest) {
@@ -10,16 +11,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const organizationId = (body.organization_id || "").trim();
-    if (!organizationId) return NextResponse.json({ error: "organization_id required" }, { status: 400 });
+    const organizationId = (body.organization_id || "").trim() || null;
 
     const admin = createAdminClient();
 
-    const { data: org } = await admin
-      .from("organizations")
-      .select("name, type, pricing_tier")
-      .eq("id", organizationId)
-      .single();
+    const { data: org } = organizationId
+      ? await admin.from("organizations").select("name, type, pricing_tier").eq("id", organizationId).single()
+      : { data: null };
 
     const customerName = (body.customer_name || "").trim();
     const deliveryAddress = (body.delivery_address || "").trim();
@@ -29,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
-    const deliveryNumber = `DLV-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
+    const deliveryNumber = generateDeliveryNumber();
     const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
     const items = Array.isArray(body.items)
       ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())
@@ -37,12 +35,12 @@ export async function POST(req: NextRequest) {
         ? body.items.split("\n").map((i: string) => i.trim()).filter(Boolean)
         : [];
 
-    const rateLookup = await getActiveRateCardLookup(organizationId);
+    const rateLookup = await getActiveRateCardLookup(organizationId || "");
 
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
-      organization_id: organizationId,
-      client_name: org?.name || "",
+      organization_id: organizationId || null,
+      client_name: (body.client_name || org?.name || "").trim() || "",
       customer_name: customerName,
       customer_email: (body.customer_email || "").trim() || null,
       customer_phone: (body.customer_phone || "").trim() || null,
@@ -55,7 +53,7 @@ export async function POST(req: NextRequest) {
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
       status: "scheduled",
-      category: org?.type || "retail",
+      category: (body.category || org?.type || "retail").trim() || "retail",
       created_by_source: "admin",
       created_by_user: null,
       booking_type: body.booking_type || null,
@@ -70,7 +68,8 @@ export async function POST(req: NextRequest) {
       services_price: body.services_price || 0,
       zone_surcharge: body.zone_surcharge || 0,
       after_hours_surcharge: body.after_hours_surcharge || 0,
-      total_price: body.total_price || 0,
+      total_price: body.total_price ?? body.quoted_price ?? 0,
+      quoted_price: body.quoted_price ?? body.total_price ?? null,
       services_selected: body.services_selected || [],
       end_customer_name: (body.end_customer_name || customerName).trim() || null,
       end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,
@@ -79,6 +78,7 @@ export async function POST(req: NextRequest) {
       recommended_vehicle: body.recommended_vehicle || null,
       recommended_day_type: body.recommended_day_type || null,
       tracking_code: trackingCode,
+      crew_id: (body.crew_id || "").trim() || null,
     };
 
     const { data: created, error: dbError } = await admin

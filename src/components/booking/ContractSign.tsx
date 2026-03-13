@@ -93,7 +93,7 @@ const SERVICE_DESCRIPTION: Record<string, string> = {
   single_item:
     "Professional single item pickup and delivery with full protection and careful handling.",
   white_glove:
-    "Premium white glove handling with enhanced protection, photo documentation, and dedicated care.",
+    "Premium gloves handling with enhanced protection, photo documentation, and dedicated care.",
   specialty:
     "Custom specialty service tailored to your specific project requirements and timeline.",
   b2b_oneoff:

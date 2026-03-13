@@ -15,7 +15,7 @@ import {
   Wrench,
   Radar,
   Camera,
-  Shirt,
+  Hand,
   Trash2,
   Home,
   ChevronDown,
@@ -93,7 +93,7 @@ const INCLUSIONS_PREMIER: Inclusion[] = [
 
 const INCLUSIONS_ESTATE: Inclusion[] = [
   { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
-  { icon: Shirt, label: "White glove item handling", description: "Art, antiques, and fragile items individually wrapped" },
+  { icon: Hand, label: "Premium gloves handling", description: "Art, antiques, and fragile items individually wrapped" },
   { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
   { icon: Home, label: "Post-move property restoration", description: "Removal of all packaging, debris, and unwanted materials from both locations" },
 ];

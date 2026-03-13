@@ -271,6 +271,95 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
   `);
 }
 
+/* ── Tier-specific Review Request (2h after completion) ── */
+
+export interface ReviewRequestTierData {
+  clientName: string;
+  tier: "essentials" | "premier" | "estate" | string;
+  reviewUrl: string;
+  referralUrl?: string | null;
+  trackingUrl: string;
+  coordinatorName?: string | null;
+}
+
+export function reviewRequestEssentialsEmail(d: ReviewRequestTierData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your move is complete, and we hope everything went smoothly.
+    </p>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
+    </p>
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review →
+    </a>
+    <p style="font-size:11px;color:#666;text-align:center">
+      Thank you for choosing Yugo. — The Yugo Team
+    </p>
+  `);
+}
+
+export function reviewRequestPremierEmail(d: ReviewRequestTierData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your move is complete, and we hope everything went smoothly.
+    </p>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
+    </p>
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review →
+    </a>
+    <p style="font-size:11px;color:#666;text-align:center">
+      Thank you for choosing Yugo. — The Yugo Team
+    </p>
+  `);
+}
+
+export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Did We Do?</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Thank you for choosing Yugo for your move. It was a privilege to take care of your home and belongings.
+    </p>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      If your experience was as exceptional as we aimed for, we would be honoured by a brief review. It helps families like yours find the level of care they deserve.
+    </p>
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Share Your Experience →
+    </a>
+    <p style="font-size:11px;color:#666;text-align:center">
+      With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo — The Art of Moving
+    </p>
+  `);
+}
+
+export interface ReviewRequestReminderData {
+  clientName: string;
+  reviewUrl: string;
+}
+
+export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quick Reminder</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder — your Yugo review</h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
+    </p>
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review →
+    </a>
+    <p style="font-size:11px;color:#666;text-align:center">
+      Thank you for choosing Yugo.
+    </p>
+  `);
+}
+
 /* ── Low Satisfaction Follow-Up (score < 4) ── */
 
 export interface LowSatisfactionData {

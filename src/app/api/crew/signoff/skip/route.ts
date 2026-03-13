@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
+import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 
 const VALID_SKIP_REASONS = [
   "client_not_home",
@@ -105,11 +106,13 @@ export async function POST(req: NextRequest) {
       .update({
         status: jobType === "move" ? "completed" : "delivered",
         stage: "completed",
+        completed_at: now,
         updated_at: now,
       })
       .eq("id", entityId);
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
+      createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
     }
   }
 

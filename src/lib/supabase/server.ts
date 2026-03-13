@@ -1,10 +1,21 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import type { UserResponse } from "@supabase/supabase-js";
+
+function isRefreshTokenError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const msg = String((err as { message?: string }).message ?? "");
+  const name = (err as { name?: string }).name ?? "";
+  return (
+    name === "AuthApiError" ||
+    /refresh\s*token\s*not\s*found|invalid\s*refresh\s*token/i.test(msg)
+  );
+}
 
 export const createClient = async () => {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -24,4 +35,19 @@ export const createClient = async () => {
       },
     }
   );
+
+  const origGetUser = client.auth.getUser.bind(client.auth);
+  client.auth.getUser = async (options): Promise<UserResponse> => {
+    try {
+      return await origGetUser(options);
+    } catch (err) {
+      if (isRefreshTokenError(err)) {
+        await client.auth.signOut();
+        return { data: { user: null }, error: err } as UserResponse;
+      }
+      throw err;
+    }
+  };
+
+  return client;
 };

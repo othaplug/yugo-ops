@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
@@ -50,7 +49,6 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const dateFromUrl = searchParams.get("date") || "";
   const typeFromUrl = searchParams.get("type") || "";
   const orgFromUrl = searchParams.get("org") || "";
-  const supabase = createClient();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -146,48 +144,49 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     setError("");
 
     const org = organizations.find((o) => o.id === organizationId);
-    const deliveryNumber = `PJ${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, "0")}`;
-
     const itemsList = inventory.length > 0
       ? inventory.map((i) => `${i.room}: ${i.item_name}`)
       : itemsFallback.split("\n").map((l) => l.trim()).filter(Boolean);
 
     const instructionsMerged = [instructions, accessNotes && `Access: ${accessNotes}`, internalNotes && `Internal: ${internalNotes}`, complexityIndicators.length > 0 && `Complexity: ${complexityIndicators.join(", ")}`].filter(Boolean).join("\n");
 
-    const { data: created, error: dbError } = await supabase
-      .from("deliveries")
-      .insert({
-        delivery_number: deliveryNumber,
-        organization_id: organizationId || null,
-        client_name: org?.name || "",
-        customer_name: customerName.trim(),
-        customer_email: customerEmail.trim() || null,
-        customer_phone: customerPhone.trim() ? normalizePhone(customerPhone) : null,
-        pickup_address: pickupAddress.trim() || null,
-        delivery_address: deliveryAddress.trim(),
-        items: itemsList,
-        scheduled_date: scheduledDate,
-        time_slot: timeSlot || null,
-        delivery_window: deliveryWindow || null,
-        status: "scheduled",
-        category: projectType || org?.type || "retail",
-        instructions: instructionsMerged || null,
-        special_handling: specialHandling,
-        quoted_price: parseNumberInput(quotedPrice) || null,
-        crew_id: crewId || null,
-      })
-      .select("id, delivery_number")
-      .single();
+    const payload = {
+      organization_id: organizationId || null,
+      client_name: org?.name || "",
+      customer_name: customerName.trim(),
+      customer_email: customerEmail.trim() || null,
+      customer_phone: customerPhone.trim() ? normalizePhone(customerPhone) : null,
+      pickup_address: pickupAddress.trim() || null,
+      delivery_address: deliveryAddress.trim(),
+      items: itemsList,
+      scheduled_date: scheduledDate,
+      time_slot: timeSlot || null,
+      delivery_window: deliveryWindow || null,
+      instructions: instructionsMerged || null,
+      special_handling: specialHandling,
+      quoted_price: parseNumberInput(quotedPrice) || null,
+      crew_id: crewId || null,
+      category: projectType || org?.type || "retail",
+    };
+
+    const res = await fetch("/api/admin/deliveries/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
     setLoading(false);
-    if (!dbError && created) {
+    const data = await res.json();
+
+    if (res.ok && data.delivery) {
+      const created = data.delivery;
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
         : `/admin/deliveries/${created.id}`;
       router.push(path);
       router.refresh();
     } else {
-      setError(dbError?.message || "Failed to create delivery");
+      setError(data.error || "Failed to create delivery");
     }
   };
 

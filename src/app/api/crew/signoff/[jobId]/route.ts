@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
+import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 
 export async function GET(
   req: NextRequest,
@@ -322,12 +323,24 @@ export async function POST(
       .update({
         status: jobType === "move" ? "completed" : "delivered",
         stage: "completed",
+        completed_at: now,
         updated_at: now,
+        eta_tracking_active: false,
       })
       .eq("id", entityId);
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
+      createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
     }
+    // Fire-and-forget: send "Completed" SMS (ETA system)
+    const origin = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: entityId, jobType }),
+    }).catch((e) => console.error("[eta] send-completed failed:", e));
   }
 
   return NextResponse.json(inserted);

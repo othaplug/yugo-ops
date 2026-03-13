@@ -139,18 +139,27 @@ export interface DeliveryStop {
   special_instructions: string | null;
 }
 
+interface EtaSmsLogEntry {
+  message_type: string;
+  sent_at: string;
+  eta_minutes: number | null;
+  twilio_sid: string | null;
+}
+
 export default function DeliveryDetailClient({
   delivery: initialDelivery,
   clientEmail,
   organizations = [],
   crews = [],
   stops = null,
+  etaSmsLog = [],
 }: {
   delivery: any;
   clientEmail?: string | null;
   organizations?: { id: string; name: string; type: string }[];
   crews?: Crew[];
   stops?: DeliveryStop[] | null;
+  etaSmsLog?: EtaSmsLogEntry[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -516,6 +525,35 @@ export default function DeliveryDetailClient({
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
         {/* LEFT */}
         <div>
+          {etaSmsLog.length > 0 && (
+            <div className="mb-4">
+            <CollapsibleSection title="SMS Updates" defaultCollapsed subtitle={`${etaSmsLog.length} sent`}>
+              <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-[var(--brd)] bg-[var(--gdim)]/30">
+                      <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Type</th>
+                      <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Sent</th>
+                      <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">ETA</th>
+                      <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Twilio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {etaSmsLog.map((row, i) => (
+                      <tr key={i} className="border-b border-[var(--brd)]/50 last:border-0">
+                        <td className="py-2 px-3 text-[var(--tx)]">{row.message_type.replace(/_/g, " ")}</td>
+                        <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "—"}</td>
+                        <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "—"}</td>
+                        <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">{row.twilio_sid || "Failed"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleSection>
+            </div>
+          )}
+
           {/* Live Tracking / Completion Status — stays as card (hero) */}
           {completed ? (
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">

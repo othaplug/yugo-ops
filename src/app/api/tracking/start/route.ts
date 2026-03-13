@@ -86,7 +86,22 @@ export async function POST(req: NextRequest) {
 
   // Set move/delivery to in_progress and stage so client track page shows live map and progress
   const table = jobType === "move" ? "moves" : "deliveries";
-  await admin.from(table).update({ status: "in_progress", stage: firstStatus, updated_at: now }).eq("id", entityId);
+  await admin.from(table).update({
+    status: "in_progress",
+    stage: firstStatus,
+    updated_at: now,
+    eta_tracking_active: true,
+  }).eq("id", entityId);
+
+  // Fire-and-forget: send "Crew Departed" SMS (ETA system)
+  const origin = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  fetch(`${origin.replace(/\/$/, "")}/api/eta/send-departure`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: entityId, jobType }),
+  }).catch((e) => console.error("[eta] send-departure failed:", e));
 
   // Notify client when crew starts job (en route to pickup) — email at start, not at arrive at pickup
   let teamName = "";

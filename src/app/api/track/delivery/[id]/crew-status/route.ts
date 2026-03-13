@@ -33,8 +33,8 @@ export async function GET(
     const admin = createAdminClient();
     const byUuid = isUuid(slug);
     const { data: delivery } = byUuid
-      ? await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window").eq("id", slug).single()
-      : await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window").ilike("delivery_number", slug).single();
+      ? await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes").eq("id", slug).single()
+      : await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes").ilike("delivery_number", slug).single();
 
     if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
     if (!verifyTrackToken("delivery", delivery.id, token)) {
@@ -125,6 +125,7 @@ export async function GET(
         dropoff,
         scheduledDate: delivery.scheduled_date || null,
         timeWindow: delivery.delivery_window || delivery.time_slot || null,
+        eta_current_minutes: delivery?.eta_current_minutes ?? null,
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );

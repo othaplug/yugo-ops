@@ -127,7 +127,7 @@ export const TIER_META: Record<
   },
   estate: {
     label: "Estate",
-    tagline: "The ultimate white-glove experience",
+    tagline: "The ultimate premium gloves experience",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,

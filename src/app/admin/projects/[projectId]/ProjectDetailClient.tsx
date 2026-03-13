@@ -5,6 +5,7 @@ import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { formatCurrency } from "@/lib/format-currency";
 import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck } from "lucide-react";
+import { getTrackingUrl } from "@/lib/tracking-url";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -114,6 +115,7 @@ const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof Chec
 
 const INV_STATUS_COLORS: Record<string, string> = {
   expected: "text-[var(--tx3)]",
+  shipped: "text-amber-500",
   received: "text-blue-500",
   inspected: "text-blue-600",
   stored: "text-purple-500",
@@ -477,12 +479,20 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
   const [newItemHandledBy, setNewItemHandledBy] = useState<string>("yugo");
   const [newItemCarrier, setNewItemCarrier] = useState("");
   const [newItemTrackingNum, setNewItemTrackingNum] = useState("");
+  const [newItemExpectedDate, setNewItemExpectedDate] = useState("");
   const [search, setSearch] = useState("");
 
   // Receive item form
   const [receiveCondition, setReceiveCondition] = useState("perfect");
   const [receiveStorage, setReceiveStorage] = useState("");
   const [receiveNotes, setReceiveNotes] = useState("");
+
+  // Vendor item update form
+  const [updateVendorItemId, setUpdateVendorItemId] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState("");
+  const [updateTracking, setUpdateTracking] = useState("");
+  const [updateCarrier, setUpdateCarrier] = useState("");
+  const [updateNotes, setUpdateNotes] = useState("");
 
   const addItem = async () => {
     if (!newItemName.trim()) return;
@@ -497,6 +507,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
         handled_by: newItemHandledBy || "yugo",
         vendor_carrier: newItemCarrier || null,
         vendor_tracking_number: newItemTrackingNum || null,
+        expected_delivery_date: newItemExpectedDate || null,
       }),
     });
     setNewItemName("");
@@ -506,6 +517,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
     setNewItemHandledBy("yugo");
     setNewItemCarrier("");
     setNewItemTrackingNum("");
+    setNewItemExpectedDate("");
     setShowAddItem(false);
     onRefresh();
   };
@@ -528,6 +540,32 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
     setReceiveCondition("perfect");
     setReceiveStorage("");
     setReceiveNotes("");
+    onRefresh();
+  };
+
+  const updateVendorItem = async () => {
+    if (!updateVendorItemId) return;
+    const payload: Record<string, unknown> = {
+      item_id: updateVendorItemId,
+      status: updateStatus,
+      vendor_tracking_number: updateTracking || null,
+      vendor_carrier: updateCarrier || null,
+      inspection_notes: updateNotes || null,
+    };
+    if (updateStatus === "received" || updateStatus === "delivered") {
+      payload.received_date = new Date().toISOString().slice(0, 10);
+      if (updateStatus === "delivered") payload.delivered_date = new Date().toISOString().slice(0, 10);
+    }
+    await fetch(`/api/admin/projects/${projectId}/inventory`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setUpdateVendorItemId(null);
+    setUpdateStatus("");
+    setUpdateTracking("");
+    setUpdateCarrier("");
+    setUpdateNotes("");
     onRefresh();
   };
 
@@ -566,6 +604,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               <>
                 <input value={newItemCarrier} onChange={(e) => setNewItemCarrier(e.target.value)} placeholder="Carrier (e.g., FedEx, DHL)" className={fieldInput} />
                 <input value={newItemTrackingNum} onChange={(e) => setNewItemTrackingNum(e.target.value)} placeholder="Tracking number" className={fieldInput} />
+                <input type="date" value={newItemExpectedDate} onChange={(e) => setNewItemExpectedDate(e.target.value)} placeholder="Expected delivery" className={fieldInput} />
               </>
             )}
           </div>
@@ -575,6 +614,44 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
           </div>
         </div>
       )}
+
+      {/* Update Vendor Item Form */}
+      {updateVendorItemId && (() => {
+        const item = data.inventory.find((i) => i.id === updateVendorItemId);
+        if (!item || (item.handled_by || "yugo") === "yugo") return null;
+        return (
+          <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 mb-4 space-y-3">
+            <div className="text-[13px] font-semibold text-[var(--tx)]">Update: {item.item_name}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] text-[var(--tx3)] mb-1 block">Status</label>
+                <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} className={fieldInput}>
+                  <option value="expected">Expected</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="received">Received</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-[var(--tx3)] mb-1 block">Carrier</label>
+                <input value={updateCarrier} onChange={(e) => setUpdateCarrier(e.target.value)} placeholder="e.g., FedEx, DHL" className={fieldInput} />
+              </div>
+              <div>
+                <label className="text-[10px] text-[var(--tx3)] mb-1 block">Tracking number</label>
+                <input value={updateTracking} onChange={(e) => setUpdateTracking(e.target.value)} placeholder="Tracking #" className={fieldInput} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--tx3)] mb-1 block">Notes</label>
+              <textarea value={updateNotes} onChange={(e) => setUpdateNotes(e.target.value)} placeholder="e.g., Delayed — customs hold, expected +5 days" rows={2} className={fieldInput} />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={updateVendorItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Save</button>
+              <button onClick={() => setUpdateVendorItemId(null)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Receive Item Modal */}
       {showReceiveItem && (() => {
@@ -642,7 +719,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                         <span className="text-[var(--tx3)]">—</span>
                       ) : item.vendor_tracking_number ? (
                         <a
-                          href={item.vendor_carrier?.toLowerCase().includes("fedex") ? `https://www.fedex.com/fedextrack/?trknbr=${item.vendor_tracking_number}` : item.vendor_carrier?.toLowerCase().includes("dhl") ? `https://www.dhl.com/en/express/tracking.html?AWB=${item.vendor_tracking_number}` : item.vendor_carrier?.toLowerCase().includes("ups") ? `https://www.ups.com/track?tracknum=${item.vendor_tracking_number}` : "#"}
+                          href={getTrackingUrl(item.vendor_carrier, item.vendor_tracking_number)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[var(--gold)] hover:underline font-mono"
@@ -658,11 +735,30 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                       {handler === "yugo" && item.status !== "delivered" && item.status !== "installed" && (
                         <span className="text-[10px] text-[var(--tx3)]">Auto-tracked</span>
                       )}
-                      {handler !== "yugo" && item.status === "expected" && (
-                        <button onClick={() => setShowReceiveItem(item.id)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Update</button>
-                      )}
                       {handler === "yugo" && (item.status === "delivered" || item.status === "installed") && (
                         <span className="text-[10px] text-emerald-500 font-semibold">View PoD</span>
+                      )}
+                      {handler !== "yugo" && item.status !== "delivered" && item.status !== "installed" && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setUpdateVendorItemId(item.id);
+                              setUpdateStatus(item.status);
+                              setUpdateTracking(item.vendor_tracking_number || "");
+                              setUpdateCarrier(item.vendor_carrier || "");
+                              setUpdateNotes(item.inspection_notes || "");
+                            }}
+                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                          >
+                            Update
+                          </button>
+                          {item.status === "expected" && (
+                            <span className="text-[var(--tx3)] mx-1">·</span>
+                          )}
+                          {item.status === "expected" && (
+                            <button onClick={() => setShowReceiveItem(item.id)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Receive</button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>

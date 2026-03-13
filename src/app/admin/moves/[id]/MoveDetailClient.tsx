@@ -25,14 +25,44 @@ import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 
+interface EtaSmsLogEntry {
+  message_type: string;
+  sent_at: string;
+  eta_minutes: number | null;
+  twilio_sid: string | null;
+}
+
+interface ReviewRequestEntry {
+  id: string;
+  status: string;
+  email_sent_at: string | null;
+  review_clicked: boolean | null;
+  review_clicked_at: string | null;
+}
+
 interface MoveDetailClientProps {
   move: any;
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
   userRole?: string;
   additionalFeesCents?: number;
+  etaSmsLog?: EtaSmsLogEntry[];
+  reviewRequest?: ReviewRequestEntry;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+
+function formatReviewTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffMin < 60) return `${diffMin} min${diffMin === 1 ? "" : "s"} ago`;
+  if (diffHr < 24) return `${diffHr} hr${diffHr === 1 ? "" : "s"} ago`;
+  if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+  return d.toLocaleDateString();
+}
 
 function isMoveStatusCompleted(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase();
@@ -51,7 +81,7 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
 
-export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0 }: MoveDetailClientProps) {
+export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0, etaSmsLog = [], reviewRequest }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -262,7 +292,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                       }
                       return;
                     }
-                    const updates: Record<string, unknown> = { status: v, updated_at: new Date().toISOString() };
+                    const now = new Date().toISOString();
+                    const updates: Record<string, unknown> = {
+                      status: v,
+                      updated_at: now,
+                      ...(v.toLowerCase() === "completed" && { completed_at: now }),
+                    };
                     const { data, error } = await supabase.from("moves").update(updates).eq("id", move.id).select().single();
                     if (error) {
                       toast(error.message || "Failed to update status", "alertTriangle");
@@ -271,6 +306,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     if (data) setMove(data);
                     setEditingCard(null);
                     router.refresh();
+                    if (v.toLowerCase() === "completed") {
+                      fetch(`/api/admin/moves/${move.id}/ensure-review-request`, { method: "POST" }).catch(() => {});
+                    }
                     // Sync status to HubSpot deal (and keep deal fields in sync)
                     if (move.hubspot_deal_id) {
                       const dealProps: Record<string, string> = { dealstage: v };
@@ -347,6 +385,50 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       </div>
 
       {/* Live Crew Tracking Map - collapsible, collapsed by default */}
+      {etaSmsLog.length > 0 && (
+        <CollapsibleSection title="SMS Updates" defaultCollapsed subtitle={`${etaSmsLog.length} sent`}>
+          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-[var(--brd)] bg-[var(--gdim)]/30">
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Type</th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Sent</th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">ETA</th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Twilio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {etaSmsLog.map((row, i) => (
+                  <tr key={i} className="border-b border-[var(--brd)]/50 last:border-0">
+                    <td className="py-2 px-3 text-[var(--tx)]">{row.message_type.replace(/_/g, " ")}</td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "—"}</td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "—"}</td>
+                    <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">{row.twilio_sid || "Failed"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {reviewRequest && isCompleted && (
+        <CollapsibleSection title="Review Request" defaultCollapsed={false} subtitle={reviewRequest.review_clicked ? "Clicked ✓" : reviewRequest.status}>
+          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4">
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[var(--tx3)]">Status:</span>
+              <span className="font-medium text-[var(--tx)]">
+                {reviewRequest.review_clicked
+                  ? `Clicked ✓${reviewRequest.review_clicked_at ? ` (${new Date(reviewRequest.review_clicked_at).toLocaleString()})` : ""}`
+                  : reviewRequest.status === "sent" || reviewRequest.status === "reminded"
+                    ? `${reviewRequest.status}${reviewRequest.email_sent_at ? ` (${formatReviewTime(reviewRequest.email_sent_at)})` : ""} · Not clicked yet`
+                    : reviewRequest.status}
+              </span>
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
       {move.crew_id && (
         <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={selectedCrew?.name || "Crew"}>
           {!isInProgress && (

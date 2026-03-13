@@ -196,7 +196,7 @@ function useSection(section: string) {
     setRows((r) => r.map((row) => row.id === id ? { ...row, [field]: value } : row));
   };
 
-  return { rows, loading, setRows, save, undo, add, remove, updateRow };
+  return { rows, loading, setRows, save, undo, add, remove, updateRow, reload: load };
 }
 
 /* ────────── Table wrapper ────────── */
@@ -1096,6 +1096,7 @@ function InventoryVolumeSection() {
 
   const WEIGHT_OPTS = [0.5, 1.0, 2.0, 3.0];
   const CATEGORY_OPTS = ["furniture", "appliance", "electronics", "decor", "other"];
+  const ROOM_OPTS = ["bedroom", "living_room", "dining_room", "kitchen", "office", "outdoor", "kids", "garage", "specialty", "other"];
 
   const filteredItems = iw.rows.filter((r) => {
     if (!showInactive && !r.active) return false;
@@ -1269,6 +1270,233 @@ function InventoryVolumeSection() {
           </>
         )}
       </div>
+
+      {/* ── Custom Items Used ── */}
+      <CustomItemsUsedSection onAddToMaster={() => { iw.reload?.(); }} />
+    </div>
+  );
+}
+
+function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void }) {
+  const [items, setItems] = useState<{ item_name: string; weight_used: number; times_used: number; first_used: string; last_used: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addModal, setAddModal] = useState<{ item_name: string; weight_used: number } | null>(null);
+  const [addForm, setAddForm] = useState({ item_name: "", weight_score: 1, category: "furniture", room: "other", is_common: false });
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch("/api/admin/pricing/custom-items");
+      const d = await r.json();
+      setItems(d.data || []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  const handleAddToMaster = async () => {
+    if (!addModal) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/admin/pricing/custom-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add_to_master",
+          item_name: addForm.item_name || addModal.item_name,
+          weight_score: addForm.weight_score,
+          category: addForm.category,
+          room: addForm.room,
+          is_common: addForm.is_common,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Failed");
+      toast("Added to master list", "check");
+      setAddModal(null);
+      fetchItems();
+      onAddToMaster?.();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDismiss = async (itemName: string) => {
+    try {
+      const r = await fetch("/api/admin/pricing/custom-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dismiss", item_name: itemName }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      toast("Dismissed", "check");
+      fetchItems();
+    } catch {
+      toast("Failed to dismiss", "x");
+    }
+  };
+
+  const openAddModal = (item: { item_name: string; weight_used: number }) => {
+    setAddModal(item);
+    setAddForm({
+      item_name: item.item_name,
+      weight_score: item.weight_used,
+      category: "furniture",
+      room: "other",
+      is_common: false,
+    });
+  };
+
+  const WEIGHT_OPTS = [0.5, 1.0, 2.0, 3.0];
+  const CATEGORY_OPTS = ["furniture", "appliance", "electronics", "decor", "other"];
+  const ROOM_OPTS = ["bedroom", "living_room", "dining_room", "kitchen", "office", "outdoor", "kids", "garage", "specialty", "other"];
+
+  return (
+    <div className="border-t border-[var(--brd)]/30 pt-6">
+      <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
+      <p className="text-[9px] text-[var(--tx3)] mb-3">
+        Items coordinators entered that are not in the master list. Add popular ones to item_weights.
+      </p>
+      {loading ? (
+        <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="text-[11px] text-[var(--tx3)]">No custom items used yet.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+          <table className={tbl}>
+            <thead>
+              <tr className="bg-[var(--bg)]">
+                <th className={th}>Item Name</th>
+                <th className={th}>Weight Used</th>
+                <th className={th}>Times Used</th>
+                <th className={th}>First Used</th>
+                <th className={th}>Last Used</th>
+                <th className={th}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row) => (
+                <tr key={row.item_name}>
+                  <td className={`${td} font-medium text-[var(--tx)]`}>{row.item_name}</td>
+                  <td className={td}>{row.weight_used} ({row.weight_used >= 2 ? "Heavy" : row.weight_used <= 0.5 ? "Light" : "Medium"})</td>
+                  <td className={td}>{row.times_used}</td>
+                  <td className={td}>{row.first_used ? new Date(row.first_used).toLocaleDateString() : "—"}</td>
+                  <td className={td}>{row.last_used ? new Date(row.last_used).toLocaleDateString() : "—"}</td>
+                  <td className={td}>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openAddModal(row)}
+                        className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                      >
+                        Add to Master List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDismiss(row.item_name)}
+                        className="text-[10px] text-[var(--tx3)] hover:text-[var(--red)]"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {addModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-md shadow-xl">
+            <h3 className="text-[13px] font-bold text-[var(--tx)] mb-3">Add to Master List</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[9px] font-semibold text-[var(--tx3)] mb-1">Item name</label>
+                <input
+                  type="text"
+                  value={addForm.item_name}
+                  onChange={(e) => setAddForm((p) => ({ ...p, item_name: e.target.value }))}
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-semibold text-[var(--tx3)] mb-1">Weight score</label>
+                <select
+                  value={addForm.weight_score}
+                  onChange={(e) => setAddForm((p) => ({ ...p, weight_score: Number(e.target.value) }))}
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                >
+                  {WEIGHT_OPTS.map((w) => (
+                    <option key={w} value={w}>{w} ({w >= 2 ? "Heavy" : w <= 0.5 ? "Light" : "Medium"})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[9px] font-semibold text-[var(--tx3)] mb-1">Category</label>
+                <select
+                  value={addForm.category}
+                  onChange={(e) => setAddForm((p) => ({ ...p, category: e.target.value }))}
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                >
+                  {CATEGORY_OPTS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[9px] font-semibold text-[var(--tx3)] mb-1">Room</label>
+                <select
+                  value={addForm.room}
+                  onChange={(e) => setAddForm((p) => ({ ...p, room: e.target.value }))}
+                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                >
+                  {ROOM_OPTS.map((r) => (
+                    <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={addForm.is_common}
+                  onChange={(e) => setAddForm((p) => ({ ...p, is_common: e.target.checked }))}
+                  className="accent-[var(--gold)]"
+                />
+                Is common (show in quick-add)
+              </label>
+            </div>
+            <div className="flex gap-2 mt-4 justify-end">
+              <button
+                type="button"
+                onClick={() => setAddModal(null)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddToMaster}
+                disabled={saving || !addForm.item_name.trim()}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              >
+                {saving ? "Saving…" : "Save to Master List"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

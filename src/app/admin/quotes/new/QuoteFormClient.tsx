@@ -8,7 +8,8 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
-import { Home, Building2, ArrowUpRight, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Search, Plus, Minus, Users, Clock, Truck } from "lucide-react";
+import { Home, Building2, ArrowUpRight, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Users, Clock, Truck, Plus } from "lucide-react";
+import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 // ─── Types ──────────────────────────────────────
 
@@ -75,14 +76,10 @@ interface ItemWeight {
   item_name: string;
   weight_score: number;
   category: string;
+  room?: string;
   is_common: boolean;
-}
-
-interface InventoryEntry {
-  slug: string;
-  name: string;
-  quantity: number;
-  weight_score: number;
+  display_order?: number;
+  active?: boolean;
 }
 
 // ─── Constants ──────────────────────────────────
@@ -264,10 +261,7 @@ export default function QuoteFormClient({
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
 
   // Inventory
-  const [inventoryItems, setInventoryItems] = useState<InventoryEntry[]>([]);
-  const [inventorySearch, setInventorySearch] = useState("");
-  const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
-  const inventorySearchRef = useRef<HTMLDivElement>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>([]);
 
   // Quote result (set only after successful generate; required for Send)
   const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
@@ -320,46 +314,6 @@ export default function QuoteFormClient({
     };
   }, [contactSearch]);
 
-  // ── Inventory helpers ─────────────────────
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inventorySearchRef.current && !inventorySearchRef.current.contains(e.target as Node)) {
-        setShowInventoryDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const commonItems = useMemo(() => itemWeights.filter((w) => w.is_common), [itemWeights]);
-
-  const filteredItemWeights = useMemo(() => {
-    if (!inventorySearch || inventorySearch.length < 1) return commonItems;
-    const q = inventorySearch.toLowerCase();
-    return itemWeights.filter(
-      (w) => w.item_name.toLowerCase().includes(q) || w.slug.includes(q) || w.category.toLowerCase().includes(q),
-    );
-  }, [inventorySearch, itemWeights, commonItems]);
-
-  const addInventoryItem = useCallback((w: ItemWeight) => {
-    setInventoryItems((prev) => {
-      const existing = prev.find((i) => i.slug === w.slug);
-      if (existing) return prev.map((i) => (i.slug === w.slug ? { ...i, quantity: i.quantity + 1 } : i));
-      return [...prev, { slug: w.slug, name: w.item_name, quantity: 1, weight_score: w.weight_score }];
-    });
-    setInventorySearch("");
-    setShowInventoryDropdown(false);
-  }, []);
-
-  const removeInventoryItem = useCallback((slug: string) => {
-    setInventoryItems((prev) => prev.filter((i) => i.slug !== slug));
-  }, []);
-
-  const updateInventoryQty = useCallback((slug: string, qty: number) => {
-    if (qty < 1) return;
-    setInventoryItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, quantity: qty } : i)));
-  }, []);
-
   const inventoryScore = useMemo(() => {
     return inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
   }, [inventoryItems]);
@@ -367,13 +321,6 @@ export default function QuoteFormClient({
   const inventoryTotalItems = useMemo(() => {
     return inventoryItems.reduce((sum, i) => sum + i.quantity, 0);
   }, [inventoryItems]);
-
-  const QUICK_ADD_SLUGS = ["bed-queen", "sofa", "dresser", "dining-table", "accent-chair", "tv-large"];
-  const quickAddItems = useMemo(
-    () => QUICK_ADD_SLUGS.map((s) => itemWeights.find((w) => w.slug === s)).filter(Boolean) as ItemWeight[],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [itemWeights],
-  );
 
   // ── HubSpot pre-fill ──────────────────────
   useEffect(() => {
@@ -541,7 +488,12 @@ export default function QuoteFormClient({
       if (clientBoxCount) base.client_box_count = Number(clientBoxCount);
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
-        base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+        base.inventory_items = inventoryItems.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          ...(i.isCustom && { weight_score: i.weight_score }),
+        }));
       }
     }
     if (serviceType === "office_move") {
@@ -552,7 +504,12 @@ export default function QuoteFormClient({
       base.has_reception_area = hasReception;
       base.timing_preference = timingPref || undefined;
       if (inventoryItems.length > 0) {
-        base.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+        base.inventory_items = inventoryItems.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          ...(i.isCustom && { weight_score: i.weight_score }),
+        }));
       }
     }
     if (serviceType === "single_item") {
@@ -989,108 +946,15 @@ export default function QuoteFormClient({
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
                 <>
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client Inventory</h3>
-                    {inventoryItems.length > 0 && (
-                      <span className="text-[10px] text-[var(--tx3)]">
-                        {inventoryTotalItems} items · Score {inventoryScore.toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Quick-add buttons */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {quickAddItems.map((w) => {
-                      const existing = inventoryItems.find((i) => i.slug === w.slug);
-                      return (
-                        <button
-                          key={w.slug}
-                          type="button"
-                          onClick={() => addInventoryItem(w)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
-                            existing
-                              ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
-                          }`}
-                        >
-                          <Plus className="w-2.5 h-2.5" />
-                          {w.item_name.split(" / ")[0].split(" (")[0]}
-                          {existing && <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Search input */}
-                  <div ref={inventorySearchRef} className="relative">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
-                      <input
-                        type="text"
-                        value={inventorySearch}
-                        onChange={(e) => { setInventorySearch(e.target.value); setShowInventoryDropdown(true); }}
-                        onFocus={() => setShowInventoryDropdown(true)}
-                        placeholder="Search items (sofa, bed, TV, fridge…)"
-                        className={`${fieldInput} pl-8`}
-                      />
-                    </div>
-                    {showInventoryDropdown && filteredItemWeights.length > 0 && (
-                      <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                        {filteredItemWeights.map((w) => (
-                          <button
-                            key={w.slug}
-                            type="button"
-                            onClick={() => addInventoryItem(w)}
-                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
-                          >
-                            <span>{w.item_name}</span>
-                            <span className={`text-[9px] font-mono tabular-nums ${
-                              w.weight_score >= 2 ? "text-orange-400 font-bold" : w.weight_score <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--tx2)]"
-                            }`}>
-                              ×{w.weight_score}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Inventory list */}
-                  {inventoryItems.length > 0 && (
-                    <div className="space-y-1">
-                      {inventoryItems.map((item) => (
-                        <div key={item.slug} className="flex items-center gap-2 py-1 group">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            item.weight_score >= 2 ? "bg-orange-400" : item.weight_score <= 0.5 ? "bg-[var(--tx3)]" : "bg-[var(--gold)]"
-                          }`} />
-                          <span className="text-[11px] text-[var(--tx)] flex-1 truncate">{item.name}</span>
-                          <span className="text-[9px] text-[var(--tx3)] font-mono tabular-nums">×{item.weight_score}</span>
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity - 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-[11px] font-medium text-[var(--tx)] w-5 text-center tabular-nums">{item.quantity}</span>
-                            <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity + 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <button type="button" onClick={() => removeInventoryItem(item.slug)} className="text-[var(--tx3)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] ml-1">
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
-                        <span className="text-[var(--tx3)]">Item score: {inventoryScore.toFixed(1)}</span>
-                        <span className="text-[var(--tx3)]">{inventoryTotalItems} items</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {inventoryItems.length === 0 && (
-                    <p className="text-[10px] text-[var(--tx3)] italic">No inventory added — standard volume assumed for pricing.</p>
-                  )}
-                </div>
+                <InventoryInput
+                  itemWeights={itemWeights as { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean }[]}
+                  value={inventoryItems}
+                  onChange={setInventoryItems}
+                  moveSize={moveSize}
+                  fromAccess={fromAccess}
+                  toAccess={toAccess}
+                  showLabourEstimate={!!moveSize}
+                />
                 </>
               )}
 

@@ -12,6 +12,12 @@ import {
   BalanceReceiptData,
   reviewRequestEmail,
   ReviewRequestData,
+  reviewRequestEssentialsEmail,
+  reviewRequestPremierEmail,
+  reviewRequestEstateEmail,
+  reviewRequestReminderEmail,
+  ReviewRequestTierData,
+  ReviewRequestReminderData,
   lowSatisfactionEmail,
   LowSatisfactionData,
   referralOfferEmail,
@@ -72,7 +78,11 @@ export type TemplateName =
   | "balance-reminder-48hr"
   | "balance-auto-charge-receipt"
   | "balance-charge-failed-client"
-  | "balance-charge-failed-admin";
+  | "balance-charge-failed-admin"
+  | "review-request-essentials"
+  | "review-request-premier"
+  | "review-request-estate"
+  | "review-request-reminder";
 
 type TemplateDataMap = {
   "quote-residential": QuoteTemplateData;
@@ -103,6 +113,10 @@ type TemplateDataMap = {
   "balance-auto-charge-receipt": BalanceAutoChargeReceiptData;
   "balance-charge-failed-client": BalanceChargeFailedClientData;
   "balance-charge-failed-admin": BalanceChargeFailedAdminData;
+  "review-request-essentials": ReviewRequestTierData;
+  "review-request-premier": ReviewRequestTierData;
+  "review-request-estate": ReviewRequestTierData;
+  "review-request-reminder": ReviewRequestReminderData;
 };
 
 interface SendEmailBaseOptions {
@@ -159,6 +173,10 @@ function renderTemplate(template: string, data: unknown): string {
     "balance-auto-charge-receipt": balanceAutoChargeReceiptEmail,
     "balance-charge-failed-client": balanceChargeFailedClientEmail,
     "balance-charge-failed-admin": balanceChargeFailedAdminEmail,
+    "review-request-essentials": reviewRequestEssentialsEmail,
+    "review-request-premier": reviewRequestPremierEmail,
+    "review-request-estate": reviewRequestEstateEmail,
+    "review-request-reminder": reviewRequestReminderEmail,
   };
 
   const renderer = renderers[template];

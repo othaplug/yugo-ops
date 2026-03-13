@@ -131,6 +131,8 @@ export async function POST(req: NextRequest) {
       .eq("id", session.job_id);
     if (session.job_type === "move") {
       syncDealStageByMoveId(session.job_id, "completed").catch(() => {});
+      const { createReviewRequestIfEligible } = await import("@/lib/review-request-helper");
+      createReviewRequestIfEligible(admin, session.job_id).catch((e) => console.error("[review] create failed:", e));
     }
   } else if (enRouteStatuses.includes(status)) {
     await admin.from(table).update({ status: "in_progress", stage: status, updated_at: now }).eq("id", session.job_id);

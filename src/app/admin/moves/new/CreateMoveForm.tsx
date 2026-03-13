@@ -10,6 +10,7 @@ import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { Plus, Trash2, FileText, Home, Building2, ArrowUpRight, Gem, Star, Truck } from "lucide-react";
+import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 interface Org {
   id: string;
@@ -27,7 +28,6 @@ interface Crew {
   members?: string[];
 }
 
-const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Other"];
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
 
 const MOVE_SIZES = ["Studio", "1 Bedroom", "2 Bedroom", "3 Bedroom", "4 Bedroom", "5+ Bedroom", "Partial Move"];
@@ -40,7 +40,6 @@ const ADDON_OPTIONS = [
   { value: "extra_truck", label: "Extra truck (+$TBD)" },
   { value: "storage", label: "Storage (+$TBD/day)" },
   { value: "junk_removal", label: "Junk removal (+$TBD)" },
-  { value: "cleaning", label: "Cleaning service (+$TBD)" },
 ];
 const BUSINESS_TYPES = ["Office", "Retail", "Salon/Spa", "Clinic/Medical", "Restaurant", "Warehouse", "Other"];
 const IT_DISCONNECT_OPTIONS = ["Client IT team", "Yugo coordinates", "N/A"];
@@ -96,12 +95,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const fieldInput =
   "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
+interface ItemWeightRow {
+  slug: string;
+  item_name: string;
+  weight_score: number;
+  category: string;
+  room?: string;
+  is_common: boolean;
+  display_order?: number;
+  active?: boolean;
+}
+
 export default function CreateMoveForm({
   organizations,
   crews,
+  itemWeights = [],
 }: {
   organizations: Org[];
   crews: Crew[];
+  itemWeights?: ItemWeightRow[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -137,12 +149,7 @@ export default function CreateMoveForm({
   const [coordinatorName, setCoordinatorName] = useState("");
   const [crewId, setCrewId] = useState("");
   const [truckPrimary, setTruckPrimary] = useState("");
-  const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
-  const [newRoom, setNewRoom] = useState("");
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemQty, setNewItemQty] = useState(1);
-  const [inventoryBulkMode, setInventoryBulkMode] = useState(false);
-  const [inventoryBulkText, setInventoryBulkText] = useState("");
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>([]);
   const [teamMembers, setTeamMembers] = useState<Set<string>>(new Set());
   const selectedCrewMembers = crewId ? (crews.find((c) => c.id === crewId)?.members || []) : [];
   const [docFiles, setDocFiles] = useState<File[]>([]);
@@ -285,38 +292,7 @@ export default function CreateMoveForm({
     }
   }, [crewId, crews]);
 
-  const addInventoryItem = () => {
-    if (!newItemName.trim() || !newRoom) return;
-    const name = newItemName.trim();
-    const itemName = newItemQty > 1 ? `${name} x${newItemQty}` : name;
-    setInventory((prev) => [...prev, { room: newRoom, item_name: itemName }]);
-    setNewItemName("");
-    setNewItemQty(1);
-  };
-
-  const removeInventoryItem = (idx: number) => {
-    setInventory((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const parseBulkInventoryLines = (text: string): string[] => {
-    return text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const m = line.match(/^(.+?)\s+x(\d+)$/i);
-        return m ? `${m[1].trim()} x${m[2]}` : line;
-      });
-  };
-
-  const addBulkInventoryItems = () => {
-    if (!newRoom || !inventoryBulkText.trim()) return;
-    const itemNames = parseBulkInventoryLines(inventoryBulkText);
-    if (itemNames.length === 0) return;
-    const newItems = itemNames.map((item_name) => ({ room: newRoom, item_name }));
-    setInventory((prev) => [...prev, ...newItems]);
-    setInventoryBulkText("");
-  };
+  const inventoryScore = inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
 
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -397,7 +373,8 @@ export default function CreateMoveForm({
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
       formData.append("truck_primary", truckPrimary || "");
-      formData.append("inventory", JSON.stringify(inventory));
+      formData.append("items", JSON.stringify(inventoryItems));
+      formData.append("inventory_score", String(inventoryScore));
       // Residential fields
       if (moveType === "residential") {
         formData.append("move_size", moveSize);
@@ -1407,132 +1384,24 @@ export default function CreateMoveForm({
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Inventory */}
-          <div className="space-y-3">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-              Client Inventory (optional)
-            </h3>
-            <p className="text-[10px] text-[var(--tx3)]">Add items now or later from the move detail page.</p>
-            {inventory.length > 0 && (
-              <ul className="space-y-1.5 mb-3">
-                {inventory.map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)]"
-                  >
-                    <span className="text-[11px]">
-                      <span className="text-[var(--tx3)]">{item.room}:</span> {item.item_name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeInventoryItem(idx)}
-                      className="p-1 rounded text-[var(--tx3)] hover:text-[var(--red)]"
-                    >
-                      <Trash2 className="w-[12px] h-[12px]" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setInventoryBulkMode(false)}
-                  className={`text-[10px] font-semibold px-2 py-1 rounded ${!inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
-                >
-                  Single
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInventoryBulkMode(true)}
-                  className={`text-[10px] font-semibold px-2 py-1 rounded ${inventoryBulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
-                >
-                  Bulk add
-                </button>
-              </div>
-              {inventoryBulkMode ? (
-                <div className="flex flex-col gap-2">
-                  <div>
-                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
-                    <select
-                      value={newRoom}
-                      onChange={(e) => setNewRoom(e.target.value)}
-                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
-                    >
-                      <option value="">Select Room</option>
-                      {DEFAULT_ROOMS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Items (one per line, e.g. Couch x2)</label>
-                    <textarea
-                      value={inventoryBulkText}
-                      onChange={(e) => setInventoryBulkText(e.target.value)}
-                      placeholder={"Couch x2\nCoffee Table\nBox 1 x5"}
-                      rows={4}
-                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] resize-y"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addBulkInventoryItems}
-                    disabled={!inventoryBulkText.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 self-start"
-                  >
-                    <Plus className="w-[12px] h-[12px]" /> Add all
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2 items-end">
-                  <div>
-                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Room</label>
-                    <select
-                      value={newRoom}
-                      onChange={(e) => setNewRoom(e.target.value)}
-                      className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
-                    >
-                      <option value="">Select Room</option>
-                      {DEFAULT_ROOMS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1 min-w-[140px]">
-                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item</label>
-                    <input
-                      type="text"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())}
-                      placeholder="e.g. Couch x2"
-                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
-                    />
-                  </div>
-                  <div className="w-14">
-                    <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Qty</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={newItemQty}
-                      onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                      className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addInventoryItem}
-                    disabled={!newItemName.trim() || !newRoom}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
-                  >
-                    <Plus className="w-[12px] h-[12px]" /> Add
-                  </button>
-                </div>
-              )}
+          {itemWeights.length > 0 ? (
+            <InventoryInput
+              itemWeights={itemWeights}
+              value={inventoryItems}
+              onChange={setInventoryItems}
+              moveSize={moveSize}
+              fromAccess={fromAccess}
+              toAccess={toAccess}
+              showLabourEstimate={!!moveSize}
+            />
+          ) : (
+            <div className="space-y-3">
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                Client Inventory (optional)
+              </h3>
+              <p className="text-[10px] text-[var(--tx3)]">Add items from the move detail page after creating.</p>
             </div>
-          </div>
+          )}
 
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 

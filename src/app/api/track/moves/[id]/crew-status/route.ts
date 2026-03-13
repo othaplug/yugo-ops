@@ -70,7 +70,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, from_address, to_address, stage, scheduled_date, status, arrival_window")
+      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, from_address, to_address, stage, scheduled_date, status, arrival_window, eta_current_minutes")
       .eq("id", moveId)
       .single();
 
@@ -187,6 +187,7 @@ export async function GET(
       "loading", "arrived_at_pickup",
     ];
     if (
+      etaMinutes == null &&
       crew &&
       (ts?.is_active || liveStage) &&
       etaStages.includes(liveStage || "")
@@ -218,7 +219,8 @@ export async function GET(
         dropoff,
         liveStage,
         lastLocationAt,
-        etaMinutes,
+        etaMinutes: etaMinutes ?? null,
+        eta_current_minutes: move?.eta_current_minutes ?? null,
         hasActiveTracking,
         crewPhone: crewPhone || null,
         dispatchPhone,

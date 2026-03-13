@@ -8,6 +8,7 @@ import { getEmailFrom } from "@/lib/email/send";
 import { logAudit } from "@/lib/audit";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
+import { estimateLabourFromScore } from "@/lib/inventory-labour";
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await requireAuth();
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
       ) as Record<string, unknown>;
       const inventoryRaw = formData.get("inventory") as string;
       if (inventoryRaw) body.inventory = JSON.parse(inventoryRaw);
+      const itemsRaw = formData.get("items") as string;
+      if (itemsRaw) body.items = JSON.parse(itemsRaw);
+      const inventoryScoreRaw = formData.get("inventory_score") as string;
+      if (inventoryScoreRaw) body.inventory_score = parseFloat(inventoryScoreRaw) || null;
       const assignedRaw = formData.get("assigned_members") as string;
       if (assignedRaw) body.assigned_members = JSON.parse(assignedRaw);
       const complexityRaw = formData.get("complexity_indicators") as string;
@@ -129,6 +134,23 @@ export async function POST(req: NextRequest) {
         coordinator_name: (body.coordinator_name as string)?.trim() || null,
         assigned_members: Array.isArray(body.assigned_members) ? body.assigned_members : [],
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
+        items: Array.isArray(body.items) ? body.items : [],
+        inventory_score: typeof body.inventory_score === "number" ? body.inventory_score : null,
+        ...(typeof body.inventory_score === "number" && body.inventory_score > 0
+          ? (() => {
+              const labour = estimateLabourFromScore(
+                body.inventory_score as number,
+                0,
+                (body.from_access as string) || undefined,
+                (body.to_access as string) || undefined
+              );
+              return {
+                est_crew_size: labour.crewSize,
+                est_hours: labour.estimatedHours,
+                est_truck_size: labour.truckSize,
+              };
+            })()
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .select("id, move_code")
@@ -164,14 +186,34 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const inventory = Array.isArray(body.inventory) ? body.inventory : [];
-      for (const item of inventory) {
-        if (item?.room && item?.item_name) {
-          await db.from("move_inventory").insert({
-            move_id: moveId,
-            room: String(item.room),
-            item_name: String(item.item_name).trim(),
-          });
+      // Populate move_inventory from items (new format) or inventory (legacy)
+      const roomDisplay = (r: string) =>
+        (r || "other").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const items = Array.isArray(body.items) ? body.items : [];
+      if (items.length > 0) {
+        for (const item of items) {
+          const name = item?.name || (item as { item_name?: string }).item_name;
+          const qty = item?.quantity ?? 1;
+          const room = roomDisplay((item?.room as string) || "other");
+          const itemName = qty > 1 ? `${name} x${qty}` : String(name).trim();
+          if (itemName) {
+            await db.from("move_inventory").insert({
+              move_id: moveId,
+              room,
+              item_name: itemName,
+            });
+          }
+        }
+      } else {
+        const inventory = Array.isArray(body.inventory) ? body.inventory : [];
+        for (const inv of inventory) {
+          if (inv?.room && inv?.item_name) {
+            await db.from("move_inventory").insert({
+              move_id: moveId,
+              room: String(inv.room),
+              item_name: String(inv.item_name).trim(),
+            });
+          }
         }
       }
 

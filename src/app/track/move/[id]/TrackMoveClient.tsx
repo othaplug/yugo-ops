@@ -255,6 +255,9 @@ export default function TrackMoveClient({
           if ("liveStage" in data) setLiveStage(data.liveStage ?? null);
           if ("scheduled_date" in data) setLiveScheduledDate(data.scheduled_date ?? null);
           if ("arrival_window" in data) setLiveArrivalWindow(data.arrival_window ?? null);
+          const eta = data.eta_current_minutes ?? data.etaMinutes;
+          if (eta != null) setLiveEtaMinutes(eta);
+          else setLiveEtaMinutes(null);
         }
       } catch (err) {
         console.error("Failed to poll move crew status:", err);
@@ -290,6 +293,7 @@ export default function TrackMoveClient({
 
   const [liveScheduledDate, setLiveScheduledDate] = useState<string | null>(move.scheduled_date || null);
   const [liveArrivalWindow, setLiveArrivalWindow] = useState<string | null>(move.arrival_window || null);
+  const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(move.eta_current_minutes ?? null);
   const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
   const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
@@ -588,11 +592,13 @@ export default function TrackMoveClient({
               <div className="text-center">
                 <div className="font-hero text-[30px] md:text-[34px] leading-tight font-semibold" style={{ color: GOLD }}>Today&apos;s the day</div>
                 <div className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>
-                  {isInProgress && liveStage != null
-                    ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
-                    : arrivalWindow
-                      ? `Arrival: ${arrivalWindow}`
-                      : "Your crew is on the way"}
+                  {isInProgress && liveEtaMinutes != null && liveEtaMinutes > 0
+                    ? `Your crew is ${liveEtaMinutes} minutes away`
+                    : isInProgress && liveStage != null
+                      ? LIVE_TRACKING_STAGES.find((s) => s.key === liveStage)?.label ?? "In progress"
+                      : arrivalWindow
+                        ? `Arrival: ${arrivalWindow}`
+                        : "Your crew is on the way"}
                 </div>
               </div>
               {scheduledDate && (

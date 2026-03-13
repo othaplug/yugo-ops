@@ -33,6 +33,7 @@ interface Props {
   onClose: () => void;
   onCreated: () => void;
   initialDate?: string;
+  initialItems?: string;
 }
 
 interface PriceResult {
@@ -62,7 +63,7 @@ interface ServiceOption {
   price_unit: string;
 }
 
-export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreated, initialDate = "" }: Props) {
+export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreated, initialDate = "", initialItems }: Props) {
   // Step state: day_rate = config then day_flow (DeliveryDayForm); per_delivery = config | details | review
   const [bookingType, setBookingType] = useState<"day_rate" | "per_delivery">("day_rate");
   const [step, setStep] = useState<"config" | "day_flow" | "details" | "review">("config");
@@ -124,6 +125,10 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   useEffect(() => {
     if (initialDate) setForm((f) => ({ ...f, scheduled_date: initialDate }));
   }, [initialDate]);
+
+  useEffect(() => {
+    if (initialItems) setForm((f) => ({ ...f, items: initialItems }));
+  }, [initialItems]);
 
   // Load available services when booking type is set
   useEffect(() => {

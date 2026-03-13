@@ -24,6 +24,17 @@ export default async function PlatformPage() {
     autoInvoicing: toggles.auto_invoicing,
   };
 
+  const { data: reviewConfig } = await db
+    .from("platform_config")
+    .select("key, value")
+    .in("key", ["auto_review_requests", "google_review_url"]);
+  const reviewConfigMap: Record<string, string> = {};
+  for (const r of reviewConfig ?? []) reviewConfigMap[r.key] = r.value ?? "";
+  const initialReviewConfig = {
+    autoReviewRequests: reviewConfigMap.auto_review_requests === "true" || reviewConfigMap.auto_review_requests === "1",
+    googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/yugo-moving/review",
+  };
+
   let crewsResult = await db.from("crews").select("id, name, members, active, phone").order("name");
   if (crewsResult.error && String(crewsResult.error.message).includes("active")) {
     crewsResult = await db.from("crews").select("id, name, members").order("name") as typeof crewsResult;
@@ -59,7 +70,7 @@ export default async function PlatformPage() {
 
   return (
     <div className="w-full max-w-[720px] min-w-0 mx-auto px-4 sm:px-5 md:px-6 py-6 md:py-8 animate-fade-up">
-      <PlatformSettingsClient initialTeams={initialTeams} initialToggles={initialToggles} currentUserId={user?.id} isSuperAdmin={isSuperAdmin} />
+      <PlatformSettingsClient initialTeams={initialTeams} initialToggles={initialToggles} initialReviewConfig={initialReviewConfig} currentUserId={user?.id} isSuperAdmin={isSuperAdmin} />
     </div>
   );
 }

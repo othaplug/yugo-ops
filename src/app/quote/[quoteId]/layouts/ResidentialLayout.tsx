@@ -1,4 +1,4 @@
-import { Check, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
+import { Check, X, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
 import {
   type Quote,
   type TierData,
@@ -15,6 +15,19 @@ const TIER_ICONS: Record<string, LucideIcon> = {
   premier: Crown,
   estate: Gem,
 };
+
+const ESSENTIALS_MISSING = [
+  "Enhanced Value Protection",
+  "Pre-move walkthrough",
+  "Premium gloves handling",
+  "Dedicated coordinator",
+];
+
+const PREMIER_MISSING = [
+  "Pre-move walkthrough",
+  "Premium gloves handling",
+  "Dedicated coordinator",
+];
 
 interface Props {
   quote: Quote;
@@ -68,6 +81,9 @@ export default function ResidentialLayout({
                 ? "Recommended"
                 : null;
 
+          const isEstate = tierKey === "estate";
+          const cardBg = isEstate ? "#FAF7F2" : meta.bg;
+
           return (
             <div
               key={tierKey}
@@ -75,13 +91,14 @@ export default function ResidentialLayout({
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               }`}
               style={{
-                backgroundColor: meta.bg,
+                backgroundColor: cardBg,
                 borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
+                ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
               }}
             >
               {badgeText && (
                 <div
-                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
+                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
                   style={{
                     backgroundColor: tierKey === "estate" ? WINE : GOLD,
                     minHeight: "28px",
@@ -96,7 +113,7 @@ export default function ResidentialLayout({
 
               <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     {(() => {
                       const TierIcon = TIER_ICONS[tierKey];
                       return TierIcon ? (
@@ -108,9 +125,26 @@ export default function ResidentialLayout({
                         </div>
                       ) : null;
                     })()}
-                    <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
-                      {meta.label}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
+                        {meta.label}
+                      </h3>
+                      {isEstate && (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "1px",
+                            color: "#5C1A33",
+                            backgroundColor: "#5C1A3310",
+                            padding: "3px 10px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          PREMIUM
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className="font-hero text-[24px] md:text-[28px] font-normal flex-shrink-0" style={{ color: meta.accent }}>
                     {fmtPrice(t.price)}
@@ -132,6 +166,30 @@ export default function ResidentialLayout({
                         <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{inc}</span>
                       </li>
                     ))}
+                    {tierKey === "essentials" &&
+                      ESSENTIALS_MISSING.map((label, i) => (
+                        <li key={`missing-${i}`} className="flex items-start gap-2">
+                          <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
+                          <span
+                            className="text-[12px] leading-snug font-light"
+                            style={{ color: "#B0A99F", textDecoration: "line-through" }}
+                          >
+                            {label}
+                          </span>
+                        </li>
+                      ))}
+                    {tierKey === "premier" &&
+                      PREMIER_MISSING.map((label, i) => (
+                        <li key={`missing-${i}`} className="flex items-start gap-2">
+                          <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
+                          <span
+                            className="text-[12px] leading-snug font-light"
+                            style={{ color: "#B0A99F", textDecoration: "line-through" }}
+                          >
+                            {label}
+                          </span>
+                        </li>
+                      ))}
                   </ul>
 
                   <button
@@ -152,10 +210,8 @@ export default function ResidentialLayout({
                       <span className="flex items-center justify-center gap-2">
                         <Check className="w-4 h-4" /> Selected
                       </span>
-                    ) : isRecommended ? (
-                      `Book ${meta.label}`
                     ) : (
-                      `Select ${meta.label}`
+                      `Book ${meta.label}`
                     )}
                   </button>
 

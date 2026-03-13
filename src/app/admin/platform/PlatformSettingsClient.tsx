@@ -17,7 +17,6 @@ import PartnersManagement from "./PartnersManagement";
 import PricingControlPanel from "./PricingControlPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 
 const TABS = [
@@ -201,28 +200,20 @@ function AuditLogSection() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("audit_log")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data }) => {
-        setLogs(data ?? []);
-        setLoading(false);
-      });
-  }, []);
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filters.action) params.set("action", filters.action);
+    if (filters.search.trim()) params.set("search", filters.search.trim());
+    fetch(`/api/admin/audit-log?${params}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setLogs(Array.isArray(d.logs) ? d.logs : []);
+      })
+      .catch(() => setLogs([]))
+      .finally(() => setLoading(false));
+  }, [filters.action, filters.search]);
 
-  const filtered = logs.filter((log) => {
-    if (filters.action && log.action !== filters.action) return false;
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      const email = (log.user_email || "").toLowerCase();
-      const resource = (log.resource_id || "").toLowerCase();
-      if (!email.includes(q) && !resource.includes(q)) return false;
-    }
-    return true;
-  });
+  const filtered = logs;
 
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
@@ -344,9 +335,15 @@ interface AppToggles {
   autoInvoicing: boolean;
 }
 
+interface ReviewConfig {
+  autoReviewRequests: boolean;
+  googleReviewUrl: string;
+}
+
 interface PlatformSettingsClientProps {
   initialTeams?: Team[];
   initialToggles?: AppToggles;
+  initialReviewConfig?: ReviewConfig;
   currentUserId?: string;
   isSuperAdmin?: boolean;
 }
@@ -610,6 +607,7 @@ function FeatureTogglesSection() {
     { key: "quote_engagement_tracking", label: "Quote Engagement Tracking", desc: "Track client behaviour on the quote page" },
     { key: "instant_quote_widget", label: "Instant Quote Widget", desc: "Enable public quote calculator on website" },
     { key: "valuation_upgrades", label: "Valuation Upgrades", desc: "Show protection upgrade options on client quotes" },
+    { key: "sms_eta_enabled", label: "SMS ETA Updates", desc: "Send SMS updates with crew ETA on move/delivery day (departure, 15-min, arrived, completed)" },
   ];
 
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -850,7 +848,9 @@ function EmailTemplatesSection() {
   );
 }
 
-export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
+const DEFAULT_REVIEW_CONFIG: ReviewConfig = { autoReviewRequests: true, googleReviewUrl: "https://g.page/r/yugo-moving/review" };
+
+export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, initialReviewConfig = DEFAULT_REVIEW_CONFIG, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -864,6 +864,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [partnerPortal, setPartnerPortal] = useState(initialToggles.partnerPortal);
   const [autoInvoicing, setAutoInvoicing] = useState(initialToggles.autoInvoicing);
   const [togglesSaving, setTogglesSaving] = useState(false);
+  const [autoReviewRequests, setAutoReviewRequests] = useState(initialReviewConfig.autoReviewRequests);
+  const [googleReviewUrl, setGoogleReviewUrl] = useState(initialReviewConfig.googleReviewUrl);
+  const [reviewConfigSaving, setReviewConfigSaving] = useState(false);
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
@@ -1065,6 +1068,33 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       return false;
     } finally {
       setTogglesSaving(false);
+    }
+  };
+
+  const persistReviewConfig = async (next: { autoReviewRequests: boolean; googleReviewUrl: string }) => {
+    setReviewConfigSaving(true);
+    try {
+      const res = await fetch("/api/admin/business-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auto_review_requests: next.autoReviewRequests ? "true" : "false",
+          google_review_url: next.googleReviewUrl || "",
+        }),
+      });
+      if (!res.ok) {
+        toast("Failed to save review settings", "x");
+        return false;
+      }
+      setAutoReviewRequests(next.autoReviewRequests);
+      setGoogleReviewUrl(next.googleReviewUrl);
+      toast("Review settings saved", "check");
+      return true;
+    } catch {
+      toast("Failed to save review settings", "x");
+      return false;
+    } finally {
+      setReviewConfigSaving(false);
     }
   };
 
@@ -1703,9 +1733,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             { label: "Crew GPS Tracking", desc: "Enable real-time crew location tracking", state: crewTracking, set: setCrewTracking },
             { label: "Partner Portal Access", desc: "Allow partners to view their deliveries", state: partnerPortal, set: setPartnerPortal },
             { label: "Auto-Invoicing", desc: "Generate invoices automatically on delivery", state: autoInvoicing, set: setAutoInvoicing },
+            { label: "Automated Review Requests", desc: "Send Google review request emails 2 hours after moves complete", state: autoReviewRequests, set: setAutoReviewRequests },
           ].map((item) => {
             const isPartnerPortal = item.label === "Partner Portal Access";
             const isCrewTracking = item.label === "Crew GPS Tracking";
+            const isReviewRequests = item.label === "Automated Review Requests";
             const handleToggle = async () => {
               if (isPartnerPortal) {
                 if (partnerPortal) {
@@ -1721,6 +1753,10 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 }
                 const ok = await persistToggles({ crewTracking: true, partnerPortal, autoInvoicing });
                 if (ok) setCrewTracking(true);
+              } else if (isReviewRequests) {
+                const next = !autoReviewRequests;
+                const ok = await persistReviewConfig({ autoReviewRequests: next, googleReviewUrl });
+                if (ok) setAutoReviewRequests(next);
               } else {
                 const next = !item.state;
                 const nextToggles = {
@@ -1734,7 +1770,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 }
               }
             };
-            const isOn = isPartnerPortal ? partnerPortal : isCrewTracking ? crewTracking : item.state;
+            const isOn = isPartnerPortal ? partnerPortal : isCrewTracking ? crewTracking : isReviewRequests ? autoReviewRequests : item.state;
             return (
               <div key={item.label} className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
                 <div>
@@ -1758,6 +1794,27 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </div>
             );
           })}
+          <div className="pt-4 mt-4 border-t border-[var(--brd)]">
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
+            <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={googleReviewUrl}
+                onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                placeholder="https://g.page/r/your-business/review"
+                className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => persistReviewConfig({ autoReviewRequests, googleReviewUrl })}
+                disabled={reviewConfigSaving}
+                className="px-4 py-2 rounded-lg bg-[var(--gold)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+              >
+                {reviewConfigSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
         </div>
         </div>
       </section>

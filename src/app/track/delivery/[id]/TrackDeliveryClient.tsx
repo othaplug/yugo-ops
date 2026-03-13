@@ -166,6 +166,7 @@ export default function TrackDeliveryClient({
   const [pickup, setPickup] = useState<Coord | null>(initialPickup || null);
   const [dropoff, setDropoff] = useState<Coord | null>(initialDropoff || null);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
+  const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(delivery.eta_current_minutes ?? null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const prevTrackingRef = useRef(false);
@@ -199,6 +200,8 @@ export default function TrackDeliveryClient({
         if (data.pickup) setPickup(data.pickup);
         if (data.dropoff) setDropoff(data.dropoff);
         setHasActiveTracking(!!data.hasActiveTracking);
+        if (data.eta_current_minutes != null) setLiveEtaMinutes(data.eta_current_minutes);
+        else setLiveEtaMinutes(null);
       } catch (err) { console.error("Failed to poll delivery crew status:", err); }
     };
     poll();
@@ -216,10 +219,11 @@ export default function TrackDeliveryClient({
 
   const isPrePickup = liveStage === "en_route" || !liveStage;
   const etaTarget = isPrePickup && pickup ? pickup : dropoff;
-  const displayEta =
+  const haversineEta =
     crewLoc && etaTarget && isInProgress
       ? Math.max(1, Math.round((haversineKm(crewLoc.current_lat, crewLoc.current_lng, etaTarget.lat, etaTarget.lng) / 30) * 60))
       : null;
+  const displayEta = (liveEtaMinutes != null && liveEtaMinutes > 0) ? liveEtaMinutes : haversineEta;
 
   const scheduledDate = delivery.scheduled_date
     ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { timeZone: "America/Toronto", weekday: "long", month: "long", day: "numeric" })

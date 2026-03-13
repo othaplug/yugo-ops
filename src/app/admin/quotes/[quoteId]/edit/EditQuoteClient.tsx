@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Send, CheckCircle, Loader2, TrendingUp, Search, Plus, Minus } from "lucide-react";
+import { ArrowLeft, RefreshCw, Send, CheckCircle, Loader2, TrendingUp } from "lucide-react";
+import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -34,14 +35,10 @@ interface ItemWeight {
   item_name: string;
   weight_score: number;
   category: string;
+  room?: string;
   is_common: boolean;
-}
-
-interface InventoryEntry {
-  slug: string;
-  name: string;
-  quantity: number;
-  weight_score: number;
+  display_order?: number;
+  active?: boolean;
 }
 
 interface EditQuoteClientProps {
@@ -142,23 +139,23 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   });
 
   // ── Inventory ─────────────────────────────────────────────
-  const [inventoryItems, setInventoryItems] = useState<InventoryEntry[]>(() => {
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>(() => {
     const saved = oq.inventory_items;
     if (!Array.isArray(saved) || saved.length === 0) return [];
     // Saved items may lack weight_score — enrich from itemWeights lookup
     return saved.map((item: any) => {
       const iw = itemWeights.find((w) => w.slug === item.slug);
+      const name = item.name || iw?.item_name || item.slug || "";
+      const slug = item.slug || undefined;
       return {
-        slug: item.slug,
-        name: item.name || iw?.item_name || item.slug,
+        slug,
+        name,
         quantity: item.quantity || 1,
-        weight_score: iw?.weight_score ?? 1,
+        weight_score: item.weight_score ?? iw?.weight_score ?? 1,
+        isCustom: !slug && !!name,
       };
     });
   });
-  const [inventorySearch, setInventorySearch] = useState("");
-  const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
-  const inventorySearchRef = useRef<HTMLDivElement>(null);
 
   // ── Box count ─────────────────────────────────────────────
   const [clientBoxCount, setClientBoxCount] = useState(
@@ -197,60 +194,6 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const oldPrice = oq.tiers?.essentials?.price ?? oq.custom_price ?? 0;
-
-  // ── Inventory helpers ─────────────────────────────────────
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inventorySearchRef.current && !inventorySearchRef.current.contains(e.target as Node)) {
-        setShowInventoryDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const commonItems = useMemo(() => itemWeights.filter((w) => w.is_common), [itemWeights]);
-  const QUICK_ADD_SLUGS = ["bed-queen", "sofa", "dresser", "dining-table", "accent-chair", "tv-large"];
-  const quickAddItems = useMemo(
-    () => QUICK_ADD_SLUGS.map((s) => itemWeights.find((w) => w.slug === s)).filter(Boolean) as ItemWeight[],
-    [itemWeights], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
-  const filteredItemWeights = useMemo(() => {
-    if (!inventorySearch || inventorySearch.length < 1) return commonItems;
-    const q = inventorySearch.toLowerCase();
-    return itemWeights.filter(
-      (w) => w.item_name.toLowerCase().includes(q) || w.slug.includes(q) || w.category.toLowerCase().includes(q),
-    );
-  }, [inventorySearch, itemWeights, commonItems]);
-
-  const inventoryScore = useMemo(
-    () => inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0),
-    [inventoryItems],
-  );
-  const inventoryTotalItems = useMemo(
-    () => inventoryItems.reduce((sum, i) => sum + i.quantity, 0),
-    [inventoryItems],
-  );
-
-  const addInventoryItem = useCallback((w: ItemWeight) => {
-    setInventoryItems((prev) => {
-      const existing = prev.find((i) => i.slug === w.slug);
-      if (existing) return prev.map((i) => (i.slug === w.slug ? { ...i, quantity: i.quantity + 1 } : i));
-      return [...prev, { slug: w.slug, name: w.item_name, quantity: 1, weight_score: w.weight_score }];
-    });
-    setInventorySearch("");
-    setShowInventoryDropdown(false);
-  }, []);
-
-  const removeInventoryItem = useCallback((slug: string) => {
-    setInventoryItems((prev) => prev.filter((i) => i.slug !== slug));
-  }, []);
-
-  const updateInventoryQty = useCallback((slug: string, qty: number) => {
-    if (qty <= 0) { removeInventoryItem(slug); return; }
-    setInventoryItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, quantity: qty } : i)));
-  }, [removeInventoryItem]);
 
   // ── Addon helpers ─────────────────────────────────────────
   const applicableAddons = useMemo(
@@ -334,13 +277,23 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     if (serviceType === "local_move" || serviceType === "long_distance") {
       if (specialtyItems.length > 0) payload.specialty_items = specialtyItems.filter((s) => s.qty > 0);
       if (inventoryItems.length > 0) {
-        payload.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+        payload.inventory_items = inventoryItems.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          weight_score: i.weight_score,
+        }));
       }
       if (clientBoxCount) payload.client_box_count = Number(clientBoxCount);
     }
 
     if (serviceType === "office_move" && inventoryItems.length > 0) {
-      payload.inventory_items = inventoryItems.map((i) => ({ slug: i.slug, name: i.name, quantity: i.quantity }));
+      payload.inventory_items = inventoryItems.map((i) => ({
+        slug: i.slug,
+        name: i.name,
+        quantity: i.quantity,
+        weight_score: i.weight_score,
+      }));
     }
 
     // Carry over any remaining factors not exposed in UI
@@ -379,7 +332,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     }, 800);
 
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current); };
-  }, [buildPayload, fromAddress, toAddress, moveDate]);
+  }, [buildPayload, fromAddress, toAddress, moveDate, inventoryItems.length, moveSize]);
 
   // ── Finalize: generate real quote + save to DB ────────────
   const handleRegenerate = useCallback(async () => {
@@ -808,103 +761,18 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
           <div>
             <SectionDivider label="Furniture & Inventory" />
-            <p className="text-[11px] text-[var(--tx3)] mt-2 mb-3">
-              Adding furniture items helps calculate an accurate volume modifier for pricing.
-            </p>
-
-            {/* Quick-add buttons */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {quickAddItems.map((w) => {
-                const existing = inventoryItems.find((i) => i.slug === w.slug);
-                return (
-                  <button
-                    key={w.slug}
-                    type="button"
-                    onClick={() => addInventoryItem(w)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
-                      existing
-                        ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                        : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
-                    }`}
-                  >
-                    <Plus className="w-2.5 h-2.5" />
-                    {w.item_name.split(" / ")[0].split(" (")[0]}
-                    {existing && <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Search input */}
-            <div ref={inventorySearchRef} className="relative mb-3">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
-                <input
-                  type="text"
-                  value={inventorySearch}
-                  onChange={(e) => { setInventorySearch(e.target.value); setShowInventoryDropdown(true); }}
-                  onFocus={() => setShowInventoryDropdown(true)}
-                  placeholder="Search items (sofa, bed, TV, fridge…)"
-                  className={`${inputClass} pl-8`}
-                />
-              </div>
-              {showInventoryDropdown && filteredItemWeights.length > 0 && (
-                <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                  {filteredItemWeights.map((w) => (
-                    <button
-                      key={w.slug}
-                      type="button"
-                      onClick={() => addInventoryItem(w)}
-                      className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
-                    >
-                      <span>{w.item_name}</span>
-                      <span className={`text-[9px] font-mono tabular-nums ${
-                        w.weight_score >= 2 ? "text-orange-400 font-bold" : w.weight_score <= 0.5 ? "text-[var(--tx3)]" : "text-[var(--tx2)]"
-                      }`}>
-                        ×{w.weight_score}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Inventory list */}
-            {inventoryItems.length > 0 ? (
-              <div className="space-y-1 mb-3">
-                {inventoryItems.map((item) => (
-                  <div key={item.slug} className="flex items-center gap-2 py-1 group">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      item.weight_score >= 2 ? "bg-orange-400" : item.weight_score <= 0.5 ? "bg-[var(--tx3)]" : "bg-[var(--gold)]"
-                    }`} />
-                    <span className="text-[11px] text-[var(--tx)] flex-1 truncate">{item.name}</span>
-                    <span className="text-[9px] text-[var(--tx3)] font-mono tabular-nums">×{item.weight_score}</span>
-                    <div className="flex items-center gap-1">
-                      <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity - 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="text-[11px] font-medium text-[var(--tx)] w-5 text-center tabular-nums">{item.quantity}</span>
-                      <button type="button" onClick={() => updateInventoryQty(item.slug, item.quantity + 1)} className="w-5 h-5 rounded flex items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <button type="button" onClick={() => removeInventoryItem(item.slug)} className="text-[var(--tx3)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] ml-1">
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
-                  <span className="text-[var(--tx3)]">Volume score: {inventoryScore.toFixed(1)}</span>
-                  <span className="text-[var(--tx3)]">{inventoryTotalItems} items</span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-[10px] text-[var(--tx3)] italic mb-3">No inventory added — standard volume assumed for pricing.</p>
-            )}
-
+            <InventoryInput
+              itemWeights={itemWeights as { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean }[]}
+              value={inventoryItems}
+              onChange={setInventoryItems}
+              moveSize={moveSize}
+              fromAccess={fromAccess}
+              toAccess={toAccess}
+              showLabourEstimate={!!moveSize}
+            />
             {/* Box count */}
             {(serviceType === "local_move" || serviceType === "long_distance") && (
-              <div className="mt-3">
+              <div className="mt-4">
                 <label className={labelClass}>Client Boxes <span className="font-normal text-[var(--tx3)]">(affects volume)</span></label>
                 <input
                   type="number"

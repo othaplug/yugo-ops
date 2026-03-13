@@ -1,6 +1,14 @@
 {
   "crons": [
     {
+      "path": "/api/cron/eta-check",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/review-requests",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/charge-balance",
       "schedule": "0 14 * * *"
     },

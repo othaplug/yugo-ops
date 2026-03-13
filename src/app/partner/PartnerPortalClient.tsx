@@ -150,6 +150,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : features.showProjects ? "projects" : "today");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
+  const [scheduleSuggestedItems, setScheduleSuggestedItems] = useState<string | null>(null);
   const [scheduleModalKey, setScheduleModalKey] = useState(0);
   const [bookServiceModalOpen, setBookServiceModalOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<Delivery | null>(null);
@@ -641,7 +642,13 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         {/* Tab Content */}
         <div key={activeTab} className="p-4 sm:p-6 tab-content">
           {activeTab === "b2b-projects" && (
-            <PartnerB2BProjectsTab />
+            <PartnerB2BProjectsTab
+              onScheduleDelivery={(suggestedItems) => {
+                setScheduleSuggestedItems(suggestedItems || null);
+                setScheduleModalKey((k) => k + 1);
+                setScheduleOpen(true);
+              }}
+            />
           )}
           {activeTab === "projects" && data && (
             <PartnerProjectsTab
@@ -752,8 +759,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           orgId={orgId}
           orgType={orgType}
           initialDate={scheduleInitialDate}
-          onClose={() => { setScheduleOpen(false); setScheduleInitialDate(""); }}
-          onCreated={() => { setScheduleOpen(false); setScheduleInitialDate(""); loadData(); }}
+          initialItems={scheduleSuggestedItems ?? undefined}
+          onClose={() => { setScheduleOpen(false); setScheduleInitialDate(""); setScheduleSuggestedItems(null); }}
+          onCreated={() => { setScheduleOpen(false); setScheduleInitialDate(""); setScheduleSuggestedItems(null); loadData(); }}
         />
       )}
       {shareTarget && (
