@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, Check, Package } from "lucide-react";
+import { MapPin, ArrowRight, Check, Truck } from "lucide-react";
 import {
   type Quote,
   WINE,
@@ -32,7 +32,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: `${FOREST}08` }}
           >
-            <Package className="w-6 h-6" style={{ color: FOREST }} />
+            <Truck className="w-6 h-6" style={{ color: FOREST }} />
           </div>
           <div>
             <p className="text-[14px] font-semibold" style={{ color: FOREST }}>

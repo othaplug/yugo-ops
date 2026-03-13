@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Package, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send } from "lucide-react";
+import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -107,7 +107,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof CheckCircle2 }> = {
   pending: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", icon: Clock },
-  active: { bg: "bg-amber-500/10", text: "text-amber-500", icon: Package },
+  active: { bg: "bg-amber-500/10", text: "text-amber-500", icon: Activity },
   completed: { bg: "bg-emerald-500/10", text: "text-emerald-500", icon: CheckCircle2 },
   skipped: { bg: "bg-[var(--tx3)]/5", text: "text-[var(--tx3)]/50", icon: Clock },
 };
@@ -678,7 +678,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
             return (
               <div className="mt-6 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-5">
                 <div className="flex items-start gap-3">
-                  <Package className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
+                  <Boxes className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <div className="text-[13px] font-semibold text-[var(--tx)]">{nonYugoCount} item{nonYugoCount > 1 ? "s" : ""} tracked manually this month</div>
                     <p className="text-[11px] text-[var(--tx3)] mt-1">
@@ -918,7 +918,7 @@ function TimelineIcon({ type }: { type: string }) {
       return <div className={`${baseClass} bg-blue-500/10`}><Plus {...iconProps} className="text-blue-500" /></div>;
     case "item_received":
     case "item_inspected":
-      return <div className={`${baseClass} bg-emerald-500/10`}><Package {...iconProps} className="text-emerald-500" /></div>;
+      return <div className={`${baseClass} bg-emerald-500/10`}><PackageCheck {...iconProps} className="text-emerald-500" /></div>;
     case "phase_started":
     case "phase_completed":
     case "phase_added":

@@ -88,7 +88,7 @@ function quoteEmailLayout(innerHtml: string): string {
   <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
   <style type="text/css">${INSTRUMENT_SERIF_FACE}</style>
 </head>
-<body style="margin:0;padding:0;background:${BG};min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 0;box-sizing:border-box">
+<body style="margin:0;padding:0;background:${BG};display:flex;align-items:flex-start;justify-content:center;padding:24px 0;box-sizing:border-box">
   ${card}
 </body>
 </html>`;

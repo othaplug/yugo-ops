@@ -11,7 +11,6 @@ import {
   Lock,
   Zap,
   Truck,
-  Package,
   Users,
   Wrench,
   Radar,
