@@ -74,7 +74,7 @@ export function statusUpdateEmailHtml(params: {
     ? `
     <tr>
       <td align="center" style="padding:8px 0 32px;">
-        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 32px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">${ctaLabel} &rarr;</a>
+        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">${ctaLabel}</a>
       </td>
     </tr>
   `
@@ -191,7 +191,7 @@ export function deliveryNotificationEmail(delivery: {
       </tr>
       <tr>
         <td align="center" style="padding-bottom:24px;">
-          <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Track this project &rarr;</a>
+          <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track this project</a>
         </td>
       </tr>
     </table>
@@ -324,7 +324,7 @@ export function moveNotificationEmail(move: {
     ${statusBarHtml}
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">Click below to view your full dashboard and see what changed.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Track your move &rarr;</a>
+      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track your move</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.</p>
   `;
@@ -342,7 +342,7 @@ export function trackingLinkEmail(params: {
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">Hi${clientName ? `, ${clientName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Use the link below to track your move, view documents, and message your coordinator. No account or login required.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Track your move &rarr;</a>
+      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track your move</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.</p>
   `;
@@ -390,7 +390,7 @@ export function changeRequestNotificationEmail(params: {
       ${isApproved && feeDollars ? `<p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:16px 0 0;">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>` : ""}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Track your move &rarr;</a>
+      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track your move</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -412,7 +412,7 @@ export function extraItemApprovalEmail(params: {
       ${feeDollars ? `<p style="font-size:12px;color:#E8E5E0;line-height:1.5;margin:16px 0 0;">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>` : ""}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Track your move &rarr;</a>
+      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track your move</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -430,13 +430,14 @@ export function inviteUserEmail(params: {
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">Welcome to YUGO+${name ? `, ${name}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join YUGO+ as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
-    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px;">Your credentials</div>
+    <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#E8E5E0;"><strong>Temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Log in to continue setup</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Log in to continue setup</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, you&apos;ll be asked to create a new password when you first sign in. If you didn&apos;t expect this invitation, you can safely ignore this email.</p>
   `;
@@ -476,13 +477,14 @@ export function invitePartnerEmail(params: {
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited as a Partner</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">Welcome to YUGO+${contactName ? `, ${contactName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner on YUGO+. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
-    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px;">Your credentials</div>
+    <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#E8E5E0;"><strong>Temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Log in to continue setup</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Log in to continue setup</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, you&apos;ll be asked to create a new password when you first sign in. If you didn&apos;t expect this invitation, you can safely ignore this email.</p>
   `;
@@ -517,7 +519,7 @@ export function addedToPartnerEmail(params: { contactName: string; companyName: 
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">You&apos;ve been added to ${companyName}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your account now has access to <strong style="color:${EMAIL_GOLD}">${companyName}</strong> on the YUGO+ Partner Portal. Log in with your existing password to view deliveries and manage requests.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Log in to Partner Portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Log in to Partner Portal</a>
     </td></tr></table>
   `;
   return emailLayout(inner, loginUrl);
@@ -544,13 +546,14 @@ export function partnerPasswordResetEmail(params: {
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Password Reset</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">New password for your YUGO+ partner account</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">A new temporary password has been set for your <strong style="color:${EMAIL_GOLD}">${companyName}</strong> partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you&apos;ll be prompted to set a new password.</p>
-    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px;">Your credentials</div>
+    <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#E8E5E0;"><strong>New temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Log in to partner portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Log in to partner portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, we recommend changing this password after you sign in. If you didn&apos;t request this, contact your admin.</p>
   `;
@@ -599,7 +602,7 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
       <li>Message our team and get support</li>
     </ul>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${client.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Access Your Portal</a>
+      <a href="${client.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Access Your Portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">If you didn&apos;t request this, you can safely ignore this email.</p>
   `;
@@ -613,7 +616,16 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Referral Received</div>
     <div style="font-size:20px;font-weight:600;margin:0 0 16px;color:${EMAIL_TX};">Hi ${agentName},</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your referral for <strong style="color:${EMAIL_GOLD}">${ref}</strong> has been received and added to our pipeline.</p>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">We&apos;ll be in touch as we process the lead. Thank you for partnering with YUGO+.</p>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div>
+          <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:6px;">Status</div>
+          <div style="font-size:13px;color:#E8E5E0;font-weight:600;">In Pipeline &mdash; Your team is on it</div>
+          <div style="font-size:12px;color:${EMAIL_TX2};margin-top:4px;line-height:1.5;">We&apos;ll be in touch as we process the lead and coordinate the move.</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">Thank you for continuing to trust YUGO+ with your clients. We take every referral seriously and will keep you updated.</p>
   `;
   return emailLayout(inner);
 }
@@ -625,13 +637,14 @@ export function crewPortalInviteEmail(params: { name: string; email: string; log
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Crew Portal Access</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 20px;color:${EMAIL_TX};">Welcome to the Crew Portal${name ? `, ${name}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to log in to the YUGO+ Crew Portal to start jobs, update status, and share your location with dispatch.</p>
-    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px;">Your login</div>
+    <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:1px;margin-bottom:8px;">Your login</div>
       <div style="font-size:12px;color:#E8E5E0;margin-bottom:4px;"><strong>Phone:</strong> ${phoneDisplay}</div>
       <div style="font-size:12px;color:#E8E5E0;"><strong>PIN:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${pin}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:14px 28px;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Log in to Crew Portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Log in to Crew Portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">Sessions expire after one shift (12h). Keep your PIN secure. If you didn&apos;t expect this invite, you can safely ignore this email.</p>
   `;
@@ -736,8 +749,8 @@ export function bookingConfirmationEmail(params: {
       </div>
     </div>
 
-    <a href="${trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px;text-align:center">
-      Track Your Move &rarr;
+    <a href="${trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;margin-bottom:16px;text-align:center">
+      Track Your Move
     </a>
 
     <p style="font-size:11px;color:#666;margin-top:16px;text-align:center">
@@ -829,6 +842,10 @@ export function essentialsConfirmationEmail(p: TierConfirmationParams): string {
       </table>
     </div>
 
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:4px 0 20px;">
+      <a href="${p.trackingUrl}" style="display:inline-block;background-color:#C9A962;color:#0D0D0D;padding:10px 26px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;border-radius:999px;">Track Your Move</a>
+    </td></tr></table>
+
     <p style="font-size:11px;color:#666;margin:0 0 16px;text-align:center">
       Questions? Reply to this email or call us anytime.
     </p>
@@ -880,8 +897,8 @@ export function premierConfirmationEmail(p: TierConfirmationParams): string {
       </div>
     </div>
 
-    <a href="${p.trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px;text-align:center">
-      Track Your Move &rarr;
+    <a href="${p.trackingUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;margin-bottom:16px;text-align:center">
+      Track Your Move
     </a>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
@@ -964,8 +981,8 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 12px">Follow every step in real-time:</p>
     </div>
 
-    <a href="${p.trackingUrl}" style="display:block;background:#5C1A33;color:#FFFFFF;padding:16px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:20px;text-align:center;letter-spacing:0.5px">
-      Track Your Move &rarr;
+    <a href="${p.trackingUrl}" style="display:block;background:#5C1A33;color:#FFFFFF;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.6px;text-decoration:none;margin-bottom:20px;text-align:center">
+      Track Your Move
     </a>
 
     ${DIV}
@@ -1065,9 +1082,12 @@ export function verificationCodeEmail(params: { code: string; purpose: "email_ch
   const inner = `
     <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Verification</div>
     <div style="font-size:20px;font-weight:600;margin:0 0 16px;color:${EMAIL_TX};">${title}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">${desc}</p>
-    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:24px;text-align:center;margin-bottom:24px;">
-      <code style="font-size:28px;font-weight:700;letter-spacing:8px;color:${EMAIL_GOLD};font-family:monospace;">${code}</code>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">${desc}</p>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:28px;text-align:center;margin-bottom:24px;">
+      <div style="font-size:9px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:16px;">Your Code</div>
+      <div style="width:40px;height:1px;background:${EMAIL_GOLD};margin:0 auto 20px;opacity:0.5"></div>
+      <code style="font-size:30px;font-weight:700;letter-spacing:10px;color:${EMAIL_GOLD};font-family:monospace;">${code}</code>
+      <div style="font-size:10px;color:${EMAIL_TX3};margin-top:16px;letter-spacing:0.5px">Expires in 15 minutes</div>
     </div>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">If you didn&apos;t request this, you can safely ignore this email. Your account remains secure.</p>
   `;

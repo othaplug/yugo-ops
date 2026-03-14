@@ -24,8 +24,8 @@ function dateDisplay(dateStr: string | null | undefined): string {
 
 function ctaButton(url: string, label: string): string {
   return `
-    <a href="${url}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:24px 0 16px">
-      ${label} &rarr;
+    <a href="${url}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:24px 0 16px">
+      ${label}
     </a>
   `;
 }
@@ -248,8 +248,8 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
       Your review helps other families find a mover they can trust. It only takes 30 seconds.
     </p>
 
-    <a href="${d.googleReviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
-      Leave a Google Review &rarr;
+    <a href="${d.googleReviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
+      Leave a Google Review
     </a>
 
     ${d.referralUrl ? `
@@ -259,7 +259,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
         <p style="font-size:12px;color:#B8B5B0;margin:0 0 14px">
           Share your referral link and you both save on your next move.
         </p>
-        <a href="${d.referralUrl}" style="display:inline-block;background:transparent;color:#C9A962;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(201,169,98,0.4)">
+        <a href="${d.referralUrl}" style="display:inline-block;background:transparent;color:#C9A962;padding:8px 22px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.4px;text-decoration:none;border:1px solid rgba(201,169,98,0.4)">
           Share Referral Link
         </a>
       </div>
@@ -292,8 +292,8 @@ export function reviewRequestEssentialsEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review →
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review
     </a>
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo. — The Yugo Team
@@ -311,8 +311,8 @@ export function reviewRequestPremierEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review →
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review
     </a>
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo. — The Yugo Team
@@ -330,8 +330,8 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If your experience was as exceptional as we aimed for, we would be honoured by a brief review. It helps families like yours find the level of care they deserve.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Share Your Experience →
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Share Your Experience
     </a>
     <p style="font-size:11px;color:#666;text-align:center">
       With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo — The Art of Moving
@@ -351,8 +351,8 @@ export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review →
+    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
+      ★★★★★ Leave a Review
     </a>
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo.
@@ -729,8 +729,8 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
           <td style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
             <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card — Includes processing fee</div>
             <div style="font-family:serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
-            <a href="${d.paymentPageUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:12px 28px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-top:4px">
-              Pay by Credit Card &rarr;
+            <a href="${d.paymentPageUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:9px 22px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;margin-top:4px">
+              Pay by Credit Card
             </a>
           </td>
         </tr>

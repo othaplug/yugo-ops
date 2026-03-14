@@ -149,7 +149,7 @@ function expiryNote(expiresAt: string | null | undefined): string {
 
 function ctaButton(url: string, label: string): string {
   return `
-    <a href="${url}" style="display:block;background:${GOLD};color:${BG};padding:16px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;text-align:center;margin:28px 0 10px;letter-spacing:0.5px">
+    <a href="${url}" style="display:block;background:${GOLD};color:${BG};padding:11px 28px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;margin:28px 0 10px;letter-spacing:0.6px">
       ${label}
     </a>
     <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 20px">Takes less than 2 minutes</p>
