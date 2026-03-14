@@ -82,19 +82,20 @@ function chooseFollowUpVariant(
 ): { subject: string; template: TemplateName; extraData: Record<string, unknown> } {
   if (ruleNumber === 2) {
     if (eng.paymentStarted || (eng.tierClicked && eng.contractViewed)) {
-      const tier = eng.tierClicked ?? "premier";
+      const tier = eng.tierClicked ?? "signature";
+      const tierLabel: Record<string, string> = { curated: "Curated", signature: "Signature", estate: "Estate", essentials: "Curated", premier: "Signature" };
       return {
-        subject: `Your ${tier.charAt(0).toUpperCase() + tier.slice(1)} move is almost booked`,
+        subject: `Your ${tierLabel[tier] ?? tier} move is almost booked`,
         template: "quote-followup-2-warm",
         extraData: { tier, addons: eng.addonsSeen },
       };
     }
 
-    if (eng.tierClicked === "essentials") {
+    if (eng.tierClicked === "curated" || eng.tierClicked === "essentials") {
       return {
         subject: "Quick question about your move",
-        template: "quote-followup-2-essentials",
-        extraData: { tier: "essentials" },
+        template: "quote-followup-2-curated",
+        extraData: { tier: "curated" },
       };
     }
 

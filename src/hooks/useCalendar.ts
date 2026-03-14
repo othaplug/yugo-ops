@@ -91,6 +91,16 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
         setEvents(data.events || []);
       }
       if (data.crews) setCrews(data.crews);
+      if (data._diagnostics && typeof data._diagnostics === "object") {
+        setDiagnostics(data._diagnostics as { movesError?: string; deliveriesError?: string });
+      } else {
+        setDiagnostics(null);
+      }
+      if (data._counts && typeof data._counts === "object") {
+        setCounts(data._counts as { moves: number; deliveries: number; phases?: number });
+      } else {
+        setCounts(null);
+      }
     } catch (e) {
       console.error("Calendar fetch error:", e);
       setFetchError("Calendar failed to load");

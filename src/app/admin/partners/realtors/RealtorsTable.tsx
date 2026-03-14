@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Badge from "../../components/Badge";
 import FilterBar, { SortableHeader } from "../../components/FilterBar";
-import { AddReferralButton } from "./RealtorsClient";
+import { AddReferralButton, AddRealtorButton } from "./RealtorsClient";
 import AgentDetailModal from "./AgentDetailModal";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -34,8 +34,8 @@ const STATUS_OPTIONS = [
 
 const TIER_OPTIONS = [
   { value: "", label: "All tiers" },
-  { value: "Essentials", label: "Essentials" },
-  { value: "Premier", label: "Premier" },
+  { value: "Curated", label: "Curated" },
+  { value: "Signature", label: "Signature" },
   { value: "Estate", label: "Estate" },
 ];
 
@@ -139,7 +139,10 @@ export default function RealtorsTable({
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden overflow-x-auto">
         <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referral Pipeline</h3>
-          <AddReferralButton realtors={realtors} />
+          <div className="flex items-center gap-2">
+            <AddRealtorButton />
+            <AddReferralButton realtors={realtors} />
+          </div>
         </div>
         <FilterBar
           filters={[

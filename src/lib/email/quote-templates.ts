@@ -13,9 +13,12 @@ const TX3 = "#6B6560";
 const WINE = "#5C1A33";
 
 const TIER_LABELS: Record<string, string> = {
-  essentials: "Essentials",
-  premier: "Premier",
+  curated: "Curated",
+  signature: "Signature",
   estate: "Estate",
+  // legacy keys for quotes created before the rename
+  essentials: "Curated",
+  premier: "Signature",
 };
 
 const MOVE_SIZE_LABELS: Record<string, string> = {
@@ -160,7 +163,7 @@ function whyYugoBlock(): string {
   const items = [
     ["Flat-rate guarantee", "no hidden fees, no surprises"],
     ["Real-time tracking", "follow your crew live from your phone"],
-    ["Only $100 deposit", "balance due before your move"],
+    ["Low deposit to book", "balance due on move day"],
     ["Fully insured", "$2M commercial liability coverage"],
   ];
   return `
@@ -206,29 +209,29 @@ function detailsCard(rows: [string, string][]): string {
 }
 
 function tierCards(tiers: Record<string, QuoteTier>, recommendedTier?: string | null): string {
-  const order = ["essentials", "premier", "estate"];
-  const rec = recommendedTier || "premier";
+  const order = ["curated", "signature", "estate"];
+  const rec = recommendedTier || "signature";
 
   const tierBgs: Record<string, string> = {
-    essentials: CARD,
-    premier: "#181510",
+    curated: CARD,
+    signature: "#181510",
     estate: "#160D12",
   };
   const tierBorders: Record<string, string> = {
-    essentials: CARD_BORDER,
-    premier: `${GOLD}44`,
+    curated: CARD_BORDER,
+    signature: `${GOLD}44`,
     estate: `${WINE}66`,
   };
   const tierAccents: Record<string, string> = {
-    essentials: TX3,
-    premier: GOLD,
+    curated: TX3,
+    signature: GOLD,
     estate: WINE,
   };
 
   const badgeLabels: Record<string, Record<string, string>> = {
-    essentials: { essentials: "", premier: "Upgrade available", estate: "Premium option" },
-    premier: { essentials: "", premier: "RECOMMENDED", estate: "For the ultimate experience" },
-    estate: { essentials: "", premier: "", estate: "RECOMMENDED FOR YOU" },
+    curated: { curated: "", signature: "Upgrade available", estate: "Premium option" },
+    signature: { curated: "", signature: "RECOMMENDED", estate: "For the ultimate experience" },
+    estate: { curated: "", signature: "", estate: "RECOMMENDED FOR YOU" },
   };
 
   return order
@@ -344,7 +347,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
 
-  const price = d.customPrice ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Long Distance Quote")}
@@ -393,7 +396,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   if (d.toAddress) rows.push(["Delivery", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
 
-  const price = d.customPrice ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
@@ -416,7 +419,7 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   if (d.toAddress) rows.push(["Delivery", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
 
-  const price = d.customPrice ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("White Glove Service Quote")}

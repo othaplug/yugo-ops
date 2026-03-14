@@ -113,8 +113,20 @@ function statusBadgeStyle(status: string): string {
 function tierBadgeStyle(tier: string): string {
   const t = (tier || "").toLowerCase();
   if (t.includes("estate")) return "bg-[#7C3AED]/15 text-[#7C3AED]";
-  if (t.includes("premier")) return "bg-[var(--gold)]/15 text-[var(--gold)]";
+  if (t.includes("signature") || t.includes("premier")) return "bg-[var(--gold)]/15 text-[var(--gold)]";
   return "bg-[var(--brd)] text-[var(--tx3)]";
+}
+
+function tierDisplayLabel(tier: string): string {
+  const map: Record<string, string> = {
+    curated: "Curated",
+    signature: "Signature",
+    estate: "Estate",
+    essentials: "Curated",
+    premier: "Signature",
+  };
+  const t = (tier || "").toLowerCase();
+  return map[t] ?? (t.charAt(0).toUpperCase() + t.slice(1));
 }
 
 function quoteStatusBadge(status: string): { bg: string; text: string } {
@@ -246,7 +258,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
           </span>
           {m._type === "residential" && m.tier_selected && (
             <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
-              {toTitleCase(m.tier_selected)}
+              {tierDisplayLabel(m.tier_selected)}
             </span>
           )}
         </div>

@@ -27,7 +27,7 @@ export default async function PartnerDashboardPage() {
     .eq("id", primaryOrgId)
     .single();
 
-  const contactName = org?.contact_name || user.email?.split("@")[0] || "Partner";
+  const contactName = (user.user_metadata?.full_name as string | undefined) || org?.contact_name || user.email?.split("@")[0] || "Partner";
   const firstName = contactName.split(" ")[0];
 
   return (

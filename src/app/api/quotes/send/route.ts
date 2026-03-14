@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
         customPrice: quote.custom_price ? Number(quote.custom_price) : null,
         coordinatorName,
         coordinatorPhone,
-        recommendedTier: quote.recommended_tier ?? "premier",
+        recommendedTier: quote.recommended_tier ?? "signature",
       },
     });
 
@@ -148,7 +148,8 @@ export async function POST(req: NextRequest) {
     if (dealId) {
       const token = process.env.HUBSPOT_ACCESS_TOKEN;
       if (token) {
-        const essentialsPrice =
+        const curatedPrice =
+          (quote.tiers as Record<string, { price: number }> | null)?.curated?.price ??
           (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
           quote.custom_price;
 
@@ -159,7 +160,7 @@ export async function POST(req: NextRequest) {
         const dealProps: Record<string, string> = {
           quote_url: quoteUrl,
         };
-        if (essentialsPrice != null) dealProps.amount = String(essentialsPrice);
+        if (curatedPrice != null) dealProps.amount = String(curatedPrice);
         if (first) dealProps.firstname = first;
         if (last) dealProps.lastname = last;
         if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();

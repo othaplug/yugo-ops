@@ -108,6 +108,9 @@ const marginBg = (margin: number, target: number) =>
       : "bg-red-500/10 border-red-500/20";
 
 const TIER_COLORS: Record<string, string> = {
+  curated: "#6B7280",
+  signature: "#C9A962",
+  // legacy keys
   essentials: "#6B7280",
   premier: "#C9A962",
   estate: "#2D6A4F",
@@ -426,6 +429,12 @@ export default function ProfitabilityClient() {
               icon={summary?.lowMarginCount ? <AlertTriangle className="w-4 h-4" /> : null}
             />
           </div>
+
+          {(summary?.moveCount ?? 0) === 0 && !loading && (
+            <p className="text-[12px] text-[var(--tx3)] border-t border-[var(--brd)]/30 pt-4">
+              No completed moves in this period. Margins use moves with status Completed/Delivered/Done and a scheduled date in the range. Try <button type="button" onClick={() => setPreset("last_3")} className="text-[var(--gold)] hover:underline font-medium">Last 3 Months</button> or <button type="button" onClick={() => setPreset("ytd")} className="text-[var(--gold)] hover:underline font-medium">Year to Date</button>.
+            </p>
+          )}
 
           {/* ──── Revenue Split: Residential vs B2B ──── */}
           {(revenueSplit.b2b.count > 0 || revenueSplit.residential.count > 0) && (

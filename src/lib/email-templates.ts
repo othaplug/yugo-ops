@@ -795,7 +795,10 @@ function confirmDateDisplay(dateStr: string | null): string {
   });
 }
 
-export function essentialsConfirmationEmail(p: TierConfirmationParams): string {
+/** @deprecated Use curatedConfirmationEmail */
+export const essentialsConfirmationEmail = (p: TierConfirmationParams): string => curatedConfirmationEmail(p);
+
+export function curatedConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Confirmed</div>
@@ -810,7 +813,7 @@ export function essentialsConfirmationEmail(p: TierConfirmationParams): string {
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">Essentials</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">Curated</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed flat rate)</td></tr>
@@ -852,22 +855,25 @@ export function essentialsConfirmationEmail(p: TierConfirmationParams): string {
   `);
 }
 
-export function premierConfirmationEmail(p: TierConfirmationParams): string {
+/** @deprecated Use signatureConfirmationEmail */
+export const premierConfirmationEmail = (p: TierConfirmationParams): string => signatureConfirmationEmail(p);
+
+export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Great choice${p.clientName ? `, ${p.clientName}` : ""} &mdash; your Premier move is confirmed.</h1>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Great choice${p.clientName ? `, ${p.clientName}` : ""} &mdash; your Yugo Signature move is confirmed.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Everything is set. No surprises &mdash; just a smooth, professional move.
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #C9A96233;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Your Premier Move</div>
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Your Signature Move</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Premier</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Signature</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed &mdash; no surprises)</td></tr>

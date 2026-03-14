@@ -61,6 +61,40 @@ export default async function TrackMovePage({
   const additionalFeesCents = changeFeesCents + extraFeesCents;
   const tippingEnabled = await isFeatureEnabled("tipping_enabled");
 
+  // Server-side show-once tip prompt logic:
+  // Mark tip_prompt_shown_at on the very first completed-page load,
+  // BEFORE we respond to the client — so every subsequent visit gets false.
+  let showTipPrompt = false;
+  let tipData: { amount: number } | null = null;
+
+  if (tippingEnabled && move.status === "completed") {
+    // Fetch existing tip record
+    const { data: existingTip } = await supabase
+      .from("tips")
+      .select("amount, charged_at")
+      .eq("move_id", move.id)
+      .maybeSingle();
+
+    if (existingTip?.charged_at) {
+      tipData = { amount: Number(existingTip.amount) };
+    } else if (!move.tip_prompt_shown_at && move.square_card_id) {
+      // First visit after completion with a card on file — show the full prompt
+      await supabase
+        .from("moves")
+        .update({ tip_prompt_shown_at: new Date().toISOString() })
+        .eq("id", move.id);
+      showTipPrompt = true;
+    }
+  }
+
+  // Crew size for per-mover tip amounts
+  const crewMembersArr: string[] = Array.isArray(move.assigned_members)
+    ? move.assigned_members
+    : Array.isArray(crew?.members)
+    ? (crew?.members ?? [])
+    : [];
+  const crewSize = Math.max(2, crewMembersArr.length);
+
   return (
     <TrackMoveClient
       move={move}
@@ -73,6 +107,9 @@ export default async function TrackMovePage({
       changeRequestFeesCents={changeFeesCents}
       extraItemFeesCents={extraFeesCents}
       tippingEnabled={tippingEnabled}
+      showTipPrompt={showTipPrompt}
+      tipData={tipData}
+      crewSize={crewSize}
     />
   );
 }

@@ -189,7 +189,6 @@ export default function AllPartnersClient() {
         searchPlaceholder="Search by company, contact, email..."
         exportFilename="partners"
         tableId="all-partners"
-        selectable
         onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
         emptyMessage="No partners found"
         emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}

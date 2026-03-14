@@ -1,4 +1,4 @@
-import { Check, X, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, X, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
 import {
   type Quote,
   type TierData,
@@ -11,23 +11,23 @@ import {
 } from "../quote-shared";
 
 const TIER_ICONS: Record<string, LucideIcon> = {
-  essentials: Shield,
-  premier: Crown,
+  curated: Shield,
+  signature: Crown,
   estate: Gem,
 };
 
-const ESSENTIALS_MISSING = [
-  "Basic disassembly & reassembly",
-  "Enhanced Value Protection",
+const CURATED_MISSING = [
+  "Full furniture wrapping",
+  "Mattress & TV protection",
   "Pre-move walkthrough",
-  "White glove handling",
-  "Dedicated coordinator",
+  "White glove item handling",
+  "Dedicated move coordinator",
 ];
 
-const PREMIER_MISSING = [
+const SIGNATURE_MISSING = [
   "Pre-move walkthrough",
-  "White glove handling",
-  "Dedicated coordinator",
+  "White glove item handling",
+  "Dedicated move coordinator",
 ];
 
 interface Props {
@@ -36,6 +36,8 @@ interface Props {
   selectedTier: string | null;
   onSelectTier: (tierKey: string) => void;
   recommendedTier?: string;
+  /** When true, unselected tier cards collapse to compact view */
+  hasSelection?: boolean;
 }
 
 export default function ResidentialLayout({
@@ -43,10 +45,11 @@ export default function ResidentialLayout({
   tiers,
   selectedTier,
   onSelectTier,
-  recommendedTier = "premier",
+  recommendedTier = "signature",
+  hasSelection = false,
 }: Props) {
-  const raw = (recommendedTier ?? "premier").toString().toLowerCase().trim();
-  const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "premier";
+  const raw = (recommendedTier ?? "signature").toString().toLowerCase().trim();
+  const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "signature";
   return (
     <section className="mb-10">
       <div className="text-center mb-8">
@@ -72,6 +75,14 @@ export default function ResidentialLayout({
           Your move coordinator recommended <strong style={{ color: WINE }}>Estate</strong> based on your requirements.
         </div>
       )}
+      {recTier === "signature" && (
+        <div
+          className="mb-6 rounded-xl px-5 py-3 text-center text-[12px] border"
+          style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}30`, color: FOREST }}
+        >
+          Your move coordinator recommended <strong style={{ color: GOLD }}>Signature</strong> for full-service protection.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl md:max-w-7xl lg:max-w-7xl xl:max-w-[84rem] mx-auto px-2">
         {TIER_ORDER.map((tierKey) => {
@@ -84,19 +95,21 @@ export default function ResidentialLayout({
           const badgeText =
             recTier === "estate" && tierKey === "estate"
               ? "Recommended for You"
-              : (recTier === "premier" && tierKey === "premier") || (recTier === "essentials" && tierKey === "essentials")
-                ? "Recommended"
+              : (recTier === "signature" && tierKey === "signature") || (recTier === "curated" && tierKey === "curated")
+                ? "RECOMMENDED"
                 : null;
 
           const isEstate = tierKey === "estate";
           const cardBg = isEstate ? "#FAF7F2" : meta.bg;
 
+          const isCollapsed = hasSelection && !isSelected;
+
           return (
             <div
               key={tierKey}
-              className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${
+              className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
-              }`}
+              } ${isCollapsed ? "opacity-60" : ""}`}
             >
               {/* Badge sits OUTSIDE the card border so corners render correctly on all browsers */}
               {badgeText ? (
@@ -118,14 +131,14 @@ export default function ResidentialLayout({
 
               {/* Card body — rounded-b-2xl when badge present, full rounded-2xl otherwise */}
               <div
-                className={`flex flex-col flex-1 min-h-0 border-2 ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
+                className={`flex flex-col flex-1 min-h-0 border-2 overflow-hidden ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
                 style={{
                   backgroundColor: cardBg,
                   borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
                   ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
                 }}
               >
-              <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
+              <div className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}>
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     {(() => {
@@ -164,15 +177,20 @@ export default function ResidentialLayout({
                     {fmtPrice(t.price)}
                   </span>
                 </div>
-                <p data-tier-tagline className="mt-2 w-full leading-relaxed text-[11px] md:text-[12px]" style={{ color: `${FOREST}70` }}>
-                  {meta.tagline}
-                </p>
-
-                <div className="mt-4 flex flex-col flex-1 min-h-0">
-                  <p className="text-[11px] mb-3" style={{ color: `${FOREST}60` }}>
-                    +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
+                {!isCollapsed && (
+                  <p data-tier-tagline className="mt-2 w-full leading-relaxed text-[11px] md:text-[12px]" style={{ color: `${FOREST}70` }}>
+                    {meta.tagline}
                   </p>
+                )}
 
+                <div className={`mt-4 flex flex-col flex-1 min-h-0 ${isCollapsed ? "!mt-0" : ""}`}>
+                  {!isCollapsed && (
+                    <p className="text-[11px] mb-3" style={{ color: `${FOREST}60` }}>
+                      +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
+                    </p>
+                  )}
+
+                  {!isCollapsed && (
                   <ul className="space-y-2 mb-6 flex-1">
                     {t.includes.map((inc, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -180,8 +198,8 @@ export default function ResidentialLayout({
                         <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{inc}</span>
                       </li>
                     ))}
-                    {tierKey === "essentials" &&
-                      ESSENTIALS_MISSING.map((label, i) => (
+                    {tierKey === "curated" &&
+                      CURATED_MISSING.map((label, i) => (
                         <li key={`missing-${i}`} className="flex items-start gap-2">
                           <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
                           <span
@@ -192,8 +210,8 @@ export default function ResidentialLayout({
                           </span>
                         </li>
                       ))}
-                    {tierKey === "premier" &&
-                      PREMIER_MISSING.map((label, i) => (
+                    {tierKey === "signature" &&
+                      SIGNATURE_MISSING.map((label, i) => (
                         <li key={`missing-${i}`} className="flex items-start gap-2">
                           <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
                           <span
@@ -205,6 +223,7 @@ export default function ResidentialLayout({
                         </li>
                       ))}
                   </ul>
+                  )}
 
                   <button
                     type="button"
@@ -225,13 +244,18 @@ export default function ResidentialLayout({
                         <Check className="w-4 h-4" /> Selected
                       </span>
                     ) : (
-                      `Book ${meta.label}`
+                      <span className="flex items-center justify-center gap-1.5">
+                        Continue with {meta.label}
+                        <ChevronRight className="w-4 h-4" />
+                      </span>
                     )}
                   </button>
 
+                  {!isCollapsed && (
                   <p className="text-center text-[10px] mt-2.5 flex-shrink-0" style={{ color: GOLD }}>
                     {fmtPrice(t.deposit)} deposit to book
                   </p>
+                  )}
                 </div>
               </div>
               </div>

@@ -69,10 +69,10 @@ export async function GET(req: NextRequest) {
     const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult] = await Promise.allSettled([
       db
         .from("moves")
-        .select("id, move_code, client_name, move_type, status, scheduled_date, scheduled_time, estimated_hours, crew_id, from_address, to_address")
+        .select("id, move_code, client_name, move_type, status, scheduled_date, crew_id, from_address, to_address")
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
-        .not("status", "eq", "cancelled"),
+        .neq("status", "cancelled"),
       db
         .from("deliveries")
         .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, crew_id, pickup_address, delivery_address, items")
@@ -136,9 +136,9 @@ export async function GET(req: NextRequest) {
         name: m.client_name || "Move",
         description: `${toTitleCase(m.move_type || "")} Move`.trim(),
         date: dk,
-        start: m.scheduled_time || null,
+        start: null,
         end: null,
-        durationHours: m.estimated_hours || null,
+        durationHours: null,
         crewId: m.crew_id || null,
         crewName: crew?.name || null,
         truckId: null,

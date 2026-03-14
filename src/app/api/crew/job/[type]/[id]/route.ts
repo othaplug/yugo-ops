@@ -115,7 +115,7 @@ export async function GET(
     scheduledDate: (m as any).scheduled_date || null,
     access,
     crewMembers: crewWithRoles,
-    jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Premier Residential",
+    jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Residential",
     inventory,
     extraItems: extra || [],
     internalNotes: m.internal_notes || m.next_action || null,

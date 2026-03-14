@@ -9,8 +9,8 @@ import { formatCurrency } from "@/lib/format-currency";
 import {
   bookingConfirmationEmail,
   internalBookingAlertEmail,
-  essentialsConfirmationEmail,
-  premierConfirmationEmail,
+  curatedConfirmationEmail,
+  signatureConfirmationEmail,
   estateConfirmationEmail,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -42,10 +42,13 @@ export interface PostPaymentResult {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  essentials: "Essentials",
-  premier: "Premier",
+  curated: "Curated",
+  signature: "Signature",
   estate: "Estate",
   custom: "Standard",
+  // legacy keys for moves created before the rename
+  essentials: "Curated",
+  premier: "Signature",
 };
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -243,7 +246,7 @@ export async function runPostPaymentActions(
         if (!clientEmail) return;
 
         const resend = getResend();
-        const tier = selectedTier ?? "premier";
+        const tier = selectedTier ?? "signature";
 
         const TRUCK_DISPLAY: Record<string, string> = {
           sprinter: "Extended Sprinter Van",
@@ -284,16 +287,22 @@ export async function runPostPaymentActions(
         };
 
         const templateFns: Record<string, (p: TierConfirmationParams) => string> = {
-          essentials: essentialsConfirmationEmail,
-          premier: premierConfirmationEmail,
+          curated: curatedConfirmationEmail,
+          signature: signatureConfirmationEmail,
           estate: estateConfirmationEmail,
+          // legacy keys for moves created before the rename
+          essentials: curatedConfirmationEmail,
+          premier: signatureConfirmationEmail,
         };
-        const templateFn = templateFns[tier] ?? premierConfirmationEmail;
+        const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
 
         const subjects: Record<string, string> = {
-          essentials: `Your Yugo move is confirmed — ${input.moveCode}`,
-          premier: `Your Yugo Premier move is confirmed — ${input.moveCode}`,
+          curated: `Your Yugo move is confirmed — ${input.moveCode}`,
+          signature: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
           estate: `Welcome to your Yugo Estate experience — ${input.moveCode}`,
+          // legacy keys
+          essentials: `Your Yugo move is confirmed — ${input.moveCode}`,
+          premier: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
         };
         const subject = subjects[tier] ?? `Booking confirmed — ${input.moveCode}`;
 

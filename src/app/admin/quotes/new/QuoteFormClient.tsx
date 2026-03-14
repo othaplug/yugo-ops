@@ -166,7 +166,7 @@ function quickEstimate(
   serviceType: string,
   moveSize: string,
   addonTotal: number,
-): { essentials: number; premier: number; estate: number } | { single: number } | null {
+): { curated: number; signature: number; estate: number } | { single: number } | null {
   const BASE: Record<string, number> = {
     studio: 549, "1br": 799, "2br": 1199, "3br": 1699, "4br": 2399, "5br_plus": 3199, partial: 499,
   };
@@ -174,10 +174,10 @@ function quickEstimate(
 
   if (serviceType === "local_move") {
     const base = BASE[moveSize] ?? 1199;
-    const ess = Math.max(roundTo(base, rounding) + addonTotal, 549);
-    const prem = roundTo(base * cfgNum(config, "tier_premier_multiplier", 1.35), rounding) + addonTotal;
+    const cur = Math.max(roundTo(base, rounding) + addonTotal, 549);
+    const sig = roundTo(base * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.35)), rounding) + addonTotal;
     const est = roundTo(base * cfgNum(config, "tier_estate_multiplier", 1.85), rounding) + addonTotal;
-    return { essentials: ess, premier: prem, estate: est };
+    return { curated: cur, signature: sig, estate: est };
   }
   return null;
 }
@@ -256,7 +256,7 @@ export default function QuoteFormClient({
   const [climateControl, setClimateControl] = useState(false);
 
   // Recommended tier (coordinator judgment)
-  const [recommendedTier, setRecommendedTier] = useState<"essentials" | "premier" | "estate">("premier");
+  const [recommendedTier, setRecommendedTier] = useState<"curated" | "signature" | "estate">("signature");
 
   // Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
@@ -635,10 +635,10 @@ export default function QuoteFormClient({
 
       // Push quote data back to HubSpot deal (price + deal fields for left column)
       if (hubspotDealId && quoteResult) {
-        const essentials = quoteResult.tiers?.essentials;
-        const price = essentials?.price ?? quoteResult.custom_price?.price ?? null;
-        const tax = essentials?.tax ?? quoteResult.custom_price?.tax ?? null;
-        const total = essentials?.total ?? quoteResult.custom_price?.total ?? null;
+        const curatedTier = quoteResult.tiers?.curated ?? quoteResult.tiers?.essentials;
+        const price = curatedTier?.price ?? quoteResult.custom_price?.price ?? null;
+        const tax = curatedTier?.tax ?? quoteResult.custom_price?.tax ?? null;
+        const total = curatedTier?.total ?? quoteResult.custom_price?.total ?? null;
 
         const dealProps: Record<string, unknown> = {
           amount: price,
@@ -916,11 +916,11 @@ export default function QuoteFormClient({
                       <div className="flex items-center gap-2">
                         <select
                           value={recommendedTier}
-                          onChange={(e) => setRecommendedTier(e.target.value as "essentials" | "premier" | "estate")}
+                          onChange={(e) => setRecommendedTier(e.target.value as "curated" | "signature" | "estate")}
                           className={`${fieldInput} w-[140px] min-w-0`}
                         >
-                          <option value="essentials">Essentials</option>
-                          <option value="premier">Premier</option>
+                          <option value="curated">Curated</option>
+                          <option value="signature">Signature</option>
                           <option value="estate">Estate</option>
                         </select>
                         {recommendedTier !== "estate" && (
@@ -1458,7 +1458,7 @@ export default function QuoteFormClient({
                 ) : (
                   /* ── Optimistic live preview ── */
                   <>
-                    {liveEstimate && "essentials" in liveEstimate ? (
+                    {liveEstimate && "curated" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} />
                     ) : (
                       <div className="text-center py-5">
@@ -1574,8 +1574,8 @@ export default function QuoteFormClient({
             {quoteResult?.valuation && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
-                {["essentials", "premier", "estate"].map((pkg) => {
-                  const included = { essentials: "Released Value", premier: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
+                {["curated", "signature", "estate"].map((pkg) => {
+                  const included = { curated: "Released Value", signature: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
                   const upgrade = quoteResult.valuation?.upgrades?.[pkg];
                   return (
                     <div key={pkg} className="flex items-center justify-between">
@@ -1614,14 +1614,14 @@ export default function QuoteFormClient({
 
 // ─── Sub-Components ─────────────────────────────
 
-function TiersDisplay({ tiers, recommendedTier = "premier" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
-  const tierOrder = ["essentials", "premier", "estate"] as const;
-  const tierColors = {
-    essentials: { bg: "bg-[var(--bg)]", border: "border-[var(--brd)]", accent: "text-[var(--tx)]" },
-    premier: { bg: "bg-[#FAF7F2] dark:bg-[#2A2520]", border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]", accent: "text-[#B8962E]" },
+function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
+  const tierOrder = ["curated", "signature", "estate"] as const;
+  const tierColors: Record<string, { bg: string; border: string; accent: string }> = {
+    curated: { bg: "bg-[var(--bg)]", border: "border-[var(--brd)]", accent: "text-[var(--tx)]" },
+    signature: { bg: "bg-[#FAF7F2] dark:bg-[#2A2520]", border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]", accent: "text-[#B8962E]" },
     estate: { bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]", border: "border-[#C9A84C]/60", accent: "text-[#C9A84C]" },
   };
-  const tierLabels = { essentials: "Essentials", premier: "Premier", estate: "Estate" };
+  const tierLabels: Record<string, string> = { curated: "Curated", signature: "Signature", estate: "Estate" };
 
   return (
     <div className="space-y-3">
@@ -1709,10 +1709,10 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   );
 }
 
-function OptimisticTiers({ est }: { est: { essentials: number; premier: number; estate: number } }) {
+function OptimisticTiers({ est }: { est: { curated: number; signature: number; estate: number } }) {
   const tiers = [
-    { name: "Essentials", price: est.essentials },
-    { name: "Premier", price: est.premier },
+    { name: "Curated", price: est.curated },
+    { name: "Signature", price: est.signature },
     { name: "Estate", price: est.estate },
   ];
   return (

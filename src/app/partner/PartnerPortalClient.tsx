@@ -913,8 +913,8 @@ function ReferralForm() {
         <input value={form.property} onChange={(e) => setForm((f) => ({ ...f, property: e.target.value }))} placeholder="Property address" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <input value={form.move_date} onChange={(e) => setForm((f) => ({ ...f, move_date: e.target.value }))} placeholder="Target move date" type="date" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white">
-          <option value="standard">Essentials</option>
-          <option value="premium">Premier</option>
+          <option value="standard">Curated</option>
+          <option value="premium">Signature</option>
           <option value="luxury">Estate</option>
         </select>
       </div>

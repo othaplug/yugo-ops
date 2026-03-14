@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   for (const rr of pending || []) {
     const reviewUrl = `${baseUrl}/api/review/redirect?id=${rr.id}`;
-    const tier = (rr.tier || "essentials").toLowerCase();
+    const tier = (rr.tier || "curated").toLowerCase();
     const { data: move } = rr.move_id
       ? await supabase.from("moves").select("move_code, id").eq("id", rr.move_id).single()
       : { data: null };
@@ -53,9 +53,9 @@ export async function GET(req: NextRequest) {
     const template =
       tier === "estate"
         ? "review-request-estate"
-        : tier === "premier"
-          ? "review-request-premier"
-          : "review-request-essentials";
+        : tier === "signature" || tier === "premier"
+          ? "review-request-signature"
+          : "review-request-curated";
 
     const firstName = (rr.client_name || "").trim().split(/\s+/)[0] || "";
 
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
         const subject =
           tier === "estate"
             ? `${firstName}, it was our privilege — how did we do?`
-            : tier === "premier"
+            : tier === "signature" || tier === "premier"
               ? `We'd love your feedback, ${firstName}`
               : `How was your Yugo move, ${firstName}?`;
 

@@ -84,7 +84,7 @@ export default function JobInventory({
     }
   }, [jobId, jobType, isUnloading, isCompleted]);
 
-  const isPremierNoInventory = jobType === "move" && moveType === "residential" && inventory.length === 0;
+  const isRoomBasedVerification = jobType === "move" && moveType === "residential" && inventory.length === 0;
   const roomsToConfirm = [...DEFAULT_ROOMS, ...customRooms];
   const allItemsWithId = inventory.flatMap((r) => r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name })));
   const verifiableCount = allItemsWithId.filter((item) => {
@@ -95,7 +95,7 @@ export default function JobInventory({
     const id = "id" in item ? item.id : "";
     return typeof id === "string" && !id.startsWith("noid-") && verifiedIds.has(id);
   }).length;
-  const totalCount = isPremierNoInventory ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
+  const totalCount = isRoomBasedVerification ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
 
   const completedFullyVerifiedCount = isCompleted && verifiableCount > 0
     ? allItemsWithId.filter((item) => {
@@ -105,19 +105,19 @@ export default function JobInventory({
     : 0;
 
   useEffect(() => {
-    if (isCompleted && isPremierNoInventory) {
+    if (isCompleted && isRoomBasedVerification) {
       const both = roomsToConfirm.filter((room) => verifiedRoomsLoading.has(room) && verifiedRoomsUnloading.has(room)).length;
       onCountChange?.(both, roomsToConfirm.length);
     } else if (isCompleted && verifiableCount > 0) {
       onCountChange?.(completedFullyVerifiedCount, verifiableCount);
-    } else if (isPremierNoInventory) {
+    } else if (isRoomBasedVerification) {
       onCountChange?.(verifiedRooms.size, roomsToConfirm.length);
     } else if (verifiableCount > 0) {
       onCountChange?.(verifiedCount, verifiableCount);
     } else {
       onCountChange?.(0, totalCount);
     }
-  }, [isPremierNoInventory, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange, isCompleted, completedFullyVerifiedCount]);
+  }, [isRoomBasedVerification, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange, isCompleted, completedFullyVerifiedCount]);
 
   const toggleRoomVerify = async (room: string) => {
     if (verifiedRooms.has(room)) return;
@@ -178,7 +178,7 @@ export default function JobInventory({
   };
 
   if (jobType === "delivery" && inventory.length === 0 && extraItems.length === 0) return null;
-  if (jobType === "move" && inventory.length === 0 && extraItems.length === 0 && !isPremierNoInventory) return null;
+  if (jobType === "move" && inventory.length === 0 && extraItems.length === 0 && !isRoomBasedVerification) return null;
 
   return (
     <div className="mt-6">
@@ -186,7 +186,7 @@ export default function JobInventory({
         <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)]">
           {isCompleted
             ? "Inventory verified (pickup & delivery)"
-            : isPremierNoInventory
+            : isRoomBasedVerification
               ? "Room Confirmation"
               : isUnloading
                 ? "Unloading Verification"
@@ -194,15 +194,15 @@ export default function JobInventory({
         </h2>
         {isCompleted && verifiableCount > 0 ? (
           <span className="text-[11px] text-[var(--tx3)]">{completedFullyVerifiedCount} of {verifiableCount} verified at both</span>
-        ) : isCompleted && isPremierNoInventory ? (
+        ) : isCompleted && isRoomBasedVerification ? (
           <span className="text-[11px] text-[var(--tx3)]">{roomsToConfirm.filter((r) => verifiedRoomsLoading.has(r) && verifiedRoomsUnloading.has(r)).length} of {roomsToConfirm.length} rooms</span>
-        ) : isPremierNoInventory ? (
+        ) : isRoomBasedVerification ? (
           <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
         ) : verifiableCount > 0 ? (
           <span className="text-[11px] text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
         ) : null}
       </div>
-      {isPremierNoInventory ? (
+      {isRoomBasedVerification ? (
         <div className="space-y-1.5 mb-3">
           {roomsToConfirm.map((room) => {
             const verified = verifiedRooms.has(room);
@@ -348,7 +348,7 @@ export default function JobInventory({
           ))}
         </div>
       )}
-      {!isPremierNoInventory && !readOnly && (
+      {!isRoomBasedVerification && !readOnly && (
       <button
         onClick={() => setAddExtraOpen(true)}
         className="w-full py-2.5 rounded-lg border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"

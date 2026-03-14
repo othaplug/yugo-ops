@@ -475,12 +475,12 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <>
               {livePreview.tiers ? (
                 <div className="grid grid-cols-3 gap-2">
-                  {(["essentials", "premier", "estate"] as const).map((tier) => {
+                  {(["curated", "signature", "estate"] as const).map((tier) => {
                     const t = livePreview.tiers[tier];
                     if (!t) return null;
-                    const isEss = tier === "essentials";
+                    const isCurated = tier === "curated";
                     return (
-                      <div key={tier} className={`rounded-lg p-3 text-center border ${isEss ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
+                      <div key={tier} className={`rounded-lg p-3 text-center border ${isCurated ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
                         <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">{tier}</div>
                         <div className="text-[16px] font-bold text-[var(--tx)]">{formatCurrency(t.price)}</div>
                         <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(t.tax)} HST</div>
@@ -982,7 +982,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
           {newQuoteResult.tiers && (
             <div className="grid grid-cols-3 gap-3 mb-4">
-              {["essentials", "premier", "estate"].map((tier) => {
+              {["curated", "signature", "estate"].map((tier) => {
                 const t = newQuoteResult.tiers[tier];
                 if (!t) return null;
                 return (

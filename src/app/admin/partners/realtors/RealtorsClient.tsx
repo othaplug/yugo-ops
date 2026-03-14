@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AddReferralModal from "./AddReferralModal";
+import AddRealtorModal from "./AddRealtorModal";
 
 type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
 
@@ -16,6 +17,21 @@ export function AddReferralButton({ realtors = [], label = "Add Referral" }: { r
         {label}
       </button>
       <AddReferralModal open={open} onClose={() => setOpen(false)} realtors={realtors} />
+    </>
+  );
+}
+
+export function AddRealtorButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap"
+      >
+        Add Realtor
+      </button>
+      <AddRealtorModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

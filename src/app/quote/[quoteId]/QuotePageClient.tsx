@@ -42,7 +42,9 @@ import {
   fmtPrice,
   fmtDate,
   expiresLabel,
+  expiresValue,
   calculateDeposit,
+  calculateTieredDeposit,
 } from "./quote-shared";
 
 import YugoLogo from "@/components/YugoLogo";
@@ -52,6 +54,7 @@ import ContractSign, {
   type ContractAddon,
 } from "@/components/booking/ContractSign";
 import ResidentialLayout from "./layouts/ResidentialLayout";
+import ProgressBar from "./ProgressBar";
 import LongDistanceLayout from "./layouts/LongDistanceLayout";
 import OfficeLayout from "./layouts/OfficeLayout";
 import SingleItemLayout from "./layouts/SingleItemLayout";
@@ -119,6 +122,7 @@ export default function QuotePageClient({
   /* ── State ── */
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(quote.status === "accepted");
+  const [currentStep, setCurrentStep] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
   const [signedName, setSignedName] = useState("");
   const [contractSigned, setContractSigned] = useState(false);
@@ -169,6 +173,11 @@ export default function QuotePageClient({
 
   const contractRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLDivElement>(null);
+  const tiersRef = useRef<HTMLElement>(null);
+  const addonsRef = useRef<HTMLElement>(null);
+  const protectionRef = useRef<HTMLElement>(null);
+  const confirmRef = useRef<HTMLElement>(null);
+  const paymentRef = useRef<HTMLElement>(null);
   const pageStartTime = useRef(Date.now());
 
   const trackEngagement = useCallback(
@@ -352,11 +361,11 @@ export default function QuotePageClient({
 
   /* ── Valuation costs ── */
   const INCLUDED_VALUATION: Record<string, string> = {
-    essentials: "released",
-    premier: "enhanced",
+    curated: "released",
+    signature: "enhanced",
     estate: "full_replacement",
   };
-  const currentPackage = isResidential && selectedTier ? selectedTier : "essentials";
+  const currentPackage = isResidential && selectedTier ? selectedTier : "curated";
   const includedValuation = INCLUDED_VALUATION[currentPackage] ?? "released";
 
   const activeUpgrade = useMemo(() => {
@@ -376,10 +385,12 @@ export default function QuotePageClient({
   const referralDiscountAmt = referralVerified ? referralDiscount : 0;
   const tax = Math.round((totalBeforeTax - referralDiscountAmt) * TAX_RATE);
   const grandTotal = totalBeforeTax - referralDiscountAmt + tax;
-  const deposit = useMemo(
-    () => calculateDeposit(quote.service_type, totalBeforeTax),
-    [quote.service_type, totalBeforeTax],
-  );
+  const deposit = useMemo(() => {
+    if (isResidential && selectedTier) {
+      return calculateTieredDeposit(selectedTier, totalBeforeTax);
+    }
+    return calculateDeposit(quote.service_type, totalBeforeTax);
+  }, [isResidential, selectedTier, quote.service_type, totalBeforeTax]);
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -451,6 +462,10 @@ export default function QuotePageClient({
   );
 
   /* ── Handlers ── */
+  const scrollToSection = useCallback((ref: React.RefObject<HTMLElement | null>) => {
+    setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  }, []);
+
   const scrollToContract = useCallback(() => {
     setTimeout(
       () => contractRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -472,10 +487,70 @@ export default function QuotePageClient({
       });
       trackEvent("tier_selected", { tier: tierKey });
       trackEngagement("tier_clicked", { tier: tierKey });
-      scrollToContract();
+      if (isResidential) {
+        const hasAddons = allAddons.some((a) => !a.excluded_tiers?.includes(tierKey));
+        const nextStep = hasAddons ? 2 : 3;
+        setCurrentStep(nextStep);
+        const targetRef = nextStep === 2 ? addonsRef : protectionRef;
+        scrollToSection(targetRef);
+      } else {
+        scrollToContract();
+      }
     },
-    [allAddons, scrollToContract, trackEvent, trackEngagement],
+    [allAddons, isResidential, scrollToContract, scrollToSection, trackEvent, trackEngagement],
   );
+
+  // Sync currentStep when addons section is skipped (no applicable addons)
+  useEffect(() => {
+    if (
+      isResidential &&
+      selectedTier &&
+      currentStep === 2 &&
+      applicableAddons.length === 0
+    ) {
+      setCurrentStep(3);
+    }
+  }, [isResidential, selectedTier, currentStep, applicableAddons.length]);
+
+  const handleAddonsComplete = useCallback(() => {
+    setCurrentStep(3);
+    scrollToSection(protectionRef);
+  }, [scrollToSection]);
+
+  const handleProtectionComplete = useCallback(() => {
+    setCurrentStep(4);
+    scrollToSection(confirmRef);
+  }, [scrollToSection]);
+
+  const handleConfirmComplete = useCallback(() => {
+    setCurrentStep(5);
+    scrollToSection(paymentRef);
+  }, [scrollToSection]);
+
+  const handleStepClick = useCallback(
+    (stepNum: number) => {
+      if (!isResidential || stepNum > currentStep) return;
+      // When no addons, step 2 (Customize) is skipped — treat as step 3
+      const effectiveStep = stepNum === 2 && applicableAddons.length === 0 ? 3 : stepNum;
+      setCurrentStep(effectiveStep);
+      const refs: React.RefObject<HTMLElement | null>[] = [tiersRef, addonsRef, protectionRef, confirmRef, paymentRef];
+      const ref = refs[effectiveStep - 1];
+      if (ref) scrollToSection(ref);
+    },
+    [currentStep, isResidential, applicableAddons.length, scrollToSection],
+  );
+
+  const getBackStep = useCallback(() => {
+    if (currentStep === 2) return 1;
+    if (currentStep === 3) return applicableAddons.length > 0 ? 2 : 1;
+    if (currentStep === 4) return 3;
+    return null;
+  }, [currentStep, applicableAddons.length]);
+
+  const handleBack = useCallback(() => {
+    const backStep = getBackStep();
+    if (backStep) handleStepClick(backStep);
+  }, [getBackStep, handleStepClick]);
 
   const handleConfirm = useCallback(() => {
     setSelectedTier("custom");
@@ -578,7 +653,7 @@ export default function QuotePageClient({
                     Valid
                   </p>
                   <p className="text-[13px] font-semibold text-white">
-                    {expiresLabel(quote.expires_at)}
+                    {expiresValue(quote.expires_at)}
                   </p>
                 </div>
               </>
@@ -586,6 +661,10 @@ export default function QuotePageClient({
           </div>
         </div>
       </header>
+
+      {isResidential && currentStep >= 2 && !booked && (
+        <ProgressBar currentStep={currentStep} onStepClick={handleStepClick} />
+      )}
 
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE BADGE ═══ */}
@@ -616,16 +695,17 @@ export default function QuotePageClient({
 
         {/* ═══ LAYOUT DISPATCH ═══ */}
         {isResidential && tiers ? (
-          <>
+          <section ref={tiersRef} className="scroll-mt-6">
             <ResidentialLayout
               quote={quote}
               tiers={tiers}
               selectedTier={selectedTier}
               onSelectTier={handleSelectTier}
               recommendedTier={(() => {
-                const r = (quote.recommended_tier ?? "premier").toString().toLowerCase().trim();
-                return ["essentials", "premier", "estate"].includes(r) ? r : "premier";
+                const r = (quote.recommended_tier ?? "signature").toString().toLowerCase().trim();
+                return ["curated", "signature", "estate"].includes(r) ? r : "signature";
               })()}
+              hasSelection={!!selectedTier}
             />
             <InclusionsShowcase
               ref={comparisonRef}
@@ -635,7 +715,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-          </>
+          </section>
         ) : quote.service_type === "long_distance" ? (
           <>
             <InclusionsShowcase
@@ -726,75 +806,163 @@ export default function QuotePageClient({
           </>
         ) : null}
 
-        {/* ═══ ADD-ONS ═══ */}
-        {isConfirmed && applicableAddons.length > 0 && !booked && (
-          <AddOnsSection
-            addons={applicableAddons}
-            allAddons={allAddons}
-            selectedAddons={selectedAddons}
-            basePrice={basePrice}
-            addonTotal={addonTotal}
-            valuationCost={valuationCost}
-            tax={tax}
-            grandTotal={grandTotal}
-            deposit={deposit}
-            selectedTierData={
-              isResidential && selectedTier && tiers?.[selectedTier] ? tiers[selectedTier] : null
-            }
-            toggleAddon={toggleAddon}
-            updateQty={updateQty}
-            updateTierIdx={updateTierIdx}
-          />
-        )}
-
-        {/* ═══ VALUATION PROTECTION ═══ */}
-        {isConfirmed && !booked && (
-          <ValuationProtectionCard
-            includedValuation={includedValuation}
-            currentPackage={currentPackage}
-            valuationTiers={valuationTiers}
-            valuationUpgrades={valuationUpgrades}
-            upgradeSelected={valuationUpgradeSelected}
-            onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
-            declarations={declarations}
-            onAddDeclaration={(d) => setDeclarations((prev) => [...prev, d])}
-            onRemoveDeclaration={(idx) => setDeclarations((prev) => prev.filter((_, i) => i !== idx))}
-          />
-        )}
-
-        {/* ═══ REFERRAL CODE ═══ */}
-        {isConfirmed && !booked && (
-          <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
-            <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
-              Have a referral code?
-            </p>
-            <div className="flex gap-2">
-              <input
-                value={referralCode}
-                onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralMsg(""); }}
-                placeholder="YUGO-NAME-XXXX"
-                disabled={referralVerified}
-                className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none"
-                style={{ borderColor: referralVerified ? "#2D9F5A" : `${GOLD}60`, background: referralVerified ? "#F0FFF4" : "white" }}
-              />
-              {!referralVerified && (
+        {/* ═══ SECTION 2: ADD-ONS ═══ */}
+        {((isResidential && currentStep >= 2) || (!isResidential && isConfirmed)) &&
+          applicableAddons.length > 0 &&
+          !booked && (
+            <section ref={addonsRef} className="scroll-mt-6">
+              {isResidential && currentStep >= 2 && (
                 <button
                   type="button"
-                  onClick={verifyReferral}
-                  disabled={!referralCode.trim()}
-                  className="px-4 py-2 rounded-lg text-[11px] font-semibold disabled:opacity-50"
-                  style={{ background: GOLD, color: "#1A1714" }}
+                  onClick={handleBack}
+                  className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
+                  style={{ color: `${FOREST}60` }}
                 >
-                  Apply
+                  ← Back
                 </button>
               )}
-            </div>
-            {referralMsg && (
-              <p className={`mt-1.5 text-[11px] font-medium ${referralVerified ? "text-[#2D9F5A]" : "text-red-500"}`}>
-                {referralMsg}
-              </p>
+              <AddOnsSection
+                addons={applicableAddons}
+                allAddons={allAddons}
+                selectedAddons={selectedAddons}
+                basePrice={basePrice}
+                addonTotal={addonTotal}
+                valuationCost={valuationCost}
+                tax={tax}
+                grandTotal={grandTotal}
+                deposit={deposit}
+                selectedTierData={
+                  isResidential && selectedTier && tiers?.[selectedTier] ? tiers[selectedTier] : null
+                }
+                toggleAddon={toggleAddon}
+                updateQty={updateQty}
+                updateTierIdx={updateTierIdx}
+                isProgressive={isResidential}
+                onContinue={handleAddonsComplete}
+                showContinueButton={isResidential && currentStep === 2}
+              />
+            </section>
+          )}
+
+        {/* ═══ SECTION 3: VALUATION PROTECTION ═══ */}
+        {((isResidential && currentStep >= 3) || (!isResidential && isConfirmed)) && !booked && (
+          <section ref={protectionRef} className="scroll-mt-6">
+            {isResidential && currentStep >= 3 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
+                style={{ color: `${FOREST}60` }}
+              >
+                ← Back
+              </button>
             )}
-          </div>
+            <ValuationProtectionCard
+              includedValuation={includedValuation}
+              currentPackage={currentPackage}
+              valuationTiers={valuationTiers}
+              valuationUpgrades={valuationUpgrades}
+              upgradeSelected={valuationUpgradeSelected}
+              onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
+              declarations={declarations}
+              onAddDeclaration={(d) => setDeclarations((prev) => [...prev, d])}
+              onRemoveDeclaration={(idx) => setDeclarations((prev) => prev.filter((_, i) => i !== idx))}
+            />
+            {isResidential && currentStep === 3 && (
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleProtectionComplete}
+                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
+                  style={{ backgroundColor: GOLD }}
+                >
+                  Continue →
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ═══ SECTION 4: CONFIRM DETAILS ═══ */}
+        {((isResidential && currentStep >= 4) || (!isResidential && isConfirmed)) && !booked && (
+          <section ref={confirmRef} className="scroll-mt-6">
+            {isResidential && currentStep >= 4 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
+                style={{ color: `${FOREST}60` }}
+              >
+                ← Back
+              </button>
+            )}
+            {isResidential && selectedTier && tiers?.[selectedTier] && (
+              <ConfirmDetailsSection
+                quote={quote}
+                selectedTier={selectedTier}
+                packageLabel={packageLabel}
+                basePrice={basePrice}
+                addonTotal={addonTotal}
+                contractAddonsList={contractAddonsList}
+                valuationCost={valuationCost}
+                tax={tax}
+                grandTotal={grandTotal}
+                deposit={deposit}
+                referralDiscountAmt={referralDiscountAmt}
+                valuationUpgradeSelected={valuationUpgradeSelected}
+                includedValuation={includedValuation}
+                onProceedToPayment={handleConfirmComplete}
+                isProgressive={isResidential}
+                currentStep={currentStep}
+              />
+            )}
+            {/* Referral code — for residential, inside confirm; for non-residential, standalone */}
+            {(!isResidential || currentStep >= 4) && (
+              <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
+                <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
+                  Have a referral code?
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={referralCode}
+                    onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralMsg(""); }}
+                    placeholder="YUGO-NAME-XXXX"
+                    disabled={referralVerified}
+                    className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none"
+                    style={{ borderColor: referralVerified ? "#2D9F5A" : `${GOLD}60`, background: referralVerified ? "#F0FFF4" : "white" }}
+                  />
+                  {!referralVerified && (
+                    <button
+                      type="button"
+                      onClick={verifyReferral}
+                      disabled={!referralCode.trim()}
+                      className="px-4 py-2 rounded-lg text-[11px] font-semibold disabled:opacity-50"
+                      style={{ background: GOLD, color: "#1A1714" }}
+                    >
+                      Apply
+                    </button>
+                  )}
+                </div>
+                {referralMsg && (
+                  <p className={`mt-1.5 text-[11px] font-medium ${referralVerified ? "text-[#2D9F5A]" : "text-red-500"}`}>
+                    {referralMsg}
+                  </p>
+                )}
+              </div>
+            )}
+            {isResidential && currentStep === 4 && (
+              <div className="mb-6 flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConfirmComplete}
+                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
+                  style={{ backgroundColor: GOLD }}
+                >
+                  Proceed to Payment →
+                </button>
+              </div>
+            )}
+          </section>
         )}
 
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
@@ -856,9 +1024,13 @@ export default function QuotePageClient({
           </section>
         )}
 
-        {/* ═══ CONTRACT / E-SIGN ═══ */}
-        {isConfirmed && !booked && (
-          <section ref={contractRef} className="mb-10 pt-6 border-t border-[var(--brd)]/30 scroll-mt-6">
+        {/* ═══ SECTION 5: AGREEMENT + PAYMENT ═══ */}
+        {((isResidential && currentStep >= 5) || (!isResidential && isConfirmed)) && !booked && (
+          <section ref={paymentRef} className="mb-10 pt-6 border-t border-[var(--brd)]/30 scroll-mt-6">
+            <h2 className="font-serif text-[20px] mb-4" style={{ color: FOREST }}>
+              Review &amp; Book
+            </h2>
+            <div ref={contractRef}>
             <ContractSign
               quoteData={contractData}
               onSigned={(data) => {
@@ -878,11 +1050,12 @@ export default function QuotePageClient({
               }}
               onContractStarted={() => trackEvent("contract_started")}
             />
+            </div>
           </section>
         )}
 
-        {/* ═══ PAYMENT ═══ */}
-        {isConfirmed && contractSigned && !booked && (
+        {/* ═══ PAYMENT (inside Section 5, after contract signed) ═══ */}
+        {((isResidential && currentStep >= 5) || (!isResidential && isConfirmed)) && contractSigned && !booked && (
           <section className="mb-10">
             <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
               <div
@@ -908,6 +1081,7 @@ export default function QuotePageClient({
                   selectedTier={selectedTier}
                   selectedAddons={Array.from(selectedAddons.values())}
                   disabled={false}
+                  submitLabel={`Pay ${fmtPrice(deposit)} & Book My Move`}
                   onSuccess={(result) => {
                     setPaymentMoveId(result.move_id);
                     setBooked(true);
@@ -1009,7 +1183,7 @@ const InclusionsShowcase = React.forwardRef<
     crewSize: number | null;
   }
 >(function InclusionsShowcase({ selectedTier, isResidential, truckPrimary, truckSecondary, crewSize }, ref) {
-  const tier = selectedTier ?? "essentials";
+  const tier = selectedTier ?? "curated";
 
   const truckLine = truckPrimary
     ? truckSecondary
@@ -1028,7 +1202,7 @@ const InclusionsShowcase = React.forwardRef<
 
   const items = [...dynamicItems, ...INCLUSIONS_ESSENTIALS];
 
-  if (isResidential && (tier === "premier" || tier === "estate")) {
+  if (isResidential && (tier === "signature" || tier === "estate")) {
     items.push(...INCLUSIONS_PREMIER);
   }
   if (isResidential && tier === "estate") {
@@ -1077,6 +1251,159 @@ const InclusionsShowcase = React.forwardRef<
 });
 
 /* ═══════════════════════════════════════════════════
+   Confirm Details Section (Step 4)
+   ═══════════════════════════════════════════════════ */
+
+const CONFIRM_VALUATION_LABELS: Record<string, string> = {
+  released: "Released Value",
+  enhanced: "Enhanced Value",
+  full_replacement: "Full Replacement",
+};
+
+function ConfirmDetailsSection({
+  quote,
+  selectedTier,
+  packageLabel,
+  basePrice,
+  addonTotal,
+  contractAddonsList,
+  valuationCost,
+  tax,
+  grandTotal,
+  deposit,
+  referralDiscountAmt,
+  valuationUpgradeSelected,
+  includedValuation,
+}: {
+  quote: Quote;
+  selectedTier: string;
+  packageLabel: string;
+  basePrice: number;
+  addonTotal: number;
+  contractAddonsList: ContractAddon[];
+  valuationCost: number;
+  tax: number;
+  grandTotal: number;
+  deposit: number;
+  referralDiscountAmt: number;
+  valuationUpgradeSelected: boolean;
+  includedValuation: string;
+  onProceedToPayment: () => void;
+  isProgressive: boolean;
+  currentStep: number;
+}) {
+  const protectionLabel =
+    CONFIRM_VALUATION_LABELS[valuationUpgradeSelected ? (selectedTier === "curated" ? "enhanced" : selectedTier === "signature" ? "full_replacement" : includedValuation) : includedValuation] ??
+    includedValuation;
+  const truckLine = quote.truck_primary
+    ? (TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary)
+    : "Moving truck";
+  const balanceDue = grandTotal - deposit;
+
+  return (
+    <div className="mb-6">
+      <h2 className="font-serif text-[20px] mb-4" style={{ color: FOREST }}>
+        Confirm Your Move
+      </h2>
+      <div
+        className="rounded-2xl border p-5 md:p-6 space-y-5"
+        style={{ borderColor: "#E2DDD5", backgroundColor: "white" }}
+      >
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+            Move Details
+          </p>
+          <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
+            <p><strong>Date:</strong> {fmtDate(quote.move_date)}</p>
+            <p><strong>From:</strong> {quote.from_address}</p>
+            <p><strong>To:</strong> {quote.to_address}</p>
+          </div>
+        </div>
+
+        <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+            Your Package
+          </p>
+          <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
+            <p><strong>Package:</strong> {packageLabel} ✓</p>
+            <p><strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers</p>
+            <p><strong>Truck:</strong> {truckLine}</p>
+            <p><strong>Protection:</strong> {protectionLabel}</p>
+          </div>
+        </div>
+
+        {contractAddonsList.length > 0 && (
+          <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+              Add-ons
+            </p>
+            <ul className="space-y-1 text-[13px]" style={{ color: FOREST }}>
+              {contractAddonsList.map((a, i) => (
+                <li key={i}>
+                  {a.name}: {fmtPrice(a.price * (a.quantity ?? 1))}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[12px] font-semibold mt-2" style={{ color: GOLD }}>
+              Add-ons subtotal: {fmtPrice(addonTotal)}
+            </p>
+          </div>
+        )}
+
+        <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+            Pricing
+          </p>
+          <div className="space-y-1.5 text-[13px]" style={{ color: FOREST }}>
+            <div className="flex justify-between">
+              <span>{packageLabel} package</span>
+              <span>{fmtPrice(basePrice)}</span>
+            </div>
+            {addonTotal > 0 && (
+              <div className="flex justify-between">
+                <span>Add-ons</span>
+                <span>{fmtPrice(addonTotal)}</span>
+              </div>
+            )}
+            {valuationCost > 0 && (
+              <div className="flex justify-between">
+                <span>Protection upgrade</span>
+                <span>{fmtPrice(valuationCost)}</span>
+              </div>
+            )}
+            {referralDiscountAmt > 0 && (
+              <div className="flex justify-between" style={{ color: GOLD }}>
+                <span>Referral discount</span>
+                <span>-{fmtPrice(referralDiscountAmt)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>{fmtPrice(basePrice + addonTotal + valuationCost - referralDiscountAmt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>HST (13%)</span>
+              <span>{fmtPrice(tax)}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t font-bold text-[15px]" style={{ borderColor: `${FOREST}10`, color: WINE }}>
+              <span>Total</span>
+              <span>{fmtPrice(grandTotal)}</span>
+            </div>
+            <div className="flex justify-between pt-2" style={{ color: GOLD }}>
+              <span className="font-bold">Deposit due today</span>
+              <span className="font-bold">{fmtPrice(deposit)}</span>
+            </div>
+            <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+              Balance due on move day: {fmtPrice(balanceDue)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    Valuation Protection Card
    ═══════════════════════════════════════════════════ */
 
@@ -1087,8 +1414,8 @@ const VALUATION_DISPLAY: Record<string, { label: string; shortLabel: string }> =
 };
 
 const UPGRADE_TARGET: Record<string, string | null> = {
-  essentials: "enhanced",
-  premier: "full_replacement",
+  curated: "enhanced",
+  signature: "full_replacement",
   estate: null,
 };
 
@@ -1481,6 +1808,9 @@ function AddOnsSection({
   toggleAddon,
   updateQty,
   updateTierIdx,
+  isProgressive,
+  onContinue,
+  showContinueButton = false,
 }: {
   addons: Addon[];
   allAddons: Addon[];
@@ -1495,6 +1825,9 @@ function AddOnsSection({
   toggleAddon: (addon: Addon) => void;
   updateQty: (id: string, qty: number) => void;
   updateTierIdx: (id: string, idx: number) => void;
+  isProgressive?: boolean;
+  onContinue?: () => void;
+  showContinueButton?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const KEY_COUNT = 3;
@@ -1712,6 +2045,27 @@ function AddOnsSection({
           <p className="text-[11px] text-center pt-1 border-t" style={{ color: GOLD, borderColor: `${GOLD}20` }}>
             {fmtPrice(deposit)} deposit to confirm · Balance due on move day
           </p>
+        </div>
+      )}
+
+      {showContinueButton && onContinue && (
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={onContinue}
+            className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
+            style={{ backgroundColor: GOLD }}
+          >
+            Continue →
+          </button>
+          <button
+            type="button"
+            onClick={onContinue}
+            className="text-[12px] font-medium transition-opacity hover:opacity-70"
+            style={{ color: "#888" }}
+          >
+            Skip — no add-ons needed
+          </button>
         </div>
       )}
     </section>

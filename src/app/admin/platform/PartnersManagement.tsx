@@ -69,6 +69,10 @@ export default function PartnersManagement() {
   const [addName, setAddName] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addLoading, setAddLoading] = useState(false);
+  const [provisionOpen, setProvisionOpen] = useState(false);
+  const [provisionDryRun, setProvisionDryRun] = useState<{ to_provision: number; already_provisioned: number; partners: { id: string; name: string; email: string; contact_name: string | null }[] } | null>(null);
+  const [provisionLoading, setProvisionLoading] = useState(false);
+  const [provisionResults, setProvisionResults] = useState<{ provisioned: number; errors: number; results: { name: string; email: string; status: string; error?: string }[] } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -157,6 +161,47 @@ export default function PartnersManagement() {
     }
   };
 
+  const handleOpenProvision = async () => {
+    setProvisionOpen(true);
+    setProvisionDryRun(null);
+    setProvisionResults(null);
+    setProvisionLoading(true);
+    try {
+      const res = await fetch("/api/admin/partners/provision-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry_run: true }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed");
+      setProvisionDryRun(d);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to preview", "x");
+    } finally {
+      setProvisionLoading(false);
+    }
+  };
+
+  const handleRunProvision = async () => {
+    setProvisionLoading(true);
+    try {
+      const res = await fetch("/api/admin/partners/provision-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry_run: false, send_emails: true }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed");
+      setProvisionResults(d);
+      setProvisionDryRun(null);
+      fetchData();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to provision", "x");
+    } finally {
+      setProvisionLoading(false);
+    }
+  };
+
   const handleResend = async (orgId: string) => {
     try {
       const res = await fetch(`/api/admin/organizations/${orgId}/resend-portal`, { method: "POST" });
@@ -207,12 +252,20 @@ export default function PartnersManagement() {
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Invite partners, manage portal access, revoke credentials</p>
           </div>
-          <button
-            onClick={() => setInviteOpen(true)}
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
-          >
-            + Invite New Partner
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleOpenProvision}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
+            >
+              Provision All Partners
+            </button>
+            <button
+              onClick={() => setInviteOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+            >
+              + Invite New Partner
+            </button>
+          </div>
         </div>
 
         {/* Stats Row */}
@@ -471,6 +524,115 @@ export default function PartnersManagement() {
             </div>
           </form>
         )}
+      </ModalOverlay>
+
+      {/* Provision All Partners Modal */}
+      <ModalOverlay
+        open={provisionOpen}
+        onClose={() => { setProvisionOpen(false); setProvisionDryRun(null); setProvisionResults(null); }}
+        title="Provision Portal Access for All Partners"
+        maxWidth="md"
+      >
+        <div className="p-5 space-y-4">
+          {provisionLoading && (
+            <p className="text-[12px] text-[var(--tx3)] text-center py-4">Scanning partners...</p>
+          )}
+
+          {/* Dry-run preview */}
+          {!provisionLoading && provisionDryRun && !provisionResults && (
+            <>
+              <div className="flex gap-4 p-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+                <div className="text-center flex-1">
+                  <div className="text-[22px] font-bold text-[var(--gold)]">{provisionDryRun.to_provision}</div>
+                  <div className="text-[10px] text-[var(--tx3)] mt-0.5">Need Access</div>
+                </div>
+                <div className="text-center flex-1">
+                  <div className="text-[22px] font-bold text-[var(--grn)]">{provisionDryRun.already_provisioned}</div>
+                  <div className="text-[10px] text-[var(--tx3)] mt-0.5">Already Set Up</div>
+                </div>
+              </div>
+
+              {provisionDryRun.to_provision === 0 ? (
+                <p className="text-[12px] text-[var(--grn)] text-center">All partners already have portal access.</p>
+              ) : (
+                <>
+                  <p className="text-[12px] text-[var(--tx3)]">
+                    The following {provisionDryRun.to_provision} partner{provisionDryRun.to_provision !== 1 ? "s" : ""} will be provisioned. New auth accounts will be created and welcome emails sent. Existing auth users with the same email will simply be linked — no email sent, no password changed.
+                  </p>
+                  <div className="max-h-[220px] overflow-y-auto space-y-1">
+                    {provisionDryRun.partners.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)]">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{p.name}</div>
+                          <div className="text-[10px] text-[var(--tx3)] truncate">{p.contact_name ? `${p.contact_name} · ` : ""}{p.email || "No email"}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setProvisionOpen(false); setProvisionDryRun(null); }}
+                      className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRunProvision}
+                      className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                    >
+                      Provision {provisionDryRun.to_provision} Partner{provisionDryRun.to_provision !== 1 ? "s" : ""}
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Results */}
+          {!provisionLoading && provisionResults && (
+            <>
+              <div className="flex gap-4 p-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+                <div className="text-center flex-1">
+                  <div className="text-[22px] font-bold text-[var(--grn)]">{provisionResults.provisioned}</div>
+                  <div className="text-[10px] text-[var(--tx3)] mt-0.5">Provisioned</div>
+                </div>
+                {provisionResults.errors > 0 && (
+                  <div className="text-center flex-1">
+                    <div className="text-[22px] font-bold text-[var(--red)]">{provisionResults.errors}</div>
+                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">Errors</div>
+                  </div>
+                )}
+              </div>
+              <div className="max-h-[220px] overflow-y-auto space-y-1">
+                {provisionResults.results.map((r, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${r.status === "error" ? "border-[var(--red)]/40 bg-[var(--rdim)]" : "border-[var(--brd)] bg-[var(--card)]"}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
+                      <div className="text-[10px] text-[var(--tx3)] truncate">{r.email}</div>
+                      {r.error && <div className="text-[10px] text-[var(--red)] truncate">{r.error}</div>}
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      r.status === "error" ? "bg-[var(--rdim)] text-[var(--red)]"
+                      : r.status === "linked_existing" ? "bg-[rgba(74,124,229,0.12)] text-[#4A7CE5]"
+                      : "bg-[rgba(45,159,90,0.12)] text-[var(--grn)]"
+                    }`}>
+                      {r.status === "error" ? "Error" : r.status === "linked_existing" ? "Linked" : "Invited"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setProvisionOpen(false); setProvisionResults(null); }}
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+              >
+                Done
+              </button>
+            </>
+          )}
+        </div>
       </ModalOverlay>
 
       {/* Add Portal User Modal */}

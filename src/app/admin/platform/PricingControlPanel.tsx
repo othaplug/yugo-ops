@@ -292,8 +292,9 @@ function TierMultipliersSection() {
   if (loading) return <Skeleton />;
 
   const getVal = (key: string) => rows.find((r) => r.key === key);
-  const essM = Number(getVal("tier_essentials_multiplier")?.value) || 1;
-  const premM = Number(getVal("tier_premier_multiplier")?.value) || 1.35;
+  // Support both old and new config keys after migration
+  const curM = Number(getVal("tier_curated_multiplier")?.value ?? getVal("tier_essentials_multiplier")?.value) || 1;
+  const sigM = Number(getVal("tier_signature_multiplier")?.value ?? getVal("tier_premier_multiplier")?.value) || 1.35;
   const estM = Number(getVal("tier_estate_multiplier")?.value) || 1.85;
   const minJob = Number(getVal("minimum_job_amount")?.value) || 549;
   const rounding = Number(getVal("rounding_nearest")?.value) || 50;
@@ -303,8 +304,18 @@ function TierMultipliersSection() {
   const preview = (m: number) => Math.round((previewBase * m) / rounding) * rounding;
 
   const tiers = [
-    { key: "tier_essentials_multiplier", label: "Essentials", desc: "Base rate — standard service", m: essM },
-    { key: "tier_premier_multiplier", label: "Premier", desc: "Full wrapping, mattress covers, etc.", m: premM },
+    {
+      key: getVal("tier_curated_multiplier") ? "tier_curated_multiplier" : "tier_essentials_multiplier",
+      label: "Curated",
+      desc: "Base rate — reliable move",
+      m: curM,
+    },
+    {
+      key: getVal("tier_signature_multiplier") ? "tier_signature_multiplier" : "tier_premier_multiplier",
+      label: "Signature",
+      desc: "Full wrapping, mattress covers, enhanced coverage",
+      m: sigM,
+    },
     { key: "tier_estate_multiplier", label: "Estate", desc: "Full packing, white glove, coordinator", m: estM },
   ];
 
@@ -329,8 +340,8 @@ function TierMultipliersSection() {
 
       <div className="bg-[var(--bg)] rounded-lg px-4 py-3 text-[11px] text-[var(--tx3)]">
         <span className="font-semibold text-[var(--tx)]">Live preview</span> (base ${previewBase.toLocaleString()}):
-        <span className="ml-2">Essentials = <b className="text-[var(--gold)]">{currency(preview(essM))}</b></span>
-        <span className="ml-2">→ Premier = <b className="text-[var(--gold)]">{currency(preview(premM))}</b></span>
+        <span className="ml-2">Curated = <b className="text-[var(--gold)]">{currency(preview(curM))}</b></span>
+        <span className="ml-2">→ Signature = <b className="text-[var(--gold)]">{currency(preview(sigM))}</b></span>
         <span className="ml-2">→ Estate = <b className="text-[var(--gold)]">{currency(preview(estM))}</b></span>
       </div>
 
@@ -614,14 +625,53 @@ const BRACKETS = ["under_500", "500_999", "1000_2999", "3000_4999", "5000_plus"]
 const BRACKET_LABELS: Record<string, string> = { under_500: "<$500", "500_999": "$500–999", "1000_2999": "$1K–2.9K", "3000_4999": "$3K–4.9K", "5000_plus": "$5K+" };
 const SERVICE_TYPES = ["residential", "long_distance", "office", "single_item", "white_glove", "specialty"];
 
+const DEPOSIT_TIER_KEYS = [
+  { tier: "Curated", pctKey: "deposit_curated_pct", minKey: "deposit_curated_min", pctDefault: 10, minDefault: 150 },
+  { tier: "Signature", pctKey: "deposit_signature_pct", minKey: "deposit_signature_min", pctDefault: 15, minDefault: 250 },
+  { tier: "Estate", pctKey: "deposit_estate_pct", minKey: "deposit_estate_min", pctDefault: 25, minDefault: 500 },
+] as const;
+
 function DepositRulesSection() {
   const { rows, loading, save, undo, updateRow } = useSection("deposit-rules");
-  if (loading) return <Skeleton />;
-
+  const configSection = useSection("config");
   const getCell = (service: string, bracket: string) => rows.find((r) => r.service_type === service && r.amount_bracket === bracket);
+  const getConfig = (key: string) => configSection.rows.find((r: Row & { key?: string }) => r.key === key);
+
+  if (loading || configSection.loading) return <Skeleton />;
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 space-y-4">
+      <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 px-4 py-3">
+        <p className="font-semibold text-[var(--gold)] mb-2 text-[12px]">Residential (local) — tier-based deposits</p>
+        <p className="text-[11px] text-[var(--tx3)] mb-3">These values are used for quotes and payments. Editable below.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {DEPOSIT_TIER_KEYS.map(({ tier, pctKey, minKey, pctDefault, minDefault }) => {
+            const pctRow = getConfig(pctKey);
+            const minRow = getConfig(minKey);
+            return (
+              <div key={tier} className="flex flex-wrap items-center gap-2 rounded-lg bg-[var(--bg)]/80 px-3 py-2 border border-[var(--brd)]/50">
+                <span className="text-[11px] font-semibold text-[var(--tx2)] w-20">{tier}</span>
+                <div className="flex items-center gap-1">
+                  <EditCell
+                    value={pctRow ? Number(pctRow.value) : pctDefault}
+                    onChange={(v) => pctRow && configSection.updateRow(String(pctRow.id), "value", String(v))}
+                    type="number"
+                    className="w-10 font-semibold text-[var(--gold)] text-[11px]"
+                  />
+                  <span className="text-[10px] text-[var(--tx3)]">%</span>
+                </div>
+                <span className="text-[10px] text-[var(--tx3)]">min $</span>
+                <EditCell
+                  value={minRow ? Number(minRow.value) : minDefault}
+                  onChange={(v) => minRow && configSection.updateRow(String(minRow.id), "value", String(v))}
+                  type="number"
+                  className="w-14 font-semibold text-[var(--gold)] text-[11px]"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
       <div className="overflow-x-auto">
         <table className={tbl}>
           <thead>
@@ -634,34 +684,49 @@ function DepositRulesSection() {
             {SERVICE_TYPES.map((st) => (
               <tr key={st}>
                 <td className={`${td} font-medium capitalize`}>{st.replace(/_/g, " ")}</td>
-                {BRACKETS.map((b) => {
-                  const cell = getCell(st, b);
-                  if (!cell) return <td key={b} className={td}>—</td>;
-                  return (
-                    <td key={b} className={td}>
-                      <div className="flex items-center gap-1">
-                        <select
-                          value={String(cell.deposit_type)}
-                          onChange={(e) => updateRow(String(cell.id), "deposit_type", e.target.value)}
-                          className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
-                        >
-                          <option value="full">Full</option>
-                          <option value="flat">Flat $</option>
-                          <option value="percent">%</option>
-                        </select>
-                        {cell.deposit_type !== "full" && (
-                          <EditCell value={Number(cell.deposit_value)} onChange={(v) => updateRow(String(cell.id), "deposit_value", Number(v))} type="number" className="w-12 font-semibold text-[var(--gold)]" />
-                        )}
-                      </div>
-                    </td>
-                  );
-                })}
+                {st === "residential" ? (
+                  <td colSpan={BRACKETS.length} className={`${td} bg-[var(--gold)]/5 text-[11px] text-[var(--tx3)]`}>
+                    Tier-based (Curated / Signature / Estate) — defined above.
+                  </td>
+                ) : (
+                  BRACKETS.map((b) => {
+                    const cell = getCell(st, b);
+                    if (!cell) return <td key={b} className={td}>—</td>;
+                    return (
+                      <td key={b} className={td}>
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={String(cell.deposit_type)}
+                            onChange={(e) => updateRow(String(cell.id), "deposit_type", e.target.value)}
+                            className="bg-transparent text-[10px] text-[var(--tx3)] outline-none border-none cursor-pointer"
+                          >
+                            <option value="full">Full</option>
+                            <option value="flat">Flat $</option>
+                            <option value="percent">%</option>
+                          </select>
+                          {cell.deposit_type !== "full" && (
+                            <EditCell value={Number(cell.deposit_value)} onChange={(v) => updateRow(String(cell.id), "deposit_value", Number(v))} type="number" className="w-12 font-semibold text-[var(--gold)]" />
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar
+        onSave={async () => {
+          await save();
+          await configSection.save();
+        }}
+        onUndo={() => {
+          undo();
+          configSection.undo();
+        }}
+      />
     </div>
   );
 }
@@ -712,7 +777,7 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 };
 
 const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS);
-const TIER_OPTIONS = ["essentials", "premier", "estate"];
+const TIER_OPTIONS = ["curated", "signature", "estate"];
 
 const FILTER_TABS = [
   { key: "", label: "All" },
@@ -1600,7 +1665,7 @@ function FleetVehiclesSection() {
 /* ────────── S12: PACKAGE & TIER FEATURES ────────── */
 
 const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
-  { key: "local_move",    label: "Residential (Local)",  tiers: ["essentials", "premier", "estate"] },
+  { key: "local_move",    label: "Residential (Local)",  tiers: ["curated", "signature", "estate"] },
   { key: "long_distance", label: "Long Distance",        tiers: ["custom"] },
   { key: "office_move",   label: "Office / Commercial",  tiers: ["custom"] },
   { key: "single_item",   label: "Single Item Delivery", tiers: ["custom"] },
@@ -1610,17 +1675,23 @@ const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
 ];
 
 const TIER_LABEL: Record<string, string> = {
-  essentials: "Essentials",
-  premier: "Premier",
+  curated: "Curated",
+  signature: "Signature",
   estate: "Estate",
   custom: "Package",
+  // legacy keys
+  essentials: "Curated",
+  premier: "Signature",
 };
 
 const TIER_COLOR: Record<string, string> = {
-  essentials: "text-[var(--tx3)] border-[var(--brd)]",
-  premier: "text-blue-400 border-blue-400/30",
+  curated: "text-[var(--tx3)] border-[var(--brd)]",
+  signature: "text-blue-400 border-blue-400/30",
   estate: "text-[var(--gold)] border-[var(--gold)]/30",
   custom: "text-[var(--tx2)] border-[var(--brd)]",
+  // legacy keys
+  essentials: "text-[var(--tx3)] border-[var(--brd)]",
+  premier: "text-blue-400 border-blue-400/30",
 };
 
 function TierFeaturesSection() {
@@ -1837,7 +1908,7 @@ export default function PricingControlPanel() {
         <BaseRatesSection />
       </Accordion>
 
-      <Accordion title="Tier Multipliers" subtitle="Essentials, Premier, Estate pricing tiers">
+      <Accordion title="Tier Multipliers" subtitle="Curated, Signature, Estate pricing tiers">
         <TierMultipliersSection />
       </Accordion>
 
@@ -1861,7 +1932,7 @@ export default function PricingControlPanel() {
         <SingleItemSection />
       </Accordion>
 
-      <Accordion title="Deposit Rules" subtitle="Service type × amount bracket matrix">
+      <Accordion title="Deposit Rules" subtitle="Residential = tier-based (Curated/Signature/Estate). Other types = matrix below">
         <DepositRulesSection />
       </Accordion>
 

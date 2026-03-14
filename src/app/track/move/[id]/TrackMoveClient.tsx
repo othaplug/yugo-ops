@@ -21,7 +21,8 @@ import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
-import TipScreen from "@/components/tracking/TipScreen";
+import TipSection from "@/components/tracking/TipSection";
+import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
@@ -92,6 +93,9 @@ export default function TrackMoveClient({
   changeRequestFeesCents = 0,
   extraItemFeesCents = 0,
   tippingEnabled = true,
+  showTipPrompt = false,
+  tipData = null,
+  crewSize = 2,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -103,6 +107,9 @@ export default function TrackMoveClient({
   changeRequestFeesCents?: number;
   extraItemFeesCents?: number;
   tippingEnabled?: boolean;
+  showTipPrompt?: boolean;
+  tipData?: { amount: number } | null;
+  crewSize?: number;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
@@ -184,59 +191,20 @@ export default function TrackMoveClient({
   }, [fromNotify]);
 
   const [paymentRecorded, setPaymentRecorded] = useState(false);
-  const [tipModalOpen, setTipModalOpen] = useState(false);
-  const [tipPreset, setTipPreset] = useState<number | null>(20);
-  const [tipCustomDollars, setTipCustomDollars] = useState("");
-  const [tipSubmitting, setTipSubmitting] = useState(false);
 
-  // Full-screen tip system (auto-show on completion)
-  const [showTipScreen, setShowTipScreen] = useState(false);
-  const [showTipBanner, setShowTipBanner] = useState(false);
-
-  // Determine if tip screen should show (respects tipping_enabled toggle)
-  useEffect(() => {
-    if (!tippingEnabled) return;
+  // 3-state tip logic: first_visit | tipped | can_tip_later | not_applicable
+  type TipState = "first_visit" | "tipped" | "can_tip_later" | "not_applicable";
+  const initialTipState = (() => {
+    if (!tippingEnabled) return "not_applicable" as TipState;
     const isComplete = move.status === "completed" || move.status === "delivered";
-    const alreadyTipped = !!move.tip_charged_at;
-    const alreadySkipped = !!move.tip_skipped_at;
-    const hasCard = !!move.square_card_id;
-    const tipPromptShown = !!move.tip_prompt_shown_at;
-
-    if (!isComplete || alreadyTipped || !hasCard) return;
-
-    if (alreadySkipped) {
-      const skipDate = new Date(move.tip_skipped_at).getTime();
-      const daysSinceSkip = (Date.now() - skipDate) / (1000 * 60 * 60 * 24);
-      if (daysSinceSkip <= 7) setShowTipBanner(true);
-      return;
-    }
-
-    if (!tipPromptShown) {
-      setShowTipScreen(true);
-      fetch(`/api/tips/skip`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moveId: move.id, token, action: "prompt_shown" }),
-      }).catch((err) => { console.error("Failed to record tip prompt shown:", err); });
-    }
-  }, [tippingEnabled, move.status, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id, move.id, token]);
-
-  // Also trigger tip screen when liveStage TRANSITIONS to completed (not on initial load)
-  const prevLiveStage = useRef<string | null>(null);
-  useEffect(() => {
-    const prev = prevLiveStage.current;
-    prevLiveStage.current = liveStage;
-    if (!tippingEnabled) return;
-    // Only fire when the stage actually changes TO "completed", not on mount
-    if (liveStage !== "completed" || prev === liveStage || prev === null) return;
-    const alreadyTipped = !!move.tip_charged_at;
-    const alreadySkipped = !!move.tip_skipped_at;
-    const tipPromptShown = !!move.tip_prompt_shown_at;
-    const hasCard = !!move.square_card_id;
-    if (!alreadyTipped && !alreadySkipped && !tipPromptShown && hasCard) {
-      setTimeout(() => setShowTipScreen(true), 2000);
-    }
-  }, [tippingEnabled, liveStage, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id]);
+    if (!isComplete || !move.square_card_id) return "not_applicable" as TipState;
+    if (tipData) return "tipped" as TipState;
+    if (showTipPrompt) return "first_visit" as TipState;
+    return "can_tip_later" as TipState;
+  })();
+  const [tipState, setTipState] = useState<TipState>(initialTipState);
+  const [tipExpanded, setTipExpanded] = useState(false);
+  const [confirmedTipAmount, setConfirmedTipAmount] = useState<number>(tipData?.amount ?? 0);
 
   // Record payment and add receipt to documents when landing from Square redirect
   useEffect(() => {
@@ -260,41 +228,6 @@ export default function TrackMoveClient({
     const url = new URL(window.location.href);
     url.searchParams.delete("payment");
     router.replace(url.pathname + url.search);
-  };
-
-  const tipAmountCents = (() => {
-    if (tipPreset != null) return tipPreset * 100;
-    const custom = parseFloat(tipCustomDollars);
-    if (Number.isFinite(custom) && custom >= 1) return Math.round(custom * 100);
-    return 0;
-  })();
-
-  const handleTipSubmit = async () => {
-    if (tipAmountCents < 100) return;
-    setTipSubmitting(true);
-    try {
-      const res = await fetch(
-        `/api/track/moves/${move.id}/tip?token=${encodeURIComponent(token)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amountCents: tipAmountCents }),
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast((data as { error?: string }).error || "Could not process tip. Please try again.", "x");
-        return;
-      }
-      toast("Thank you! Your tip has been charged to your card on file.", "check");
-      setTipModalOpen(false);
-      setTipPreset(20);
-      setTipCustomDollars("");
-    } catch {
-      toast("Something went wrong. Please try again.", "x");
-    } finally {
-      setTipSubmitting(false);
-    }
   };
 
   // Poll crew-status (including liveStage, scheduled_date, status) so client stays in sync when admin updates
@@ -482,23 +415,6 @@ export default function TrackMoveClient({
 
   const moveTotal = Number(move.amount || move.estimate || 0);
 
-  if (tippingEnabled && showTipScreen) {
-    return (
-      <TipScreen
-        moveId={move.id}
-        token={token}
-        clientName={move.client_name || ""}
-        crewName={crew?.name || "Your Crew"}
-        crewMembers={Array.isArray(move.assigned_members) ? move.assigned_members : crew?.members}
-        moveTotal={moveTotal}
-        hoursWorked={move.estimated_hours ? Number(move.estimated_hours) : undefined}
-        cardLast4={move.card_last4 || null}
-        onComplete={() => { setShowTipScreen(false); router.refresh(); }}
-        onSkip={() => { setShowTipScreen(false); }}
-      />
-    );
-  }
-
   if (linkExpired) {
     return (
       <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: CREAM, color: FOREST }}>
@@ -614,17 +530,6 @@ export default function TrackMoveClient({
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Leave a Review
                 </a>
-                {tippingEnabled && !move.tip_charged_at && (
-                  <button
-                    type="button"
-                    onClick={() => setShowTipScreen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-4 transition-all hover:opacity-90 active:scale-95 tracking-wide"
-                    style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}35` }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Tip Crew
-                  </button>
-                )}
               </div>
             </div>
           ) : daysUntil === 0 ? (
@@ -696,25 +601,54 @@ export default function TrackMoveClient({
         {isCompleted && (
           <div className="space-y-5 mt-1">
 
-            {/* Tip your crew banner */}
-            {tippingEnabled && !move.tip_charged_at && (
-              <button
-                type="button"
-                onClick={() => setShowTipScreen(true)}
-                className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border transition-all hover:opacity-80 active:scale-[0.99]"
-                style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}08` }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Tip your crew</div>
-                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>100% goes directly to your movers</div>
-                  </div>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
+            {/* Tip section — 3-state inline */}
+            {tipState === "first_visit" && (
+              <TipSection
+                crewSize={crewSize}
+                moveId={move.id}
+                token={token}
+                onTipped={(amount) => {
+                  setConfirmedTipAmount(amount);
+                  setTipState("tipped");
+                }}
+                onSkipped={() => setTipState("can_tip_later")}
+              />
+            )}
+
+            {tipState === "tipped" && (
+              <TipConfirmation amount={confirmedTipAmount} />
+            )}
+
+            {tipState === "can_tip_later" && (
+              <div className="text-center py-3">
+                {!tipExpanded ? (
+                  <>
+                    <p className="text-[13px] mb-1" style={{ color: FOREST, opacity: 0.55 }}>
+                      Want to tip your crew?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setTipExpanded(true)}
+                      className="text-[13px] font-medium underline underline-offset-2 transition-opacity hover:opacity-80"
+                      style={{ color: GOLD, background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Leave a Tip
+                    </button>
+                  </>
+                ) : (
+                  <TipSection
+                    crewSize={crewSize}
+                    moveId={move.id}
+                    token={token}
+                    onTipped={(amount) => {
+                      setConfirmedTipAmount(amount);
+                      setTipState("tipped");
+                      setTipExpanded(false);
+                    }}
+                    onSkipped={() => setTipExpanded(false)}
+                  />
+                )}
+              </div>
             )}
 
             {/* ── Compact move summary bar (collapsible) ── */}
@@ -1403,97 +1337,6 @@ export default function TrackMoveClient({
           <Link href="/terms" className="hover:underline" style={{ color: FOREST }}>Terms</Link>
         </p>
       </footer>
-
-      {/* Tip Modal */}
-      {tipModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md bg-white/30 p-4" onClick={() => !tipSubmitting && setTipModalOpen(false)}>
-          <div
-            className="w-full max-w-sm rounded-2xl border-2 shadow-xl bg-white overflow-hidden"
-            style={{ borderColor: `${FOREST}20` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 sm:p-8" style={{ backgroundColor: CREAM }}>
-              <h3 className="font-hero text-[22px] font-semibold text-center" style={{ color: WINE }}>
-                Leave a Tip
-              </h3>
-              <p className="mt-2 text-center text-[12px] opacity-90" style={{ color: FOREST }}>
-                Thank your crew. This will be charged to the card on your file.
-              </p>
-              <div className="mt-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-3 opacity-80" style={{ color: FOREST }}>
-                  Amount
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[20, 50, 100].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => { setTipPreset(d); setTipCustomDollars(""); }}
-                      className="rounded-xl border-2 px-4 py-2.5 text-[14px] font-semibold transition-all"
-                      style={{
-                        borderColor: tipPreset === d ? GOLD : `${FOREST}30`,
-                        color: tipPreset === d ? WINE : FOREST,
-                        backgroundColor: tipPreset === d ? `${GOLD}25` : "transparent",
-                      }}
-                    >
-                      ${d}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => { setTipPreset(null); setTipCustomDollars(""); }}
-                    className="rounded-xl border-2 px-4 py-2.5 text-[14px] font-semibold transition-all"
-                    style={{
-                      borderColor: tipPreset === null ? GOLD : `${FOREST}30`,
-                      color: tipPreset === null ? WINE : FOREST,
-                      backgroundColor: tipPreset === null ? `${GOLD}25` : "transparent",
-                    }}
-                  >
-                    Custom
-                  </button>
-                </div>
-                {tipPreset === null && (
-                  <div className="mt-3">
-                    <label className="sr-only">Custom amount ($)</label>
-                    <div className="flex items-center rounded-xl border-2 px-4 py-2.5" style={{ borderColor: `${FOREST}30` }}>
-                      <span className="text-[14px] font-semibold mr-2" style={{ color: FOREST }}>$</span>
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        placeholder="Enter amount"
-                        value={tipCustomDollars}
-                        onChange={(e) => setTipCustomDollars(e.target.value.replace(/[^0-9.]/g, ""))}
-                        className="flex-1 bg-transparent text-[14px] font-semibold outline-none min-w-0"
-                        style={{ color: FOREST }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => !tipSubmitting && setTipModalOpen(false)}
-                  className="flex-1 rounded-xl border-2 py-3 text-[13px] font-semibold transition-colors"
-                  style={{ borderColor: `${FOREST}30`, color: FOREST }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTipSubmit}
-                  disabled={tipSubmitting || tipAmountCents < 100}
-                  className="flex-1 rounded-xl py-3 text-[13px] font-bold transition-colors disabled:opacity-50 hover:opacity-90"
-                  style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
-                >
-                  {tipSubmitting ? "Processing…" : `Pay ${formatCurrency(tipAmountCents / 100)}`}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Change Request Modal */}
       {changeModalOpen && (

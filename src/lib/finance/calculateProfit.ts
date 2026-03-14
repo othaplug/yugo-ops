@@ -35,11 +35,11 @@ export function calculateMoveProfitability(
   config: Record<string, string>,
   monthlyMoveCount: number,
 ): MoveCosts {
-  const hours = move.actual_hours ?? move.est_hours ?? 4;
-  const crewSize = move.actual_crew_count ?? move.est_crew_size ?? (move.crew_count as number | null) ?? 2;
+  const hours = Number(move.actual_hours ?? move.est_hours ?? 4) || 4;
+  const crewSize = Number(move.actual_crew_count ?? move.est_crew_size ?? move.crew_count ?? 2) || 2;
   const labour = crewSize * hours * cfg(config, "crew_hourly_cost", 25);
 
-  const distanceKm = move.distance_km ?? 5;
+  const distanceKm = Number(move.distance_km ?? 5) || 5;
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
 
   const truckType = move.truck_primary ?? "sprinter";
@@ -55,7 +55,7 @@ export function calculateMoveProfitability(
   else if (svc === "single_item") suppliesKey = "supplies_cost_single_item";
   const supplies = cfg(config, suppliesKey, 30);
 
-  const revenue = move.final_amount ?? move.estimate ?? 0;
+  const revenue = Number(move.final_amount ?? move.estimate ?? 0) || 0;
   const processing =
     revenue * cfg(config, "payment_processing_pct", 0.029) +
     cfg(config, "payment_processing_flat", 0.3);

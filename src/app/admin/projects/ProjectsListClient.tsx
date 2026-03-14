@@ -188,7 +188,6 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         exportable
         exportFilename="yugo-projects"
         columnToggle
-        selectable
         onRowClick={(p) => router.push(`/admin/projects/${p.id}`)}
         emptyMessage={projects.length === 0 ? "No projects yet. Create your first project to get started." : "No projects match your filters."}
       />

@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       clientName: m.client_name || "—",
       fromAddress: m.from_address || "—",
       toAddress: m.to_address || "—",
-      jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Premier Residential",
+      jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Residential",
       scheduledTime: time,
       status: m.status || "scheduled",
       completedAt: null,

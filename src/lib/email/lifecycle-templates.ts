@@ -275,14 +275,17 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
 
 export interface ReviewRequestTierData {
   clientName: string;
-  tier: "essentials" | "premier" | "estate" | string;
+  tier: "curated" | "signature" | "estate" | string;
   reviewUrl: string;
   referralUrl?: string | null;
   trackingUrl: string;
   coordinatorName?: string | null;
 }
 
-export function reviewRequestEssentialsEmail(d: ReviewRequestTierData): string {
+/** @deprecated Use reviewRequestCuratedEmail */
+export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string => reviewRequestCuratedEmail(d);
+
+export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
@@ -301,7 +304,10 @@ export function reviewRequestEssentialsEmail(d: ReviewRequestTierData): string {
   `);
 }
 
-export function reviewRequestPremierEmail(d: ReviewRequestTierData): string {
+/** @deprecated Use reviewRequestSignatureEmail */
+export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => reviewRequestSignatureEmail(d);
+
+export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>

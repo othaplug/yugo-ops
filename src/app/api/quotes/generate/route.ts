@@ -56,7 +56,7 @@ interface QuoteInput {
   // B2B
   delivery_type?: string;
   // Recommended tier (coordinator's manual selection)
-  recommended_tier?: "essentials" | "premier" | "estate";
+  recommended_tier?: "curated" | "signature" | "estate";
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -475,12 +475,12 @@ async function residentialIncludes(
   minCrew: number,
   estHours: number,
   moveSize?: string,
-): Promise<{ essentials: string[]; premier: string[]; estate: string[] }> {
+): Promise<{ curated: string[]; signature: string[]; estate: string[] }> {
   const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
 
-  const [dbEss, dbPrem, dbEst] = await Promise.all([
-    fetchTierFeatures(sb, "local_move", "essentials"),
-    fetchTierFeatures(sb, "local_move", "premier"),
+  const [dbCur, dbSig, dbEst] = await Promise.all([
+    fetchTierFeatures(sb, "local_move", "curated"),
+    fetchTierFeatures(sb, "local_move", "signature"),
     fetchTierFeatures(sb, "local_move", "estate"),
   ]);
 
@@ -493,39 +493,49 @@ async function residentialIncludes(
       return f;
     });
 
-  if (dbEss.length > 0) {
+  if (dbCur.length > 0) {
     return {
-      essentials: hydrate(dbEss),
-      premier: hydrate(dbPrem.length > 0 ? dbPrem : dbEss),
-      estate: hydrate(dbEst.length > 0 ? dbEst : dbPrem.length > 0 ? dbPrem : dbEss),
+      curated: hydrate(dbCur),
+      signature: hydrate(dbSig.length > 0 ? dbSig : dbCur),
+      estate: hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbCur),
     };
   }
 
   // Hardcoded fallback
-  const essentials = [
+  const curated = [
     truckLabel,
     `${minCrew} professional movers`,
-    `${estHours}-hour window`,
-    "Moving blankets",
-    "Basic disassembly & reassembly",
-    "Floor runners",
+    "Moving blankets & padding",
+    "Furniture disassembly & reassembly",
+    "Floor & door frame protection",
+    "Standard valuation coverage",
   ];
-  const premier = [
-    ...essentials,
-    "Full furniture wrapping",
-    "Mattress covers",
-    "TV screen protection",
-    "Premium furniture pads",
-    "Dolly service",
+  const signature = [
+    truckLabel,
+    `${minCrew} professional movers`,
+    "Moving blankets & full furniture wrapping",
+    "Furniture disassembly & reassembly",
+    "Floor & door frame protection",
+    "Mattress covers & TV screen protection",
+    "Dolly & equipment included",
+    "Enhanced valuation coverage",
   ];
   const estate = [
-    ...premier,
-    "Full packing & unpacking",
+    truckLabel,
+    `${minCrew} professional movers`,
+    "Moving blankets & full furniture wrapping",
+    "Furniture disassembly & reassembly",
+    "Floor & door frame protection",
+    "Mattress covers & TV screen protection",
+    "Dolly & equipment included",
+    "Full packing & unpacking service",
     "Custom crating for fragile items",
-    "Premium gloves handling",
+    "White glove item handling",
     "Dedicated move coordinator",
+    "Pre-move walkthrough",
+    "Full replacement valuation coverage",
   ];
-  return { essentials, premier, estate };
+  return { curated, signature, estate };
 }
 
 // ═══════════════════════════════════════════════
@@ -790,51 +800,61 @@ async function calcResidential(
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
-  const essentialsMult = cfgNum(config, "tier_essentials_multiplier", 1.0);
-  const premierMult = cfgNum(config, "tier_premier_multiplier", 1.35);
+  // Support both old and new config key names during transition
+  const curatedMult = cfgNum(config, "tier_curated_multiplier",
+    cfgNum(config, "tier_essentials_multiplier", 1.0));
+  const signatureMult = cfgNum(config, "tier_signature_multiplier",
+    cfgNum(config, "tier_premier_multiplier", 1.35));
   const estateMult = cfgNum(config, "tier_estate_multiplier", 1.85);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
-  let essBase = roundTo(subtotal * essentialsMult, rounding);
-  let premBase = roundTo(subtotal * premierMult, rounding);
+  let curBase = roundTo(subtotal * curatedMult, rounding);
+  let sigBase = roundTo(subtotal * signatureMult, rounding);
   let estBase = roundTo(subtotal * estateMult, rounding);
 
-  if (essBase < minJob) essBase = minJob;
-  if (premBase < essBase) premBase = essBase;
-  if (estBase < premBase) estBase = premBase;
+  if (curBase < minJob) curBase = minJob;
+  if (sigBase < curBase) sigBase = curBase;
+  if (estBase < sigBase) estBase = sigBase;
 
-  const addonForEss = addonResult.total - (addonResult.byTierExclusion.get("essentials") ?? 0);
-  const addonForPrem = addonResult.total - (addonResult.byTierExclusion.get("premier") ?? 0);
+  const addonForCur = addonResult.total - (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0));
+  const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
   const addonForEst = addonResult.total - (addonResult.byTierExclusion.get("estate") ?? 0);
 
-  const essPrice = essBase + addonForEss;
-  const premPrice = premBase + addonForPrem;
+  const curPrice = curBase + addonForCur;
+  const sigPrice = sigBase + addonForSig;
   const estPrice = estBase + addonForEst;
 
-  const essTax = Math.round(essPrice * taxRate);
-  const premTax = Math.round(premPrice * taxRate);
+  const curTax = Math.round(curPrice * taxRate);
+  const sigTax = Math.round(sigPrice * taxRate);
   const estTax = Math.round(estPrice * taxRate);
 
-  const essDep = await calculateDeposit(sb, "residential", essPrice);
-  const premDep = await calculateDeposit(sb, "residential", premPrice);
-  const estDep = await calculateDeposit(sb, "residential", estPrice);
+  // Tiered deposits from platform_config (Residential tier-based rules)
+  const curPct = cfgNum(config, "deposit_curated_pct", 10);
+  const curMin = cfgNum(config, "deposit_curated_min", 150);
+  const sigPct = cfgNum(config, "deposit_signature_pct", 15);
+  const sigMin = cfgNum(config, "deposit_signature_min", 250);
+  const estPct = cfgNum(config, "deposit_estate_pct", 25);
+  const estMin = cfgNum(config, "deposit_estate_min", 500);
+  const curDep = Math.max(curMin, Math.round(curPrice * curPct / 100));
+  const sigDep = Math.max(sigMin, Math.round(sigPrice * sigPct / 100));
+  const estDep = Math.max(estMin, Math.round(estPrice * estPct / 100));
 
   const inc = await residentialIncludes(sb, minCrew, estHours, input.move_size);
 
   const tiers = {
-    essentials: {
-      price: essPrice,
-      deposit: essDep,
-      tax: essTax,
-      total: essPrice + essTax,
-      includes: inc.essentials,
+    curated: {
+      price: curPrice,
+      deposit: curDep,
+      tax: curTax,
+      total: curPrice + curTax,
+      includes: inc.curated,
     } as TierResult,
-    premier: {
-      price: premPrice,
-      deposit: premDep,
-      tax: premTax,
-      total: premPrice + premTax,
-      includes: inc.premier,
+    signature: {
+      price: sigPrice,
+      deposit: sigDep,
+      tax: sigTax,
+      total: sigPrice + sigTax,
+      includes: inc.signature,
     } as TierResult,
     estate: {
       price: estPrice,
@@ -1488,18 +1508,18 @@ export async function POST(req: NextRequest) {
 
   // ── Valuation upgrades lookup ──
   const INCLUDED_VALUATION: Record<string, string> = {
-    essentials: "released",
-    premier: "enhanced",
+    curated: "released",
+    signature: "enhanced",
     estate: "full_replacement",
   };
   const UPGRADE_PATHS: Record<string, string | null> = {
-    essentials: "enhanced",
-    premier: "full_replacement",
+    curated: "enhanced",
+    signature: "full_replacement",
     estate: null,
   };
   const moveSize = input.move_size ?? "2br";
   const valuationUpgrades: Record<string, { price: number; to_tier: string; assumed_shipment_value: number } | null> = {};
-  for (const pkg of ["essentials", "premier", "estate"]) {
+  for (const pkg of ["curated", "signature", "estate"]) {
     const target = UPGRADE_PATHS[pkg];
     if (!target) { valuationUpgrades[pkg] = null; continue; }
     const { data: vu } = await sb
@@ -1530,8 +1550,8 @@ export async function POST(req: NextRequest) {
     quoteId = await generateQuoteId(sb);
   }
 
-  const primaryPrice = tiers ? tiers.essentials.price : custom_price!.price;
-  const depositAmount = tiers ? tiers.essentials.deposit : custom_price!.deposit;
+  const primaryPrice = tiers ? tiers.curated.price : custom_price!.price;
+  const depositAmount = tiers ? tiers.curated.deposit : custom_price!.deposit;
 
   // Resolve contact: use provided contact_id, or look up / create from client info
   let contactId = input.contact_id || null;
@@ -1590,7 +1610,7 @@ export async function POST(req: NextRequest) {
       est_truck_size: labour?.truckSize ?? null,
       truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
-      recommended_tier: input.recommended_tier || "premier",
+      recommended_tier: input.recommended_tier || "signature",
     };
 
     if (isUpdate) {

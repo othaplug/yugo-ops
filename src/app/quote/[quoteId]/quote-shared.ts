@@ -104,30 +104,30 @@ export interface HighValueDeclaration {
 
 /* ─── Constants ──────────────────────────────── */
 
-export const TIER_ORDER = ["essentials", "premier", "estate"] as const;
+export const TIER_ORDER = ["curated", "signature", "estate"] as const;
 
 export const TIER_META: Record<
   string,
   { label: string; tagline: string; badge?: string; accent: string; bg: string; border: string }
 > = {
-  essentials: {
-    label: "Essentials",
-    tagline: "Everything you need for a smooth move",
+  curated: {
+    label: "Curated",
+    tagline: "Everything you need for a reliable move",
     accent: FOREST,
     bg: "#FFFFFF",
     border: "#E2DDD5",
   },
-  premier: {
-    label: "Premier",
-    tagline: "Full-service protection & comfort",
-    badge: "Most Popular",
+  signature: {
+    label: "Signature",
+    tagline: "Full-service protection for your home",
+    badge: "RECOMMENDED",
     accent: GOLD,
     bg: "#FFFDF8",
     border: GOLD,
   },
   estate: {
     label: "Estate",
-    tagline: "The ultimate premium gloves experience",
+    tagline: "The complete premium experience",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,
@@ -231,19 +231,46 @@ export function expiresLabel(d: string | null) {
   return `Valid for ${days} days`;
 }
 
+/** Value-only for use under a "Valid" label (e.g. "7 days", "Tomorrow") — avoids repeating "Valid". */
+export function expiresValue(d: string | null) {
+  if (!d) return null;
+  const exp = new Date(d);
+  const now = new Date();
+  const days = Math.ceil((exp.getTime() - now.getTime()) / 86_400_000);
+  if (days <= 0) return "Expired";
+  if (days === 1) return "Tomorrow";
+  return `${days} days`;
+}
+
 export function addDays(d: Date, n: number) {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
   return r;
 }
 
-export function calculateDeposit(serviceType: string, total: number): number {
+/** Tiered deposit for residential local moves — 10 / 15 / 25 % with minimums. */
+export function calculateTieredDeposit(tier: string, total: number): number {
+  switch (tier) {
+    case "curated":
+      return Math.max(150, Math.round(total * 0.10));
+    case "signature":
+      return Math.max(250, Math.round(total * 0.15));
+    case "estate":
+      return Math.max(500, Math.round(total * 0.25));
+    default:
+      return Math.max(150, Math.round(total * 0.10));
+  }
+}
+
+export function calculateDeposit(serviceType: string, total: number, tier?: string): number {
+  if (serviceType === "local_move" && tier) {
+    return calculateTieredDeposit(tier, total);
+  }
   switch (serviceType) {
     case "local_move":
       if (total < 500) return total;
-      if (total < 3000) return 100;
-      if (total < 5000) return Math.round(total * 0.1);
-      return Math.round(total * 0.15);
+      if (total < 3000) return 150;
+      return Math.max(150, Math.round(total * 0.10));
     case "long_distance":
       return Math.round(total * 0.25);
     case "office_move":
@@ -263,7 +290,7 @@ export function calculateDeposit(serviceType: string, total: number): number {
       return 100;
     default:
       if (total < 500) return total;
-      if (total < 3000) return 100;
+      if (total < 3000) return 150;
       return Math.round(total * 0.1);
   }
 }

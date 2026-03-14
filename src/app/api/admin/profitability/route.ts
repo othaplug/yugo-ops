@@ -16,33 +16,72 @@ export async function GET(req: NextRequest) {
 
   const sb = createAdminClient();
 
-  const [{ data: moves }, { data: configRows }] = await Promise.all([
+  // Include "paid" — moves are often marked paid when done (Square, admin mark paid, etc.)
+  const completedStatuses = ["completed", "delivered", "done", "paid"];
+  const fromDate = from.slice(0, 10);
+  const toDate = to.slice(0, 10);
+
+  // Fetch moves that are either: (a) scheduled in range, or (b) completed_at in range (catch null scheduled_date)
+  const [{ data: byScheduled }, { data: byCompletedAt }, { data: configRows }] = await Promise.all([
     sb
       .from("moves")
       .select(
-        "id, move_code, scheduled_date, client_name, move_type, service_type, tier_selected, estimate, final_amount, tip_amount, distance_km, truck_primary, truck_secondary, move_size, est_crew_size, est_hours, actual_crew_count, actual_hours, actual_start_time, actual_end_time, crew, from_postal, status",
+        "id, move_code, scheduled_date, completed_at, client_name, move_type, service_type, tier_selected, estimate, final_amount, tip_amount, distance_km, truck_primary, truck_secondary, move_size, est_crew_size, est_hours, actual_crew_count, actual_hours, actual_start_time, actual_end_time, crew, from_postal, status",
       )
-      .in("status", ["completed", "delivered", "done"])
-      .gte("scheduled_date", from)
-      .lte("scheduled_date", to)
+      .gte("scheduled_date", fromDate)
+      .lte("scheduled_date", toDate)
       .order("scheduled_date", { ascending: false }),
+    sb
+      .from("moves")
+      .select(
+        "id, move_code, scheduled_date, completed_at, client_name, move_type, service_type, tier_selected, estimate, final_amount, tip_amount, distance_km, truck_primary, truck_secondary, move_size, est_crew_size, est_hours, actual_crew_count, actual_hours, actual_start_time, actual_end_time, crew, from_postal, status",
+      )
+      .not("completed_at", "is", null)
+      .gte("completed_at", `${fromDate}T00:00:00Z`)
+      .lte("completed_at", `${toDate}T23:59:59.999Z`)
+      .order("completed_at", { ascending: false }),
     sb.from("platform_config").select("key, value"),
   ]);
+
+  // Merge and dedupe by id; prefer scheduled_date-in-range set so we don't double-count
+  const seen = new Set<string>();
+  const merged: typeof byScheduled = [];
+  for (const m of byScheduled ?? []) {
+    if (m?.id && !seen.has(m.id)) {
+      seen.add(m.id);
+      merged.push(m);
+    }
+  }
+  for (const m of byCompletedAt ?? []) {
+    if (m?.id && !seen.has(m.id)) {
+      seen.add(m.id);
+      merged.push(m);
+    }
+  }
+  merged.sort((a, b) => {
+    const da = a.scheduled_date || a.completed_at || "";
+    const db = b.scheduled_date || b.completed_at || "";
+    return db.localeCompare(da);
+  });
+
+  // Include moves whose status (case-insensitive) is completed/delivered/done/paid
+  const completedMoves = merged.filter((m) =>
+    completedStatuses.includes((m.status || "").toLowerCase())
+  );
 
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
-  const completedMoves = moves ?? [];
   const monthlyMoveCount = completedMoves.length || 1;
   const targetMargin = parseFloat(config.target_gross_margin_pct ?? "40");
 
   const rows = completedMoves.map((m) => {
+    const revenue = Number(m.final_amount ?? m.estimate ?? 0);
     const costs = calculateMoveProfitability(m, config, monthlyMoveCount);
-    const revenue = m.final_amount ?? m.estimate ?? 0;
     return {
       id: m.id,
       move_code: m.move_code,
-      date: m.scheduled_date,
+      date: m.scheduled_date || (m.completed_at ? m.completed_at.slice(0, 10) : null),
       client: m.client_name,
       type: m.move_type || m.service_type,
       tier: m.tier_selected,

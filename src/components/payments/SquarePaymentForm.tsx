@@ -28,6 +28,8 @@ interface SquarePaymentFormProps {
   onSuccess: (result: PaymentResult) => void;
   onError: (error: string) => void;
   disabled: boolean;
+  /** Optional custom label for the submit button, e.g. "Pay $150 & Book My Move" */
+  submitLabel?: string;
 }
 
 type SquareCard = {
@@ -67,6 +69,7 @@ export default function SquarePaymentForm({
   onSuccess,
   onError,
   disabled,
+  submitLabel,
 }: SquarePaymentFormProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [cardReady, setCardReady] = useState(false);
@@ -276,7 +279,7 @@ export default function SquarePaymentForm({
             Processing&hellip;
           </span>
         ) : (
-          `Pay ${fmtPrice(amount)} Deposit`
+          submitLabel ?? `Pay ${fmtPrice(amount)} Deposit`
         )}
       </button>
 

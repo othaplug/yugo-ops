@@ -7,11 +7,11 @@ import { usePhoneInput } from "@/hooks/usePhoneInput";
 const VALUATION_INFO: Record<string, { label: string; desc: string }> = {
   released: {
     label: "Released Value Protection",
-    desc: "Coverage: $0.60/lb per item. Included with Essentials package.",
+    desc: "Coverage: $0.60/lb per item. Included with Curated package.",
   },
   enhanced: {
     label: "Enhanced Value Protection",
-    desc: "Coverage: $5.00/lb per item, max $2,500/item. Included with Premier package.",
+    desc: "Coverage: $5.00/lb per item, max $2,500/item. Included with Signature package.",
   },
   full_replacement: {
     label: "Full Replacement Value Protection",
