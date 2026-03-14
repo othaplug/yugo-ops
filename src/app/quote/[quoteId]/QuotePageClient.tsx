@@ -573,46 +573,116 @@ export default function QuotePageClient({
           </div>
         </div>
 
-        {/* ═══ PREMIUM INCLUSIONS SHOWCASE (above tier cards) ═══ */}
-        <InclusionsShowcase
-          ref={comparisonRef}
-          selectedTier={selectedTier}
-          isResidential={isResidential}
-          truckPrimary={quote.truck_primary}
-          truckSecondary={quote.truck_secondary}
-          crewSize={quote.est_crew_size}
-        />
-
         {/* ═══ LAYOUT DISPATCH ═══ */}
         {isResidential && tiers ? (
-          <ResidentialLayout
-            quote={quote}
-            tiers={tiers}
-            selectedTier={selectedTier}
-            onSelectTier={handleSelectTier}
-            recommendedTier={(() => {
-              const r = (quote.recommended_tier ?? "premier").toString().toLowerCase().trim();
-              return ["essentials", "premier", "estate"].includes(r) ? r : "premier";
-            })()}
-          />
+          <>
+            <ResidentialLayout
+              quote={quote}
+              tiers={tiers}
+              selectedTier={selectedTier}
+              onSelectTier={handleSelectTier}
+              recommendedTier={(() => {
+                const r = (quote.recommended_tier ?? "premier").toString().toLowerCase().trim();
+                return ["essentials", "premier", "estate"].includes(r) ? r : "premier";
+              })()}
+            />
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+          </>
         ) : quote.service_type === "long_distance" ? (
-          <LongDistanceLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <LongDistanceLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.service_type === "office_move" ? (
-          <OfficeLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <OfficeLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.service_type === "single_item" ? (
-          <SingleItemLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <SingleItemLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.service_type === "white_glove" ? (
-          <WhiteGloveLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <WhiteGloveLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.service_type === "specialty" ? (
-          <SpecialtyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <SpecialtyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.service_type === "b2b_oneoff" ? (
-          <B2BOneOffLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <B2BOneOffLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
         ) : quote.custom_price != null ? (
-          <FallbackPrice
-            price={quote.custom_price}
-            onConfirm={handleConfirm}
-            confirmed={confirmed}
-          />
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <FallbackPrice
+              price={quote.custom_price}
+              onConfirm={handleConfirm}
+              confirmed={confirmed}
+            />
+          </>
         ) : null}
 
         {/* ═══ ADD-ONS ═══ */}
