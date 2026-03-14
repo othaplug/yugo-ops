@@ -2,11 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
-import { PROJECTS } from "./projectsData";
-import { mergeProjectsWithSavedState } from "./designerProjectsStorage";
 import BackButton from "../../components/BackButton";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -20,18 +17,23 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
 };
 
+const ACTIVE_STATUSES = ["draft", "proposed", "active", "on_hold"];
+
 export default function DesignerDashboard({
   orgs,
   deliveries,
+  projects,
 }: {
   orgs: any[];
   deliveries: any[];
+  projects: any[];
 }) {
-  const allProjects = mergeProjectsWithSavedState(PROJECTS);
-  const activeProjects = allProjects.filter((p) => p.percent > 0 && p.percent < 100);
-  const delayedCount = allProjects.reduce((sum, p) => sum + p.vendors.filter((v) => v.status === "late").length, 0);
-  const revenue = 10800;
-  const revenuePrev = 8200;
+  const allProjects = projects;
+  const activeProjects = allProjects.filter((p) => ACTIVE_STATUSES.includes(p.status || ""));
+  const completedProjects = allProjects.filter((p) => ["completed", "invoiced"].includes(p.status || ""));
+  const totalDeliveryRevenue = useMemo(() =>
+    deliveries.reduce((sum: number, d: any) => sum + (Number(d.total_price) || Number(d.quoted_price) || 0), 0),
+  [deliveries]);
 
   const [activeTab, setActiveTab] = useState<"deliveries" | "projects" | "partners">("deliveries");
   const [selectedPartner, setSelectedPartner] = useState("all");
@@ -80,28 +82,24 @@ export default function DesignerDashboard({
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Projects</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{allProjects.length}</span>
-            <StatPctChange current={allProjects.length} previous={3} />
           </div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{activeProjects.length}</span>
-            <StatPctChange current={activeProjects.length} previous={2} />
           </div>
         </div>
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delayed</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--red)]">{delayedCount}</span>
-            <StatPctChange current={delayedCount} previous={1} />
+            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{completedProjects.length}</span>
           </div>
         </div>
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery Revenue</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">${(revenue / 1000).toFixed(1)}K</span>
-            <StatPctChange current={revenue} previous={revenuePrev} />
+            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCurrency(totalDeliveryRevenue)}</span>
           </div>
         </div>
       </div>
@@ -124,6 +122,10 @@ export default function DesignerDashboard({
           ))}
         </div>
         <div className="flex gap-2">
+          <Link href="/admin/projects/new?partnerType=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create Project
+          </Link>
           <Link href="/admin/deliveries/new?type=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Create Delivery
@@ -187,31 +189,35 @@ export default function DesignerDashboard({
           <div>
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
               <span>Projects</span>
-              <Link href="/admin/partners/designers/projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
+              <Link href="/admin/projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
             </div>
             <div className="divide-y divide-[var(--brd)]/30">
               {allProjects.length === 0 ? (
-                <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">No projects yet.</div>
+                <div className="px-4 py-10 text-center">
+                  <p className="text-[12px] text-[var(--tx3)] mb-2">No projects yet.</p>
+                  <Link href="/admin/projects/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Create your first designer project →</Link>
+                </div>
               ) : allProjects.map((project) => {
-                const doneCount = project.vendors.filter((v) => v.status === "done").length;
-                const lateCount = project.vendors.filter((v) => v.status === "late").length;
-                const summary = `${doneCount}/${project.vendors.length} delivered${lateCount > 0 ? ` · ${lateCount} delayed` : ""}`;
-                const isActive = project.percent > 0 && project.percent < 100;
+                const org = Array.isArray(project.organizations) ? project.organizations[0] : project.organizations;
+                const partnerName = org?.name || "—";
+                const isActive = ACTIVE_STATUSES.includes(project.status || "");
+                const statusLabel = (project.status || "").replace("_", " ");
                 return (
-                  <Link key={project.id} href={`/admin/partners/designers/${project.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
+                  <Link key={project.id} href={`/admin/projects/${project.id}?from=designers`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.name}</span>
+                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.project_name}</span>
                         {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
-                        {lateCount > 0 && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(209,67,67,0.1)] text-[var(--red)]">{lateCount} delayed</span>}
+                        <span className="text-[10px] text-[var(--tx3)] font-mono">{project.project_number}</span>
                       </div>
                       <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                        {project.designerCompany || project.designer} · {project.address} · Install {project.installDate}
+                        {partnerName}
+                        {project.site_address && ` · ${project.site_address}`}
+                        {project.target_end_date && ` · ${new Date(project.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                       </div>
-                      <div className="text-[10px] text-[var(--tx3)] mt-0.5">{summary}</div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-[12px] font-bold text-[var(--gold)]">{project.percent}%</span>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded capitalize ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                   </Link>

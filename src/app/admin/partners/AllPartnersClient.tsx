@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@/components/AppIcons";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 interface Partner {

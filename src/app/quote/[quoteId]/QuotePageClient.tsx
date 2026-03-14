@@ -573,8 +573,15 @@ export default function QuotePageClient({
           </div>
         </div>
 
-        {/* Spacer before layout */}
-        <div className="pt-8" />
+        {/* ═══ PREMIUM INCLUSIONS SHOWCASE (above tier cards) ═══ */}
+        <InclusionsShowcase
+          ref={comparisonRef}
+          selectedTier={selectedTier}
+          isResidential={isResidential}
+          truckPrimary={quote.truck_primary}
+          truckSecondary={quote.truck_secondary}
+          crewSize={quote.est_crew_size}
+        />
 
         {/* ═══ LAYOUT DISPATCH ═══ */}
         {isResidential && tiers ? (
@@ -628,16 +635,6 @@ export default function QuotePageClient({
             updateTierIdx={updateTierIdx}
           />
         )}
-
-        {/* ═══ PREMIUM INCLUSIONS SHOWCASE ═══ */}
-        <InclusionsShowcase
-          ref={comparisonRef}
-          selectedTier={selectedTier}
-          isResidential={isResidential}
-          truckPrimary={quote.truck_primary}
-          truckSecondary={quote.truck_secondary}
-          crewSize={quote.est_crew_size}
-        />
 
         {/* ═══ VALUATION PROTECTION ═══ */}
         {isConfirmed && !booked && (
@@ -892,8 +889,6 @@ const InclusionsShowcase = React.forwardRef<
     items.push(...INCLUSIONS_ESTATE);
   }
 
-  const showUpgradeHint = isResidential && tier === "essentials" && !selectedTier;
-
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
@@ -931,12 +926,6 @@ const InclusionsShowcase = React.forwardRef<
         })}
       </div>
 
-      {showUpgradeHint && (
-        <p className="text-center text-[11px] mt-6" style={{ color: `${FOREST}50` }}>
-          Upgrade to <span style={{ color: GOLD }} className="font-semibold">Premier</span> or{" "}
-          <span style={{ color: WINE }} className="font-semibold">Estate</span> for even more.
-        </p>
-      )}
     </section>
   );
 });

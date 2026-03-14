@@ -27,7 +27,7 @@ const fieldInput =
 
 const STEPS = ["Partner & Client", "Phases", "Budget", "Review"];
 
-export default function NewProjectForm({ partners, currentUserId }: { partners: Partner[]; currentUserId: string | null }) {
+export default function NewProjectForm({ partners, currentUserId, partnerFilter }: { partners: Partner[]; currentUserId: string | null; partnerFilter?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -105,7 +105,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
         throw new Error(d.error || "Failed to create project");
       }
       const project = await res.json();
-      router.push(`/admin/projects/${project.id}`);
+      router.push(partnerFilter === "designer" ? `/admin/projects/${project.id}?from=designers` : `/admin/projects/${project.id}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create project");
     } finally {
@@ -115,7 +115,10 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
 
   return (
     <div className="px-4 sm:px-6 py-5 max-w-[720px] mx-auto">
-      <BackButton href="/admin/projects" label="Projects" />
+      <BackButton
+        href={partnerFilter === "designer" ? "/admin/partners/designers" : "/admin/projects"}
+        label={partnerFilter === "designer" ? "Designers" : "Projects"}
+      />
 
       <h1 className="font-heading text-[20px] font-bold text-[var(--tx)] mt-4 mb-6">New Project</h1>
 
@@ -153,7 +156,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
       {step === 0 && (
         <div className="space-y-5">
           <div>
-            <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Partner *</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Partner *</label>
             <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className={fieldInput}>
               <option value="">Select partner...</option>
               {partners.map((p) => (
@@ -163,38 +166,38 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
           </div>
 
           <div>
-            <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Chen Residence — Full Furnishing" className={fieldInput} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client Name</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client Name</label>
               <input value={endClientName} onChange={(e) => setEndClientName(e.target.value)} placeholder="Mr. & Mrs. Chen" className={fieldInput} />
             </div>
             <div>
-              <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Client Contact</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Client Contact</label>
               <input value={endClientContact} onChange={(e) => setEndClientContact(e.target.value)} placeholder="Phone or email" className={fieldInput} />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
             <AddressAutocomplete value={siteAddress} onChange={(addr) => setSiteAddress(addr.fullAddress)} placeholder="Primary delivery location" className={fieldInput} />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Complete home furnishing. 6 vendor shipments expected..." rows={3} className={fieldInput} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldInput} />
             </div>
             <div>
-              <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
               <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className={fieldInput} />
             </div>
           </div>
@@ -209,7 +212,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
           {phases.map((phase, i) => (
             <div key={i} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Phase {i + 1}</span>
+                <span className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Phase {i + 1}</span>
                 {phases.length > 1 && (
                   <button onClick={() => removePhase(i)} className="p-1 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-500 transition-colors">
                     <Trash2 size={14} />
@@ -224,13 +227,13 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
                 className={fieldInput}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-[var(--tx3)] mb-1 block">Target Date</label>
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Target Date</label>
                   <input type="date" value={phase.scheduled_date} onChange={(e) => updatePhase(i, "scheduled_date", e.target.value)} className={fieldInput} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-[var(--tx3)] mb-1 block">Items Expected</label>
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Items Expected</label>
                   <input value={phase.items_expected} onChange={(e) => updatePhase(i, "items_expected", e.target.value)} placeholder="Sofa, chairs, bed..." className={fieldInput} />
                 </div>
               </div>
@@ -251,7 +254,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
       {step === 2 && (
         <div className="space-y-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-4">
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Budget</div>
+            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Budget</div>
 
             {selectedPartner && (
               <div className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
@@ -262,7 +265,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
             )}
 
             <div>
-              <label className="text-[10px] text-[var(--tx3)] mb-1 block">Estimated Delivery Cost</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Estimated Delivery Cost</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
                 <input
@@ -277,7 +280,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
             </div>
 
             <div>
-              <label className="text-[10px] text-[var(--tx3)] mb-1 block">Project Management Fee</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Project Management Fee</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
                 <input
@@ -317,7 +320,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
       {step === 3 && (
         <div className="space-y-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Summary</div>
+            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Summary</div>
 
             <Row label="Partner" value={selectedPartner?.name || "—"} />
             <Row label="Project Name" value={projectName} />
@@ -327,7 +330,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
             <Row label="Dates" value={`${startDate || "TBD"} → ${targetEndDate || "TBD"}`} />
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phases</div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Phases</div>
               {phases.filter((p) => p.phase_name.trim()).map((p, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 text-[12px]">
                   <span className="text-[var(--tx)] font-medium">{p.phase_name}</span>
@@ -337,7 +340,7 @@ export default function NewProjectForm({ partners, currentUserId }: { partners: 
             </div>
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Budget</div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Budget</div>
               <Row label="Estimated Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "—"} />
               <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
               <Row label="HST (13%)" value={formatCurrency(hst)} />

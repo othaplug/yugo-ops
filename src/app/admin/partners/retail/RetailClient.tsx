@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
-import { ScheduleDeliveryItem } from "../../components/ScheduleItem";
 import { toTitleCase } from "@/lib/format-text";
 
 interface Client {
@@ -51,6 +50,8 @@ export default function RetailClient({
   const [activeTab, setActiveTab] = useState<"deliveries" | "partners">("deliveries");
   const [selectedPartner, setSelectedPartner] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selectedDeliveries, setSelectedDeliveries] = useState<Set<string>>(new Set());
+  const [selectedPartners, setSelectedPartners] = useState<Set<string>>(new Set());
 
   const filteredDeliveries = useMemo(() => {
     let result = deliveries;
@@ -72,6 +73,51 @@ export default function RetailClient({
     }
     return result;
   }, [deliveries, selectedPartner, search, clients]);
+
+  const visibleDeliveries = filteredDeliveries.slice(0, 25);
+  const allDeliveriesSelected = visibleDeliveries.length > 0 && visibleDeliveries.every((d) => selectedDeliveries.has(d.id));
+  const someDeliveriesSelected = visibleDeliveries.some((d) => selectedDeliveries.has(d.id));
+  const toggleAllDeliveries = useCallback(() => {
+    setSelectedDeliveries((prev) => {
+      const next = new Set(prev);
+      if (allDeliveriesSelected) {
+        visibleDeliveries.forEach((d) => next.delete(d.id));
+      } else {
+        visibleDeliveries.forEach((d) => next.add(d.id));
+      }
+      return next;
+    });
+  }, [allDeliveriesSelected, visibleDeliveries]);
+  const toggleDelivery = useCallback((id: string) => {
+    setSelectedDeliveries((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const allPartnersSelected = clients.length > 0 && clients.every((c) => selectedPartners.has(c.id));
+  const somePartnersSelected = clients.some((c) => selectedPartners.has(c.id));
+  const toggleAllPartners = useCallback(() => {
+    setSelectedPartners((prev) => {
+      const next = new Set(prev);
+      if (allPartnersSelected) {
+        clients.forEach((c) => next.delete(c.id));
+      } else {
+        clients.forEach((c) => next.add(c.id));
+      }
+      return next;
+    });
+  }, [allPartnersSelected, clients]);
+  const togglePartner = useCallback((id: string) => {
+    setSelectedPartners((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const tabs = [
     { key: "deliveries" as const, label: `Deliveries (${deliveries.length})` },
@@ -143,6 +189,20 @@ export default function RetailClient({
               </select>
             </div>
 
+            {/* Bulk action bar */}
+            {selectedDeliveries.size > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
+                <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedDeliveries.size} selected</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDeliveries(new Set())}
+                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors ml-auto"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             {/* Deliveries list */}
             <div className="divide-y divide-[var(--brd)]/50">
               {filteredDeliveries.length === 0 ? (
@@ -150,38 +210,67 @@ export default function RetailClient({
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
                 </div>
               ) : (
-                filteredDeliveries.slice(0, 25).map((d) => {
-                  const statusLabel = toTitleCase(d.status || "");
-                  const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
-                  return (
-                    <Link
-                      key={d.id}
-                      href={getDeliveryDetailPath(d)}
-                      className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-                          <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                <>
+                  <div
+                    className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allDeliveriesSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someDeliveriesSelected && !allDeliveriesSelected;
+                      }}
+                      onChange={toggleAllDeliveries}
+                      className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                    />
+                    <span className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Select all</span>
+                  </div>
+                  {visibleDeliveries.map((d) => {
+                    const statusLabel = toTitleCase(d.status || "");
+                    const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
+                    return (
+                      <div
+                        key={d.id}
+                        className={`flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors ${selectedDeliveries.has(d.id) ? "bg-[var(--gold)]/[0.04]" : ""}`}
+                      >
+                        <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedDeliveries.has(d.id)}
+                            onChange={() => toggleDelivery(d.id)}
+                            className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                          />
                         </div>
-                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                          {d.client_name && <span className="font-medium">{d.client_name}</span>}
-                          {d.delivery_address && <span> · {d.delivery_address}</span>}
-                          {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
-                        </div>
+                        <Link
+                          href={getDeliveryDetailPath(d)}
+                          className="flex items-center justify-between min-w-0 flex-1"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                              <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                            </div>
+                            <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
+                              {d.client_name && <span className="font-medium">{d.client_name}</span>}
+                              {d.delivery_address && <span> · {d.delivery_address}</span>}
+                              {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                            <span className="text-[10px] text-[var(--tx3)]">
+                              {Array.isArray(d.items) ? d.items.length : 0} items
+                            </span>
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
+                              {statusLabel}
+                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                          </div>
+                        </Link>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className="text-[10px] text-[var(--tx3)]">
-                          {Array.isArray(d.items) ? d.items.length : 0} items
-                        </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
-                          {statusLabel}
-                        </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-                      </div>
-                    </Link>
-                  );
-                })
+                    );
+                  })}
+                </>
               )}
             </div>
             {filteredDeliveries.length > 25 && (
@@ -197,6 +286,21 @@ export default function RetailClient({
         {activeTab === "partners" && (
           <div>
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+
+            {/* Bulk action bar */}
+            {selectedPartners.size > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
+                <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedPartners.size} selected</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPartners(new Set())}
+                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors ml-auto"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
@@ -206,35 +310,64 @@ export default function RetailClient({
                 </Link>
               </div>
             ) : (
-              clients.map((c) => {
-                const stats = byPartner[c.name || ""] || { revenue: 0, owing: 0, deliveryCount: 0 };
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/admin/clients/${c.id}?from=retail`}
-                    className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
-                        {(c.name || "?").charAt(0).toUpperCase()}
+              <>
+                <div
+                  className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allPartnersSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = somePartnersSelected && !allPartnersSelected;
+                    }}
+                    onChange={toggleAllPartners}
+                    className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                  />
+                  <span className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Select all</span>
+                </div>
+                {clients.map((c) => {
+                  const stats = byPartner[c.name || ""] || { revenue: 0, owing: 0, deliveryCount: 0 };
+                  return (
+                    <div
+                      key={c.id}
+                      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors ${selectedPartners.has(c.id) ? "bg-[var(--gold)]/[0.04]" : ""}`}
+                    >
+                      <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedPartners.has(c.id)}
+                          onChange={() => togglePartner(c.id)}
+                          className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                        />
                       </div>
-                      <div>
-                        <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
-                        <div className="text-[11px] text-[var(--tx3)]">{c.contact_name} · {c.email}</div>
-                      </div>
+                      <Link
+                        href={`/admin/clients/${c.id}?from=retail`}
+                        className="flex items-center justify-between min-w-0 flex-1"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
+                            {(c.name || "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
+                            <div className="text-[11px] text-[var(--tx3)]">{c.contact_name} · {c.email}</div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-3">
+                          <div className="text-[11px] font-semibold text-[var(--tx)]">{stats.deliveryCount} deliveries</div>
+                          {stats.revenue > 0 && (
+                            <div className="text-[10px] text-[var(--grn)]">{formatCurrency(stats.revenue)} earned</div>
+                          )}
+                          {stats.owing > 0 && (
+                            <div className="text-[10px] text-[var(--org)]">{formatCurrency(stats.owing)} owing</div>
+                          )}
+                        </div>
+                      </Link>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-3">
-                      <div className="text-[11px] font-semibold text-[var(--tx)]">{stats.deliveryCount} deliveries</div>
-                      {stats.revenue > 0 && (
-                        <div className="text-[10px] text-[var(--grn)]">{formatCurrency(stats.revenue)} earned</div>
-                      )}
-                      {stats.owing > 0 && (
-                        <div className="text-[10px] text-[var(--org)]">{formatCurrency(stats.owing)} owing</div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })
+                  );
+                })}
+              </>
             )}
             </div>
           </div>

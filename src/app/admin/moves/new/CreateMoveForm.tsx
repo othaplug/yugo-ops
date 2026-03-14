@@ -480,20 +480,20 @@ export default function CreateMoveForm({
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-3">
         <BackButton label="Back" />
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-[var(--brd)]">
-          <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Create New Move</h1>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+        <div className="px-4 py-2.5 border-b border-[var(--brd)]">
+          <h1 className="font-heading text-[17px] font-bold text-[var(--tx)]">Create New Move</h1>
+          <p className="text-[10px] text-[var(--tx3)] mt-0.5">
             Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-0">
+        <form onSubmit={handleSubmit} className="p-4 space-y-0">
           {/* Move type selector */}
           <div>
-            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Service Type</label>
+            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
               {(["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const).map((val) => {
                 const META: Record<string, { Icon: React.ElementType; label: string; desc: string }> = {
@@ -545,10 +545,10 @@ export default function CreateMoveForm({
             </div>
           </div>
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
 
           {/* Client section */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
             <Field label="Select to auto fill">
               <div ref={contactDropdownRef} className="relative">
@@ -632,7 +632,7 @@ export default function CreateMoveForm({
                 )}
               </div>
             </Field>
-            <div className="grid sm:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-3 gap-2">
               <Field label="Client Name *">
                 <input
                   name="client_name"
@@ -694,14 +694,14 @@ export default function CreateMoveForm({
           </div>
 
           {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty") && (
-            <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+            <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
 
           {/* Office: Company info */}
           <AnimatedSection show={moveType === "office"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Company Name">
                   <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Business name" className={fieldInput} />
                 </Field>
@@ -718,34 +718,33 @@ export default function CreateMoveForm({
           {/* Single Item: item info */}
           <AnimatedSection show={moveType === "single_item"}>
             <div className="space-y-3">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
+              <h3 className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--tx2)]">Item Details</h3>
               <Field label="Item Description *">
                 <input value={siItemDescription} onChange={(e) => setSiItemDescription(e.target.value)} placeholder="e.g. Leather sectional sofa" className={fieldInput} />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="Item Category *">
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="Number of Items">
+                  <input type="number" min={1} max={5} value={siNumberOfItems} onChange={(e) => setSiNumberOfItems(e.target.value)} className={fieldInput} />
+                </Field>
+                <Field label="Category *">
                   <select value={siItemCategory} onChange={(e) => setSiItemCategory(e.target.value)} className={fieldInput}>
                     <option value="">Select…</option>
                     {ITEM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </Field>
-                <Field label="Estimated Weight">
+                <Field label="Weight Class">
                   <select value={siEstimatedWeight} onChange={(e) => setSiEstimatedWeight(e.target.value)} className={fieldInput}>
                     <option value="">Select…</option>
                     {WEIGHT_CLASSES.map((w) => <option key={w} value={w}>{w}</option>)}
                   </select>
                 </Field>
               </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="Item Dimensions">
-                  <input value={siItemDimensions} onChange={(e) => setSiItemDimensions(e.target.value)} placeholder="L × W × H (optional)" className={fieldInput} />
+              <div className="grid sm:grid-cols-2 gap-2">
+                <Field label="Dimensions (optional)">
+                  <input value={siItemDimensions} onChange={(e) => setSiItemDimensions(e.target.value)} placeholder="L × W × H" className={fieldInput} />
                 </Field>
-                <Field label="Number of Items">
-                  <input type="number" min={1} max={5} value={siNumberOfItems} onChange={(e) => setSiNumberOfItems(e.target.value)} className={fieldInput} />
-                </Field>
-              </div>
-              <Field label="Item Photo">
-                <div className="flex items-center gap-3">
+                <Field label="Item Photo">
+                  <div className="flex items-center gap-2">
                   <input
                     type="file"
                     accept="image/*"
@@ -768,17 +767,18 @@ export default function CreateMoveForm({
                   )}
                 </div>
               </Field>
+              </div>
             </div>
           </AnimatedSection>
 
           {/* White Glove: item info */}
           <AnimatedSection show={moveType === "white_glove"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
               <Field label="Item Description *">
                 <input value={wgItemDescription} onChange={(e) => setWgItemDescription(e.target.value)} placeholder="Describe the item in detail" className={fieldInput} />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Retail / Declared Value ($)">
                   <input
                     type="text"
@@ -805,9 +805,9 @@ export default function CreateMoveForm({
 
           {/* Specialty: project info */}
           <AnimatedSection show={moveType === "specialty"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty / Event Details</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Project Type *">
                   <select value={spProjectType} onChange={(e) => setSpProjectType(e.target.value)} className={fieldInput}>
                     <option value="">Select…</option>
@@ -825,17 +825,17 @@ export default function CreateMoveForm({
           </AnimatedSection>
 
           {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "b2b_oneoff") && (
-            <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+            <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
 
           {/* B2B One-Off: business info */}
           <AnimatedSection show={moveType === "b2b_oneoff"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
                 For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">B2B Partners → Create Project</span>.
               </div>
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Source Business Name">
                   <input value={b2bSourceBusiness} onChange={(e) => setB2bSourceBusiness(e.target.value)} placeholder="Company the item is coming from" className={fieldInput} />
                 </Field>
@@ -846,7 +846,7 @@ export default function CreateMoveForm({
                   </select>
                 </Field>
               </div>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="End Customer Name">
                   <input value={b2bEndCustomerName} onChange={(e) => setB2bEndCustomerName(e.target.value)} placeholder="Person receiving the delivery" className={fieldInput} />
                 </Field>
@@ -854,7 +854,7 @@ export default function CreateMoveForm({
                   <input ref={b2bPhoneInput.ref} type="tel" value={b2bEndCustomerPhone} onChange={b2bPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                 </Field>
               </div>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Number of Items">
                   <input type="number" min={1} value={b2bNumberOfItems} onChange={(e) => setB2bNumberOfItems(e.target.value)} className={fieldInput} />
                 </Field>
@@ -870,8 +870,8 @@ export default function CreateMoveForm({
           {/* Addresses */}
           <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
-            <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 items-end">
+            <div className="space-y-1.5">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 items-end">
                 <div className="flex-1 min-w-0 w-full">
                   <AddressAutocomplete
                     value={fromAddress}
@@ -882,13 +882,13 @@ export default function CreateMoveForm({
                       setFromLng(r.lng);
                     }}
                     placeholder="Origin address"
-                    label="From Address"
+                    label="From"
                     required
                     className={fieldInput}
                   />
                 </div>
                 <div className="w-full sm:w-[140px]">
-                  <Field label="Access">
+                  <Field label="From Access">
                     <select
                     name="from_access"
                     value={fromAccess}
@@ -907,7 +907,7 @@ export default function CreateMoveForm({
                   </Field>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 items-end">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 items-end">
                 <div className="flex-1 min-w-0 w-full">
                   <AddressAutocomplete
                     value={toAddress}
@@ -918,13 +918,13 @@ export default function CreateMoveForm({
                       setToLng(r.lng);
                     }}
                     placeholder="Destination address"
-                    label="To Address"
+                    label="To"
                     required
                     className={fieldInput}
                   />
                 </div>
                 <div className="w-full sm:w-[140px]">
-                  <Field label="Access">
+                  <Field label="To Access">
                     <select
                     name="to_access"
                     value={toAccess}
@@ -950,9 +950,9 @@ export default function CreateMoveForm({
 
           {/* Residential-only fields */}
           <AnimatedSection show={moveType === "residential"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Move Size">
                   <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
                     <option value="">Select size…</option>
@@ -1014,7 +1014,7 @@ export default function CreateMoveForm({
                 )}
               </Field>
 
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Boxes / Bins Needed">
                   <input type="number" min={0} value={boxesBins} onChange={(e) => setBoxesBins(e.target.value)} placeholder="0" className={fieldInput} />
                 </Field>
@@ -1044,32 +1044,38 @@ export default function CreateMoveForm({
 
           {/* Office-only detail fields */}
           <AnimatedSection show={moveType === "office"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Field label="Square Footage">
-                  <input type="number" min={0} value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} placeholder="e.g. 2500" className={fieldInput} />
+                  <input type="number" min={0} value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} placeholder="e.g. 2500" className={`${fieldInput} min-w-0`} />
                 </Field>
-                <Field label="Number of Workstations">
-                  <input type="number" min={0} value={workstationCount} onChange={(e) => setWorkstationCount(e.target.value)} placeholder="e.g. 20" className={fieldInput} />
+                <Field label="Workstations">
+                  <input type="number" min={0} value={workstationCount} onChange={(e) => setWorkstationCount(e.target.value)} placeholder="e.g. 20" className={`${fieldInput} min-w-0`} />
+                </Field>
+                <Field label="Timing Preference">
+                  <select value={timingPreference} onChange={(e) => setTimingPreference(e.target.value)} className={`${fieldInput} min-w-0`}>
+                    <option value="">Select…</option>
+                    {TIMING_PREFERENCES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </Field>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">IT Equipment</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={hasItEquipment}
                     onClick={() => setHasItEquipment(!hasItEquipment)}
-                    className={`relative w-9 h-5 rounded-full transition-colors ${hasItEquipment ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                    className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasItEquipment ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasItEquipment ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <AnimatedSection show={hasItEquipment}>
-                  <div className="space-y-3 pt-1">
+                  <div className="space-y-2 pt-1">
                     <Field label="IT Detail">
                       <textarea value={itDetail} onChange={(e) => setItDetail(e.target.value)} rows={3} placeholder="Describe server racks, networking, printers…" className={`${fieldInput} resize-none`} />
                     </Field>
@@ -1083,34 +1089,28 @@ export default function CreateMoveForm({
                 </AnimatedSection>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
-                <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Conference Room</span>
-                  <button type="button" role="switch" aria-checked={hasConferenceRoom} onClick={() => setHasConferenceRoom(!hasConferenceRoom)} className={`relative w-9 h-5 rounded-full transition-colors ${hasConferenceRoom ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={hasConferenceRoom} onClick={() => setHasConferenceRoom(!hasConferenceRoom)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasConferenceRoom ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasConferenceRoom ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Reception Area</span>
-                  <button type="button" role="switch" aria-checked={hasReceptionArea} onClick={() => setHasReceptionArea(!hasReceptionArea)} className={`relative w-9 h-5 rounded-full transition-colors ${hasReceptionArea ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={hasReceptionArea} onClick={() => setHasReceptionArea(!hasReceptionArea)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasReceptionArea ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasReceptionArea ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Building COI Required</span>
-                  <button type="button" role="switch" aria-checked={buildingCoiRequired} onClick={() => setBuildingCoiRequired(!buildingCoiRequired)} className={`relative w-9 h-5 rounded-full transition-colors ${buildingCoiRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={buildingCoiRequired} onClick={() => setBuildingCoiRequired(!buildingCoiRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${buildingCoiRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${buildingCoiRequired ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="Timing Preference">
-                  <select value={timingPreference} onChange={(e) => setTimingPreference(e.target.value)} className={fieldInput}>
-                    <option value="">Select…</option>
-                    {TIMING_PREFERENCES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </Field>
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Site Assessment">
                   <select value={siteAssessment} onChange={(e) => setSiteAssessment(e.target.value)} className={fieldInput}>
                     <option value="">Select…</option>
@@ -1128,45 +1128,48 @@ export default function CreateMoveForm({
           {/* Single Item: after-address fields */}
           <AnimatedSection show={moveType === "single_item"}>
             <div className="space-y-3">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Handling & Assembly</h3>
-              <Field label="Assembly Needed">
-                <select value={siAssemblyNeeded} onChange={(e) => setSiAssemblyNeeded(e.target.value)} className={fieldInput}>
-                  <option value="">Select…</option>
-                  {ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </Field>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-[var(--tx)]">Stair Carry</span>
-                  <button type="button" role="switch" aria-checked={siStairCarry} onClick={() => setSiStairCarry(!siStairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${siStairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`} />
-                  </button>
-                </div>
-                <AnimatedSection show={siStairCarry}>
-                  <div className="pt-1">
-                    <Field label="Number of Flights">
-                      <input type="number" min={1} max={10} value={siStairFlights} onChange={(e) => setSiStairFlights(e.target.value)} className={fieldInput} />
-                    </Field>
+              <h3 className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--tx2)]">Handling & Assembly</h3>
+              <div className="flex flex-wrap items-end gap-3">
+                <Field label="Assembly">
+                  <select value={siAssemblyNeeded} onChange={(e) => setSiAssemblyNeeded(e.target.value)} className={`${fieldInput} min-w-0`}>
+                    <option value="">Select…</option>
+                    {ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </Field>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-[var(--tx2)]">Stair Carry</span>
+                    <button type="button" role="switch" aria-checked={siStairCarry} onClick={() => setSiStairCarry(!siStairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${siStairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`} />
+                    </button>
                   </div>
-                </AnimatedSection>
+                  {siStairCarry && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)]">Flights</span>
+                      <input type="number" min={1} max={10} value={siStairFlights} onChange={(e) => setSiStairFlights(e.target.value)} className={`${fieldInput} w-14 py-1`} />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </AnimatedSection>
 
           {/* White Glove: after-address fields */}
           <AnimatedSection show={moveType === "white_glove"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
-              <Field label="Assembly Required">
-                <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
-                  <option value="">Select…</option>
-                  {WG_ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </Field>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <Field label="Assembly Required">
+                  <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
+                    <option value="">Select…</option>
+                    {WG_ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </Field>
+              </div>
               <Field label="Placement Specification">
                 <textarea value={wgPlacementSpec} onChange={(e) => setWgPlacementSpec(e.target.value)} rows={3} placeholder="Exact room, wall, position…" className={`${fieldInput} resize-none`} />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
+              <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[11px] font-medium text-[var(--tx)]">Packaging Removal</span>
@@ -1200,9 +1203,9 @@ export default function CreateMoveForm({
 
           {/* Specialty: after-address fields */}
           <AnimatedSection show={moveType === "specialty"}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Timeline">
                   <select value={spTimeline} onChange={(e) => setSpTimeline(e.target.value)} className={fieldInput}>
                     <option value="">Select…</option>
@@ -1216,7 +1219,7 @@ export default function CreateMoveForm({
                   </select>
                 </Field>
               </div>
-              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-3">
+              <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Custom Crating Needed</span>
                   <button type="button" role="switch" aria-checked={spCustomCrating} onClick={() => setSpCustomCrating(!spCustomCrating)} className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
@@ -1291,7 +1294,7 @@ export default function CreateMoveForm({
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Schedule & estimate */}
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
             <Field label="Scheduled Date">
               <input
                 type="date"
@@ -1344,27 +1347,28 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+          <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
 
           {/* Crew / team */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
-            <Field label="Crew">
-              <select
-                name="crew_id"
-                value={crewId}
-                onChange={(e) => setCrewId(e.target.value)}
-                className={fieldInput}
-              >
-                <option value="">Select crew…</option>
-                {crews.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Vehicle">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Field label="Crew">
+                <select
+                  name="crew_id"
+                  value={crewId}
+                  onChange={(e) => setCrewId(e.target.value)}
+                  className={fieldInput}
+                >
+                  <option value="">Select crew…</option>
+                  {crews.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Vehicle">
               <select
                 name="truck_primary"
                 value={truckPrimary}
@@ -1378,7 +1382,8 @@ export default function CreateMoveForm({
                 <option value="24ft">24ft Box Truck</option>
                 <option value="26ft">26ft Box Truck</option>
               </select>
-            </Field>
+              </Field>
+            </div>
             <Field label="Team Members">
               {selectedCrewMembers.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -1403,34 +1408,37 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
-          {/* Inventory */}
-          {itemWeights.length > 0 ? (
-            <InventoryInput
-              itemWeights={itemWeights}
-              value={inventoryItems}
-              onChange={setInventoryItems}
-              moveSize={moveSize}
-              fromAccess={fromAccess}
-              toAccess={toAccess}
-              showLabourEstimate={!!moveSize}
-              boxCount={boxCount}
-              onBoxCountChange={setBoxCount}
-            />
-          ) : (
-            <div className="space-y-3">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-                Client Inventory (optional)
-              </h3>
-              <p className="text-[10px] text-[var(--tx3)]">Add items from the move detail page after creating.</p>
-            </div>
+          {moveType !== "specialty" && moveType !== "b2b_oneoff" && (
+            <>
+              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {/* Inventory */}
+              {itemWeights.length > 0 ? (
+                <InventoryInput
+                  itemWeights={itemWeights}
+                  value={inventoryItems}
+                  onChange={setInventoryItems}
+                  moveSize={moveSize}
+                  fromAccess={fromAccess}
+                  toAccess={toAccess}
+                  showLabourEstimate={!!moveSize}
+                  boxCount={boxCount}
+                  onBoxCountChange={setBoxCount}
+                  mode={moveType === "office" ? "commercial" : "residential"}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                    Client Inventory (optional)
+                  </h3>
+                  <p className="text-[10px] text-[var(--tx3)]">Add items from the move detail page after creating.</p>
+                </div>
+              )}
+              <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
+            </>
           )}
 
-          <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
           {/* Documents */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               Documents & Invoices (optional)
             </h3>
@@ -1479,7 +1487,7 @@ export default function CreateMoveForm({
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Complexity indicators */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMPLEXITY_PRESETS.map((preset) => (
@@ -1536,7 +1544,7 @@ export default function CreateMoveForm({
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Notes */}
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-2">
             <Field label="Access Notes">
               <textarea
                 name="access_notes"
@@ -1559,7 +1567,7 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          <div className="flex gap-3 pt-5 border-t border-[var(--brd)]/30">
+          <div className="flex gap-2 pt-4 border-t border-[var(--brd)]/30">
             <button
               type="button"
               onClick={() => router.back()}

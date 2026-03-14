@@ -540,6 +540,7 @@ export default function AllMovesClient({
           exportable
           exportFilename="yugo-moves"
           columnToggle
+          selectable
           emptyMessage="No moves match the current filters"
           onRowClick={(m) => router.push(getMoveDetailPath(m))}
           columns={moveColumns(crewMap)}

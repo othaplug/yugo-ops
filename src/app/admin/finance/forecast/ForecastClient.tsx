@@ -19,6 +19,7 @@ import {
   Sun,
   BarChart3,
 } from "lucide-react";
+import BackButton from "../../components/BackButton";
 
 /* ════════════ Types ════════════ */
 
@@ -144,6 +145,7 @@ export default function ForecastClient() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6 animate-fade-up">
+      <div className="mb-4"><BackButton label="Profitability" href="/admin/finance/profitability" /></div>
       {/* ──── HEADER ──── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import { createClient } from "@/lib/supabase/client";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 interface Claim {
   id: string;
@@ -57,11 +59,82 @@ function statusLabel(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const claimColumns: ColumnDef<Claim>[] = [
+  {
+    id: "claim_number",
+    label: "Claim #",
+    accessor: (c) => c.claim_number,
+    searchable: true,
+    render: (c) => (
+      <Link href={`/admin/claims/${c.id}`} className="font-semibold text-[var(--gold)] hover:underline" onClick={(e) => e.stopPropagation()}>
+        {c.claim_number}
+      </Link>
+    ),
+  },
+  {
+    id: "date",
+    label: "Date",
+    accessor: (c) => c.submitted_at || c.created_at,
+    render: (c) => new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+  },
+  {
+    id: "client",
+    label: "Client",
+    accessor: (c) => c.client_name,
+    searchable: true,
+    render: (c) => (
+      <div>
+        <div className="text-[var(--tx)] font-medium">{c.client_name}</div>
+        <div className="text-[11px] text-[var(--tx3)]">{c.client_email}</div>
+      </div>
+    ),
+  },
+  {
+    id: "items",
+    label: "Items",
+    accessor: (c) => (Array.isArray(c.items) ? c.items.length : 0),
+    render: (c) => {
+      const n = Array.isArray(c.items) ? c.items.length : 0;
+      return `${n} item${n !== 1 ? "s" : ""}`;
+    },
+  },
+  {
+    id: "claimed",
+    label: "Claimed",
+    accessor: (c) => c.total_claimed_value,
+    render: (c) => <span className="text-[var(--tx)] font-medium">{formatCurrency(c.total_claimed_value)}</span>,
+    align: "right",
+  },
+  {
+    id: "approved",
+    label: "Approved",
+    accessor: (c) => c.approved_amount,
+    render: (c) => (c.approved_amount != null ? formatCurrency(c.approved_amount) : "—"),
+    align: "right",
+  },
+  {
+    id: "status",
+    label: "Status",
+    accessor: (c) => c.status,
+    render: (c) => (
+      <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(c.status)}`}>
+        {statusLabel(c.status)}
+      </span>
+    ),
+  },
+  {
+    id: "crew",
+    label: "Crew",
+    accessor: (c) => c.crew_team || "",
+    render: (c) => c.crew_team || "—",
+  },
+];
+
 export default function ClaimsListClient({ claims: initialClaims, stats: initialStats }: { claims: Claim[]; stats: Stats }) {
   const [claims, setClaims] = useState<Claim[]>(initialClaims);
   const [stats, setStats] = useState<Stats>(initialStats);
   const [statusFilter, setStatusFilter] = useState("");
-  const [search, setSearch] = useState("");
+  const router = useRouter();
 
   // Realtime + polling for new claims
   useEffect(() => {
@@ -108,20 +181,10 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    let list = claims;
-    if (statusFilter) list = list.filter((c) => c.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.claim_number.toLowerCase().includes(q) ||
-          c.client_name.toLowerCase().includes(q) ||
-          c.client_email.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [claims, statusFilter, search]);
+  const filtered = useMemo(
+    () => (statusFilter ? claims.filter((c) => c.status === statusFilter) : claims),
+    [claims, statusFilter]
+  );
 
   return (
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
@@ -147,14 +210,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search claims..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none"
-        />
+      <div className="flex flex-wrap gap-3 mb-4">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -167,63 +223,21 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
       </div>
 
       {/* Table */}
-      <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--brd)]">
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Claim #</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Date</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Client</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Items</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Claimed</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Approved</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Crew</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-[var(--tx3)]">
-                    {claims.length === 0 ? "No claims yet" : "No claims match your filters"}
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)] transition-colors">
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/claims/${c.id}`} className="font-semibold text-[var(--gold)] hover:underline">
-                        {c.claim_number}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">
-                      {new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-[var(--tx)] font-medium">{c.client_name}</div>
-                      <div className="text-[11px] text-[var(--tx3)]">{c.client_email}</div>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">
-                      {Array.isArray(c.items) ? c.items.length : 0} item{(Array.isArray(c.items) ? c.items.length : 0) !== 1 ? "s" : ""}
-                    </td>
-                    <td className="px-4 py-3 text-[var(--tx)] font-medium">{formatCurrency(c.total_claimed_value)}</td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">
-                      {c.approved_amount != null ? formatCurrency(c.approved_amount) : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(c.status)}`}>
-                        {statusLabel(c.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">{c.crew_team || "—"}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable<Claim>
+        data={filtered}
+        columns={claimColumns}
+        keyField="id"
+        tableId="claims-list"
+        searchable
+        searchPlaceholder="Search by claim #, client, email…"
+        pagination
+        exportable
+        exportFilename="yugo-claims"
+        columnToggle
+        selectable
+        onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
+        emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}
+      />
     </div>
   );
 }

@@ -297,6 +297,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           exportable
           exportFilename="yugo-quotes"
           columnToggle
+          selectable
           onRowClick={(q) => router.push(`/admin/quotes/${q.quote_id || q.id}`)}
           emptyMessage="No quotes yet"
         />

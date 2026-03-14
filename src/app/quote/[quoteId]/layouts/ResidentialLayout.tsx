@@ -39,6 +39,7 @@ interface Props {
 }
 
 export default function ResidentialLayout({
+  quote,
   tiers,
   selectedTier,
   onSelectTier,
@@ -54,8 +55,13 @@ export default function ResidentialLayout({
         </h2>
         <p className="text-[13px] max-w-md mx-auto" style={{ color: `${FOREST}80` }}>
           Every package includes a professional crew, truck, and blanket wrapping.
-          Upgrade for more protection and convenience.
         </p>
+        {quote.expires_at && (
+          <p className="text-[12px] mt-2" style={{ color: "#999" }}>
+            Quote valid until{" "}
+            {new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "long", day: "numeric" })}
+          </p>
+        )}
       </div>
 
       {recTier === "estate" && (
@@ -88,18 +94,14 @@ export default function ResidentialLayout({
           return (
             <div
               key={tierKey}
-              className={`relative rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden ${
+              className={`relative flex flex-col transition-all duration-300 ${
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               }`}
-              style={{
-                backgroundColor: cardBg,
-                borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
-                ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
-              }}
             >
+              {/* Badge sits OUTSIDE the card border so corners render correctly on all browsers */}
               {badgeText ? (
                 <div
-                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0"
+                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
                   style={{
                     backgroundColor: tierKey === "estate" ? WINE : GOLD,
                     minHeight: "30px",
@@ -114,6 +116,15 @@ export default function ResidentialLayout({
                 <div aria-hidden style={{ minHeight: "30px", flexShrink: 0 }} />
               )}
 
+              {/* Card body — rounded-b-2xl when badge present, full rounded-2xl otherwise */}
+              <div
+                className={`flex flex-col flex-1 min-h-0 border-2 ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
+                  ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
+                }}
+              >
               <div className="p-5 md:p-6 flex flex-col flex-1 min-h-0">
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
@@ -222,6 +233,7 @@ export default function ResidentialLayout({
                     {fmtPrice(t.deposit)} deposit to book
                   </p>
                 </div>
+              </div>
               </div>
             </div>
           );

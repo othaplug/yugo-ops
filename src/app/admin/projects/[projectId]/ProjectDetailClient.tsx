@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import { useToast } from "../../components/Toast";
+import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck } from "lucide-react";
+import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2 } from "lucide-react";
 import { getTrackingUrl } from "@/lib/tracking-url";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -130,10 +133,16 @@ const TABS = ["Overview", "Phases", "Inventory", "Deliveries", "Timeline", "Invo
 const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function ProjectDetailClient({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const fromDesigners = searchParams.get("from") === "designers";
   const [data, setData] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Modals
   const [showAddItem, setShowAddItem] = useState(false);
@@ -162,6 +171,25 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
     setStatusUpdating(false);
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        toast(json.error || "Failed to delete", "alertTriangle");
+        setDeleting(false);
+        return;
+      }
+      toast("Project deleted", "check");
+      router.push(fromDesigners ? "/admin/partners/designers" : "/admin/projects");
+      router.refresh();
+    } catch {
+      toast("Failed to delete", "alertTriangle");
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="px-6 py-8"><div className="animate-pulse h-8 w-48 bg-[var(--brd)] rounded mb-4" /><div className="animate-pulse h-64 bg-[var(--brd)] rounded" /></div>;
   }
@@ -177,7 +205,10 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
   return (
     <div className="px-4 sm:px-6 py-5">
-      <BackButton href="/admin/projects" label="Projects" />
+      <BackButton
+        href={fromDesigners ? "/admin/partners/designers" : "/admin/projects"}
+        label={fromDesigners ? "Designers" : "Projects"}
+      />
 
       {/* Header */}
       <div className="mt-4 mb-6">
@@ -197,7 +228,8 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         </div>
 
         {/* Status actions */}
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <div className="flex flex-wrap gap-2">
           {data.status === "draft" && (
             <button onClick={() => updateStatus("proposed")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors disabled:opacity-40">
               <Send size={12} className="inline mr-1" /> Send Proposal
@@ -223,6 +255,10 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
               <FileText size={12} className="inline mr-1" /> Mark Invoiced
             </button>
           )}
+          </div>
+          <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-colors shrink-0">
+            <Trash2 size={12} className="inline mr-1" /> Delete
+          </button>
         </div>
       </div>
 
@@ -250,6 +286,23 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         {activeTab === "Timeline" && <TimelineTab data={data} projectId={projectId} onRefresh={loadProject} showAddNote={showAddNote} setShowAddNote={setShowAddNote} />}
         {activeTab === "Invoice" && <InvoiceTab data={data} />}
       </div>
+
+      {/* Delete Confirmation */}
+      <ModalOverlay open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Project" maxWidth="sm">
+        <div className="p-5 space-y-4">
+          <p className="text-[12px] text-[var(--tx2)]">
+            Are you sure you want to delete <strong>{data.project_number} · {data.project_name}</strong>? Deliveries will be unlinked. This action cannot be undone.
+          </p>
+          <div className="flex items-center gap-2 justify-end">
+            <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]">
+              Cancel
+            </button>
+            <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+              {deleting ? "Deleting…" : "Delete Project"}
+            </button>
+          </div>
+        </div>
+      </ModalOverlay>
     </div>
   );
 }

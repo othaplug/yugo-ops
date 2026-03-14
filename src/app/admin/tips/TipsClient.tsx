@@ -122,6 +122,7 @@ export default function TipsClient({
           exportable
           exportFilename="yugo-tips"
           columnToggle
+          selectable
           emptyMessage="No tips yet — tips appear here after clients leave gratuities on completed moves."
         />
       </div>

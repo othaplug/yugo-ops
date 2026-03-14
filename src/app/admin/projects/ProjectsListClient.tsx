@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 interface Project {
   id: string;
@@ -39,28 +40,95 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_OPTIONS = ["all", "draft", "proposed", "active", "on_hold", "completed", "invoiced", "cancelled"];
 
+const projectColumns: ColumnDef<Project>[] = [
+  {
+    id: "project_number",
+    label: "PRJ #",
+    accessor: (p) => p.project_number,
+    searchable: true,
+    render: (p) => <span className="text-[12px] font-semibold text-[var(--gold)]">{p.project_number}</span>,
+  },
+  {
+    id: "partner",
+    label: "Partner",
+    accessor: (p) => p.organizations?.name || "",
+    searchable: true,
+    render: (p) => (
+      <div>
+        <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "—"}</div>
+        <div className="text-[10px] text-[var(--tx3)] capitalize">{p.organizations?.type || ""}</div>
+      </div>
+    ),
+  },
+  {
+    id: "project_name",
+    label: "Project Name",
+    accessor: (p) => p.project_name,
+    searchable: true,
+    render: (p) => (
+      <div>
+        <div className="text-[12px] font-semibold text-[var(--tx)]">{p.project_name}</div>
+        {p.end_client_name && <div className="text-[10px] text-[var(--tx3)]">{p.end_client_name}</div>}
+      </div>
+    ),
+  },
+  {
+    id: "status",
+    label: "Status",
+    accessor: (p) => p.status,
+    render: (p) => (
+      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${STATUS_COLORS[p.status] || ""}`}>
+        {p.status.replace("_", " ")}
+      </span>
+    ),
+  },
+  {
+    id: "phase",
+    label: "Phase",
+    accessor: (p) => p.active_phase || "",
+    render: (p) => <span className="text-[11px] text-[var(--tx2)] capitalize">{p.active_phase?.replace("_", " ") || "—"}</span>,
+  },
+  {
+    id: "budget",
+    label: "Budget",
+    accessor: (p) => p.estimated_budget ?? 0,
+    render: (p) => (
+      <div>
+        <div className="text-[12px] font-medium text-[var(--tx)]">
+          {p.estimated_budget ? formatCurrency(p.estimated_budget) : "—"}
+        </div>
+        {p.actual_cost ? (
+          <div className="text-[10px] text-[var(--tx3)]">Spent: {formatCurrency(p.actual_cost)}</div>
+        ) : null}
+      </div>
+    ),
+    align: "right",
+  },
+  {
+    id: "dates",
+    label: "Dates",
+    accessor: (p) => p.start_date || "",
+    render: (p) => (
+      <span className="text-[11px] text-[var(--tx3)]">
+        {p.start_date ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+        {p.target_end_date ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
+      </span>
+    ),
+  },
+];
+
 export default function ProjectsListClient({ projects, partners }: { projects: Project[]; partners: Partner[] }) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("all");
   const [partnerFilter, setPartnerFilter] = useState("all");
-  const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return projects.filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (partnerFilter !== "all" && p.partner_id !== partnerFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        return (
-          p.project_number.toLowerCase().includes(q) ||
-          p.project_name.toLowerCase().includes(q) ||
-          (p.end_client_name || "").toLowerCase().includes(q) ||
-          (p.organizations?.name || "").toLowerCase().includes(q)
-        );
-      }
       return true;
     });
-  }, [projects, statusFilter, partnerFilter, search]);
+  }, [projects, statusFilter, partnerFilter]);
 
   return (
     <div className="px-4 sm:px-6 py-5">
@@ -81,13 +149,6 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search projects..."
-          className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none w-[220px]"
-        />
         <div className="flex bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-0.5 overflow-x-auto">
           {STATUS_OPTIONS.map((s) => (
             <button
@@ -116,60 +177,21 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       </div>
 
       {/* Table */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-[var(--tx3)] text-[13px]">
-          {projects.length === 0 ? "No projects yet. Create your first project to get started." : "No projects match your filters."}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-[var(--brd)]">
-                {["PRJ #", "Partner", "Project Name", "Status", "Phase", "Budget", "Dates"].map((h) => (
-                  <th key={h} className="px-3 py-2.5 text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => router.push(`/admin/projects/${p.id}`)}
-                  className="border-b border-[var(--brd)]/50 hover:bg-[var(--gdim)]/30 cursor-pointer transition-colors"
-                >
-                  <td className="px-3 py-3 text-[12px] font-semibold text-[var(--gold)]">{p.project_number}</td>
-                  <td className="px-3 py-3">
-                    <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "—"}</div>
-                    <div className="text-[10px] text-[var(--tx3)] capitalize">{p.organizations?.type || ""}</div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="text-[12px] font-semibold text-[var(--tx)]">{p.project_name}</div>
-                    {p.end_client_name && <div className="text-[10px] text-[var(--tx3)]">{p.end_client_name}</div>}
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${STATUS_COLORS[p.status] || ""}`}>
-                      {p.status.replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-[11px] text-[var(--tx2)] capitalize">{p.active_phase?.replace("_", " ") || "—"}</td>
-                  <td className="px-3 py-3">
-                    <div className="text-[12px] font-medium text-[var(--tx)]">
-                      {p.estimated_budget ? formatCurrency(p.estimated_budget) : "—"}
-                    </div>
-                    {p.actual_cost ? (
-                      <div className="text-[10px] text-[var(--tx3)]">Spent: {formatCurrency(p.actual_cost)}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-3 text-[11px] text-[var(--tx3)]">
-                    {p.start_date ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
-                    {p.target_end_date ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<Project>
+        data={filtered}
+        columns={projectColumns}
+        keyField="id"
+        tableId="projects-list"
+        searchable
+        searchPlaceholder="Search by project #, name, partner…"
+        pagination
+        exportable
+        exportFilename="yugo-projects"
+        columnToggle
+        selectable
+        onRowClick={(p) => router.push(`/admin/projects/${p.id}`)}
+        emptyMessage={projects.length === 0 ? "No projects yet. Create your first project to get started." : "No projects match your filters."}
+      />
     </div>
   );
 }

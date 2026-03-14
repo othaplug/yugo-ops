@@ -9,7 +9,6 @@ import { Plus, Trash2, Truck, Send, Calendar, DollarSign } from "lucide-react";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 
-const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Office", "Other"];
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
 const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string }[] = [
@@ -95,8 +94,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     special_handling: false,
     complexityIndicators: [] as string[],
   });
-  const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
-  const [newRoom, setNewRoom] = useState("");
+  const [inventory, setInventory] = useState<string[]>([]);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
   const [inventoryBulkMode, setInventoryBulkMode] = useState(false);
@@ -190,12 +188,12 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     }
   }, [fetchPricing, step]);
 
-  // Inventory helpers
+  // Inventory helpers (no room — partners don't need room-level detail)
   const addInventoryItem = () => {
-    if (!newItemName.trim() || !newRoom) return;
+    if (!newItemName.trim()) return;
     const name = newItemName.trim();
     const itemName = newItemQty > 1 ? `${name} x${newItemQty}` : name;
-    setInventory((prev) => [...prev, { room: newRoom, item_name: itemName }]);
+    setInventory((prev) => [...prev, itemName]);
     setNewItemName("");
     setNewItemQty(1);
   };
@@ -206,8 +204,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       return m ? `${m[1].trim()} x${m[2]}` : l;
     });
   const addBulkInventoryItems = () => {
-    if (!newRoom || !inventoryBulkText.trim()) return;
-    const items = parseBulkLines(inventoryBulkText).map((item_name) => ({ room: newRoom, item_name }));
+    if (!inventoryBulkText.trim()) return;
+    const items = parseBulkLines(inventoryBulkText);
     setInventory((prev) => [...prev, ...items]);
     setInventoryBulkText("");
   };
@@ -237,7 +235,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
     const itemsList =
       inventory.length > 0
-        ? inventory.map((i) => (i.item_name.includes(" x") ? i.item_name : `${i.room}: ${i.item_name}`))
+        ? inventory
         : form.items ? form.items.split("\n").map((l) => l.trim()).filter(Boolean) : [];
 
     const svcList = Object.entries(selectedServices)
@@ -356,7 +354,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "day_rate" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Vehicle</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vehicle</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {VEHICLE_TYPES.map((v) => (
                     <button
@@ -374,7 +372,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </section>
 
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Duration</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Duration</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {([["full_day", "Full Day", "6 stops incl."], ["half_day", "Half Day", "3 stops incl."]] as const).map(([val, label, desc]) => (
                     <button
@@ -391,7 +389,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Number of Stops</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Number of Stops</h3>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setNumStops((n) => Math.max(1, n - 1))} className="w-9 h-9 rounded-lg border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]">-</button>
                   <span className="text-[22px] font-bold text-[#1A1A1A] w-10 text-center">{numStops}</span>
@@ -408,7 +406,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "per_delivery" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Delivery Type</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Delivery Type</h3>
                 <div className="space-y-2">
                   {DELIVERY_TYPES.map((dt) => (
                     <button
@@ -425,7 +423,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Zone</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Zone</h3>
                 <select value={zone} onChange={(e) => setZone(Number(e.target.value))} className={fieldInput}>
                   <option value={1}>Zone 1 — GTA (0–40 km) — Included</option>
                   <option value={2}>Zone 2 — Outer GTA (40–70 km) — + $120–$145</option>
@@ -436,7 +434,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Heavy Items */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Heavy / Oversized Items</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Heavy / Oversized Items</h3>
                 <p className="text-[11px] text-[#888]">Items over 250 lbs incur additional surcharges.</p>
                 <div className="space-y-2">
                   {([
@@ -495,7 +493,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="space-y-5">
               {/* Client */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Client / Recipient</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Client / Recipient</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <FormField label="Name" required>
                     <input value={form.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Full name" className={fieldInput} />
@@ -511,7 +509,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Addresses */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Addresses</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Addresses</h3>
                 <FormField label="Pickup Address">
                   <AddressAutocomplete value={form.pickup_address || pickupRaw} onRawChange={setPickupRaw} onChange={(r) => set("pickup_address", r.fullAddress)} placeholder="Warehouse or store" className={fieldInput} />
                 </FormField>
@@ -522,7 +520,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Schedule */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Schedule</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Schedule</h3>
                 <div className="grid grid-cols-1 gap-y-3">
                   <FormField label="Date" required>
                     <input type="date" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} className={fieldInput} />
@@ -543,12 +541,12 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Inventory */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Inventory</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Inventory</h3>
                 {inventory.length > 0 && (
                   <ul className="space-y-1.5 mb-2">
                     {inventory.map((item, idx) => (
                       <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[#FAF8F5] border border-[#E8E4DF]">
-                        <span className="text-[12px] text-[#1A1A1A]"><span className="text-[#888]">{item.room}:</span> {item.item_name}</span>
+                        <span className="text-[12px] text-[#1A1A1A]">{item}</span>
                         <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[#888] hover:text-red-600" aria-label="Remove"><Trash2 className="w-[14px] h-[14px]" /></button>
                       </li>
                     ))}
@@ -560,24 +558,17 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
-                    <select value={newRoom} onChange={(e) => setNewRoom(e.target.value)} className={`${fieldInput} max-w-[180px]`}>
-                      <option value="">Room</option>
-                      {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                    <textarea value={inventoryBulkText} onChange={(e) => setInventoryBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
-                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
+                    <textarea value={inventoryBulkText} onChange={(e) => setInventoryBulkText(e.target.value)} placeholder="One item per line, e.g. Sofa x2
+Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
+                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
                       <Plus className="w-[14px] h-[14px]" /> Add all
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2 items-end">
-                    <select value={newRoom} onChange={(e) => setNewRoom(e.target.value)} className={`${fieldInput} w-full sm:w-[140px]`}>
-                      <option value="">Room</option>
-                      {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
                     <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item (e.g. Couch x2)" className={`${fieldInput} flex-1 min-w-[120px]`} />
                     <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))} className={`${fieldInput} w-16`} />
-                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
+                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
                       <Plus className="w-[14px] h-[14px]" /> Add
                     </button>
                   </div>
@@ -586,7 +577,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Complexity */}
               <section className="space-y-2">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Complexity</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Complexity</h3>
                 <div className="flex flex-wrap gap-2">
                   {COMPLEXITY_PRESETS.map((preset) => (
                     <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-white text-[#666] border-[#E8E4DF] hover:border-[#C9A962]/50"}`}>
@@ -598,7 +589,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Notes */}
               <section className="space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Notes</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Notes</h3>
                 <FormField label="Instructions / access">
                   <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-[13px]`} />
                 </FormField>
@@ -614,7 +605,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "review" && (
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E8E4DF] p-4 space-y-3">
-                <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Summary</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Summary</h3>
                 <div className="grid grid-cols-2 gap-2 text-[13px]">
                   <div className="text-[#888]">Type</div>
                   <div className="font-semibold text-[#1A1A1A]">{bookingType === "day_rate" ? "Day Rate" : "Per Delivery"}</div>
@@ -695,7 +686,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   function renderSurcharges() {
     return (
       <section className="space-y-2">
-        <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Surcharges</h3>
+        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Surcharges</h3>
         <div className="flex gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
@@ -715,7 +706,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     if (displayServices.length === 0) return null;
     return (
       <section className="space-y-2">
-        <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#888]">Add-on Services</h3>
+        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Add-on Services</h3>
         <div className="space-y-1.5">
           {displayServices.map((svc) => (
             <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[#E8E4DF] hover:border-[#C9A962]/40 transition-colors cursor-pointer">
@@ -755,7 +746,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       <div className="rounded-xl border border-[#C9A962]/30 bg-[#FFFDF7] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <DollarSign className="w-4 h-4 text-[#C9A962]" />
-          <h3 className="text-[11px] font-semibold tracking-wider uppercase text-[#8B6914]">Price Preview</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#8B6914]">Price Preview</h3>
           {pricingLoading && <span className="text-[10px] text-[#888]">Calculating…</span>}
         </div>
         {pricing ? (
@@ -797,7 +788,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 function FormField({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-[11px] font-semibold text-[#888] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <label className="block text-[9px] font-semibold tracking-wider uppercase text-[#888] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       {children}
     </div>
   );

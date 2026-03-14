@@ -550,7 +550,7 @@ function QuotingDefaultsSection() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
-            <input type="text" value={config.quote_id_prefix || "YGO-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <input type="text" value={config.quote_id_prefix || "YG-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>

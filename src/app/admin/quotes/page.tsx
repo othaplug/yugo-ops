@@ -10,6 +10,7 @@ export default async function QuotesPage() {
   const { data: quotes } = await db
     .from("quotes")
     .select("id, quote_id, contact_id, service_type, status, tiers, custom_price, from_address, to_address, move_date, sent_at, viewed_at, accepted_at, expires_at, created_at")
+    .neq("status", "superseded")
     .order("created_at", { ascending: false });
 
   const contactIds = (quotes || []).map((q) => q.contact_id).filter(Boolean);

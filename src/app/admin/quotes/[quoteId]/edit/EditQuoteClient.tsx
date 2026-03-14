@@ -115,6 +115,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const [timingPreference, setTimingPreference] = useState(factors.timing_preference || oq.timing_preference || "");
 
   // ── Single item / White glove fields ─────────────────────
+  const [itemDescription, setItemDescription] = useState(factors.item_description || oq.item_description || "");
   const [itemCategory, setItemCategory] = useState(factors.item_category || oq.item_category || "");
   const [itemWeightClass, setItemWeightClass] = useState(factors.item_weight_class || oq.item_weight_class || "");
   const [assemblyNeeded, setAssemblyNeeded] = useState(factors.assembly_needed || oq.assembly_needed || "");
@@ -237,6 +238,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   // ── Build request payload from current state ──────────────
   const buildPayload = useCallback((): Record<string, any> => {
     const payload: Record<string, any> = {
+      quote_id: oq.quote_id,
       service_type: serviceType,
       from_address: fromAddress,
       to_address: toAddress,
@@ -298,7 +300,6 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
     // Carry over any remaining factors not exposed in UI
     if (factors.company_name) payload.company_name = factors.company_name;
-    if (factors.item_description) payload.item_description = factors.item_description;
 
     return payload;
   }, [
@@ -356,29 +357,28 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   }, [buildPayload]);
 
   const handleSendUpdate = useCallback(async () => {
-    if (!newQuoteId) return;
+    const quoteIdToSend = newQuoteId || oq.quote_id;
+    if (!quoteIdToSend) return;
     setError(null);
     setLinking(true);
     try {
-      const res = await fetch("/api/quotes/update", {
+      const res = await fetch("/api/quotes/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          originalQuoteId: oq.quote_id,
-          newQuoteId,
-          reason: reason.trim() || undefined,
-          sendToClient: true,
+          quoteId: quoteIdToSend,
+          hubspot_deal_id: oq.hubspot_deal_id,
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to link quote"); return; }
+      if (!res.ok) { setError(data.error || "Failed to send quote"); return; }
       setDone(true);
     } catch {
       setError("Network error");
     } finally {
       setLinking(false);
     }
-  }, [newQuoteId, oq.quote_id, reason]);
+  }, [newQuoteId, oq.quote_id, oq.hubspot_deal_id]);
 
   const newPrice = newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
   const livePrice = livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
@@ -394,17 +394,17 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         </div>
         <h1 className="text-xl font-bold text-[var(--tx)] mb-2">Quote Updated & Sent</h1>
         <p className="text-sm text-[var(--tx2)] mb-1">
-          {oq.quote_id} has been superseded by <strong className="text-[var(--gold)]">{newQuoteId}</strong>.
+          <strong className="text-[var(--gold)]">{oq.quote_id}</strong> has been updated and sent.
         </p>
         <p className="text-sm text-[var(--tx3)] mb-8">
-          {contact?.email ? `The updated quote has been emailed to ${contact.email}.` : "The new quote is ready."}
+          {contact?.email ? `The updated quote has been emailed to ${contact.email}.` : "The quote is ready."}
         </p>
         <div className="flex gap-3 justify-center">
           <button onClick={() => router.push("/admin/quotes")} className="px-5 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)]">
             Back to Quotes
           </button>
-          <button onClick={() => router.push(`/admin/quotes/${newQuoteId}/edit`)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
-            View New Quote
+          <button onClick={() => router.push(`/admin/quotes/${oq.quote_id}/edit`)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
+            View Quote
           </button>
         </div>
       </div>
@@ -592,20 +592,20 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
         {/* ── Office move ── */}
         {serviceType === "office_move" && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             <SectionDivider label="Office Details" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className={labelClass}>Square Footage</label>
-                <input type="number" value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} className={inputClass} placeholder="e.g. 2000" />
+                <input type="number" value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} className={`${inputClass} min-w-0`} placeholder="e.g. 2000" />
               </div>
               <div>
-                <label className={labelClass}>Number of Workstations</label>
-                <input type="number" value={workstationCount} onChange={(e) => setWorkstationCount(e.target.value)} className={inputClass} placeholder="e.g. 15" />
+                <label className={labelClass}>Workstations</label>
+                <input type="number" value={workstationCount} onChange={(e) => setWorkstationCount(e.target.value)} className={`${inputClass} min-w-0`} placeholder="e.g. 15" />
               </div>
               <div>
                 <label className={labelClass}>Timing Preference</label>
-                <select value={timingPreference} onChange={(e) => setTimingPreference(e.target.value)} className={inputClass}>
+                <select value={timingPreference} onChange={(e) => setTimingPreference(e.target.value)} className={`${inputClass} min-w-0`}>
                   <option value="">Standard (business hours)</option>
                   <option value="morning">Morning</option>
                   <option value="afternoon">Afternoon</option>
@@ -614,26 +614,36 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                   <option value="weekend">Weekend</option>
                 </select>
               </div>
-              <div className="flex flex-col gap-3 justify-center pt-1">
-                <Toggle checked={hasItEquipment} onChange={setHasItEquipment} label="Has IT Equipment" />
-                <Toggle checked={hasConferenceRoom} onChange={setHasConferenceRoom} label="Has Conference Room" />
-                <Toggle checked={hasReceptionArea} onChange={setHasReceptionArea} label="Has Reception Area" />
-              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              <Toggle checked={hasItEquipment} onChange={setHasItEquipment} label="Has IT Equipment" />
+              <Toggle checked={hasConferenceRoom} onChange={setHasConferenceRoom} label="Has Conference Room" />
+              <Toggle checked={hasReceptionArea} onChange={setHasReceptionArea} label="Has Reception Area" />
             </div>
           </div>
         )}
 
         {/* ── Single item / White glove ── */}
         {(serviceType === "single_item" || serviceType === "white_glove") && (
-          <div className="space-y-4">
-            <SectionDivider label="Item Details" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <SectionDivider label="Items" />
+            <div>
+              <label className={labelClass}>Item description *</label>
+              <input
+                type="text"
+                value={itemDescription}
+                onChange={(e) => setItemDescription(e.target.value)}
+                placeholder="e.g. Leather sectional sofa, Dining table, Queen bed"
+                className={inputClass}
+              />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
               <div>
-                <label className={labelClass}>Item Category</label>
-                <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={inputClass}>
-                  <option value="">Select category…</option>
+                <label className={labelClass}>Category</label>
+                <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={`${inputClass} min-w-0`}>
+                  <option value="">Select…</option>
                   <option value="standard_furniture">Standard Furniture</option>
-                  <option value="large_furniture">Large Furniture (couch, bed frame)</option>
+                  <option value="large_furniture">Large Furniture</option>
                   <option value="appliance">Appliance</option>
                   <option value="piano">Piano</option>
                   <option value="safe">Safe</option>
@@ -645,37 +655,37 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 </select>
               </div>
               <div>
-                <label className={labelClass}>Item Weight Class</label>
-                <select value={itemWeightClass} onChange={(e) => setItemWeightClass(e.target.value)} className={inputClass}>
-                  <option value="">Select weight…</option>
+                <label className={labelClass}>Weight Class</label>
+                <select value={itemWeightClass} onChange={(e) => setItemWeightClass(e.target.value)} className={`${inputClass} min-w-0`}>
+                  <option value="">Select…</option>
                   <option value="Under 150 lbs">Under 150 lbs</option>
                   <option value="150-300 lbs">150–300 lbs</option>
                   <option value="300-500 lbs">300–500 lbs (+$100)</option>
                   <option value="Over 500 lbs">Over 500 lbs (+$200)</option>
                 </select>
               </div>
-              <div>
-                <label className={labelClass}>Assembly / Disassembly</label>
-                <select value={assemblyNeeded} onChange={(e) => setAssemblyNeeded(e.target.value)} className={inputClass}>
-                  <option value="">None required</option>
-                  <option value="assembly">Assembly only</option>
-                  <option value="disassembly">Disassembly only</option>
-                  <option value="both">Both assembly & disassembly</option>
-                </select>
-              </div>
               {serviceType === "white_glove" && (
                 <div>
                   <label className={labelClass}>Declared Value ($)</label>
-                  <input type="number" value={declaredValue} onChange={(e) => setDeclaredValue(e.target.value)} className={inputClass} placeholder="e.g. 5000" />
+                  <input type="number" value={declaredValue} onChange={(e) => setDeclaredValue(e.target.value)} className={`${inputClass} w-24 min-w-0`} placeholder="e.g. 5000" />
                 </div>
               )}
-              <div className="flex flex-col gap-3">
-                <Toggle checked={stairCarry} onChange={setStairCarry} label="Stair Carry Required" />
+              <div>
+                <label className={labelClass}>Assembly</label>
+                <select value={assemblyNeeded} onChange={(e) => setAssemblyNeeded(e.target.value)} className={`${inputClass} min-w-0`}>
+                  <option value="">None</option>
+                  <option value="assembly">Assembly only</option>
+                  <option value="disassembly">Disassembly only</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
+                <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
+                </button>
                 {stairCarry && (
-                  <div>
-                    <label className={labelClass}>Number of Flights</label>
-                    <input type="number" min="1" max="10" value={stairFlights} onChange={(e) => setStairFlights(e.target.value)} className={inputClass} />
-                  </div>
+                  <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(e.target.value)} className={`${inputClass} w-12 py-1 min-w-0`} title="Flights" />
                 )}
               </div>
             </div>
@@ -684,12 +694,12 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
         {/* ── Specialty service ── */}
         {serviceType === "specialty" && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             <SectionDivider label="Specialty Details" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
               <div>
                 <label className={labelClass}>Project Type</label>
-                <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={inputClass}>
+                <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={`${inputClass} min-w-0`}>
                   <option value="">Select type…</option>
                   <option value="art_installation">Art Installation</option>
                   <option value="trade_show">Trade Show</option>
@@ -703,15 +713,15 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 </select>
               </div>
               <div>
-                <label className={labelClass}>Estimated Hours</label>
-                <input type="number" min="1" max="24" step="0.5" value={timelineHours} onChange={(e) => setTimelineHours(e.target.value)} className={inputClass} placeholder="e.g. 4" />
+                <label className={labelClass}>Hours</label>
+                <input type="number" min="1" max="24" step="0.5" value={timelineHours} onChange={(e) => setTimelineHours(e.target.value)} className={`${inputClass} w-20 min-w-0`} placeholder="e.g. 4" />
               </div>
               <div>
-                <label className={labelClass}>Custom Crating Pieces</label>
-                <input type="number" min="0" value={customCratingPieces} onChange={(e) => setCustomCratingPieces(e.target.value)} className={inputClass} placeholder="0" />
+                <label className={labelClass}>Crating (pcs)</label>
+                <input type="number" min="0" value={customCratingPieces} onChange={(e) => setCustomCratingPieces(e.target.value)} className={`${inputClass} w-16 min-w-0`} placeholder="0" />
               </div>
-              <div className="flex items-center pt-4">
-                <Toggle checked={climateControl} onChange={setClimateControl} label="Climate-Controlled Transport (+$150)" />
+              <div className="flex items-center gap-2">
+                <Toggle checked={climateControl} onChange={setClimateControl} label="Climate Control (+$150)" />
               </div>
             </div>
           </div>

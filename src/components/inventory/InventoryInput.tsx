@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Search, Plus, Minus, Package, ChevronDown, StickyNote } from "lucide-react";
+import { Search, Plus, Minus, ChevronDown, StickyNote } from "lucide-react";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 
 const fieldInput =
@@ -39,6 +39,12 @@ const ROOM_TABS = [
   { id: "outdoor", label: "Outdoor" },
   { id: "kids", label: "Kids" },
   { id: "garage", label: "Garage" },
+  { id: "specialty", label: "Specialty" },
+  { id: "all", label: "All" },
+] as const;
+
+const COMMERCIAL_ROOM_TABS = [
+  { id: "office", label: "Office" },
   { id: "specialty", label: "Specialty" },
   { id: "all", label: "All" },
 ] as const;
@@ -108,6 +114,8 @@ interface InventoryInputProps {
   /** Controlled box count (midpoint of range) */
   boxCount?: number;
   onBoxCountChange?: (n: number) => void;
+  /** commercial = office/commercial move, residential = default household move */
+  mode?: "residential" | "commercial";
 }
 
 export default function InventoryInput({
@@ -121,8 +129,11 @@ export default function InventoryInput({
   showLabourEstimate = false,
   boxCount,
   onBoxCountChange,
+  mode = "residential",
 }: InventoryInputProps) {
-  const [activeRoom, setActiveRoom] = useState<string>("bedroom");
+  const isCommercial = mode === "commercial";
+  const [activeRoom, setActiveRoom] = useState<string>(isCommercial ? "office" : "bedroom");
+  const [showAllItems, setShowAllItems] = useState(false);
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -136,9 +147,15 @@ export default function InventoryInput({
 
   const activeItems = useMemo(() => {
     const active = itemWeights.filter((w) => w.active !== false);
-    if (activeRoom === "all") return active;
+    if (activeRoom === "all") {
+      if (isCommercial) {
+        const commercialRooms = COMMERCIAL_ROOM_TABS.filter((t) => t.id !== "all").map((t) => t.id);
+        return active.filter((w) => (commercialRooms as readonly string[]).includes(w.room || "other"));
+      }
+      return active;
+    }
     return active.filter((w) => (w.room || "other") === activeRoom);
-  }, [itemWeights, activeRoom]);
+  }, [itemWeights, activeRoom, isCommercial]);
 
   const sortedItems = useMemo(() => {
     return [...activeItems].sort((a, b) => {
@@ -305,7 +322,7 @@ export default function InventoryInput({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-          Client Inventory
+          {isCommercial ? "Equipment & Furniture" : "Client Inventory"}
         </h3>
         {(value.length > 0 || internalBoxCount > 0) && (
           <span className="text-[10px] text-[var(--tx3)]">
@@ -316,11 +333,11 @@ export default function InventoryInput({
 
       {/* Room tabs */}
       <div className="flex flex-wrap gap-1.5">
-        {ROOM_TABS.map((tab) => (
+        {(isCommercial ? COMMERCIAL_ROOM_TABS : ROOM_TABS).map((tab) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveRoom(tab.id)}
+            onClick={() => { setActiveRoom(tab.id); setShowAllItems(false); }}
             className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
               activeRoom === tab.id
                 ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
@@ -333,29 +350,48 @@ export default function InventoryInput({
       </div>
 
       {/* Quick-add buttons per room */}
-      <div className="flex flex-wrap gap-1.5">
-        {sortedItems.map((w) => {
-          const existing = value.find((i) => i.slug === w.slug);
-          return (
-            <button
-              key={w.slug}
-              type="button"
-              onClick={() => addItem(w)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
-                existing
-                  ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
-              }`}
-            >
-              <Plus className="w-2.5 h-2.5" />
-              {w.item_name.split(" / ")[0].split(" (")[0]}
-              {existing && (
-                <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {(() => {
+        const LIMIT = 14;
+        const visibleItems = showAllItems ? sortedItems : sortedItems.slice(0, LIMIT);
+        const hiddenCount = sortedItems.length - LIMIT;
+        return (
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {visibleItems.map((w) => {
+                const existing = value.find((i) => i.slug === w.slug);
+                return (
+                  <button
+                    key={w.slug}
+                    type="button"
+                    onClick={() => addItem(w)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                      existing
+                        ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
+                        : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                    }`}
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    {w.item_name.split(" / ")[0].split(" (")[0]}
+                    {existing && (
+                      <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {sortedItems.length > LIMIT && (
+              <button
+                type="button"
+                onClick={() => setShowAllItems((v) => !v)}
+                className="inline-flex items-center gap-1 text-[9px] text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
+              >
+                <ChevronDown className={`w-3 h-3 transition-transform ${showAllItems ? "rotate-180" : ""}`} />
+                {showAllItems ? "Show less" : `Show all ${sortedItems.length} items`}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Search input */}
       <div ref={searchRef} className="relative">
@@ -369,7 +405,7 @@ export default function InventoryInput({
               setShowDropdown(true);
             }}
             onFocus={() => setShowDropdown(true)}
-            placeholder="Search items (sofa, bed, TV, fridge…)"
+            placeholder={isCommercial ? "Search items (desk, filing cabinet, server rack…)" : "Search items (sofa, bed, TV, fridge…)"}
             className={`${fieldInput} pl-8`}
           />
         </div>
@@ -400,22 +436,22 @@ export default function InventoryInput({
         )}
       </div>
 
-      {/* Custom item input */}
+      {/* Custom item input + Box count */}
       <div className="border-t border-[var(--brd)]/30 pt-3 space-y-2">
         <p className="text-[9px] text-[var(--tx3)]">Can&apos;t find an item?</p>
         <div className="flex flex-wrap gap-2 items-end">
-          <div className="flex-1 min-w-[140px]">
+          <div className="w-[160px] min-w-0">
             <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item name</label>
             <input
               type="text"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomItem(); } }}
-              placeholder="e.g. Patio Set (wicker)"
+              placeholder={isCommercial ? "e.g. Standing desk, Server rack" : "e.g. Patio Set (wicker)"}
               className={fieldInput}
             />
           </div>
-          <div className="w-28">
+          <div className="w-24">
             <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Weight</label>
             <select
               value={customWeight}
@@ -435,63 +471,53 @@ export default function InventoryInput({
           >
             <Plus className="w-[12px] h-[12px]" /> Add Custom Item
           </button>
+          {onBoxCountChange !== undefined && (
+            <div className="flex items-center gap-1">
+              <select
+                value={showCustomBox ? -1 : internalBoxCount}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (v === -1) {
+                    setShowCustomBox(true);
+                    setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
+                  } else {
+                    setShowCustomBox(false);
+                    setCustomBoxInput("");
+                    onBoxCountChange(v);
+                  }
+                }}
+                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1 text-[var(--tx)] outline-none min-w-0"
+              >
+                {BOX_RANGES.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              {showCustomBox && (
+                <>
+                  <input
+                    type="number"
+                    min={1}
+                    max={9999}
+                    value={customBoxInput}
+                    onChange={(e) => {
+                      setCustomBoxInput(e.target.value);
+                      const n = parseInt(e.target.value, 10);
+                      if (!isNaN(n) && n > 0) onBoxCountChange(n);
+                    }}
+                    placeholder="e.g. 120"
+                    className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--gold)]/50 rounded-lg px-2 py-1 text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+                    autoFocus
+                  />
+                  <span className="text-[10px] text-[var(--tx3)]">boxes</span>
+                </>
+              )}
+              {internalBoxCount > 0 && (
+                <span className="text-[9px] text-[var(--tx3)] font-mono">+{boxScore.toFixed(1)}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Box count */}
-      {onBoxCountChange !== undefined && (
-        <div className="border-t border-[var(--brd)]/30 pt-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Package className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
-            <label className="text-[9px] text-[var(--tx3)] font-semibold uppercase tracking-wide shrink-0">
-              Boxes / bins
-            </label>
-            <select
-              value={showCustomBox ? -1 : internalBoxCount}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (v === -1) {
-                  setShowCustomBox(true);
-                  setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
-                } else {
-                  setShowCustomBox(false);
-                  setCustomBoxInput("");
-                  onBoxCountChange(v);
-                }
-              }}
-              className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1 text-[var(--tx)] outline-none"
-            >
-              {BOX_RANGES.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            {showCustomBox && (
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min={1}
-                  max={9999}
-                  value={customBoxInput}
-                  onChange={(e) => {
-                    setCustomBoxInput(e.target.value);
-                    const n = parseInt(e.target.value, 10);
-                    if (!isNaN(n) && n > 0) onBoxCountChange(n);
-                  }}
-                  placeholder="e.g. 120"
-                  className="w-20 text-[11px] bg-[var(--bg)] border border-[var(--gold)]/50 rounded-lg px-2 py-1 text-[var(--tx)] outline-none focus:border-[var(--gold)]"
-                  autoFocus
-                />
-                <span className="text-[10px] text-[var(--tx3)]">boxes</span>
-              </div>
-            )}
-            {internalBoxCount > 0 && (
-              <span className="text-[9px] text-[var(--tx3)] font-mono">
-                +{boxScore.toFixed(1)} score
-              </span>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Inventory list */}
       {value.length > 0 && (

@@ -282,26 +282,53 @@ export default function DataTable<T>({
   );
 
   /* ── CSV export ── */
+  const exportToCsv = useCallback(
+    (rows: T[], filename: string) => {
+      const headers = visibleCols.map((c) => c.label);
+      const csvRows = rows.map((row) =>
+        visibleCols
+          .map((c) => {
+            const val = c.exportAccessor ? c.exportAccessor(row) : c.accessor(row);
+            const s = String(val ?? "");
+            return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+          })
+          .join(","),
+      );
+      const csv = [headers.join(","), ...csvRows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    [visibleCols],
+  );
+
   const handleExport = useCallback(() => {
-    const headers = visibleCols.map((c) => c.label);
-    const rows = sorted.map((row) =>
-      visibleCols
-        .map((c) => {
-          const val = c.exportAccessor ? c.exportAccessor(row) : c.accessor(row);
-          const s = String(val ?? "");
-          return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
-        })
-        .join(","),
-    );
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${exportFilename}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [visibleCols, sorted, exportFilename]);
+    exportToCsv(sorted, `${exportFilename}.csv`);
+  }, [sorted, exportFilename, exportToCsv]);
+
+  const handleExportSelected = useCallback(
+    (keys: string[]) => {
+      const selectedRows = sorted.filter((row) => keys.includes(getKey(row)));
+      exportToCsv(selectedRows, `${exportFilename}-selected-${selectedRows.length}.csv`);
+    },
+    [sorted, exportFilename, getKey, exportToCsv],
+  );
+
+  const effectiveBulkActions = useMemo(() => {
+    const actions: BulkAction[] = [];
+    if (selectable && exportable) {
+      actions.push({
+        label: "Export selected",
+        icon: <Download className="w-3 h-3" />,
+        onClick: handleExportSelected,
+      });
+    }
+    return [...actions, ...bulkActions];
+  }, [selectable, exportable, bulkActions, handleExportSelected]);
 
   /* ════════════ Render ════════════ */
   return (
@@ -376,7 +403,7 @@ export default function DataTable<T>({
         <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
           <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedKeys.size} selected</span>
           <div className="flex items-center gap-1.5 ml-auto">
-            {bulkActions.map((action) => (
+            {effectiveBulkActions.map((action) => (
               <button
                 key={action.label}
                 type="button"

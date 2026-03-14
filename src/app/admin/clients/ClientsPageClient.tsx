@@ -195,6 +195,7 @@ export default function ClientsPageClient({
         exportable
         exportFilename="yugo-move-clients"
         columnToggle
+        selectable
         onRowClick={(c) => router.push(`/admin/clients/${c.id}`)}
         emptyMessage="No move clients yet"
         emptySubtext="Add a client to get started"

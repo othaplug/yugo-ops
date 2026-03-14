@@ -78,10 +78,12 @@ export default function InvoicesTable({
       keyField="id"
       tableId="invoices"
       searchable
+      searchPlaceholder="Search invoices…"
       pagination
       exportable
       exportFilename="yugo-invoices"
       columnToggle
+      selectable
       onRowClick={onRowClick}
     />
   );

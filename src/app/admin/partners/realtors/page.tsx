@@ -1,22 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import RealtorsTable from "./RealtorsTable";
 import RealtorsMetrics from "./RealtorsMetrics";
-import RealtorPartnersSection from "./RealtorPartnersSection";
 
 export default async function RealtorsPage() {
   const db = createAdminClient();
-  const [refRes, orgRes, realtorsRes, movesRes, realtorOrgsRes] = await Promise.all([
+  const [refRes, orgRes, realtorsRes, movesRes] = await Promise.all([
     db.from("referrals").select("*").order("created_at", { ascending: false }),
     db.from("organizations").select("id, name"),
     db.from("realtors").select("id, agent_name, email, brokerage, created_at").order("agent_name"),
     db.from("moves").select("id, client_name"),
-    db.from("organizations").select("id, name, contact_name, email").eq("type", "realtor").order("name"),
   ]);
   const referrals = refRes.data ?? [];
   const orgs = orgRes.data ?? [];
-  const realtorPartners = realtorOrgsRes.data ?? [];
   const realtors = realtorsRes.data ?? [];
   const moves = movesRes.data ?? [];
 
@@ -71,13 +67,14 @@ export default async function RealtorsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
+      <div className="mb-4">
+        <BackButton label="B2B Partners" href="/admin/platform?tab=partners" />
+      </div>
       <RealtorsMetrics
         referralsCount={all.length}
         booked={booked}
         totalCommission={totalCommission}
         realtorsCount={realtors.length}
-        realtors={realtors}
         referralsThisMonth={referralsThisMonth}
         referralsPrev={referralsLastMonth}
         bookedThisMonth={bookedThisMonth}
@@ -86,7 +83,6 @@ export default async function RealtorsPage() {
         commissionPrev={commissionLastMonth}
         realtorsPrev={realtorsPrev}
       />
-      <RealtorPartnersSection partners={realtorPartners} />
       <RealtorsTable
         referrals={all}
         clientNameToId={clientNameToId}

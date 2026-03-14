@@ -177,12 +177,12 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
           {/* Location */}
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
-          <section className="space-y-4">
+          <section className="space-y-2">
             <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
               <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Location
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-2">
               <div className="space-y-3">
                 <AddressAutocomplete
                   value={fromAddress}
@@ -238,7 +238,7 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Schedule
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-2">
               <Field label="Date">
                 <input
                   type="date"

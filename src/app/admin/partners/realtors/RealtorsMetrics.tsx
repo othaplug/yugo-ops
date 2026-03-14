@@ -1,19 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import AddRealtorModal from "./AddRealtorModal";
 import { StatPctChange } from "../../components/StatPctChange";
 import { formatCompactCurrency } from "@/lib/format-currency";
-
-type Realtor = { id: string; agent_name: string; email?: string | null; brokerage?: string | null };
 
 interface RealtorsMetricsProps {
   referralsCount: number;
   booked: number;
   totalCommission: number;
   realtorsCount?: number;
-  realtors?: Realtor[];
   referralsThisMonth?: number;
   referralsPrev?: number;
   bookedThisMonth?: number;
@@ -39,27 +33,11 @@ export default function RealtorsMetrics({
   const refCur = referralsThisMonth ?? referralsCount;
   const bookedCur = bookedThisMonth ?? booked;
   const commissionCur = commissionThisMonth ?? totalCommission;
-  const [addRealtorOpen, setAddRealtorOpen] = useState(false);
 
   return (
     <>
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Referrals</h3>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAddRealtorOpen(true)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg)] transition-all whitespace-nowrap"
-          >
-            Add Realtor
-          </button>
-          <Link
-            href="/admin/clients/new?type=partner&partnerType=realtor"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap"
-          >
-            Add Realtor Partner
-          </Link>
-        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4">
@@ -91,7 +69,6 @@ export default function RealtorsMetrics({
           </div>
         </div>
       </div>
-      <AddRealtorModal open={addRealtorOpen} onClose={() => setAddRealtorOpen(false)} />
     </>
   );
 }

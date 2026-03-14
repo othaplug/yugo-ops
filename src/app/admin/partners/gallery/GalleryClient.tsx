@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Badge from "../../components/Badge";
 import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
+import CreateGalleryProjectModal from "./CreateGalleryProjectModal";
 import { toTitleCase } from "@/lib/format-text";
 
 interface GalleryPartner {
@@ -37,6 +38,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
   const [expandedTrans, setExpandedTrans] = useState<Set<string>>(new Set());
   const [projectDetail, setProjectDetail] = useState<GalleryProject | null>(null);
   const [editingProject, setEditingProject] = useState<GalleryProject | null>(null);
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const fetchProjects = () => {
     setLoading(true);
@@ -93,11 +95,28 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
     <>
       {/* Projects - consolidated exhibitions & transports */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Projects</div>
+          <button
+            type="button"
+            onClick={() => setCreatingProject(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New project
+          </button>
+        </div>
         <div className="space-y-0 divide-y divide-[var(--brd)]/30">
           {allProjects.length === 0 ? (
-            <div className="py-8 text-center text-[12px] text-[var(--tx3)]">
-              No projects yet
+            <div className="py-8 text-center">
+              <p className="text-[12px] text-[var(--tx3)] mb-2">No gallery projects yet.</p>
+              <button
+                type="button"
+                onClick={() => setCreatingProject(true)}
+                className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
+              >
+                Create your first gallery project →
+              </button>
             </div>
           ) : allProjects.map((ex) => {
             const isExhibition = exhibitions.some((e) => e.id === ex.id);
@@ -213,6 +232,13 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         project={editingProject}
         galleryPartners={galleryPartners}
         onSaved={fetchProjects}
+      />
+
+      <CreateGalleryProjectModal
+        open={creatingProject}
+        onClose={() => setCreatingProject(false)}
+        galleryPartners={galleryPartners}
+        onCreated={fetchProjects}
       />
     </>
   );

@@ -238,6 +238,7 @@ export default function QuoteFormClient({
   const [timingPref, setTimingPref] = useState("");
 
   // Single item fields
+  const [itemDescription, setItemDescription] = useState("");
   const [itemCategory, setItemCategory] = useState("standard_furniture");
   const [itemWeight, setItemWeight] = useState("");
   const [assembly, setAssembly] = useState("None");
@@ -513,6 +514,7 @@ export default function QuoteFormClient({
       }
     }
     if (serviceType === "single_item") {
+      base.item_description = itemDescription.trim() || undefined;
       base.item_category = itemCategory;
       base.item_weight_class = itemWeight || undefined;
       base.assembly_needed = assembly;
@@ -521,6 +523,7 @@ export default function QuoteFormClient({
       base.number_of_items = numItems;
     }
     if (serviceType === "white_glove") {
+      base.item_description = itemDescription.trim() || undefined;
       base.item_category = itemCategory;
       base.item_weight_class = itemWeight || undefined;
       base.declared_value = Number(declaredValue) || undefined;
@@ -537,7 +540,7 @@ export default function QuoteFormClient({
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
     selectedAddons, recommendedTier, moveSize, clientBoxCount, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
-    hasReception, timingPref, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
+    hasReception, timingPref, itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
     firstName, lastName, email, phone,
   ]);
@@ -758,7 +761,7 @@ export default function QuoteFormClient({
                     )}
                   </div>
                 </Field>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <Field label="First Name">
                     <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={fieldInput} />
                   </Field>
@@ -786,13 +789,13 @@ export default function QuoteFormClient({
                       onRawChange={setFromAddress}
                       onChange={(r) => setFromAddress(r.fullAddress)}
                       placeholder="Origin address"
-                      label="From Address"
+                      label="From"
                       required
                       className={fieldInput}
                     />
                   </div>
                   <div className="w-full min-[400px]:w-[150px] shrink-0">
-                    <Field label="Access">
+                    <Field label="From Access">
                       <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -806,13 +809,13 @@ export default function QuoteFormClient({
                       onRawChange={setToAddress}
                       onChange={(r) => setToAddress(r.fullAddress)}
                       placeholder="Destination address"
-                      label="To Address"
+                      label="To"
                       required
                       className={fieldInput}
                     />
                   </div>
                   <div className="w-full min-[400px]:w-[150px] shrink-0">
-                    <Field label="Access">
+                    <Field label="To Access">
                       <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -826,7 +829,7 @@ export default function QuoteFormClient({
               {/* ── 4. Move details ── */}
               <div>
                 <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h3>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Field label="Move Date *">
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
                   </Field>
@@ -846,6 +849,30 @@ export default function QuoteFormClient({
                       <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
                         {MOVE_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
+                    </Field>
+                  )}
+                  {serviceType === "local_move" && (
+                    <Field label="Recommend Tier">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={recommendedTier}
+                          onChange={(e) => setRecommendedTier(e.target.value as "essentials" | "premier" | "estate")}
+                          className={`${fieldInput} w-[140px] min-w-0`}
+                        >
+                          <option value="essentials">Essentials</option>
+                          <option value="premier">Premier</option>
+                          <option value="estate">Estate</option>
+                        </select>
+                        {recommendedTier !== "estate" && (
+                          <button
+                            type="button"
+                            onClick={() => setRecommendedTier("estate")}
+                            className="text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors whitespace-nowrap shrink-0"
+                          >
+                            White glove? Estate →
+                          </button>
+                        )}
+                      </div>
                     </Field>
                   )}
                   {/* Box count moved into InventoryInput when inventory is shown */}
@@ -894,35 +921,9 @@ export default function QuoteFormClient({
                 </div>
 
                 {serviceType === "local_move" && (
-                  <div className="mt-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Field label="Recommend Tier">
-                          <select
-                            value={recommendedTier}
-                            onChange={(e) => setRecommendedTier(e.target.value as "essentials" | "premier" | "estate")}
-                            className={fieldInput}
-                          >
-                            <option value="essentials">Essentials</option>
-                            <option value="premier">Premier</option>
-                            <option value="estate">Estate</option>
-                          </select>
-                        </Field>
-                      </div>
-                      {recommendedTier !== "estate" && (
-                        <button
-                          type="button"
-                          onClick={() => setRecommendedTier("estate")}
-                          className="mt-4 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors whitespace-nowrap"
-                        >
-                          White glove lead? Select Estate &rarr;
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-[9px] text-[var(--tx3)] mt-1">
-                      The recommended tier highlights that package on the client&apos;s quote page and email.
-                    </p>
-                  </div>
+                  <p className="text-[9px] text-[var(--tx3)] mt-1.5">
+                    The recommended tier highlights that package on the client&apos;s quote page and email.
+                  </p>
                 )}
               </div>
 
@@ -985,6 +986,7 @@ export default function QuoteFormClient({
                   showLabourEstimate={!!moveSize}
                   boxCount={Number(clientBoxCount) || 0}
                   onBoxCountChange={(n) => setClientBoxCount(n > 0 ? String(n) : "")}
+                  mode={serviceType === "office_move" ? "commercial" : "residential"}
                 />
                 </>
               )}
@@ -993,146 +995,157 @@ export default function QuoteFormClient({
 
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Field label="Square Footage">
-                      <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={fieldInput} />
+                      <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={`${fieldInput} min-w-0`} />
                     </Field>
                     <Field label="Workstations">
-                      <input type="number" min={0} value={wsCount} onChange={(e) => setWsCount(e.target.value)} placeholder="20" className={fieldInput} />
+                      <input type="number" min={0} value={wsCount} onChange={(e) => setWsCount(e.target.value)} placeholder="20" className={`${fieldInput} min-w-0`} />
+                    </Field>
+                    <Field label="Timing Preference">
+                      <select value={timingPref} onChange={(e) => setTimingPref(e.target.value)} className={`${fieldInput} min-w-0`}>
+                        <option value="">Select…</option>
+                        {TIMING_PREFS.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
                     </Field>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {[
                       { label: "IT Equipment", val: hasIt, set: setHasIt },
                       { label: "Conference Room", val: hasConf, set: setHasConf },
                       { label: "Reception Area", val: hasReception, set: setHasReception },
                     ].map((tog) => (
-                      <div key={tog.label} className="flex items-center justify-between">
+                      <div key={tog.label} className="flex items-center gap-2">
                         <span className="text-[10px] font-medium text-[var(--tx)]">{tog.label}</span>
                         <button
                           type="button"
                           role="switch"
                           aria-checked={tog.val}
                           onClick={() => tog.set(!tog.val)}
-                          className={`relative w-9 h-5 rounded-full transition-colors ${tog.val ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${tog.val ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                         >
                           <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${tog.val ? "translate-x-4" : ""}`} />
                         </button>
                       </div>
                     ))}
                   </div>
-                  <Field label="Timing Preference">
-                    <select value={timingPref} onChange={(e) => setTimingPref(e.target.value)} className={fieldInput}>
-                      <option value="">Select…</option>
-                      {TIMING_PREFS.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </Field>
                 </div>
               )}
 
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
-                <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Details</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
+                  <Field label="Item description *">
+                    <input
+                      value={itemDescription}
+                      onChange={(e) => setItemDescription(e.target.value)}
+                      placeholder="e.g. Leather sectional sofa, Dining table, Queen bed"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
                     <Field label="Category">
-                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
+                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={`${fieldInput} min-w-0`}>
                         {ITEM_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                       </select>
                     </Field>
                     <Field label="Weight Class">
-                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={fieldInput}>
+                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={`${fieldInput} min-w-0`}>
                         <option value="">Select…</option>
                         {WEIGHT_CLASSES.map((w) => <option key={w} value={w}>{w}</option>)}
                       </select>
                     </Field>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Number of Items">
+                      <input type="number" min={1} max={5} value={numItems} onChange={(e) => setNumItems(Number(e.target.value) || 1)} className={`${fieldInput} w-14 min-w-0`} />
+                    </Field>
                     <Field label="Assembly">
-                      <select value={assembly} onChange={(e) => setAssembly(e.target.value)} className={fieldInput}>
+                      <select value={assembly} onChange={(e) => setAssembly(e.target.value)} className={`${fieldInput} min-w-0`}>
                         {ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                       </select>
                     </Field>
-                    <Field label="Number of Items">
-                      <input type="number" min={1} max={5} value={numItems} onChange={(e) => setNumItems(Number(e.target.value) || 1)} className={fieldInput} />
-                    </Field>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
+                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
+                      </button>
+                      {stairCarry && (
+                        <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={`${fieldInput} w-12 py-1 min-w-0`} title="Flights" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
-                    <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
-                    </button>
-                  </div>
-                  {stairCarry && (
-                    <Field label="Flights">
-                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={fieldInput} />
-                    </Field>
-                  )}
                 </div>
               )}
 
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
-                <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove Details</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Items</h3>
+                  <Field label="Item description *">
+                    <input
+                      value={itemDescription}
+                      onChange={(e) => setItemDescription(e.target.value)}
+                      placeholder="e.g. Antique dresser, Grand piano, Art piece"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
                     <Field label="Item Category">
-                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={fieldInput}>
+                      <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className={`${fieldInput} min-w-0`}>
                         {ITEM_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                       </select>
                     </Field>
-                    <Field label="Declared Value ($)">
-                      <input type="number" min={0} value={declaredValue} onChange={(e) => setDeclaredValue(e.target.value)} placeholder="For insurance" className={fieldInput} />
-                    </Field>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
                     <Field label="Weight Class">
-                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={fieldInput}>
+                      <select value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} className={`${fieldInput} min-w-0`}>
                         <option value="">Select…</option>
                         {WEIGHT_CLASSES.map((w) => <option key={w} value={w}>{w}</option>)}
                       </select>
                     </Field>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-[var(--tx)]">Stair Carry</span>
-                    <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
-                    </button>
-                  </div>
-                  {stairCarry && (
-                    <Field label="Flights">
-                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={fieldInput} />
+                    <Field label="Declared Value ($)">
+                      <input type="number" min={0} value={declaredValue} onChange={(e) => setDeclaredValue(e.target.value)} placeholder="For insurance" className={`${fieldInput} w-24 min-w-0`} />
                     </Field>
-                  )}
+                    <Field label="Assembly">
+                      <select value={assembly} onChange={(e) => setAssembly(e.target.value)} className={`${fieldInput} min-w-0`}>
+                        {ASSEMBLY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </Field>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
+                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
+                      </button>
+                      {stairCarry && (
+                        <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Number(e.target.value) || 1)} className={`${fieldInput} w-12 py-1 min-w-0`} title="Flights" />
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
                     <Field label="Project Type">
-                      <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
+                      <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={`${fieldInput} min-w-0`}>
                         {PROJECT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </Field>
-                    <Field label="Timeline (hours)">
-                      <input type="number" min={1} max={80} value={timelineHours} onChange={(e) => setTimelineHours(Number(e.target.value) || 4)} className={fieldInput} />
+                    <Field label="Timeline (hrs)">
+                      <input type="number" min={1} max={80} value={timelineHours} onChange={(e) => setTimelineHours(Number(e.target.value) || 4)} className={`${fieldInput} w-20 min-w-0`} />
                     </Field>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <Field label="Custom Crating (pieces)">
-                      <input type="number" min={0} value={cratingPieces} onChange={(e) => setCratingPieces(Number(e.target.value) || 0)} className={fieldInput} />
+                    <Field label="Crating (pcs)">
+                      <input type="number" min={0} value={cratingPieces} onChange={(e) => setCratingPieces(Number(e.target.value) || 0)} className={`${fieldInput} w-16 min-w-0`} />
                     </Field>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-[var(--tx)]">Climate Control Required</span>
-                    <button type="button" role="switch" aria-checked={climateControl} onClick={() => setClimateControl(!climateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${climateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${climateControl ? "translate-x-4" : ""}`} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Climate Control</span>
+                      <button type="button" role="switch" aria-checked={climateControl} onClick={() => setClimateControl(!climateControl)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${climateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${climateControl ? "translate-x-4" : ""}`} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

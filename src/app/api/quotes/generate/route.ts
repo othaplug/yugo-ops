@@ -15,6 +15,8 @@ interface InventoryItem {
 }
 
 interface QuoteInput {
+  /** When provided, update existing quote in place instead of creating a new one */
+  quote_id?: string;
   service_type: string;
   from_address: string;
   to_address: string;
@@ -35,7 +37,8 @@ interface QuoteInput {
   has_conference_room?: boolean;
   has_reception_area?: boolean;
   timing_preference?: string;
-  // Single item
+  // Single item / White glove
+  item_description?: string;
   item_category?: string;
   item_weight_class?: string;
   assembly_needed?: string;
@@ -403,7 +406,7 @@ async function generateQuoteId(sb: SupabaseAdmin): Promise<string> {
     .select("value")
     .eq("key", "quote_id_prefix")
     .maybeSingle();
-  const prefix = (prefixRow?.value || "YGO-").trim() || "YGO-";
+  const prefix = (prefixRow?.value || "YG-").trim() || "YG-";
   const likePattern = prefix.replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
 
   const { data } = await sb
@@ -1076,6 +1079,10 @@ async function calcSingleItem(
     factors: {
       base_rate: Math.round((min + max) / 2),
       distance_surcharge: distanceSurcharge,
+      item_description: input.item_description || null,
+      item_category: input.item_category || null,
+      weight_class: input.item_weight_class || null,
+      assembly_surcharge: asm ? (asm.includes("both") || asm === "Both" ? assemblyBoth : asm.includes("disassembly") || asm.includes("dis") ? assemblyDis : assemblyAs) : null,
     },
   };
 }
@@ -1128,6 +1135,7 @@ async function calcWhiteGlove(
       includes: whiteGloveIncludes,
     } as TierResult,
     factors: {
+      ...siResult.factors,
       base_rate: siResult.custom_price.price,
       white_glove_premium: 1.5,
       distance_surcharge: siResult.factors.distance_surcharge,
@@ -1511,7 +1519,16 @@ export async function POST(req: NextRequest) {
     .eq("active", true)
     .order("tier_slug");
 
-  const quoteId = isPreview ? "PREVIEW" : await generateQuoteId(sb);
+  const isUpdate = !isPreview && !!input.quote_id?.trim();
+  let quoteId: string;
+  if (isPreview) {
+    quoteId = "PREVIEW";
+  } else if (isUpdate) {
+    const { data: existing } = await sb.from("quotes").select("quote_id").eq("quote_id", input.quote_id!.trim()).maybeSingle();
+    quoteId = existing?.quote_id ?? (await generateQuoteId(sb));
+  } else {
+    quoteId = await generateQuoteId(sb);
+  }
 
   const primaryPrice = tiers ? tiers.essentials.price : custom_price!.price;
   const depositAmount = tiers ? tiers.essentials.deposit : custom_price!.deposit;
@@ -1544,8 +1561,7 @@ export async function POST(req: NextRequest) {
   const expiryDays = cfgNum(config, "quote_expiry_days", 7);
 
   if (!isPreview) {
-    const { error: insertErr } = await sb.from("quotes").insert({
-      quote_id: quoteId,
+    const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
       contact_id: contactId,
       service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType,
@@ -1575,10 +1591,21 @@ export async function POST(req: NextRequest) {
       truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
       recommended_tier: input.recommended_tier || "premier",
-    });
+    };
 
-    if (insertErr) {
-      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    if (isUpdate) {
+      const { error: updateErr } = await sb.from("quotes").update(quotePayload).eq("quote_id", quoteId);
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      }
+    } else {
+      const { error: insertErr } = await sb.from("quotes").insert({
+        quote_id: quoteId,
+        ...quotePayload,
+      });
+      if (insertErr) {
+        return NextResponse.json({ error: insertErr.message }, { status: 500 });
+      }
     }
   }
 

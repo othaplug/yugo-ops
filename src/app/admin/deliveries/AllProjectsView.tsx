@@ -90,6 +90,30 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     exportAccessor: (d) => `${formatMoveDate(d.scheduled_date)} ${d.time_slot || ""}`,
   },
   {
+    id: "partner",
+    label: "Partner",
+    accessor: (d) => d.client_name,
+    sortable: true,
+    searchable: true,
+    render: (d) => <span className="font-medium text-[var(--tx)]">{d.client_name || "—"}</span>,
+  },
+  {
+    id: "category",
+    label: "Category",
+    accessor: (d) => d.category || "Delivery",
+    render: (d) => <span className="text-[var(--tx2)]">{toTitleCase(d.category || "Delivery")}</span>,
+    sortable: true,
+    searchable: true,
+  },
+  {
+    id: "customer",
+    label: "Customer",
+    accessor: (d) => d.customer_name || d.client_name,
+    render: (d) => <span className="text-[var(--tx2)]">{d.customer_name || d.client_name || "—"}</span>,
+    sortable: true,
+    searchable: true,
+  },
+  {
     id: "type",
     label: "Type",
     accessor: (d) => deliveryTypeLabel(d),
@@ -103,20 +127,11 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     searchable: true,
   },
   {
-    id: "details",
-    label: "Details",
-    accessor: (d) => deliveryDetailsLabel(d),
-    render: (d) => <span className="text-[12px] text-[var(--tx2)]">{deliveryDetailsLabel(d)}</span>,
-    sortable: true,
-    searchable: true,
-  },
-  {
     id: "price",
     label: "Price",
     accessor: (d) => d.total_price ?? 0,
     render: (d) => (d.total_price != null && d.total_price > 0 ? formatCurrency(d.total_price) : "—"),
     sortable: true,
-    align: "right",
   },
   {
     id: "status",
@@ -133,36 +148,6 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     },
     sortable: true,
     searchable: true,
-  },
-  {
-    id: "category",
-    label: "Category",
-    accessor: (d) => d.category || "Delivery",
-    render: (d) => <span>{toTitleCase(d.category || "Delivery")}</span>,
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "partner",
-    label: "Partner",
-    accessor: (d) => d.client_name,
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "customer",
-    label: "Customer",
-    accessor: (d) => d.customer_name || d.client_name,
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "items",
-    label: "Items",
-    accessor: (d) => d.items?.length ?? 0,
-    render: (d) => (d.items?.length ?? 0) > 0 ? `${d.items.length} item${d.items.length > 1 ? "s" : ""}` : "—",
-    sortable: true,
-    align: "right",
   },
 ];
 
@@ -360,6 +345,7 @@ export default function AllDeliveriesView({
           pagination
           exportable
           columnToggle
+          selectable
           onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
           emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}
         />

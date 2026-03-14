@@ -56,7 +56,7 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
               className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
                 statusFilter === f.value
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                  : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
+                  : "bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:bg-[var(--bg2)] hover:border-[var(--brd)]"
               }`}
             >
               {f.label}
