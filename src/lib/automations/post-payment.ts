@@ -451,6 +451,92 @@ export async function runPostPaymentActions(
         });
       },
     },
+
+    /* ── 7. Referral: mark used + notify referrer ── */
+    {
+      name: "referral_update",
+      critical: false,
+      fn: async () => {
+        const referralId = quote.referral_id as string | null;
+        if (!referralId) return;
+
+        // Fetch referral to get referrer details
+        const { data: ref } = await supabase
+          .from("client_referrals")
+          .select("id, referrer_email, referrer_name, referrer_credit, status")
+          .eq("id", referralId)
+          .single();
+
+        if (!ref || ref.status !== "active") return;
+
+        // Mark referral as used with referred client info
+        await supabase
+          .from("client_referrals")
+          .update({
+            status: "used",
+            referred_name: clientName,
+            referred_email: clientEmail,
+            referred_move_id: input.moveId,
+            used_at: new Date().toISOString(),
+          })
+          .eq("id", referralId);
+
+        // Increment referral_count on referrer's contact record
+        await supabase.rpc("increment_referral_count", { contact_email: ref.referrer_email }).then(
+          () => {},
+          async () => {
+            // Fallback if RPC not available: fetch and update manually
+            const { data: contact } = await supabase
+              .from("contacts")
+              .select("referral_count")
+              .eq("email", ref.referrer_email)
+              .single();
+            if (contact) {
+              await supabase
+                .from("contacts")
+                .update({ referral_count: (contact.referral_count ?? 0) + 1 })
+                .eq("email", ref.referrer_email);
+            }
+          }
+        );
+
+        // Email referrer to notify their referral booked
+        if (ref.referrer_email) {
+          const resend = getResend();
+          const emailFrom = await getEmailFrom();
+          const referrerFirstName = (ref.referrer_name || "").split(" ")[0] || "there";
+          const referredFirstName = clientName.split(" ")[0] || "Your friend";
+
+          await resend.emails.send({
+            from: emailFrom,
+            to: ref.referrer_email,
+            subject: `Great news — your referral just booked with Yugo!`,
+            html: `
+              <div style="font-family:sans-serif;background:#0D0D0D;padding:32px;border-radius:12px;max-width:520px;margin:0 auto">
+                <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Referral Booked</div>
+                <h1 style="font-size:22px;font-weight:700;margin:0 0 12px;color:#F5F5F3">
+                  ${referredFirstName} just booked with Yugo, ${referrerFirstName}!
+                </h1>
+                <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 20px">
+                  Someone you referred has confirmed their move. Your
+                  <strong style="color:#C9A962"> $${ref.referrer_credit} credit</strong>
+                  will be applied to your next Yugo booking.
+                </p>
+                <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
+                  <div style="font-size:12px;color:#666;margin-bottom:4px">Your referral credit</div>
+                  <div style="font-size:24px;font-weight:700;color:#C9A962">$${ref.referrer_credit}</div>
+                  <div style="font-size:11px;color:#666;margin-top:4px">Applied to your next move booking</div>
+                </div>
+                <p style="font-size:11px;color:#666;text-align:center">
+                  Questions? Reply to this email. — The Yugo Team
+                </p>
+              </div>
+            `,
+            headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+          });
+        }
+      },
+    },
   ];
 
   /* ── Execute all actions in parallel ── */

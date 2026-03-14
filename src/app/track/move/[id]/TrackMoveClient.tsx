@@ -8,7 +8,6 @@ import { getMoveCode, formatJobId } from "@/lib/move-code";
 import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
-import TrackMessageThread from "./TrackMessageThread";
 import TrackLiveMap from "./TrackLiveMap";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import StageProgressBar from "@/components/StageProgressBar";
@@ -70,7 +69,7 @@ const CHANGE_TYPES = [
 const YUGO_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 const YUGO_EMAIL = process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@yugo.com";
 
-type TabKey = "dash" | "track" | "inv" | "photos" | "docs" | "msg";
+type TabKey = "dash" | "track" | "inv" | "files";
 
 /** Map legacy status to index for timeline */
 function getStatusIdx(status: string | null): number {
@@ -222,17 +221,22 @@ export default function TrackMoveClient({
     }
   }, [tippingEnabled, move.status, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id, move.id, token]);
 
-  // Also trigger tip screen when liveStage transitions to completed
+  // Also trigger tip screen when liveStage TRANSITIONS to completed (not on initial load)
+  const prevLiveStage = useRef<string | null>(null);
   useEffect(() => {
+    const prev = prevLiveStage.current;
+    prevLiveStage.current = liveStage;
     if (!tippingEnabled) return;
-    if (liveStage !== "completed") return;
+    // Only fire when the stage actually changes TO "completed", not on mount
+    if (liveStage !== "completed" || prev === liveStage || prev === null) return;
     const alreadyTipped = !!move.tip_charged_at;
     const alreadySkipped = !!move.tip_skipped_at;
+    const tipPromptShown = !!move.tip_prompt_shown_at;
     const hasCard = !!move.square_card_id;
-    if (!alreadyTipped && !alreadySkipped && hasCard) {
+    if (!alreadyTipped && !alreadySkipped && !tipPromptShown && hasCard) {
       setTimeout(() => setShowTipScreen(true), 2000);
     }
-  }, [tippingEnabled, liveStage, move.tip_charged_at, move.tip_skipped_at, move.square_card_id]);
+  }, [tippingEnabled, liveStage, move.tip_charged_at, move.tip_skipped_at, move.tip_prompt_shown_at, move.square_card_id]);
 
   // Record payment and add receipt to documents when landing from Square redirect
   useEffect(() => {
@@ -473,9 +477,7 @@ export default function TrackMoveClient({
     { key: "dash", label: "Dashboard" },
     { key: "track" as TabKey, label: "Live Tracking" },
     { key: "inv", label: "Inventory" },
-    { key: "photos", label: "Photos" },
-    { key: "docs", label: "Documents" },
-    { key: "msg", label: "Messages" },
+    { key: "files", label: "Files" },
   ];
 
   const moveTotal = Number(move.amount || move.estimate || 0);
@@ -532,7 +534,13 @@ export default function TrackMoveClient({
               BETA
             </span>
           </div>
-          <ClientSettingsMenu moveId={move.id} />
+          <ClientSettingsMenu
+            moveId={move.id}
+            clientName={move.client_name || ""}
+            clientEmail={move.client_email || ""}
+            clientPhone={move.client_phone || ""}
+            valuationTier={move.tier_selected || move.service_tier || "released"}
+          />
         </div>
       </header>
 
@@ -912,7 +920,9 @@ export default function TrackMoveClient({
               {!referral ? (
                 <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
                   <p className="text-[12px] opacity-50 leading-relaxed" style={{ color: FOREST }}>
-                    Your referral code is on its way — check back shortly after your move completes.
+                    {isCompleted
+                      ? "Your referral code is being prepared — check back soon."
+                      : "Your referral code is on its way — check back shortly after your move completes."}
                   </p>
                 </div>
               ) : referral.status !== "active" ? (
@@ -992,9 +1002,9 @@ export default function TrackMoveClient({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {[
-                  { label: "Book a Move", sub: "Local or long distance", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
-                  { label: "Single Item", sub: "Sofa, piano, art piece", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
-                  { label: "Junk Removal", sub: "Cleanout, disposal", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
+                  { label: "Book a Move", sub: "Local or long distance", href: "https://yugoplus.co" },
+                  { label: "Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
+                  { label: "White Glove Service", sub: "Premium packing & placement", href: "https://yugoplus.co" },
                 ].map(({ label, sub, href }) => (
                   <a
                     key={label}
@@ -1373,23 +1383,13 @@ export default function TrackMoveClient({
           </div>
         )}
 
-        {activeTab === "photos" && (
-          <div className="mb-6">
+        {activeTab === "files" && (
+          <div className="mb-6 space-y-6">
             <TrackPhotos moveId={move.id} token={token} moveComplete={isCompleted} />
-          </div>
-        )}
-
-        {activeTab === "docs" && (
-          <div className="mb-6">
             <TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} />
           </div>
         )}
 
-        {activeTab === "msg" && (
-          <div>
-            <TrackMessageThread moveId={move.id} token={token} moveStatus={statusVal} />
-          </div>
-        )}
       </main>
 
       <footer className="py-3 px-4 text-center border-t" style={{ backgroundColor: CREAM, borderColor: `${FOREST}10` }}>

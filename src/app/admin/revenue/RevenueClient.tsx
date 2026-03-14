@@ -213,44 +213,44 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
-      {/* KPI Cards - real data */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{currentMonthLabel} Revenue</div>
-          <div className="text-xl font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
-          {currentMonthRevenue > 0 && <div className="text-[8px] text-[var(--tx3)] mt-0.5">Before HST</div>}
+      {/* KPI Stats — bare */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
+        <Link href="/admin/invoices" className="block group">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{currentMonthLabel} Revenue</div>
+          <div className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
+          {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mt-0.5">Before HST</div>}
           {pctChange !== 0 && (
             <div className={`text-[10px] font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
               {pctChange >= 0 ? "↑" : "↓"}{Math.abs(pctChange)}% vs last month
             </div>
           )}
         </Link>
-        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">YTD</div>
-          <div className="text-xl font-bold font-heading">{formatCompactCurrency(ytdRevenue)}</div>
+        <Link href="/admin/invoices" className="block group">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">YTD</div>
+          <div className="text-[24px] font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(ytdRevenue)}</div>
         </Link>
-        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(outstanding)}</div>
+        <Link href="/admin/invoices" className="block group">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+          <div className="text-[24px] font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(outstanding)}</div>
         </Link>
-        <Link href="/admin/invoices" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-4 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg Job</div>
-          <div className="text-xl font-bold font-heading">{formatCompactCurrency(avgJob)}</div>
+        <Link href="/admin/invoices" className="block group">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Avg Job</div>
+          <div className="text-[24px] font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(avgJob)}</div>
         </Link>
       </div>
 
       {/* Revenue breakdown: Move vs Invoice */}
       {(invoiceRevenue > 0 || moveRevenue > 0) && (
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-6">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-3">Revenue by Source</h3>
+        <div className="mb-6">
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Revenue by Source</div>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[var(--gold)]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />
               <span className="text-[11px] text-[var(--tx2)]">Invoice payments</span>
               <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(invoiceRevenue)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[var(--grn)]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--grn)]" />
               <span className="text-[11px] text-[var(--tx2)]">Move payments</span>
               <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(moveRevenue)}</span>
             </div>
@@ -259,7 +259,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
       )}
 
       {/* Revenue Trend - real interactive chart */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-[20px] p-6 mb-6">
+      <div className="mb-6">
         <h3 className="font-heading text-[15px] font-bold text-[var(--tx)] mb-1">
           Revenue Trend{period === "monthly" ? ` — ${now.toLocaleString("en-US", { month: "long", year: "numeric" })}` : ` — ${now.getFullYear()}`}
         </h3>
@@ -331,9 +331,9 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
 
       {/* By Type + Top Clients */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-4">By Type</h3>
-          <p className="text-[10px] text-[var(--tx3)] mb-3">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
+        <div>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-1">By Type</h3>
+          <p className="text-[10px] text-[var(--tx3)] mb-4">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
           <div className="space-y-3">
             {byType.map((t) => (
                 <button
@@ -357,7 +357,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+        <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Top Clients</h3>
             <Link href="/admin/clients" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">

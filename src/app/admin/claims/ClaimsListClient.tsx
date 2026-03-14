@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
-import { createClient } from "@/lib/supabase/client";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
 interface Claim {
@@ -136,50 +135,34 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
   const [statusFilter, setStatusFilter] = useState("");
   const router = useRouter();
 
-  // Realtime + polling for new claims
-  useEffect(() => {
-    const supabase = createClient();
-
-    const refreshClaims = async () => {
-      const { data } = await supabase
-        .from("claims")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (data) {
-        const allClaims = data as Claim[];
-        setClaims(allClaims);
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        setStats({
-          openCount: allClaims.filter((c) => ["submitted", "under_review"].includes(c.status)).length,
-          reviewCount: allClaims.filter((c) => c.status === "under_review").length,
-          resolvedCount: allClaims.filter((c) =>
-            ["approved", "partially_approved", "denied", "settled", "closed"].includes(c.status) &&
-            c.resolved_at && c.resolved_at >= thirtyDaysAgo
-          ).length,
-          totalPaidOut: allClaims
-            .filter((c) => c.approved_amount && c.resolved_at && c.resolved_at >= thirtyDaysAgo)
-            .reduce((sum, c) => sum + (c.approved_amount || 0), 0),
-        });
-      }
-    };
-
-    // Supabase realtime
-    const channel = supabase
-      .channel("claims-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "claims" }, () => {
-        refreshClaims();
-      })
-      .subscribe();
-
-    // Polling fallback every 30s
-    const interval = setInterval(refreshClaims, 30_000);
-
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-    };
+  const refreshClaims = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/claims");
+      if (!res.ok) return;
+      const json = await res.json();
+      const allClaims: Claim[] = json.claims || [];
+      setClaims(allClaims);
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      setStats({
+        openCount: allClaims.filter((c) => ["submitted", "under_review"].includes(c.status)).length,
+        reviewCount: allClaims.filter((c) => c.status === "under_review").length,
+        resolvedCount: allClaims.filter((c) =>
+          ["approved", "partially_approved", "denied", "settled", "closed"].includes(c.status) &&
+          c.resolved_at && c.resolved_at >= thirtyDaysAgo
+        ).length,
+        totalPaidOut: allClaims
+          .filter((c) => c.approved_amount && c.resolved_at && c.resolved_at >= thirtyDaysAgo)
+          .reduce((sum, c) => sum + (c.approved_amount || 0), 0),
+      });
+    } catch { /* network errors are non-fatal */ }
   }, []);
+
+  // Poll every 30s for new claims
+  useEffect(() => {
+    const interval = setInterval(refreshClaims, 30_000);
+    return () => clearInterval(interval);
+  }, [refreshClaims]);
 
   const filtered = useMemo(
     () => (statusFilter ? claims.filter((c) => c.status === statusFilter) : claims),
@@ -201,8 +184,8 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         </Link>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      {/* Stats row — bare */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
         <StatCard label="Open Claims" value={stats.openCount} color="var(--gold)" />
         <StatCard label="Under Review" value={stats.reviewCount} color="#3B82F6" />
         <StatCard label="Resolved (30d)" value={stats.resolvedCount} color="var(--grn)" />
@@ -244,9 +227,9 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
-    <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-4">
-      <p className="text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-[22px] font-bold" style={{ color }}>{value}</p>
+    <div>
+      <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</p>
+      <p className="text-[24px] font-bold font-heading" style={{ color }}>{value}</p>
     </div>
   );
 }

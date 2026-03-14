@@ -33,8 +33,8 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
 
   return (
     <ToastProvider>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-4 border-b border-[var(--brd)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div className="px-0 py-4 border-b border-[var(--brd)]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Invoices</h3>
           <div className="flex items-center gap-2">
             <p className="text-[11px] text-[var(--tx3)]">Create and manage invoices.</p>
@@ -47,7 +47,7 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
             </button>
           </div>
         </div>
-        <div className="px-4 py-3 border-b border-[var(--brd)] flex flex-wrap gap-2">
+        <div className="px-0 py-3 border-b border-[var(--brd)]/30 flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}

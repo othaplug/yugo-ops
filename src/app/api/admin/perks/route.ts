@@ -40,6 +40,31 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ perks: data ?? [] });
 }
 
+export async function PATCH(req: NextRequest) {
+  const { error: authErr } = await requireAdmin();
+  if (authErr) return authErr;
+
+  const db = createAdminClient();
+  const body = await req.json();
+
+  if (body.type === "credit_referral") {
+    const { referral_id } = body;
+    if (!referral_id) return NextResponse.json({ error: "referral_id required" }, { status: 400 });
+
+    const { data, error } = await db
+      .from("client_referrals")
+      .update({ status: "credited", credited_at: new Date().toISOString() })
+      .eq("id", referral_id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(data);
+  }
+
+  return NextResponse.json({ error: "Unknown patch type" }, { status: 400 });
+}
+
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;

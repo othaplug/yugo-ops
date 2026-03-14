@@ -16,6 +16,12 @@ type ExistingClaim = {
   status: string;
 };
 
+type ClaimItem = {
+  name: string;
+  damage_description: string;
+  declared_value: string;
+};
+
 function getSettings(): ClientSettings {
   if (typeof window === "undefined") return {};
   try {
@@ -39,7 +45,21 @@ function getTheme(): "light" | "dark" {
   return (localStorage.getItem(CLIENT_THEME_KEY) as "light" | "dark") || "light";
 }
 
-export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
+const EMPTY_ITEM: ClaimItem = { name: "", damage_description: "", declared_value: "" };
+
+export default function ClientSettingsMenu({
+  moveId,
+  clientName = "",
+  clientEmail = "",
+  clientPhone = "",
+  valuationTier = "released",
+}: {
+  moveId: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  valuationTier?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [claimStatusOpen, setClaimStatusOpen] = useState(false);
@@ -47,10 +67,13 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
   const [settings, setSettingsState] = useState<ClientSettings>({});
   const ref = useRef<HTMLDivElement>(null);
 
-  const [claimDesc, setClaimDesc] = useState("");
-  const [claimDate, setClaimDate] = useState("");
+  // Claim form state
+  const [claimItems, setClaimItems] = useState<ClaimItem[]>([{ ...EMPTY_ITEM }]);
   const [claimPhotos, setClaimPhotos] = useState<File[]>([]);
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
   const [claimSubmitted, setClaimSubmitted] = useState(false);
+  const [claimError, setClaimError] = useState("");
+  const [submittedClaimNumber, setSubmittedClaimNumber] = useState("");
 
   const [existingClaim, setExistingClaim] = useState<ExistingClaim | null>(null);
 
@@ -86,6 +109,13 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
     saveSettings(next);
   };
 
+  const setItem = (index: number, field: keyof ClaimItem, value: string) => {
+    setClaimItems((prev) => prev.map((it, i) => i === index ? { ...it, [field]: value } : it));
+  };
+
+  const addItem = () => setClaimItems((prev) => [...prev, { ...EMPTY_ITEM }]);
+  const removeItem = (index: number) => setClaimItems((prev) => prev.filter((_, i) => i !== index));
+
   const handleClaimPhotoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -93,9 +123,70 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
     e.target.value = "";
   };
 
-  const handleClaimSubmit = (e: React.FormEvent) => {
+  const handleClaimSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setClaimSubmitted(true);
+    setClaimError("");
+
+    const validItems = claimItems.filter((it) => it.name.trim());
+    if (validItems.length === 0) {
+      setClaimError("Please describe at least one damaged item.");
+      return;
+    }
+
+    setClaimSubmitting(true);
+    try {
+      const res = await fetch("/api/claims/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          moveId,
+          clientName: clientName || "Client",
+          clientEmail: clientEmail || "",
+          clientPhone: clientPhone || null,
+          valuationTier: valuationTier || "released",
+          wasUpgraded: false,
+          items: validItems.map((it) => ({
+            name: it.name.trim(),
+            damage_description: it.damage_description.trim(),
+            declared_value: it.declared_value ? Number(it.declared_value) : 0,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submission failed");
+
+      const claimId: string = data.claimId;
+      setSubmittedClaimNumber(data.claimNumber || "");
+
+      // Upload photos if any
+      if (claimPhotos.length > 0) {
+        await Promise.allSettled(
+          claimPhotos.map((file) => {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("claimId", claimId);
+            fd.append("photoType", "damage");
+            fd.append("uploadedBy", "client");
+            return fetch("/api/claims/photos", { method: "POST", body: fd });
+          })
+        );
+      }
+
+      setClaimSubmitted(true);
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : "Submission failed. Please try again.");
+    } finally {
+      setClaimSubmitting(false);
+    }
+  };
+
+  const resetClaimForm = () => {
+    setClaimItems([{ ...EMPTY_ITEM }]);
+    setClaimPhotos([]);
+    setClaimSubmitted(false);
+    setClaimError("");
+    setSubmittedClaimNumber("");
   };
 
   return (
@@ -170,61 +261,53 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
 
               {/* View claim status — only when a claim exists */}
               {existingClaim && (
-                <>
-                  <button
-                    onClick={() => { setOpen(false); setClaimStatusOpen(true); }}
-                    className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors"
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme === "dark" ? "#222" : "#F8F7F4")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <span className="text-[11px] font-semibold" style={{ color: GOLD }}>
-                      View claim status
-                    </span>
-                  </button>
-                </>
+                <button
+                  onClick={() => { setOpen(false); setClaimStatusOpen(true); }}
+                  className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 transition-colors"
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme === "dark" ? "#222" : "#F8F7F4")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span className="text-[11px] font-semibold" style={{ color: GOLD }}>
+                    View claim status
+                  </span>
+                </button>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Claim Submission Modal */}
+      {/* ── Claim Submission Modal ── */}
       {claimOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-y-auto"
           style={{ minHeight: "100dvh" }}
-          onClick={(e) => { if (e.target === e.currentTarget) setClaimOpen(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setClaimOpen(false); resetClaimForm(); } }}
         >
           <div
-            className="rounded-2xl w-full max-w-[440px] shadow-2xl overflow-hidden my-auto"
+            className="rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden my-auto"
             style={{ backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF" }}
           >
             {/* Header */}
-            <div
-              className="px-6 pt-6 pb-4 border-b"
-              style={{ borderColor: theme === "dark" ? "#333" : "#E7E5E4" }}
-            >
+            <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#E7E5E4" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-[16px] font-bold" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
                     Submit a Claim
                   </h3>
                   <p className="text-[11px] mt-1" style={{ color: theme === "dark" ? "#888" : "#999" }}>
-                    Report any damages or issues from your move
+                    Report damages or missing items from your move
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setClaimOpen(false); setClaimSubmitted(false); }}
+                  onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                   className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                  style={{
-                    backgroundColor: theme === "dark" ? "#333" : "#F5F5F3",
-                    color: theme === "dark" ? "#999" : "#666",
-                  }}
+                  style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -235,24 +318,27 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
             </div>
 
             {claimSubmitted ? (
+              /* ── Success state ── */
               <div className="px-6 py-10 text-center">
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: `${GOLD}18` }}
-                >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${GOLD}18` }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <h4 className="text-[15px] font-bold mb-2" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
+                <h4 className="text-[15px] font-bold mb-1" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
                   Claim Submitted
                 </h4>
+                {submittedClaimNumber && (
+                  <p className="text-[11px] font-mono font-semibold mb-2" style={{ color: GOLD }}>
+                    {submittedClaimNumber}
+                  </p>
+                )}
                 <p className="text-[12px] max-w-[280px] mx-auto leading-relaxed" style={{ color: theme === "dark" ? "#888" : "#999" }}>
-                  We&apos;ve received your claim. Our team will review it and contact you within 48 hours.
+                  We&apos;ve received your claim and will follow up by email within 3 business days.
                 </p>
                 <button
                   type="button"
-                  onClick={() => { setClaimOpen(false); setClaimSubmitted(false); setClaimDesc(""); setClaimDate(""); setClaimPhotos([]); }}
+                  onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                   className="mt-6 px-6 py-2.5 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90"
                   style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                 >
@@ -260,45 +346,83 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleClaimSubmit} className="px-6 py-5 space-y-4">
+              /* ── Form ── */
+              <form onSubmit={handleClaimSubmit} className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
+
+                {/* Items */}
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: GOLD }}>
-                    What happened? *
-                  </label>
-                  <textarea
-                    value={claimDesc}
-                    onChange={(e) => setClaimDesc(e.target.value)}
-                    placeholder="Describe the damage or issue in detail..."
-                    rows={3}
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-lg border text-[13px] focus:outline-none transition-colors resize-none"
-                    style={{
-                      borderColor: theme === "dark" ? "#444" : "#E7E5E4",
-                      backgroundColor: theme === "dark" ? "#222" : "#FAFAF8",
-                      color: theme === "dark" ? "#E8E5E0" : "#1A1A1A",
-                    }}
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GOLD }}>
+                      Damaged Item(s) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addItem}
+                      className="text-[10px] font-semibold flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
+                      style={{ color: FOREST }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add item
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {claimItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl border p-3.5 space-y-2.5"
+                        style={{ borderColor: theme === "dark" ? "#333" : "#E7E5E4", backgroundColor: theme === "dark" ? "#111" : "#FAFAF8" }}
+                      >
+                        {claimItems.length > 1 && (
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-semibold opacity-40" style={{ color: FOREST }}>Item {idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(idx)}
+                              className="text-[10px] opacity-40 hover:opacity-80"
+                              style={{ color: "#EF4444" }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                        <input
+                          value={item.name}
+                          onChange={(e) => setItem(idx, "name", e.target.value)}
+                          placeholder="Item name (e.g. Sofa, TV, Glass table)"
+                          required={idx === 0}
+                          className="w-full px-3 py-2 rounded-lg border text-[12px] focus:outline-none"
+                          style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", backgroundColor: theme === "dark" ? "#222" : "#FFF", color: theme === "dark" ? "#E8E5E0" : "#1A1A1A" }}
+                        />
+                        <textarea
+                          value={item.damage_description}
+                          onChange={(e) => setItem(idx, "damage_description", e.target.value)}
+                          placeholder="Describe the damage..."
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-lg border text-[12px] focus:outline-none resize-none"
+                          style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", backgroundColor: theme === "dark" ? "#222" : "#FFF", color: theme === "dark" ? "#E8E5E0" : "#1A1A1A" }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-medium opacity-60" style={{ color: FOREST }}>$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={item.declared_value}
+                            onChange={(e) => setItem(idx, "declared_value", e.target.value)}
+                            placeholder="Declared value"
+                            className="flex-1 px-3 py-2 rounded-lg border text-[12px] focus:outline-none"
+                            style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", backgroundColor: theme === "dark" ? "#222" : "#FFF", color: theme === "dark" ? "#E8E5E0" : "#1A1A1A" }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
+                {/* Photos */}
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: GOLD }}>
-                    When did it happen?
-                  </label>
-                  <input
-                    type="date"
-                    value={claimDate}
-                    onChange={(e) => setClaimDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border text-[13px] focus:outline-none transition-colors"
-                    style={{
-                      borderColor: theme === "dark" ? "#444" : "#E7E5E4",
-                      backgroundColor: theme === "dark" ? "#222" : "#FAFAF8",
-                      color: theme === "dark" ? "#E8E5E0" : "#1A1A1A",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: GOLD }}>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
                     Photos (optional, max 5)
                   </label>
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -308,19 +432,14 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                         className="relative w-16 h-16 rounded-lg overflow-hidden border"
                         style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4" }}
                       >
-                        <img
-                          src={URL.createObjectURL(f)}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setClaimPhotos((p) => p.filter((_, j) => j !== i))}
                           className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
                         >
                           <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                           </svg>
                         </button>
                       </div>
@@ -329,45 +448,44 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                   {claimPhotos.length < 5 && (
                     <label
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed text-[11px] font-semibold cursor-pointer transition-colors"
-                      style={{
-                        borderColor: theme === "dark" ? "#555" : "#D4D0C8",
-                        color: theme === "dark" ? "#888" : "#888",
-                      }}
+                      style={{ borderColor: theme === "dark" ? "#555" : "#D4D0C8", color: theme === "dark" ? "#888" : "#888" }}
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                       </svg>
                       Add photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleClaimPhotoAdd}
-                        className="hidden"
-                      />
+                      <input type="file" accept="image/*" onChange={handleClaimPhotoAdd} className="hidden" />
                     </label>
                   )}
                 </div>
 
-                <div className="flex gap-2.5 pt-2">
+                {/* Error */}
+                {claimError && (
+                  <p className="text-[11px] font-medium text-red-500">{claimError}</p>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2.5 pt-1">
                   <button
                     type="button"
-                    onClick={() => setClaimOpen(false)}
+                    onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                     className="flex-1 py-2.5 rounded-xl border text-[12px] font-semibold transition-colors"
-                    style={{
-                      borderColor: theme === "dark" ? "#444" : "#E7E5E4",
-                      color: theme === "dark" ? "#999" : "#555",
-                    }}
+                    style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", color: theme === "dark" ? "#999" : "#555" }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={!claimDesc.trim()}
-                    className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
+                    disabled={claimSubmitting || !claimItems.some((it) => it.name.trim())}
+                    className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                     style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
                   >
-                    Submit Claim
+                    {claimSubmitting ? (
+                      <>
+                        <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+                        Submitting…
+                      </>
+                    ) : "Submit Claim"}
                   </button>
                 </div>
 
@@ -381,7 +499,7 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
         </div>
       )}
 
-      {/* Claim Status Modal */}
+      {/* ── Claim Status Modal ── */}
       {claimStatusOpen && existingClaim && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
@@ -408,14 +526,10 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                 type="button"
                 onClick={() => setClaimStatusOpen(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                style={{
-                  backgroundColor: theme === "dark" ? "#333" : "#F5F5F3",
-                  color: theme === "dark" ? "#999" : "#666",
-                }}
+                style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
@@ -427,7 +541,7 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                   style={{ backgroundColor: claimStatusColor(existingClaim.status).bg }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={claimStatusColor(existingClaim.status).fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    {existingClaim.status === "resolved" || existingClaim.status === "settled" ? (
+                    {existingClaim.status === "resolved" || existingClaim.status === "settled" || existingClaim.status === "approved" ? (
                       <polyline points="20 6 9 17 4 12" />
                     ) : existingClaim.status === "denied" ? (
                       <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
@@ -454,7 +568,7 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
                   What happens next
                 </div>
                 <p className="text-[12px] leading-relaxed" style={{ color: theme === "dark" ? "#AAA" : "#666" }}>
-                  {existingClaim.status === "resolved" || existingClaim.status === "settled"
+                  {existingClaim.status === "resolved" || existingClaim.status === "settled" || existingClaim.status === "approved"
                     ? "Your claim has been resolved. If you have any questions, please contact us."
                     : existingClaim.status === "denied"
                     ? "Your claim was reviewed and could not be approved. Contact us if you have questions."
@@ -480,9 +594,9 @@ export default function ClientSettingsMenu({ moveId }: { moveId: string }) {
 
 function claimStatusColor(status: string) {
   switch (status) {
-    case "resolved": case "settled": return { bg: "#22C55E18", fg: "#22C55E" };
+    case "resolved": case "settled": case "approved": return { bg: "#22C55E18", fg: "#22C55E" };
     case "denied": return { bg: "#EF444418", fg: "#EF4444" };
-    case "in_review": case "investigating": return { bg: `${GOLD}18`, fg: GOLD };
+    case "in_review": case "investigating": case "under_review": return { bg: `${GOLD}18`, fg: GOLD };
     default: return { bg: `${GOLD}12`, fg: GOLD };
   }
 }
@@ -490,8 +604,10 @@ function claimStatusColor(status: string) {
 function claimStatusLabel(status: string) {
   switch (status) {
     case "submitted": return "Claim Submitted";
-    case "in_review": return "Under Review";
+    case "in_review": case "under_review": return "Under Review";
     case "investigating": return "Being Investigated";
+    case "approved": return "Approved";
+    case "partially_approved": return "Partially Approved";
     case "resolved": case "settled": return "Resolved";
     case "denied": return "Denied";
     default: return "In Progress";
@@ -501,8 +617,10 @@ function claimStatusLabel(status: string) {
 function claimStatusDescription(status: string) {
   switch (status) {
     case "submitted": return "Your claim has been received and is awaiting review.";
-    case "in_review": return "Our team is currently reviewing your claim.";
+    case "in_review": case "under_review": return "Our team is currently reviewing your claim.";
     case "investigating": return "We're investigating the details of your claim.";
+    case "approved": return "Your claim has been approved.";
+    case "partially_approved": return "Your claim has been partially approved.";
     case "resolved": case "settled": return "Your claim has been resolved.";
     case "denied": return "Your claim was not approved after review.";
     default: return "Your claim is being processed.";

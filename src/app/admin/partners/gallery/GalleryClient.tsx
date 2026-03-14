@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import Badge from "../../components/Badge";
 import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
 import CreateGalleryProjectModal from "./CreateGalleryProjectModal";
@@ -13,32 +14,26 @@ interface GalleryPartner {
   email?: string | null;
 }
 
-function getProgressBarColor(onTrack: boolean, atRisk: boolean, behind: boolean): string {
-  if (onTrack) return "bg-[var(--grn)]";
-  if (atRisk) return "bg-[var(--org)]";
-  return "bg-[var(--red)]";
+function formatDateShort(d: string | null): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatDate(d: string | null): string {
   if (!d) return "—";
-  const date = new Date(d);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatDateShort(d: string | null): string {
-  if (!d) return "—";
-  const date = new Date(d);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function GalleryClient({ galleryPartners = [] }: { galleryPartners?: GalleryPartner[] }) {
   const [projects, setProjects] = useState<GalleryProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedEx, setExpandedEx] = useState<Set<string>>(new Set());
-  const [expandedTrans, setExpandedTrans] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [projectDetail, setProjectDetail] = useState<GalleryProject | null>(null);
   const [editingProject, setEditingProject] = useState<GalleryProject | null>(null);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [activeTab, setActiveTab] = useState<"projects" | "partners">("projects");
+  const [search, setSearch] = useState("");
+  const [selectedPartner, setSelectedPartner] = useState("all");
 
   const fetchProjects = () => {
     setLoading(true);
@@ -49,119 +44,252 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  useEffect(() => { fetchProjects(); }, []);
 
-  const exhibitions = projects.filter((p) => p.project_type === "exhibition" || (!p.project_type && p.status !== "delivered"));
-  const transports = projects.filter((p) => ["delivery", "install", "storage_retrieval", "art_fair", "other"].includes(p.project_type || ""));
+  const filteredProjects = useMemo(() => {
+    let result = projects;
+    if (selectedPartner !== "all") {
+      const partner = galleryPartners.find((g) => g.id === selectedPartner);
+      if (partner?.name) result = result.filter((p) => p.gallery === partner.name);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((p) =>
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.gallery || "").toLowerCase().includes(q) ||
+        (p.location || "").toLowerCase().includes(q) ||
+        (p.address || "").toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [projects, selectedPartner, search, galleryPartners]);
 
-  const toggleEx = (id: string) => {
-    setExpandedEx((prev) => {
+  const tabs = [
+    { key: "projects" as const, label: `Projects (${projects.length})` },
+    { key: "partners" as const, label: `Partners (${galleryPartners.length})` },
+  ];
+
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  };
-
-  const toggleTrans = (id: string) => {
-    setExpandedTrans((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const openDetail = (p: GalleryProject) => {
-    setProjectDetail(p);
-  };
-
-  const openEdit = (p: GalleryProject) => {
-    setEditingProject(p);
-    setProjectDetail(null);
-  };
 
   if (loading) {
-    return (
-      <div className="mb-6 py-8 text-center text-[12px] text-[var(--tx3)]">Loading projects…</div>
-    );
+    return <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading projects…</div>;
   }
-
-  const allProjects = [...exhibitions, ...transports];
 
   return (
     <>
-      {/* Projects - consolidated exhibitions & transports */}
-      <div className="pt-6 border-t border-[var(--brd)]/30">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Projects</div>
+      {/* Tabs + Action Buttons */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
+                activeTab === t.key
+                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
+                  : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setCreatingProject(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New project
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Project
           </button>
+          <Link
+            href="/admin/clients/new?type=partner&partnerType=gallery"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            Add Partner
+          </Link>
         </div>
-        <div className="space-y-0 divide-y divide-[var(--brd)]/30">
-          {allProjects.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-[12px] text-[var(--tx3)] mb-2">No gallery projects yet.</p>
-              <button
-                type="button"
-                onClick={() => setCreatingProject(true)}
-                className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
-              >
-                Create your first gallery project →
-              </button>
-            </div>
-          ) : allProjects.map((ex) => {
-            const isExhibition = exhibitions.some((e) => e.id === ex.id);
-            const isExpanded = isExhibition ? expandedEx.has(ex.id) : expandedTrans.has(ex.id);
-            const toggle = isExhibition ? () => toggleEx(ex.id) : () => toggleTrans(ex.id);
-            const start = ex.start_date ? new Date(ex.start_date) : null;
-            const end = ex.end_date ? new Date(ex.end_date) : null;
-            const dates = start && end ? `${formatDateShort(ex.start_date)} – ${formatDateShort(ex.end_date)}` : "—";
-            const subtitle = isExhibition
-              ? `${ex.gallery || "—"} • ${ex.location || "—"} • ${dates}`
-              : `${ex.gallery || "—"} • ${ex.address || ex.location || "—"} • ${ex.insurance_value || "—"}`;
-            return (
-              <div key={ex.id} className="py-3 first:pt-0">
-                <button type="button" onClick={toggle} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                  {!isExhibition && (
-                    <div className="w-10 h-10 rounded-lg bg-[var(--gdim)] flex items-center justify-center text-[var(--gold)] shrink-0">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18M9 21V9" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-bold text-[var(--tx)]">{ex.name}</div>
-                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {!isExhibition && ex.start_date && <div className="text-[10px] text-[var(--tx3)]">{formatDateShort(ex.start_date)}</div>}
-                    <Badge status={ex.status} />
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}>
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                {isExpanded && (
-                  <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]/30">
-                    <div className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{ex.details || "—"}</div>
-                    <button type="button" onClick={() => openDetail(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline mr-3">View details →</button>
-                    <button type="button" onClick={() => openEdit(ex)} className="inline-block mt-2 text-[10px] font-semibold text-[var(--tx2)] hover:underline">Edit project</button>
-                  </div>
-                )}
+      </div>
+
+      {/* Tab Content */}
+      <div className="pt-6 border-t border-[var(--brd)]/30">
+
+        {/* ── Projects Tab ── */}
+        {activeTab === "projects" && (
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
+
+            {/* Search + filter */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
+              <div className="relative flex-1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search projects…"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors"
+                />
               </div>
-            );
-          })}
-        </div>
+              <select
+                value={selectedPartner}
+                onChange={(e) => setSelectedPartner(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors min-w-[160px]"
+              >
+                <option value="all">All Partners</option>
+                {galleryPartners.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Project rows */}
+            <div className="divide-y divide-[var(--brd)]/30">
+              {filteredProjects.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-[12px] text-[var(--tx3)] mb-2">
+                    {search || selectedPartner !== "all" ? "No projects match your filter." : "No gallery projects yet."}
+                  </p>
+                  {!search && selectedPartner === "all" && (
+                    <button
+                      type="button"
+                      onClick={() => setCreatingProject(true)}
+                      className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
+                    >
+                      Create your first gallery project →
+                    </button>
+                  )}
+                </div>
+              ) : filteredProjects.map((p) => {
+                const isExpanded = expandedIds.has(p.id);
+                const isExhibition = p.project_type === "exhibition" || (!p.project_type && p.status !== "delivered");
+                const start = p.start_date ? formatDateShort(p.start_date) : null;
+                const end = p.end_date ? formatDateShort(p.end_date) : null;
+                const dates = start && end ? `${start} – ${end}` : start || end || null;
+                const subtitle = [
+                  p.gallery,
+                  isExhibition ? p.location : (p.address || p.location),
+                  dates,
+                ].filter(Boolean).join(" · ") || "—";
+
+                return (
+                  <div key={p.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(p.id)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-[var(--bg)]/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{p.name}</span>
+                          {p.project_type && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--bg)] text-[var(--tx3)] flex-shrink-0">
+                              {toTitleCase(p.project_type)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{subtitle}</div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                        <Badge status={p.status} />
+                        <svg
+                          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"
+                          className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        >
+                          <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-[var(--brd)]/20">
+                        {p.details && (
+                          <p className="text-[11px] text-[var(--tx2)] mt-3 leading-relaxed">{p.details}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-3">
+                          {p.start_date && (
+                            <div>
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Dates</div>
+                              <div className="text-[11px] text-[var(--tx)]">{formatDate(p.start_date)}{p.end_date ? ` – ${formatDate(p.end_date)}` : ""}</div>
+                            </div>
+                          )}
+                          {p.insurance_value && (
+                            <div>
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Estimate</div>
+                              <div className="text-[11px] font-semibold text-[var(--gold)]">{p.insurance_value}</div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setProjectDetail(p)}
+                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                          >
+                            View details →
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingProject(p); setProjectDetail(null); }}
+                            className="text-[10px] font-semibold text-[var(--tx2)] hover:underline"
+                          >
+                            Edit project
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Partners Tab ── */}
+        {activeTab === "partners" && (
+          <div>
+            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="divide-y divide-[var(--brd)]/30">
+              {galleryPartners.length === 0 ? (
+                <div className="px-4 py-10 text-center">
+                  <p className="text-[13px] text-[var(--tx3)]">No gallery partners yet.</p>
+                  <Link
+                    href="/admin/clients/new?type=partner&partnerType=gallery"
+                    className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block"
+                  >
+                    Add your first partner
+                  </Link>
+                </div>
+              ) : galleryPartners.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/admin/clients/${p.id}?from=gallery`}
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-[#4A7CE5]/10 flex items-center justify-center text-[12px] font-bold text-[#4A7CE5]">
+                    {(p.name || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
+                    <div className="text-[11px] text-[var(--tx3)]">{[p.contact_name, p.email].filter(Boolean).join(" · ") || "—"}</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Project detail modal */}
@@ -196,7 +324,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Dates</div>
-                <div className="text-[var(--tx)]">{projectDetail.start_date ? formatDate(projectDetail.start_date) : "—"} – {projectDetail.end_date ? formatDate(projectDetail.end_date) : "—"}</div>
+                <div className="text-[var(--tx)]">{formatDate(projectDetail.start_date)} – {formatDate(projectDetail.end_date)}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>
@@ -210,7 +338,11 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div>
                   <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Handling</div>
                   <div className="text-[var(--tx2)]">
-                    {[projectDetail.white_glove && "White-glove", projectDetail.crating_required && "Crating", projectDetail.climate_controlled && "Climate-controlled"].filter(Boolean).join(" • ") || "—"}
+                    {[
+                      projectDetail.white_glove && "White-glove",
+                      projectDetail.crating_required && "Crating",
+                      projectDetail.climate_controlled && "Climate-controlled",
+                    ].filter(Boolean).join(" · ") || "—"}
                   </div>
                 </div>
               )}
@@ -219,7 +351,11 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
               </div>
             </div>
-            <button type="button" onClick={() => openEdit(projectDetail)} className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
+            <button
+              type="button"
+              onClick={() => { setEditingProject(projectDetail); setProjectDetail(null); }}
+              className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+            >
               Edit project
             </button>
           </div>

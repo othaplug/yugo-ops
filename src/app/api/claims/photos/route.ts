@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File size exceeds 10MB limit" }, { status: 400 });
     }
 
-    const VALID_PHOTO_TYPES = ["damage", "before", "after", "receipt", "other"];
+    const VALID_PHOTO_TYPES = ["damage", "item_before", "item_after", "receipt", "other"];
     if (!VALID_PHOTO_TYPES.includes(photoType)) {
       return NextResponse.json({ error: `Invalid photoType. Accepted: ${VALID_PHOTO_TYPES.join(", ")}` }, { status: 400 });
     }

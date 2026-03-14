@@ -17,10 +17,16 @@ CREATE INDEX IF NOT EXISTS idx_tier_features_lookup
   ON public.tier_features(service_type, tier, active, display_order);
 
 ALTER TABLE public.tier_features ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role manages tier_features"
-  ON public.tier_features FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated can read tier_features"
-  ON public.tier_features FOR SELECT TO authenticated USING (true);
+DO $$ BEGIN
+  CREATE POLICY "Service role manages tier_features"
+    ON public.tier_features FOR ALL TO service_role USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Authenticated can read tier_features"
+    ON public.tier_features FOR SELECT TO authenticated USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─────────────────────────────────────────────
 -- SEED: Residential (local_move) — 3 tiers

@@ -32,7 +32,7 @@ function SkippedBanner({ onDone }: { onDone: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[150] flex items-center justify-center px-4 modal-overlay"
-      style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      style={{ backgroundColor: "rgba(255,255,255,0.5)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
     >
       <div
         className="w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl px-6 py-8 text-center"
@@ -149,7 +149,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
     return (
       <>
         <ConfettiEffect />
-        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay" style={{ backgroundColor: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)" }}>
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay" style={{ backgroundColor: "rgba(255,255,255,0.5)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
           <div
             className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
             style={{ backgroundColor: CREAM }}
@@ -199,10 +199,10 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
   return (
     <div
       className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay"
-      style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      style={{ backgroundColor: "rgba(255,255,255,0.5)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
     >
       <div
-        className="w-full max-w-[340px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
+        className="w-full max-w-[400px] sm:max-w-[420px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
         style={{ backgroundColor: CREAM }}
       >
         {/* Drag handle (mobile) */}
@@ -275,7 +275,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
                   <div className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-0.5" style={{ color: isSelected ? GOLD : FOREST }}>
                     {p.pct}
                   </div>
-                  <div className="text-[18px] font-bold leading-tight" style={{ color: isSelected ? WINE : FOREST }}>
+                  <div className="text-[14px] font-bold leading-tight" style={{ color: isSelected ? WINE : FOREST }}>
                     {formatCurrency(p.amount)}
                   </div>
                   <div className="text-[10px] font-semibold mt-0.5 opacity-60" style={{ color: isSelected ? GOLD : FOREST }}>

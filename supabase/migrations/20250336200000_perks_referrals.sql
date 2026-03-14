@@ -85,24 +85,39 @@ ALTER TABLE public.client_referrals  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.perk_redemptions  ENABLE ROW LEVEL SECURITY;
 
 -- Platform users (admin) can manage all
-CREATE POLICY "platform_users_manage_partner_perks"
-  ON public.partner_perks FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+DO $$ BEGIN
+  CREATE POLICY "platform_users_manage_partner_perks"
+    ON public.partner_perks FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "platform_users_manage_client_referrals"
-  ON public.client_referrals FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+DO $$ BEGIN
+  CREATE POLICY "platform_users_manage_client_referrals"
+    ON public.client_referrals FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "platform_users_manage_perk_redemptions"
-  ON public.perk_redemptions FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+DO $$ BEGIN
+  CREATE POLICY "platform_users_manage_perk_redemptions"
+    ON public.perk_redemptions FOR ALL
+    USING (EXISTS (SELECT 1 FROM public.platform_users WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Public read on active perks (for tracking page / client facing)
-CREATE POLICY "public_read_active_perks"
-  ON public.partner_perks FOR SELECT
-  USING (is_active = TRUE AND (valid_until IS NULL OR valid_until >= CURRENT_DATE));
+DO $$ BEGIN
+  CREATE POLICY "public_read_active_perks"
+    ON public.partner_perks FOR SELECT
+    USING (is_active = TRUE AND (valid_until IS NULL OR valid_until >= CURRENT_DATE));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Public read on own referral by code (for verify endpoint — filtered in app)
-CREATE POLICY "public_read_referral_by_code"
-  ON public.client_referrals FOR SELECT
-  USING (TRUE);
+DO $$ BEGIN
+  CREATE POLICY "public_read_referral_by_code"
+    ON public.client_referrals FOR SELECT
+    USING (TRUE);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

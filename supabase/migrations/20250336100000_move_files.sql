@@ -20,12 +20,15 @@ CREATE INDEX IF NOT EXISTS idx_move_files_move_id ON public.move_files(move_id);
 ALTER TABLE public.move_files ENABLE ROW LEVEL SECURITY;
 
 -- Admins and platform users can manage all move files
-CREATE POLICY "platform_users_manage_move_files"
-  ON public.move_files
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.platform_users
-      WHERE user_id = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "platform_users_manage_move_files"
+    ON public.move_files
+    FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.platform_users
+        WHERE user_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
