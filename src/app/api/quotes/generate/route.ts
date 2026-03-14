@@ -437,7 +437,7 @@ function roundTo(amount: number, nearest: number): number {
 }
 
 // ═══════════════════════════════════════════════
-// Tier includes definitions
+// Tier includes — loaded from DB with hardcoded fallback
 // ═══════════════════════════════════════════════
 
 const DEFAULT_TRUCK_BY_SIZE: Record<string, string> = {
@@ -450,12 +450,55 @@ const DEFAULT_TRUCK_BY_SIZE: Record<string, string> = {
   office: "26-ft truck",
 };
 
-function residentialIncludes(minCrew: number, estHours: number, moveSize?: string): {
-  essentials: string[];
-  premier: string[];
-  estate: string[];
-} {
+/** Fetch active features for a service_type+tier combo from the DB, ordered by display_order. */
+async function fetchTierFeatures(
+  sb: SupabaseAdmin,
+  serviceType: string,
+  tier: string,
+): Promise<string[]> {
+  const { data } = await sb
+    .from("tier_features")
+    .select("feature")
+    .eq("service_type", serviceType)
+    .eq("tier", tier)
+    .eq("active", true)
+    .order("display_order");
+  if (data && data.length > 0) return data.map((r: { feature: string }) => r.feature);
+  return [];
+}
+
+async function residentialIncludes(
+  sb: SupabaseAdmin,
+  minCrew: number,
+  estHours: number,
+  moveSize?: string,
+): Promise<{ essentials: string[]; premier: string[]; estate: string[] }> {
   const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
+
+  const [dbEss, dbPrem, dbEst] = await Promise.all([
+    fetchTierFeatures(sb, "local_move", "essentials"),
+    fetchTierFeatures(sb, "local_move", "premier"),
+    fetchTierFeatures(sb, "local_move", "estate"),
+  ]);
+
+  // Replace generic placeholders with dynamic values when using DB features
+  const hydrate = (list: string[]) =>
+    list.map((f) => {
+      if (f === "Dedicated moving truck") return truckLabel;
+      if (f === "Professional movers") return `${minCrew} professional movers`;
+      if (f === "Moving blankets") return f;
+      return f;
+    });
+
+  if (dbEss.length > 0) {
+    return {
+      essentials: hydrate(dbEss),
+      premier: hydrate(dbPrem.length > 0 ? dbPrem : dbEss),
+      estate: hydrate(dbEst.length > 0 ? dbEst : dbPrem.length > 0 ? dbPrem : dbEss),
+    };
+  }
+
+  // Hardcoded fallback
   const essentials = [
     truckLabel,
     `${minCrew} professional movers`,
@@ -773,7 +816,7 @@ async function calcResidential(
   const premDep = await calculateDeposit(sb, "residential", premPrice);
   const estDep = await calculateDeposit(sb, "residential", estPrice);
 
-  const inc = residentialIncludes(minCrew, estHours, input.move_size);
+  const inc = await residentialIncludes(sb, minCrew, estHours, input.move_size);
 
   const tiers = {
     essentials: {
@@ -875,15 +918,18 @@ async function calcOffice(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "office", price);
 
-  const includes = [
+  const officeFeatures = await fetchTierFeatures(sb, "office_move", "custom");
+  const includes = officeFeatures.length > 0 ? [...officeFeatures] : [
     "Professional moving crew",
     "Moving truck(s) as needed",
     "Furniture disassembly & reassembly",
     "Floor & door frame protection",
     "Labeled crate system",
   ];
-  if (input.has_it_equipment) includes.push("IT equipment handling");
-  if (input.has_conference_room) includes.push("Conference room teardown & setup");
+  if (input.has_it_equipment && !includes.includes("IT equipment handling"))
+    includes.push("IT equipment handling");
+  if (input.has_conference_room && !includes.includes("Conference room teardown & setup"))
+    includes.push("Conference room teardown & setup");
 
   return {
     custom_price: { price, deposit, tax, total: price + tax, includes } as TierResult,
@@ -933,20 +979,23 @@ async function calcLongDistance(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "long_distance", price);
 
+  const ldIncludes = await fetchTierFeatures(sb, "long_distance", "custom");
+  const longDistanceIncludes = ldIncludes.length > 0 ? ldIncludes : [
+    "Climate-controlled truck",
+    "Full packing included",
+    "Professional crew",
+    "Door-to-door service",
+    "Furniture disassembly & reassembly",
+    "Moving blankets & shrink wrap",
+  ];
+
   return {
     custom_price: {
       price,
       deposit,
       tax,
       total: price + tax,
-      includes: [
-        "Climate-controlled truck",
-        "Full packing included",
-        "Professional crew",
-        "Door-to-door service",
-        "Furniture disassembly & reassembly",
-        "Moving blankets & shrink wrap",
-      ],
+      includes: longDistanceIncludes,
     } as TierResult,
     factors: {
       base_rate: Math.round(baseRate),
@@ -1008,18 +1057,21 @@ async function calcSingleItem(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "single_item", price);
 
+  const siFeatures = await fetchTierFeatures(sb, "single_item", "custom");
+  const singleItemIncludes = siFeatures.length > 0 ? siFeatures : [
+    "Professional 2-person crew",
+    "Blanket wrapping",
+    "Secure transport",
+    "Doorstep delivery",
+  ];
+
   return {
     custom_price: {
       price,
       deposit,
       tax,
       total: price + tax,
-      includes: [
-        "Professional 2-person crew",
-        "Blanket wrapping",
-        "Secure transport",
-        "Doorstep delivery",
-      ],
+      includes: singleItemIncludes,
     } as TierResult,
     factors: {
       base_rate: Math.round((min + max) / 2),
@@ -1056,21 +1108,24 @@ async function calcWhiteGlove(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "white_glove", price);
 
+  const wgFeatures = await fetchTierFeatures(sb, "white_glove", "custom");
+  const whiteGloveIncludes = wgFeatures.length > 0 ? wgFeatures : [
+    "Premium gloves handling",
+    "Professional 2-person crew",
+    "Full assembly included",
+    "Photo documentation (before/during/after)",
+    "Packaging removal",
+    "Blanket & pad wrapping",
+    "Secure climate transport",
+  ];
+
   return {
     custom_price: {
       price,
       deposit,
       tax,
       total: price + tax,
-      includes: [
-        "Premium gloves handling",
-        "Professional 2-person crew",
-        "Full assembly included",
-        "Photo documentation (before/during/after)",
-        "Packaging removal",
-        "Blanket & pad wrapping",
-        "Secure climate transport",
-      ],
+      includes: whiteGloveIncludes,
     } as TierResult,
     factors: {
       base_rate: siResult.custom_price.price,
@@ -1152,18 +1207,21 @@ async function calcSpecialty(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "specialty", price);
 
+  const spFeatures = await fetchTierFeatures(sb, "specialty", "custom");
+  const specialtyIncludes = spFeatures.length > 0 ? spFeatures : [
+    "Specialized handling crew",
+    "Project-specific equipment",
+    "Site assessment",
+    "Insurance coverage",
+  ];
+
   return {
     custom_price: {
       price,
       deposit,
       tax,
       total: price + tax,
-      includes: [
-        "Specialized handling crew",
-        "Project-specific equipment",
-        "Site assessment",
-        "Insurance coverage",
-      ],
+      includes: specialtyIncludes,
     } as TierResult,
     factors: {
       project_base: projectBase,
@@ -1205,13 +1263,16 @@ async function calcB2bOneoff(
     deposit = 100;
   }
 
+  const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
+  const b2bIncludes = b2bFeatures.length > 0 ? b2bFeatures : wgResult.custom_price.includes;
+
   return {
     custom_price: {
       price,
       deposit,
       tax,
       total: price + tax,
-      includes: wgResult.custom_price.includes,
+      includes: b2bIncludes,
     } as TierResult,
     factors: wgResult.factors,
   };

@@ -3,6 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOwner } from "@/lib/auth/check-role";
 import { logAudit } from "@/lib/audit";
 
+const ORDER_COLUMN: Record<string, string> = {
+  "tier-features": "display_order",
+};
+
 const TABLE_MAP: Record<string, string> = {
   "base-rates": "base_rates",
   config: "platform_config",
@@ -19,6 +23,7 @@ const TABLE_MAP: Record<string, string> = {
   "truck-rules": "truck_allocation_rules",
   "valuation-tiers": "valuation_tiers",
   "valuation-upgrades": "valuation_upgrades",
+  "tier-features": "tier_features",
 };
 
 export async function GET(req: NextRequest) {
@@ -33,7 +38,8 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = createAdminClient();
     const table = TABLE_MAP[section];
-    const { data, error } = await supabase.from(table).select("*").order("id");
+    const orderCol = ORDER_COLUMN[section] ?? "id";
+    const { data, error } = await supabase.from(table).select("*").order(orderCol);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ data });
   } catch (err: unknown) {

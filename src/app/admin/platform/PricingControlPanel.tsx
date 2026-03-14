@@ -1597,6 +1597,234 @@ function FleetVehiclesSection() {
   );
 }
 
+/* ────────── S12: PACKAGE & TIER FEATURES ────────── */
+
+const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
+  { key: "local_move",    label: "Residential (Local)",  tiers: ["essentials", "premier", "estate"] },
+  { key: "long_distance", label: "Long Distance",        tiers: ["custom"] },
+  { key: "office_move",   label: "Office / Commercial",  tiers: ["custom"] },
+  { key: "single_item",   label: "Single Item Delivery", tiers: ["custom"] },
+  { key: "white_glove",   label: "White Glove",          tiers: ["custom"] },
+  { key: "specialty",     label: "Specialty / Event",    tiers: ["custom"] },
+  { key: "b2b_delivery",  label: "B2B One-Off",          tiers: ["custom"] },
+];
+
+const TIER_LABEL: Record<string, string> = {
+  essentials: "Essentials",
+  premier: "Premier",
+  estate: "Estate",
+  custom: "Package",
+};
+
+const TIER_COLOR: Record<string, string> = {
+  essentials: "text-[var(--tx3)] border-[var(--brd)]",
+  premier: "text-blue-400 border-blue-400/30",
+  estate: "text-[var(--gold)] border-[var(--gold)]/30",
+  custom: "text-[var(--tx2)] border-[var(--brd)]",
+};
+
+function TierFeaturesSection() {
+  const { rows, loading, save, undo, add, remove, updateRow, reload } = useSection("tier-features");
+  const [activeSvc, setActiveSvc] = useState("local_move");
+  const [newFeature, setNewFeature] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const { toast } = useToast();
+
+  const meta = SERVICE_TYPE_META.find((m) => m.key === activeSvc)!;
+
+  const featuresFor = (tier: string) =>
+    rows
+      .filter((r) => r.service_type === activeSvc && r.tier === tier)
+      .sort((a, b) => Number(a.display_order) - Number(b.display_order));
+
+  const handleUpdate = (id: string, field: string, value: string | number | boolean) => {
+    updateRow(id, field, value);
+    setDirty(true);
+  };
+
+  const handleAdd = async (tier: string) => {
+    const feat = (newFeature[tier] ?? "").trim();
+    if (!feat) return;
+    const existing = featuresFor(tier);
+    await add({
+      service_type: activeSvc,
+      tier,
+      feature: feat,
+      display_order: existing.length + 1,
+      active: true,
+    });
+    setNewFeature((prev) => ({ ...prev, [tier]: "" }));
+  };
+
+  const handleMoveUp = (id: string, tier: string) => {
+    const list = featuresFor(tier);
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx <= 0) return;
+    const above = list[idx - 1];
+    const cur = list[idx];
+    updateRow(String(cur.id), "display_order", Number(above.display_order));
+    updateRow(String(above.id), "display_order", Number(cur.display_order));
+    setDirty(true);
+  };
+
+  const handleMoveDown = (id: string, tier: string) => {
+    const list = featuresFor(tier);
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx >= list.length - 1) return;
+    const below = list[idx + 1];
+    const cur = list[idx];
+    updateRow(String(cur.id), "display_order", Number(below.display_order));
+    updateRow(String(below.id), "display_order", Number(cur.display_order));
+    setDirty(true);
+  };
+
+  const handleSave = async () => {
+    await save();
+    setDirty(false);
+    await reload();
+  };
+
+  const handleDelete = async (id: string) => {
+    await remove(id);
+    toast("Feature removed", "check");
+  };
+
+  if (loading) return <Skeleton />;
+
+  return (
+    <div className="pt-4 space-y-5">
+      {/* Service type tabs */}
+      <div className="flex flex-wrap gap-1.5">
+        {SERVICE_TYPE_META.map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            onClick={() => setActiveSvc(m.key)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
+              activeSvc === m.key
+                ? "bg-[var(--gold)]/15 text-[var(--gold)] border-[var(--gold)]/40"
+                : "bg-transparent text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/20 hover:text-[var(--tx2)]"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tier columns */}
+      <div className={`grid gap-4 ${meta.tiers.length === 3 ? "grid-cols-3" : "grid-cols-1 max-w-md"}`}>
+        {meta.tiers.map((tier) => {
+          const features = featuresFor(tier);
+          return (
+            <div key={tier} className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
+              {/* Tier header */}
+              <div className={`px-3 py-2 border-b border-[var(--brd)] flex items-center justify-between`}>
+                <span className={`text-[10px] font-bold tracking-wider uppercase ${TIER_COLOR[tier]?.split(" ")[0] ?? "text-[var(--tx2)]"}`}>
+                  {TIER_LABEL[tier] ?? tier}
+                </span>
+                <span className="text-[10px] text-[var(--tx3)]">{features.filter((f) => f.active).length} items</span>
+              </div>
+
+              {/* Feature list */}
+              <div className="divide-y divide-[var(--brd)]/40">
+                {features.length === 0 && (
+                  <p className="text-[11px] text-[var(--tx3)] px-3 py-3 italic">No features yet</p>
+                )}
+                {features.map((f, idx) => (
+                  <div key={String(f.id)} className="flex items-center gap-2 px-3 py-2 group">
+                    {/* Toggle active */}
+                    <button
+                      type="button"
+                      title={f.active ? "Disable" : "Enable"}
+                      onClick={() => handleUpdate(String(f.id), "active", !f.active)}
+                      className={`w-3.5 h-3.5 rounded-full shrink-0 border transition-colors ${
+                        f.active
+                          ? "bg-[var(--grn)] border-[var(--grn)]"
+                          : "bg-transparent border-[var(--brd)] opacity-40"
+                      }`}
+                    />
+
+                    {/* Feature text */}
+                    <div className={`flex-1 min-w-0 ${!f.active ? "opacity-40 line-through" : ""}`}>
+                      <EditCell
+                        value={String(f.feature)}
+                        onChange={(v) => handleUpdate(String(f.id), "feature", v)}
+                        className={`text-[12px] w-full ${!f.active ? "text-[var(--tx3)]" : "text-[var(--tx)]"}`}
+                      />
+                    </div>
+
+                    {/* Reorder + delete — visible on hover */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveUp(String(f.id), tier)}
+                        disabled={idx === 0}
+                        className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
+                        title="Move up"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveDown(String(f.id), tier)}
+                        disabled={idx === features.length - 1}
+                        className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
+                        title="Move down"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(String(f.id))}
+                        className="p-0.5 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-400 ml-0.5"
+                        title="Remove feature"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add new feature */}
+              <div className="px-3 py-2 border-t border-[var(--brd)]/40 flex gap-1.5">
+                <input
+                  type="text"
+                  value={newFeature[tier] ?? ""}
+                  onChange={(e) => setNewFeature((prev) => ({ ...prev, [tier]: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAdd(tier); }}
+                  placeholder="Add feature…"
+                  className="flex-1 text-[11px] bg-transparent border-none outline-none placeholder:text-[var(--tx3)]/50 text-[var(--tx)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAdd(tier)}
+                  className="text-[var(--gold)] hover:text-[var(--gold2)] transition-colors"
+                  title="Add"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Tip about residential dynamic values */}
+      {activeSvc === "local_move" && (
+        <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+          <span className="text-[var(--gold)]">Tip:</span> Use{" "}
+          <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Professional movers</code> and{" "}
+          <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Dedicated moving truck</code>{" "}
+          as placeholders — the system replaces them with the actual crew count and truck size at quote time.
+        </p>
+      )}
+
+      {dirty && <SaveBar onSave={handleSave} onUndo={() => { undo(); setDirty(false); }} />}
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
@@ -1647,6 +1875,10 @@ export default function PricingControlPanel() {
 
       <Accordion title="Inventory & Volume" subtitle="Item weight scores and volume benchmarks per move size">
         <InventoryVolumeSection />
+      </Accordion>
+
+      <Accordion title="Package & Tier Features" subtitle="What's included in each move package — shown on customer quotes">
+        <TierFeaturesSection />
       </Accordion>
     </div>
   );
