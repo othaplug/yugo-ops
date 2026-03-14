@@ -18,11 +18,15 @@ export default async function BookDayRatePage() {
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, type, default_pickup_address")
+    .select("id, name, type, default_pickup_address, portal_features")
     .eq("id", primaryOrgId)
     .single();
 
   if (!org?.id) redirect("/partner/login?error=no_org");
+
+  // Feature guard: day_rates must be enabled
+  const pf = (org?.portal_features ?? {}) as Record<string, boolean>;
+  if (pf.day_rates === false) redirect("/partner");
 
   return (
     <BookDayRateClient

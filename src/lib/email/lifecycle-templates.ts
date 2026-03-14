@@ -878,3 +878,120 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
     </p>
   `);
 }
+
+/* ── Post-move: 72hr Perks & Referral Email ── */
+
+export interface PostMovePerksEmailData {
+  clientName: string;
+  moveCode: string;
+  referralCode: string | null;
+  referredDiscount: number;
+  referrerCredit: number;
+  trackingUrl: string;
+  activePerks: { title: string; description: string | null; offer_type: string; discount_value: number | null; redemption_code: string | null; redemption_url: string | null }[];
+}
+
+export function postMovePerksEmail(d: PostMovePerksEmailData): string {
+  const name = firstName(d.clientName);
+
+  const perksHtml = d.activePerks.length > 0
+    ? `
+      <div style="margin-bottom:24px">
+        <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Your Yugo Perks</div>
+        ${d.activePerks.map((p) => {
+          const offerLabel =
+            p.offer_type === "percentage_off" && p.discount_value ? `${p.discount_value}% off` :
+            p.offer_type === "dollar_off" && p.discount_value ? `$${p.discount_value} off` :
+            p.offer_type === "free_service" ? "Free service" :
+            p.offer_type === "consultation" ? "Free consultation" :
+            "Special offer";
+          return `
+            <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:600;color:#F5F5F3">${p.title}</span>
+                <span style="font-size:9px;font-weight:700;color:#C9A962;background:rgba(201,169,98,0.12);padding:3px 8px;border-radius:999px;white-space:nowrap;margin-left:8px">${offerLabel}</span>
+              </div>
+              ${p.description ? `<p style="font-size:12px;color:#888;margin:0 0 8px;line-height:1.5">${p.description}</p>` : ""}
+              ${p.redemption_code ? `<span style="font-family:monospace;font-size:11px;font-weight:600;color:#C9A962;background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);padding:4px 10px;border-radius:6px">${p.redemption_code}</span>` : ""}
+              ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:11px;color:#C9A962;text-decoration:underline;margin-left:${p.redemption_code ? "12px" : "0"}">Redeem →</a>` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `
+    : "";
+
+  const referralHtml = d.referralCode
+    ? `
+      <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
+        <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Refer a Friend</div>
+        <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 16px">
+          Know someone moving soon? Share your unique code and they&apos;ll get <strong style="color:#F5F5F3">$${d.referredDiscount} off</strong> their first Yugo move. When they book, you earn a <strong style="color:#F5F5F3">$${d.referrerCredit} credit</strong>.
+        </p>
+        <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.25);border-radius:8px;padding:14px;text-align:center">
+          <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#C9A962">${d.referralCode}</div>
+          <div style="font-size:10px;color:#666;margin-top:4px">Your personal referral code</div>
+        </div>
+      </div>
+    `
+    : "";
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Perks</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">
+      Thanks for moving with Yugo${name ? `, ${name}` : ""}!
+    </h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      Your move <strong style="color:#C9A962">${d.moveCode}</strong> is complete. Here are some exclusive perks and a way to share the Yugo experience with friends.
+    </p>
+
+    ${perksHtml}
+    ${referralHtml}
+
+    ${ctaButton(d.trackingUrl, "View Your Move")}
+  `);
+}
+
+/* ── Post-move: 365-day Anniversary Email ── */
+
+export interface MoveAnniversaryEmailData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  fromAddress: string | null;
+  toAddress: string | null;
+  referralCode: string | null;
+  referredDiscount: number;
+}
+
+export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
+  const name = firstName(d.clientName);
+  const moveDateStr = d.moveDate
+    ? new Date(d.moveDate + "T00:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
+    : "last year";
+
+  return emailLayout(`
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Anniversary</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">
+      One year since your move${name ? `, ${name}` : ""}!
+    </h1>
+    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
+      It&apos;s been a whole year since we helped you move on <strong style="color:#E8E5E0">${moveDateStr}</strong>
+      ${d.fromAddress && d.toAddress ? ` from ${d.fromAddress.split(",")[0]} to ${d.toAddress.split(",")[0]}` : ""}.
+      We hope you&apos;re loving your new home!
+    </p>
+
+    ${d.referralCode ? `
+    <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.25);border-radius:10px;padding:20px;margin-bottom:24px;text-align:center">
+      <p style="font-size:13px;color:#B8B5B0;margin:0 0 12px;line-height:1.6">
+        Moving again or know someone who is? Share your code for <strong style="color:#F5F5F3">$${d.referredDiscount} off</strong>.
+      </p>
+      <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#C9A962">${d.referralCode}</div>
+    </div>
+    ` : ""}
+
+    <p style="font-size:12px;color:#666;text-align:center;line-height:1.6">
+      Need to move again? We&apos;d love to help. Reply to this email or visit yugomoves.com.
+    </p>
+  `);
+}

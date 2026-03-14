@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getTrackingUrl } from "@/lib/tracking-url";
-import { Boxes, Truck } from "lucide-react";
+import { Boxes, Truck, Plus, X } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -133,6 +133,38 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeView, setActiveView] = useState<"phases" | "inventory" | "deliveries" | "timeline">("phases");
 
+  // New project form
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [npName, setNpName] = useState("");
+  const [npClientName, setNpClientName] = useState("");
+  const [npAddress, setNpAddress] = useState("");
+  const [npPhone, setNpPhone] = useState("");
+  const [npEmail, setNpEmail] = useState("");
+  const [npDesc, setNpDesc] = useState("");
+  const [npPhases, setNpPhases] = useState<string[]>(["receiving", "delivery"]);
+  const [npStartDate, setNpStartDate] = useState("");
+  const [npEndDate, setNpEndDate] = useState("");
+  const [npBudget, setNpBudget] = useState("");
+  const [npSaving, setNpSaving] = useState(false);
+  const [npError, setNpError] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<{ place_name: string }[]>([]);
+  const addressDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Add item form
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [aiName, setAiName] = useState("");
+  const [aiVendor, setAiVendor] = useState("");
+  const [aiDesc, setAiDesc] = useState("");
+  const [aiQty, setAiQty] = useState("1");
+  const [aiValue, setAiValue] = useState("");
+  const [aiDelivery, setAiDelivery] = useState("");
+  const [aiHandledBy, setAiHandledBy] = useState<"yugo" | "vendor_direct" | "other_carrier">("yugo");
+  const [aiCarrier, setAiCarrier] = useState("");
+  const [aiTracking, setAiTracking] = useState("");
+  const [aiPhaseId, setAiPhaseId] = useState("");
+  const [aiSaving, setAiSaving] = useState(false);
+  const [aiError, setAiError] = useState("");
+
   // Note/issue form
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteText, setNoteText] = useState("");
@@ -210,9 +242,172 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
     setUpdateNotes(item.inspection_notes || "");
   };
 
+  const fetchAddressSuggestions = (val: string) => {
+    if (addressDebounce.current) clearTimeout(addressDebounce.current);
+    if (!val.trim() || val.length < 3) { setAddressSuggestions([]); return; }
+    addressDebounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(val)}&limit=5`);
+        const data = await res.json();
+        setAddressSuggestions(data.features ?? []);
+      } catch { /* ignore */ }
+    }, 300);
+  };
+
+  const createProject = async () => {
+    if (!npName.trim()) { setNpError("Project name is required"); return; }
+    setNpSaving(true);
+    setNpError("");
+    try {
+      const res = await fetch("/api/partner/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_name: npName,
+          description: npDesc,
+          client_name: npClientName,
+          client_address: npAddress,
+          client_phone: npPhone,
+          client_email: npEmail,
+          start_date: npStartDate || null,
+          end_date: npEndDate || null,
+          budget_range: npBudget || null,
+          phases: npPhases,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create project");
+      setShowNewProject(false);
+      setNpName(""); setNpClientName(""); setNpAddress(""); setNpPhone("");
+      setNpEmail(""); setNpDesc(""); setNpPhases(["receiving", "delivery"]);
+      setNpStartDate(""); setNpEndDate(""); setNpBudget("");
+      loadProjects();
+      viewProject(data.id);
+    } catch (e) {
+      setNpError(e instanceof Error ? e.message : "Failed to create project");
+    } finally {
+      setNpSaving(false);
+    }
+  };
+
+  const addItem = async () => {
+    if (!selectedProject || !aiName.trim()) { setAiError("Item name is required"); return; }
+    setAiSaving(true);
+    setAiError("");
+    try {
+      const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_name: aiName,
+          vendor: aiVendor,
+          description: aiDesc,
+          quantity: parseInt(aiQty) || 1,
+          estimated_value: aiValue ? parseFloat(aiValue) : null,
+          expected_delivery_date: aiDelivery || null,
+          handled_by: aiHandledBy,
+          vendor_carrier: aiCarrier || null,
+          vendor_tracking_number: aiTracking || null,
+          phase_id: aiPhaseId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to add item");
+      setShowAddItem(false);
+      setAiName(""); setAiVendor(""); setAiDesc(""); setAiQty("1");
+      setAiValue(""); setAiDelivery(""); setAiHandledBy("yugo");
+      setAiCarrier(""); setAiTracking(""); setAiPhaseId("");
+      viewProject(selectedProject.id);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Failed to add item");
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
   if (loading) {
     return <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="animate-pulse h-32 bg-[var(--brd)]/30 rounded-xl" />)}</div>;
   }
+
+  const AddItemModal = showAddItem && selectedProject ? (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
+          <h3 className="text-[16px] font-bold text-[var(--tx)]">Add Item</h3>
+          <button type="button" onClick={() => setShowAddItem(false)} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4 text-[var(--tx3)]" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Item Name *</label>
+            <input value={aiName} onChange={(e) => setAiName(e.target.value)} placeholder="e.g. Roche Bobois sofa" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Vendor</label>
+              <input value={aiVendor} onChange={(e) => setAiVendor(e.target.value)} placeholder="Brand / vendor" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Qty</label>
+              <input type="number" min="1" value={aiQty} onChange={(e) => setAiQty(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Description</label>
+            <textarea value={aiDesc} onChange={(e) => setAiDesc(e.target.value)} rows={2} placeholder="Dimensions, color, notes…" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Est. Value ($)</label>
+              <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="Optional" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Expected Delivery</label>
+              <input type="date" value={aiDelivery} onChange={(e) => setAiDelivery(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+          </div>
+          {selectedProject.phases.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Phase</label>
+              <select value={aiPhaseId} onChange={(e) => setAiPhaseId(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none">
+                <option value="">No phase</option>
+                {selectedProject.phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.phase_name}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-2">Handled By</label>
+            <div className="flex gap-2">
+              {(["yugo", "vendor_direct", "other_carrier"] as const).map((h) => (
+                <button key={h} type="button" onClick={() => setAiHandledBy(h)}
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${aiHandledBy === h ? "border-[var(--gold)] bg-[var(--gdim)] text-[var(--gold)]" : "border-[var(--brd)] text-[var(--tx3)]"}`}>
+                  {h === "yugo" ? "Yugo" : h === "vendor_direct" ? "Vendor ships" : "Carrier"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {aiHandledBy !== "yugo" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Carrier</label>
+                <input value={aiCarrier} onChange={(e) => setAiCarrier(e.target.value)} placeholder="FedEx, UPS…" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Tracking #</label>
+                <input value={aiTracking} onChange={(e) => setAiTracking(e.target.value)} placeholder="Optional" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+              </div>
+            </div>
+          )}
+          {aiError && <p className="text-[11px] text-red-500">{aiError}</p>}
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setShowAddItem(false)} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+            <button type="button" onClick={addItem} disabled={aiSaving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+              {aiSaving ? "Adding…" : "Add Item"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   // Detail view
   if (selectedProject) {
@@ -222,6 +417,8 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
     const receivedItems = p.inventory.filter((i) => i.status !== "expected").length;
 
     return (
+      <>
+        {AddItemModal}
       <div>
         {/* Back button */}
         <button onClick={() => setSelectedProject(null)} className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] mb-4 transition-colors">
@@ -300,6 +497,11 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
         {/* Inventory View */}
         {activeView === "inventory" && (
           <div className="space-y-2">
+            <div className="flex justify-end mb-2">
+              <button type="button" onClick={() => setShowAddItem(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                <Plus className="w-[13px] h-[13px]" /> Add Item
+              </button>
+            </div>
             {/* Update vendor item form */}
             {updateItemId && (() => {
               const item = p.inventory.find((i) => i.id === updateItemId);
@@ -484,23 +686,143 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
           </div>
         )}
       </div>
+      </>
     );
   }
+
+  const PHASE_OPTIONS = [
+    { key: "receiving",    label: "Receiving — items arrive at Yugo warehouse" },
+    { key: "storage",      label: "Storage — items held until install date" },
+    { key: "delivery",     label: "Delivery — items delivered to client site" },
+    { key: "installation", label: "Installation — items placed and assembled" },
+    { key: "removal",      label: "Removal — existing items removed" },
+  ];
+
+  const BUDGET_OPTIONS = [
+    "$5,000 - $10,000", "$10,000 - $25,000", "$25,000 - $50,000",
+    "$50,000 - $100,000", "$100,000+",
+  ];
+
+  const NewProjectModal = showNewProject ? (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[540px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
+          <h3 className="text-[16px] font-bold text-[var(--tx)]">New Project</h3>
+          <button type="button" onClick={() => setShowNewProject(false)} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4 text-[var(--tx3)]" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Project Name *</label>
+            <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. The Riverdale Residence" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Client Name</label>
+            <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="End client name" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+          </div>
+          <div className="relative">
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Client Address (Mapbox)</label>
+            <input
+              value={npAddress}
+              onChange={(e) => { setNpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
+              placeholder="Start typing address…"
+              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none"
+            />
+            {addressSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-10 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-lg mt-1 overflow-hidden">
+                {addressSuggestions.map((s, i) => (
+                  <button key={i} type="button" onClick={() => { setNpAddress(s.place_name); setAddressSuggestions([]); }}
+                    className="w-full text-left px-4 py-2.5 text-[12px] hover:bg-[var(--bg)] transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                    {s.place_name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Client Phone</label>
+              <input value={npPhone} onChange={(e) => setNpPhone(e.target.value)} placeholder="Optional" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Client Email</label>
+              <input value={npEmail} onChange={(e) => setNpEmail(e.target.value)} placeholder="Optional" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Description</label>
+            <textarea value={npDesc} onChange={(e) => setNpDesc(e.target.value)} rows={2} placeholder="Brief project description" className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none resize-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-2">Phases</label>
+            <div className="space-y-2">
+              {PHASE_OPTIONS.map((opt) => (
+                <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={npPhases.includes(opt.key)}
+                    onChange={(e) => setNpPhases((prev) => e.target.checked ? [...prev, opt.key] : prev.filter((k) => k !== opt.key))}
+                    className="w-4 h-4 accent-[var(--gold)]" />
+                  <span className="text-[12px] text-[var(--tx2)]">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Start Date</label>
+              <input type="date" value={npStartDate} onChange={(e) => setNpStartDate(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">End Date</label>
+              <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Budget (optional)</label>
+            <select value={npBudget} onChange={(e) => setNpBudget(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none">
+              <option value="">Select range…</option>
+              {BUDGET_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          {npError && <p className="text-[11px] text-red-500">{npError}</p>}
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setShowNewProject(false)} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+            <button type="button" onClick={createProject} disabled={npSaving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+              {npSaving ? "Creating…" : "Create Project"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   // Projects list
   if (projects.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect width="6" height="4" x="9" y="3" rx="1" /></svg>
+      <>
+        {NewProjectModal}
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect width="6" height="4" x="9" y="3" rx="1" /></svg>
+          </div>
+          <p className="text-[14px] text-[var(--tx3)]">No active projects</p>
+          <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Create your first project or wait for your account manager</p>
+          <button type="button" onClick={() => setShowNewProject(true)} className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+            <Plus className="w-[14px] h-[14px]" /> New Project
+          </button>
         </div>
-        <p className="text-[14px] text-[var(--tx3)]">No active projects</p>
-        <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Projects will appear here when your account manager creates one</p>
-      </div>
+      </>
     );
   }
 
   return (
+    <>
+      {NewProjectModal}
+      {AddItemModal}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[14px] font-bold text-[var(--tx)]">Projects ({projects.length})</h2>
+        <button type="button" onClick={() => setShowNewProject(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          <Plus className="w-[13px] h-[13px]" /> New Project
+        </button>
+      </div>
     <div className="space-y-4">
       {projects.map((p) => {
         const pct = p.phasesTotal > 0 ? Math.round((p.phasesCompleted / p.phasesTotal) * 100) : 0;
@@ -542,5 +864,6 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
       })}
       {loadingDetail && <div className="text-center py-4 text-[var(--tx3)] text-[12px]">Loading project...</div>}
     </div>
+    </>
   );
 }

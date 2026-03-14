@@ -72,6 +72,49 @@ export async function POST(req: NextRequest) {
             icon: "check",
           });
           logStatus = "processed";
+
+          // ── Update client referral if quote/move has one ──────────────────
+          try {
+            // Try to find the move linked to this invoice
+            let moveId = invoice.move_id || null;
+            if (!moveId && invoice.quote_id) {
+              const { data: quote } = await admin
+                .from("quotes")
+                .select("referral_id, move_id")
+                .eq("id", invoice.quote_id)
+                .single();
+              if (quote?.referral_id) {
+                await admin
+                  .from("client_referrals")
+                  .update({ status: "used", used_at: new Date().toISOString(), referred_move_id: quote.move_id || null })
+                  .eq("id", quote.referral_id)
+                  .eq("status", "active");
+              }
+            }
+            if (moveId) {
+              const { data: move } = await admin
+                .from("moves")
+                .select("quote_id")
+                .eq("id", moveId)
+                .single();
+              if (move?.quote_id) {
+                const { data: quote } = await admin
+                  .from("quotes")
+                  .select("referral_id")
+                  .eq("id", move.quote_id)
+                  .single();
+                if (quote?.referral_id) {
+                  await admin
+                    .from("client_referrals")
+                    .update({ status: "used", used_at: new Date().toISOString(), referred_move_id: moveId })
+                    .eq("id", quote.referral_id)
+                    .eq("status", "active");
+                }
+              }
+            }
+          } catch {
+            // Non-critical — don't fail the webhook
+          }
         }
       }
     }

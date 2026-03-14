@@ -11,11 +11,7 @@ import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
-import ClientMessagesSection from "./ClientMessagesSection";
-import MovePhotosSection from "./MovePhotosSection";
-import MoveCrewPhotosSection from "./MoveCrewPhotosSection";
-import MoveSignOffSection from "./MoveSignOffSection";
-import MoveDocumentsSection from "./MoveDocumentsSection";
+import MoveFilesSection from "./MoveFilesSection";
 import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
@@ -937,15 +933,9 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Distance & Logistics */}
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
 
-      {/* Inventory, Photos, Documents */}
+      {/* Inventory, Files & Media */}
       <MoveInventorySection moveId={move.id} />
-      <MovePhotosSection moveId={move.id} />
-      <MoveCrewPhotosSection moveId={move.id} />
-      <MoveSignOffSection moveId={move.id} />
-      <MoveDocumentsSection moveId={move.id} />
-
-      {/* Client Messages - conversation thread */}
-      <ClientMessagesSection moveId={move.id} clientName={move.client_name} />
+      <MoveFilesSection moveId={move.id} />
 
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />

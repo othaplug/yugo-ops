@@ -27,6 +27,15 @@ import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 
+function formatPerkOffer(offerType: string, discountValue: number | null): string {
+  if (offerType === "percentage_off" && discountValue) return `${discountValue}% off`;
+  if (offerType === "dollar_off" && discountValue) return `$${discountValue} off`;
+  if (offerType === "free_service") return "Free service";
+  if (offerType === "consultation") return "Free consultation";
+  if (offerType === "priority_access") return "Priority booking";
+  return "Special offer";
+}
+
 function shortAddress(addr: string | null | undefined): string {
   if (!addr) return "—";
   const parts = addr.split(",").map((s) => s.trim());
@@ -111,6 +120,32 @@ export default function TrackMoveClient({
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
   const [dashboardInventory, setDashboardInventory] = useState<{ items: { id: string; room?: string; item_name?: string }[]; extraItems: { id: string; description?: string }[] } | null>(null);
 
+  type Perk = {
+    id: string;
+    title: string;
+    description: string | null;
+    offer_type: string;
+    discount_value: number | null;
+    redemption_code: string | null;
+    redemption_url: string | null;
+    valid_until: string | null;
+    partner_id: string | null;
+  };
+  type ClientReferral = {
+    id: string;
+    referral_code: string;
+    referrer_credit: number;
+    referred_discount: number;
+    status: string;
+    used_at: string | null;
+    created_at: string;
+  };
+  const [perks, setPerks] = useState<Perk[]>([]);
+  const [referral, setReferral] = useState<ClientReferral | null>(null);
+  const [referralCopied, setReferralCopied] = useState(false);
+  const [showMoveDetails, setShowMoveDetails] = useState(false);
+  const [detailsSubTab, setDetailsSubTab] = useState<"details" | "photos" | "docs" | "inv">("details");
+
   useEffect(() => {
     setLiveStage(move.stage || null);
   }, [move.stage]);
@@ -125,6 +160,22 @@ export default function TrackMoveClient({
       .catch((err) => { console.error("Failed to load move inventory:", err); });
     return () => { cancelled = true; };
   }, [move.id, token]);
+
+  // Fetch perks + referral code for completed moves
+  useEffect(() => {
+    const isComplete = move.status === "completed" || move.status === "delivered";
+    if (!isComplete) return;
+    let cancelled = false;
+    fetch(`/api/track/moves/${move.id}/perks-referral?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.perks) setPerks(data.perks);
+        if (data?.referral) setReferral(data.referral);
+      })
+      .catch((err) => { console.error("Failed to load perks/referral:", err); });
+    return () => { cancelled = true; };
+  }, [move.id, move.status, token]);
 
   // Auto-hide "your move status was recently updated" card after 5s when arriving from notify email
   useEffect(() => {
@@ -510,25 +561,6 @@ export default function TrackMoveClient({
             Your move status was recently updated.
           </div>
         )}
-        {tippingEnabled && !move.tip_charged_at && isCompleted && (
-          <button
-            type="button"
-            onClick={() => setShowTipScreen(true)}
-            className="mb-4 w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border transition-all hover:opacity-80 active:scale-[0.99]"
-            style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}08` }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              </div>
-              <div className="text-left">
-                <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Tip your crew</div>
-                <div className="text-[10px] opacity-50" style={{ color: FOREST }}>100% goes directly to your movers</div>
-              </div>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        )}
         {/* Client header */}
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="min-w-0">
@@ -556,8 +588,8 @@ export default function TrackMoveClient({
           </span>
         </div>
 
-        {/* Countdown / hero */}
-        <div className="py-3 sm:py-5 mb-2">
+        {/* Countdown / hero — hidden for completed moves; perks hub renders instead */}
+        {!isCompleted && (<div className="py-3 sm:py-5 mb-2">
           {isCompleted ? (
             <div className="text-center">
               <div className="font-hero text-[26px] sm:text-[30px] leading-tight font-semibold" style={{ color: WINE }}>
@@ -648,9 +680,340 @@ export default function TrackMoveClient({
               <div className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>days until move day</div>
             </div>
           )}
-        </div>
+        </div>)}
 
-        {/* Tabs */}
+        {/* ═══ COMPLETED: Permanent Perks Hub ═══════════════════════════════════════
+            Shown instead of the countdown + tabs for all completed moves.
+            This page never expires — clients revisiting years later see their perks. */}
+        {isCompleted && (
+          <div className="space-y-5 mt-1">
+
+            {/* Tip your crew banner */}
+            {tippingEnabled && !move.tip_charged_at && (
+              <button
+                type="button"
+                onClick={() => setShowTipScreen(true)}
+                className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border transition-all hover:opacity-80 active:scale-[0.99]"
+                style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}08` }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Tip your crew</div>
+                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>100% goes directly to your movers</div>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
+
+            {/* ── Compact move summary bar (collapsible) ── */}
+            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}15` }}>
+              <button
+                type="button"
+                onClick={() => setShowMoveDetails(v => !v)}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:opacity-80"
+                style={{ backgroundColor: `${FOREST}04` }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                      {move.client_name || "Your Move"}
+                    </span>
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+                      style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                    >
+                      Completed ✓
+                    </span>
+                  </div>
+                  <div className="text-[10px] opacity-50 mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: FOREST }}>
+                    <span>{displayCode}</span>
+                    {scheduledDate && <><span>·</span><span>{formatMoveDate(scheduledDate)}</span></>}
+                    {move.from_address && (
+                      <><span>·</span><span className="truncate max-w-[200px]">{shortAddress(move.from_address)} → {shortAddress(move.to_address || move.delivery_address)}</span></>
+                    )}
+                  </div>
+                </div>
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{ opacity: 0.4, transition: "transform 0.2s", transform: showMoveDetails ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+
+              {showMoveDetails && (
+                <div className="border-t px-4 pb-5 pt-3" style={{ borderColor: `${FOREST}10` }}>
+                  {/* Sub-tab nav */}
+                  <div className="flex gap-4 mb-4 border-b pb-2" style={{ borderColor: `${FOREST}08` }}>
+                    {(["details", "photos", "docs", "inv"] as const).map((t) => {
+                      const label = t === "inv" ? "Inventory" : t === "docs" ? "Documents" : t.charAt(0).toUpperCase() + t.slice(1);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setDetailsSubTab(t)}
+                          className="text-[11px] font-semibold pb-1.5 border-b-[1.5px] transition-all"
+                          style={{
+                            borderColor: detailsSubTab === t ? GOLD : "transparent",
+                            color: detailsSubTab === t ? GOLD : FOREST,
+                            opacity: detailsSubTab === t ? 1 : 0.4,
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Details */}
+                  {detailsSubTab === "details" && (
+                    <div className="space-y-4">
+                      <div className="flex gap-3 items-stretch">
+                        <div className="flex flex-col items-center pt-1 shrink-0">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                          <div className="w-px flex-1 my-1" style={{ background: `linear-gradient(to bottom, ${GOLD}70, ${GOLD}20)` }} />
+                          <div className="w-1.5 h-1.5 rounded-sm rotate-45" style={{ backgroundColor: `${GOLD}90` }} />
+                        </div>
+                        <div className="flex flex-col gap-3 min-w-0 flex-1">
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>From</div>
+                            <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.from_address)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>To</div>
+                            <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.to_address || move.delivery_address)}</div>
+                          </div>
+                        </div>
+                      </div>
+                      {crewMembers.length > 0 && (
+                        <div>
+                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-2" style={{ color: FOREST }}>Your Crew</div>
+                          <div className="flex flex-wrap gap-2.5">
+                            {crewMembers.map((name: string, i: number) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}>
+                                  {(name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                                </div>
+                                <span className="text-[11px] font-medium" style={{ color: FOREST }}>{name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap pt-1">
+                        <a
+                          href={process.env.NEXT_PUBLIC_REVIEW_URL || "https://maps.app.goo.gl/oC8fkJT8yqSpZMpXA?g_st=ic"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-3.5 transition-all hover:opacity-90"
+                          style={{ backgroundColor: FOREST, color: CREAM }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                          Leave a Review
+                        </a>
+                        <a
+                          href={`tel:${normalizePhone(YUGO_PHONE)}`}
+                          className="inline-flex items-center gap-1.5 rounded-full font-semibold text-[11px] py-2 px-3.5 transition-all hover:opacity-70"
+                          style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
+                        >
+                          {formatPhone(YUGO_PHONE)}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {detailsSubTab === "photos" && (
+                    <div className="mt-1"><TrackPhotos moveId={move.id} token={token} moveComplete={true} /></div>
+                  )}
+                  {detailsSubTab === "docs" && (
+                    <div className="mt-1"><TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} /></div>
+                  )}
+                  {detailsSubTab === "inv" && (
+                    <div className="mt-1"><TrackInventory moveId={move.id} token={token} moveComplete={true} /></div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Active Partner Perks ── */}
+            {perks.length > 0 && (
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
+                  Your Yugo Perks
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {perks.map((perk) => (
+                    <div
+                      key={perk.id}
+                      className="rounded-2xl border p-4 flex flex-col gap-1.5"
+                      style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}06` }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[12px] font-semibold leading-snug" style={{ color: WINE }}>{perk.title}</span>
+                        <span
+                          className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${GOLD}20`, color: GOLD }}
+                        >
+                          {formatPerkOffer(perk.offer_type, perk.discount_value)}
+                        </span>
+                      </div>
+                      {perk.description && (
+                        <p className="text-[11px] opacity-70 leading-snug" style={{ color: FOREST }}>{perk.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {perk.redemption_code && (
+                          <span
+                            className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border"
+                            style={{ borderColor: `${FOREST}25`, color: FOREST, backgroundColor: `${FOREST}06` }}
+                          >
+                            {perk.redemption_code}
+                          </span>
+                        )}
+                        {perk.redemption_url && (
+                          <a
+                            href={perk.redemption_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-70"
+                            style={{ color: GOLD }}
+                            onClick={() => {
+                              fetch("/api/perks/redeem", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ perk_id: perk.id, client_email: move.client_email, move_id: move.id }),
+                              }).catch(() => {});
+                            }}
+                          >
+                            Redeem →
+                          </a>
+                        )}
+                        {perk.valid_until && (
+                          <span className="text-[9px] opacity-40 ml-auto" style={{ color: FOREST }}>
+                            Expires {new Date(perk.valid_until).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Refer a Friend ── */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
+                Refer a Friend
+              </div>
+              {!referral ? (
+                <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
+                  <p className="text-[12px] opacity-50 leading-relaxed" style={{ color: FOREST }}>
+                    Your referral code is on its way — check back shortly after your move completes.
+                  </p>
+                </div>
+              ) : referral.status !== "active" ? (
+                <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
+                  <p className="text-[12px] opacity-60 leading-relaxed" style={{ color: FOREST }}>
+                    Your referral code has expired.{" "}
+                    <a href={`mailto:${YUGO_EMAIL}`} className="underline" style={{ color: GOLD }}>Contact us</a>{" "}
+                    for a new one.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}>
+                  <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
+                    Share your code and your friend gets{" "}
+                    <span className="font-semibold" style={{ color: WINE }}>${referral.referred_discount} off</span>{" "}
+                    their first Yugo move. When they book, you earn a{" "}
+                    <span className="font-semibold" style={{ color: WINE }}>${referral.referrer_credit} credit</span>.
+                  </p>
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
+                    style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
+                  >
+                    <span className="font-mono text-[14px] font-bold tracking-widest" style={{ color: WINE }}>
+                      {referral.referral_code}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(referral.referral_code).then(() => {
+                          setReferralCopied(true);
+                          setTimeout(() => setReferralCopied(false), 2000);
+                        });
+                      }}
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+                      style={{ backgroundColor: referralCopied ? `${FOREST}15` : GOLD, color: referralCopied ? FOREST : "#1A1A1A" }}
+                    >
+                      {referralCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
+                        if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
+                        else { navigator.clipboard.writeText(msg); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }
+                      }}
+                      className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
+                      style={{ backgroundColor: WINE, color: CREAM }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                      </svg>
+                      Share with a friend
+                    </button>
+                    <a
+                      href={`sms:?body=${encodeURIComponent(`Moving soon? Use my Yugo referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
+                      className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
+                      style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Send via SMS
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Need Yugo Again? ── */}
+            <div className="rounded-2xl border p-5 sm:p-6" style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}03` }}>
+              <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1.5" style={{ color: FOREST }}>Need Yugo again?</div>
+              <h3 className="font-hero text-[18px] sm:text-[20px] font-semibold mb-4 leading-tight" style={{ color: WINE }}>
+                Moving again? We&apos;ve got you.
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {[
+                  { label: "Book a Move", sub: "Local or long distance", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
+                  { label: "Single Item", sub: "Sofa, piano, art piece", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
+                  { label: "Junk Removal", sub: "Cleanout, disposal", href: process.env.NEXT_PUBLIC_BOOK_URL || "/" },
+                ].map(({ label, sub, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    className="flex flex-col rounded-xl border px-4 py-3 transition-all hover:opacity-80 active:scale-[0.99]"
+                    style={{ borderColor: `${FOREST}20` }}
+                  >
+                    <span className="text-[12px] font-semibold" style={{ color: FOREST }}>{label}</span>
+                    <span className="text-[10px] opacity-50 mt-0.5" style={{ color: FOREST }}>{sub}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* Tabs (hidden for completed moves — perks hub is the permanent view) */}
+        {!isCompleted && (
         <div className="relative mb-4">
           <div
             className="flex gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth sm:justify-center"
@@ -674,9 +1037,10 @@ export default function TrackMoveClient({
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[1px]" style={{ backgroundColor: `${FOREST}12` }} />
         </div>
+        )}
 
         {/* Tab content */}
-        {activeTab === "dash" && (
+        {activeTab === "dash" && !isCompleted && (
           <div>
             {additionalFeesCents > 0 && !isPaid && (
               <div className="pb-4 text-[11px] opacity-70" style={{ color: FOREST }}>
@@ -780,18 +1144,6 @@ export default function TrackMoveClient({
                   </button>
                 )}
               </div>
-
-              {/* Package selected by client */}
-              {move.tier_selected && (
-                <div className="flex items-center gap-2 pt-1">
-                  <span
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold tracking-widest uppercase"
-                    style={{ backgroundColor: `${GOLD}18`, color: GOLD, border: `1px solid ${GOLD}30` }}
-                  >
-                    {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)} Package
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Crew */}
@@ -845,6 +1197,155 @@ export default function TrackMoveClient({
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Request a Change
                 </button>
+              </div>
+            )}
+
+            {/* ── Perks & Referral (completed moves only) ── */}
+            {isCompleted && (perks.length > 0 || referral) && (
+              <div className="border-t border-[var(--brd)]/20 pt-6 mt-6 space-y-6">
+
+                {/* Partner Perks */}
+                {perks.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
+                      Your Yugo Perks
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {perks.map((perk) => (
+                        <div
+                          key={perk.id}
+                          className="rounded-2xl border p-4 flex flex-col gap-1.5"
+                          style={{ borderColor: `${GOLD}28`, backgroundColor: `${GOLD}06` }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-[12px] font-semibold leading-snug" style={{ color: WINE }}>
+                              {perk.title}
+                            </span>
+                            <span
+                              className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                              style={{ backgroundColor: `${GOLD}20`, color: GOLD }}
+                            >
+                              {formatPerkOffer(perk.offer_type, perk.discount_value)}
+                            </span>
+                          </div>
+                          {perk.description && (
+                            <p className="text-[11px] opacity-70 leading-snug" style={{ color: FOREST }}>
+                              {perk.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {perk.redemption_code && (
+                              <span
+                                className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border"
+                                style={{ borderColor: `${FOREST}25`, color: FOREST, backgroundColor: `${FOREST}06` }}
+                              >
+                                {perk.redemption_code}
+                              </span>
+                            )}
+                            {perk.redemption_url && (
+                              <a
+                                href={perk.redemption_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-70"
+                                style={{ color: GOLD }}
+                              >
+                                Redeem →
+                              </a>
+                            )}
+                            {perk.valid_until && (
+                              <span className="text-[9px] opacity-40 ml-auto" style={{ color: FOREST }}>
+                                Expires {new Date(perk.valid_until).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Refer a Friend */}
+                {referral && referral.status === "active" && (
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
+                      Refer a Friend
+                    </div>
+                    <div
+                      className="rounded-2xl border p-4 sm:p-5"
+                      style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}
+                    >
+                      <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
+                        Share your unique code and your friend gets{" "}
+                        <span className="font-semibold" style={{ color: WINE }}>
+                          ${referral.referred_discount} off
+                        </span>{" "}
+                        their first Yugo move. When they book, you earn a{" "}
+                        <span className="font-semibold" style={{ color: WINE }}>
+                          ${referral.referrer_credit} credit
+                        </span>
+                        .
+                      </p>
+                      <div
+                        className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
+                        style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
+                      >
+                        <span className="font-mono text-[14px] font-bold tracking-widest" style={{ color: WINE }}>
+                          {referral.referral_code}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(referral.referral_code).then(() => {
+                              setReferralCopied(true);
+                              setTimeout(() => setReferralCopied(false), 2000);
+                            });
+                          }}
+                          className="shrink-0 rounded-lg px-3 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+                          style={{
+                            backgroundColor: referralCopied ? `${FOREST}15` : GOLD,
+                            color: referralCopied ? FOREST : "#1A1A1A",
+                          }}
+                        >
+                          {referralCopied ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
+                            if (navigator.share) {
+                              navigator.share({ text: msg }).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(msg);
+                              setReferralCopied(true);
+                              setTimeout(() => setReferralCopied(false), 2000);
+                            }
+                          }}
+                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: WINE, color: CREAM }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                          </svg>
+                          Share with a friend
+                        </button>
+                        <a
+                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my Yugo referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
+                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          Send via SMS
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

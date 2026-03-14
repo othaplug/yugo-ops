@@ -30,21 +30,24 @@ function SkippedBanner({ onDone }: { onDone: () => void }) {
   }, [onDone]);
 
   return (
-    <>
-      <div className="fixed inset-0 z-[149]" style={{ backgroundColor: CREAM }} />
-      <div className="fixed inset-0 z-[150] flex items-center justify-center px-4">
-        <div className="w-full max-w-[400px] text-center">
-          <div
-            className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-5"
-            style={{ background: `linear-gradient(135deg, ${GOLD}, #8B7332)` }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-          </div>
-          <p className="text-[20px] font-semibold" style={{ color: FOREST }}>No problem!</p>
-          <p className="text-[14px] mt-2 opacity-60" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center px-4 modal-overlay"
+      style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+    >
+      <div
+        className="w-full max-w-[320px] rounded-2xl overflow-hidden shadow-2xl px-6 py-8 text-center"
+        style={{ backgroundColor: CREAM }}
+      >
+        <div
+          className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-5"
+          style={{ background: `linear-gradient(135deg, ${GOLD}, #8B7332)` }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
         </div>
+        <p className="text-[20px] font-semibold" style={{ color: FOREST }}>No problem!</p>
+        <p className="text-[14px] mt-2 opacity-60" style={{ color: FOREST }}>We&apos;re glad we could help with your move.</p>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -196,10 +199,10 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
   return (
     <div
       className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center modal-overlay"
-      style={{ backgroundColor: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
     >
       <div
-        className="w-full max-w-[420px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
+        className="w-full max-w-[340px] rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-2xl mx-0 sm:mx-4 sheet-card sm:modal-card"
         style={{ backgroundColor: CREAM }}
       >
         {/* Drag handle (mobile) */}
@@ -220,9 +223,9 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
           </button>
         </div>
 
-        <div className="px-6 pb-8 pt-2">
+        <div className="px-5 pb-6 pt-2">
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <p className="text-[11px] font-bold uppercase tracking-widest mb-1.5 opacity-40" style={{ color: FOREST }}>
               Move Complete
             </p>
@@ -254,7 +257,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
           )}
 
           {/* Preset amounts */}
-          <div className="grid grid-cols-3 gap-2.5 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {presets.map((p) => {
               const isSelected = selectedPreset === p.amount;
               return (
@@ -262,7 +265,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
                   key={p.amount}
                   type="button"
                   onClick={() => { setSelectedPreset(p.amount); setCustomDollars(""); }}
-                  className="rounded-2xl border-2 py-4 text-center transition-all duration-150"
+                  className="rounded-2xl border-2 py-3 text-center transition-all duration-150"
                   style={{
                     borderColor: isSelected ? GOLD : `${FOREST}18`,
                     backgroundColor: isSelected ? `${GOLD}12` : "white",
@@ -272,7 +275,7 @@ export default function TipScreen({ moveId, token, clientName, crewName, crewMem
                   <div className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-0.5" style={{ color: isSelected ? GOLD : FOREST }}>
                     {p.pct}
                   </div>
-                  <div className="text-[20px] font-bold leading-tight" style={{ color: isSelected ? WINE : FOREST }}>
+                  <div className="text-[18px] font-bold leading-tight" style={{ color: isSelected ? WINE : FOREST }}>
                     {formatCurrency(p.amount)}
                   </div>
                   <div className="text-[10px] font-semibold mt-0.5 opacity-60" style={{ color: isSelected ? GOLD : FOREST }}>

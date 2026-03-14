@@ -23,7 +23,7 @@ export default async function PartnerDashboardPage() {
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, type, contact_name, email, phone")
+    .select("id, name, type, contact_name, email, phone, portal_features, vertical")
     .eq("id", primaryOrgId)
     .single();
 
@@ -37,6 +37,7 @@ export default async function PartnerDashboardPage() {
       orgType={org?.type || "retail"}
       contactName={firstName}
       userEmail={user.email || ""}
+      portalFeatures={org?.portal_features ?? null}
     />
   );
 }

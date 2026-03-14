@@ -94,7 +94,7 @@ export default function ResidentialLayout({
           return (
             <div
               key={tierKey}
-              className={`relative flex flex-col transition-all duration-300 ${
+              className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               }`}
             >

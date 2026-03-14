@@ -127,6 +127,46 @@ export default function QuotePageClient({
   const [valuationUpgradeSelected, setValuationUpgradeSelected] = useState(!!quote.valuation_upgraded);
   const [declarations, setDeclarations] = useState<HighValueDeclaration[]>([]);
 
+  // Referral code state
+  const [referralCode, setReferralCode] = useState(
+    typeof quote === "object" && (quote as { referral_code?: string }).referral_code
+      ? (quote as { referral_code?: string }).referral_code!
+      : ""
+  );
+  const [referralVerified, setReferralVerified] = useState(false);
+  const [referralMsg, setReferralMsg] = useState("");
+  const [referralDiscount, setReferralDiscount] = useState(0);
+  const [referralId, setReferralId] = useState<string | null>((quote as { referral_id?: string }).referral_id ?? null);
+
+  const verifyReferral = useCallback(async () => {
+    if (!referralCode.trim()) return;
+    try {
+      const res = await fetch("/api/referrals/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: referralCode }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setReferralVerified(true);
+        setReferralId(data.referral_id);
+        setReferralDiscount(data.discount || 75);
+        setReferralMsg(`✓ Applied! $${data.discount || 75} off — referred by ${data.referrer_name}.`);
+        // Persist referral_id on the quote
+        await fetch(`/api/quotes/${quote.quote_id}/referral`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ referral_id: data.referral_id }),
+        }).catch(() => {});
+      } else {
+        setReferralVerified(false);
+        setReferralMsg(data.error || "Invalid code");
+      }
+    } catch {
+      setReferralMsg("Verification failed");
+    }
+  }, [referralCode, quote.quote_id]);
+
   const contractRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLDivElement>(null);
   const pageStartTime = useRef(Date.now());
@@ -333,8 +373,9 @@ export default function QuotePageClient({
 
   /* ── Computed totals ── */
   const totalBeforeTax = basePrice + addonTotal + valuationCost;
-  const tax = Math.round(totalBeforeTax * TAX_RATE);
-  const grandTotal = totalBeforeTax + tax;
+  const referralDiscountAmt = referralVerified ? referralDiscount : 0;
+  const tax = Math.round((totalBeforeTax - referralDiscountAmt) * TAX_RATE);
+  const grandTotal = totalBeforeTax - referralDiscountAmt + tax;
   const deposit = useMemo(
     () => calculateDeposit(quote.service_type, totalBeforeTax),
     [quote.service_type, totalBeforeTax],
@@ -721,6 +762,41 @@ export default function QuotePageClient({
           />
         )}
 
+        {/* ═══ REFERRAL CODE ═══ */}
+        {isConfirmed && !booked && (
+          <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
+            <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
+              Have a referral code?
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={referralCode}
+                onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralMsg(""); }}
+                placeholder="YUGO-NAME-XXXX"
+                disabled={referralVerified}
+                className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none"
+                style={{ borderColor: referralVerified ? "#2D9F5A" : `${GOLD}60`, background: referralVerified ? "#F0FFF4" : "white" }}
+              />
+              {!referralVerified && (
+                <button
+                  type="button"
+                  onClick={verifyReferral}
+                  disabled={!referralCode.trim()}
+                  className="px-4 py-2 rounded-lg text-[11px] font-semibold disabled:opacity-50"
+                  style={{ background: GOLD, color: "#1A1714" }}
+                >
+                  Apply
+                </button>
+              )}
+            </div>
+            {referralMsg && (
+              <p className={`mt-1.5 text-[11px] font-medium ${referralVerified ? "text-[#2D9F5A]" : "text-red-500"}`}>
+                {referralMsg}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
         <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
           <div>
@@ -972,7 +1048,7 @@ const InclusionsShowcase = React.forwardRef<
 
       <div className="w-10 h-px mx-auto mb-8" style={{ backgroundColor: GOLD }} />
 
-      <div className="grid md:grid-cols-2 gap-x-5 gap-y-4">
+      <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
         {items.map((item, i) => {
           const Icon = item.icon;
           return (

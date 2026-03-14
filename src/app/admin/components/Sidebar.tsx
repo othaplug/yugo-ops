@@ -35,7 +35,7 @@ const NAV = [
   ]},
   { label: "CRM", items: [
     { name: "Contacts", icon: "users", href: "/admin/clients" },
-    { name: "Messages", icon: "messageSquare", href: "/admin/messages" },
+    { name: "Perks & Referrals", icon: "gift", href: "/admin/perks" },
     { name: "Settings", icon: "settings", href: "/admin/settings" },
   ]},
 ];

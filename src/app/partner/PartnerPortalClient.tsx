@@ -24,12 +24,19 @@ import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerN
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
 
+interface PortalFeatures {
+  projects?: boolean;
+  day_rates?: boolean;
+  recurring_schedules?: boolean;
+}
+
 interface Props {
   orgId: string;
   orgName: string;
   orgType: string;
   contactName: string;
   userEmail: string;
+  portalFeatures?: PortalFeatures | null;
 }
 
 interface ProjectData {
@@ -142,12 +149,14 @@ const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail }: Props) {
+export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail, portalFeatures }: Props) {
   const features = getPartnerFeatures(orgType);
+  // portal_features from DB override legacy type-based feature detection
+  const pf: PortalFeatures = portalFeatures ?? {};
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [portalError, setPortalError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : features.showProjects ? "projects" : "today");
+  const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : "today");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
   const [scheduleSuggestedItems, setScheduleSuggestedItems] = useState<string | null>(null);
@@ -228,6 +237,13 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const dayStr = formatDate(today, { weekday: "long", month: "long", day: "numeric" });
   const isReturning = loginInfo && !loginInfo.isFirstLogin && loginInfo.loginCount > 1;
 
+  // Resolve feature visibility: DB portal_features take precedence over legacy type-based detection
+  // If portal_features was never set (pf is empty {}), fall back to legacy flags
+  const hasPfOverride = Object.keys(pf).length > 0;
+  const showProjects = hasPfOverride ? (pf.projects === true) : features.showProjects;
+  const showDayRates = hasPfOverride ? (pf.day_rates === true) : true;
+  const showRecurring = hasPfOverride ? (pf.recurring_schedules === true) : true;
+
   const tabs = features.showReferrals
     ? [
         { key: "active", label: `Active (${data?.referrals.filter((r) => r.status !== "completed" && r.status !== "booked").length ?? 0})` },
@@ -235,7 +251,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "materials", label: "Materials" },
       ]
     : [
-        { key: "b2b-projects", label: "Projects" },
+        ...(showProjects ? [{ key: "b2b-projects", label: "Projects" }] : []),
         ...(features.showProjects ? [{ key: "projects", label: `Gallery (${data?.projects?.length ?? 0})` }] : []),
         { key: "today", label: `Today (${data?.todayDeliveries.length ?? 0})` },
         { key: "upcoming", label: `Upcoming (${data?.upcomingDeliveries.length ?? 0})` },
@@ -243,7 +259,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "tracking", label: "Live Map" },
         { key: "invoices", label: "Invoices" },
         { key: "billing", label: "Monthly Report" },
-        { key: "recurring", label: "Recurring" },
+        ...(showRecurring ? [{ key: "recurring", label: "Recurring" }] : []),
         { key: "analytics", label: "Analytics" },
       ];
 
@@ -723,7 +739,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           {activeTab === "billing" && data && (
             <PartnerBillingTab data={data} orgName={orgName} onViewInvoices={() => setActiveTab("invoices")} />
           )}
-          {activeTab === "recurring" && (
+          {activeTab === "recurring" && showRecurring && (
             <PartnerRecurringTab orgId={orgId} />
           )}
           {activeTab === "analytics" && (

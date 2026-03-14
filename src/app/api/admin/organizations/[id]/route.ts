@@ -11,7 +11,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await req.json();
-    const updates: Record<string, string> = {};
+    const updates: Record<string, unknown> = {};
 
     if (typeof body.name === "string") updates.name = body.name.trim();
     if (typeof body.type === "string") {
@@ -21,6 +21,10 @@ export async function PATCH(
     if (typeof body.contact_name === "string") updates.contact_name = body.contact_name.trim();
     if (typeof body.email === "string") updates.email = body.email.trim().toLowerCase();
     if (typeof body.phone === "string") updates.phone = body.phone.trim();
+    if (typeof body.vertical === "string") updates.vertical = body.vertical;
+    if (body.portal_features && typeof body.portal_features === "object" && !Array.isArray(body.portal_features)) {
+      updates.portal_features = body.portal_features;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

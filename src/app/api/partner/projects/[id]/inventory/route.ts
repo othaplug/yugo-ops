@@ -2,6 +2,62 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 
+/** POST: Add a new inventory item to the project */
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: projectId } = await params;
+  const { orgIds, error } = await requirePartner();
+  if (error) return error;
+
+  const db = createAdminClient();
+
+  // Verify partner owns project
+  const { data: project } = await db
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .in("partner_id", orgIds)
+    .single();
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const body = await req.json();
+  if (!body.item_name?.trim()) {
+    return NextResponse.json({ error: "item_name is required" }, { status: 400 });
+  }
+
+  const { data: item, error: insertErr } = await db
+    .from("project_inventory")
+    .insert({
+      project_id: projectId,
+      phase_id: body.phase_id || null,
+      item_name: body.item_name.trim(),
+      vendor: body.vendor?.trim() || null,
+      description: body.description?.trim() || null,
+      quantity: Number(body.quantity) || 1,
+      estimated_value: body.estimated_value ? Number(body.estimated_value) : null,
+      expected_delivery_date: body.expected_delivery_date || null,
+      handled_by: body.handled_by || "yugo",
+      vendor_carrier: body.vendor_carrier?.trim() || null,
+      vendor_tracking_number: body.vendor_tracking_number?.trim() || null,
+      status: "expected",
+    })
+    .select()
+    .single();
+
+  if (insertErr || !item) {
+    return NextResponse.json({ error: insertErr?.message || "Failed to add item" }, { status: 500 });
+  }
+
+  // Timeline entry
+  await db.from("project_timeline").insert({
+    project_id: projectId,
+    event_type: "item_added",
+    event_description: `${body.item_name} added to project`,
+    phase_id: body.phase_id || null,
+  });
+
+  return NextResponse.json(item, { status: 201 });
+}
+
 /** PATCH: Update VENDOR/CARRIER inventory items (partners cannot change Yugo items) */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = await params;

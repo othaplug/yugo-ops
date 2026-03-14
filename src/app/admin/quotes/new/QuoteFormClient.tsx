@@ -264,6 +264,39 @@ export default function QuoteFormClient({
   // Inventory
   const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>([]);
 
+  // Referral code
+  const [referralCode, setReferralCode] = useState("");
+  const [referralId, setReferralId] = useState<string | null>(null);
+  const [referralStatus, setReferralStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [referralMsg, setReferralMsg] = useState("");
+  const [referralDiscount, setReferralDiscount] = useState(0);
+
+  const verifyReferral = async () => {
+    if (!referralCode.trim()) return;
+    try {
+      const res = await fetch("/api/referrals/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: referralCode }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setReferralId(data.referral_id);
+        setReferralDiscount(data.discount || 75);
+        setReferralStatus("valid");
+        setReferralMsg(`Valid! $${data.discount || 75} off. Referred by ${data.referrer_name}.`);
+      } else {
+        setReferralId(null);
+        setReferralDiscount(0);
+        setReferralStatus("invalid");
+        setReferralMsg(data.error || "Invalid code");
+      }
+    } catch {
+      setReferralStatus("invalid");
+      setReferralMsg("Verification failed");
+    }
+  };
+
   // Quote result (set only after successful generate; required for Send)
   const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -482,6 +515,7 @@ export default function QuoteFormClient({
       client_name: clientName || undefined,
       client_email: email || undefined,
       client_phone: phone ? normalizePhone(phone) : undefined,
+      referral_id: referralId || undefined,
     };
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
@@ -775,6 +809,32 @@ export default function QuoteFormClient({
                     <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                   </Field>
                 </div>
+              </div>
+
+              {/* ── Referral Code ── */}
+              <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
+                <div className="flex gap-2">
+                  <input
+                    value={referralCode}
+                    onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralStatus("idle"); setReferralMsg(""); }}
+                    placeholder="YUGO-NAME-XXXX"
+                    className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={verifyReferral}
+                    disabled={!referralCode.trim()}
+                    className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all"
+                  >
+                    Verify
+                  </button>
+                </div>
+                {referralMsg && (
+                  <p className={`mt-1.5 text-[11px] ${referralStatus === "valid" ? "text-[#2D9F5A]" : "text-red-500"}`}>
+                    {referralStatus === "valid" ? "✓ " : "✗ "}{referralMsg}
+                  </p>
+                )}
               </div>
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
