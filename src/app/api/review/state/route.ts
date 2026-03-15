@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyReviewToken } from "@/lib/track-token";
 
-/** GET: Public review state by token (no session). Returns googleReviewUrl and existing rating/feedback. */
+/**
+ * GET: Public review state by token (no session). Returns googleReviewUrl and existing rating/feedback.
+ * Token is signed with TRACK_SIGNING_SECRET; same secret must be set everywhere that sends or verifies review links.
+ */
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token") || "";
   const reviewRequestId = verifyReviewToken(token);
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest) {
   const googleReviewUrl =
     (configRes.data as { value?: string } | null)?.value ||
     process.env.GOOGLE_REVIEW_URL ||
-    "https://g.page/r/yugo-moving/review";
+    "https://g.page/r/CU67iDN6TgMIEB0/review/";
 
   return NextResponse.json({
     googleReviewUrl,

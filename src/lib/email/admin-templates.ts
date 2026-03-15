@@ -3,7 +3,6 @@
  * All use light background and dark text for readability (no bare plain-text emails).
  */
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { EMAIL_FOOTER_COMPANY } from "@/lib/email-templates";
 
 const WINE = "#722F37";
 const GOLD = "#B8962E";
@@ -12,6 +11,28 @@ const PAGE_BG = "#FAF7F2";
 const TEXT = "#1a1a1a";
 const TEXT_MUTED = "#555";
 const BORDER = "rgba(0,0,0,0.08)";
+const FOOTER_LINK = "#2563eb";
+
+function adminFooterHtml(): string {
+  const privacyUrl = `${getEmailBaseUrl()}/privacy`;
+  const contactEmail = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "hello@helloyugo.com";
+  const contactPhone = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
+  const mailto = `mailto:${contactEmail}`;
+  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
+  return `
+  <div style="margin-top:28px;padding-top:20px;border-top:1px solid ${BORDER};font-size:11px;color:${TEXT_MUTED};line-height:1.6;">
+    <p style="text-align:center;margin:0 0 12px;">
+      <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:underline;">Email us</a>
+      <span style="color:#ccc;margin:0 10px">|</span>
+      <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:underline;">Call us</a>
+      <span style="color:#ccc;margin:0 10px">|</span>
+      <a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:underline;">Privacy</a>
+    </p>
+    <p style="margin:0 0 8px;">This is an internal notification from <strong style="color:${WINE};">Yugo</strong>. For support, <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:underline;">email</a> or <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>.</p>
+    <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:underline;">Privacy policy</a></p>
+    <p style="font-size:10px;color:#888;margin:12px 0 0;">&copy; 2025 <strong>Yugo Inc.</strong> All rights reserved. 507 King Street E, Toronto, ON.</p>
+  </div>`;
+}
 
 /** Full document wrapper for admin notifications: light bg, YUGO+ header, white card. */
 export function adminNotificationLayout(innerHtml: string, title?: string): string {
@@ -31,8 +52,8 @@ export function adminNotificationLayout(innerHtml: string, title?: string): stri
     <div style="font-size:14px;color:${TEXT};line-height:1.6;">
       ${innerHtml}
     </div>
+    ${adminFooterHtml()}
   </div>
-  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">${EMAIL_FOOTER_COMPANY}</p>
 </div>
 </body>
 </html>`;

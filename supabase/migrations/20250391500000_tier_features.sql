@@ -1,5 +1,6 @@
 -- Editable tier/package feature lists for each service type.
 -- These replace the hardcoded includes arrays in the quote generate route.
+-- (Re-applied at 20250391500000 so db push can run; remote already had 20250334000000.)
 
 CREATE TABLE IF NOT EXISTS public.tier_features (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,17 +48,17 @@ INSERT INTO public.tier_features (service_type, tier, feature, display_order) VA
   ('local_move', 'premier', 'Full furniture wrapping',              6),
   ('local_move', 'premier', 'Mattress covers',                      7),
   ('local_move', 'premier', 'TV screen protection',                 8),
-  ('local_move', 'premier', 'Premium furniture pads',               9),
+  ('local_move', 'premier', 'Premium furniture pads',              9),
   ('local_move', 'premier', 'Dolly service',                       10),
   -- Estate (includes everything from premier)
-  ('local_move', 'estate', 'Dedicated moving truck',                1),
+  ('local_move', 'estate', 'Dedicated moving truck',               1),
   ('local_move', 'estate', 'Professional movers',                   2),
   ('local_move', 'estate', 'Moving blankets',                       3),
-  ('local_move', 'estate', 'Basic disassembly & reassembly',        4),
-  ('local_move', 'estate', 'Floor runners',                         5),
+  ('local_move', 'estate', 'Basic disassembly & reassembly',       4),
+  ('local_move', 'estate', 'Floor runners',                        5),
   ('local_move', 'estate', 'Full furniture wrapping',               6),
   ('local_move', 'estate', 'Mattress covers',                       7),
-  ('local_move', 'estate', 'TV screen protection',                  8),
+  ('local_move', 'estate', 'TV screen protection',                 8),
   ('local_move', 'estate', 'Premium furniture pads',                9),
   ('local_move', 'estate', 'Dolly service',                        10),
   ('local_move', 'estate', 'Full packing & unpacking',             11),
@@ -105,11 +106,11 @@ ON CONFLICT (service_type, tier, feature) DO NOTHING;
 INSERT INTO public.tier_features (service_type, tier, feature, display_order) VALUES
   ('white_glove', 'custom', 'Premium gloves handling',                   1),
   ('white_glove', 'custom', 'Professional 2-person crew',                2),
-  ('white_glove', 'custom', 'Full assembly included',                    3),
+  ('white_glove', 'custom', 'Full assembly included',                   3),
   ('white_glove', 'custom', 'Photo documentation (before/during/after)', 4),
   ('white_glove', 'custom', 'Packaging removal',                         5),
-  ('white_glove', 'custom', 'Blanket & pad wrapping',                    6),
-  ('white_glove', 'custom', 'Secure climate transport',                  7)
+  ('white_glove', 'custom', 'Blanket & pad wrapping',                   6),
+  ('white_glove', 'custom', 'Secure climate transport',                 7)
 ON CONFLICT (service_type, tier, feature) DO NOTHING;
 
 -- ─────────────────────────────────────────────
@@ -131,6 +132,6 @@ INSERT INTO public.tier_features (service_type, tier, feature, display_order) VA
   ('b2b_delivery', 'custom', 'Full assembly included',                   3),
   ('b2b_delivery', 'custom', 'Photo documentation (before/during/after)',4),
   ('b2b_delivery', 'custom', 'Packaging removal',                        5),
-  ('b2b_delivery', 'custom', 'Blanket & pad wrapping',                   6),
+  ('b2b_delivery', 'custom', 'Blanket & pad wrapping',                  6),
   ('b2b_delivery', 'custom', 'Secure climate transport',                 7)
 ON CONFLICT (service_type, tier, feature) DO NOTHING;

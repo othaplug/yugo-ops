@@ -64,7 +64,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   const canAddPhotos = !NO_PHOTO_STATUSES.includes(currentStatus);
   const requiresPhotosBeforeLoading =
     (jobType === "move" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination")) ||
-    (jobType === "delivery" && currentStatus === "arrived");
+    (jobType === "delivery" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination" || currentStatus === "arrived"));
   const [photosSkipped, setPhotosSkipped] = useState(false);
 
   const fetchPhotos = () => {

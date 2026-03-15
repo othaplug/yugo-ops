@@ -98,6 +98,19 @@ export async function POST(req: NextRequest) {
 
     const subject = quoteSubject(firstName, quoteId);
 
+    // If quote is stored as 1br but inventory suggests 2br+ (e.g. wrong prefill from deal), use 2br for email and persist
+    const storedMoveSize = (quote.move_size as string | null) ?? null;
+    const inventoryScore = (quote.inventory_score as number | null) ?? (factors.inventory_score as number | null) ?? null;
+    const inventoryItems = (quote.inventory_items as { quantity?: number }[] | null) ?? [];
+    const itemCount = Array.isArray(inventoryItems) ? inventoryItems.reduce((s, i) => s + (i.quantity ?? 1), 0) : 0;
+    const suggests2br = (inventoryScore != null && inventoryScore >= 28) || itemCount >= 14;
+    const moveSize =
+      storedMoveSize === "1br" && suggests2br ? "2br" : storedMoveSize;
+
+    if (storedMoveSize === "1br" && suggests2br) {
+      await supabase.from("quotes").update({ move_size: "2br" }).eq("quote_id", quoteId);
+    }
+
     const result = await sendEmail({
       to: clientEmail,
       subject,
@@ -111,12 +124,15 @@ export async function POST(req: NextRequest) {
         fromAddress: quote.from_address,
         toAddress: quote.to_address,
         moveDate: quote.move_date,
-        moveSize: quote.move_size ?? null,
+        moveSize,
         companyName: (factors.company_name as string) ?? null,
         itemDescription: (factors.item_description as string) ?? null,
         itemCategory: (factors.item_category as string) ?? null,
         projectType: (factors.project_type as string) ?? null,
         distance: factors.distance_km ? `${factors.distance_km} km` : null,
+        estCrewSize: quote.est_crew_size != null ? Number(quote.est_crew_size) : null,
+        estHours: quote.est_hours != null ? Number(quote.est_hours) : null,
+        truckSize: quote.truck_primary ? String(quote.truck_primary) : null,
         tiers: quote.tiers ?? null,
         customPrice: quote.custom_price ? Number(quote.custom_price) : null,
         coordinatorName,

@@ -66,32 +66,32 @@ const destIcon = new L.DivIcon({
   iconAnchor: [7, 7],
 });
 
-function FitBounds({ deliveries }: { deliveries: ActiveDelivery[] }) {
+function FitBounds({ currentDelivery }: { currentDelivery: ActiveDelivery | null }) {
   const map = useMap();
   useEffect(() => {
-    if (deliveries.length === 0) return;
-    const pts = deliveries
-      .filter((d) => d.crew_lat != null)
-      .flatMap((d) => {
-        const arr: L.LatLngTuple[] = [[d.crew_lat!, d.crew_lng!]];
-        if (d.dest_lat != null && d.dest_lng != null) arr.push([d.dest_lat, d.dest_lng]);
-        return arr;
-      });
-    if (pts.length > 0) {
+    if (!currentDelivery) return;
+    const pts: L.LatLngTuple[] = [];
+    if (currentDelivery.crew_lat != null && currentDelivery.crew_lng != null) {
+      pts.push([currentDelivery.crew_lat, currentDelivery.crew_lng]);
+    }
+    if (currentDelivery.dest_lat != null && currentDelivery.dest_lng != null) {
+      pts.push([currentDelivery.dest_lat, currentDelivery.dest_lng]);
+    }
+    if (pts.length >= 2) {
       const bounds = L.latLngBounds(pts);
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [map, deliveries]);
+  }, [map, currentDelivery?.id, currentDelivery?.crew_lat, currentDelivery?.crew_lng, currentDelivery?.dest_lat, currentDelivery?.dest_lng]);
   return null;
 }
 
 export default function PartnerMapLeaflet({
   center,
-  deliveries,
+  currentDelivery,
   onSelect,
 }: {
   center: { latitude: number; longitude: number };
-  deliveries: ActiveDelivery[];
+  currentDelivery: ActiveDelivery | null;
   onSelect: (d: ActiveDelivery) => void;
 }) {
   return (
@@ -102,34 +102,35 @@ export default function PartnerMapLeaflet({
       style={{ width: "100%", height: "100%" }}
       zoomControl={false}
     >
-      <FitBounds deliveries={deliveries} />
+      <FitBounds currentDelivery={currentDelivery} />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         attribution=""
       />
-      {deliveries.map((d) => {
-        if (d.crew_lat == null || d.crew_lng == null) return null;
-        return (
-          <div key={d.id}>
-            <Marker position={[d.crew_lat, d.crew_lng]} icon={makeCrewIcon(d.crew_name)} eventHandlers={{ click: () => onSelect(d) }}>
-              <Popup>
-                <strong>{d.customer_name || d.delivery_number}</strong>
-                <br />
-                {d.crew_name && <span>Crew: {d.crew_name}</span>}
-              </Popup>
-            </Marker>
-            {d.dest_lat != null && d.dest_lng != null && (
-              <>
-                <Marker position={[d.dest_lat, d.dest_lng]} icon={destIcon} />
-                <Polyline
-                  positions={[[d.crew_lat, d.crew_lng], [d.dest_lat, d.dest_lng]]}
-                  pathOptions={{ color: "#8B5CF6", weight: 4, opacity: 0.8 }}
-                />
-              </>
-            )}
-          </div>
-        );
-      })}
+      {currentDelivery?.crew_lat != null && currentDelivery?.crew_lng != null && (
+        <Marker
+          position={[currentDelivery.crew_lat, currentDelivery.crew_lng]}
+          icon={makeCrewIcon(currentDelivery.crew_name)}
+          eventHandlers={{ click: () => onSelect(currentDelivery) }}
+        >
+          <Popup>
+            <strong>{currentDelivery.customer_name || currentDelivery.delivery_number}</strong>
+            <br />
+            {currentDelivery.crew_name && <span>Crew: {currentDelivery.crew_name}</span>}
+          </Popup>
+        </Marker>
+      )}
+      {currentDelivery?.dest_lat != null && currentDelivery?.dest_lng != null && (
+        <>
+          <Marker position={[currentDelivery.dest_lat, currentDelivery.dest_lng]} icon={destIcon} />
+          {currentDelivery.crew_lat != null && currentDelivery.crew_lng != null && (
+            <Polyline
+              positions={[[currentDelivery.crew_lat, currentDelivery.crew_lng], [currentDelivery.dest_lat, currentDelivery.dest_lng]]}
+              pathOptions={{ color: "#8B5CF6", weight: 4, opacity: 0.8 }}
+            />
+          )}
+        </>
+      )}
       <MyLocationButtonLeaflet />
     </MapContainer>
     </div>

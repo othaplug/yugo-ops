@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-/** Regular tracker marker (circle, no car). Color matches route line: purple light theme, gold dark. */
-function makeCrewIcon(mapTheme: "light" | "dark" = "light") {
-  const fill = mapTheme === "dark" ? "#C9A962" : "#8B5CF6";
+/** Regular tracker marker (circle, no car). Purple everywhere to match route. */
+function makeCrewIcon(_mapTheme: "light" | "dark" = "light") {
+  const fill = "#8B5CF6";
   return L.divIcon({
     className: "crew-marker-tracker",
     html: `<div style="width:14px;height:14px;border-radius:50%;background:${fill};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
@@ -16,37 +16,46 @@ function makeCrewIcon(mapTheme: "light" | "dark" = "light") {
   });
 }
 
-function makeDestinationIcon() {
+function makePickupIcon() {
   return L.divIcon({
-    className: "dest-marker",
+    className: "pickup-marker",
     html: `<div style="width:16px;height:16px;border-radius:50%;background:#22C55E;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
 }
 
-/** Tracking line from vehicle to destination - light: purple, dark: gold for visibility */
+function makeDropoffIcon() {
+  return L.divIcon({
+    className: "dropoff-marker",
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:#C9A962;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
+/** Tracking line from vehicle to destination - purple everywhere */
 const ROUTE_LINE_LIGHT = { color: "#8B5CF6", weight: 5, opacity: 1 };
-const ROUTE_LINE_DARK = { color: "#C9A962", weight: 5, opacity: 1 };
+const ROUTE_LINE_DARK = { color: "#8B5CF6", weight: 5, opacity: 1 };
 
 function MapController({
   center,
   hasPosition,
-  destination,
+  points,
 }: {
   center: [number, number];
   hasPosition: boolean;
-  destination?: [number, number];
+  points: [number, number][];
 }) {
   const map = useMap();
   useEffect(() => {
-    if (hasPosition && destination) {
-      const bounds = L.latLngBounds([center, destination]);
+    if (points.length >= 2) {
+      const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     } else {
       map.setView(center, hasPosition ? 14 : 10);
     }
-  }, [map, center, hasPosition, destination]);
+  }, [map, center, hasPosition, points]);
   return null;
 }
 
@@ -54,6 +63,8 @@ export function LiveTrackingMapLeaflet({
   center,
   crew,
   crewName,
+  pickup,
+  dropoff,
   destination,
   mapTheme = "light",
   routePositions,
@@ -61,6 +72,11 @@ export function LiveTrackingMapLeaflet({
   center: { longitude: number; latitude: number };
   crew: { current_lat: number; current_lng: number; name?: string } | null;
   crewName?: string;
+  /** Pickup coords — green marker */
+  pickup?: { lat: number; lng: number };
+  /** Dropoff coords — gold marker */
+  dropoff?: { lat: number; lng: number };
+  /** Fallback when no pickup/dropoff (e.g. moves) */
   destination?: { lat: number; lng: number };
   /** When "dark", use dark base tiles to match admin/crew appearance */
   mapTheme?: "light" | "dark";
@@ -69,8 +85,15 @@ export function LiveTrackingMapLeaflet({
 }) {
   const centerArr: [number, number] = [center.latitude, center.longitude];
   const hasPosition = crew != null;
-  const destArr: [number, number] | undefined =
-    destination ? [destination.lat, destination.lng] : undefined;
+  const routeDestArr: [number, number] | undefined =
+    destination ? [destination.lat, destination.lng] : (pickup ?? dropoff) ? [(pickup ?? dropoff)!.lat, (pickup ?? dropoff)!.lng] : undefined;
+  const boundsPoints = useMemo((): [number, number][] => {
+    const pts: [number, number][] = [centerArr];
+    if (hasPosition && crew) pts.push([crew.current_lat, crew.current_lng]);
+    if (pickup) pts.push([pickup.lat, pickup.lng]);
+    if (dropoff) pts.push([dropoff.lat, dropoff.lng]);
+    return pts;
+  }, [centerArr[0], centerArr[1], hasPosition, crew?.current_lat, crew?.current_lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
   const tileUrl =
     mapTheme === "dark"
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -79,8 +102,8 @@ export function LiveTrackingMapLeaflet({
   const linePositions: [number, number][] =
     routePositions && routePositions.length > 0
       ? routePositions
-      : hasPosition && crew && destArr
-        ? [[crew.current_lat, crew.current_lng], destArr]
+      : hasPosition && crew && routeDestArr
+        ? [[crew.current_lat, crew.current_lng], routeDestArr]
         : [];
 
   return (
@@ -91,7 +114,7 @@ export function LiveTrackingMapLeaflet({
       scrollWheelZoom
       className="track-live-map"
     >
-      <MapController center={centerArr} hasPosition={hasPosition} destination={destArr} />
+      <MapController center={centerArr} hasPosition={hasPosition} points={boundsPoints} />
       <TileLayer attribution="" url={tileUrl} />
       {linePositions.length >= 2 && (
         <Polyline
@@ -99,8 +122,18 @@ export function LiveTrackingMapLeaflet({
           pathOptions={mapTheme === "dark" ? ROUTE_LINE_DARK : ROUTE_LINE_LIGHT}
         />
       )}
-      {destArr && (
-        <Marker position={destArr} icon={makeDestinationIcon()}>
+      {pickup && (
+        <Marker position={[pickup.lat, pickup.lng]} icon={makePickupIcon()}>
+          <Popup>Pickup</Popup>
+        </Marker>
+      )}
+      {dropoff && (
+        <Marker position={[dropoff.lat, dropoff.lng]} icon={makeDropoffIcon()}>
+          <Popup>Drop-off</Popup>
+        </Marker>
+      )}
+      {!pickup && !dropoff && destination && (
+        <Marker position={[destination.lat, destination.lng]} icon={makePickupIcon()}>
           <Popup>Destination</Popup>
         </Marker>
       )}

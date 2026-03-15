@@ -1,8 +1,11 @@
 -- Prompt 89: Add baseline_crew for labour delta (baseline man-hours = baseline_crew × baseline_hours)
--- baseline_hours already added in 20250391000000; crew values align with base_rates / typical move size.
+-- Ensure both columns exist (baseline_hours may exist from 20250391000000 on some envs).
 
 ALTER TABLE public.volume_benchmarks
   ADD COLUMN IF NOT EXISTS baseline_crew INTEGER DEFAULT 2;
+
+ALTER TABLE public.volume_benchmarks
+  ADD COLUMN IF NOT EXISTS baseline_hours NUMERIC;
 
 UPDATE public.volume_benchmarks SET baseline_crew = 2, baseline_hours = 3.0  WHERE move_size = 'studio';
 UPDATE public.volume_benchmarks SET baseline_crew = 2, baseline_hours = 4.0  WHERE move_size = '1br';

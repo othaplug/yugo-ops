@@ -1,4 +1,4 @@
-import { Check, ChevronRight, X, Shield, Crown, Gem, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, Target, Crown, Gem, type LucideIcon } from "lucide-react";
 import {
   type Quote,
   type TierData,
@@ -11,24 +11,10 @@ import {
 } from "../quote-shared";
 
 const TIER_ICONS: Record<string, LucideIcon> = {
-  curated: Shield,
+  curated: Target,
   signature: Crown,
   estate: Gem,
 };
-
-const CURATED_MISSING = [
-  "Full furniture wrapping",
-  "Mattress & TV protection",
-  "Pre-move walkthrough",
-  "White glove item handling",
-  "Dedicated move coordinator",
-];
-
-const SIGNATURE_MISSING = [
-  "Pre-move walkthrough",
-  "White glove item handling",
-  "Dedicated move coordinator",
-];
 
 interface Props {
   quote: Quote;
@@ -92,17 +78,15 @@ export default function ResidentialLayout({
           const isSelected = selectedTier === tierKey;
           const isRecommended = tierKey === recTier;
 
-          const badgeText =
-            recTier === "estate" && tierKey === "estate"
-              ? "Recommended for You"
-              : (recTier === "signature" && tierKey === "signature") || (recTier === "curated" && tierKey === "curated")
-                ? "RECOMMENDED"
-                : null;
-
           const isEstate = tierKey === "estate";
-          const cardBg = isEstate ? "#FAF7F2" : meta.bg;
+          const cardBg = isEstate ? "#1a1612" : meta.bg;
 
           const isCollapsed = hasSelection && !isSelected;
+
+          const cardFg = isEstate ? "rgba(255,255,255,0.9)" : undefined;
+          const cardMuted = isEstate ? "rgba(255,255,255,0.65)" : undefined;
+          const checkColor = isEstate ? "#C9A84C" : GOLD;
+          const depositColor = isEstate ? "#C9A84C" : GOLD;
 
           return (
             <div
@@ -111,44 +95,17 @@ export default function ResidentialLayout({
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               } ${isCollapsed ? "opacity-60" : ""}`}
             >
-              {/* Badge sits OUTSIDE the card border so corners render correctly on all browsers */}
-              {badgeText ? (
-                <div
-                  className="text-center py-2 text-[10px] font-bold tracking-[0.15em] uppercase text-white flex-shrink-0 rounded-t-2xl"
-                  style={{
-                    backgroundColor: tierKey === "estate" ? WINE : GOLD,
-                    minHeight: "30px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {badgeText}
-                </div>
-              ) : (
-                <div
-                  aria-hidden
-                  className="flex-shrink-0 rounded-t-2xl"
-                  style={{
-                    minHeight: "30px",
-                    backgroundColor:
-                      tierKey === "curated"
-                        ? `${FOREST}CC`
-                        : tierKey === "signature"
-                          ? `${FOREST}CC`
-                          : `${WINE}CC`,
-                  }}
-                />
-              )}
-
-              {/* Card body — rounded-b-2xl when badge present, full rounded-2xl otherwise */}
+              {/* Card body — no badge strip */}
               <div
-                className={`flex flex-col flex-1 min-h-0 overflow-hidden ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
+                className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl"
                 style={{
                   backgroundColor: cardBg,
                 }}
               >
-              <div className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}>
+              <div
+                className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}
+                style={isEstate ? { backgroundColor: "#1a1612" } : undefined}
+              >
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     {(() => {
@@ -156,97 +113,75 @@ export default function ResidentialLayout({
                       return TierIcon ? (
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${meta.accent}10` }}
+                          style={{ backgroundColor: isEstate ? "rgba(201,168,76,0.2)" : `${meta.accent}10` }}
                         >
-                          <TierIcon className="w-5 h-5" style={{ color: meta.accent }} strokeWidth={1.5} />
+                          <TierIcon className="w-5 h-5" style={{ color: isEstate ? "#C9A84C" : meta.accent }} strokeWidth={1.5} />
                         </div>
                       ) : null;
                     })()}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-heading text-[16px] font-bold" style={{ color: meta.accent }}>
+                      <h3 className="font-heading text-[16px] font-bold" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
                         {meta.label}
                       </h3>
-                      {isEstate && (
+                      {isRecommended && (
                         <span
+                          className="uppercase text-[8px] font-bold tracking-wider"
                           style={{
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            letterSpacing: "1px",
-                            color: "#5C1A33",
-                            backgroundColor: "#5C1A3310",
-                            padding: "3px 10px",
-                            borderRadius: "4px",
+                            letterSpacing: "0.5px",
+                            color: "#0A0A0A",
+                            backgroundColor: GOLD,
+                            padding: "2px 6px",
+                            borderRadius: "3px",
                           }}
                         >
-                          PREMIUM
+                          Recommended
                         </span>
                       )}
                     </div>
                   </div>
-                  <span className="font-hero text-[24px] md:text-[28px] font-normal flex-shrink-0" style={{ color: meta.accent }}>
+                  <span className="font-hero text-[24px] md:text-[28px] font-bold flex-shrink-0" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
                     {fmtPrice(t.price)}
                   </span>
                 </div>
                 {!isCollapsed && (
-                  <p data-tier-tagline className="mt-2 w-full leading-relaxed text-[11px] md:text-[12px]" style={{ color: `${FOREST}70` }}>
+                  <p data-tier-tagline className="mt-2 w-full leading-relaxed text-[11px] md:text-[12px]" style={{ color: cardMuted ?? `${FOREST}70` }}>
                     {meta.tagline}
                   </p>
                 )}
 
                 <div className={`mt-4 flex flex-col flex-1 min-h-0 ${isCollapsed ? "!mt-0" : ""}`}>
                   {!isCollapsed && (
-                    <p className="text-[11px] mb-3" style={{ color: `${FOREST}60` }}>
+                    <p className="text-[11px] mb-3" style={{ color: cardMuted ?? `${FOREST}60` }}>
                       +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
                     </p>
                   )}
 
                   {!isCollapsed && (
-                  <ul className="space-y-2 mb-6 flex-1">
+                  <ul className="space-y-2 mb-4 flex-1">
                     {t.includes.map((inc, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-                        <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{inc}</span>
+                        <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: checkColor }} />
+                        <span className="text-[12px] leading-snug" style={{ color: cardFg ?? FOREST }}>{inc}</span>
                       </li>
                     ))}
-                    {tierKey === "curated" &&
-                      CURATED_MISSING.map((label, i) => (
-                        <li key={`missing-${i}`} className="flex items-start gap-2">
-                          <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
-                          <span
-                            className="text-[12px] leading-snug font-light"
-                            style={{ color: "#B0A99F", textDecoration: "line-through" }}
-                          >
-                            {label}
-                          </span>
-                        </li>
-                      ))}
-                    {tierKey === "signature" &&
-                      SIGNATURE_MISSING.map((label, i) => (
-                        <li key={`missing-${i}`} className="flex items-start gap-2">
-                          <X className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#B0A99F" }} />
-                          <span
-                            className="text-[12px] leading-snug font-light"
-                            style={{ color: "#B0A99F", textDecoration: "line-through" }}
-                          >
-                            {label}
-                          </span>
-                        </li>
-                      ))}
                   </ul>
+                  )}
+                  {!isCollapsed && meta.footer && (
+                    <p className="text-[10px] mb-4 leading-snug" style={{ color: cardMuted ?? `${FOREST}60` }}>
+                      {meta.footer}
+                    </p>
                   )}
 
                   <button
                     type="button"
                     onClick={() => onSelectTier(tierKey)}
-                    className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all flex-shrink-0 ${
-                      isSelected ? "text-white shadow-md" : "border-2 hover:shadow-sm"
+                    className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all flex-shrink-0 hover:opacity-90 ${
+                      isSelected ? "text-white shadow-md" : ""
                     }`}
                     style={
                       isSelected
                         ? { backgroundColor: GOLD }
-                        : isRecommended
-                          ? { backgroundColor: tierKey === "estate" ? WINE : GOLD, color: "#FFFFFF" }
-                          : { borderColor: meta.accent, color: meta.accent }
+                        : { backgroundColor: "transparent", color: isEstate ? "#C9A84C" : meta.accent }
                     }
                   >
                     {isSelected ? (
@@ -262,7 +197,7 @@ export default function ResidentialLayout({
                   </button>
 
                   {!isCollapsed && (
-                  <p className="text-center text-[10px] mt-2.5 flex-shrink-0" style={{ color: GOLD }}>
+                  <p className="text-center text-[10px] mt-2.5 flex-shrink-0" style={{ color: depositColor }}>
                     {fmtPrice(t.deposit)} deposit to book
                   </p>
                   )}

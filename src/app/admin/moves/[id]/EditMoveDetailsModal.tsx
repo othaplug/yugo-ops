@@ -11,11 +11,23 @@ import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
+const IN_PROGRESS_STATUSES = [
+  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
+  "en_route_to_destination", "arrived_at_destination", "unloading",
+  "in_progress", "dispatched", "in_transit",
+];
+function isMoveInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase().replace(/-/g, "_");
+  const st = (stage || "").toLowerCase().replace(/-/g, "_");
+  return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
+}
 const ACCESS_OPTIONS = ["Elevator", "Stairs", "Loading dock", "Parking", "Gate / Buzz code", "Ground floor", "Building access required"];
 
 interface EditMoveDetailsModalProps {
   open: boolean;
   onClose: () => void;
+  /** When set, only show and save this section (addresses = location/schedule/crew, notes = internal notes only). */
+  section?: "addresses" | "notes" | null;
   moveId: string;
   initial: {
     from_address?: string | null;
@@ -25,6 +37,8 @@ interface EditMoveDetailsModalProps {
     to_lat?: number | null;
     to_lng?: number | null;
     crew_id?: string | null;
+    status?: string | null;
+    stage?: string | null;
     coordinator_name?: string | null;
     scheduled_date?: string | null;
     arrival_window?: string | null;
@@ -51,7 +65,7 @@ function Field({ label, children, className = "" }: { label: string; children: R
 const inputBase =
   "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
 
-export default function EditMoveDetailsModal({ open, onClose, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
+export default function EditMoveDetailsModal({ open, onClose, section = null, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -118,12 +132,40 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
   const handleSave = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setSaving(true);
+    const moveInProgress = isMoveInProgress(initial.status, initial.stage);
+    const crewChanging = (crewId.trim() || null) !== (initial.crew_id || null);
+    if (moveInProgress && crewChanging) {
+      toast("Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.", "alertTriangle");
+      setSaving(false);
+      return;
+    }
     const updated_at = new Date().toISOString();
     const accessNotesMerged =
       [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`].filter(Boolean).join("\n") || null;
-    const { data, error } = await supabase
-      .from("moves")
-      .update({
+
+    const updatePayload: Record<string, unknown> = { updated_at };
+    if (section === "notes") {
+      updatePayload.internal_notes = internalNotes.trim() || null;
+    } else if (section === "addresses") {
+      Object.assign(updatePayload, {
+        from_address: fromAddress.trim() || null,
+        to_address: toAddress.trim() || null,
+        delivery_address: toAddress.trim() || null,
+        from_lat: fromLat,
+        from_lng: fromLng,
+        to_lat: toLat,
+        to_lng: toLng,
+        from_access: fromAccess.trim() || null,
+        to_access: toAccess.trim() || null,
+        scheduled_date: scheduledDate.trim() || null,
+        scheduled_time: null,
+        arrival_window: arrivalWindow.trim() || null,
+        access_notes: accessNotesMerged,
+        crew_id: crewId.trim() || null,
+        coordinator_name: coordinatorName.trim() || null,
+      });
+    } else {
+      Object.assign(updatePayload, {
         from_address: fromAddress.trim() || null,
         to_address: toAddress.trim() || null,
         delivery_address: toAddress.trim() || null,
@@ -141,8 +183,12 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
         coordinator_name: coordinatorName.trim() || null,
         complexity_indicators: complexityIndicators.length ? complexityIndicators : null,
         internal_notes: internalNotes.trim() || null,
-        updated_at,
-      })
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("moves")
+      .update(updatePayload)
       .eq("id", moveId)
       .select()
       .single();
@@ -171,11 +217,16 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
     }
   };
 
+  const showAddresses = section === null || section === "addresses";
+  const showNotes = section === null || section === "notes";
+  const modalTitle = section === "addresses" ? "Edit addresses & schedule" : section === "notes" ? "Edit internal notes" : "Edit move details";
+
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Edit move details" maxWidth="lg">
+    <ModalOverlay open={open} onClose={onClose} title={modalTitle} maxWidth="lg">
       <form onSubmit={handleSave} className="flex flex-col min-h-0">
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
           {/* Location */}
+          {showAddresses && (
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-2">
             <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
@@ -230,8 +281,10 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
             </div>
           </section>
           </fieldset>
+          )}
 
           {/* Schedule */}
+          {showAddresses && (
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
             <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
@@ -261,11 +314,13 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
             </div>
           </section>
           </fieldset>
+          )}
 
           {/* Crew & Coordinator */}
+          {showAddresses && (
           <section className="pt-4 border-t border-[var(--brd)]/60">
             {crews.length > 0 && (
-              <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
+              <fieldset disabled={isCompleted || isMoveInProgress(initial.status, initial.stage)} className={isCompleted || isMoveInProgress(initial.status, initial.stage) ? "opacity-70" : ""}>
                 <Field label="Crew (for live tracking)">
                   <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputBase}>
                     <option value="">No crew assigned</option>
@@ -286,70 +341,87 @@ export default function EditMoveDetailsModal({ open, onClose, moveId, initial, c
               />
             </Field>
           </section>
+          )}
 
-          {/* Optional: Complexity & Internal notes */}
-          <section className="pt-4 border-t border-[var(--brd)]/60">
-            <button
-              type="button"
-              onClick={() => setShowOptional(!showOptional)}
-              className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
-            >
-              {showOptional ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              {showOptional ? "Hide" : "Show"} optional details
-            </button>
-            {showOptional && (
-              <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
-                <Field label="Complexity indicators">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {COMPLEXITY_PRESETS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => toggleComplexity(preset)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
-                          complexityIndicators.includes(preset)
-                            ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40"
-                            : "bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
+          {/* Internal notes — shown when section is notes only, or in full modal under optional */}
+          {showNotes && (
+          <section className={showAddresses ? "pt-4 border-t border-[var(--brd)]/60" : ""}>
+            {section === "notes" ? (
+              <Field label="Internal notes">
+                <textarea
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                  placeholder="Client preferences, special instructions, internal-only..."
+                  rows={5}
+                  className={`${inputBase} resize-none min-h-[120px]`}
+                />
+              </Field>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowOptional(!showOptional)}
+                  className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
+                >
+                  {showOptional ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  {showOptional ? "Hide" : "Show"} optional details
+                </button>
+                {showOptional && (
+                  <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
+                    <Field label="Complexity indicators">
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {COMPLEXITY_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => toggleComplexity(preset)}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                              complexityIndicators.includes(preset)
+                                ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40"
+                                : "bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          value={customComplexity}
+                          onChange={(e) => setCustomComplexity(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addCustomComplexity();
+                            }
+                          }}
+                          placeholder="Add custom (Enter to add)"
+                          className={`${inputBase} flex-1`}
+                        />
+                        <button
+                          type="button"
+                          onClick={addCustomComplexity}
+                          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </Field>
+                    <Field label="Internal notes">
+                      <textarea
+                        value={internalNotes}
+                        onChange={(e) => setInternalNotes(e.target.value)}
+                        placeholder="Client preferences, special instructions, internal-only..."
+                        rows={3}
+                        className={`${inputBase} resize-none min-h-[72px]`}
+                      />
+                    </Field>
                   </div>
-                  <div className="flex gap-2">
-                    <input
-                      value={customComplexity}
-                      onChange={(e) => setCustomComplexity(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addCustomComplexity();
-                        }
-                      }}
-                      placeholder="Add custom (Enter to add)"
-                      className={`${inputBase} flex-1`}
-                    />
-                    <button
-                      type="button"
-                      onClick={addCustomComplexity}
-                      className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </Field>
-                <Field label="Internal notes">
-                  <textarea
-                    value={internalNotes}
-                    onChange={(e) => setInternalNotes(e.target.value)}
-                    placeholder="Client preferences, special instructions, internal-only..."
-                    rows={3}
-                    className={`${inputBase} resize-none min-h-[72px]`}
-                  />
-                </Field>
-              </div>
+                )}
+              </>
             )}
           </section>
+          )}
         </div>
 
         {/* Sticky footer */}

@@ -58,8 +58,8 @@ export function estimateLabourFromScore(
   if (toAccess && hardAccess.includes(toAccess)) crewSize += 1;
   crewSize = Math.min(6, crewSize);
 
-  // Hours: overhead + load (divisor 10) + drive + unload (0.75 of load) + disassembly
-  const loadHours = inventoryScore / 10;
+  // Hours: overhead + load (divisor 12 for realistic loading; boxes move in batches) + drive + unload (0.75 of load) + disassembly
+  const loadHours = inventoryScore / 12;
   const driveHours = distanceKm / 40;
   const unloadHours = loadHours * 0.75;
   const disassemblyHours = DISASSEMBLY_BY_SIZE[sizeKey] ?? 0.5;

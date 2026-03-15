@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
-import { Pencil, ChevronDown } from "lucide-react";
+import { Pencil, ChevronDown, Lock } from "lucide-react";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
@@ -12,6 +12,7 @@ import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
 import MoveFilesSection from "./MoveFilesSection";
+import MoveSignOffSection from "./MoveSignOffSection";
 import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
@@ -35,7 +36,11 @@ interface ReviewRequestEntry {
   reminder_sent_at: string | null;
   review_clicked: boolean | null;
   review_clicked_at: string | null;
+  client_rating: number | null;
+  client_feedback: string | null;
 }
+
+type ItemWeightRow = { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean };
 
 interface MoveDetailClientProps {
   move: any;
@@ -45,6 +50,7 @@ interface MoveDetailClientProps {
   additionalFeesCents?: number;
   etaSmsLog?: EtaSmsLogEntry[];
   reviewRequest?: ReviewRequestEntry;
+  itemWeights?: ItemWeightRow[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 
@@ -78,6 +84,17 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase();
   return s === "completed" || s === "delivered" || s === "done";
 }
+
+const IN_PROGRESS_STATUSES = [
+  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
+  "en_route_to_destination", "arrived_at_destination", "unloading",
+  "in_progress", "dispatched", "in_transit",
+];
+function isMoveInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase().replace(/-/g, "_");
+  const st = (stage || "").toLowerCase().replace(/-/g, "_");
+  return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
+}
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
@@ -92,7 +109,7 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
 
-export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0, etaSmsLog = [], reviewRequest }: MoveDetailClientProps) {
+export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0, etaSmsLog = [], reviewRequest, itemWeights = [] }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -101,12 +118,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [detailsModalSection, setDetailsModalSection] = useState<"addresses" | "notes" | null>(null);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
   const [restartOverrideModal, setRestartOverrideModal] = useState<{ newStatus: string } | null>(null);
   const [restartOverrideTyped, setRestartOverrideTyped] = useState("");
+  const [overrideStatusModalOpen, setOverrideStatusModalOpen] = useState(false);
+  const [overrideStatusNewStatus, setOverrideStatusNewStatus] = useState("confirmed");
+  const [overrideStatusTyped, setOverrideStatusTyped] = useState("");
   const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
@@ -135,6 +156,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const isCompleted = isMoveStatusCompleted(move.status);
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
+  const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
   const [balanceLoading, setBalanceLoading] = useState<"etransfer" | "card" | null>(null);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
@@ -261,7 +283,31 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
               <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
-              {editingCard === "status" ? (
+              {isCompleted ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                      {getStatusLabel(move.status)}
+                    </span>
+                    <span className="p-1 rounded-md text-red-500" title="Move completed — status locked" aria-hidden="true">
+                      <Lock className="w-[11px] h-[11px]" />
+                    </span>
+                  </span>
+                  {userRole === "owner" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOverrideStatusModalOpen(true);
+                        setOverrideStatusNewStatus("confirmed");
+                        setOverrideStatusTyped("");
+                      }}
+                      className="text-[10px] font-medium text-[var(--org)] hover:underline opacity-80 hover:opacity-100"
+                    >
+                      Override status
+                    </button>
+                  )}
+                </>
+              ) : editingCard === "status" ? (
                 <select
                   className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[120px]"
                   value={(() => {
@@ -399,7 +445,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {reviewRequest && isCompleted && (
         <CollapsibleSection title="Review Request" defaultCollapsed={false} subtitle={reviewRequest.review_clicked ? "Clicked ✓" : toTitleCase(reviewRequest.status)}>
-          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4">
+          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[12px]">
                 <span className="text-[var(--tx3)]">Status:</span>
@@ -411,7 +457,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                       : toTitleCase(reviewRequest.status)}
                 </span>
               </div>
-              {!reviewRequest.review_clicked && (reviewRequest.status === "pending" || reviewRequest.status === "sent") && (
+              {!reviewRequest.review_clicked && (reviewRequest.status === "pending" || reviewRequest.status === "sent" || reviewRequest.status === "reminded") && (
                 <button
                   type="button"
                   disabled={reviewReminderLoading}
@@ -442,7 +488,26 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 </button>
               )}
             </div>
+            {(reviewRequest.client_rating != null && reviewRequest.client_rating <= 3) || (reviewRequest.client_feedback && reviewRequest.client_feedback.trim()) ? (
+              <div className="pt-3 border-t border-[var(--brd)]">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1.5">Client feedback (from review link)</p>
+                <div className="text-[12px] text-[var(--tx2)]">
+                  {reviewRequest.client_rating != null && reviewRequest.client_rating <= 5 && (
+                    <p className="mb-1"><span className="text-[var(--tx3)]">Rating:</span> {reviewRequest.client_rating}★</p>
+                  )}
+                  {reviewRequest.client_feedback?.trim() && (
+                    <p><span className="text-[var(--tx3)]">Feedback:</span> {reviewRequest.client_feedback}</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
+        </CollapsibleSection>
+      )}
+
+      {isCompleted && (
+        <CollapsibleSection title="Post-move feedback (from crew)" defaultCollapsed={false} subtitle="Client satisfaction & NPS from crew sign-off">
+          <MoveSignOffSection moveId={move.id} />
         </CollapsibleSection>
       )}
 
@@ -455,6 +520,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             crewId={move.crew_id}
             crewName={selectedCrew?.name}
             destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
+            pickup={move.from_lat != null && move.from_lng != null ? { lat: move.from_lat, lng: move.from_lng } : undefined}
+            dropoff={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
             moveId={move.id}
           />
         </CollapsibleSection>
@@ -476,20 +543,38 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
         <div className="p-5 space-y-4">
+          {moveInProgress && (
+            <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
+              Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.
+            </p>
+          )}
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
             <select
               value={move.crew_id || ""}
+              disabled={moveInProgress}
               onChange={async (e) => {
+                if (moveInProgress) return;
                 const v = e.target.value || null;
-                const { data } = await supabase.from("moves").update({ crew_id: v, assigned_members: v ? (crews.find((c) => c.id === v)?.members || []) : [], updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
-                if (data) {
-                  setMove(data);
-                  setAssignedMembers(new Set(Array.isArray(data.assigned_members) ? data.assigned_members : (crews.find((c) => c.id === v)?.members || [])));
+                try {
+                  const res = await fetch("/api/dispatch/assign", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ jobId: move.id, jobType: "move", crewId: v }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error || "Failed to assign");
+                  if (json.move) {
+                    setMove(json.move);
+                    setAssignedMembers(new Set(Array.isArray(json.move.assigned_members) ? json.move.assigned_members : (crews.find((c) => c.id === v)?.members || [])));
+                  }
+                  router.refresh();
+                  toast("Crew assigned", "check");
+                } catch (err) {
+                  toast(err instanceof Error ? err.message : "Failed to assign", "alertTriangle");
                 }
-                router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <option value="">No crew assigned</option>
               {crews.map((c) => (
@@ -673,15 +758,103 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </ModalOverlay>
       )}
 
+      {overrideStatusModalOpen && (
+        <ModalOverlay
+          open
+          onClose={() => {
+            setOverrideStatusModalOpen(false);
+            setOverrideStatusTyped("");
+          }}
+          title="Override status (admin)"
+          maxWidth="sm"
+        >
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--tx2)]">
+              This move is completed. Changing status will <strong>restart</strong> the move globally:
+            </p>
+            <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
+              <li>Live stage will be cleared</li>
+              <li>Any tracking session will be ended</li>
+              <li>Crew will be able to start the job again from scratch</li>
+            </ul>
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">New status</label>
+              <select
+                value={overrideStatusNewStatus}
+                onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
+                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              >
+                {MOVE_STATUS_OPTIONS.filter((s) => !["completed", "cancelled", "paid"].includes(s.value)).map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-[11px] text-[var(--tx3)]">
+              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to confirm you understand this action.
+            </p>
+            <input
+              type="text"
+              value={overrideStatusTyped}
+              onChange={(e) => setOverrideStatusTyped(e.target.value)}
+              placeholder="Type OVERRIDE"
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              autoComplete="off"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOverrideStatusModalOpen(false);
+                  setOverrideStatusTyped("");
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE"}
+                onClick={async () => {
+                  if (overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE") return;
+                  try {
+                    const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ newStatus: overrideStatusNewStatus }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed to override status");
+                    if (data.move) setMove(data.move);
+                    setOverrideStatusModalOpen(false);
+                    setOverrideStatusTyped("");
+                    router.refresh();
+                    toast("Status overridden", "check");
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Failed to override status", "alertTriangle");
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Override & restart
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
       {/* ─── Seamless info sections ─── */}
       <div className="mt-1 space-y-0">
 
         {/* Time Intelligence */}
         <div className="group/s relative py-4">
-          {!isCompleted && (
-            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+          {!isCompleted ? (
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
               <Pencil className="w-[11px] h-[11px]" />
             </button>
+          ) : (
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+              <Lock className="w-[11px] h-[11px]" />
+            </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
@@ -695,10 +868,14 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
         {/* Addresses */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
-          {!isCompleted && (
-            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit addresses">
+          {!isCompleted ? (
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("addresses"); setDetailsModalOpen(true); }} aria-label="Edit addresses">
               <Pencil className="w-[11px] h-[11px]" />
             </button>
+          ) : (
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+              <Lock className="w-[11px] h-[11px]" />
+            </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
@@ -717,10 +894,14 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
         {/* Crew */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
-          {!isCompleted && (
-            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setCrewModalOpen(true)} aria-label="Edit crew">
+          {!isCompleted ? (
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} aria-label="Edit crew" title={moveInProgress ? "Cannot reassign job in progress" : "Change crew"}>
               <Pencil className="w-[11px] h-[11px]" />
             </button>
+          ) : (
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+              <Lock className="w-[11px] h-[11px]" />
+            </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
@@ -729,17 +910,21 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
             {isCompleted ? (
               <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
-              <button type="button" onClick={() => setCrewModalOpen(true)} className="text-left hover:opacity-90 transition-opacity"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
 
         {/* Vehicle */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
-          {!isCompleted && (
-            <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
+          {!isCompleted ? (
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
               <Pencil className="w-[11px] h-[11px]" />
             </button>
+          ) : (
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+              <Lock className="w-[11px] h-[11px]" />
+            </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
@@ -957,30 +1142,11 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       {/* Profitability — Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}
 
-      {/* Complexity Indicators — seamless */}
-      <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
-        <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
-          <Pencil className="w-[11px] h-[11px]" />
-        </button>
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
-        <div className="flex flex-wrap gap-1">
-          {(Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).length > 0 ? (
-            (Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).map((tag: string) => (
-              <span key={tag} className="px-2 py-0.5 rounded text-[9px] font-medium bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/15">
-                {tag}
-              </span>
-            ))
-          ) : (
-            <span className="text-[10px] text-[var(--tx3)]">No indicators. Click edit to add.</span>
-          )}
-        </div>
-      </div>
-
       {/* Distance & Logistics */}
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
 
       {/* Inventory, Files & Media */}
-      <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} />
+      <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} itemWeights={itemWeights} moveType={move.move_type} />
       <MoveFilesSection moveId={move.id} moveStatus={move.status} />
 
       {/* Reported Issues from crew */}
@@ -988,9 +1154,15 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Internal Notes — seamless */}
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
-        <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
-          <Pencil className="w-[11px] h-[11px]" />
-        </button>
+        {!isCompleted ? (
+          <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
+            <Pencil className="w-[11px] h-[11px]" />
+          </button>
+        ) : (
+          <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+            <Lock className="w-[11px] h-[11px]" />
+          </span>
+        )}
         <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
@@ -999,7 +1171,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       <EditMoveDetailsModal
         open={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
+        onClose={() => { setDetailsModalOpen(false); setDetailsModalSection(null); }}
+        section={detailsModalSection}
         moveId={move.id}
         crews={crews}
         isCompleted={isCompleted}
@@ -1011,6 +1184,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           to_lat: move.to_lat,
           to_lng: move.to_lng,
           crew_id: move.crew_id,
+          status: move.status,
+          stage: move.stage,
           coordinator_name: move.coordinator_name,
           scheduled_date: move.scheduled_date,
           arrival_window: move.arrival_window,

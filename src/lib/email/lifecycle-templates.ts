@@ -30,6 +30,27 @@ function ctaButton(url: string, label: string): string {
   `;
 }
 
+/** Star rating links: 1–3 → review page (feedback), 4–5 → redirect API (Google). */
+function starRatingLinks(reviewUrl: string, reviewRedirectUrl: string): string {
+  const sep = reviewUrl.includes("?") ? "&" : "?";
+  const starStyle = "display:inline-block;width:36px;height:36px;line-height:36px;text-align:center;font-size:18px;color:#C9A962;text-decoration:none;margin:0 2px;border-radius:8px;background:rgba(201,169,98,0.15)";
+  const link1 = `${reviewUrl}${sep}rating=1`;
+  const link2 = `${reviewUrl}${sep}rating=2`;
+  const link3 = `${reviewUrl}${sep}rating=3`;
+  const link4 = `${reviewRedirectUrl}${reviewRedirectUrl.includes("?") ? "&" : "?"}rating=4`;
+  const link5 = `${reviewRedirectUrl}${reviewRedirectUrl.includes("?") ? "&" : "?"}rating=5`;
+  return `
+    <div style="font-size:11px;color:#B8B5B0;margin-bottom:10px;text-align:center">Rate your experience:</div>
+    <div style="margin:0 0 24px;text-align:center">
+      <a href="${link1}" style="${starStyle}" title="1 star">★</a>
+      <a href="${link2}" style="${starStyle}" title="2 stars">★</a>
+      <a href="${link3}" style="${starStyle}" title="3 stars">★</a>
+      <a href="${link4}" style="${starStyle}" title="4 stars">★</a>
+      <a href="${link5}" style="${starStyle}" title="5 stars">★</a>
+    </div>
+  `;
+}
+
 /* ── T-72 Hours: Checklist Email ── */
 
 export interface PreMove72hrData {
@@ -284,6 +305,8 @@ export interface ReviewRequestTierData {
   clientName: string;
   tier: "curated" | "signature" | "estate" | string;
   reviewUrl: string;
+  /** URL for 4–5 star clicks: saves rating and redirects to Google. */
+  reviewRedirectUrl: string;
   referralUrl?: string | null;
   trackingUrl: string;
   coordinatorName?: string | null;
@@ -302,9 +325,7 @@ export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review
-    </a>
+    ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo. — The Yugo Team
     </p>
@@ -324,9 +345,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review
-    </a>
+    ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo. — The Yugo Team
     </p>
@@ -343,9 +362,7 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       If your experience was as exceptional as we aimed for, we would be honoured by a brief review. It helps families like yours find the level of care they deserve.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Share Your Experience
-    </a>
+    ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
       With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo — The Art of Moving
     </p>
@@ -355,6 +372,8 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
 export interface ReviewRequestReminderData {
   clientName: string;
   reviewUrl: string;
+  /** URL for 4–5 star clicks: saves rating and redirects to Google. */
+  reviewRedirectUrl: string;
 }
 
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
@@ -364,9 +383,7 @@ export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
     </p>
-    <a href="${d.reviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
-      ★★★★★ Leave a Review
-    </a>
+    ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
       Thank you for choosing Yugo.
     </p>

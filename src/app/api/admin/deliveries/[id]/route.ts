@@ -29,9 +29,32 @@ export async function PATCH(
 
   const { data: existing } = await admin
     .from("deliveries")
-    .select("status, organization_id, delivery_number, customer_name")
+    .select("status, stage, crew_id, organization_id, delivery_number, customer_name")
     .eq("id", id)
     .single();
+
+  const IN_PROGRESS = [
+    "en_route",
+    "en_route_to_pickup",
+    "arrived_at_pickup",
+    "loading",
+    "en_route_to_destination",
+    "arrived_at_destination",
+    "unloading",
+    "in_progress",
+    "dispatched",
+    "in_transit",
+  ];
+  const norm = (s: string | null) => (s || "").toLowerCase().replace(/-/g, "_");
+  const isInProgress =
+    IN_PROGRESS.includes(norm(existing?.status)) || IN_PROGRESS.includes(norm(existing?.stage));
+
+  if (isInProgress && "crew_id" in body && body.crew_id !== existing?.crew_id) {
+    return NextResponse.json(
+      { error: "Cannot reassign: job is in progress. Reassignment is only allowed before the crew has started." },
+      { status: 400 }
+    );
+  }
 
   const allowedFields = [
     "customer_name", "customer_email", "customer_phone",

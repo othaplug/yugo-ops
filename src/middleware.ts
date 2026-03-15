@@ -12,6 +12,7 @@ const PUBLIC_PATHS = new Set([
   "/privacy",
   "/terms",
   "/cookies",
+  "/review",
   "/api/health",
   "/api/auth/role",
   "/api/crew/login",
@@ -27,6 +28,7 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/quote/")) return true;
   if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
+  if (pathname.startsWith("/tracking/")) return true;
   if (pathname.startsWith("/widget/")) return true;
   if (pathname.startsWith("/claim/")) return true;
   if (pathname.startsWith("/api/contracts/")) return true;
@@ -44,13 +46,14 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/api/widget/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
   if (pathname.startsWith("/api/claims/")) return true;
+  if (pathname.startsWith("/api/review/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
   if (/\.(svg|png|jpg|ico|css|js|woff2?)$/.test(pathname)) return true;
   return false;
 }
 
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const response = NextResponse.next({

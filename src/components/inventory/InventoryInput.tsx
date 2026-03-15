@@ -117,6 +117,8 @@ interface InventoryInputProps {
   onBoxCountChange?: (n: number) => void;
   /** commercial = office/commercial move, residential = default household move */
   mode?: "residential" | "commercial";
+  /** When true, only show add UI (room tabs, quick-add, search); hide empty state and selected list (for move detail quick-add) */
+  addOnlyMode?: boolean;
 }
 
 export default function InventoryInput({
@@ -131,6 +133,7 @@ export default function InventoryInput({
   boxCount,
   onBoxCountChange,
   mode = "residential",
+  addOnlyMode = false,
 }: InventoryInputProps) {
   const isCommercial = mode === "commercial";
   const [activeRoom, setActiveRoom] = useState<string>(isCommercial ? "office" : "bedroom");
@@ -306,6 +309,8 @@ export default function InventoryInput({
 
   const boxScore = (boxCount ?? 0) * 0.3;
   const totalScore = inventoryScore + boxScore;
+  // Labour estimate uses lower box weight (0.15): boxes move in batches on dollies; volume/modifier still use 0.3.
+  const labourScore = totalScore - (boxCount ?? 0) * 0.15;
 
   const totalItems = useMemo(
     () => value.reduce((sum, i) => sum + i.quantity, 0),
@@ -313,9 +318,9 @@ export default function InventoryInput({
   );
 
   const labourEstimate = useMemo(() => {
-    if (!showLabourEstimate || totalScore <= 0) return null;
-    return estimateLabourFromScore(totalScore, distanceKm, fromAccess, toAccess, moveSize);
-  }, [showLabourEstimate, totalScore, distanceKm, fromAccess, toAccess, moveSize]);
+    if (!showLabourEstimate || labourScore <= 0) return null;
+    return estimateLabourFromScore(labourScore, distanceKm, fromAccess, toAccess, moveSize);
+  }, [showLabourEstimate, labourScore, distanceKm, fromAccess, toAccess, moveSize]);
 
   const internalBoxCount = boxCount ?? 0;
 
@@ -326,7 +331,7 @@ export default function InventoryInput({
         <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
           {isCommercial ? "Equipment & Furniture" : "Client Inventory"}
         </h3>
-        {(value.length > 0 || internalBoxCount > 0) && (
+        {!addOnlyMode && (value.length > 0 || internalBoxCount > 0) && (
           <span className="text-[10px] text-[var(--tx3)]">
             {totalItems} items{internalBoxCount > 0 ? ` + ${internalBoxCount} boxes` : ""} · Score {totalScore.toFixed(1)}
           </span>
@@ -522,7 +527,7 @@ export default function InventoryInput({
       </div>
 
       {/* Inventory list */}
-      {value.length > 0 && (
+      {!addOnlyMode && value.length > 0 && (
         <div className="space-y-1 pt-1">
           {value.map((item) => {
             const key = itemKey(item);
@@ -698,12 +703,12 @@ export default function InventoryInput({
       )}
 
       {/* Empty state */}
-      {value.length === 0 && internalBoxCount === 0 && (
+      {!addOnlyMode && value.length === 0 && internalBoxCount === 0 && (
         <p className="text-[10px] text-[var(--tx3)] italic">
           No inventory added — standard volume assumed for pricing.
         </p>
       )}
-      {value.length === 0 && internalBoxCount > 0 && (
+      {!addOnlyMode && value.length === 0 && internalBoxCount > 0 && (
         <p className="text-[10px] text-[var(--tx3)]">
           {internalBoxCount} boxes only · Score {boxScore.toFixed(1)}
         </p>

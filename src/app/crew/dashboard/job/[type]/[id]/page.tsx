@@ -620,7 +620,7 @@ export default function CrewJobPage({
           )}
 
           {/* Sign-off CTA */}
-          {["unloading", "delivering"].includes(currentStatus) && !isCompleted && (
+          {["unloading", "delivering", "arrived_at_destination"].includes(currentStatus) && !isCompleted && (
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
               className="flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[14px] text-white transition-all shadow-lg"

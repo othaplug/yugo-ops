@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Trash2, Plus, Link as LinkIcon, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Trash2, Plus, Link as LinkIcon, FileText, Upload } from "lucide-react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
@@ -33,6 +33,8 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
   const [deleteConfirm, setDeleteConfirm] = useState<DocItem | null>(null);
   const [unlinkConfirm, setUnlinkConfirm] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [replacingDoc, setReplacingDoc] = useState<DocItem | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const fetchData = () => {
@@ -163,6 +165,37 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     }
   };
 
+  const handleReplaceClick = (doc: DocItem) => {
+    if (doc.source !== "move" || !doc.storage_path) return;
+    setReplacingDoc(doc);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !replacingDoc) return;
+    setDeleting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const r = await fetch(`/api/admin/moves/${moveId}/documents/${replacingDoc.id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+      const data = await r.json();
+      if (!r.ok || data.error) {
+        toast(data.error || "Failed to replace", "x");
+        return;
+      }
+      toast("Document replaced", "check");
+      setReplacingDoc(null);
+      fetchData();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const unlinkedInvoices = invoices.filter((i) => i.move_id !== moveId);
 
   return (
@@ -233,6 +266,13 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
           </div>
 
           <div>
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept=".pdf,image/*"
+              className="hidden"
+              onChange={handleReplaceFile}
+            />
             {allDocuments.length > 0 ? (
               <ul className="space-y-1 mb-3">
                 {allDocuments.map((d) => (
@@ -252,6 +292,18 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                         >
                           View
                         </a>
+                      )}
+                      {d.source === "move" && d.storage_path && (
+                        <button
+                          type="button"
+                          onClick={() => handleReplaceClick(d)}
+                          disabled={deleting}
+                          className="p-1 rounded-md text-[var(--tx3)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] transition-colors disabled:opacity-50"
+                          aria-label="Replace"
+                          title="Replace file"
+                        >
+                          <Upload className="w-[11px] h-[11px]" />
+                        </button>
                       )}
                       <button
                         type="button"

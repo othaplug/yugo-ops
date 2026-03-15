@@ -81,6 +81,15 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
   },
 };
 
+function getClientMessage(status: TrackingStatus, jobType: "move" | "delivery", defaultMessage: string): string {
+  if (jobType === "delivery") {
+    if (status === "en_route_to_pickup" || status === "en_route") return "Your crew is heading to pickup.";
+    if (status === "en_route_to_destination") return "Your delivery is on the way to you!";
+    if (status === "arrived_at_destination") return "Your crew has arrived at your address!";
+  }
+  return defaultMessage;
+}
+
 export async function notifyOnCheckpoint(
   status: TrackingStatus,
   jobId: string,
@@ -90,7 +99,10 @@ export async function notifyOnCheckpoint(
   fromAddress?: string,
   toAddress?: string
 ): Promise<void> {
-  const cfg = CONFIG[status] || { notifyClient: false, notifyAdmin: false, notifyPartner: false, clientMessage: "" };
+  let cfg = CONFIG[status] || { notifyClient: false, notifyAdmin: false, notifyPartner: false, clientMessage: "" };
+  if (jobType === "delivery" && (status === "en_route_to_pickup" || status === "en_route")) {
+    cfg = { ...cfg, notifyClient: false };
+  }
   const admin = createAdminClient();
 
   const adminMessage = status === "completed"
@@ -158,10 +170,10 @@ export async function notifyOnCheckpoint(
   }
 
   const subject = status === "completed"
-    ? `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`
+    ? jobType === "delivery" ? `Your delivery is complete — ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`
     : `Your crew is on the way — ${formatJobId(moveCode || jobId, jobType)}`;
 
-  const headline = cfg.clientMessage || "Status update";
+  const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "Status update";
   const body = status === "completed"
     ? "Thank you for choosing YUGO+. We hope your move went smoothly."
     : "Your crew has updated the status of your job.";

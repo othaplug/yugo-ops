@@ -81,7 +81,13 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
   }, [moveId]);
 
   if (loading) return <p className="text-[11px] text-[var(--tx3)]">Loading sign-off…</p>;
-  if (!signOff && skips.length === 0) return null;
+  if (!signOff && skips.length === 0) {
+    return (
+      <p className="text-[11px] text-[var(--tx3)]">
+        No crew sign-off yet. The crew can complete the post-move check and client satisfaction (NPS) from the crew app when they finish the job.
+      </p>
+    );
+  }
 
   const deadlinePassed = signOff?.damage_report_deadline
     ? new Date(signOff.damage_report_deadline) < new Date()

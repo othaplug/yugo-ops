@@ -33,7 +33,7 @@ export async function GET() {
 
   const { data: deliveries } = await admin
     .from("deliveries")
-    .select("id, delivery_number, customer_name, status, delivery_address, crew_id")
+    .select("id, delivery_number, customer_name, status, delivery_address, pickup_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, crew_id")
     .in("organization_id", orgIds)
     .eq("scheduled_date", todayStr)
     .in("status", liveStatuses)
@@ -90,19 +90,29 @@ export async function GET() {
     });
   }
 
-  // Geocode delivery addresses in parallel for destination markers
-  const geocodePromises = deliveries.map(async (d) => {
-    if (d.delivery_address) {
-      return geocodeAddress(d.delivery_address);
-    }
-    return null;
+  const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
+
+  const coordsPromises = deliveries.map(async (d) => {
+    const pickup =
+      d.pickup_lat != null && d.pickup_lng != null
+        ? { lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) }
+        : (d.pickup_address ? await geocodeAddress(d.pickup_address) : null);
+    const dropoff =
+      d.delivery_lat != null && d.delivery_lng != null
+        ? { lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) }
+        : (d.delivery_address ? await geocodeAddress(d.delivery_address) : null);
+    return { pickup, dropoff };
   });
-  const geocoded = await Promise.all(geocodePromises);
+  const allCoords = await Promise.all(coordsPromises);
 
   const enriched = deliveries.map((d, i) => {
     const crew = d.crew_id ? crewMap[d.crew_id] : null;
     const session = sessionMap[d.id];
-    const destCoords = geocoded[i];
+    const liveStage = session?.live_stage || "";
+    const headingToPickup = PICKUP_STAGES.includes(liveStage) || !liveStage.trim();
+    const { pickup: pickupCoords, dropoff: dropoffCoords } = allCoords[i];
+    const destCoords = headingToPickup ? (pickupCoords ?? dropoffCoords) : (dropoffCoords ?? pickupCoords);
+
     return {
       id: d.id,
       delivery_number: d.delivery_number,
@@ -113,10 +123,17 @@ export async function GET() {
       crew_name: crew?.name || null,
       crew_lat: crew?.current_lat || null,
       crew_lng: crew?.current_lng || null,
-      dest_lat: destCoords?.lat || null,
-      dest_lng: destCoords?.lng || null,
+      dest_lat: destCoords?.lat ?? null,
+      dest_lng: destCoords?.lng ?? null,
       live_stage: session?.live_stage || null,
     };
+  });
+
+  // Current delivery first (has active tracking session), then rest in schedule order
+  enriched.sort((a, b) => {
+    const aActive = a.live_stage != null ? 1 : 0;
+    const bActive = b.live_stage != null ? 1 : 0;
+    return bActive - aActive;
   });
 
   return NextResponse.json({ deliveries: enriched });

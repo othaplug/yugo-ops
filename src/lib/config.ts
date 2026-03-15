@@ -85,7 +85,7 @@ export async function getReviewUrl(): Promise<string> {
   return getConfig(
     "company_review_url",
     process.env.NEXT_PUBLIC_REVIEW_URL ||
-      "https://g.page/r/CRbJqWRCVlYBEAE/review",
+      "https://g.page/r/CU67iDN6TgMIEB0/review/",
   );
 }
 

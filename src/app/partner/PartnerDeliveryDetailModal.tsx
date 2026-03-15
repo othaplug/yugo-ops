@@ -12,13 +12,24 @@ const DeliveryTrackMap = dynamic(
   { ssr: false, loading: () => <div className="h-full min-h-[240px] bg-[var(--bg)] animate-pulse rounded-xl" /> }
 );
 
-const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
+/** Full 5 stages for admin/partner (two-leg delivery) */
+const DELIVERY_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route_to_destination", "arrived_at_destination", "completed"];
 const STAGE_LABELS: Record<string, string> = {
-  en_route: "On the way",
-  arrived: "Arrived",
-  delivering: "Delivering / Installing",
-  completed: "Completed",
+  en_route_to_pickup: "En Route to Pick Up",
+  arrived_at_pickup: "Arrived at Pickup",
+  en_route_to_destination: "En Route to Drop Off",
+  arrived_at_destination: "Delivering/Installing",
+  completed: "Complete",
+  en_route: "En Route to Pick Up",
+  arrived: "Arrived at Pickup",
+  delivering: "Delivering/Installing",
 };
+
+function normalizeDeliveryStage(stage: string | null): string | null {
+  if (!stage) return null;
+  const legacy: Record<string, string> = { en_route: "en_route_to_pickup", arrived: "arrived_at_pickup", delivering: "en_route_to_destination" };
+  return legacy[stage] || stage;
+}
 
 interface Delivery {
   id: string;
@@ -236,9 +247,10 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
     } catch (err) { console.error("Failed to copy tracking link:", err); }
   };
 
-  const stageIdx = DELIVERY_STAGES.indexOf(liveStage || "");
-  const progressPercent = isCompleted || liveStage === "completed" ? 100 : stageIdx >= 0 ? ((stageIdx + 1) / DELIVERY_STAGES.length) * 100 : 0;
-  const showProgressBar = (isInProgress || isCompleted) && (stageIdx >= 0 || liveStage === "completed" || isCompleted);
+  const normalizedStage = normalizeDeliveryStage(liveStage);
+  const stageIdx = DELIVERY_STAGES.indexOf(normalizedStage || "");
+  const progressPercent = isCompleted || normalizedStage === "completed" ? 100 : stageIdx >= 0 ? ((stageIdx + 1) / DELIVERY_STAGES.length) * 100 : 0;
+  const showProgressBar = (isInProgress || isCompleted) && (stageIdx >= 0 || normalizedStage === "completed" || isCompleted);
 
   const items = Array.isArray(d.items) ? d.items : [];
   const itemsDisplay = items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean);
@@ -291,7 +303,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           <div className="px-5 pt-4">
             <DeliveryProgressBar
               percent={progressPercent}
-              label={liveStage ? STAGE_LABELS[liveStage] || liveStage : isCompleted ? "Completed" : "Tracking…"}
+              label={normalizedStage ? ((STAGE_LABELS[normalizedStage] || liveStage) ?? "Tracking…") : isCompleted ? "Complete" : "Tracking…"}
               sublabel={`${Math.round(progressPercent)}%`}
               variant="light"
             />

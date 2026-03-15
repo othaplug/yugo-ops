@@ -120,6 +120,12 @@ export interface QuoteTemplateData {
   itemCategory?: string | null;
   projectType?: string | null;
   distance?: string | null;
+  /** Crew size (e.g. 3 movers) for residential/long distance */
+  estCrewSize?: number | null;
+  /** Estimated hours for the move */
+  estHours?: number | null;
+  /** Truck size label when available (e.g. 20ft truck) */
+  truckSize?: string | null;
   tiers?: Record<string, QuoteTier> | null;
   customPrice?: number | null;
   coordinatorName?: string | null;
@@ -137,6 +143,14 @@ function dateDisplay(dateStr: string | null | undefined): string {
     month: "long",
     day: "numeric",
   });
+}
+
+function flatRateBadge(): string {
+  return `
+    <div style="display:inline-block;background:${GOLD}22;border:1px solid ${GOLD};border-radius:999px;padding:6px 14px;margin:0 0 20px">
+      <span style="font-size:10px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:0.8px;text-transform:uppercase">&#10003; Guaranteed flat rate</span>
+    </div>
+  `;
 }
 
 function expiryNote(expiresAt: string | null | undefined): string {
@@ -194,17 +208,21 @@ function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: str
   `;
 }
 
+/** Value cell style: no underline so addresses don’t look like links */
+const valueCellStyle = `color:${TX};font-weight:600;padding:6px 0;text-align:right;font-size:12px;line-height:1.5;text-decoration:none`;
+
 function detailRow(label: string, value: string): string {
-  return `<tr><td style="color:${TX3};padding:6px 0;font-size:12px;vertical-align:top;line-height:1.5">${label}</td><td style="color:${TX};font-weight:600;padding:6px 0;text-align:right;font-size:12px;line-height:1.5">${value}</td></tr>`;
+  return `<tr><td style="color:${TX3};padding:6px 0;font-size:12px;vertical-align:top;line-height:1.5">${label}</td><td style="${valueCellStyle}">${value}</td></tr>`;
 }
 
-function detailsCard(rows: [string, string][]): string {
+/** Move details as a plain table — no card/div wrapper, details just lay on the page */
+function detailsPlain(rows: [string, string][]): string {
+  if (rows.length === 0) return "";
   return `
-    <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:20px;margin-bottom:24px;background:${CARD}">
-      <table style="width:100%;border-collapse:collapse">
-        ${rows.map(([l, v]) => detailRow(l, v)).join("")}
-      </table>
-    </div>
+    <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Move Details</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+      ${rows.map(([l, v]) => detailRow(l, v)).join("")}
+    </table>
   `;
 }
 
@@ -263,7 +281,7 @@ function tierCards(tiers: Record<string, QuoteTier>, recommendedTier?: string | 
           <div style="font-size:9px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">
             ${label}${badge}
           </div>
-          <div style="font-family:'Instrument Serif',serif;font-size:${priceFontSize};font-weight:400;color:${TX};margin-bottom:${isRec ? "12px" : "4px"}">${formatCurrency(t.price)}</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:${priceFontSize};font-weight:700;color:${TX};margin-bottom:${isRec ? "12px" : "4px"}">${formatCurrency(t.price)}</div>
           ${includesHtml ? `<div style="font-size:11px;color:${TX2};line-height:1.8">${includesHtml}</div>` : ""}
         </div>
       `;
@@ -284,7 +302,7 @@ function priceCard(label: string, price: number, note: string): string {
   return `
     <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
       <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">${label}</div>
-      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;color:${GOLD_LIGHT}">${formatCurrency(price)}</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(price)}</div>
       <div style="font-size:11px;color:${TX3};margin-top:6px">${note}</div>
     </div>
   `;
@@ -322,13 +340,18 @@ function residentialTemplate(d: QuoteTemplateData): string {
   if (d.fromAddress) rows.push(["From", d.fromAddress]);
   if (d.toAddress) rows.push(["To", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.distance) rows.push(["Distance", d.distance]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.truckSize) rows.push(["Truck", d.truckSize]);
 
   return quoteEmailLayout(`
     ${subHeading("Your Moving Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("We have prepared your personalized moving quote with three flat-rate packages. Choose the level of service that fits your needs &mdash; every option includes professional movers, a dedicated truck, and full protection.")}
+    ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${d.tiers ? tierCards(d.tiers, d.recommendedTier) : ""}
     ${estateRecommendationNote(d.recommendedTier)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -346,6 +369,9 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.truckSize) rows.push(["Truck", d.truckSize]);
 
   const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
@@ -353,8 +379,9 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
     ${subHeading("Long Distance Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your long distance moving quote is ready. We have calculated a flat rate based on your route and inventory &mdash; no surprises on arrival day.")}
+    ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${price ? priceCard("Flat Rate", price, "+ HST &middot; No hidden fees") : ""}
     ${d.tiers ? tierCards(d.tiers, d.recommendedTier) : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -379,7 +406,7 @@ function officeTemplate(d: QuoteTemplateData): string {
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Thank you for considering YUGO+ for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${price ? priceCard("Project Estimate", price, "+ HST &middot; Flat-rate guarantee") : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Proposal")}
@@ -395,6 +422,8 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
   if (d.toAddress) rows.push(["Delivery", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
@@ -403,7 +432,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your delivery quote is ready. We will handle your item with care from pickup to placement &mdash; fully insured, flat-rate, no surprises.")}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${price ? priceCard("Flat Price", price, "+ HST &middot; All-inclusive") : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
@@ -418,6 +447,8 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
   if (d.toAddress) rows.push(["Delivery", d.toAddress]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
@@ -426,7 +457,7 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your white glove service quote is ready. Premium handling with custom crating, climate control, and enhanced insurance &mdash; your valuables deserve the best.")}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${price ? priceCard("Premium Service Rate", price, "+ HST &middot; Enhanced insurance included") : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
@@ -441,6 +472,8 @@ function specialtyTemplate(d: QuoteTemplateData): string {
   if (d.fromAddress) rows.push(["From", d.fromAddress]);
   if (d.toAddress) rows.push(["To", d.toAddress]);
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice;
 
@@ -449,7 +482,7 @@ function specialtyTemplate(d: QuoteTemplateData): string {
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Thank you for reaching out about your specialty project. We have put together a custom proposal with all specialized equipment and handling included.")}
     ${expiryNote(d.expiresAt)}
-    ${detailsCard(rows)}
+    ${detailsPlain(rows)}
     ${price ? priceCard("Custom Quote", price, "+ HST &middot; Includes all specialized equipment") : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Proposal")}

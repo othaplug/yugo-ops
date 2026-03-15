@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Plus,
   X,
+  Gift,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -97,6 +98,8 @@ const INCLUSIONS_ESTATE: Inclusion[] = [
   { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
   { icon: Hand, label: "Premium gloves handling", description: "Art, antiques, and fragile items individually wrapped" },
   { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
+  { icon: Clock, label: "30 day concierge support", description: "Post-move support and questions answered within 30 days" },
+  { icon: Gift, label: "Exclusive partner offers & perks", description: "Access to partner discounts and member benefits" },
 ];
 
 export default function QuotePageClient({
@@ -287,13 +290,17 @@ export default function QuotePageClient({
     return SERVICE_LABEL[quote.service_type] ?? "Standard";
   }, [isResidential, selectedTier, quote.service_type]);
 
-  /* ── Applicable add-ons (exclude those included in tier) ── */
+  /* ── Applicable add-ons (exclude those included in tier; Estate includes packing supplies so hide packing materials kit) ── */
   const applicableAddons = useMemo(() => {
-    if (!selectedTier) return allAddons;
-    return allAddons.filter((a) => {
-      if (!a.excluded_tiers) return true;
-      return !a.excluded_tiers.includes(selectedTier);
-    });
+    let list = allAddons;
+    if (selectedTier) {
+      list = list.filter((a) => {
+        if (a.excluded_tiers?.includes(selectedTier)) return false;
+        if (selectedTier === "estate" && a.slug === "packing_materials") return false;
+        return true;
+      });
+    }
+    return list;
   }, [allAddons, selectedTier]);
 
   /* ── Add-on helpers ── */
@@ -480,6 +487,7 @@ export default function QuotePageClient({
         for (const [id] of next) {
           const addon = allAddons.find((a) => a.id === id);
           if (addon?.excluded_tiers?.includes(tierKey)) next.delete(id);
+          if (tierKey === "estate" && addon?.slug === "packing_materials") next.delete(id);
         }
         return next;
       });
@@ -808,7 +816,7 @@ export default function QuotePageClient({
 
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
         {((isResidential && currentStep >= 2) || (!isResidential && isConfirmed)) &&
-          applicableAddons.length > 0 &&
+          (applicableAddons.length > 0 || (isResidential && selectedTier === "estate")) &&
           !booked && (
             <section ref={addonsRef} className="scroll-mt-6">
               {isResidential && currentStep >= 2 && (
@@ -820,6 +828,11 @@ export default function QuotePageClient({
                 >
                   ← Back
                 </button>
+              )}
+              {isResidential && selectedTier === "estate" && (
+                <p className="text-[12px] mb-4 px-4 py-2.5 rounded-lg border" style={{ color: FOREST, backgroundColor: `${GOLD}12`, borderColor: `${GOLD}40` }}>
+                  Packing supplies are included with your Estate package.
+                </p>
               )}
               <AddOnsSection
                 addons={applicableAddons}

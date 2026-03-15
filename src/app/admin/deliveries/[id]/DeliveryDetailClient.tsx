@@ -68,6 +68,17 @@ function isDone(status: string | null | undefined): boolean {
   return s === "delivered" || s === "completed" || s === "cancelled";
 }
 
+const IN_PROGRESS_STATUSES = [
+  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
+  "en_route_to_destination", "arrived_at_destination", "unloading",
+  "in_progress", "dispatched", "in_transit",
+];
+function isDeliveryInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase().replace(/-/g, "_");
+  const st = (stage || "").toLowerCase().replace(/-/g, "_");
+  return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Not set";
   const d = new Date(dateStr + "T00:00:00");
@@ -177,11 +188,55 @@ export default function DeliveryDetailClient({
   const [adjustedPrice, setAdjustedPrice] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [mapPickup, setMapPickup] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapDropoff, setMapDropoff] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => setDelivery(initialDelivery), [initialDelivery]);
 
+  // Resolve pickup/dropoff coords for LiveTrackingMap (from DB or geocode)
+  useEffect(() => {
+    const d = delivery;
+    if (!d) return;
+
+    const hasPickupCoords = d.pickup_lat != null && d.pickup_lng != null;
+    const hasDropoffCoords = d.delivery_lat != null && d.delivery_lng != null;
+
+    if (hasPickupCoords) {
+      setMapPickup({ lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) });
+    } else if (d.pickup_address?.trim()) {
+      fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.pickup_address.trim())}&limit=1`, { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          const feat = data?.features?.[0];
+          const coords = feat?.geometry?.coordinates;
+          if (Array.isArray(coords) && coords.length >= 2) setMapPickup({ lng: coords[0], lat: coords[1] });
+          else setMapPickup(null);
+        })
+        .catch(() => setMapPickup(null));
+    } else {
+      setMapPickup(null);
+    }
+
+    if (hasDropoffCoords) {
+      setMapDropoff({ lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) });
+    } else if (d.delivery_address?.trim()) {
+      fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address.trim())}&limit=1`, { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          const feat = data?.features?.[0];
+          const coords = feat?.geometry?.coordinates;
+          if (Array.isArray(coords) && coords.length >= 2) setMapDropoff({ lng: coords[0], lat: coords[1] });
+          else setMapDropoff(null);
+        })
+        .catch(() => setMapDropoff(null));
+    } else {
+      setMapDropoff(null);
+    }
+  }, [delivery?.id, delivery?.pickup_lat, delivery?.pickup_lng, delivery?.pickup_address, delivery?.delivery_lat, delivery?.delivery_lng, delivery?.delivery_address]);
+
   const selectedCrew = crews.find((c) => c.id === delivery.crew_id);
   const completed = isDone(delivery.status);
+  const deliveryInProgress = isDeliveryInProgress(delivery.status, delivery.stage);
   const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
   const sc = STATUS_COLORS[delivery.status] || STATUS_COLORS.pending;
   const price = delivery.quoted_price || delivery.total_price || delivery.admin_adjusted_price || 0;
@@ -578,23 +633,40 @@ export default function DeliveryDetailClient({
                   <span className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</span>
                 </div>
                 {delivery.crew_id ? (
-                  <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
+                    {!deliveryInProgress && (
+                      <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                        Change
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                    Assign Crew
-                  </button>
+                  !deliveryInProgress && (
+                    <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                      Assign Crew
+                    </button>
+                  )
                 )}
               </div>
               {delivery.crew_id ? (
-                <LiveTrackingMap crewId={delivery.crew_id} crewName={selectedCrew?.name} deliveryId={delivery.id} />
+                <LiveTrackingMap
+                  crewId={delivery.crew_id}
+                  crewName={selectedCrew?.name}
+                  deliveryId={delivery.id}
+                  pickup={mapPickup ?? undefined}
+                  dropoff={mapDropoff ?? undefined}
+                />
               ) : (
                 <div className="px-6 py-10 text-center">
                   <Truck className="w-5 h-5 text-[var(--tx3)]/30 mx-auto mb-2" />
                   <p className="text-[12px] font-medium text-[var(--tx2)]">No crew assigned</p>
                   <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
-                  <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
-                    Assign Crew
-                  </button>
+                  {!deliveryInProgress && (
+                    <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                      Assign Crew
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -732,9 +804,11 @@ export default function DeliveryDetailClient({
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
-                <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
-                  {selectedCrew ? "Change" : "Assign"}
-                </button>
+                {!deliveryInProgress && (
+                  <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
+                    {selectedCrew ? "Change" : "Assign"}
+                  </button>
+                )}
               </div>
               {selectedCrew ? (
                 <div>
@@ -822,10 +896,16 @@ export default function DeliveryDetailClient({
       {/* Crew Picker */}
       <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
         <div className="p-5 space-y-2">
+          {deliveryInProgress && (
+            <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
+              Cannot reassign: this delivery is in progress. Reassignment is only allowed before the crew has started.
+            </p>
+          )}
           <button
             type="button"
-            onClick={() => { assignCrew(null); setCrewModalOpen(false); }}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${!delivery.crew_id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+            disabled={deliveryInProgress}
+            onClick={() => { if (!deliveryInProgress) { assignCrew(null); setCrewModalOpen(false); } }}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${!delivery.crew_id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"} disabled:opacity-60 disabled:cursor-not-allowed`}
           >
             <div className="w-8 h-8 rounded-lg bg-[var(--bg)] flex items-center justify-center text-[var(--tx3)]">
               <Users className="w-3.5 h-3.5" />
@@ -839,8 +919,9 @@ export default function DeliveryDetailClient({
             <button
               key={c.id}
               type="button"
-              onClick={() => { assignCrew(c.id); setCrewModalOpen(false); }}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+              disabled={deliveryInProgress}
+              onClick={() => { if (!deliveryInProgress) { assignCrew(c.id); setCrewModalOpen(false); } }}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"} disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
                 {c.name.charAt(0).toUpperCase()}

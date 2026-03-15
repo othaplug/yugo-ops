@@ -286,27 +286,42 @@ function BaseRatesSection() {
   );
 }
 
-/* ────────── S1.5: LABOUR PRICING ────────── */
+/* ────────── S1.5: LABOUR & ESTATE PRICING ────────── */
 function LabourPricingSection() {
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
   const getVal = (key: string) => rows.find((r) => r.key === key);
-  const row = getVal("labour_rate_per_mover_hour");
-  const rate = Number(row?.value ?? 35);
+  const labourRow = getVal("labour_rate_per_mover_hour");
+  const rate = Number(labourRow?.value ?? 35);
+  const estateSuppliesRow = getVal("estate_supplies_allowance");
+  const estateSuppliesBase = Number(estateSuppliesRow?.value ?? 250);
 
   return (
     <div className="pt-4 space-y-4">
       <p className="text-[11px] text-[var(--tx3)]">
         Charged when actual crew × hours exceeds the move-size baseline. Higher = more sensitive to crew/hours. Lower = gentler adjustment.
       </p>
-      {row ? (
+      {labourRow ? (
         <div className="flex items-center gap-3">
           <label className="text-[11px] font-semibold text-[var(--tx)]">Rate per extra mover-hour ($)</label>
-          <EditCell value={rate} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--gold)]" />
+          <EditCell value={rate} onChange={(v) => updateRow(String(labourRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--gold)]" />
         </div>
       ) : (
         <p className="text-[11px] text-[var(--tx3)]">Run migrations to add labour_rate_per_mover_hour to platform_config.</p>
       )}
+
+      <p className="text-[11px] text-[var(--tx3)] mt-4">
+        Estate tier only: base packing supplies allowance in dollars. Scaled by move size (2br→5br) and inventory complexity in the quote algorithm.
+      </p>
+      {estateSuppliesRow ? (
+        <div className="flex items-center gap-3">
+          <label className="text-[11px] font-semibold text-[var(--tx)]">Estate supplies base ($)</label>
+          <EditCell value={estateSuppliesBase} onChange={(v) => updateRow(String(estateSuppliesRow.id), "value", v)} type="number" className="w-24 text-[14px] font-bold text-[var(--gold)]" />
+        </div>
+      ) : (
+        <p className="text-[11px] text-[var(--tx3)]">Run migrations to add estate_supplies_allowance to platform_config.</p>
+      )}
+
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
   );
@@ -320,8 +335,8 @@ function TierMultipliersSection() {
   const getVal = (key: string) => rows.find((r) => r.key === key);
   // Support both old and new config keys after migration
   const curM = Number(getVal("tier_curated_multiplier")?.value ?? getVal("tier_essentials_multiplier")?.value) || 1;
-  const sigM = Number(getVal("tier_signature_multiplier")?.value ?? getVal("tier_premier_multiplier")?.value) || 1.35;
-  const estM = Number(getVal("tier_estate_multiplier")?.value) || 1.85;
+  const sigM = Number(getVal("tier_signature_multiplier")?.value ?? getVal("tier_premier_multiplier")?.value) || 1.50;
+  const estM = Number(getVal("tier_estate_multiplier")?.value) || 3.15;
   const minJob = Number(getVal("minimum_job_amount")?.value) || 549;
   const rounding = Number(getVal("rounding_nearest")?.value) || 50;
   const taxRate = Number(getVal("tax_rate")?.value) || 0.13;

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { WINE, GOLD, CREAM } from "@/lib/client-theme";
+import Image from "next/image";
+import { WINE, GOLD, CREAM, FOREST } from "@/lib/client-theme";
 
 const STAR_SIZE = 36;
 
@@ -51,6 +52,11 @@ export default function ReviewPageClient() {
       setLoading(false);
       return;
     }
+    const ratingFromUrl = searchParams.get("rating");
+    const urlRating =
+      ratingFromUrl != null ? parseInt(ratingFromUrl, 10) : NaN;
+    const validUrlRating = Number.isInteger(urlRating) && urlRating >= 1 && urlRating <= 5 ? urlRating : null;
+
     fetch(`/api/review/state?token=${encodeURIComponent(token)}`)
       .then((r) => r.json())
       .then((data) => {
@@ -59,16 +65,17 @@ export default function ReviewPageClient() {
           return;
         }
         setState({
-          googleReviewUrl: data.googleReviewUrl || "https://g.page/r/yugo-moving/review",
+          googleReviewUrl: data.googleReviewUrl || "https://g.page/r/CU67iDN6TgMIEB0/review/",
           clientRating: data.clientRating ?? null,
           clientFeedback: data.clientFeedback ?? null,
           reviewClicked: data.reviewClicked ?? false,
         });
         if (data.clientRating != null) setSelectedRating(data.clientRating);
+        else if (validUrlRating != null) setSelectedRating(validUrlRating);
       })
       .catch(() => setInvalid(true))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, searchParams]);
 
   const saveRating = useCallback(
     async (rating: number, feedbackText?: string) => {
@@ -137,39 +144,49 @@ export default function ReviewPageClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F] px-4">
-        <p className="text-[14px] text-[#B8B5B0]">Loading…</p>
+      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
+        <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-90 mb-6" />
+        <p className="text-[14px]" style={{ color: CREAM }}>Loading…</p>
       </div>
     );
   }
 
   if (invalid || !state) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0F0F0F] px-4 text-center">
-        <h1 className="font-semibold text-[18px] text-[#F5F5F3] mb-2">Invalid or expired link</h1>
-        <p className="text-[13px] text-[#B8B5B0]">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
+        <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-90 mb-6" />
+        <h1 className="font-semibold text-[18px] mb-2" style={{ color: CREAM }}>Invalid or expired link</h1>
+        <p className="text-[13px] max-w-[280px]" style={{ color: "rgba(250,247,242,0.8)" }}>
           This review link may have expired. If you received this from Yugo, please use the latest link from your email.
         </p>
       </div>
     );
   }
 
-  const rating = state.clientRating ?? selectedRating;
-  const isHighRating = rating != null && rating >= 4;
-  const isLowRating = rating != null && rating <= 3;
+  // Only lock stars after 4–5 star + "Leave a Review on Google" clicked; otherwise allow changing selection
   const showFilledStarsOnly =
     state.clientRating != null && state.clientRating >= 4 && state.reviewClicked;
-  const isInteractive = !showFilledStarsOnly && state.clientRating == null;
+  const isInteractive = !showFilledStarsOnly;
+  const rating = isInteractive
+    ? (selectedRating ?? state.clientRating)
+    : (state.clientRating ?? selectedRating);
+  const isHighRating = rating != null && rating >= 4;
+  const isLowRating = rating != null && rating <= 3;
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] flex flex-col items-center justify-center px-4 py-8">
-      <div className="flex flex-col items-center text-center max-w-[320px] w-full">
+    <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
+      <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-95 mb-6" priority />
+      <div
+        className="flex flex-col items-center text-center w-full max-w-[340px] rounded-2xl p-6 sm:p-8"
+        style={{ backgroundColor: "rgba(250,247,242,0.06)", border: `1px solid rgba(184,181,176,0.2)` }}
+      >
         <h1
-          className="font-hero text-[20px] font-semibold leading-tight mb-4"
-          style={{ color: WINE }}
+          className="font-hero text-[20px] font-semibold leading-tight mb-1"
+          style={{ color: CREAM }}
         >
           How was your experience?
         </h1>
+        <p className="text-[12px] mb-5" style={{ color: "rgba(250,247,242,0.7)" }}>Your feedback helps us improve</p>
 
         <div
           ref={starsRef}
@@ -264,22 +281,23 @@ export default function ReviewPageClient() {
                     <textarea
                       value={feedback}
                       onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="Your feedback (optional)"
-                      rows={3}
-                      className="w-full rounded-lg border px-3 py-2 text-[12px] resize-none focus:outline-none focus:ring-2 focus:ring-offset-0 bg-white border-[#2A2A2A] text-[#1a1a1a]"
+                      placeholder="Tell us what we could do better (optional)"
+                      rows={4}
+                      className="w-full rounded-xl border px-3 py-2.5 text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-offset-0 placeholder:opacity-60"
+                      style={{ backgroundColor: "rgba(250,247,242,0.08)", borderColor: "rgba(184,181,176,0.3)", color: CREAM }}
                     />
                     <button
                       type="button"
                       onClick={handleSubmitFeedback}
                       disabled={submitting}
-                      className="w-full rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                      className="w-full rounded-xl font-semibold text-[13px] py-3 px-4 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
                       style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
                     >
-                      {submitting ? "Submitting…" : "Submit Feedback"}
+                      {submitting ? "Submitting…" : "Submit feedback"}
                     </button>
                   </>
                 ) : (
-                  <p className="text-[11px] opacity-70" style={{ color: CREAM }}>
+                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
                     Thanks for your feedback. We&apos;ll use it to improve.
                   </p>
                 )}

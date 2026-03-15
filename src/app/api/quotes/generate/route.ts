@@ -498,56 +498,68 @@ async function residentialIncludes(
     fetchTierFeatures(sb, "local_move", "estate"),
   ]);
 
-  // Replace generic placeholders with dynamic values when using DB features
+  const crewLine = `Professional crew of ${minCrew}`;
+  const estateCrewLine = `White glove specialist crew of ${minCrew}`;
   const hydrate = (list: string[]) =>
     list.map((f) => {
       if (f === "Dedicated moving truck") return truckLabel;
-      if (f === "Professional movers") return `${minCrew} professional movers`;
+      if (f.toLowerCase().includes("white glove specialist crew of")) return estateCrewLine;
+      if (f === "Professional movers" || f.toLowerCase().includes("professional crew of")) return crewLine;
       if (f === "Moving blankets") return f;
       return f;
     });
 
+  const estateSuppliesLine = "All packing supplies included (boxes, wrapping, protection materials)";
   if (dbCur.length > 0) {
+    const estateList = hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbCur);
+    if (!estateList.some((f) => f.toLowerCase().includes("packing supplies"))) estateList.push(estateSuppliesLine);
     return {
       curated: hydrate(dbCur),
       signature: hydrate(dbSig.length > 0 ? dbSig : dbCur),
-      estate: hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbCur),
+      estate: estateList,
     };
   }
 
-  // Hardcoded fallback
+  // Hardcoded fallback — aligned with "Your Move Includes" (QuotePageClient)
   const curated = [
     truckLabel,
-    `${minCrew} professional movers`,
-    "Moving blankets & padding",
-    "Basic disassembly & reassembly",
-    "Floor & door frame protection",
-    "Standard valuation coverage",
+    crewLine,
+    "Premium moving blankets",
+    "Floor & doorway protection",
+    "All equipment included",
+    "Real-time GPS tracking",
+    "Guaranteed flat price",
+    "Zero-damage commitment",
   ];
   const signature = [
     truckLabel,
-    `${minCrew} professional movers`,
-    "Moving blankets & full furniture wrapping",
+    crewLine,
+    "Premium moving blankets",
+    "Floor & doorway protection",
+    "All equipment included",
+    "Real-time GPS tracking",
+    "Guaranteed flat price",
+    "Zero-damage commitment",
     "Basic disassembly & reassembly",
-    "Floor & door frame protection",
-    "Mattress covers & TV screen protection",
-    "Dolly & equipment included",
-    "Enhanced valuation coverage",
+    "Debris & packaging removal",
   ];
   const estate = [
     truckLabel,
-    `${minCrew} professional movers`,
-    "Moving blankets & full furniture wrapping",
+    crewLine,
+    "Premium moving blankets",
+    "Floor & doorway protection",
+    "All equipment included",
+    "Real-time GPS tracking",
+    "Guaranteed flat price",
+    "Zero-damage commitment",
     "Basic disassembly & reassembly",
-    "Floor & door frame protection",
-    "Mattress covers & TV screen protection",
-    "Dolly & equipment included",
-    "Full packing & unpacking service",
-    "Custom crating for fragile items",
-    "White glove item handling",
+    "Debris & packaging removal",
+    "All packing supplies included (boxes, wrapping, protection materials)",
+    "Pre-move inventory walkthrough",
+    "Premium gloves handling",
     "Dedicated move coordinator",
-    "Pre-move walkthrough",
-    "Full replacement valuation coverage",
+    "30 day concierge support",
+    "Exclusive partner offers & perks",
   ];
   return { curated, signature, estate };
 }
@@ -783,8 +795,8 @@ async function calcResidential(
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
 
-  // Prompt 89/90: Labour DELTA — only charge when actual man-hours exceed baseline (base rate already includes standard crew/hours). Rate $75/mover-hour.
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 75);
+  // Labour delta: flat amount for extra man-hours above baseline; applied AFTER tier multiplication (crew time does not scale by tier). Rate $45/mover-hour (incremental).
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
   let labourDelta = 0;
   let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
   if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
@@ -803,7 +815,6 @@ async function calcResidential(
       }
     }
   }
-  const subtotalWithLabour = subtotal + labourDelta;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
@@ -811,13 +822,30 @@ async function calcResidential(
   const curatedMult = cfgNum(config, "tier_curated_multiplier",
     cfgNum(config, "tier_essentials_multiplier", 1.0));
   const signatureMult = cfgNum(config, "tier_signature_multiplier",
-    cfgNum(config, "tier_premier_multiplier", 1.35));
-  const estateMult = cfgNum(config, "tier_estate_multiplier", 1.85);
+    cfgNum(config, "tier_premier_multiplier", 1.50));
+  const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
-  let curBase = roundTo(subtotalWithLabour * curatedMult, rounding);
-  let sigBase = roundTo(subtotalWithLabour * signatureMult, rounding);
-  let estBase = roundTo(subtotalWithLabour * estateMult, rounding);
+  // Tier base = subtotal × multiplier; labour delta added after (same flat amount for all tiers).
+  let curBase = roundTo(subtotal * curatedMult, rounding) + labourDelta;
+  let sigBase = roundTo(subtotal * signatureMult, rounding) + labourDelta;
+  let estBase = roundTo(subtotal * estateMult, rounding) + labourDelta;
+
+  // Estate-only: packing supplies allowance (base from config, scaled by move size and complexity).
+  const estateSuppliesBase = cfgNum(config, "estate_supplies_allowance", 250);
+  const ESTATE_SUPPLIES_SIZE_MULT: Record<string, number> = {
+    studio: 1.0,
+    "1br": 1.2,
+    "2br": 1.5,
+    "3br": 2.3,
+    "4br": 3.4,
+    "5br_plus": 4.4,
+    partial: 0.9,
+  };
+  const sizeMult = ESTATE_SUPPLIES_SIZE_MULT[input.move_size ?? "2br"] ?? 1.25;
+  const complexityMult = Math.min(1.3, 0.9 + 0.1 * Math.min(invResult.modifier, 1.5));
+  const estateSuppliesAllowance = Math.max(0, roundTo(estateSuppliesBase * sizeMult * complexityMult, 25));
+  estBase += estateSuppliesAllowance;
 
   if (curBase < minJob) curBase = minJob;
   if (sigBase < curBase) sigBase = curBase;
@@ -902,6 +930,7 @@ async function calcResidential(
           : null,
       inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
       subtotal_before_labour: subtotal,
+      packing_supplies_included: estateSuppliesAllowance,
     },
   };
 }
@@ -1400,7 +1429,10 @@ export async function POST(req: NextRequest) {
     wine_collection: 5,
     aquarium: 15,
   };
-  let adjustedScore = invResult.inventoryScore;
+  // Labour estimate uses lower box weight (0.15): boxes move in batches on dollies, not individually; modifier still uses 0.3 for volume.
+  const boxCount = (invResult as { boxCount?: number }).boxCount ?? 0;
+  const labourBaseScore = invResult.inventoryScore - boxCount * 0.15;
+  let adjustedScore = labourBaseScore;
   if (input.specialty_items && input.specialty_items.length > 0) {
     for (const item of input.specialty_items) {
       const impact = SPECIALTY_CREW_IMPACT[item.type] ?? 5;
@@ -1550,12 +1582,19 @@ export async function POST(req: NextRequest) {
 
   // When labour exists (inventory-based or base_rates fallback), use it for tier includes so the public quote page shows crew/hours that match the estimate
   if (labour && tiers) {
-    const crewLine = `${labour.crewSize} professional movers`;
+    const crewLineStandard = `Professional crew of ${labour.crewSize}`;
+    const crewLineEstate = `White glove specialist crew of ${labour.crewSize}`;
     const hoursLine = `${Math.round(labour.estimatedHours)}-hour window`;
     for (const tierName of Object.keys(tiers)) {
       const t = tiers[tierName];
-      const crewIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("professional movers"));
-      if (crewIdx >= 0) t.includes[crewIdx] = crewLine;
+      const estateCrewIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("white glove specialist crew of"));
+      if (estateCrewIdx >= 0) t.includes[estateCrewIdx] = crewLineEstate;
+      else {
+        const crewIdx = t.includes.findIndex((s: string) =>
+          s.toLowerCase().includes("professional crew of") || s.toLowerCase().includes("professional movers")
+        );
+        if (crewIdx >= 0) t.includes[crewIdx] = crewLineStandard;
+      }
       const hoursIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("-hour window"));
       if (hoursIdx >= 0) t.includes[hoursIdx] = hoursLine;
     }

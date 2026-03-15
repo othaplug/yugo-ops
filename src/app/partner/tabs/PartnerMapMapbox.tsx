@@ -50,72 +50,77 @@ interface ActiveDelivery {
 export default function PartnerMapMapbox({
   token,
   center,
-  deliveries,
+  currentDelivery,
   onSelect,
 }: {
   token: string;
   center: { latitude: number; longitude: number };
-  deliveries: ActiveDelivery[];
+  currentDelivery: ActiveDelivery | null;
   onSelect: (d: ActiveDelivery) => void;
 }) {
-  // Routed travel lines keyed by delivery id: [lng, lat][]
-  const [routedLines, setRoutedLines] = useState<Record<string, [number, number][]>>({});
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
 
   useEffect(() => {
+    if (!currentDelivery?.crew_lat || !currentDelivery?.crew_lng) {
+      setRouteCoords(null);
+      return;
+    }
     let cancelled = false;
-    const fetchRoutes = async () => {
-      const next: Record<string, [number, number][]> = {};
-      await Promise.all(
-        deliveries.map(async (d) => {
-          if (d.crew_lat == null || d.crew_lng == null) return;
+    const d = currentDelivery;
+    let destLat = d.dest_lat;
+    let destLng = d.dest_lng;
 
-          // Determine destination coords — either already geocoded or fall back to geocoding address
-          let destLat = d.dest_lat;
-          let destLng = d.dest_lng;
-
-          if ((destLat == null || destLng == null) && d.delivery_address) {
-            try {
-              const geoRes = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address)}&limit=1`);
-              const geoData = await geoRes.json();
-              const coords = geoData?.features?.[0]?.geometry?.coordinates;
-              if (coords) { destLng = coords[0]; destLat = coords[1]; }
-            } catch { /* ignore */ }
-          }
-
-          if (destLat == null || destLng == null) return;
-
-          try {
-            const from = `${d.crew_lng},${d.crew_lat}`;
-            const to = `${destLng},${destLat}`;
-            const res = await fetch(`/api/mapbox/directions?from=${from}&to=${to}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data?.coordinates) && data.coordinates.length >= 2) {
-                next[d.id] = data.coordinates;
-                return;
-              }
-            }
-          } catch { /* fall through to straight line */ }
-
-          // Straight-line fallback
-          next[d.id] = [[d.crew_lng!, d.crew_lat!], [destLng!, destLat!]];
-        })
-      );
-      if (!cancelled) setRoutedLines(next);
+    const applyRoute = (coords: [number, number][]) => {
+      if (!cancelled) setRouteCoords(coords);
     };
 
-    fetchRoutes();
-    return () => { cancelled = true; };
-  }, [deliveries]);
+    const doFetchRoute = (toLng: number, toLat: number) => {
+      const from = `${d.crew_lng},${d.crew_lat}`;
+      const to = `${toLng},${toLat}`;
+      fetch(`/api/mapbox/directions?from=${from}&to=${to}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data?.coordinates) && data.coordinates.length >= 2) {
+            applyRoute(data.coordinates);
+          } else {
+            applyRoute([[d.crew_lng!, d.crew_lat!], [toLng, toLat]]);
+          }
+        })
+        .catch(() => applyRoute([[d.crew_lng!, d.crew_lat!], [toLng, toLat]]));
+    };
 
-  const routeGeoJson = {
-    type: "FeatureCollection" as const,
-    features: Object.entries(routedLines).map(([id, coords]) => ({
-      type: "Feature" as const,
-      properties: { id },
-      geometry: { type: "LineString" as const, coordinates: coords },
-    })),
-  };
+    if ((destLat == null || destLng == null) && d.delivery_address) {
+      fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address)}&limit=1`)
+        .then((res) => res.json())
+        .then((data) => {
+          const coords = data?.features?.[0]?.geometry?.coordinates;
+          if (coords && !cancelled) doFetchRoute(coords[0], coords[1]);
+        })
+        .catch(() => {
+          if (!cancelled) setRouteCoords(null);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (destLat == null || destLng == null) {
+      setRouteCoords(null);
+      return;
+    }
+    doFetchRoute(destLng, destLat);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDelivery?.id, currentDelivery?.crew_lat, currentDelivery?.crew_lng, currentDelivery?.dest_lat, currentDelivery?.dest_lng, currentDelivery?.delivery_address]);
+
+  const routeGeoJson =
+    routeCoords && routeCoords.length >= 2
+      ? {
+          type: "Feature" as const,
+          properties: {},
+          geometry: { type: "LineString" as const, coordinates: routeCoords },
+        }
+      : null;
 
   return (
     <Map
@@ -124,10 +129,10 @@ export default function PartnerMapMapbox({
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/light-v11"
     >
-      {Object.keys(routedLines).length > 0 && (
-        <Source id="partner-routes" type="geojson" data={routeGeoJson}>
+      {routeGeoJson && (
+        <Source id="partner-route" type="geojson" data={routeGeoJson}>
           <Layer
-            id="partner-routes-layer"
+            id="partner-route-layer"
             type="line"
             paint={{
               "line-color": "#8B5CF6",
@@ -138,39 +143,37 @@ export default function PartnerMapMapbox({
         </Source>
       )}
 
-      {deliveries.map((d) => {
-        if (d.crew_lat == null || d.crew_lng == null) return null;
-        const initial = (d.crew_name || "C").replace("Team ", "").charAt(0).toUpperCase();
-        return (
-          <Marker
-            key={`crew-${d.id}`}
-            longitude={d.crew_lng}
-            latitude={d.crew_lat}
-            anchor="center"
-            onClick={() => onSelect(d)}
-          >
-            <div className="cursor-pointer relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
-              <span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }} />
-              <span className="absolute inset-[3px] rounded-full opacity-20 animate-pulse" style={{ background: "#C9A962" }} />
-              <span
-                className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shadow-lg"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)", boxShadow: "0 2px 10px rgba(201,169,98,0.45)" }}
-              >
-                {initial}
-              </span>
-            </div>
-          </Marker>
-        );
-      })}
+      {currentDelivery?.crew_lat != null && currentDelivery?.crew_lng != null && (
+        <Marker
+          key="crew"
+          longitude={currentDelivery.crew_lng}
+          latitude={currentDelivery.crew_lat}
+          anchor="center"
+          onClick={() => onSelect(currentDelivery)}
+        >
+          <div className="cursor-pointer relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
+            <span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }} />
+            <span className="absolute inset-[3px] rounded-full opacity-20 animate-pulse" style={{ background: "#C9A962" }} />
+            <span
+              className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shadow-lg"
+              style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)", boxShadow: "0 2px 10px rgba(201,169,98,0.45)" }}
+            >
+              {(currentDelivery.crew_name || "C").replace("Team ", "").charAt(0).toUpperCase()}
+            </span>
+          </div>
+        </Marker>
+      )}
 
-      {deliveries.map((d) => {
-        if (d.dest_lat == null || d.dest_lng == null) return null;
-        return (
-          <Marker key={`dest-${d.id}`} longitude={d.dest_lng} latitude={d.dest_lat} anchor="center">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
-          </Marker>
-        );
-      })}
+      {currentDelivery?.dest_lat != null && currentDelivery?.dest_lng != null && (
+        <Marker
+          key="dest"
+          longitude={currentDelivery.dest_lng}
+          latitude={currentDelivery.dest_lat}
+          anchor="center"
+        >
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
+        </Marker>
+      )}
 
       <NavigationControl position="bottom-right" showCompass showZoom />
       <MyLocationButton />

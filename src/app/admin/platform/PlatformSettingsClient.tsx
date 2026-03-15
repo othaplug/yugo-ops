@@ -848,7 +848,7 @@ function EmailTemplatesSection() {
   );
 }
 
-const DEFAULT_REVIEW_CONFIG: ReviewConfig = { autoReviewRequests: true, googleReviewUrl: "https://g.page/r/yugo-moving/review" };
+const DEFAULT_REVIEW_CONFIG: ReviewConfig = { autoReviewRequests: true, googleReviewUrl: "https://g.page/r/CU67iDN6TgMIEB0/review/" };
 
 export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, initialReviewConfig = DEFAULT_REVIEW_CONFIG, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
   const router = useRouter();
@@ -1802,7 +1802,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 type="url"
                 value={googleReviewUrl}
                 onChange={(e) => setGoogleReviewUrl(e.target.value)}
-                placeholder="https://g.page/r/your-business/review"
+                placeholder="https://g.page/r/CU67iDN6TgMIEB0/review/"
                 className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
               />
               <button

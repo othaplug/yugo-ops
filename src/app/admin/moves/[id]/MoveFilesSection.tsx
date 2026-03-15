@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, X, ChevronDown, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import { Upload, FileText, Image, X, ChevronDown, ChevronRight, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "../../components/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -15,6 +15,8 @@ type FileEntry = {
   date: string;
   caption?: string | null;
   source?: string;
+  /** When true, show delete control and call onDelete(id) when requested */
+  deletable?: boolean;
 };
 
 type SignOffData = {
@@ -70,6 +72,7 @@ function FileGroup({
   empty,
   defaultOpen = true,
   extra,
+  onDeleteFile,
 }: {
   label: string;
   borderColor: string;
@@ -77,6 +80,7 @@ function FileGroup({
   empty?: string;
   defaultOpen?: boolean;
   extra?: React.ReactNode;
+  onDeleteFile?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -124,11 +128,24 @@ function FileGroup({
                       href={f.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-col items-center justify-center aspect-square rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] hover:border-[var(--gold)]/50 transition-colors gap-1.5"
+                      className="flex flex-col items-center justify-center aspect-square rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] hover:border-[var(--gold)]/50 transition-colors gap-1"
                     >
-                      <FileText className="w-5 h-5 text-[var(--tx3)]" />
-                      <ExternalLink className="w-3 h-3 text-[var(--tx3)]" />
+                      <FileText className="w-3 h-3 text-[var(--tx3)]" />
+                      <ExternalLink className="w-2 h-2 text-[var(--tx3)]" />
                     </a>
+                  )}
+                  {f.deletable && onDeleteFile && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onDeleteFile(f.id);
+                      }}
+                      className="absolute top-1 right-1 p-1 rounded-md bg-[var(--card)] border border-[var(--brd)]/60 text-[var(--tx3)] hover:text-red-600 hover:border-red-200 transition-colors"
+                      title="Delete document"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   )}
                   {/* Badge + date tooltip */}
                   <div className="mt-1 space-y-0.5">
@@ -256,6 +273,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
         type: (isPdf(d.view_url || d.storage_path || d.external_url || "") ? "pdf" : "other") as "pdf" | "other",
         badge: "doc" as const,
         date: d.created_at || new Date().toISOString(),
+        deletable: true,
       }));
       const systemFiles = (adminRes.files ?? []).filter((f: { source?: string }) => f.source === "system");
       const docFromSystem: FileEntry[] = systemFiles.map((f: { id: string; file_url: string; file_name: string; file_type: string; created_at: string }) => ({
@@ -424,7 +442,21 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
             borderColor="border-[#6B2D3E]"
             files={documents}
             empty="No documents linked."
-            defaultOpen={documents.length > 0}
+            defaultOpen={false}
+            onDeleteFile={async (docId) => {
+              try {
+                const res = await fetch(`/api/admin/moves/${moveId}/documents/${docId}`, { method: "DELETE" });
+                const data = await res.json();
+                if (!res.ok) {
+                  toast(data.error || "Delete failed", "x");
+                  return;
+                }
+                toast("Document removed", "check");
+                fetchAll();
+              } catch {
+                toast("Delete failed", "x");
+              }
+            }}
           />
 
           {/* Admin Uploads */}

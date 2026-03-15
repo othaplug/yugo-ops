@@ -35,9 +35,9 @@ UPDATE quotes SET recommended_tier = 'signature' WHERE recommended_tier = 'premi
 ALTER TABLE quotes ADD CONSTRAINT quotes_recommended_tier_check
   CHECK (recommended_tier IN ('curated', 'signature', 'estate'));
 
--- ── valuation_tiers table ────────────────────────────────────
-UPDATE valuation_tiers SET tier = 'curated'   WHERE tier = 'essentials';
-UPDATE valuation_tiers SET tier = 'signature' WHERE tier = 'premier';
+-- ── valuation_tiers table (column is tier_slug) ───────────────
+UPDATE valuation_tiers SET tier_slug = 'curated'   WHERE tier_slug = 'essentials';
+UPDATE valuation_tiers SET tier_slug = 'signature' WHERE tier_slug = 'premier';
 
 -- ── valuation_upgrades (from_package column) ─────────────────
 UPDATE valuation_upgrades SET from_package = 'curated'   WHERE from_package = 'essentials';
@@ -47,14 +47,14 @@ UPDATE valuation_upgrades SET from_package = 'signature' WHERE from_package = 'p
 UPDATE tier_features SET tier = 'curated'   WHERE tier = 'essentials';
 UPDATE tier_features SET tier = 'signature' WHERE tier = 'premier';
 
--- ── email_templates (slugs) ──────────────────────────────────
+-- ── email_templates (column is template_slug) ─────────────────
 UPDATE email_templates
-  SET slug = REPLACE(slug, 'essentials', 'curated')
-  WHERE slug LIKE '%essentials%';
+  SET template_slug = REPLACE(template_slug, 'essentials', 'curated')
+  WHERE template_slug LIKE '%essentials%';
 
 UPDATE email_templates
-  SET slug = REPLACE(slug, 'premier', 'signature')
-  WHERE slug LIKE '%premier%';
+  SET template_slug = REPLACE(template_slug, 'premier', 'signature')
+  WHERE template_slug LIKE '%premier%';
 
 -- ── platform_config (tier multiplier keys) ───────────────────
 UPDATE platform_config

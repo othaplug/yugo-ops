@@ -251,6 +251,15 @@ export async function GET(req: NextRequest) {
       if (!contact?.email) continue;
 
       try {
+        // Claim this quote so only one cron invocation sends (avoids duplicate emails if cron runs multiple times)
+        const { data: claimed } = await supabase
+          .from("quotes")
+          .update({ followup_1_sent: now.toISOString() })
+          .eq("quote_id", q.quote_id)
+          .is("followup_1_sent", null)
+          .select("quote_id");
+        if (!claimed?.length) continue;
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
 
@@ -266,10 +275,6 @@ export async function GET(req: NextRequest) {
         });
 
         if (res.success) {
-          await supabase
-            .from("quotes")
-            .update({ followup_1_sent: now.toISOString() })
-            .eq("quote_id", q.quote_id);
           results.followup1++;
         } else {
           results.errors.push(`f1:${q.quote_id}:${res.error}`);
@@ -303,10 +308,23 @@ export async function GET(req: NextRequest) {
       if (!contact?.email) continue;
 
       try {
+        const eng = await getEngagementSummary(supabase, q.quote_id);
+        const variant = chooseFollowUpVariant(2, eng);
+
+        // Claim this quote so only one cron invocation sends (avoids duplicate emails if cron runs multiple times)
+        const { data: claimed } = await supabase
+          .from("quotes")
+          .update({
+            followup_2_sent: now.toISOString(),
+            engagement_summary: eng,
+          })
+          .eq("quote_id", q.quote_id)
+          .is("followup_2_sent", null)
+          .select("quote_id");
+        if (!claimed?.length) continue;
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
-        const eng = await getEngagementSummary(supabase, q.id);
-        const variant = chooseFollowUpVariant(2, eng);
 
         const res = await sendEmail({
           to: contact.email,
@@ -323,13 +341,6 @@ export async function GET(req: NextRequest) {
         });
 
         if (res.success) {
-          await supabase
-            .from("quotes")
-            .update({
-              followup_2_sent: now.toISOString(),
-              engagement_summary: eng,
-            })
-            .eq("quote_id", q.quote_id);
           results.followup2++;
         } else {
           results.errors.push(`f2:${q.quote_id}:${res.error}`);
@@ -371,10 +382,23 @@ export async function GET(req: NextRequest) {
       if (!contact?.email) continue;
 
       try {
+        const eng = await getEngagementSummary(supabase, q.quote_id);
+        const variant = chooseFollowUpVariant(3, eng);
+
+        // Claim this quote so only one cron invocation sends (avoids duplicate emails if cron runs multiple times)
+        const { data: claimed } = await supabase
+          .from("quotes")
+          .update({
+            followup_3_sent: now.toISOString(),
+            engagement_summary: eng,
+          })
+          .eq("quote_id", q.quote_id)
+          .is("followup_3_sent", null)
+          .select("quote_id");
+        if (!claimed?.length) continue;
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
-        const eng = await getEngagementSummary(supabase, q.id);
-        const variant = chooseFollowUpVariant(3, eng);
 
         const res = await sendEmail({
           to: contact.email,
@@ -390,13 +414,6 @@ export async function GET(req: NextRequest) {
         });
 
         if (res.success) {
-          await supabase
-            .from("quotes")
-            .update({
-              followup_3_sent: now.toISOString(),
-              engagement_summary: eng,
-            })
-            .eq("quote_id", q.quote_id);
           results.followup3++;
         } else {
           results.errors.push(`f3:${q.quote_id}:${res.error}`);

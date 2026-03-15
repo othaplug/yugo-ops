@@ -36,6 +36,16 @@ const TIME_OPTIONS = (() => {
    ═══════════════════════════════════════════════════ */
 
 const inputCls = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/20 outline-none transition-all";
+const IN_PROGRESS_STATUSES = [
+  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
+  "en_route_to_destination", "arrived_at_destination", "unloading",
+  "in_progress", "dispatched", "in_transit",
+];
+function isDeliveryInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase().replace(/-/g, "_");
+  const st = (stage || "").toLowerCase().replace(/-/g, "_");
+  return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
+}
 const selectCls = `${inputCls} appearance-none`;
 const labelCls = "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
 
@@ -260,7 +270,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Crew</label>
-              <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={selectCls}>
+              <select value={crewId} onChange={(e) => setCrewId(e.target.value)} disabled={isDeliveryInProgress(delivery?.status, delivery?.stage)} className={`${selectCls} disabled:opacity-60 disabled:cursor-not-allowed`}>
                 <option value="">Unassigned</option>
                 {crews.map((c) => <option key={c.id} value={c.id}>{c.name}{c.members?.length ? ` (${c.members.length})` : ""}</option>)}
               </select>

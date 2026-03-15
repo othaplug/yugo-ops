@@ -40,5 +40,17 @@ export async function GET(
   const { data: signed } = await admin.storage.from("move-documents").createSignedUrl(path, 3600);
   if (!signed?.signedUrl) return NextResponse.json({ error: "Document unavailable" }, { status: 404 });
 
-  return NextResponse.redirect(signed.signedUrl, 302);
+  // Stream PDF so the browser URL stays on our domain (no redirect to Supabase)
+  const pdfRes = await fetch(signed.signedUrl);
+  if (!pdfRes.ok) return NextResponse.json({ error: "Document unavailable" }, { status: 404 });
+  const blob = await pdfRes.arrayBuffer();
+  const filename = docId === "summary" ? `move-summary-${displayId}.pdf` : `${docId}-${displayId}.pdf`;
+  return new NextResponse(blob, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${filename}"`,
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
 }

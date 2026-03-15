@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -104,18 +104,80 @@ export default function DeliveryTrackMap({
 }) {
   const animCrew = useAnimatedCrewPos(crew);
 
-  const routePositions: [number, number][] = useMemo(() => {
-    if (!pickup || !dropoff) return [];
-    return [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]];
-  }, [pickup, dropoff]);
-
-  const isPrePickup = liveStage === "en_route" || !liveStage;
+  const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
+  const isPrePickup = PICKUP_STAGES.includes(liveStage || "") || !(liveStage ?? "").trim();
   const trackingDestination = isPrePickup && pickup ? pickup : dropoff;
 
-  const trackingLine: [number, number][] = useMemo(() => {
-    if (!animCrew || !trackingDestination) return [];
-    return [[animCrew.current_lat, animCrew.current_lng], [trackingDestination.lat, trackingDestination.lng]];
-  }, [animCrew, trackingDestination]);
+  const [routeLine, setRouteLine] = useState<[number, number][] | null>(null);
+  const lastFetchRef = useRef<string>("");
+
+  const fetchDrivingRoute = useCallback(async (from: Coord, to: Coord) => {
+    if (!MAPBOX_TOKEN || !USE_MAPBOX) return;
+    const key = `${from.lat.toFixed(5)},${from.lng.toFixed(5)}-${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+    if (lastFetchRef.current === key) return;
+    lastFetchRef.current = key;
+    try {
+      const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      if (Array.isArray(coordsList) && coordsList.length >= 2) {
+        setRouteLine(coordsList.map(([lng, lat]) => [lat, lng] as [number, number]));
+      } else {
+        setRouteLine(null);
+      }
+    } catch {
+      setRouteLine(null);
+    }
+  }, []);
+
+  // Single primitive key so useEffect dependency array size never changes
+  const routeDepsKey = [
+    crew?.current_lat,
+    crew?.current_lng,
+    trackingDestination?.lat,
+    trackingDestination?.lng,
+    pickup?.lat,
+    pickup?.lng,
+    dropoff?.lat,
+    dropoff?.lng,
+  ]
+    .map((n) => (n != null ? String(n) : ""))
+    .join("|");
+
+  useEffect(() => {
+    const from = crew ?? animCrew;
+    if (from && trackingDestination) {
+      fetchDrivingRoute(
+        { lat: from.current_lat, lng: from.current_lng },
+        { lat: trackingDestination.lat, lng: trackingDestination.lng }
+      );
+      return;
+    }
+    if (!pickup || !dropoff) {
+      lastFetchRef.current = "";
+      setRouteLine(null);
+      return;
+    }
+    // No crew position yet: show planned route pickup → dropoff so user sees where crew is going
+    fetchDrivingRoute(pickup, dropoff);
+  }, [routeDepsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const trackingLineStraight: [number, number][] = useMemo(() => {
+    if (animCrew && trackingDestination)
+      return [[animCrew.current_lat, animCrew.current_lng], [trackingDestination.lat, trackingDestination.lng]];
+    if (pickup && dropoff)
+      return [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]];
+    return [];
+  }, [animCrew, trackingDestination, pickup, dropoff]);
+
+  const purpleLinePositions =
+    (routeLine && routeLine.length >= 2)
+      ? routeLine
+      : trackingLineStraight.length >= 2
+        ? trackingLineStraight
+        : [];
 
   return (
     <MapContainer
@@ -136,11 +198,8 @@ export default function DeliveryTrackMap({
       ) : (
         <TileLayer attribution="" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
       )}
-      {routePositions.length === 2 && (
-        <Polyline positions={routePositions} color={GOLD} weight={2} opacity={0.3} dashArray="4,6" lineCap="round" />
-      )}
-      {trackingLine.length === 2 && (
-        <Polyline positions={trackingLine} color="#8B5CF6" weight={4} opacity={0.9} lineCap="round" />
+      {purpleLinePositions.length >= 2 && (
+        <Polyline positions={purpleLinePositions} color="#8B5CF6" weight={4} opacity={0.9} lineCap="round" lineJoin="round" />
       )}
       {pickup && (
         <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>

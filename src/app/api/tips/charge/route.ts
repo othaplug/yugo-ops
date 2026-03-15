@@ -13,15 +13,19 @@ export async function POST(req: NextRequest) {
   if (!(await isFeatureEnabled("tipping_enabled"))) {
     return NextResponse.json({ error: "Tipping is currently disabled" }, { status: 403 });
   }
-  let body: { moveId?: string; amount?: number; token?: string };
+  let body: { moveId?: string; slug?: string; amount?: number; token?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { moveId, amount, token } = body;
-  if (!moveId || !token) {
+  const { moveId, slug: urlSlug, amount, token } = body;
+  if ((!moveId && !urlSlug) || !token) {
+    return NextResponse.json({ error: "Missing moveId or token" }, { status: 400 });
+  }
+  const moveIdOrSlug = (moveId || urlSlug || "").trim();
+  if (!moveIdOrSlug) {
     return NextResponse.json({ error: "Missing moveId or token" }, { status: 400 });
   }
 
@@ -37,26 +41,48 @@ export async function POST(req: NextRequest) {
     let move: { id: string; client_name: string | null; client_email: string | null; move_code: string | null; crew_id: string | null; square_customer_id: string | null; square_card_id: string | null; tip_charged_at: string | null; status: string | null } | null = null;
     let resolvedMoveId: string | null = null;
 
-    const byId = await admin
-      .from("moves")
-      .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
-      .eq("id", moveId)
-      .maybeSingle();
-
-    if (byId.data) {
-      move = byId.data;
-      resolvedMoveId = move.id;
-    } else if (!isMoveIdUuid(moveId)) {
-      // Fallback: resolve by move_code (e.g. MV0025) in case client sent code instead of UUID
-      const code = String(moveId).replace(/^#/, "").trim().toUpperCase();
-      const byCode = await admin
+    // 1) Try by UUID (moveId)
+    if (moveId?.trim()) {
+      const byId = await admin
         .from("moves")
         .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
-        .ilike("move_code", code)
+        .eq("id", moveId.trim())
         .maybeSingle();
-      if (byCode.data) {
-        move = byCode.data;
+      if (byId.data) {
+        move = byId.data;
         resolvedMoveId = move.id;
+      }
+    }
+
+    // 2) If not found and value looks like move_code (e.g. MV0025), resolve by move_code
+    if (!move && !isMoveIdUuid(moveIdOrSlug)) {
+      const code = String(moveIdOrSlug).replace(/^#/, "").trim().toUpperCase();
+      if (code) {
+        const byCode = await admin
+          .from("moves")
+          .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
+          .ilike("move_code", code)
+          .maybeSingle();
+        if (byCode.data) {
+          move = byCode.data;
+          resolvedMoveId = move.id;
+        }
+      }
+    }
+
+    // 3) Fallback: resolve by URL slug (same as track page) so /track/move/MV0025 always works
+    if (!move && urlSlug?.trim()) {
+      const code = String(urlSlug).replace(/^#/, "").trim().toUpperCase();
+      if (code) {
+        const bySlug = await admin
+          .from("moves")
+          .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
+          .ilike("move_code", code)
+          .maybeSingle();
+        if (bySlug.data) {
+          move = bySlug.data;
+          resolvedMoveId = move.id;
+        }
       }
     }
 

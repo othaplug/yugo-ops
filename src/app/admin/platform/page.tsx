@@ -33,7 +33,7 @@ export default async function PlatformPage() {
   for (const r of reviewConfig ?? []) reviewConfigMap[r.key] = r.value ?? "";
   const initialReviewConfig = {
     autoReviewRequests: reviewConfigMap.auto_review_requests === "true" || reviewConfigMap.auto_review_requests === "1",
-    googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/yugo-moving/review",
+    googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/CU67iDN6TgMIEB0/review/",
   };
 
   let crewsResult = await db.from("crews").select("id, name, members, active, phone").order("name");

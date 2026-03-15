@@ -1,7 +1,7 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
@@ -34,7 +34,8 @@ const MapboxMap = dynamic(
       crewName,
       token,
       mapStyle,
-      destination,
+      pickup,
+      dropoff,
       routeLineColor,
       routeGeoJson,
     }: {
@@ -44,7 +45,8 @@ const MapboxMap = dynamic(
       crewName?: string;
       token: string;
       mapStyle: string;
-      destination?: { lat: number; lng: number };
+      pickup?: { lat: number; lng: number };
+      dropoff?: { lat: number; lng: number };
       routeLineColor?: string;
       routeGeoJson?: RouteGeoJson;
     }) {
@@ -70,9 +72,14 @@ const MapboxMap = dynamic(
               />
             </Source>
           )}
-          {destination && (
-            <Marker longitude={destination.lng} latitude={destination.lat} anchor="center">
-              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" />
+          {pickup && (
+            <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
+              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" title="Pickup" />
+            </Marker>
+          )}
+          {dropoff && (
+            <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="center">
+              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#C9A962]" title="Drop-off" />
             </Marker>
           )}
           {hasPosition && crew && (
@@ -109,16 +116,33 @@ interface Crew {
   current_lng: number | null;
 }
 
+/** Stages where crew is heading to pickup (or at pickup); otherwise route shows to dropoff.
+ * Includes legacy/variant statuses from crew app and tracking_sessions. */
+const PICKUP_STAGES = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route",
+  "on_route",
+  "arrived",
+  "arrived_on_site",
+];
+
 export default function LiveTrackingMap({
   crewId,
   crewName,
   destination,
+  pickup,
+  dropoff,
   moveId,
   deliveryId,
 }: {
   crewId: string;
   crewName?: string;
   destination?: { lat: number; lng: number };
+  /** Delivery: pickup coords (route shows crew → pickup when en route to pick up) */
+  pickup?: { lat: number; lng: number };
+  /** Delivery: dropoff coords (route shows crew → dropoff when en route to destination) */
+  dropoff?: { lat: number; lng: number };
   moveId?: string;
   /** Delivery ID: checks for an active tracking session before showing GPS */
   deliveryId?: string;
@@ -130,12 +154,64 @@ export default function LiveTrackingMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [routeGeoJson, setRouteGeoJson] = useState<RouteGeoJson>(null);
   const [routePositions, setRoutePositions] = useState<[number, number][]>([]);
+  const [resolvedPickup, setResolvedPickup] = useState<{ lat: number; lng: number } | null>(null);
+  const [resolvedDropoff, setResolvedDropoff] = useState<{ lat: number; lng: number } | null>(null);
   const supabase = createClient();
   const { theme } = useTheme();
   const mapStyle = theme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
-  const routeLineColor = theme === "dark" ? "#C9A962" : "#8B5CF6";
+  const routeLineColor = "#8B5CF6";
+
+  // When deliveryId is set and parent didn't pass coords, fetch delivery and geocode so we can draw the route
+  useEffect(() => {
+    if (!deliveryId || (pickup && dropoff)) return;
+    let cancelled = false;
+    supabase
+      .from("deliveries")
+      .select("pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng")
+      .eq("id", deliveryId)
+      .single()
+      .then(({ data: d }) => {
+        if (cancelled || !d) return;
+        if (!pickup) {
+          if (d.pickup_lat != null && d.pickup_lng != null)
+            setResolvedPickup({ lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) });
+          else if (d.pickup_address?.trim())
+            fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.pickup_address.trim())}&limit=1`, { credentials: "include" })
+              .then((r) => r.json())
+              .then((data) => {
+                if (cancelled) return;
+                const c = data?.features?.[0]?.geometry?.coordinates;
+                if (Array.isArray(c) && c.length >= 2) setResolvedPickup({ lng: c[0], lat: c[1] });
+              });
+        }
+        if (!dropoff) {
+          if (d.delivery_lat != null && d.delivery_lng != null)
+            setResolvedDropoff({ lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) });
+          else if (d.delivery_address?.trim())
+            fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address.trim())}&limit=1`, { credentials: "include" })
+              .then((r) => r.json())
+              .then((data) => {
+                if (cancelled) return;
+                const c = data?.features?.[0]?.geometry?.coordinates;
+                if (Array.isArray(c) && c.length >= 2) setResolvedDropoff({ lng: c[0], lat: c[1] });
+              });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [deliveryId, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
+
+  const effectivePickup = pickup ?? resolvedPickup;
+  const effectiveDropoff = dropoff ?? resolvedDropoff;
+
+  // Current destination: for delivery/move use stage to pick pickup vs dropoff; else use single destination.
+  const headingToPickup =
+    PICKUP_STAGES.includes(liveStage || "") || !(liveStage ?? "").trim();
+  const effectiveDestination =
+    (deliveryId || moveId) && (effectivePickup || effectiveDropoff)
+      ? (headingToPickup ? (effectivePickup ?? effectiveDropoff) : (effectiveDropoff ?? effectivePickup))
+      : destination;
 
   // Initial fetch + realtime subscription for crew position
   useEffect(() => {
@@ -234,23 +310,25 @@ export default function LiveTrackingMap({
     ? { longitude: crew!.current_lng!, latitude: crew!.current_lat! }
     : DEFAULT_CENTER;
 
-  // Fetch real driving route (roads, not straight line) when we have crew position and destination
+  // Fetch driving route: use client-side Mapbox when token available so route always fetches
   useEffect(() => {
-    if (!hasPosition || !crew || !destination) {
+    if (!hasPosition || !crew || !effectiveDestination) {
       setRouteGeoJson(null);
       setRoutePositions([]);
       return;
     }
     const from = `${crew.current_lng},${crew.current_lat}`;
-    const to = `${destination.lng},${destination.lat}`;
-    fetch(`/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+    const to = `${effectiveDestination.lng},${effectiveDestination.lat}`;
+    const url = MAPBOX_TOKEN
+      ? `https://api.mapbox.com/directions/v5/mapbox/driving/${from};${to}?geometries=geojson&access_token=${MAPBOX_TOKEN}`
+      : `/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    fetch(url)
       .then((res) => {
-        if (!res.ok) { console.warn("[LiveTrackingMap] directions API returned", res.status); return null; }
+        if (!res.ok) return null;
         return res.json();
       })
       .then((data) => {
-        if (!data) { setRouteGeoJson(null); setRoutePositions([]); return; }
-        const coordsList = data?.coordinates;
+        const coordsList = data?.coordinates ?? data?.routes?.[0]?.geometry?.coordinates;
         if (Array.isArray(coordsList) && coordsList.length > 0) {
           setRouteGeoJson({
             type: "Feature",
@@ -259,17 +337,31 @@ export default function LiveTrackingMap({
           });
           setRoutePositions(coordsList.map((c: [number, number]) => [c[1], c[0]]));
         } else {
-          console.warn("[LiveTrackingMap] No route coordinates returned", { from, to });
           setRouteGeoJson(null);
           setRoutePositions([]);
         }
       })
-      .catch((err) => {
-        console.warn("[LiveTrackingMap] directions fetch failed", err);
+      .catch(() => {
         setRouteGeoJson(null);
         setRoutePositions([]);
       });
-  }, [hasPosition, crew?.current_lat, crew?.current_lng, destination?.lat, destination?.lng]);
+  }, [hasPosition, crew?.current_lat, crew?.current_lng, effectiveDestination?.lat, effectiveDestination?.lng]);
+
+  // When directions API fails, show straight line so route is always visible
+  const fallbackRouteGeoJson = useMemo((): RouteGeoJson => {
+    if (routeGeoJson || !hasPosition || !crew || !effectiveDestination) return null;
+    return {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [crew.current_lng!, crew.current_lat!],
+          [effectiveDestination.lng, effectiveDestination.lat],
+        ],
+      },
+    };
+  }, [routeGeoJson, hasPosition, crew?.current_lat, crew?.current_lng, effectiveDestination?.lat, effectiveDestination?.lng]);
 
   const isDeliveryMode = !!deliveryId;
   const sessionActive = hasActiveSession === true;
@@ -343,7 +435,9 @@ export default function LiveTrackingMap({
                 ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
                 : null}
               crewName={crewName}
-              destination={destination}
+              pickup={effectivePickup ?? undefined}
+              dropoff={effectiveDropoff ?? undefined}
+              destination={effectiveDestination ?? undefined}
               mapTheme={theme}
               routePositions={routePositions.length > 0 ? routePositions : undefined}
             />
@@ -409,9 +503,10 @@ export default function LiveTrackingMap({
               : null}
             crewName={crewName}
             mapStyle={mapStyle}
-            destination={destination ?? undefined}
+            pickup={effectivePickup ?? undefined}
+            dropoff={effectiveDropoff ?? undefined}
             routeLineColor={routeLineColor}
-            routeGeoJson={routeGeoJson ?? undefined}
+            routeGeoJson={routeGeoJson ?? fallbackRouteGeoJson ?? undefined}
           />
         )}
       </div>

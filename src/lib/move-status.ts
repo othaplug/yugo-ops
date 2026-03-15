@@ -49,7 +49,10 @@ export const CREW_STATUS_TO_LABEL: Record<string, string> = {
   en_route_to_destination: "En Route to Destination",
   arrived_at_destination: "Arrived at Destination",
   unloading: "Unloading",
-  completed: "Completed",
+  completed: "Complete",
+  en_route: "En Route to Pick Up",
+  arrived: "Arrived at Pickup",
+  delivering: "Delivering/Installing",
 };
 
 /** Status index for progress calculation (0-5) */

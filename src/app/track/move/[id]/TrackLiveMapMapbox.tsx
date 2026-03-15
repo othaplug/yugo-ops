@@ -54,7 +54,14 @@ function useAnimatedPosition(target: { lat: number; lng: number } | null, durati
 const YUGO_GOLD = "#C9A962";
 const YUGO_PURPLE = "#8B5CF6";
 
-const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup"];
+const PICKUP_STAGES = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route",
+  "on_route",
+  "arrived",
+  "arrived_on_site",
+];
 
 function FitBoundsController({
   crew,
@@ -143,27 +150,25 @@ export function TrackLiveMapMapbox({
   const [completedCoords, setCompletedCoords] = useState<[number, number][] | null>(null);
   const [remainingCoords, setRemainingCoords] = useState<[number, number][] | null>(null);
 
-  // Fetch real driving route from Mapbox Directions API
+  // Fetch real driving route: client-side Mapbox (no auth) so public track page works
   const fetchRoute = useCallback(async () => {
-    if (!pickup || !dropoff) return;
+    if (!pickup || !dropoff || !mapboxAccessToken) return;
+    const coords = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${mapboxAccessToken}`;
     try {
-      const from = `${pickup.lng},${pickup.lat}`;
-      const to = `${dropoff.lng},${dropoff.lat}`;
-      const res = await fetch(`/api/mapbox/directions?from=${from}&to=${to}`);
-      if (!res.ok) {
-        console.warn("[TrackLiveMap] Directions API returned", res.status);
-        return;
-      }
+      const res = await fetch(url);
       const data = await res.json();
-      if (data?.coordinates && Array.isArray(data.coordinates)) {
-        setRouteCoords(data.coordinates);
+      const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      if (Array.isArray(coordsList) && coordsList.length >= 2) {
+        setRouteCoords(coordsList);
       } else {
-        console.warn("[TrackLiveMap] No route coordinates returned");
+        setRouteCoords(null);
       }
     } catch (err) {
-      console.warn("[TrackLiveMap] Failed to fetch directions, falling back to straight line", err);
+      console.warn("[TrackLiveMap] Failed to fetch directions, using straight line", err);
+      setRouteCoords(null);
     }
-  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, mapboxAccessToken]);
 
   useEffect(() => { fetchRoute(); }, [fetchRoute]);
 
@@ -210,7 +215,18 @@ export function TrackLiveMapMapbox({
     };
   }, [remainingCoords]);
 
-  const fallbackGeoJson = null;
+  // When Mapbox returns no route, show straight line from pickup to dropoff so route is always visible
+  const fallbackGeoJson = useMemo(() => {
+    if (routeCoords != null || !pickup || !dropoff) return null;
+    return {
+      type: "Feature" as const,
+      properties: {},
+      geometry: {
+        type: "LineString" as const,
+        coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]] as [number, number][],
+      },
+    };
+  }, [routeCoords, pickup, dropoff]);
 
   return (
     <Map
@@ -221,14 +237,14 @@ export function TrackLiveMapMapbox({
     >
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
 
-      {/* Completed route: solid gold */}
+      {/* Completed route: solid purple */}
       {completedGeoJson && (
         <Source id="route-completed" type="geojson" data={completedGeoJson}>
           <Layer
             id="route-completed-layer"
             type="line"
             paint={{
-              "line-color": YUGO_GOLD,
+              "line-color": YUGO_PURPLE,
               "line-width": 5,
               "line-opacity": 0.9,
             }}
@@ -236,14 +252,14 @@ export function TrackLiveMapMapbox({
         </Source>
       )}
 
-      {/* Remaining route: animated dashed gold */}
+      {/* Remaining route: dashed purple */}
       {remainingGeoJson && (
         <Source id="route-remaining" type="geojson" data={remainingGeoJson}>
           <Layer
             id="route-remaining-layer"
             type="line"
             paint={{
-              "line-color": YUGO_GOLD,
+              "line-color": YUGO_PURPLE,
               "line-width": 4,
               "line-opacity": 0.6,
               "line-dasharray": [2, 2],
@@ -252,14 +268,14 @@ export function TrackLiveMapMapbox({
         </Source>
       )}
 
-      {/* Fallback route */}
+      {/* Fallback route (straight line) */}
       {fallbackGeoJson && (
         <Source id="route-fallback" type="geojson" data={fallbackGeoJson}>
           <Layer
             id="route-fallback-layer"
             type="line"
             paint={{
-              "line-color": YUGO_GOLD,
+              "line-color": YUGO_PURPLE,
               "line-width": 3,
               "line-opacity": 0.4,
               "line-dasharray": [2, 2],

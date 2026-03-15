@@ -3,6 +3,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getPlatformToggles } from "@/lib/platform-settings";
 
+/** Fallback position when a live session has no GPS yet — so "LIVE" panel and "teams on map" stay in sync. */
+const FALLBACK_LAT = 43.66027;
+const FALLBACK_LNG = -79.35365;
+
+const STALE_MS = 12 * 60 * 60 * 1000;
+const PANEL_EXCLUDE_STATUSES = ["not_started", "cancelled"];
+
+function isSessionActiveForPanel(s: { status?: string | null; updated_at?: string | null }): boolean {
+  const status = (s.status || "").toLowerCase();
+  if (PANEL_EXCLUDE_STATUSES.includes(status)) return false;
+  if (!s.updated_at || Date.now() - new Date(s.updated_at).getTime() > STALE_MS) return false;
+  return true;
+}
+
 /** GET all crews with live positions for unified tracking map. Staff only; requires crew tracking enabled. */
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -87,8 +101,13 @@ export async function GET(req: NextRequest) {
     const locRow = locationByCrew.get(c.id);
     const hasLocPos = locRow?.lat != null && locRow?.lng != null;
     // Full-time tracking: show crew on map whenever we have a position — session (preferred) > crew row > crew_locations.
-    const lat = hasSessionPos ? sessionLoc!.lat! : (hasCrewPos ? c.current_lat! : (hasLocPos ? locRow!.lat : null));
-    const lng = hasSessionPos ? sessionLoc!.lng! : (hasCrewPos ? c.current_lng! : (hasLocPos ? locRow!.lng : null));
+    let lat = hasSessionPos ? sessionLoc!.lat! : (hasCrewPos ? c.current_lat! : (hasLocPos ? locRow!.lat : null));
+    let lng = hasSessionPos ? sessionLoc!.lng! : (hasCrewPos ? c.current_lng! : (hasLocPos ? locRow!.lng : null));
+    // If still no position but this crew has an active session (shown in LIVE panel), use fallback so they appear on the map.
+    if ((lat == null || lng == null) && session && isSessionActiveForPanel(session)) {
+      lat = lat ?? FALLBACK_LAT;
+      lng = lng ?? FALLBACK_LNG;
+    }
 
     const pendingDeliveries = (deliveryByCrew.get(c.id) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
     const pendingMoves = (moveByCrew.get(c.id) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
@@ -126,9 +145,14 @@ export async function GET(req: NextRequest) {
   for (const [teamId, session] of sessionByTeam.entries()) {
     if (crewIdsInTable.has(teamId)) continue; // already represented by a real crews row
     const loc = session.last_location as { lat?: number; lng?: number } | null;
-    const lat = loc?.lat ?? null;
-    const lng = loc?.lng ?? null;
-    if (lat == null || lng == null) continue; // no position — nothing to plot
+    let lat = loc?.lat ?? null;
+    let lng = loc?.lng ?? null;
+    // If no GPS yet but session is active (shown in LIVE panel), use fallback so team appears on map.
+    if ((lat == null || lng == null) && isSessionActiveForPanel(session)) {
+      lat = lat ?? FALLBACK_LAT;
+      lng = lng ?? FALLBACK_LNG;
+    }
+    if (lat == null || lng == null) continue; // no position and not active — skip
     const members = membersByTeam.get(teamId) || [];
     const displayName = members[0] || `Team ${teamId.slice(0, 8)}`;
     const pendingDeliveries = (deliveryByCrew.get(teamId) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
@@ -149,11 +173,8 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Keep sessions active for 12 hours so teams stay visible on the map all day even after jobs complete.
-  const STALE_MS = 12 * 60 * 60 * 1000;
-  const now = Date.now();
-
   // Only auto-close sessions that haven't had ANY update in 12 hours (true inactivity, not job completion).
+  const now = Date.now();
   const staleIds = (sessions || [])
     .filter((s) => {
       if (!s.updated_at) return true;
@@ -165,14 +186,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Active sessions for the panel — show all non-abandoned sessions updated within 12 hours.
-  const panelExcludeStatuses = ["not_started", "cancelled"];
   const activeSessions = (sessions || [])
-    .filter((s) => {
-      const status = (s.status || "").toLowerCase();
-      if (panelExcludeStatuses.includes(status)) return false;
-      if (!s.updated_at || now - new Date(s.updated_at).getTime() > STALE_MS) return false;
-      return true;
-    })
+    .filter((s) => isSessionActiveForPanel(s))
     .map((s) => {
       const job = s.job_type === "move"
         ? (moves || []).find((m) => m.id === s.job_id)

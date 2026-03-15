@@ -62,7 +62,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const { data: activeDeliveries } = await admin
     .from("deliveries")
     .select(
-      "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, delivery_lat, delivery_lng, tracking_code, organization_id, crew_id"
+      "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, stage, tracking_code, organization_id, crew_id"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -266,12 +266,25 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
     const destLng = delivery.delivery_lng ?? 0;
     if (!destLat || !destLng) continue;
 
-    const etaMinutes = await getETAMinutes(
-      Number(crewPos.lat),
-      Number(crewPos.lng),
-      destLat,
-      destLng
-    );
+    const isPrePickup = delivery.stage === "en_route_to_pickup" || delivery.stage === "en_route";
+    const pickupLat = delivery.pickup_lat != null ? Number(delivery.pickup_lat) : null;
+    const pickupLng = delivery.pickup_lng != null ? Number(delivery.pickup_lng) : null;
+
+    let etaMinutes: number;
+    if (isPrePickup && pickupLat != null && pickupLng != null) {
+      const [leg1, leg2] = await Promise.all([
+        getETAMinutes(Number(crewPos.lat), Number(crewPos.lng), pickupLat, pickupLng),
+        getETAMinutes(pickupLat, pickupLng, destLat, destLng),
+      ]);
+      etaMinutes = leg1 + 15 + leg2;
+    } else {
+      etaMinutes = await getETAMinutes(
+        Number(crewPos.lat),
+        Number(crewPos.lng),
+        destLat,
+        destLng
+      );
+    }
 
     await admin
       .from("deliveries")

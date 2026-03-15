@@ -17,19 +17,50 @@ const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
   ),
 });
 
-const DELIVERY_STAGES = ["en_route", "arrived", "delivering", "completed"];
-const STAGE_LABELS: Record<string, string> = {
-  en_route: "On the way",
-  arrived: "Arrived at location",
-  delivering: "Delivering / Installing",
-  completed: "Completed",
+/** Full 5 stages (two-leg delivery). Used for progress %, ETA logic, and admin/partner. */
+const DELIVERY_STAGES_FULL = ["en_route_to_pickup", "arrived_at_pickup", "en_route_to_destination", "arrived_at_destination", "completed"] as const;
+
+/** Legacy stage → normalized stage for backward compatibility */
+function normalizeDeliveryStage(stage: string | null): string | null {
+  if (!stage) return null;
+  const legacy: Record<string, string> = {
+    en_route: "en_route_to_pickup",
+    arrived: "arrived_at_pickup",
+    delivering: "en_route_to_destination",
+  };
+  return legacy[stage] || stage;
+}
+
+/** Client-facing labels for all 5 stages */
+const CLIENT_STAGE_LABELS: Record<string, string> = {
+  en_route_to_pickup: "En route to pick up",
+  arrived_at_pickup: "En route to pick up",
+  en_route_to_destination: "On the way to you",
+  arrived_at_destination: "Delivering/Installing",
+  completed: "Complete",
+  en_route: "En route to pick up",
+  arrived: "En route to pick up",
+  delivering: "Delivering/Installing",
 };
-const STAGE_ICONS: Record<string, string> = {
-  en_route: "M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l5 4H1",
-  arrived: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z",
-  delivering: "M20 7H4a2 2 0 00-2 2v10h20V9a2 2 0 00-2-2zM12 3v4",
-  completed: "M20 6L9 17l-5-5",
+
+/** 4 separate client steps: pick up → on the way to you → delivering → complete */
+const CLIENT_MAIN_STEPS = ["En route to pick up", "On the way to you", "Delivering/Installing", "Complete"] as const;
+const CLIENT_MAIN_STEP_ICONS: Record<string, string> = {
+  "En route to pick up": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z",
+  "On the way to you": "M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l5 4H1",
+  "Delivering/Installing": "M20 7H4a2 2 0 00-2 2v10h20V9a2 2 0 00-2-2zM12 3v4",
+  "Complete": "M20 6L9 17l-5-5",
 };
+
+/** Map normalized stage to main step index (0–3) for 4-step progress */
+function getClientMainStepIndex(normalized: string | null): number {
+  if (!normalized) return 0;
+  if (normalized === "en_route_to_pickup" || normalized === "arrived_at_pickup") return 0;
+  if (normalized === "en_route_to_destination") return 1;
+  if (normalized === "arrived_at_destination") return 2;
+  if (normalized === "completed") return 3;
+  return 0;
+}
 
 type Coord = { lat: number; lng: number };
 type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
@@ -210,14 +241,16 @@ export default function TrackDeliveryClient({
   }, [delivery.id, token]);
 
   const itemsCount = Array.isArray(delivery.items) ? delivery.items.length : 0;
-  const statusVal = liveStage === "completed" ? "delivered" : delivery.status;
-  const isInProgress = ["en_route", "arrived", "delivering"].includes(liveStage || "");
-  const isCompleted = statusVal === "delivered" || statusVal === "completed" || liveStage === "completed";
+  const normalizedStage = normalizeDeliveryStage(liveStage);
+  const statusVal = normalizedStage === "completed" ? "delivered" : delivery.status;
+  const isInProgress = !!normalizedStage && normalizedStage !== "completed" && DELIVERY_STAGES_FULL.includes(normalizedStage as (typeof DELIVERY_STAGES_FULL)[number]);
+  const isCompleted = statusVal === "delivered" || statusVal === "completed" || normalizedStage === "completed";
 
-  const stageIdx = DELIVERY_STAGES.indexOf(liveStage || "");
-  const progressPercent = isCompleted ? 100 : stageIdx >= 0 ? ((stageIdx + 1) / DELIVERY_STAGES.length) * 100 : 0;
+  const clientMainStepIdx = getClientMainStepIndex(normalizedStage);
+  const progressPercent = isCompleted ? 100 : ((clientMainStepIdx + 1) / CLIENT_MAIN_STEPS.length) * 100;
 
-  const isPrePickup = liveStage === "en_route" || !liveStage;
+  const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
+  const isPrePickup = PICKUP_STAGES.includes(normalizedStage || "") || PICKUP_STAGES.includes(liveStage || "") || !(normalizedStage ?? "").trim();
   const etaTarget = isPrePickup && pickup ? pickup : dropoff;
   const haversineEta =
     crewLoc && etaTarget && isInProgress
@@ -246,20 +279,15 @@ export default function TrackDeliveryClient({
               <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
             </span>
             <div>
-              <div className="text-[13px] font-bold" style={{ color: FOREST }}>{STAGE_LABELS[liveStage] || toTitleCase(liveStage)}</div>
+              <div className="text-[13px] font-bold" style={{ color: FOREST }}>
+                {normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] || CLIENT_MAIN_STEPS[clientMainStepIdx] : toTitleCase(liveStage || "")}
+              </div>
               <div className="text-[11px] opacity-70" style={{ color: FOREST }}>
                 {displayEta != null ? `~${displayEta} min away` : crewName ? `Crew: ${crewName}` : "Your crew is on the way"}
               </div>
             </div>
           </div>
         )}
-        {crewHasStarted && displayEta != null && (
-          <div className="absolute top-4 right-[88px] z-20 rounded-2xl px-4 py-2.5 shadow-2xl" style={{ backgroundColor: GOLD }}>
-            <div className="text-[22px] font-bold text-[#1A1A1A] leading-none tabular-nums">{displayEta}</div>
-            <div className="text-[9px] font-semibold text-[#1A1A1A]/60 uppercase tracking-wider">min</div>
-          </div>
-        )}
-
         {/* Minimize / close button — prominent pill */}
         <button
           type="button"
@@ -314,32 +342,37 @@ export default function TrackDeliveryClient({
             {isCompleted && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                Delivered
+                Complete
               </span>
             )}
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — 3-step: On the way to you | At your address | Complete */}
         {(isInProgress || isCompleted) && (
           <div className="mb-6 anim-slide-up anim-delay-2">
             <DeliveryProgressBar
               percent={progressPercent}
               sublabel={`${Math.round(progressPercent)}%`}
-              label={liveStage ? STAGE_LABELS[liveStage] || liveStage : isCompleted ? "Completed" : "Tracking…"}
+              label={
+                isCompleted
+                  ? "Complete"
+                  : (normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] : "Tracking…") || CLIENT_MAIN_STEPS[clientMainStepIdx]
+              }
               variant="light"
             />
           </div>
         )}
 
-        {/* Stage timeline — horizontal */}
+        {/* Stage timeline — 3 main steps; show secondary detail when on first step and pre-client */}
         {(isInProgress || isCompleted) && (
           <div className="flex items-center gap-0 mb-7 overflow-x-auto pb-1 anim-slide-up anim-delay-2">
-            {DELIVERY_STAGES.map((s, i) => {
-              const isPast = stageIdx > i || isCompleted;
-              const isCurrent = stageIdx === i && !isCompleted;
+            {CLIENT_MAIN_STEPS.map((label, i) => {
+              const isPast = clientMainStepIdx > i || isCompleted;
+              const isCurrent = clientMainStepIdx === i && !isCompleted;
+              const iconPath = CLIENT_MAIN_STEP_ICONS[label];
               return (
-                <div key={s} className="flex items-center gap-0 flex-shrink-0">
+                <div key={label} className="flex items-center gap-0 flex-shrink-0">
                   <div className="flex flex-col items-center">
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all border"
@@ -353,20 +386,20 @@ export default function TrackDeliveryClient({
                     >
                       {isPast ? (
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      ) : STAGE_ICONS[s] ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={STAGE_ICONS[s]}/></svg>
+                      ) : iconPath ? (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={iconPath}/></svg>
                       ) : (
                         i + 1
                       )}
                     </div>
                     <div
-                      className="text-[9px] mt-1.5 font-semibold whitespace-nowrap"
+                      className="text-[9px] mt-1.5 font-semibold whitespace-nowrap text-center max-w-[80px]"
                       style={{ color: isCurrent ? GOLD : isPast ? "#22C55E" : `${FOREST}50` }}
                     >
-                      {STAGE_LABELS[s]}
+                      {label}
                     </div>
                   </div>
-                  {i < DELIVERY_STAGES.length - 1 && (
+                  {i < CLIENT_MAIN_STEPS.length - 1 && (
                     <div className="w-8 sm:w-12 h-[2px] mx-1.5 mt-[-16px] rounded-full transition-colors" style={{ backgroundColor: isPast ? "#22C55E" : `${FOREST}15` }} />
                   )}
                 </div>
@@ -375,8 +408,8 @@ export default function TrackDeliveryClient({
           </div>
         )}
 
-        {/* ── Route Card: From → To ── */}
-        <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-3" style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}>
+        {/* ── Route: From → To (no card) ── */}
+        <div className="mb-5 anim-slide-up anim-delay-3">
           {pickupAddr && (
             <div className="flex items-start gap-3.5 px-5 py-4">
               <div className="shrink-0 mt-0.5">
@@ -466,15 +499,15 @@ export default function TrackDeliveryClient({
               </span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: displayEta != null ? GOLD : FOREST }}>
-              {displayEta != null ? `~${displayEta} min` : isCompleted ? "Delivered" : isInProgress ? (STAGE_LABELS[liveStage || ""] || "In Progress") : "Scheduled"}
+              {displayEta != null ? `~${displayEta} min` : isCompleted ? "Complete" : isInProgress ? (CLIENT_STAGE_LABELS[normalizedStage || ""] || CLIENT_MAIN_STEPS[clientMainStepIdx] || "In Progress") : "Scheduled"}
             </div>
           </div>
         </div>
 
-        {/* ── Crew Card ── */}
+        {/* ── Crew (no card) ── */}
         {crewName && (
-          <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
-            <div className="flex items-center gap-3.5 px-5 py-4">
+          <div className="mb-5 anim-slide-up anim-delay-4">
+            <div className="flex items-center gap-3.5 px-0 py-2">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}12` }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -689,9 +722,9 @@ export default function TrackDeliveryClient({
                   )}
                 </div>
 
-                {/* Waiting overlay when crew hasn't started */}
+                {/* Waiting overlay when crew hasn't started — z-[1000] above Leaflet */}
                 {!crewHasStarted && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/30">
+                  <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 border border-white/10" style={{ backgroundColor: `${GOLD}18` }}>
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -704,32 +737,24 @@ export default function TrackDeliveryClient({
                   </div>
                 )}
 
-                {/* Live status badge inside map when active */}
+                {/* Live status badge inside map when active — z-[1000] so it sits above Leaflet map panes */}
                 {crewHasStarted && liveStage && (
-                  <div className="absolute top-3 left-3 z-20 rounded-xl bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg" style={{ borderColor: `${FOREST}15` }}>
+                  <div className="absolute top-3 left-3 z-[1000] rounded-xl bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg" style={{ borderColor: `${FOREST}15` }}>
                     <span className="relative flex h-2.5 w-2.5 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
                     </span>
                     <span className="text-[11px] font-bold" style={{ color: FOREST }}>
-                      {STAGE_LABELS[liveStage] || toTitleCase(liveStage)}
+                      {normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] : toTitleCase(liveStage || "")}
                     </span>
                   </div>
                 )}
 
-                {/* ETA badge when active */}
-                {crewHasStarted && displayEta != null && (
-                  <div className="absolute top-3 right-12 z-20 rounded-xl px-3 py-1.5 shadow-lg" style={{ backgroundColor: GOLD }}>
-                    <div className="text-[18px] font-bold text-[#1A1A1A] leading-none tabular-nums">{displayEta}</div>
-                    <div className="text-[8px] font-semibold text-[#1A1A1A]/50 uppercase tracking-wider">min</div>
-                  </div>
-                )}
-
-                {/* Fullscreen button */}
+                {/* Fullscreen button — z-[1000] so it sits above Leaflet map panes */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
-                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-sm border shadow-lg transition-all hover:scale-105 active:scale-95"
+                  className="absolute bottom-3 right-3 z-[1000] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-sm border shadow-lg transition-all hover:scale-105 active:scale-95"
                   style={{ borderColor: `${FOREST}15`, color: FOREST }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>

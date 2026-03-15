@@ -176,8 +176,8 @@ function quickEstimate(
   if (serviceType === "local_move") {
     const base = BASE[moveSize] ?? 1199;
     const cur = Math.max(roundTo(base, rounding) + addonTotal, 549);
-    const sig = roundTo(base * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.35)), rounding) + addonTotal;
-    const est = roundTo(base * cfgNum(config, "tier_estate_multiplier", 1.85), rounding) + addonTotal;
+    const sig = roundTo(base * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.50)), rounding) + addonTotal;
+    const est = roundTo(base * cfgNum(config, "tier_estate_multiplier", 3.15), rounding) + addonTotal;
     return { curated: cur, signature: sig, estate: est };
   }
   return null;
@@ -1773,6 +1773,7 @@ function OptimisticTiers({ est }: { est: { curated: number; signature: number; e
 const LABOUR_FACTOR_KEYS = new Set([
   "labour_delta", "labour_component", "labour_actual_crew", "labour_actual_hours",
   "labour_baseline_crew", "labour_baseline_hours", "labour_rate", "labour_rate_per_mover_hour", "labour_extra_man_hours",
+  "packing_supplies_included",
 ]);
 
 function FactorsDisplay({
@@ -1793,10 +1794,17 @@ function FactorsDisplay({
   const labourExtraManHours = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
   const labourRate = typeof factors.labour_rate === "number" ? factors.labour_rate : typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
   const hasLabourLine = labourDelta !== null;
-  if (entries.length === 0 && distance == null && !hasLabourLine) return null;
+  const packingSuppliesIncluded = typeof factors.packing_supplies_included === "number" ? factors.packing_supplies_included : null;
+  if (entries.length === 0 && distance == null && !hasLabourLine && packingSuppliesIncluded == null) return null;
 
   return (
     <div className="space-y-1.5">
+      {packingSuppliesIncluded != null && packingSuppliesIncluded > 0 && (
+        <div className="flex justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">Packing supplies (included)</span>
+          <span className="text-[var(--tx)] font-medium">{fmtPrice(packingSuppliesIncluded)}</span>
+        </div>
+      )}
       {distance != null && (
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">Distance</span>

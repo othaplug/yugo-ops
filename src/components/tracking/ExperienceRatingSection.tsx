@@ -150,31 +150,31 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (fetchState?.clientRating != null) return;
       const value = "target" in e && (e.target as HTMLElement).closest("[data-star-value]")
         ? Number((e.target as HTMLElement).closest("[data-star-value]")?.getAttribute("data-star-value"))
         : getStarFromClientX(e.clientX);
       setSelectedRating(value);
       setError(null);
     },
-    [fetchState?.clientRating, getStarFromClientX]
+    [getStarFromClientX]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (fetchState?.clientRating != null || e.buttons !== 1) return;
+      if (e.buttons !== 1) return;
       const value = getStarFromClientX(e.clientX);
       setSelectedRating(value);
     },
-    [fetchState?.clientRating, getStarFromClientX]
+    [getStarFromClientX]
   );
 
   const handleLeaveReviewClick = useCallback(async () => {
-    if (selectedRating == null || selectedRating < 4) return;
+    if (selectedRating == null || selectedRating < 4 || !fetchState?.googleReviewUrl) return;
+    // Open in same user gesture to avoid popup blockers; then save rating
+    window.open(fetchState.googleReviewUrl, "_blank", "noopener,noreferrer");
     const ok = await saveRating(selectedRating);
-    if (ok && fetchState?.googleReviewUrl) {
-      window.open(fetchState.googleReviewUrl, "_blank", "noopener,noreferrer");
-      setFetchState((prev) => prev ? { ...prev, reviewClicked: true } : null);
+    if (ok) {
+      setFetchState((prev) => (prev ? { ...prev, reviewClicked: true } : null));
     }
   }, [selectedRating, fetchState?.googleReviewUrl, saveRating]);
 
@@ -194,14 +194,18 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
     );
   }
 
-  const rating = fetchState.clientRating ?? selectedRating;
-  const isHighRating = rating != null && rating >= 4;
-  const isLowRating = rating != null && rating <= 3;
+  // Only lock stars after 4–5 star + "Leave a Review on Google" clicked; otherwise allow changing selection
   const showFilledStarsOnly =
     fetchState.clientRating != null &&
     fetchState.clientRating >= 4 &&
     fetchState.reviewClicked;
-  const isInteractive = !showFilledStarsOnly && fetchState.clientRating == null;
+  const isInteractive = !showFilledStarsOnly;
+  // When interactive, prefer local selection so clicking a different star updates the UI
+  const rating = isInteractive
+    ? (selectedRating ?? fetchState.clientRating)
+    : (fetchState.clientRating ?? selectedRating);
+  const isHighRating = rating != null && rating >= 4;
+  const isLowRating = rating != null && rating <= 3;
 
   return (
     <div className="flex flex-col items-center text-center max-w-[320px] mx-auto w-full py-4">
@@ -275,7 +279,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                 <p className="text-[11px] opacity-70" style={{ color: FOREST }}>
                   Thanks for leaving a review!
                 </p>
-              ) : (
+              ) : (selectedRating ?? 0) >= 4 ? (
                 <button
                   type="button"
                   onClick={handleLeaveReviewClick}
@@ -286,7 +290,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                   <StarIcon filled={true} size={14} />
                   {submitting ? "Saving…" : "Leave a Review on Google"}
                 </button>
-              )}
+              ) : null}
             </>
           )}
 

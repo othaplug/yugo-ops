@@ -25,11 +25,12 @@ export const MOVE_STATUS_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
-/** Delivery/project status progression (shorter) */
+/** Delivery/project status progression (two-leg: pickup then client) */
 export const DELIVERY_STATUS_FLOW: TrackingStatus[] = [
-  "en_route",
-  "arrived",
-  "delivering",
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route_to_destination",
+  "arrived_at_destination",
   "completed",
 ];
 
@@ -41,7 +42,7 @@ export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
   en_route_to_destination: "En Route to Destination",
   arrived_at_destination: "Arrived at Destination",
   unloading: "Unloading",
-  completed: "Completed",
+  completed: "Complete",
   en_route: "En Route",
   arrived: "Arrived",
   delivering: "Delivering / Installing",

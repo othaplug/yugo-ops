@@ -10,6 +10,50 @@ import { logAudit } from "@/lib/audit";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 
+/** Map inventory_score to truck_allocation_rules inventory_range. */
+function inventoryRangeFromScore(score: number | null | undefined): string {
+  if (score == null || score <= 0) return "no_inventory";
+  if (score <= 30) return "light";
+  if (score <= 60) return "standard";
+  return "heavy";
+}
+
+/** Default vehicle_type by move_size when no rule matches (labels like "20-ft truck" -> "20ft"). */
+const DEFAULT_TRUCK_BY_SIZE: Record<string, string> = {
+  studio: "16ft",
+  "1br": "16ft",
+  "2br": "20ft",
+  "3br": "20ft",
+  "4br": "26ft",
+  "5br_plus": "26ft",
+  partial: "16ft",
+  single_item: "sprinter",
+  white_glove: "sprinter",
+};
+
+/** Resolve truck_primary: use explicit value, else truck_allocation_rules by move_size + inventory_range, else default by size. */
+async function resolveTruckPrimary(
+  db: ReturnType<typeof createAdminClient>,
+  moveSize: string | null | undefined,
+  inventoryScore: number | null | undefined,
+  explicitTruckPrimary: string | null | undefined,
+): Promise<string | null> {
+  const trimmed = (explicitTruckPrimary as string)?.trim();
+  if (trimmed) return trimmed;
+  if (!moveSize || !moveSize.trim()) return null;
+
+  const range = inventoryRangeFromScore(inventoryScore ?? null);
+  const { data: rule } = await db
+    .from("truck_allocation_rules")
+    .select("primary_vehicle")
+    .eq("move_size", moveSize.trim())
+    .eq("inventory_range", range)
+    .maybeSingle();
+
+  if (rule?.primary_vehicle) return rule.primary_vehicle;
+  return DEFAULT_TRUCK_BY_SIZE[moveSize.trim()] ?? null;
+}
+
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await requireAuth();
   if (authError) return authError;
@@ -83,6 +127,24 @@ export async function POST(req: NextRequest) {
     if (!fromAddress) return NextResponse.json({ error: "From address is required" }, { status: 400 });
     if (!toAddress) return NextResponse.json({ error: "To address is required" }, { status: 400 });
 
+    const moveSize =
+      moveType === "residential"
+        ? ((body.move_size as string)?.trim() || "2br")
+        : moveType === "single_item"
+          ? "single_item"
+          : moveType === "white_glove"
+            ? "white_glove"
+            : null;
+    const inventoryScore =
+      typeof body.inventory_score === "number" ? body.inventory_score : null;
+    const explicitTruckPrimary = (body.truck_primary as string)?.trim() || null;
+    const truckPrimary = await resolveTruckPrimary(
+      db,
+      moveSize,
+      inventoryScore,
+      explicitTruckPrimary,
+    );
+
     // If no org selected, check for duplicate client before creating
     if (!organizationId && (clientName || clientEmail || clientPhone)) {
       const { data: orgs } = await db
@@ -139,6 +201,8 @@ export async function POST(req: NextRequest) {
         items: Array.isArray(body.items) ? body.items : [],
         inventory_score: typeof body.inventory_score === "number" ? body.inventory_score : null,
         client_box_count: typeof body.box_count === "number" && body.box_count > 0 ? body.box_count : null,
+        move_size: moveSize ?? null,
+        truck_primary: truckPrimary ?? null,
         ...(typeof body.inventory_score === "number" && body.inventory_score > 0
           ? (() => {
               const labour = estimateLabourFromScore(

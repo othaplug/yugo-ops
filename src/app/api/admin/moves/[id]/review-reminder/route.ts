@@ -78,7 +78,9 @@ export async function POST(
         .update({ client_email: clientEmail, client_name: displayName })
         .eq("id", rr.id);
     }
-    const reviewUrl = `${baseUrl}/api/review/redirect?id=${rr.id}`;
+    const token = signReviewToken(rr.id);
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
+    const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
     const tier = (rr.tier || "curated").toLowerCase();
     const trackSlug = move ? getTrackMoveSlug({ move_code: move.move_code, id: move.id }) : rr.move_id;
     const trackToken = rr.move_id ? signTrackToken("move", rr.move_id) : "";
@@ -114,6 +116,7 @@ export async function POST(
           clientName: displayName,
           tier: rr.tier,
           reviewUrl,
+          reviewRedirectUrl,
           referralUrl: null,
           trackingUrl,
           coordinatorName,
@@ -138,8 +141,8 @@ export async function POST(
     return NextResponse.json({ ok: true, action: "send" });
   }
 
-  // action === "remind"
-  if (rr.status !== "sent") {
+  // action === "remind" (allowed when status is "sent" or already "reminded" so staff can send another reminder)
+  if (rr.status !== "sent" && rr.status !== "reminded") {
     return NextResponse.json(
       { error: rr.status === "pending" ? "Send the initial request first" : "No reminder to send" },
       { status: 400 }
@@ -168,7 +171,9 @@ export async function POST(
     );
   }
 
-  const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
+  const token = signReviewToken(rr.id);
+  const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
+  const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
 
   try {
     await sendEmail({
@@ -178,6 +183,7 @@ export async function POST(
       data: {
         clientName: reminderName,
         reviewUrl,
+        reviewRedirectUrl,
       },
     });
   } catch (e) {

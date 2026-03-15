@@ -4,7 +4,7 @@
 
 -- Platform config for Google review URL and feature toggle
 INSERT INTO public.platform_config (key, value, description) VALUES
-  ('google_review_url', 'https://g.page/r/yugo-moving/review', 'Direct link to leave a Google review for Yugo'),
+  ('google_review_url', 'https://g.page/r/CU67iDN6TgMIEB0/review/', 'Direct link to leave a Google review for Yugo'),
   ('auto_review_requests', 'true', 'Automatically send Google review requests 2 hours after moves complete')
 ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,

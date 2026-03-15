@@ -31,14 +31,61 @@ function emailLogoRow(): string {
   `;
 }
 
-function emailFooterRow(loginUrl?: string): string {
-  const learnMoreUrl = `${getEmailBaseUrl()}/about`;
+/** Link color in footer for visibility on dark background (blue, underlined like Amex-style). */
+const EMAIL_FOOTER_LINK = "#8BB4D4";
+/** Subtle highlight for company name in copyright. */
+const EMAIL_FOOTER_HIGHLIGHT_BG = "rgba(201,169,98,0.2)";
+
+/** Client contact email and phone for footer (no app URLs — mailto/tel only). */
+function getContactEmail(): string {
+  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "hello@helloyugo.com";
+}
+function getContactPhone(): string {
+  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
+}
+
+function emailFooterRow(_loginUrl?: string): string {
+  const base = getEmailBaseUrl();
+  const privacyUrl = `${base}/privacy`;
+  const contactEmail = getContactEmail();
+  const contactPhone = getContactPhone();
+  const mailto = `mailto:${contactEmail}`;
+  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
   return `
     <tr>
-      <td align="center" style="padding:16px 24px 32px;font-size:10px;color:${EMAIL_TX3};border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
-        <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none;">Learn more</a>
-        <span style="color:${EMAIL_BRD};margin:0 8px;">&middot;</span>
-        Powered by YUGO+
+      <td style="padding:24px 24px 0;border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;margin:0 auto;">
+          <tr>
+            <td align="center" style="padding-bottom:20px;font-size:12px;color:${EMAIL_TX2};">
+              <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Email us</a>
+              <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
+              <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Call us</a>
+              <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
+              <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:12px;">
+              This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>. This address is not monitored and we cannot respond to messages sent here.
+            </td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:12px;">
+              You received this email because you are the contact for a move or quote with Yugo.
+            </td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:16px;">
+              Learn how we collect, use and safeguard your information at <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${base.replace(/^https?:\/\//, "")}/privacy</a>.
+            </td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;color:${EMAIL_TX3};padding-bottom:32px;">
+              &copy; 2025 <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo Inc.</span> All rights reserved.<br/>
+              <span style="font-size:10px;color:${EMAIL_TX3};margin-top:4px;display:inline-block;">507 King Street E, Toronto, ON</span>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   `;
@@ -113,13 +160,25 @@ function emailLogo() {
   `;
 }
 
-function emailFooter(loginUrl?: string) {
-  const learnMoreUrl = `${getEmailBaseUrl()}/about`;
+function emailFooter(_loginUrl?: string) {
+  const base = getEmailBaseUrl();
+  const privacyUrl = `${base}/privacy`;
+  const contactEmail = getContactEmail();
+  const contactPhone = getContactPhone();
+  const mailto = `mailto:${contactEmail}`;
+  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
   return `
-    <div style="font-size:10px;color:#999;text-align:center;margin-top:32px;padding-top:20px;border-top:1px solid ${EMAIL_BRD}">
-      <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none">Learn more</a>
-      <span style="color:#888;margin:0 6px">&middot;</span>
-      Powered by YUGO+
+    <div style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;margin-top:32px;padding-top:24px;border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
+      <p style="text-align:center;margin:0 0 12px;">
+        <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Email us</a>
+        <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
+        <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Call us</a>
+        <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
+        <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy</a>
+      </p>
+      <p style="margin:0 0 8px;">This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. This address is not monitored. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>.</p>
+      <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy policy</a> — how we collect, use and safeguard your information.</p>
+      <p style="font-size:10px;color:${EMAIL_TX3};margin:16px 0 0;">&copy; 2025 <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo Inc.</span> All rights reserved. 507 King Street E, Toronto, ON.</p>
     </div>
   `;
 }

@@ -109,29 +109,32 @@ export const TIER_ORDER = ["curated", "signature", "estate"] as const;
 
 export const TIER_META: Record<
   string,
-  { label: string; tagline: string; badge?: string; accent: string; bg: string; border: string }
+  { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
 > = {
   curated: {
-    label: "Curated",
-    tagline: "Everything you need for a reliable move",
+    label: "Essential",
+    tagline: "Precision and care for a seamless move.",
     accent: FOREST,
     bg: "#FFFFFF",
     border: "#E2DDD5",
+    footer: "Best for: straightforward moves with quality assurance.",
   },
   signature: {
     label: "Signature",
-    tagline: "Full-service protection for your home",
+    tagline: "Every detail handled. Nothing left to chance.",
     badge: "RECOMMENDED",
     accent: GOLD,
     bg: "#FFFDF8",
     border: GOLD,
+    footer: "Best for: full-home moves where nothing gets overlooked.",
   },
   estate: {
     label: "Estate",
-    tagline: "The complete premium experience",
+    tagline: "A private standard for those who expect more than a move.",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,
+    footer: "Best for: high-value homes, art, antiques & complete transitions.",
   },
 };
 

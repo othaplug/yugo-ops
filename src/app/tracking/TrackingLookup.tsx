@@ -118,21 +118,29 @@ export default function TrackingLookup() {
           )}
         </form>
 
-        {/* Feature hints — seamless, no cards */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-14 w-full max-w-lg">
-          {[
-            { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z", title: "Live GPS", desc: "Real-time crew location" },
-            { icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", title: "Status Updates", desc: "Step-by-step progress" },
-            { icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", title: "ETA & Schedule", desc: "Date, time window" },
-          ].map((c) => (
-            <div key={c.title} className="flex flex-col items-center gap-2 text-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
-                <path d={c.icon} />
-              </svg>
-              <div className="text-[11px] font-semibold" style={{ color: FOREST }}>{c.title}</div>
-              <div className="text-[10px] opacity-50" style={{ color: FOREST }}>{c.desc}</div>
-            </div>
-          ))}
+        {/* Feature hints — Live GPS and ETA side by side, Status Updates below */}
+        <div className="flex flex-col items-center gap-8 mt-14 w-full max-w-lg">
+          <div className="flex flex-row items-center justify-center gap-10 sm:gap-14 w-full">
+            {[
+              { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z", title: "Live GPS", desc: "Real-time crew location" },
+              { icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", title: "ETA & Schedule", desc: "Date, time window" },
+            ].map((c) => (
+              <div key={c.title} className="flex flex-col items-center gap-2 text-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
+                  <path d={c.icon} />
+                </svg>
+                <div className="text-[11px] font-semibold" style={{ color: FOREST }}>{c.title}</div>
+                <div className="text-[10px] opacity-50" style={{ color: FOREST }}>{c.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Status Updates</div>
+            <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Step-by-step progress</div>
+          </div>
         </div>
       </div>
 

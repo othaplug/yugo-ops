@@ -11,7 +11,7 @@ import {
 } from "@/lib/email/lifecycle-templates";
 
 const GOOGLE_REVIEW_URL =
-  process.env.GOOGLE_REVIEW_URL || "https://g.page/r/yugo-moving/review";
+  process.env.GOOGLE_REVIEW_URL || "https://g.page/r/CU67iDN6TgMIEB0/review/";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.

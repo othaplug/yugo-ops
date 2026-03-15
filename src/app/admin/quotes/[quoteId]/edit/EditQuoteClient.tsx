@@ -194,7 +194,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const oldPrice = oq.tiers?.essentials?.price ?? oq.custom_price ?? 0;
+  // Resolve previous quote price: curated (current) or essentials (legacy) tier, or custom_price for non-tiered
+  const oldPrice = oq.tiers?.curated?.price ?? oq.tiers?.essentials?.price ?? (typeof oq.custom_price === "number" ? oq.custom_price : null) ?? 0;
 
   // ── Addon helpers ─────────────────────────────────────────
   const applicableAddons = useMemo(
@@ -348,7 +349,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to generate quote"); return; }
       setNewQuoteResult(data);
-      setNewQuoteId(data.quote_id);
+      const id = data.quote_id ?? data.quoteId;
+      setNewQuoteId(typeof id === "string" && id.trim() ? id.trim() : null);
     } catch {
       setError("Network error generating quote");
     } finally {
@@ -380,8 +382,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     }
   }, [newQuoteId, oq.quote_id, oq.hubspot_deal_id]);
 
-  const newPrice = newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
-  const livePrice = livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
+  const newPrice = newQuoteResult?.tiers?.curated?.price ?? newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
+  const livePrice = livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
   const inputClass = "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "block text-[11px] font-semibold text-[var(--tx2)] mb-1.5";
@@ -400,11 +402,11 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           {contact?.email ? `The updated quote has been emailed to ${contact.email}.` : "The quote is ready."}
         </p>
         <div className="flex gap-3 justify-center">
-          <button onClick={() => router.push("/admin/quotes")} className="px-5 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)]">
-            Back to Quotes
+          <button onClick={() => router.push(`/admin/quotes/${oq.quote_id}`)} className="px-5 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)]">
+            Back to Quote Details
           </button>
-          <button onClick={() => router.push(`/admin/quotes/${oq.quote_id}/edit`)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
-            View Quote
+          <button onClick={() => setDone(false)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
+            Edit Quote
           </button>
         </div>
       </div>
@@ -993,9 +995,9 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <div className="flex items-center gap-6 mb-4 flex-wrap">
             <div>
               <div className="text-[11px] text-[var(--tx3)]">Quote ID</div>
-              <div className="text-sm font-bold text-[var(--gold)]">{newQuoteId}</div>
+              <div className="text-sm font-bold text-[var(--gold)]">{newQuoteId ?? "—"}</div>
             </div>
-            {oldPrice && newPrice && (
+            {oldPrice != null && newPrice != null ? (
               <div>
                 <div className="text-[11px] text-[var(--tx3)]">Price Change</div>
                 <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
@@ -1004,7 +1006,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                   <span className="text-[var(--gold)] font-bold">{formatCurrency(Number(newPrice))}</span>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {newQuoteResult.tiers && (

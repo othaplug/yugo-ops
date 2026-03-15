@@ -42,7 +42,9 @@ export async function GET(req: NextRequest) {
     .lte("scheduled_send_at", now);
 
   for (const rr of pending || []) {
-    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
+    const token = signReviewToken(rr.id);
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
+    const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
     const tier = (rr.tier || "curated").toLowerCase();
     const { data: move } = rr.move_id
       ? await supabase.from("moves").select("move_code, id").eq("id", rr.move_id).single()
@@ -76,6 +78,7 @@ export async function GET(req: NextRequest) {
             clientName: rr.client_name,
             tier: rr.tier,
             reviewUrl,
+            reviewRedirectUrl,
             referralUrl: null,
             trackingUrl,
             coordinatorName,
@@ -118,7 +121,9 @@ export async function GET(req: NextRequest) {
     .lte("reminder_send_at", now);
 
   for (const rr of toRemind || []) {
-    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
+    const token = signReviewToken(rr.id);
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
+    const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
 
     if (rr.client_email) {
       try {
@@ -129,6 +134,7 @@ export async function GET(req: NextRequest) {
           data: {
             clientName: rr.client_name,
             reviewUrl,
+            reviewRedirectUrl,
           },
         });
       } catch (e) {

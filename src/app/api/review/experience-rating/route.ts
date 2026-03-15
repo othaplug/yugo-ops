@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     const redirectUrl =
       (config as { value?: string } | null)?.value ||
       process.env.GOOGLE_REVIEW_URL ||
-      "https://g.page/r/yugo-moving/review";
+      "https://g.page/r/CU67iDN6TgMIEB0/review/";
     return NextResponse.json({ ok: true, redirectUrl });
   }
 

@@ -100,26 +100,21 @@ export default function TrackDocuments({
               key={doc.id}
               className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-[#E7E5E4] flex items-center justify-center shrink-0 text-[#999] text-[12px] font-semibold">
-                  Doc
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>
-                  <div className="text-[11px] text-[#666] flex items-center gap-2">
-                    {dateStr}
-                    {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
-                    {isPaid && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
-                        PAID
-                      </span>
-                    )}
-                    {isSent && !isPaid && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
-                        SENT
-                      </span>
-                    )}
-                  </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>
+                <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
+                  {dateStr}
+                  {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
+                  {isPaid && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
+                      PAID
+                    </span>
+                  )}
+                  {isSent && !isPaid && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
+                      SENT
+                    </span>
+                  )}
                 </div>
               </div>
               {url && (

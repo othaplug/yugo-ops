@@ -22,6 +22,26 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
   return null;
 }
 
+const PICKUP_LOAD_BUFFER_MINUTES = 15;
+
+async function getMapboxDrivingEtaMinutes(
+  fromLat: number, fromLng: number,
+  toLat: number, toLng: number
+): Promise<number | null> {
+  if (!MAPBOX_TOKEN) return null;
+  try {
+    const coords = `${fromLng},${fromLat};${toLng},${toLat}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${MAPBOX_TOKEN}&overview=false`;
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    const data = await res.json();
+    const durationSec = data?.routes?.[0]?.duration;
+    if (typeof durationSec === "number" && durationSec > 0) {
+      return Math.max(1, Math.round(durationSec / 60));
+    }
+  } catch {}
+  return null;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -112,6 +132,18 @@ export async function GET(
       delivery.delivery_address ? geocodeAddress(delivery.delivery_address) : null,
     ]);
 
+    const isPrePickup = liveStage === "en_route_to_pickup" || liveStage === "en_route";
+    let etaMinutes: number | null = delivery?.eta_current_minutes ?? null;
+    if (isPrePickup && crew && pickup && dropoff) {
+      const [leg1, leg2] = await Promise.all([
+        getMapboxDrivingEtaMinutes(crew.current_lat, crew.current_lng, pickup.lat, pickup.lng),
+        getMapboxDrivingEtaMinutes(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng),
+      ]);
+      if (leg1 != null && leg2 != null) {
+        etaMinutes = leg1 + PICKUP_LOAD_BUFFER_MINUTES + leg2;
+      }
+    }
+
     return NextResponse.json(
       {
         crew,
@@ -125,7 +157,7 @@ export async function GET(
         dropoff,
         scheduledDate: delivery.scheduled_date || null,
         timeWindow: delivery.delivery_window || delivery.time_slot || null,
-        eta_current_minutes: delivery?.eta_current_minutes ?? null,
+        eta_current_minutes: etaMinutes,
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );

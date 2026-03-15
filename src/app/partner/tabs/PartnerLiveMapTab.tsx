@@ -51,15 +51,29 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
   }, [orgId]);
 
   const activeWithCrew = deliveries.filter((d) => d.crew_lat != null && d.crew_lng != null);
-  // Show map whenever ANY delivery exists — destination pins render even without live GPS
   const hasAny = deliveries.length > 0;
   const crewHasStarted = activeWithCrew.length > 0;
 
-  const center = activeWithCrew.length > 0
-    ? { latitude: activeWithCrew[0].crew_lat!, longitude: activeWithCrew[0].crew_lng! }
-    : deliveries[0]?.dest_lat != null
-    ? { latitude: deliveries[0].dest_lat!, longitude: deliveries[0].dest_lng! }
-    : { latitude: 43.665, longitude: -79.385 };
+  // One delivery on the map at a time: current = first with live GPS, else first in list (API sorts current first)
+  const currentDelivery =
+    deliveries.find((d) => d.crew_lat != null && d.crew_lng != null) ?? deliveries[0] ?? null;
+
+  // When the current delivery changes (e.g. after completing one), show its overlay; don’t re-open if user closed it
+  const lastSyncedCurrentId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!currentDelivery) return;
+    if (currentDelivery.id !== lastSyncedCurrentId.current) {
+      lastSyncedCurrentId.current = currentDelivery.id;
+      setSelected(currentDelivery);
+    }
+  }, [currentDelivery?.id]);
+
+  const center =
+    currentDelivery?.crew_lat != null && currentDelivery?.crew_lng != null
+      ? { latitude: currentDelivery.crew_lat, longitude: currentDelivery.crew_lng }
+      : currentDelivery?.dest_lat != null && currentDelivery?.dest_lng != null
+        ? { latitude: currentDelivery.dest_lat, longitude: currentDelivery.dest_lng }
+        : { latitude: 43.665, longitude: -79.385 };
 
   return (
     <div>
@@ -136,13 +150,13 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               <PartnerMapMapbox
                 token={MAPBOX_TOKEN}
                 center={center}
-                deliveries={deliveries}
+                currentDelivery={currentDelivery}
                 onSelect={setSelected}
               />
             ) : (
               <PartnerMapLeaflet
                 center={center}
-                deliveries={deliveries}
+                currentDelivery={currentDelivery}
                 onSelect={setSelected}
               />
             )}
@@ -157,27 +171,55 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
         )}
       </div>
 
-      {/* Active deliveries list — hide addresses until crew has started (live signal on) */}
+      {/* Active deliveries list — current first, then Next, then Upcoming */}
       {deliveries.length > 0 && (
         <div className="mt-4 space-y-2">
-          {deliveries.map((d) => {
+          {deliveries.map((d, index) => {
             const hasGPS = d.crew_lat != null;
+            const slotLabel =
+              index === 0 ? "Current" : index === 1 ? "Next" : "Upcoming";
+            const isCurrent = index === 0;
             return (
               <div
                 key={d.id}
                 onClick={() => hasGPS ? setSelected(d) : undefined}
-                className={`bg-white border border-[#E8E4DF] rounded-xl p-4 flex items-center justify-between ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40" : ""} transition-colors`}
+                className={`bg-white border rounded-xl p-4 flex items-center justify-between transition-colors ${
+                  isCurrent
+                    ? "border-[#C9A962] ring-1 ring-[#C9A962]/30"
+                    : "border-[#E8E4DF]"
+                } ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40" : ""}`}
               >
-                <div>
-                  <div className="text-[14px] font-semibold text-[#1A1A1A]">{d.customer_name || d.delivery_number}</div>
-                  {crewHasStarted ? (
-                    <div className="text-[12px] text-[#888] mt-0.5">{d.delivery_address || "—"}</div>
-                  ) : (
-                    <div className="text-[11px] text-[#999] mt-0.5">Live signal off — details when crew starts</div>
-                  )}
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${
+                      index === 0
+                        ? "bg-[#2D9F5A] text-white"
+                        : index === 1
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-[#F5F3F0] text-[#888]"
+                    }`}
+                  >
+                    {slotLabel}
+                  </span>
+                  <div>
+                    <div className="text-[14px] font-semibold text-[#1A1A1A]">
+                      {d.customer_name || d.delivery_number}
+                    </div>
+                    {crewHasStarted ? (
+                      <div className="text-[12px] text-[#888] mt-0.5">
+                        {d.delivery_address || "—"}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-[#999] mt-0.5">
+                        Live signal off — details when crew starts
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {crewHasStarted && d.crew_name && <span className="text-[11px] text-[#888]">{d.crew_name}</span>}
+                  {crewHasStarted && d.crew_name && (
+                    <span className="text-[11px] text-[#888]">{d.crew_name}</span>
+                  )}
                   {hasGPS ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
                       <span className="w-2 h-2 rounded-full bg-[#2D9F5A]" />

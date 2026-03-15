@@ -43,7 +43,7 @@ export async function GET(
   const googleReviewUrl =
     (configRes.data as { value?: string } | null)?.value ||
     process.env.GOOGLE_REVIEW_URL ||
-    "https://g.page/r/yugo-moving/review";
+    "https://g.page/r/CU67iDN6TgMIEB0/review/";
 
   return NextResponse.json({
     reviewRequestId: rr?.id ?? null,

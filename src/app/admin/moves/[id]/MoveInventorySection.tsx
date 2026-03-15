@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
 import { expandItemRow as expandItemRowFromName } from "@/lib/inventory-parse";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { toTitleCase } from "@/lib/format-text";
+import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 type InventoryItem = {
   id: string;
@@ -27,12 +28,18 @@ type ExtraItem = {
 
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Other"];
 
+type ItemWeightRow = { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean };
+
 function isMoveStatusCompleted(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase();
   return s === "completed" || s === "delivered" || s === "done";
 }
 
-export default function MoveInventorySection({ moveId, moveStatus, userRole = "viewer" }: { moveId: string; moveStatus?: string; userRole?: string }) {
+function roomSlugToDisplay(slug: string | undefined): string {
+  return (slug || "other").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function MoveInventorySection({ moveId, moveStatus, userRole = "viewer", itemWeights = [], moveType }: { moveId: string; moveStatus?: string; userRole?: string; itemWeights?: ItemWeightRow[]; moveType?: string }) {
   const isCompleted = isMoveStatusCompleted(moveStatus);
   const canEditInventory = !isCompleted || userRole === "owner";
 
@@ -55,6 +62,37 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   const [approveExtraModal, setApproveExtraModal] = useState<{ itemId: string } | null>(null);
   const [approveExtraFeeDollars, setApproveExtraFeeDollars] = useState("");
   const { toast } = useToast();
+
+  const handleQuickAddChange = useCallback(
+    (newItems: InventoryItemEntry[]) => {
+      if (newItems.length === 0) return;
+      setAdding(true);
+      (async () => {
+        let added = 0;
+        for (const entry of newItems) {
+          const room = roomSlugToDisplay(entry.room);
+          const itemName = entry.quantity > 1 ? `${entry.name} x${entry.quantity}` : entry.name;
+          const res = await fetch(`/api/admin/moves/${moveId}/inventory`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ room, item_name: itemName }),
+          });
+          const data = await res.json();
+          if (data.error) {
+            toast(data.error, "x");
+            break;
+          }
+          added++;
+        }
+        if (added > 0) {
+          fetchItems();
+          toast(added === 1 ? "Item added" : `Added ${added} items`, "check");
+        }
+        setAdding(false);
+      })();
+    },
+    [moveId, toast]
+  );
 
   const handleExtraApprove = async (itemId: string, feeCents?: number) => {
     setExtraActioning(itemId);
@@ -289,6 +327,18 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
         <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
       ) : (
         <>
+          {canEditInventory && itemWeights.length > 0 && (
+            <div className="mb-4 pb-4 border-b border-[var(--brd)]/40">
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Quick add from catalog</p>
+              <InventoryInput
+                itemWeights={itemWeights as ItemWeightRow[]}
+                value={[]}
+                onChange={handleQuickAddChange}
+                mode={moveType === "office" ? "commercial" : "residential"}
+                addOnlyMode
+              />
+            </div>
+          )}
           {rooms.length === 0 && !adding ? (
             <p className="text-[11px] text-[var(--tx3)] mb-4">No items yet. Add room-by-room items for the client portal.</p>
           ) : (
