@@ -247,7 +247,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               type="submit"
               disabled={submitting || !extraDesc.trim()}
               className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
             >
               {submitting ? "Submitting…" : "Submit Request"}
             </button>

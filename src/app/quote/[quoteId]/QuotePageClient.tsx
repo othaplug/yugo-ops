@@ -17,7 +17,6 @@ import {
   Camera,
   Hand,
   Trash2,
-  Home,
   ChevronDown,
   Plus,
   X,
@@ -90,7 +89,7 @@ const INCLUSIONS_ESSENTIALS: Inclusion[] = [
 ];
 
 const INCLUSIONS_PREMIER: Inclusion[] = [
-  { icon: Wrench, label: "Furniture disassembly & reassembly", description: "We take it apart and put it back together" },
+  { icon: Wrench, label: "Basic disassembly & reassembly", description: "We take it apart and put it back together" },
   { icon: Trash2, label: "Debris & packaging removal", description: "We clear away all packing materials and debris post-move" },
 ];
 
@@ -98,7 +97,6 @@ const INCLUSIONS_ESTATE: Inclusion[] = [
   { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
   { icon: Hand, label: "Premium gloves handling", description: "Art, antiques, and fragile items individually wrapped" },
   { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
-  { icon: Home, label: "Post-move property restoration", description: "Removal of all packaging, debris, and unwanted materials from both locations" },
 ];
 
 export default function QuotePageClient({
@@ -667,12 +665,12 @@ export default function QuotePageClient({
       )}
 
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
-        {/* ═══ GUARANTEED PRICE BADGE ═══ */}
+        {/* ═══ GUARANTEED PRICE BADGE (sticky) ═══ */}
         <div
-          className={`relative z-10 mb-8 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "-mt-5"}`}
+          className={`sticky top-0 z-20 mb-8 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "-mt-5"}`}
         >
           <div
-            className="rounded-xl px-5 py-3.5 flex items-center gap-3"
+            className="rounded-xl px-5 py-3.5 flex items-center gap-3 shadow-sm"
             style={{
               backgroundColor: "#FFFDF8",
               border: `1px solid ${GOLD}40`,
@@ -707,7 +705,7 @@ export default function QuotePageClient({
                 const r = (quote.recommended_tier ?? "signature").toString().toLowerCase().trim();
                 return ["curated", "signature", "estate"].includes(r) ? r : "signature";
               })()}
-              hasSelection={!!selectedTier}
+              hasSelection={false}
             />
             <InclusionsShowcase
               ref={comparisonRef}
@@ -1316,7 +1314,12 @@ function ConfirmDetailsSection({
             Move Details
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
-            <p><strong>Date:</strong> {fmtDate(quote.move_date)}</p>
+            <p>
+              <strong>Date:</strong> {fmtDate(quote.move_date)}
+              {quote.preferred_time && (
+                <> · <strong>Arrival/start:</strong> {quote.preferred_time}</>
+              )}
+            </p>
             <p><strong>From:</strong> {quote.from_address}</p>
             <p><strong>To:</strong> {quote.to_address}</p>
           </div>
@@ -1327,7 +1330,18 @@ function ConfirmDetailsSection({
             Your Package
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
-            <p><strong>Package:</strong> {packageLabel} ✓</p>
+            <p className="flex items-center gap-2 flex-wrap">
+              <strong>Package:</strong>
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider"
+                style={{
+                  backgroundColor: selectedTier === "estate" ? `${WINE}15` : selectedTier === "signature" ? `${GOLD}18` : `${FOREST}15`,
+                  color: selectedTier === "estate" ? WINE : selectedTier === "signature" ? "#8B7332" : FOREST,
+                }}
+              >
+                {packageLabel}
+              </span>
+            </p>
             <p><strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers</p>
             <p><strong>Truck:</strong> {truckLine}</p>
             <p><strong>Protection:</strong> {protectionLabel}</p>
@@ -1567,7 +1581,7 @@ function ValuationProtectionCard({
             className="flex items-center justify-between w-full py-2.5 text-left group"
           >
             <span className="text-[12px] font-semibold" style={{ color: FOREST }}>What&apos;s covered</span>
-            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${coversOpen ? "rotate-180" : ""}`} style={{ color: `${FOREST}30` }} />
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${coversOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
           </button>
           {coversOpen && (
             <ul className="pb-3 space-y-2 pl-1">
@@ -1587,7 +1601,7 @@ function ValuationProtectionCard({
             className="flex items-center justify-between w-full py-2.5 text-left"
           >
             <span className="text-[12px] font-semibold" style={{ color: FOREST }}>Exclusions</span>
-            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${excludesOpen ? "rotate-180" : ""}`} style={{ color: `${FOREST}30` }} />
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${excludesOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
           </button>
           {excludesOpen && (
             <ul className="pb-3 space-y-2 pl-1">

@@ -1,5 +1,11 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { backfillMoveClientEmailFromQuote } from "@/lib/client-referral";
 
+/**
+ * Create a review request only when we have a client email (so the request can be sent).
+ * Backfills move.client_email from quote→contact before deciding, so quote-sourced moves
+ * always get a review request when the contact has an email.
+ */
 export async function createReviewRequestIfEligible(
   supabase: SupabaseClient,
   moveId: string
@@ -50,12 +56,18 @@ export async function createReviewRequestIfEligible(
     .maybeSingle();
   if (existing) return false;
 
-  if (!move.client_email && !move.client_phone) return false;
+  // Backfill move.client_email from quote→contact so we never create a review request without email
+  const backfilled = await backfillMoveClientEmailFromQuote(supabase, moveId);
+  const clientEmail = (move.client_email || "").trim() || backfilled.email || null;
+  const clientName = (move.client_name || "").trim() || backfilled.name || "Client";
+
+  // Only create review requests when we have an email (so we can send the request)
+  if (!clientEmail) return false;
 
   const { error } = await supabase.from("review_requests").insert({
     move_id: moveId,
-    client_name: move.client_name || "Client",
-    client_email: move.client_email || null,
+    client_name: clientName,
+    client_email: clientEmail,
     client_phone: move.client_phone || null,
     tier: move.tier_selected || null,
     pod_rating: podRating,

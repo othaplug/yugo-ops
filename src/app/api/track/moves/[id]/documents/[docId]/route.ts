@@ -1,23 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth, requireStaff } from "@/lib/api-auth";
+import { verifyTrackToken } from "@/lib/track-token";
 
 const PDF_DOC_TYPES = ["summary", "invoice", "receipt"] as const;
 
 /**
  * GET: Short-URL proxy when docId is "summary" | "invoice" | "receipt" — redirect to signed PDF.
- * Other docIds are not used for GET (documents list is from the parent route).
+ * Requires ?token= for track auth. Client never sees Supabase URL.
  */
 export async function GET(
-  _req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
-  const { error: authError } = await requireStaff();
-  if (authError) return authError;
-
   const { id: moveId, docId } = await params;
+  const token = req.nextUrl.searchParams.get("token") || "";
+  if (!verifyTrackToken("move", moveId, token)) {
+    return NextResponse.json({ error: "Invalid or missing token" }, { status: 401 });
+  }
+
   if (!PDF_DOC_TYPES.includes(docId as (typeof PDF_DOC_TYPES)[number])) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -39,36 +41,4 @@ export async function GET(
   if (!signed?.signedUrl) return NextResponse.json({ error: "Document unavailable" }, { status: 404 });
 
   return NextResponse.redirect(signed.signedUrl, 302);
-}
-
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string; docId: string }> }
-) {
-  const { error: authError } = await requireAuth();
-  if (authError) return authError;
-
-  try {
-    const { id: moveId, docId } = await params;
-    const admin = createAdminClient();
-    const { data: doc } = await admin
-      .from("move_documents")
-      .select("storage_path")
-      .eq("id", docId)
-      .eq("move_id", moveId)
-      .single();
-
-    if (doc?.storage_path) {
-      await admin.storage.from("move-documents").remove([doc.storage_path]);
-    }
-
-    await admin.from("move_documents").delete().eq("id", docId).eq("move_id", moveId);
-
-    return NextResponse.json({ ok: true });
-  } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to delete" },
-      { status: 500 }
-    );
-  }
 }

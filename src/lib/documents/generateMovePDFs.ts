@@ -1,8 +1,10 @@
 /**
  * Auto-generate Move Summary, Invoice, and Receipt PDFs on move completion.
- * Uploads to Supabase Storage (move-documents), updates moves table, and inserts into move_files.
- * Uses premium branding from @/lib/pdf-brand (wine, gold, cream, Instrument Serif / Times).
+ * Uploads to Supabase Storage (move-documents), updates moves table.
+ * Uses premium Yugo branding from @/lib/pdf-brand (logo, wine, gold, cream).
  */
+import fs from "fs";
+import path from "path";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,7 +14,6 @@ import {
   GOLD,
   DARK,
   GRAY,
-  GRAY_LIGHT,
   CREAM_BG,
   drawYugoHeader,
   drawYugoFooter,
@@ -23,6 +24,9 @@ import {
   setSectionLabel,
   setBodyText,
   setHeroTitle,
+  SECTION_GAP,
+  SUB_SECTION_GAP,
+  drawInfoBox,
 } from "@/lib/pdf-brand";
 
 const BUCKET = "move-documents";
@@ -87,21 +91,31 @@ function formatDate(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
 }
 
-function pdfHeader(doc: jsPDF, yStart: number, centerX: number): number {
-  let y = drawYugoHeader(doc, { yStart, centerX, margin: 50 });
-  return y;
+function loadYugoLogoBase64(): string {
+  try {
+    const logoPath = path.join(process.cwd(), "public", "images", "yugo-logo-black.png");
+    const base64 = fs.readFileSync(logoPath, { encoding: "base64" });
+    return `data:image/png;base64,${base64}`;
+  } catch {
+    return "";
+  }
+}
+
+function pdfHeader(doc: jsPDF, yStart: number, centerX: number, logoBase64?: string): number {
+  return drawYugoHeader(doc, { yStart, centerX, margin: 50, logoBase64 });
 }
 
 function pdfFooter(doc: jsPDF): void {
   drawYugoFooter(doc, { y: 285 });
 }
 
-/** Move Summary PDF */
+/** Move Summary PDF — Yugo design: logo, accent bars, organized sections */
 function generateMoveSummaryPDF(
   move: MoveRow,
   crew: CrewRow,
   inventory: InventoryRow,
-  tierLabel: string
+  tierLabel: string,
+  logoBase64: string
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -110,32 +124,38 @@ function generateMoveSummaryPDF(
   let y = 36;
 
   drawTopAccentBar(doc, true);
-  y = pdfHeader(doc, 24, centerX);
+  y = pdfHeader(doc, 24, centerX, logoBase64);
   setHeroTitle(doc, 16);
   doc.text("Move Summary", centerX, y, { align: "center" });
-  y += 22;
+  y += SECTION_GAP + 8;
 
-  setBodyText(doc, 10);
-  doc.text(`Move ID: ${moveDisplayId(move)}`, margin, y);
-  doc.setTextColor(...GRAY);
-  doc.setFontSize(9);
-  doc.text(`Date: ${formatDate(move.completed_at || move.scheduled_date)}`, pageWidth - margin, y, { align: "right" });
-  y += 8;
-  doc.setTextColor(...DARK);
-  doc.text(`Client: ${move.client_name || "—"}`, margin, y);
-  y += 8;
-  doc.setTextColor(...GRAY);
-  doc.text(`From: ${move.from_address || "—"}`, margin, y);
-  y += 6;
-  doc.text(`To: ${move.to_address || "—"}`, margin, y);
-  y += 12;
-
-  setSectionLabel(doc, 9);
-  doc.text("Package", margin, y);
+  // ─── Move details (Yugo info block) ───
+  const boxW = pageWidth - margin * 2;
+  const boxH = 52;
+  drawInfoBox(doc, { x: margin, y, width: boxW, height: boxH });
+  setSectionLabel(doc, 8);
+  doc.text("MOVE DETAILS", margin + 6, y + 10);
   setBodyText(doc, 9);
-  doc.text(`: ${tierLabel}`, margin + 45, y);
-  y += 8;
+  doc.text(`Move ID: ${moveDisplayId(move)}`, margin + 6, y + 22);
+  doc.setTextColor(...GRAY);
+  doc.setFontSize(8);
+  doc.text(`Date: ${formatDate(move.completed_at || move.scheduled_date)}`, pageWidth - margin - 6, y + 22, { align: "right" });
+  doc.setTextColor(...DARK);
+  doc.setFontSize(9);
+  doc.text(`Client: ${move.client_name || "—"}`, margin + 6, y + 32);
+  doc.setTextColor(...GRAY);
+  doc.setFontSize(8);
+  doc.text(`From: ${(move.from_address || "—").slice(0, 50)}${(move.from_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 42);
+  doc.text(`To: ${(move.to_address || "—").slice(0, 50)}${(move.to_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 50);
+  y += boxH + SECTION_GAP;
 
+  // ─── Package & crew ───
+  setSectionLabel(doc, 9);
+  doc.text("PACKAGE & CREW", margin, y);
+  y += SUB_SECTION_GAP;
+  setBodyText(doc, 9);
+  doc.text(`Package: ${tierLabel}`, margin, y);
+  y += 6;
   const crewNames = crew?.members && Array.isArray(crew.members)
     ? (crew.members as string[]).join(", ")
     : crew?.name || "—";
@@ -147,11 +167,12 @@ function generateMoveSummaryPDF(
   y += 6;
   const hours = move.actual_hours ?? move.est_hours;
   doc.text(`Duration: ${hours != null ? `${hours} hours` : "—"}`, margin, y);
-  y += 14;
+  y += SECTION_GAP;
 
+  // ─── Inventory ───
   setSectionLabel(doc, 9);
-  doc.text("Inventory", margin, y);
-  y += 6;
+  doc.text("INVENTORY", margin, y);
+  y += SUB_SECTION_GAP;
   setBodyText(doc, 8);
   doc.setTextColor(...DARK);
   if (inventory.length === 0) {
@@ -171,32 +192,34 @@ function generateMoveSummaryPDF(
       y += 8;
     }
   }
+  y += SECTION_GAP;
 
-  y += 6;
+  // ─── What was included ───
   setSectionLabel(doc, 9);
-  doc.text("What was included", margin, y);
-  y += 6;
+  doc.text("WHAT WAS INCLUDED", margin, y);
+  y += SUB_SECTION_GAP;
   setBodyText(doc, 8);
   const tierKey = (move.tier_selected || "").toLowerCase().replace(/\s+/g, "_");
   doc.text(TIER_FEATURES[tierKey] || TIER_FEATURES.curated || "Moving service as agreed.", margin, y);
-  y += 8;
+  y += SECTION_GAP;
 
   setSectionLabel(doc, 9);
-  doc.text("Valuation coverage", margin, y);
+  doc.text("VALUATION COVERAGE", margin, y);
   setBodyText(doc, 8);
-  doc.text(`: ${move.valuation_tier || "Released value"}`, margin + 55, y);
+  doc.text(`: ${move.valuation_tier || "Released value"}`, margin + 58, y);
 
   pdfFooter(doc);
   drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Invoice PDF — tier + add-ons, HST, payments */
+/** Invoice PDF — Yugo design: logo, tier + add-ons, HST, payments */
 function generateInvoicePDF(
   move: MoveRow,
   extraItems: ExtraRow,
   tierLabel: string,
-  tierPrice: number
+  tierPrice: number,
+  logoBase64: string
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -205,10 +228,10 @@ function generateInvoicePDF(
   let y = 36;
 
   drawTopAccentBar(doc, false);
-  y = pdfHeader(doc, 24, centerX);
+  y = pdfHeader(doc, 24, centerX, logoBase64);
   setHeroTitle(doc, 16);
   doc.text("Invoice", centerX, y, { align: "center" });
-  y += 22;
+  y += SECTION_GAP + 8;
 
   const invNum = invoiceNumber(move);
   const issuedDate = formatDate(move.completed_at || move.scheduled_date);
@@ -284,12 +307,13 @@ function generateInvoicePDF(
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Receipt PDF */
+/** Receipt PDF — Yugo design: logo, payment table */
 function generateReceiptPDF(
   move: MoveRow,
   tierLabel: string,
   depositPaid: number,
   balancePaid: number,
+  logoBase64: string,
   cardLast4?: string | null
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
@@ -299,10 +323,10 @@ function generateReceiptPDF(
   let y = 36;
 
   drawTopAccentBar(doc, true);
-  y = pdfHeader(doc, 24, centerX);
+  y = pdfHeader(doc, 24, centerX, logoBase64);
   setHeroTitle(doc, 16);
   doc.text("Payment Receipt", centerX, y, { align: "center" });
-  y += 22;
+  y += SECTION_GAP + 8;
 
   setBodyText(doc, 10);
   doc.text(`Receipt #: ${receiptNumber(move)}`, margin, y);
@@ -353,7 +377,7 @@ function generateReceiptPDF(
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-export async function generateMovePDFs(moveId: string): Promise<{ summaryUrl: string; invoiceUrl: string; receiptUrl: string }> {
+export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: string; invoicePath: string; receiptPath: string }> {
   const admin = createAdminClient();
 
   const { data: move, error: moveErr } = await admin
@@ -385,14 +409,14 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryUrl: st
   const approvedExtras = extras.filter((e) => (e.status ?? "approved") === "approved");
 
   const tierLabel = (moveRow.tier_selected || "Curated").replace(/_/g, " ");
-  const tierKey = (moveRow.tier_selected || "curated").toLowerCase().replace(/\s+/g, "_");
   const tierPrice = Number(moveRow.estimate ?? moveRow.amount ?? 0);
   const depositPaid = Number(moveRow.deposit_amount ?? Math.round(tierPrice * 0.25));
   const balancePaid = Number(moveRow.balance_amount ?? (tierPrice - depositPaid));
 
-  const summaryBuffer = generateMoveSummaryPDF(moveRow, crewData, invList, tierLabel);
-  const invoiceBuffer = generateInvoicePDF(moveRow, extras, tierLabel, tierPrice);
-  const receiptBuffer = generateReceiptPDF(moveRow, tierLabel, depositPaid, balancePaid, undefined);
+  const logoBase64 = loadYugoLogoBase64();
+  const summaryBuffer = generateMoveSummaryPDF(moveRow, crewData, invList, tierLabel, logoBase64);
+  const invoiceBuffer = generateInvoicePDF(moveRow, extras, tierLabel, tierPrice, logoBase64);
+  const receiptBuffer = generateReceiptPDF(moveRow, tierLabel, depositPaid, balancePaid, logoBase64, undefined);
 
   const summaryPath = `moves/${moveId}/move-summary-${displayId}.pdf`;
   const invoicePath = `moves/${moveId}/invoice-${displayId}.pdf`;
@@ -411,37 +435,15 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryUrl: st
     upsert: true,
   });
 
-  const summaryUrl = admin.storage.from(BUCKET).getPublicUrl(summaryPath).data.publicUrl;
-  const invoiceUrl = admin.storage.from(BUCKET).getPublicUrl(invoicePath).data.publicUrl;
-  const receiptUrl = admin.storage.from(BUCKET).getPublicUrl(receiptPath).data.publicUrl;
-
+  // Store storage paths (not public URLs): bucket is private; APIs create signed URLs on demand
   await admin
     .from("moves")
     .update({
-      summary_pdf_url: summaryUrl,
-      invoice_pdf_url: invoiceUrl,
-      receipt_pdf_url: receiptUrl,
+      summary_pdf_url: summaryPath,
+      invoice_pdf_url: invoicePath,
+      receipt_pdf_url: receiptPath,
     })
     .eq("id", moveId);
 
-  await admin
-    .from("move_files")
-    .delete()
-    .eq("move_id", moveId)
-    .eq("source", "system");
-
-  const docs = [
-    { file_url: summaryUrl, file_name: `Move Summary - ${displayId}.pdf`, category: "document", source: "system" },
-    { file_url: invoiceUrl, file_name: `Invoice - ${displayId}.pdf`, category: "document", source: "system" },
-    { file_url: receiptUrl, file_name: `Payment Receipt - ${displayId}.pdf`, category: "document", source: "system" },
-  ];
-  for (const doc of docs) {
-    await admin.from("move_files").insert({
-      move_id: moveId,
-      ...doc,
-      file_type: "application/pdf",
-    });
-  }
-
-  return { summaryUrl, invoiceUrl, receiptUrl };
+  return { summaryPath, invoicePath, receiptPath };
 }

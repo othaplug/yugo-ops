@@ -1,6 +1,6 @@
 "use client";
 
-/** Segmented progress bar with glass effect. Shows discrete steps (e.g. move status flow). Animated & interactive. */
+/** Segmented progress bar. Shows discrete steps (e.g. move status flow). Animated & interactive. */
 export default function SegmentedProgressBar({
   steps,
   currentIndex,
@@ -16,7 +16,7 @@ export default function SegmentedProgressBar({
   const filledCount = Math.min(currentIndex + 1, total);
   const isAllComplete = currentIndex >= total - 1;
   return (
-    <div className={`glass rounded-xl p-4 ${className}`}>
+    <div className={`p-4 ${className}`}>
       {label && (
         <div className="text-[10px] font-bold tracking-widest uppercase text-[var(--gold)]/90 mb-3">{label}</div>
       )}

@@ -28,7 +28,7 @@ export async function GET(
   const [perksRes, referralRes] = await Promise.all([
     admin
       .from("partner_perks")
-      .select("id, title, description, offer_type, discount_value, redemption_code, redemption_url, valid_until, partner_id")
+      .select("id, title, description, offer_type, discount_value, redemption_code, redemption_url, valid_until, partner_id, organizations!partner_id(name)")
       .eq("is_active", true)
       .or("valid_until.is.null,valid_until.gte." + new Date().toISOString().split("T")[0])
       .order("display_order", { ascending: true })

@@ -38,16 +38,39 @@ export async function GET(
     );
 
     const moveRow = move as { move_code?: string | null; summary_pdf_url?: string | null; invoice_pdf_url?: string | null; receipt_pdf_url?: string | null } | null;
+    const displayId = moveRow?.move_code || `MV-${moveId.slice(0, 8).toUpperCase()}`;
     const code = moveRow?.move_code || moveId.slice(0, 8).toUpperCase();
+
+    function pdfPath(type: "summary" | "invoice" | "receipt"): string {
+      const name = type === "summary" ? "move-summary" : type;
+      return `moves/${moveId}/${name}-${displayId}.pdf`;
+    }
+    function pathOrDerived(stored: string | null | undefined, type: "summary" | "invoice" | "receipt"): string {
+      if (stored && !stored.startsWith("http")) return stored;
+      return pdfPath(type);
+    }
+
     const autoDocs: { id: string; type: string; title: string; view_url: string; external_url: null; created_at: string }[] = [];
-    if (moveRow?.summary_pdf_url) {
-      autoDocs.push({ id: "summary-pdf", type: "document", title: `Move Summary — ${code}.pdf`, view_url: moveRow.summary_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    const summaryPath = pathOrDerived(moveRow?.summary_pdf_url, "summary");
+    const invoicePath = pathOrDerived(moveRow?.invoice_pdf_url, "invoice");
+    const receiptPath = pathOrDerived(moveRow?.receipt_pdf_url, "receipt");
+    const hasSummary = !!moveRow?.summary_pdf_url;
+    const hasInvoice = !!moveRow?.invoice_pdf_url;
+    const hasReceipt = !!moveRow?.receipt_pdf_url;
+    const [summarySigned, invoiceSigned, receiptSigned] = await Promise.all([
+      hasSummary ? admin.storage.from(bucket).createSignedUrl(summaryPath, 3600) : Promise.resolve({ data: null }),
+      hasInvoice ? admin.storage.from(bucket).createSignedUrl(invoicePath, 3600) : Promise.resolve({ data: null }),
+      hasReceipt ? admin.storage.from(bucket).createSignedUrl(receiptPath, 3600) : Promise.resolve({ data: null }),
+    ]);
+    // Short app URLs (proxy to signed URL); client never sees Supabase URL
+    if (summarySigned.data?.signedUrl) {
+      autoDocs.push({ id: "summary-pdf", type: "document", title: `Move Summary — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/summary`, external_url: null, created_at: new Date().toISOString() });
     }
-    if (moveRow?.invoice_pdf_url) {
-      autoDocs.push({ id: "invoice-pdf", type: "invoice", title: `Invoice — ${code}.pdf`, view_url: moveRow.invoice_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    if (invoiceSigned.data?.signedUrl) {
+      autoDocs.push({ id: "invoice-pdf", type: "invoice", title: `Invoice — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/invoice`, external_url: null, created_at: new Date().toISOString() });
     }
-    if (moveRow?.receipt_pdf_url) {
-      autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt — ${code}.pdf`, view_url: moveRow.receipt_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    if (receiptSigned.data?.signedUrl) {
+      autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/receipt`, external_url: null, created_at: new Date().toISOString() });
     }
     const allDocuments = [...autoDocs, ...withUrls];
 

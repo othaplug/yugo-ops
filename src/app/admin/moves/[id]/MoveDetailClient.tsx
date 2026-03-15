@@ -32,6 +32,7 @@ interface ReviewRequestEntry {
   id: string;
   status: string;
   email_sent_at: string | null;
+  reminder_sent_at: string | null;
   review_clicked: boolean | null;
   review_clicked_at: string | null;
 }
@@ -46,6 +47,19 @@ interface MoveDetailClientProps {
   reviewRequest?: ReviewRequestEntry;
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+
+function tierDisplayLabel(tier: string | null | undefined): string | null {
+  if (!tier) return null;
+  const t = tier.toLowerCase().trim();
+  const map: Record<string, string> = {
+    curated: "Curated",
+    signature: "Signature",
+    estate: "Estate",
+    essentials: "Curated",
+    premier: "Signature",
+  };
+  return map[t] ?? tier.charAt(0).toUpperCase() + tier.slice(1);
+}
 
 function formatReviewTime(dateStr: string): string {
   const d = new Date(dateStr);
@@ -67,6 +81,7 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
 const VEHICLE_LABELS: Record<string, string> = {
   sprinter: "Sprinter Van",
@@ -92,6 +107,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
   const [restartOverrideModal, setRestartOverrideModal] = useState<{ newStatus: string } | null>(null);
   const [restartOverrideTyped, setRestartOverrideTyped] = useState("");
+  const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
@@ -206,8 +222,8 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         </div>
       )}
 
-      {/* Hero - compact header with glass */}
-      <div className="glass rounded-xl p-4 sm:p-5">
+      {/* Hero - compact header */}
+      <div className="p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -224,11 +240,6 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 </span>
               )}
             </div>
-            {move.coordinator_name && (
-              <span className="text-[11px] text-[var(--tx2)]">
-                Coordinator: {move.coordinator_name}
-              </span>
-            )}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
                 <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
@@ -387,17 +398,49 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       )}
 
       {reviewRequest && isCompleted && (
-        <CollapsibleSection title="Review Request" defaultCollapsed={false} subtitle={reviewRequest.review_clicked ? "Clicked ✓" : reviewRequest.status}>
+        <CollapsibleSection title="Review Request" defaultCollapsed={false} subtitle={reviewRequest.review_clicked ? "Clicked ✓" : toTitleCase(reviewRequest.status)}>
           <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4">
-            <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[var(--tx3)]">Status:</span>
-              <span className="font-medium text-[var(--tx)]">
-                {reviewRequest.review_clicked
-                  ? `Clicked ✓${reviewRequest.review_clicked_at ? ` (${new Date(reviewRequest.review_clicked_at).toLocaleString()})` : ""}`
-                  : reviewRequest.status === "sent" || reviewRequest.status === "reminded"
-                    ? `${reviewRequest.status}${reviewRequest.email_sent_at ? ` (${formatReviewTime(reviewRequest.email_sent_at)})` : ""} · Not clicked yet`
-                    : reviewRequest.status}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-[12px]">
+                <span className="text-[var(--tx3)]">Status:</span>
+                <span className="font-medium text-[var(--tx)]">
+                  {reviewRequest.review_clicked
+                    ? `Clicked ✓${reviewRequest.review_clicked_at ? ` (${new Date(reviewRequest.review_clicked_at).toLocaleString()})` : ""}`
+                    : reviewRequest.status === "sent" || reviewRequest.status === "reminded"
+                      ? `${toTitleCase(reviewRequest.status)}${reviewRequest.status === "reminded" && reviewRequest.reminder_sent_at ? ` (${formatReviewTime(reviewRequest.reminder_sent_at)})` : reviewRequest.email_sent_at ? ` (${formatReviewTime(reviewRequest.email_sent_at)})` : ""} · Not clicked yet`
+                      : toTitleCase(reviewRequest.status)}
+                </span>
+              </div>
+              {!reviewRequest.review_clicked && (reviewRequest.status === "pending" || reviewRequest.status === "sent") && (
+                <button
+                  type="button"
+                  disabled={reviewReminderLoading}
+                  onClick={async () => {
+                    setReviewReminderLoading(true);
+                    try {
+                      const res = await fetch(`/api/admin/moves/${move.id}/review-reminder`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          action: reviewRequest.status === "pending" ? "send" : "remind",
+                        }),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        toast(data?.error || "Failed", "alertTriangle");
+                        return;
+                      }
+                      toast(reviewRequest.status === "pending" ? "Review request sent" : "Reminder sent", "check");
+                      router.refresh();
+                    } finally {
+                      setReviewReminderLoading(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--gold)]/40 text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 transition-colors disabled:opacity-50"
+                >
+                  {reviewReminderLoading ? "Sending…" : reviewRequest.status === "pending" ? "Send request" : "Remind"}
+                </button>
+              )}
             </div>
           </div>
         </CollapsibleSection>
@@ -640,7 +683,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
@@ -657,17 +700,17 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
               <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
               <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
-              {move.from_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.from_access}</div>}
+              {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
             </div>
             <div>
               <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
               <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
-              {move.to_access && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{move.to_access}</div>}
+              {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
             </div>
           </div>
         </div>
@@ -679,7 +722,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
@@ -698,7 +741,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
               <Pencil className="w-[11px] h-[11px]" />
             </button>
           )}
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
             <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
@@ -709,7 +752,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         {/* Valuation Protection */}
         {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
           <div className="border-t border-[var(--brd)]/30 py-4">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
+            <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
               <div>
                 <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
@@ -750,13 +793,16 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
           <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
             {/* Header strip */}
             <div className="flex items-center justify-between px-5 pt-4 pb-0">
-              <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Payments</span>
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Payments</span>
               <div className="flex items-center gap-1.5">
-                {move.tier_selected && (
-                  <span className="text-[8px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
-                    {move.tier_selected.charAt(0).toUpperCase() + move.tier_selected.slice(1)}
-                  </span>
-                )}
+                {(() => {
+                  const label = tierDisplayLabel(move.tier_selected);
+                  return label ? (
+                    <span className="text-[8px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
+                      {label}
+                    </span>
+                  ) : null;
+                })()}
                 {move.service_type && (
                   <span className="text-[8px] text-[var(--tx3)]/50">
                     {SERVICE_LABELS[move.service_type as string] || move.service_type}
@@ -916,7 +962,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit complexity indicators">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Complexity Indicators</div>
         <div className="flex flex-wrap gap-1">
           {(Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).length > 0 ? (
             (Array.isArray(move.complexity_indicators) ? move.complexity_indicators : []).map((tag: string) => (
@@ -934,7 +980,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
 
       {/* Inventory, Files & Media */}
-      <MoveInventorySection moveId={move.id} />
+      <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} />
       <MoveFilesSection moveId={move.id} moveStatus={move.status} />
 
       {/* Reported Issues from crew */}
@@ -945,7 +991,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <button type="button" className="absolute top-4 right-0 opacity-0 group-hover/s:opacity-100 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity" onClick={() => setDetailsModalOpen(true)} aria-label="Edit internal notes">
           <Pencil className="w-[11px] h-[11px]" />
         </button>
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
@@ -1072,7 +1118,7 @@ function MoveProfitCard({ move }: { move: any }) {
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
         <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">

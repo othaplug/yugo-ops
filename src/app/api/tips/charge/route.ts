@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { isMoveIdUuid } from "@/lib/move-code";
 import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
 import { getAdminNotificationEmail } from "@/lib/config";
@@ -24,10 +25,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing moveId or token" }, { status: 400 });
   }
 
-  if (!verifyTrackToken("move", moveId, token)) {
-    return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
-  }
-
   const amountDollars = Number(amount);
   if (!Number.isFinite(amountDollars) || amountDollars < 5) {
     return NextResponse.json({ error: "Minimum tip amount is $5.00" }, { status: 400 });
@@ -37,14 +34,38 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
 
   try {
-    const { data: move, error: moveError } = await admin
+    let move: { id: string; client_name: string | null; client_email: string | null; move_code: string | null; crew_id: string | null; square_customer_id: string | null; square_card_id: string | null; tip_charged_at: string | null; status: string | null } | null = null;
+    let resolvedMoveId: string | null = null;
+
+    const byId = await admin
       .from("moves")
       .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
       .eq("id", moveId)
-      .single();
+      .maybeSingle();
 
-    if (moveError || !move) {
+    if (byId.data) {
+      move = byId.data;
+      resolvedMoveId = move.id;
+    } else if (!isMoveIdUuid(moveId)) {
+      // Fallback: resolve by move_code (e.g. MV0025) in case client sent code instead of UUID
+      const code = String(moveId).replace(/^#/, "").trim().toUpperCase();
+      const byCode = await admin
+        .from("moves")
+        .select("id, client_name, client_email, move_code, crew_id, square_customer_id, square_card_id, tip_charged_at, status")
+        .ilike("move_code", code)
+        .maybeSingle();
+      if (byCode.data) {
+        move = byCode.data;
+        resolvedMoveId = move.id;
+      }
+    }
+
+    if (!move || !resolvedMoveId) {
       return NextResponse.json({ error: "Move not found" }, { status: 404 });
+    }
+
+    if (!verifyTrackToken("move", resolvedMoveId, token)) {
+      return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
     }
 
     if (move.tip_charged_at) {
@@ -64,9 +85,9 @@ export async function POST(req: NextRequest) {
       sourceId: move.square_card_id,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
-      referenceId: `TIP-${moveId}`,
-      note: `Tip for crew — Move ${move.move_code || moveId}`,
-      idempotencyKey: `tip-${moveId}-${Date.now()}`,
+      referenceId: `TIP-${resolvedMoveId}`,
+      note: `Tip for crew — Move ${move.move_code || resolvedMoveId}`,
+      idempotencyKey: `tip-${resolvedMoveId}-${Date.now()}`,
       locationId,
     });
 
@@ -90,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Store in tips table + update move
     await Promise.all([
       admin.from("tips").insert({
-        move_id: moveId,
+        move_id: resolvedMoveId,
         crew_id: move.crew_id,
         client_name: move.client_name,
         crew_name: crewName,
@@ -103,13 +124,13 @@ export async function POST(req: NextRequest) {
       admin.from("moves").update({
         tip_amount: amountDollars,
         tip_charged_at: now,
-      }).eq("id", moveId),
+      }).eq("id", resolvedMoveId),
     ]);
 
     // Log status event
     await admin.from("status_events").insert({
       entity_type: "move",
-      entity_id: moveId,
+      entity_id: resolvedMoveId,
       event_type: "tip_received",
       description: `Tip of $${amountDollars.toFixed(2)} received from ${move.client_name || "client"} for ${crewName || "crew"}`,
       icon: "dollar",
@@ -123,7 +144,7 @@ export async function POST(req: NextRequest) {
         clientName: move.client_name || "A client",
         amount: `$${amountDollars.toFixed(2)}`,
         crewName: crewName || "the crew",
-        moveCode: move.move_code || moveId,
+        moveCode: move.move_code || resolvedMoveId,
         netAmount: `$${netAmount.toFixed(2)}`,
       }),
     }).catch(() => {});

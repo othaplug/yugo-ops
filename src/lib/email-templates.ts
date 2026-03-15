@@ -24,8 +24,8 @@ function emailLogoRow(): string {
   const logoUrl = getEmailLogoUrl();
   return `
     <tr>
-      <td align="center" style="padding:32px 24px 24px;">
-        <img src="${logoUrl}" alt="YUGO" width="140" height="38" style="display:block;border:0;max-width:140px;height:auto;" />
+      <td align="center" style="padding:20px 24px 16px;">
+        <img src="${logoUrl}" alt="YUGO" width="100" height="27" style="display:block;border:0;max-width:100px;height:auto;" />
       </td>
     </tr>
   `;

@@ -81,11 +81,14 @@ export async function POST(req: NextRequest) {
   if (!title?.trim() || !offer_type) {
     return NextResponse.json({ error: "title and offer_type are required" }, { status: 400 });
   }
+  if (!partner_id?.trim()) {
+    return NextResponse.json({ error: "partner_id is required" }, { status: 400 });
+  }
 
   const { data, error } = await db
     .from("partner_perks")
     .insert({
-      partner_id: partner_id || null,
+      partner_id: partner_id.trim(),
       title: title.trim(),
       description: description?.trim() || null,
       offer_type,

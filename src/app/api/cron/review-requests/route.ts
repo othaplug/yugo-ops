@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import { signTrackToken, signReviewToken } from "@/lib/track-token";
 import { getTrackMoveSlug } from "@/lib/move-code";
 
 export async function GET(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     .lte("scheduled_send_at", now);
 
   for (const rr of pending || []) {
-    const reviewUrl = `${baseUrl}/api/review/redirect?id=${rr.id}`;
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
     const tier = (rr.tier || "curated").toLowerCase();
     const { data: move } = rr.move_id
       ? await supabase.from("moves").select("move_code, id").eq("id", rr.move_id).single()
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
     .lte("reminder_send_at", now);
 
   for (const rr of toRemind || []) {
-    const reviewUrl = `${baseUrl}/api/review/redirect?id=${rr.id}`;
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
 
     if (rr.client_email) {
       try {

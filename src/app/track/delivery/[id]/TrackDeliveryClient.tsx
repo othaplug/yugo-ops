@@ -347,7 +347,7 @@ export default function TrackDeliveryClient({
                         isPast
                           ? { backgroundColor: "#22C55E", color: "white", borderColor: "transparent" }
                           : isCurrent
-                            ? { backgroundColor: GOLD, color: "#1A1A1A", borderColor: "transparent", boxShadow: `0 0 0 3px ${GOLD}30` }
+                            ? { backgroundColor: GOLD, color: CREAM, borderColor: "transparent", boxShadow: `0 0 0 3px ${GOLD}30` }
                             : { backgroundColor: CREAM, color: `${FOREST}50`, borderColor: `${FOREST}18` }
                       }
                     >

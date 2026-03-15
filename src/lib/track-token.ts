@@ -35,3 +35,27 @@ export function verifyTrackToken(
     return false;
   }
 }
+
+/** Sign a review_request id for use in email link (public, no session). Returns id.sig for URL. */
+export function signReviewToken(reviewRequestId: string): string {
+  const sig = createHmac("sha256", getTrackSecret()).update(`review:${reviewRequestId}`).digest("base64url");
+  return `${reviewRequestId}.${sig}`;
+}
+
+/** Verify token (id.sig) and return review_request id, or null. */
+export function verifyReviewToken(token: string): string | null {
+  if (!token || typeof token !== "string") return null;
+  const lastDot = token.lastIndexOf(".");
+  if (lastDot <= 0) return null;
+  const id = token.slice(0, lastDot);
+  const sig = token.slice(lastDot + 1);
+  if (!id || !sig) return null;
+  const expected = createHmac("sha256", getTrackSecret()).update(`review:${id}`).digest("base64url");
+  if (expected.length !== sig.length) return null;
+  try {
+    if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(sig, "utf8"))) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}

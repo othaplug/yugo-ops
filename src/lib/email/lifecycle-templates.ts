@@ -295,7 +295,7 @@ export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string =
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is complete, and we hope everything went smoothly.
     </p>
@@ -317,7 +317,7 @@ export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => r
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is complete, and we hope everything went smoothly.
     </p>
@@ -336,7 +336,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Did We Do?</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Thank you for choosing Yugo for your move. It was a privilege to take care of your home and belongings.
     </p>
@@ -360,7 +360,7 @@ export interface ReviewRequestReminderData {
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quick Reminder</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder — your Yugo review</h1>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder — your Yugo review</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
     </p>

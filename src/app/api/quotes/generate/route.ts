@@ -520,7 +520,7 @@ async function residentialIncludes(
     truckLabel,
     `${minCrew} professional movers`,
     "Moving blankets & padding",
-    "Furniture disassembly & reassembly",
+    "Basic disassembly & reassembly",
     "Floor & door frame protection",
     "Standard valuation coverage",
   ];
@@ -528,7 +528,7 @@ async function residentialIncludes(
     truckLabel,
     `${minCrew} professional movers`,
     "Moving blankets & full furniture wrapping",
-    "Furniture disassembly & reassembly",
+    "Basic disassembly & reassembly",
     "Floor & door frame protection",
     "Mattress covers & TV screen protection",
     "Dolly & equipment included",
@@ -538,7 +538,7 @@ async function residentialIncludes(
     truckLabel,
     `${minCrew} professional movers`,
     "Moving blankets & full furniture wrapping",
-    "Furniture disassembly & reassembly",
+    "Basic disassembly & reassembly",
     "Floor & door frame protection",
     "Mattress covers & TV screen protection",
     "Dolly & equipment included",
@@ -630,7 +630,7 @@ async function calcInventoryModifier(
   moveSize: string,
   inventoryItems: InventoryItem[],
   clientBoxCount?: number,
-): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }> {
+): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number; boxCount?: number }> {
   const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
   if (!inventoryItems || inventoryItems.length === 0) return noAdj;
 
@@ -667,7 +667,7 @@ async function calcInventoryModifier(
   modifier = Math.max(Number(bm.min_modifier), Math.min(maxMod, modifier));
   modifier = Math.round(modifier * 100) / 100;
 
-  return { modifier, inventoryScore, benchmarkScore, totalItems, maxModifier: maxMod };
+  return { modifier, inventoryScore, benchmarkScore, totalItems, maxModifier: maxMod, boxCount };
 }
 
 // ═══════════════════════════════════════════════
@@ -783,8 +783,8 @@ async function calcResidential(
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
 
-  // Prompt 89: Labour DELTA — only charge when actual man-hours exceed baseline (base rate already includes standard crew/hours)
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 35);
+  // Prompt 89/90: Labour DELTA — only charge when actual man-hours exceed baseline (base rate already includes standard crew/hours). Rate $75/mover-hour.
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 75);
   let labourDelta = 0;
   let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
   if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
@@ -966,7 +966,7 @@ async function calcOffice(
   const includes = officeFeatures.length > 0 ? [...officeFeatures] : [
     "Professional moving crew",
     "Moving truck(s) as needed",
-    "Furniture disassembly & reassembly",
+    "Basic disassembly & reassembly",
     "Floor & door frame protection",
     "Labeled crate system",
   ];
@@ -1029,7 +1029,7 @@ async function calcLongDistance(
     "Full packing included",
     "Professional crew",
     "Door-to-door service",
-    "Furniture disassembly & reassembly",
+    "Basic disassembly & reassembly",
     "Moving blankets & shrink wrap",
   ];
 
@@ -1658,6 +1658,7 @@ export async function POST(req: NextRequest) {
       selected_addons: addonResult.breakdown,
       expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
       inventory_items: input.inventory_items ?? [],
+      client_box_count: input.client_box_count ?? null,
       inventory_warnings: inventoryWarnings.length > 0 ? inventoryWarnings : [],
       inventory_score: invResult.inventoryScore || null,
       inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
@@ -1706,6 +1707,7 @@ export async function POST(req: NextRequest) {
       score: invResult.inventoryScore,
       benchmark: invResult.benchmarkScore,
       totalItems: invResult.totalItems,
+      boxCount: (invResult as { boxCount?: number }).boxCount ?? input.client_box_count ?? null,
     },
     inventory_warnings: inventoryWarnings,
     labour: labour ?? null,

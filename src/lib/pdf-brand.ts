@@ -30,7 +30,30 @@ const FONT_HERO = "times";
 const FONT_BODY = "helvetica";
 
 /**
- * Draw premium Yugo header: wine "YUGO", gold italic "The Art of Moving", gold divider.
+ * Draw Yugo logo image (PNG base64). Use logoBase64 from loadYugoLogoBase64().
+ * Returns the y position after the logo.
+ */
+export function drawYugoLogo(
+  doc: jsPDF,
+  logoBase64: string,
+  options: { x?: number; y?: number; width?: number; margin?: number } = {}
+): number {
+  const margin = options.margin ?? 50;
+  const x = options.x ?? margin;
+  const y = options.y ?? 36;
+  const w = options.width ?? 72;
+  const h = w * 0.28;
+  try {
+    doc.addImage(logoBase64, "PNG", x, y, w, h);
+  } catch {
+    // If image fails, skip
+  }
+  return y + h;
+}
+
+/**
+ * Draw premium Yugo header: optional logo, then wine "YUGO", gold italic "The Art of Moving", gold divider.
+ * If logoBase64 is provided, logo is drawn at top-left and text is right of it; otherwise text is centered.
  * Returns the y position after the header.
  */
 export function drawYugoHeader(
@@ -40,30 +63,44 @@ export function drawYugoHeader(
     centerX?: number;
     width?: number;
     margin?: number;
+    logoBase64?: string;
   } = {}
 ): number {
   const yStart = options.yStart ?? 36;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const centerX = options.centerX ?? pageWidth / 2;
   const margin = options.margin ?? 50;
+  const logoBase64 = options.logoBase64;
+
+  if (logoBase64) {
+    const logoW = 72;
+    const logoH = logoW * 0.28;
+    try {
+      doc.addImage(logoBase64, "PNG", margin, yStart, logoW, logoH);
+    } catch {
+      // skip
+    }
+  }
+
+  const centerX = options.centerX ?? pageWidth / 2;
   const lineEnd = options.width != null ? centerX + options.width / 2 : pageWidth - margin;
   const lineStart = options.width != null ? centerX - options.width / 2 : margin;
 
   doc.setFont(FONT_HERO, "bold");
   doc.setFontSize(24);
   doc.setTextColor(...WINE);
-  doc.text("YUGO", centerX, yStart, { align: "center" });
+  doc.text("YUGO", centerX, yStart + (logoBase64 ? 10 : 0), { align: "center" });
 
   doc.setFont(FONT_HERO, "italic");
   doc.setFontSize(9);
   doc.setTextColor(...GOLD);
-  doc.text("The Art of Moving", centerX, yStart + 6, { align: "center" });
+  doc.text("The Art of Moving", centerX, yStart + (logoBase64 ? 16 : 6), { align: "center" });
 
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
-  doc.line(lineStart, yStart + 12, lineEnd, yStart + 12);
+  const lineY = yStart + (logoBase64 ? 22 : 12);
+  doc.line(lineStart, lineY, lineEnd, lineY);
 
-  return yStart + 22;
+  return lineY + 10;
 }
 
 /**
@@ -140,3 +177,19 @@ export function setHeroTitle(doc: jsPDF, size = 18): void {
   doc.setFontSize(size);
   doc.setTextColor(...WINE);
 }
+
+/**
+ * Draw a subtle box for a key info block (Yugo style: cream border, wine/gold accents).
+ */
+export function drawInfoBox(doc: jsPDF, options: { x: number; y: number; width: number; height: number }): void {
+  doc.setDrawColor(...GOLD_DARK);
+  doc.setLineWidth(0.3);
+  doc.setFillColor(...CREAM_BG);
+  doc.rect(options.x, options.y, options.width, options.height, "FD");
+}
+
+/**
+ * Vertical spacing constant for consistent section gaps.
+ */
+export const SECTION_GAP = 10;
+export const SUB_SECTION_GAP = 6;

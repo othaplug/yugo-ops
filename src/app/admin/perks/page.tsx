@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Plus, X, Gift, Users, Tag } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
@@ -112,6 +113,7 @@ function CreatePerkModal({
 
   const handleSave = async () => {
     if (!form.title.trim()) { toast("Title is required", "x"); return; }
+    if (!form.partner_id?.trim()) { toast("Partner is required", "x"); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/admin/perks", {
@@ -138,18 +140,18 @@ function CreatePerkModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl">
+  const modal = (
+    <div className="fixed inset-0 z-[100] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl shrink-0">
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
           <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Perk</h3>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Partner</label>
-            <select value={form.partner_id} onChange={(e) => set("partner_id", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none">
-              <option value="">Yugo (no partner)</option>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Partner *</label>
+            <select value={form.partner_id} onChange={(e) => set("partner_id", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" required>
+              <option value="">Select a partner</option>
               {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -161,7 +163,7 @@ function CreatePerkModal({
             <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Description</label>
             <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none resize-none" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${["percentage_off", "dollar_off"].includes(form.offer_type) ? "grid-cols-2" : "grid-cols-1"}`}>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Offer Type</label>
               <select value={form.offer_type} onChange={(e) => set("offer_type", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none">
@@ -173,12 +175,21 @@ function CreatePerkModal({
                 <option value="custom">Custom</option>
               </select>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">
-                {form.offer_type === "percentage_off" ? "% Value" : "$ Value"}
-              </label>
-              <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 10" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
-            </div>
+            {["percentage_off", "dollar_off"].includes(form.offer_type) && (
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">
+                  {form.offer_type === "percentage_off" ? "% Value" : "$ Value"}
+                </label>
+                {form.offer_type === "dollar_off" ? (
+                  <div className="flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)] focus-within:border-[var(--gold)]">
+                    <span className="pl-3 text-[12px] text-[var(--tx2)]">$</span>
+                    <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 25" className="w-full py-2 pr-3 pl-0.5 bg-transparent text-[12px] focus:outline-none" />
+                  </div>
+                ) : (
+                  <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 10" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                )}
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -220,6 +231,9 @@ function CreatePerkModal({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -239,7 +253,11 @@ export default function PerksPage() {
       const res = await fetch("/api/admin/organizations/list");
       if (res.ok) {
         const data = await res.json();
-        setPartners((data.organizations || data || []).map((o: { id: string; name: string }) => ({ id: o.id, name: o.name })));
+        const orgs = (data.organizations || data || []) as { id: string; name: string; type?: string }[];
+        const partnersOnly = orgs
+          .filter((o) => o.type !== "b2c" && !(o.name || "").startsWith("_"))
+          .map((o) => ({ id: o.id, name: o.name }));
+        setPartners(partnersOnly);
       }
     } catch { /* ignore */ }
   }, []);

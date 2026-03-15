@@ -20,7 +20,7 @@ export default function CollapsibleSection({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
-    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
+    <div>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}

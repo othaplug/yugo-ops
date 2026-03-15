@@ -47,6 +47,7 @@ export interface Quote {
   to_address: string;
   to_access: string | null;
   move_date: string | null;
+  preferred_time: string | null;
   move_size: string | null;
   tiers: Record<string, TierData> | null;
   custom_price: number | null;

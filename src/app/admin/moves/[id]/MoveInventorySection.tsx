@@ -27,7 +27,15 @@ type ExtraItem = {
 
 const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Other"];
 
-export default function MoveInventorySection({ moveId }: { moveId: string }) {
+function isMoveStatusCompleted(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "completed" || s === "delivered" || s === "done";
+}
+
+export default function MoveInventorySection({ moveId, moveStatus, userRole = "viewer" }: { moveId: string; moveStatus?: string; userRole?: string }) {
+  const isCompleted = isMoveStatusCompleted(moveStatus);
+  const canEditInventory = !isCompleted || userRole === "owner";
+
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,7 +282,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <h3 className="font-heading text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
+      <h3 className="font-heading text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
         Client inventory
       </h3>
       {loading ? (
@@ -311,7 +319,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                           <tr className="border-b border-[var(--brd)]/40">
                             <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
                             <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
-                            <th className="w-16" aria-label="Actions" />
+                            {canEditInventory && <th className="w-16" aria-label="Actions" />}
                           </tr>
                         </thead>
                         <tbody>
@@ -320,7 +328,7 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                             return rows.map((r, ri) => (
                               <tr key={`${item.id}-${ri}`} className="border-b border-[var(--brd)]/30 last:border-0 group hover:bg-[var(--bg)]/20 transition-colors">
                                 <td className="px-3 py-2 text-[12px] font-medium text-[var(--tx)]">
-                                  {ri === 0 && editingId === item.id ? (
+                                  {ri === 0 && canEditInventory && editingId === item.id ? (
                                     <input
                                       type="text"
                                       value={editItemName}
@@ -334,23 +342,25 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                                   )}
                                 </td>
                                 <td className="px-3 py-2 text-[12px] text-[var(--tx2)] text-right tabular-nums">{r.qty}</td>
-                                <td className="px-3 py-2 text-right">
-                                  {ri === 0 && (
-                                    <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100">
-                                      {editingId === item.id ? (
-                                        <>
-                                          <button type="button" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-[var(--grn)] hover:bg-[var(--grdim)]">Save</button>
-                                          <button type="button" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 rounded text-[10px] text-[var(--tx3)]">Cancel</button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <button type="button" onClick={() => startEdit(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" aria-label="Edit"><Pencil className="w-[11px] h-[11px]" /></button>
-                                          <button type="button" onClick={() => handleDelete(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--rdim)] hover:text-[var(--red)]" aria-label="Delete"><Trash2 className="w-[11px] h-[11px]" /></button>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-                                </td>
+                                {canEditInventory && (
+                                  <td className="px-3 py-2 text-right">
+                                    {ri === 0 && (
+                                      <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100">
+                                        {editingId === item.id ? (
+                                          <>
+                                            <button type="button" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-[var(--grn)] hover:bg-[var(--grdim)]">Save</button>
+                                            <button type="button" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 rounded text-[10px] text-[var(--tx3)]">Cancel</button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button type="button" onClick={() => startEdit(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" aria-label="Edit"><Pencil className="w-[11px] h-[11px]" /></button>
+                                            <button type="button" onClick={() => handleDelete(item)} className="p-1 rounded text-[var(--tx3)] hover:bg-[var(--rdim)] hover:text-[var(--red)]" aria-label="Delete"><Trash2 className="w-[11px] h-[11px]" /></button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                )}
                               </tr>
                             ));
                           })}
@@ -421,6 +431,10 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
           )}
 
           <div className="space-y-3 pt-1 border-t border-[var(--brd)]/40">
+            {!canEditInventory ? (
+              <p className="text-[11px] text-[var(--tx3)]">Inventory locked for completed moves. Only owners can add or edit items.</p>
+            ) : (
+              <>
             <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg)]/50 w-fit">
               <button
                 type="button"
@@ -540,6 +554,8 @@ export default function MoveInventorySection({ moveId }: { moveId: string }) {
                   <Plus className="w-[11px] h-[11px]" /> Add
                 </button>
               </div>
+            )}
+              </>
             )}
           </div>
         </>

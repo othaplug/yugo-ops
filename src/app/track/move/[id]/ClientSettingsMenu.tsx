@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { FOREST, GOLD } from "@/lib/client-theme";
+import { FOREST, GOLD, CREAM } from "@/lib/client-theme";
 
 const CLIENT_SETTINGS_KEY = "yugo-client-settings";
 const CLIENT_THEME_KEY = "yugo-client-theme";
@@ -340,7 +340,7 @@ export default function ClientSettingsMenu({
                   type="button"
                   onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                   className="mt-6 px-6 py-2.5 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90"
-                  style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+                  style={{ backgroundColor: GOLD, color: CREAM }}
                 >
                   Done
                 </button>
@@ -580,7 +580,7 @@ export default function ClientSettingsMenu({
                 type="button"
                 onClick={() => setClaimStatusOpen(false)}
                 className="w-full mt-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90"
-                style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+                style={{ backgroundColor: GOLD, color: CREAM }}
               >
                 Done
               </button>

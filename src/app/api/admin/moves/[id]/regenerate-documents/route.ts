@@ -32,8 +32,8 @@ export async function POST(
   }
 
   try {
-    const urls = await generateMovePDFs(moveId);
-    return NextResponse.json({ success: true, ...urls });
+    const paths = await generateMovePDFs(moveId);
+    return NextResponse.json({ success: true, ...paths });
   } catch (e) {
     console.error("[regenerate-documents]", e);
     return NextResponse.json(

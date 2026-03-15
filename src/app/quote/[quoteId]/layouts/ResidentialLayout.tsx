@@ -126,7 +126,19 @@ export default function ResidentialLayout({
                   {badgeText}
                 </div>
               ) : (
-                <div aria-hidden style={{ minHeight: "30px", flexShrink: 0 }} />
+                <div
+                  aria-hidden
+                  className="flex-shrink-0 rounded-t-2xl"
+                  style={{
+                    minHeight: "30px",
+                    backgroundColor:
+                      tierKey === "curated"
+                        ? `${FOREST}CC`
+                        : tierKey === "signature"
+                          ? `${FOREST}CC`
+                          : `${WINE}CC`,
+                  }}
+                />
               )}
 
               {/* Card body — rounded-b-2xl when badge present, full rounded-2xl otherwise */}
@@ -134,14 +146,6 @@ export default function ResidentialLayout({
                 className={`flex flex-col flex-1 min-h-0 overflow-hidden ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
                 style={{
                   backgroundColor: cardBg,
-                  borderWidth: 2,
-                  borderStyle: "solid",
-                  borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
-                  ...(isEstate && {
-                    borderLeftWidth: 3,
-                    borderLeftStyle: "solid",
-                    borderLeftColor: "#5C1A33",
-                  }),
                 }}
               >
               <div className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}>

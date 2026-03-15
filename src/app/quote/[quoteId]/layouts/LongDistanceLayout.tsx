@@ -15,7 +15,7 @@ const DEFAULT_INCLUDES = [
   "Full packing & wrapping service",
   "Climate-controlled dedicated truck",
   "Dedicated 3-person moving crew",
-  "Furniture disassembly & reassembly",
+  "Basic disassembly & reassembly",
   "Floor & wall protection",
   "Real-time GPS tracking throughout transit",
   "$2M cargo insurance included",

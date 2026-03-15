@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatAccessForDisplay } from "@/lib/format-text";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -193,10 +194,12 @@ export async function createMoveFromQuote(
     if (newOrg) organizationId = newOrg.id;
   }
 
-  /* ── 7. Build access notes ── */
+  /* ── 7. Build access notes (display labels, never raw DB values) ── */
+  const fromLabel = formatAccessForDisplay(quote.from_access);
+  const toLabel = formatAccessForDisplay(quote.to_access);
   const accessParts = [
-    quote.from_access && `From: ${quote.from_access.replace(/_/g, " ")}`,
-    quote.to_access && `To: ${quote.to_access.replace(/_/g, " ")}`,
+    fromLabel && `From: ${fromLabel}`,
+    toLabel && `To: ${toLabel}`,
   ].filter(Boolean);
   const accessNotes = accessParts.length > 0 ? accessParts.join("\n") : null;
 

@@ -538,7 +538,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                   <p className="mt-0.5">Price is capped — consider manual adjustment.</p>
                 </div>
               )}
-              {livePreview.factors && typeof livePreview.factors.labour_component === "number" && typeof livePreview.factors.subtotal_before_labour === "number" && livePreview.factors.labour_component > livePreview.factors.subtotal_before_labour && (
+              {livePreview.factors && typeof livePreview.factors.labour_component === "number" && typeof livePreview.factors.subtotal_before_labour === "number" && Number(livePreview.factors.subtotal_before_labour) > 0 && Number(livePreview.factors.labour_component) > 0.5 * Number(livePreview.factors.subtotal_before_labour) && (
                 <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
                   <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ High labour component: {formatCurrency(livePreview.factors.labour_component)}</p>
                   <p className="mt-0.5">This move needs significantly more crew/time than standard.</p>

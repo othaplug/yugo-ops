@@ -55,7 +55,7 @@ interface QuoteResult {
   expires_at?: string;
   factors: Record<string, unknown>;
   addons: { items: { name: string; subtotal: number }[]; total: number };
-  inventory?: { modifier: number; score: number; benchmark: number; totalItems: number };
+  inventory?: { modifier: number; score: number; benchmark: number; totalItems: number; boxCount?: number | null };
   labour?: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null;
   truck?: {
     primary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
@@ -525,6 +525,7 @@ export default function QuoteFormClient({
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
       base.move_size = moveSize;
+      // Send box count when user has specified a value (including 0) so API uses it for score/labour
       if (clientBoxCount !== "" && clientBoxCount != null) base.client_box_count = Number(clientBoxCount);
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
@@ -1477,7 +1478,7 @@ export default function QuoteFormClient({
                         <p className="mt-0.5">Price is capped — consider manual adjustment for this move.</p>
                       </div>
                     )}
-                    {quoteResult.factors && typeof quoteResult.factors.labour_component === "number" && typeof quoteResult.factors.subtotal_before_labour === "number" && quoteResult.factors.labour_component > quoteResult.factors.subtotal_before_labour && (
+                    {quoteResult.factors && typeof quoteResult.factors.labour_component === "number" && typeof quoteResult.factors.subtotal_before_labour === "number" && (quoteResult.factors.subtotal_before_labour as number) > 0 && (quoteResult.factors.labour_component as number) > 0.5 * (quoteResult.factors.subtotal_before_labour as number) && (
                       <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
                         <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ High labour component: {fmtPrice(quoteResult.factors.labour_component as number)}</p>
                         <p className="mt-0.5">This move needs significantly more crew/time than standard.</p>
@@ -1557,16 +1558,19 @@ export default function QuoteFormClient({
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">1 × {quoteResult.labour.truckSize}</span>
                 </div>
-                {quoteResult.inventory && quoteResult.inventory.modifier !== 1.0 && (
+                {quoteResult.inventory && (quoteResult.inventory.modifier !== 1.0 || (quoteResult.inventory.boxCount ?? 0) > 0) && (
                   <div className="pt-2 border-t border-[var(--brd)]/50 flex items-center justify-between text-[10px]">
                     <span className="text-[var(--tx3)]">
                       Inventory volume
                       <span className="ml-1 text-[var(--tx)]">
-                        ({quoteResult.inventory.totalItems} items, {quoteResult.inventory.modifier < 1 ? "below" : "above"} standard)
+                        ({quoteResult.inventory.totalItems} items
+                        {(quoteResult.inventory.boxCount ?? 0) > 0 && ` + ${quoteResult.inventory.boxCount} boxes`}
+                        {quoteResult.inventory.modifier !== 1.0 && `, ${quoteResult.inventory.modifier < 1 ? "below" : "above"} standard`})
                       </span>
                     </span>
                     <span className={`font-mono font-bold ${quoteResult.inventory.modifier < 1 ? "text-emerald-400" : "text-orange-400"}`}>
-                      ×{quoteResult.inventory.modifier.toFixed(2)}
+                      Score {quoteResult.inventory.score.toFixed(1)}
+                      {quoteResult.inventory.modifier !== 1.0 && ` · ×${quoteResult.inventory.modifier.toFixed(2)}`}
                     </span>
                   </div>
                 )}

@@ -315,7 +315,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
+        <h3 className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx3)]">
           Files & Media
         </h3>
         <div className="flex items-center gap-2">

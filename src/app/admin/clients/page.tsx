@@ -11,7 +11,6 @@ export default async function ClientsPage() {
     .from("organizations")
     .select("*")
     .eq("type", "b2c")
-    .neq("id", "b0000000-0000-0000-0000-000000000001") // Exclude Rate Card Templates system org
     .order("name");
 
   const b2cIds = (clients ?? []).map((c) => c.id);

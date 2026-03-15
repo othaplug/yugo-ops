@@ -77,7 +77,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/clients", label: "Contacts", Icon: Icons.users, minRole: "admin" },
       { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, minRole: "admin" },
       { href: "/admin/perks", label: "Perks & Referrals", Icon: Icons.gift, minRole: "admin" },
-      { href: "/admin/messages", label: "Messages", Icon: Icons.messageSquare, minRole: "admin" },
     ],
   },
   {
