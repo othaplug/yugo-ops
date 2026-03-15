@@ -1,5 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
+
+export const metadata = { title: "Realtors" };
+
 import RealtorsTable from "./RealtorsTable";
 import RealtorsMetrics from "./RealtorsMetrics";
 

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         html: `
           <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;padding:32px;border-radius:14px;background:#FAFAFA">
             <div style="text-align:center;margin-bottom:24px">
-              <span style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;letter-spacing:2px;color:#1A1A1A">YUGO+</span>
+              <span style="font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:2px;color:#1A1A1A">YUGO+</span>
             </div>
             <h1 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 12px">Your delivery is on its way</h1>
             <p style="font-size:14px;color:#666;margin:0 0 8px">${delivery.customer_name || "Customer"} — ${delivery.delivery_address || ""}</p>

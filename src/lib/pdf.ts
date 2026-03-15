@@ -2,6 +2,23 @@ import jsPDF from "jspdf";
 import { formatCurrency } from "./format-currency";
 import { formatPhone } from "./phone";
 import autoTable from "jspdf-autotable";
+import {
+  WINE,
+  GOLD,
+  DARK,
+  GRAY,
+  GRAY_LIGHT,
+  CREAM_BG,
+  GREEN,
+  drawYugoHeader,
+  drawYugoFooter,
+  drawTopAccentBar,
+  drawBottomAccentBar,
+  getTableHeadStyles,
+  TABLE_ALT_ROW,
+  setBodyText,
+  setSectionLabel,
+} from "./pdf-brand";
 
 export function generateInvoicePDF(invoice: {
   invoice_number: string;
@@ -11,31 +28,32 @@ export function generateInvoicePDF(invoice: {
   line_items: any[];
 }) {
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
 
-  // Header
-  doc.setFontSize(24);
-  doc.setFont("helvetica", "bold");
-  doc.text("YUGO+", 20, 30);
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("Invoice", 20, 36);
+  drawTopAccentBar(doc, true);
+  let y = drawYugoHeader(doc, { yStart: 24, centerX });
+  doc.setFont("times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...WINE);
+  doc.text("Invoice", centerX, y, { align: "center" });
+  y += 20;
 
-  // Invoice info
-  doc.setFontSize(14);
-  doc.setTextColor(0);
-  doc.text(invoice.invoice_number, 20, 55);
+  setBodyText(doc, 12);
+  doc.text(invoice.invoice_number, 20, y);
+  doc.setTextColor(...GRAY);
   doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`Client: ${invoice.client_name}`, 20, 63);
-  doc.text(`Due: ${invoice.due_date}`, 20, 70);
+  doc.text(`Client: ${invoice.client_name}`, 20, y + 8);
+  doc.text(`Due: ${invoice.due_date}`, 20, y + 16);
+  y += 28;
 
-  // Line items table
   const items = typeof invoice.line_items === "string"
     ? JSON.parse(invoice.line_items)
     : invoice.line_items || [];
 
+  const headStyles = getTableHeadStyles(true);
   autoTable(doc, {
-    startY: 80,
+    startY: y,
     head: [["Description", "Qty", "Rate", "Total"]],
     body: items.map((item: any) => [
       item.d || item.description || "",
@@ -43,23 +61,20 @@ export function generateInvoicePDF(invoice: {
       formatCurrency(item.r ?? item.rate ?? 0),
       formatCurrency((item.q || 1) * (item.r || 0)),
     ]),
-    theme: "grid",
-    headStyles: { fillColor: [201, 169, 98], textColor: [13, 13, 13], fontStyle: "bold" },
-    styles: { fontSize: 10 },
+    theme: "plain",
+    headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE },
+    bodyStyles: { fontSize: 10 },
+    alternateRowStyles: { fillColor: TABLE_ALT_ROW },
   });
 
-  // Total
   const finalY = (doc as any).lastAutoTable?.finalY || 120;
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(0);
+  doc.setTextColor(...DARK);
   doc.text(`Total: ${formatCurrency(invoice.amount)}`, 140, finalY + 15);
 
-  // Footer
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("YUGO+ • opsplus.co", 20, 280);
-
+  drawYugoFooter(doc, { y: 278 });
+  drawBottomAccentBar(doc, true);
   return doc;
 }
 
@@ -393,75 +408,57 @@ export interface MoveInvoiceData {
 
 export function generateMoveInvoicePDF(data: MoveInvoiceData) {
   const doc = new jsPDF();
-  const gold: [number, number, number] = [201, 169, 98];
-  const dark: [number, number, number] = [13, 13, 13];
-  const gray: [number, number, number] = [120, 120, 120];
-  const lightGray: [number, number, number] = [200, 200, 200];
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
   const hstRate = data.hstRate ?? 0.13;
 
-  // Gold accent bar at top
-  doc.setFillColor(...gold);
-  doc.rect(0, 0, 210, 3, "F");
+  drawTopAccentBar(doc, false);
+  let y = drawYugoHeader(doc, { yStart: 24, centerX });
+  doc.setFont("times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...WINE);
+  doc.text("Invoice", centerX, y, { align: "center" });
+  y += 20;
 
-  // Header
-  doc.setFontSize(28);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text("YUGO+", 20, 26);
-  doc.setFontSize(9);
-  doc.setTextColor(...gray);
-  doc.text("Premium Moving Services", 20, 33);
-
-  // Invoice badge
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gold);
-  doc.text("INVOICE", 155, 20);
+  doc.setTextColor(...GOLD);
+  doc.text("INVOICE", 155, 22);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(...dark);
-  doc.text(data.invoiceNumber, 155, 27);
+  doc.setTextColor(...DARK);
+  doc.text(data.invoiceNumber, 155, 29);
   doc.setFontSize(8);
-  doc.setTextColor(...gray);
-  doc.text(`Date: ${data.completedDate}`, 155, 33);
+  doc.setTextColor(...GRAY);
+  doc.text(`Date: ${data.completedDate}`, 155, 35);
 
-  // Divider
-  doc.setDrawColor(...lightGray);
-  doc.line(20, 40, 190, 40);
+  doc.setDrawColor(...GRAY_LIGHT);
+  doc.setLineWidth(0.5);
+  doc.line(20, 42, 190, 42);
+  y = 52;
 
-  let y = 50;
-
-  // Bill To + Move Details side by side
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gold);
+  setSectionLabel(doc, 8);
   doc.text("BILL TO", 20, y);
   doc.text("MOVE DETAILS", 115, y);
   y += 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...dark);
-  doc.setFontSize(9);
+  setBodyText(doc, 9);
   doc.text(data.clientName, 20, y);
   doc.text(`Move: ${data.moveCode}`, 115, y);
   y += 5;
-  if (data.clientEmail) { doc.setFontSize(8); doc.setTextColor(...gray); doc.text(data.clientEmail, 20, y); }
-  doc.setFontSize(8); doc.setTextColor(...gray);
+  if (data.clientEmail) { doc.setFontSize(8); doc.setTextColor(...GRAY); doc.text(data.clientEmail, 20, y); }
+  doc.setFontSize(8); doc.setTextColor(...GRAY);
   doc.text(`Scheduled: ${data.scheduledDate}`, 115, y);
   y += 5;
   if (data.clientPhone) { doc.text(formatPhone(data.clientPhone), 20, y); }
   doc.text(`Completed: ${data.completedDate}`, 115, y);
   y += 10;
 
-  // Addresses
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gold);
+  setSectionLabel(doc, 8);
   doc.text("FROM", 20, y);
   doc.text("TO", 115, y);
   y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...dark);
-  doc.setFontSize(8);
+  setBodyText(doc, 8);
   const fromLines = doc.splitTextToSize(data.fromAddress || "—", 80);
   const toLines = doc.splitTextToSize(data.toAddress || "—", 80);
   doc.text(fromLines, 20, y);
@@ -493,18 +490,13 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
     }
   }
 
+  const headStyles = getTableHeadStyles(true);
   autoTable(doc, {
     startY: y,
     head: [["Description", "Qty", "Rate", "Amount"]],
     body: lineItems,
     theme: "plain",
-    headStyles: {
-      fillColor: [245, 243, 240],
-      textColor: dark,
-      fontStyle: "bold",
-      fontSize: 8,
-      cellPadding: { top: 4, bottom: 4, left: 6, right: 6 },
-    },
+    headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE, cellPadding: { top: 4, bottom: 4, left: 6, right: 6 } },
     bodyStyles: { fontSize: 8, cellPadding: { top: 3, bottom: 3, left: 6, right: 6 } },
     columnStyles: {
       0: { cellWidth: 90 },
@@ -512,12 +504,11 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
       2: { cellWidth: 35, halign: "right" },
       3: { cellWidth: 35, halign: "right" },
     },
-    alternateRowStyles: { fillColor: [252, 251, 249] },
+    alternateRowStyles: { fillColor: TABLE_ALT_ROW },
   });
 
   y = (doc as any).lastAutoTable?.finalY + 8;
 
-  // Summary section
   const subtotal = data.estimate +
     data.extraItems.reduce((s, e) => s + (e.feeCents > 0 ? (e.feeCents / 100) * e.quantity : 0), 0) +
     data.changeFees.reduce((s, c) => s + (c.feeCents > 0 ? c.feeCents / 100 : 0), 0);
@@ -526,32 +517,32 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
 
   const summaryX = 130;
   doc.setFontSize(8);
-  doc.setTextColor(...gray);
+  doc.setTextColor(...GRAY);
   doc.text("Subtotal", summaryX, y);
-  doc.setTextColor(...dark);
+  doc.setTextColor(...DARK);
   doc.text(formatCurrency(subtotal), 185, y, { align: "right" });
   y += 5;
 
-  doc.setTextColor(...gray);
+  doc.setTextColor(...GRAY);
   doc.text(`HST (${(hstRate * 100).toFixed(0)}%)`, summaryX, y);
-  doc.setTextColor(...dark);
+  doc.setTextColor(...DARK);
   doc.text(formatCurrency(hst), 185, y, { align: "right" });
   y += 5;
 
-  doc.setDrawColor(...lightGray);
+  doc.setDrawColor(...GRAY_LIGHT);
   doc.line(summaryX, y, 190, y);
   y += 5;
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
+  doc.setTextColor(...DARK);
   doc.text("Total", summaryX, y);
   doc.text(formatCurrency(total), 185, y, { align: "right" });
   y += 8;
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...gray);
+  doc.setTextColor(...GRAY);
   doc.text(`Deposit Paid: ${formatCurrency(data.depositPaid)}`, summaryX, y);
   y += 5;
 
@@ -561,19 +552,13 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
   doc.text(`Balance Due: ${formatCurrency(data.balanceDue)}`, summaryX, y);
   y += 12;
 
-  // Footer
-  doc.setDrawColor(...lightGray);
+  doc.setDrawColor(...GRAY_LIGHT);
   doc.line(20, 272, 190, 272);
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...gray);
-  doc.text("Thank you for choosing YUGO+. Payment is due upon receipt unless otherwise arranged.", 20, 278);
-  doc.text("YUGO+ Premium Moving • opsplus.co", 20, 283);
-
-  // Gold accent bar at bottom
-  doc.setFillColor(...gold);
-  doc.rect(0, 294, 210, 3, "F");
-
+  drawYugoFooter(doc, { y: 278 });
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  doc.text("Thank you for choosing Yugo. Payment is due upon receipt unless otherwise arranged.", 20, 283);
+  drawBottomAccentBar(doc, false);
   return doc;
 }
 
@@ -615,44 +600,34 @@ export interface MoveSnapshotData {
 
 export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
   const doc = new jsPDF();
-  const gold: [number, number, number] = [201, 169, 98];
-  const dark: [number, number, number] = [13, 13, 13];
-  const gray: [number, number, number] = [120, 120, 120];
-  const lightGray: [number, number, number] = [200, 200, 200];
-  const green: [number, number, number] = [45, 159, 90];
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
 
-  // Gold accent bar
-  doc.setFillColor(...gold);
-  doc.rect(0, 0, 210, 3, "F");
-
-  // Header
-  doc.setFontSize(28);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text("YUGO+", 20, 26);
-  doc.setFontSize(9);
-  doc.setTextColor(...gray);
-  doc.text("Move Snapshot", 20, 33);
+  drawTopAccentBar(doc, true);
+  let y = drawYugoHeader(doc, { yStart: 24, centerX });
+  doc.setFont("times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...WINE);
+  doc.text("Move Snapshot", centerX, y, { align: "center" });
+  y += 18;
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text(data.moveCode, 155, 22);
+  doc.setTextColor(...DARK);
+  doc.text(data.moveCode, 155, y - 8);
   doc.setFontSize(8);
-  doc.setTextColor(...green);
-  doc.text("COMPLETED", 155, 29);
-  doc.setTextColor(...gray);
-  doc.text(data.completedDate, 155, 35);
+  doc.setTextColor(...GREEN);
+  doc.text("COMPLETED", 155, y - 2);
+  doc.setTextColor(...GRAY);
+  doc.text(data.completedDate, 155, y + 4);
 
-  doc.setDrawColor(...lightGray);
-  doc.line(20, 40, 190, 40);
-  let y = 50;
+  doc.setDrawColor(...GRAY_LIGHT);
+  doc.line(20, y + 12, 190, y + 12);
+  y += 22;
 
   function sectionHeader(title: string) {
     if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gold);
+    setSectionLabel(doc, 8);
     doc.text(title, 20, y);
     y += 6;
   }
@@ -661,9 +636,9 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
     if (y > 275) { doc.addPage(); y = 20; }
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...gray);
+    doc.setTextColor(...GRAY);
     doc.text(label, x, y);
-    doc.setTextColor(...dark);
+    doc.setTextColor(...DARK);
     doc.text(value, x + 42, y);
     y += 5;
   }
@@ -713,15 +688,16 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       const statusLabel = cp.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
       return [time, statusLabel, cp.note || ""];
     });
+    const headStyles = getTableHeadStyles(true);
     autoTable(doc, {
       startY: y,
       head: [["Time", "Status", "Note"]],
       body: cpRows,
       theme: "plain",
-      headStyles: { fillColor: [245, 243, 240], textColor: dark, fontStyle: "bold", fontSize: 7 },
+      headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE, fontSize: 7 },
       bodyStyles: { fontSize: 7, cellPadding: 2 },
       columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 50 } },
-      alternateRowStyles: { fillColor: [252, 251, 249] },
+      alternateRowStyles: { fillColor: TABLE_ALT_ROW },
     });
     y = (doc as any).lastAutoTable?.finalY + 8;
   }
@@ -735,14 +711,15 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       e.status.charAt(0).toUpperCase() + e.status.slice(1),
       e.feeCents ? formatCurrency(e.feeCents / 100) : "—",
     ]);
+    const headStylesExtra = getTableHeadStyles(true);
     autoTable(doc, {
       startY: y,
       head: [["Item", "Qty", "Status", "Fee"]],
       body: extraRows,
       theme: "plain",
-      headStyles: { fillColor: [245, 243, 240], textColor: dark, fontStyle: "bold", fontSize: 7 },
+      headStyles: { ...headStylesExtra, fillColor: CREAM_BG, textColor: WINE, fontSize: 7 },
       bodyStyles: { fontSize: 7, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [252, 251, 249] },
+      alternateRowStyles: { fillColor: TABLE_ALT_ROW },
     });
     y = (doc as any).lastAutoTable?.finalY + 8;
   }
@@ -756,14 +733,15 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       c.status.charAt(0).toUpperCase() + c.status.slice(1),
       c.feeCents ? formatCurrency(c.feeCents / 100) : "—",
     ]);
+    const headStylesChange = getTableHeadStyles(true);
     autoTable(doc, {
       startY: y,
       head: [["Type", "Details", "Status", "Fee"]],
       body: changeRows,
       theme: "plain",
-      headStyles: { fillColor: [245, 243, 240], textColor: dark, fontStyle: "bold", fontSize: 7 },
+      headStyles: { ...headStylesChange, fillColor: CREAM_BG, textColor: WINE, fontSize: 7 },
       bodyStyles: { fontSize: 7, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [252, 251, 249] },
+      alternateRowStyles: { fillColor: TABLE_ALT_ROW },
     });
     y = (doc as any).lastAutoTable?.finalY + 8;
   }
@@ -779,14 +757,13 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       doc.text(`${inc.type}${inc.severity ? ` (${inc.severity})` : ""}`, 20, y);
       y += 4;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...dark);
+      doc.setTextColor(...DARK);
       const lines = doc.splitTextToSize(inc.description, 170);
       doc.text(lines, 20, y);
       y += lines.length * 4 + 4;
     }
   }
 
-  // Sign-off
   if (data.signOff) {
     sectionHeader("CLIENT SIGN-OFF");
     infoLine("Signed by", data.signOff.signedBy);
@@ -802,11 +779,11 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       y += 2;
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...gray);
+      doc.setTextColor(...GRAY);
       doc.text("Feedback:", 20, y);
       y += 4;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...dark);
+      doc.setTextColor(...DARK);
       const lines = doc.splitTextToSize(data.signOff.feedbackNote, 170);
       doc.text(lines, 20, y);
       y += lines.length * 4 + 4;
@@ -817,26 +794,21 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       doc.text("Exceptions:", 20, y);
       y += 4;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...dark);
+      doc.setTextColor(...DARK);
       const lines = doc.splitTextToSize(data.signOff.exceptions, 170);
       doc.text(lines, 20, y);
       y += lines.length * 4 + 4;
     }
   }
 
-  // Footer
   if (y > 265) { doc.addPage(); }
-  doc.setDrawColor(...lightGray);
+  doc.setDrawColor(...GRAY_LIGHT);
   doc.line(20, 272, 190, 272);
+  drawYugoFooter(doc, { y: 278 });
   doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...gray);
-  doc.text("This document is an automated summary of your move. For questions, contact YUGO+ support.", 20, 278);
-  doc.text(`Generated ${new Date().toLocaleString("en-US")} • YUGO Premium Moving • opsplus.co`, 20, 283);
-
-  doc.setFillColor(...gold);
-  doc.rect(0, 294, 210, 3, "F");
-
+  doc.setTextColor(...GRAY);
+  doc.text("This document is an automated summary of your move. For questions, contact Yugo support.", 20, 283);
+  drawBottomAccentBar(doc, true);
   return doc;
 }
 

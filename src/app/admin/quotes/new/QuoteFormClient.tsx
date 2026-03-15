@@ -69,6 +69,7 @@ interface QuoteResult {
     upgrades: Record<string, { price: number; to_tier: string; assumed_shipment_value: number } | null>;
     tiers: unknown[];
   };
+  inventory_warnings?: string[];
 }
 
 interface ItemWeight {
@@ -356,6 +357,10 @@ export default function QuoteFormClient({
     return inventoryItems.reduce((sum, i) => sum + i.quantity, 0);
   }, [inventoryItems]);
 
+  const clientBoxCountNum = Number(clientBoxCount) || 0;
+  const boxScore = clientBoxCountNum * 0.3;
+  const inventoryScoreWithBoxes = inventoryScore + boxScore;
+
   // ── HubSpot pre-fill ──────────────────────
   useEffect(() => {
     if (!hubspotDealId || prefillDone.current) return;
@@ -520,7 +525,7 @@ export default function QuoteFormClient({
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
       base.move_size = moveSize;
-      if (clientBoxCount) base.client_box_count = Number(clientBoxCount);
+      if (clientBoxCount !== "" && clientBoxCount != null) base.client_box_count = Number(clientBoxCount);
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map((i) => ({
@@ -1454,6 +1459,30 @@ export default function QuoteFormClient({
                     )}
 
                     <FactorsDisplayCollapsible factors={quoteResult.factors} distance={quoteResult.distance_km} time={quoteResult.drive_time_min} showMultipliers={userRole === "owner" || userRole === "admin"} />
+
+                    {/* FIX 6: Algorithm anomaly warnings for coordinator review */}
+                    {(quoteResult.inventory_warnings?.length ?? 0) > 0 && (
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1.5 text-[11px]">
+                        <p className="font-semibold text-amber-600 dark:text-amber-400">⚠ Check inventory quantities</p>
+                        <ul className="list-disc list-inside text-[var(--tx2)]">
+                          {quoteResult.inventory_warnings!.map((w, i) => (
+                            <li key={i}>{w}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {quoteResult.factors && typeof quoteResult.factors.inventory_modifier === "number" && typeof quoteResult.factors.inventory_max_modifier === "number" && quoteResult.factors.inventory_modifier >= quoteResult.factors.inventory_max_modifier && (
+                      <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
+                        <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ Inventory at volume ceiling (×{Number(quoteResult.factors.inventory_max_modifier).toFixed(2)})</p>
+                        <p className="mt-0.5">Price is capped — consider manual adjustment for this move.</p>
+                      </div>
+                    )}
+                    {quoteResult.factors && typeof quoteResult.factors.labour_component === "number" && typeof quoteResult.factors.subtotal_before_labour === "number" && quoteResult.factors.labour_component > quoteResult.factors.subtotal_before_labour && (
+                      <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
+                        <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ High labour component: {fmtPrice(quoteResult.factors.labour_component as number)}</p>
+                        <p className="mt-0.5">This move needs significantly more crew/time than standard.</p>
+                      </div>
+                    )}
                   </>
                 ) : (
                   /* ── Optimistic live preview ── */
@@ -1596,11 +1625,11 @@ export default function QuoteFormClient({
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory Summary</h4>
                 <div className="flex items-center justify-between">
                   <span className="text-[var(--tx3)]">Items</span>
-                  <span className="text-[var(--tx)] font-medium">{inventoryTotalItems}</span>
+                  <span className="text-[var(--tx)] font-medium">{inventoryTotalItems}{clientBoxCountNum > 0 ? ` + ${clientBoxCountNum} boxes` : ""}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[var(--tx3)]">Item score</span>
-                  <span className="text-[var(--tx)] font-medium tabular-nums">{inventoryScore.toFixed(1)}</span>
+                  <span className="text-[var(--tx3)]">Score</span>
+                  <span className="text-[var(--tx)] font-medium tabular-nums">{inventoryScoreWithBoxes.toFixed(1)}</span>
                 </div>
                 <p className="text-[9px] text-[var(--tx3)] italic">Generate quote to see volume modifier and labour estimate.</p>
               </div>

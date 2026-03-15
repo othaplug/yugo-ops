@@ -1,7 +1,7 @@
 import QuoteWidgetClient from "./QuoteWidgetClient";
 
 export const metadata = {
-  title: "Yugo+ | Instant Quote",
+  title: "Instant Quote",
   description: "Get a ballpark estimate for your move in under a minute.",
 };
 

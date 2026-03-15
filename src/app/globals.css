@@ -310,6 +310,11 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   font-weight: 400 !important;
 }
 
+/* Design system: all serif type uses Instrument Serif (no Georgia). */
+.font-serif {
+  font-family: var(--font-hero);
+}
+
 .field-input {
   width: 100%;
   padding: 10px 12px;

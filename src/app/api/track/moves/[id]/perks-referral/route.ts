@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { createClientReferralIfNeeded } from "@/lib/client-referral";
 
 export async function GET(
   req: NextRequest,
@@ -43,8 +44,22 @@ export async function GET(
       : Promise.resolve({ data: null, error: null }),
   ]);
 
+  let referral = referralRes.data ?? null;
+  const isCompleted = move.status === "completed" || move.status === "delivered";
+  if (isCompleted && move.client_email && !referral) {
+    await createClientReferralIfNeeded(admin, move.id);
+    const { data: newRef } = await admin
+      .from("client_referrals")
+      .select("id, referral_code, referrer_credit, referred_discount, status, used_at, created_at")
+      .eq("referrer_email", move.client_email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    referral = newRef ?? null;
+  }
+
   return NextResponse.json({
     perks: perksRes.data ?? [],
-    referral: referralRes.data ?? null,
+    referral,
   });
 }

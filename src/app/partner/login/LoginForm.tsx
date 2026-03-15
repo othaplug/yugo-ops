@@ -144,7 +144,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
               )}
 
               <div style={{ marginBottom: 32 }}>
-                <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 32, fontWeight: 500, color: "#1A1714", marginBottom: 6, lineHeight: 1.2 }}>
+                <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 32, fontWeight: 500, color: "#1A1714", marginBottom: 6, lineHeight: 1.2 }}>
                   {title}
                 </h1>
                 <p style={{ fontSize: 14, color: "#888", lineHeight: 1.5 }}>{subtitle}</p>
@@ -202,7 +202,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
           {mode === "forgot" && (
             <>
               <div style={{ marginBottom: 28 }}>
-                <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1A1714", marginBottom: 6 }}>Reset your password</h1>
+                <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 28, fontWeight: 500, color: "#1A1714", marginBottom: 6 }}>Reset your password</h1>
                 <p style={{ fontSize: 14, color: "#888" }}>Enter your email and we&apos;ll send you a temporary password and login link</p>
               </div>
               {error && (
@@ -238,7 +238,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                     <path d="M22 7l-10 7L2 7" />
                   </svg>
                 </div>
-                <h2 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#1A1714", marginBottom: 6 }}>Check your email</h2>
+                <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#1A1714", marginBottom: 6 }}>Check your email</h2>
                 <p style={{ fontSize: 13, color: "#888" }}>If that email is on file, we sent a temporary password and login link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
               </div>
               <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, textAlign: "center" }}>
@@ -293,7 +293,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
             </div>
           </div>
 
-          <h2 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, color: "#E8E5E0", marginBottom: 8, lineHeight: 1.3 }}>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 28, color: "#E8E5E0", marginBottom: 8, lineHeight: 1.3 }}>
             Your delivery operations,<br />all in one place
           </h2>
           <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 6 }}>

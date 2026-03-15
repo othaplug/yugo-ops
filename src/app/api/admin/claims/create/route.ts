@@ -2,45 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
-
-function claimCreatedHtml(
-  claimNumber: string,
-  clientName: string,
-  itemCount: number,
-  totalClaimed: number,
-): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#FAF7F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
-  <div style="text-align:center;margin-bottom:32px;">
-    <span style="font-size:20px;font-weight:700;color:#722F37;letter-spacing:1px;">YUGO+</span>
-  </div>
-  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-    <h1 style="font-size:22px;color:#1a1a1a;margin:0 0 8px;">Claim Filed on Your Behalf</h1>
-    <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
-      Hi ${clientName}, a damage claim <strong>${claimNumber}</strong> has been filed on your behalf by our team.
-    </p>
-    <div style="background:#FAF7F2;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="font-size:14px;color:#555;margin:0 0 4px;">${itemCount} item${itemCount !== 1 ? "s" : ""} claimed</p>
-      <p style="font-size:22px;font-weight:700;color:#722F37;margin:0;">
-        $${totalClaimed.toLocaleString()} total declared value
-      </p>
-    </div>
-    <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 16px;">
-      Our team is already reviewing this claim. We'll contact you with updates and next steps.
-    </p>
-    <p style="font-size:13px;color:#888;margin:0;">Reference: ${claimNumber}</p>
-  </div>
-  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:24px;">
-    © ${new Date().getFullYear()} Yugo Moving · Toronto, ON
-  </p>
-</div>
-</body>
-</html>`;
-}
+import { newClaimAdminEmailHtml } from "@/lib/email/admin-templates";
+import { claimCreatedByAdminEmailHtml } from "@/lib/email-templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -130,12 +93,21 @@ export async function POST(req: NextRequest) {
     sendEmail({
       to: clientEmail.toLowerCase(),
       subject: `Claim ${claim.claim_number} Filed — Yugo+`,
-      html: claimCreatedHtml(claim.claim_number, clientName, items.length, totalClaimedValue),
+      html: claimCreatedByAdminEmailHtml(claim.claim_number, clientName, items.length, totalClaimedValue),
     }).catch(() => {});
 
     notifyAdmins("quote_requested", {
       subject: `New Claim: ${claim.claim_number}`,
       body: `Admin-created claim for ${clientName}. ${items.length} item(s), $${totalClaimedValue.toLocaleString()} total. ${valuationTier || "released"} valuation.`,
+      html: newClaimAdminEmailHtml({
+        claimNumber: claim.claim_number,
+        clientName,
+        itemCount: items.length,
+        totalClaimed: totalClaimedValue,
+        valuationTier: valuationTier || "released",
+        claimId: claim.id,
+        adminCreated: true,
+      }),
     }).catch(() => {});
 
     return NextResponse.json({

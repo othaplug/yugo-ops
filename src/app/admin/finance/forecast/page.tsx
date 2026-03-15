@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import ForecastClient from "./ForecastClient";
 
+export const metadata = { title: "Forecast" };
 export const dynamic = "force-dynamic";
 
 export default async function ForecastPage() {

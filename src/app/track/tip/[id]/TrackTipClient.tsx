@@ -127,8 +127,8 @@ export default function TrackTipClient({
             100% goes to your crew.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-wrap gap-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="flex flex-wrap gap-1.5">
               {[5, 10, 15, 20].map((amt) => (
                 <button
                   key={amt}
@@ -137,46 +137,41 @@ export default function TrackTipClient({
                     setAmount(amt);
                     setCustomAmount("");
                   }}
-                  className="px-4 py-2.5 rounded-full text-[13px] font-semibold border transition-colors"
+                  className="px-3 py-2 rounded-lg text-[12px] font-semibold border transition-colors"
                   style={{
-                    borderColor: amount === amt ? GOLD : `${GOLD}40`,
+                    borderColor: amount === amt ? GOLD : "rgba(255,255,255,0.15)",
                     color: GOLD,
-                    backgroundColor: amount === amt ? `${GOLD}15` : "transparent",
+                    backgroundColor: amount === amt ? `${GOLD}18` : "transparent",
                   }}
                 >
                   ${amt}
                 </button>
               ))}
             </div>
-            <div>
-              <label
-                htmlFor="custom-tip"
-                className="block text-[12px] font-medium text-[#B0ADA8] mb-1"
-              >
-                Custom amount ($)
-              </label>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-[#B0ADA8] shrink-0">Custom amount</span>
               <input
                 id="custom-tip"
                 type="number"
                 min="1"
                 step="0.01"
-                placeholder="e.g. 25"
+                placeholder="0"
                 value={customAmount}
                 onChange={(e) => {
                   setCustomAmount(e.target.value);
                   setAmount(null);
                 }}
-                className="w-full px-4 py-3 rounded-xl border bg-[#1A1A1A] text-[#E8E5E0] text-[14px] outline-none"
+                className="flex-1 px-3 py-2 rounded-lg border bg-[#1A1A1A] text-[#E8E5E0] text-[13px] outline-none min-w-0"
                 style={{ borderColor: "#2A2A2A" }}
               />
             </div>
             {error && (
-              <p className="text-[13px] text-red-400">{error}</p>
+              <p className="text-[11px] text-red-400">{error}</p>
             )}
             <button
               type="submit"
               disabled={!canSubmit}
-              className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-40 transition-all"
+              className="w-full py-2.5 rounded-full text-[12px] font-semibold text-white disabled:opacity-40 transition-all"
               style={{ backgroundColor: FOREST }}
             >
               {submitting ? "Processing…" : `Tip $${effectiveAmount.toFixed(2)}`}

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 export const metadata = {
-  title: "Yugo+ | Sign In",
+  title: "Sign In",
   description: "Sign in to your Yugo+ operations dashboard",
 };
 

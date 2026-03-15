@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+export const metadata = { title: "Command Center" };
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString } from "@/lib/business-timezone";
 import AdminPageClient from "./AdminPageClient";

@@ -3,6 +3,17 @@ import { notFound, redirect } from "next/navigation";
 import { isUuid, getDeliveryDetailPath } from "@/lib/move-code";
 import DeliveryDetailClient from "./DeliveryDetailClient";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const slug = decodeURIComponent((await params).id?.trim() || "");
+  const db = createAdminClient();
+  const byUuid = isUuid(slug);
+  const { data: delivery } = byUuid
+    ? await db.from("deliveries").select("delivery_number").eq("id", slug).single()
+    : await db.from("deliveries").select("delivery_number").ilike("delivery_number", slug).single();
+  const name = delivery?.delivery_number ? `Delivery ${delivery.delivery_number}` : "Delivery";
+  return { title: name };
+}
+
 export default async function DeliveryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const slug = decodeURIComponent((await params).id?.trim() || "");
   const db = createAdminClient();

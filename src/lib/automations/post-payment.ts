@@ -402,16 +402,24 @@ export async function runPostPaymentActions(
         if (tier !== "estate") return;
 
         const { notifyAdmins } = await import("@/lib/notifications/dispatch");
+        const { estateBookingAdminEmailHtml } = await import("@/lib/email/admin-templates");
         const dateLabel = quote.move_date
           ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })
           : "TBD";
 
         await notifyAdmins("quote_accepted", {
           subject: `Estate booking: ${clientName} — ${dateLabel} — ${formatCurrency(totalWithTax)}`,
+          body: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
           description: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
           moveId: input.moveId,
           clientName,
           amount: totalWithTax,
+          html: estateBookingAdminEmailHtml({
+            clientName,
+            dateLabel,
+            totalFormatted: formatCurrency(totalWithTax),
+            moveId: input.moveId,
+          }),
         });
       },
     },

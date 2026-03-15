@@ -4,6 +4,7 @@ import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
 import { getAdminNotificationEmail } from "@/lib/config";
+import { tipReceivedAdminEmailHtml } from "@/lib/email/admin-templates";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 
@@ -118,11 +119,13 @@ export async function POST(req: NextRequest) {
     sendEmail({
       to: adminEmail,
       subject: `Tip received: $${amountDollars.toFixed(2)} from ${move.client_name || "client"} for ${crewName || "crew"}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-        <h2 style="color:#5C1A33;margin:0 0 12px">Tip Received</h2>
-        <p><strong>${move.client_name || "A client"}</strong> left a <strong>$${amountDollars.toFixed(2)} tip</strong> for <strong>${crewName || "the crew"}</strong>.</p>
-        <p style="color:#666;font-size:14px">Move: ${move.move_code || moveId}<br/>Net after processing: $${netAmount.toFixed(2)}</p>
-      </div>`,
+      html: tipReceivedAdminEmailHtml({
+        clientName: move.client_name || "A client",
+        amount: `$${amountDollars.toFixed(2)}`,
+        crewName: crewName || "the crew",
+        moveCode: move.move_code || moveId,
+        netAmount: `$${netAmount.toFixed(2)}`,
+      }),
     }).catch(() => {});
 
     return NextResponse.json({

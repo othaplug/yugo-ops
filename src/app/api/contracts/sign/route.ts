@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
 import jsPDF from "jspdf";
+import {
+  WINE,
+  GOLD,
+  DARK,
+  GRAY,
+  GRAY_LIGHT,
+  drawYugoHeader,
+  drawYugoFooter,
+  drawTopAccentBar,
+  drawBottomAccentBar,
+  setSectionLabel,
+  setBodyText,
+  setHeroTitle,
+} from "@/lib/pdf-brand";
 
 interface ContractAddonData {
   name: string;
@@ -81,28 +95,15 @@ function generateContractPdf(
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
-  let y = 25;
+  const centerX = pageWidth / 2;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("YUGO+", pageWidth / 2, y, { align: "center" });
-  y += 7;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("The Art of Moving", pageWidth / 2, y, { align: "center" });
-  y += 5;
-
-  doc.setDrawColor(184, 150, 46);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
+  drawTopAccentBar(doc, true);
+  let y = drawYugoHeader(doc, { yStart: 18, centerX, margin });
+  setHeroTitle(doc, 14);
+  doc.text("Service Agreement", centerX, y, { align: "center" });
   y += 10;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Service Agreement", pageWidth / 2, y, { align: "center" });
-  y += 12;
-
-  doc.setFontSize(10);
+  setBodyText(doc, 10);
   doc.text(`Quote: ${payload.quote_id}`, margin, y);
   doc.setFont("helvetica", "normal");
   doc.text(
@@ -115,13 +116,10 @@ function generateContractPdf(
   doc.text(`Client: ${payload.typed_name}`, margin, y);
   y += 10;
 
-  /* ── Service Summary ── */
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  setSectionLabel(doc, 12);
   doc.text("Service Summary", margin, y);
   y += 8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  setBodyText(doc, 10);
 
   const svcLabel = cd.service_type
     .replace(/_/g, " ")
@@ -145,10 +143,9 @@ function generateContractPdf(
     y += wrapped.length * 5;
   }
 
-  /* ── Add-ons ── */
   if (cd.addons?.length > 0) {
     y += 3;
-    doc.setFont("helvetica", "bold");
+    setSectionLabel(doc, 10);
     doc.text("Add-ons:", margin, y);
     y += 6;
     doc.setFont("helvetica", "normal");
@@ -163,14 +160,11 @@ function generateContractPdf(
     y += 3;
   }
 
-  /* ── Financial Summary ── */
   y += 5;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  setSectionLabel(doc, 12);
   doc.text("Financial Summary", margin, y);
   y += 8;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  setBodyText(doc, 10);
   doc.text(`Total Before Tax: ${fmtCurrency(cd.total_before_tax)}`, margin, y);
   y += 5;
   doc.text(`HST (13%): ${fmtCurrency(cd.tax)}`, margin, y);
@@ -198,11 +192,10 @@ function generateContractPdf(
     }
   };
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  setSectionLabel(doc, 12);
   doc.text("Terms & Conditions", margin, y);
   y += 8;
-  doc.setFontSize(9);
+  setBodyText(doc, 9);
 
   const terms = [
     {
@@ -242,19 +235,17 @@ function generateContractPdf(
     y += lines.length * 4.5 + 4;
   }
 
-  /* ── Signature Block ── */
   checkPageBreak();
   y += 5;
-  doc.setDrawColor(184, 150, 46);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  setSectionLabel(doc, 12);
   doc.text("Electronic Signature", margin, y);
   y += 8;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  setBodyText(doc, 10);
   doc.text(`Signed by: ${payload.typed_name}`, margin, y);
   y += 6;
   doc.text(
@@ -273,7 +264,7 @@ function generateContractPdf(
   doc.text(uaLines, margin, y);
 
   doc.setFontSize(7);
-  doc.setTextColor(128, 128, 128);
+  doc.setTextColor(...GRAY);
   doc.text(
     "This document is a legally binding agreement under the Ontario Electronic Commerce Act, 2000.",
     pageWidth / 2,
@@ -281,6 +272,8 @@ function generateContractPdf(
     { align: "center" },
   );
 
+  drawYugoFooter(doc, { y: 282 });
+  drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
 }
 

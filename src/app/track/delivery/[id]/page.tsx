@@ -6,7 +6,7 @@ import { isUuid } from "@/lib/move-code";
 import TrackDeliveryClient from "./TrackDeliveryClient";
 
 export const metadata: Metadata = {
-  title: "Yugo+ | Track Your Delivery",
+  title: "Track Your Delivery",
   robots: "noindex, nofollow",
 };
 export const dynamic = "force-dynamic";

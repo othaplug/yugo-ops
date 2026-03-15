@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, X, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Upload, FileText, Image, X, ChevronDown, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
 import { useToast } from "../../components/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ function FileGroup({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function MoveFilesSection({ moveId }: { moveId: string }) {
+export default function MoveFilesSection({ moveId, moveStatus }: { moveId: string; moveStatus?: string }) {
   const [photos, setPhotos] = useState<FileEntry[]>([]);
   const [crewPhotos, setCrewPhotos] = useState<FileEntry[]>([]);
   const [podFiles, setPodFiles] = useState<FileEntry[]>([]);
@@ -185,8 +185,10 @@ export default function MoveFilesSection({ moveId }: { moveId: string }) {
   const [adminFiles, setAdminFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const isCompleted = moveStatus === "completed" || moveStatus === "delivered";
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -246,8 +248,8 @@ export default function MoveFilesSection({ moveId }: { moveId: string }) {
         setPodFiles([]);
       }
 
-      // Documents
-      const docArr: FileEntry[] = (docsRes.documents ?? []).map((d: { id: string; view_url?: string; storage_path?: string; external_url?: string; title: string; type: string; created_at?: string }) => ({
+      // Documents = move_documents + system-generated PDFs from move_files
+      const docFromApi: FileEntry[] = (docsRes.documents ?? []).map((d: { id: string; view_url?: string; storage_path?: string; external_url?: string; title: string; type: string; created_at?: string }) => ({
         id: d.id,
         url: d.view_url || d.storage_path || d.external_url || "#",
         name: d.title || d.type,
@@ -255,10 +257,20 @@ export default function MoveFilesSection({ moveId }: { moveId: string }) {
         badge: "doc" as const,
         date: d.created_at || new Date().toISOString(),
       }));
-      setDocuments(docArr);
+      const systemFiles = (adminRes.files ?? []).filter((f: { source?: string }) => f.source === "system");
+      const docFromSystem: FileEntry[] = systemFiles.map((f: { id: string; file_url: string; file_name: string; file_type: string; created_at: string }) => ({
+        id: f.id,
+        url: f.file_url,
+        name: f.file_name,
+        type: isPdf(f.file_url, f.file_type) ? "pdf" : "other",
+        badge: "doc" as const,
+        date: f.created_at,
+      }));
+      setDocuments([...docFromSystem, ...docFromApi]);
 
-      // Admin uploads
-      const adminArr: FileEntry[] = (adminRes.files ?? []).map((f: { id: string; file_url: string; file_name: string; file_type: string; created_at: string }) => ({
+      // Admin uploads (exclude system-generated so they only show under Documents)
+      const adminOnly = (adminRes.files ?? []).filter((f: { source?: string }) => f.source !== "system");
+      const adminArr: FileEntry[] = adminOnly.map((f: { id: string; file_url: string; file_name: string; file_type: string; created_at: string }) => ({
         id: f.id,
         url: f.file_url,
         name: f.file_name,
@@ -302,22 +314,51 @@ export default function MoveFilesSection({ moveId }: { moveId: string }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
           Files & Media
         </h3>
-        <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
-          <Upload className="w-[11px] h-[11px]" />
-          {uploading ? "Uploading…" : "Upload File"}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            onChange={handleUpload}
-            disabled={uploading}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          {isCompleted && (
+            <button
+              type="button"
+              onClick={async () => {
+                setRegenerating(true);
+                try {
+                  const res = await fetch(`/api/admin/moves/${moveId}/regenerate-documents`, { method: "POST" });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    toast(data.error || "Regenerate failed", "x");
+                    return;
+                  }
+                  toast("Documents regenerated", "check");
+                  fetchAll();
+                } catch {
+                  toast("Regenerate failed", "x");
+                } finally {
+                  setRegenerating(false);
+                }
+              }}
+              disabled={regenerating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--brd)] transition-colors disabled:opacity-60"
+            >
+              <RefreshCw className={`w-[11px] h-[11px] ${regenerating ? "animate-spin" : ""}`} />
+              {regenerating ? "Regenerating…" : "Regenerate Documents"}
+            </button>
+          )}
+          <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+            <Upload className="w-[11px] h-[11px]" />
+            {uploading ? "Uploading…" : "Upload File"}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={handleUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
 
       {loading ? (

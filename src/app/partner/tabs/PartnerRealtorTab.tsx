@@ -72,7 +72,7 @@ export default function PartnerRealtorTab({
                   {statusLabel}
                 </span>
                 {r.commission > 0 && (
-                  <span className="text-[16px] font-bold text-[#2D9F5A] font-serif">{formatCurrency(r.commission)}</span>
+                  <span className="text-[16px] font-bold text-[#2D9F5A] font-hero">{formatCurrency(r.commission)}</span>
                 )}
               </div>
             </div>

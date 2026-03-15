@@ -279,7 +279,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <div className="flex items-center gap-1.5">
           <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
           <span className="text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50">BETA</span>
-          <span className="text-[13px] text-[var(--tx3)] font-medium hidden sm:inline ml-1.5">{orgName}</span>
+          <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">{orgName}</span>
         </div>
         <div className="flex items-center gap-3">
           <PartnerNotificationBell

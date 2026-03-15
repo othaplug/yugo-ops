@@ -1,10 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
-
-export const dynamic = "force-dynamic";
 import { isMoveIdUuid, getMoveDetailPath } from "@/lib/move-code";
 import MoveDetailClient from "./MoveDetailClient";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const slug = (await params).id?.trim() || "";
+  const db = createAdminClient();
+  const byUuid = isMoveIdUuid(slug);
+  const { data: move } = await (byUuid
+    ? db.from("moves").select("move_code").eq("id", slug).single()
+    : db.from("moves").select("move_code").ilike("move_code", slug.replace(/^#/, "").toUpperCase()).single());
+  const name = move?.move_code ? `Move ${move.move_code}` : "Move";
+  return { title: name };
+}
 
 export default async function MoveDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const slug = (await params).id?.trim() || "";

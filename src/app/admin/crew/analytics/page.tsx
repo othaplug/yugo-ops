@@ -2,6 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString, getLocalDateString } from "@/lib/business-timezone";
 import CrewAnalyticsClient from "./CrewAnalyticsClient";
 
+export const metadata = { title: "Crew Analytics" };
+
 export default async function CrewAnalyticsPage({
   searchParams,
 }: {

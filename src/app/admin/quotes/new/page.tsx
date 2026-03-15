@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import QuoteFormClient from "./QuoteFormClient";
 
+export const metadata = { title: "New Quote" };
+
 export default async function NewQuotePage() {
   const supabase = await createClient();
   const db = createAdminClient();

@@ -105,7 +105,7 @@ export default function CrewSetupPage() {
             </div>
           </div>
 
-          <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6 }}>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6 }}>
             iPad Setup
           </div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 32 }}>

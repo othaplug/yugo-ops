@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import NewDeliveryChoiceClient from "./NewDeliveryChoiceClient";
 
+export const metadata = { title: "Schedule Delivery" };
+
 export default async function NewDeliveryPage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: crews }] = await Promise.all([

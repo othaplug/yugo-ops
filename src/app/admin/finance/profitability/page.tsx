@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import ProfitabilityClient from "./ProfitabilityClient";
 
+export const metadata = { title: "Profitability" };
 export const dynamic = "force-dynamic";
 
 export default async function ProfitabilityPage() {

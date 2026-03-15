@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import CreateMoveForm from "./CreateMoveForm";
 
+export const metadata = { title: "New Move" };
+
 export default async function NewMovePage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: crews }, { data: itemWeights }] = await Promise.all([

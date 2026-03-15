@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
 import { Resend } from "resend";
 import { getEmailFrom } from "@/lib/email/send";
 
 export async function GET(req: NextRequest) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
   const db = createAdminClient();
   const status = req.nextUrl.searchParams.get("status");
   const partnerId = req.nextUrl.searchParams.get("partner_id");
@@ -24,6 +27,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
   const db = createAdminClient();
   const body = await req.json();
 

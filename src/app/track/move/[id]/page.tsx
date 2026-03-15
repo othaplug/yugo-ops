@@ -7,6 +7,7 @@ import { isFeatureEnabled } from "@/lib/platform-settings";
 import TrackMoveClient from "./TrackMoveClient";
 
 export const metadata: Metadata = {
+  title: "Track Your Move",
   robots: "noindex, nofollow",
 };
 export const dynamic = "force-dynamic";

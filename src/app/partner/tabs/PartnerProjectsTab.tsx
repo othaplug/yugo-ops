@@ -83,7 +83,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-[17px] font-bold text-[#1A1A1A] font-serif">{project.name}</h3>
+                  <h3 className="text-[17px] font-bold text-[#1A1A1A] font-hero">{project.name}</h3>
                   <p className="text-[12px] text-[#888] mt-0.5">
                     {project.address} — {project.vendorCount} vendor{project.vendorCount !== 1 ? "s" : ""} — {project.installDate}
                   </p>

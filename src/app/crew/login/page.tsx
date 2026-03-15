@@ -154,7 +154,7 @@ export default function CrewLoginPage() {
             textAlign: "center",
           }}
         >
-          <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
             Device Not Registered
           </div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
@@ -201,7 +201,7 @@ export default function CrewLoginPage() {
             textAlign: "center",
           }}
         >
-          <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
             Device Not Found
           </div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
@@ -248,7 +248,7 @@ export default function CrewLoginPage() {
             textAlign: "center",
           }}
         >
-          <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
             No Team Assigned
           </div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
@@ -315,7 +315,7 @@ export default function CrewLoginPage() {
             <YugoLogo size={22} variant="gold" />
           </div>
 
-          <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 26, color: "#F5F5F3", marginBottom: 6 }}>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: "#F5F5F3", marginBottom: 6 }}>
             Crew Portal
           </div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>

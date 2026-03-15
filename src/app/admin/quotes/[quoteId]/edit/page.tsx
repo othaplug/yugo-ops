@@ -6,6 +6,11 @@ interface Props {
   params: Promise<{ quoteId: string }>;
 }
 
+export async function generateMetadata({ params }: Props) {
+  const { quoteId } = await params;
+  return { title: `Edit Quote ${quoteId}` };
+}
+
 export default async function EditQuotePage({ params }: Props) {
   const { quoteId } = await params;
   const db = createAdminClient();

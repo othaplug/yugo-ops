@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import ResidentialMovesClient from "./ResidentialMovesClient";
 
+export const metadata = { title: "Residential Moves" };
+
 export default async function ResidentialMovesPage() {
   const db = createAdminClient();
   const { data: moves } = await db

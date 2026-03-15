@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import AllMovesClient from "./AllMovesClient";
 
+export const metadata = { title: "Moves" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 

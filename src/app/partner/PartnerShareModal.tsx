@@ -53,7 +53,7 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[420px] mx-4 modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[18px] font-bold text-[#1A1A1A] font-serif">Share Tracking Link</h2>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] font-hero">Share Tracking Link</h2>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>

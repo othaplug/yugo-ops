@@ -1027,7 +1027,7 @@ export default function QuotePageClient({
         {/* ═══ SECTION 5: AGREEMENT + PAYMENT ═══ */}
         {((isResidential && currentStep >= 5) || (!isResidential && isConfirmed)) && !booked && (
           <section ref={paymentRef} className="mb-10 pt-6 border-t border-[var(--brd)]/30 scroll-mt-6">
-            <h2 className="font-serif text-[20px] mb-4" style={{ color: FOREST }}>
+            <h2 className="font-hero text-[26px] md:text-[30px] mb-4" style={{ color: FOREST }}>
               Review &amp; Book
             </h2>
             <div ref={contractRef}>
@@ -1215,7 +1215,7 @@ const InclusionsShowcase = React.forwardRef<
         <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
           Your Move Includes
         </h2>
-        <p className="font-serif text-[15px] italic" style={{ color: `${FOREST}60` }}>
+        <p className="font-hero text-[15px] italic" style={{ color: `${FOREST}60` }}>
           Every detail, handled.
         </p>
       </div>
@@ -1302,7 +1302,7 @@ function ConfirmDetailsSection({
 
   return (
     <div className="mb-6">
-      <h2 className="font-serif text-[20px] mb-4" style={{ color: FOREST }}>
+      <h2 className="font-hero text-[26px] md:text-[30px] mb-4" style={{ color: FOREST }}>
         Confirm Your Move
       </h2>
       <div

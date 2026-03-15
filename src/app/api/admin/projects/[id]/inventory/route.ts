@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
   const { id } = await params;
   const db = createAdminClient();
   const body = await req.json();
@@ -30,6 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
   const { id } = await params;
   const db = createAdminClient();
   const body = await req.json();

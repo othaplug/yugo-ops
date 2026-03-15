@@ -192,6 +192,7 @@ export async function GET(req: NextRequest) {
           referrer_email: move.client_email,
           referrer_phone: move.client_phone || null,
           referral_code: code,
+          status: "active",
           expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         });
       }

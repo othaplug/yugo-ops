@@ -15,8 +15,16 @@ Copy `.env.example` to `.env.local` and configure. **Required for production:**
 | `SUPER_ADMIN_EMAIL` | Superadmin email (must be set in production) |
 | `TRACK_SIGNING_SECRET` | Min 32 chars for track link HMAC |
 | `CREW_SESSION_SECRET` | Min 32 chars for crew PIN hashing and JWT |
+| **`CRON_SECRET`** | **Required for cron routes.** Set in Vercel (and any external cron). All cron endpoints require `Authorization: Bearer <CRON_SECRET>`. Without it, quote follow-ups, pre-move emails, balance reminders, and post-move reviews return 401. |
 
 **Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` (or `MAPBOX_ACCESS_TOKEN` for server-side: maps, address autocomplete, distance/directions), `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN`, VAPID keys for web push.
+
+### Cron jobs (critical for email lifecycle)
+
+Cron routes live under `/api/cron/` (e.g. `pre-move-emails`, `post-move-reviews`, `quote-followups`, `charge-balance`, `review-requests`, `eta-check`). They **require**:
+
+1. **`CRON_SECRET`** set in Vercel (or your host) and passed as `Authorization: Bearer <CRON_SECRET>`.
+2. **A scheduler:** Vercel Pro includes cron; on Hobby you must use an external service (e.g. [cron-job.org](https://cron-job.org)) to hit these URLs on the desired schedule with the header above.
 
 ## Getting Started
 

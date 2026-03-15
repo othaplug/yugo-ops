@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Yugo+ | Terms of Use",
+  title: "Terms of Use",
   description: "Yugo+ terms of use - terms and conditions for our moving and logistics services",
 };
 

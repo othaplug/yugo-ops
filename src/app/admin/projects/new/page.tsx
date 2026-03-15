@@ -1,3 +1,4 @@
+export const metadata = { title: "New Project" };
 export const dynamic = "force-dynamic";
 
 import { createAdminClient } from "@/lib/supabase/admin";

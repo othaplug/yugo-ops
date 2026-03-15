@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Search, Plus, Minus, ChevronDown, StickyNote } from "lucide-react";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import { validateInventoryQuantity } from "@/lib/inventory-quantity-validation";
 
 const fieldInput =
   "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
@@ -142,6 +143,7 @@ export default function InventoryInput({
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
   const [customBoxInput, setCustomBoxInput] = useState("");
   const [showCustomBox, setShowCustomBox] = useState(false);
+  const [quantityOverriddenKeys, setQuantityOverriddenKeys] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLDivElement>(null);
   const weightSelectRef = useRef<HTMLSelectElement>(null);
 
@@ -312,8 +314,8 @@ export default function InventoryInput({
 
   const labourEstimate = useMemo(() => {
     if (!showLabourEstimate || totalScore <= 0) return null;
-    return estimateLabourFromScore(totalScore, distanceKm, fromAccess, toAccess);
-  }, [showLabourEstimate, totalScore, distanceKm, fromAccess, toAccess]);
+    return estimateLabourFromScore(totalScore, distanceKm, fromAccess, toAccess, moveSize);
+  }, [showLabourEstimate, totalScore, distanceKm, fromAccess, toAccess, moveSize]);
 
   const internalBoxCount = boxCount ?? 0;
 
@@ -326,7 +328,7 @@ export default function InventoryInput({
         </h3>
         {(value.length > 0 || internalBoxCount > 0) && (
           <span className="text-[10px] text-[var(--tx3)]">
-            {totalItems} items · Score {totalScore.toFixed(1)}
+            {totalItems} items{internalBoxCount > 0 ? ` + ${internalBoxCount} boxes` : ""} · Score {totalScore.toFixed(1)}
           </span>
         )}
       </div>
@@ -529,6 +531,12 @@ export default function InventoryInput({
             const isOverridden =
               item.defaultWeight !== undefined &&
               item.defaultWeight !== item.weight_score;
+            const qtyValidation = validateInventoryQuantity(
+              item.slug || item.name || "",
+              item.quantity,
+              item.name,
+            );
+            const showQtyWarning = !qtyValidation.valid && !quantityOverriddenKeys.has(key);
 
             return (
               <div key={key} className="space-y-0.5">
@@ -629,6 +637,22 @@ export default function InventoryInput({
                     ×
                   </button>
                 </div>
+
+                {/* FIX 1: Quantity over max — yellow warning; coordinator can override */}
+                {showQtyWarning && (
+                  <div className="pl-4 flex items-center gap-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-[10px]">
+                    <span className="text-amber-600 dark:text-amber-400">
+                      Max {qtyValidation.maxAllowed} for this item. Did you mean 1?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantityOverriddenKeys((prev) => new Set(prev).add(key))}
+                      className="text-amber-600 dark:text-amber-400 font-semibold underline hover:no-underline"
+                    >
+                      Override
+                    </button>
+                  </div>
+                )}
 
                 {/* Note inline editor */}
                 {isNoteEditing && (

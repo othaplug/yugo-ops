@@ -1,6 +1,8 @@
 import Link from "next/link";
 import NewClientForm from "./NewClientForm";
 
+export const metadata = { title: "New Client" };
+
 export default async function NewClientPage({
   searchParams,
 }: {

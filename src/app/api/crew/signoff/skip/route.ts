@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
+import { createClientReferralIfNeeded } from "@/lib/client-referral";
+import { generatePostMoveDocuments } from "@/lib/post-move-documents";
 
 const VALID_SKIP_REASONS = [
   "client_not_home",
@@ -113,6 +115,8 @@ export async function POST(req: NextRequest) {
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
       createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
+      createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
+      generatePostMoveDocuments(entityId).catch((e) => console.error("[post-move-documents] failed:", e));
     }
   }
 

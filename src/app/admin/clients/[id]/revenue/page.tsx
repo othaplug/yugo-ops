@@ -1,5 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const db = createAdminClient();
+  const { data: org } = await db.from("organizations").select("name").eq("id", id).single();
+  const name = org?.name ? `Revenue — ${org.name}` : "Revenue";
+  return { title: name };
+}
+
 import Link from "next/link";
 import BackButton from "../../../components/BackButton";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";

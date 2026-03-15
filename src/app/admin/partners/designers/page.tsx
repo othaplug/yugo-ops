@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import DesignerDashboard from "./DesignerDashboard";
 
+export const metadata = { title: "Designers" };
+
 const DESIGNER_ORG_TYPES = ["designer", "interior_designer"];
 
 export default async function DesignersPage() {

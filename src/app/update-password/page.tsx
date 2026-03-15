@@ -114,7 +114,7 @@ export default function UpdatePasswordPage() {
                   </svg>
                 </div>
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 24, color: text, textAlign: "center", marginBottom: 6 }}>
+              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: text, textAlign: "center", marginBottom: 6 }}>
                 Password updated
               </div>
               <div style={{ fontSize: 13, color: muted, textAlign: "center", marginBottom: 16 }}>
@@ -123,7 +123,7 @@ export default function UpdatePasswordPage() {
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 26, color: text, marginBottom: 6 }}>
+              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: text, marginBottom: 6 }}>
                 Update your password
               </div>
               <div style={{ fontSize: 14, color: muted, marginBottom: 8 }}>

@@ -70,7 +70,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                   <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </div>
-              <h2 className="text-[22px] font-bold text-[#1A1A1A]" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+              <h2 className="font-hero text-[22px] font-bold text-[#1A1A1A]">
                 Set your password
               </h2>
               <p className="text-[13px] text-[#888] mt-1.5 leading-relaxed">

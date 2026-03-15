@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
+import { createClientReferralIfNeeded } from "@/lib/client-referral";
+import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 
 export async function GET(
   req: NextRequest,
@@ -331,6 +333,13 @@ export async function POST(
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
       createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
+      // Create client referral so it’s available on the dashboard immediately (no 24–48hr cron wait)
+      createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
+      try {
+        await generateMovePDFs(entityId);
+      } catch (e) {
+        console.error("[generateMovePDFs] failed:", e);
+      }
     }
     // Fire-and-forget: send "Completed" SMS (ETA system)
     const origin = process.env.VERCEL_URL

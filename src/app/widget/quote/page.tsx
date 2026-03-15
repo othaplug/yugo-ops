@@ -1,7 +1,7 @@
 import QuoteWidgetClient from "@/app/quote-widget/QuoteWidgetClient";
 
 export const metadata = {
-  title: "Yugo+ | Get a Quote",
+  title: "Get a Quote",
 };
 
 export default function WidgetQuotePage() {

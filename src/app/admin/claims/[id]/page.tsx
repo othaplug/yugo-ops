@@ -4,6 +4,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import ClaimDetailClient from "./ClaimDetailClient";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const db = createAdminClient();
+  const { data: claim } = await db.from("claims").select("claim_number").eq("id", id).single();
+  const name = claim?.claim_number ? `Claim ${claim.claim_number}` : "Claim";
+  return { title: name };
+}
+
 export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = createAdminClient();

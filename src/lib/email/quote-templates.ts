@@ -263,7 +263,7 @@ function tierCards(tiers: Record<string, QuoteTier>, recommendedTier?: string | 
           <div style="font-size:9px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">
             ${label}${badge}
           </div>
-          <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:${priceFontSize};font-weight:400;color:${TX};margin-bottom:${isRec ? "12px" : "4px"}">${formatCurrency(t.price)}</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:${priceFontSize};font-weight:400;color:${TX};margin-bottom:${isRec ? "12px" : "4px"}">${formatCurrency(t.price)}</div>
           ${includesHtml ? `<div style="font-size:11px;color:${TX2};line-height:1.8">${includesHtml}</div>` : ""}
         </div>
       `;
@@ -284,7 +284,7 @@ function priceCard(label: string, price: number, note: string): string {
   return `
     <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
       <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">${label}</div>
-      <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;color:${GOLD_LIGHT}">${formatCurrency(price)}</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;color:${GOLD_LIGHT}">${formatCurrency(price)}</div>
       <div style="font-size:11px;color:${TX3};margin-top:6px">${note}</div>
     </div>
   `;
@@ -302,7 +302,7 @@ function coordinatorBlock(name?: string | null, phone?: string | null): string {
 }
 
 function heading(text: string): string {
-  return `<h1 style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;margin:0 0 12px;color:${TX};line-height:1.3">${text}</h1>`;
+  return `<h1 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;margin:0 0 12px;color:${TX};line-height:1.3">${text}</h1>`;
 }
 
 function subHeading(text: string): string {

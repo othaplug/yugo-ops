@@ -134,6 +134,10 @@ export async function POST(req: NextRequest) {
       syncDealStageByMoveId(session.job_id, "completed").catch(() => {});
       const { createReviewRequestIfEligible } = await import("@/lib/review-request-helper");
       createReviewRequestIfEligible(admin, session.job_id).catch((e) => console.error("[review] create failed:", e));
+      const { createClientReferralIfNeeded } = await import("@/lib/client-referral");
+      createClientReferralIfNeeded(admin, session.job_id).catch((e) => console.error("[referral] create failed:", e));
+      const { generateMovePDFs } = await import("@/lib/documents/generateMovePDFs");
+      generateMovePDFs(session.job_id).catch((e) => console.error("[generateMovePDFs] failed:", e));
     }
     // Send completed SMS to client/customer
     const origin = process.env.NEXT_PUBLIC_APP_URL || "https://app.withyugo.com";

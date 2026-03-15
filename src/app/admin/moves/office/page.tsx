@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import OfficeMovesClient from "./OfficeMovesClient";
 
+export const metadata = { title: "Office Moves" };
+
 export default async function OfficeMovesPage() {
   const db = createAdminClient();
   const { data: moves } = await db

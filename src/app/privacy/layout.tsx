@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Yugo+ | Privacy Policy",
+  title: "Privacy Policy",
   description: "Yugo+ privacy policy - how we collect, use, and protect your information",
 };
 

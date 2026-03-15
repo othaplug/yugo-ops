@@ -1,5 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ tab: string }> }) {
+  const { tab } = await params;
+  const label = tab === "personal" ? "Personal" : tab === "security" ? "Security" : tab === "appearance" ? "Appearance" : tab === "notifications" ? "Notifications" : tab === "integrations" ? "Integrations" : "Settings";
+  return { title: `Settings — ${label}` };
+}
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import SettingsForm from "../SettingsForm";
 import AppearanceSettings from "../AppearanceSettings";

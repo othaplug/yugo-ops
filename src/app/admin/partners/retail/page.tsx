@@ -1,5 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
+
+export const metadata = { title: "Retail Partners" };
+
 import BackButton from "../../components/BackButton";
 import { StatPctChange } from "../../components/StatPctChange";
 import { getDeliveryDetailPath } from "@/lib/move-code";

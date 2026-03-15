@@ -2,7 +2,7 @@ import "./globals.css";
 import { ToastProvider } from "@/app/admin/components/Toast";
 
 export const metadata = {
-  title: "Yugo+",
+  title: { default: "Yugo+", template: "%s | Yugo+" },
   description: "Premium logistics operations platform",
   icons: {
     icon: [

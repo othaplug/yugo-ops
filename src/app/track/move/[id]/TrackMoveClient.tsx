@@ -150,7 +150,7 @@ export default function TrackMoveClient({
   const [referral, setReferral] = useState<ClientReferral | null>(null);
   const [referralCopied, setReferralCopied] = useState(false);
   const [showMoveDetails, setShowMoveDetails] = useState(false);
-  const [detailsSubTab, setDetailsSubTab] = useState<"details" | "photos" | "docs" | "inv">("details");
+  const [detailsSubTab, setDetailsSubTab] = useState<"details" | "photos_docs" | "inv">("details");
 
   useEffect(() => {
     setLiveStage(move.stage || null);
@@ -690,10 +690,10 @@ export default function TrackMoveClient({
 
               {showMoveDetails && (
                 <div className="border-t px-4 pb-5 pt-3" style={{ borderColor: `${FOREST}10` }}>
-                  {/* Sub-tab nav */}
+                  {/* Sub-tab nav: Details | Photos & Documents | Inventory */}
                   <div className="flex gap-4 mb-4 border-b pb-2" style={{ borderColor: `${FOREST}08` }}>
-                    {(["details", "photos", "docs", "inv"] as const).map((t) => {
-                      const label = t === "inv" ? "Inventory" : t === "docs" ? "Documents" : t.charAt(0).toUpperCase() + t.slice(1);
+                    {(["details", "photos_docs", "inv"] as const).map((t) => {
+                      const label = t === "inv" ? "Inventory" : t === "photos_docs" ? "Photos & Documents" : "Details";
                       return (
                         <button
                           key={t}
@@ -769,11 +769,11 @@ export default function TrackMoveClient({
                     </div>
                   )}
 
-                  {detailsSubTab === "photos" && (
-                    <div className="mt-1"><TrackPhotos moveId={move.id} token={token} moveComplete={true} /></div>
-                  )}
-                  {detailsSubTab === "docs" && (
-                    <div className="mt-1"><TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} /></div>
+                  {detailsSubTab === "photos_docs" && (
+                    <div className="space-y-6 mt-1">
+                      <TrackPhotos moveId={move.id} token={token} moveComplete={true} />
+                      <TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} />
+                    </div>
                   )}
                   {detailsSubTab === "inv" && (
                     <div className="mt-1"><TrackInventory moveId={move.id} token={token} moveComplete={true} /></div>
@@ -848,15 +848,18 @@ export default function TrackMoveClient({
 
             {/* ── Refer a Friend ── */}
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
-                Refer a Friend
+              <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
+                Refer a Friend & Earn $100 or More
               </div>
+              <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
+                Share your code — your friend saves, you earn credit when they book.
+              </p>
               {!referral ? (
                 <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
                   <p className="text-[12px] opacity-50 leading-relaxed" style={{ color: FOREST }}>
                     {isCompleted
-                      ? "Your referral code is being prepared — check back soon."
-                      : "Your referral code is on its way — check back shortly after your move completes."}
+                      ? "Your referral code is being prepared — check back in a moment."
+                      : "Your referral code will appear here once your move is complete."}
                   </p>
                 </div>
               ) : referral.status !== "active" ? (
@@ -870,7 +873,7 @@ export default function TrackMoveClient({
               ) : (
                 <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}>
                   <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
-                    Share your code and your friend gets{" "}
+                    Your friend gets{" "}
                     <span className="font-semibold" style={{ color: WINE }}>${referral.referred_discount} off</span>{" "}
                     their first Yugo move. When they book, you earn a{" "}
                     <span className="font-semibold" style={{ color: WINE }}>${referral.referrer_credit} credit</span>.
@@ -896,6 +899,12 @@ export default function TrackMoveClient({
                       {referralCopied ? "Copied!" : "Copy"}
                     </button>
                   </div>
+                  <p className="text-[10px] opacity-60 mb-3" style={{ color: FOREST }}>
+                    Terms and conditions apply.{" "}
+                    <Link href="/terms" className="underline hover:opacity-80" style={{ color: GOLD }}>
+                      Click here to read more.
+                    </Link>
+                  </p>
                   <div className="flex gap-2 flex-wrap">
                     <button
                       type="button"
@@ -1212,23 +1221,22 @@ export default function TrackMoveClient({
                 {/* Refer a Friend */}
                 {referral && referral.status === "active" && (
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3" style={{ color: FOREST }}>
-                      Refer a Friend
+                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
+                      Refer a Friend & Earn $100 or More
                     </div>
+                    <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
+                      Your friend saves, you earn ${referral.referrer_credit} credit when they book.
+                    </p>
                     <div
                       className="rounded-2xl border p-4 sm:p-5"
                       style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}
                     >
                       <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
-                        Share your unique code and your friend gets{" "}
+                        Share your code — your friend gets{" "}
                         <span className="font-semibold" style={{ color: WINE }}>
                           ${referral.referred_discount} off
                         </span>{" "}
-                        their first Yugo move. When they book, you earn a{" "}
-                        <span className="font-semibold" style={{ color: WINE }}>
-                          ${referral.referrer_credit} credit
-                        </span>
-                        .
+                        their first Yugo move.
                       </p>
                       <div
                         className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
@@ -1254,6 +1262,12 @@ export default function TrackMoveClient({
                           {referralCopied ? "Copied!" : "Copy"}
                         </button>
                       </div>
+                      <p className="text-[10px] opacity-60 mb-3" style={{ color: FOREST }}>
+                        Terms and conditions apply.{" "}
+                        <Link href="/terms" className="underline hover:opacity-80" style={{ color: GOLD }}>
+                          Click here to read more.
+                        </Link>
+                      </p>
                       <div className="flex gap-2 flex-wrap">
                         <button
                           type="button"

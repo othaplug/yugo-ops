@@ -1,5 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
+
+export const metadata = { title: "Gallery Partners" };
+
 import { StatPctChange } from "../../components/StatPctChange";
 import GalleryClient from "./GalleryClient";
 import { formatCompactCurrency } from "@/lib/format-currency";

@@ -17,6 +17,9 @@ export function getEmailLogoUrl(): string {
   return `${base}/images/yugo-logo-gold.png`;
 }
 
+/** Company footer line for all emails (claim, admin, lifecycle). */
+export const EMAIL_FOOTER_COMPANY = "Yugo Inc. 507 King Street E. Toronto, ON.";
+
 function emailLogoRow(): string {
   const logoUrl = getEmailLogoUrl();
   return `
@@ -360,7 +363,7 @@ export function invoiceEmail(invoice: {
     <div style="font-size:14px;font-weight:600;margin-bottom:16px;">${invoice.invoice_number}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;text-align:center;margin-bottom:16px;">
       <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;margin-bottom:8px;">Amount Due</div>
-      <div style="font-family:serif;font-size:28px;font-weight:700;color:${EMAIL_GOLD};">${formatCurrency(invoice.amount)}</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:700;color:${EMAIL_GOLD};">${formatCurrency(invoice.amount)}</div>
       <div style="font-size:10px;color:${EMAIL_TX3};margin-top:4px;">Due: ${invoice.due_date}</div>
     </div>
   `;
@@ -928,7 +931,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Estate Experience</div>
-    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;margin:0 0 12px;color:#F5F5F3;line-height:1.3">
+    <h1 style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;margin:0 0 12px;color:#F5F5F3;line-height:1.3">
       Welcome to your Yugo Estate experience${p.clientName ? `, ${p.clientName}` : ""}.
     </h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.7;margin:0 0 28px">
@@ -994,7 +997,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     ${DIV}
 
     <div style="text-align:center;margin-bottom:4px">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#C9A962;margin-bottom:4px">Investment: ${formatCurrency(p.totalWithTax)}</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:18px;color:#C9A962;margin-bottom:4px">Investment: ${formatCurrency(p.totalWithTax)}</div>
       <div style="font-size:11px;color:#666">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</div>
       <div style="margin-top:8px;font-size:12px">
         <span style="color:#2D9F5A;font-weight:600">&#10003; Deposit paid: ${formatCurrency(p.depositPaid)}</span>
@@ -1096,6 +1099,99 @@ export function verificationCodeEmail(params: { code: string; purpose: "email_ch
       <div style="font-size:10px;color:${EMAIL_TX3};margin-top:16px;letter-spacing:0.5px">Expires in 15 minutes</div>
     </div>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">If you didn&apos;t request this, you can safely ignore this email. Your account remains secure.</p>
+  `;
+  return emailLayout(inner);
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Claim submitted (client) — premium dark layout. */
+export function claimConfirmationEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
+  const inner = `
+    <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Claim Received</div>
+    <h1 style="font-size:22px;font-weight:700;color:${EMAIL_TX};margin:0 0 8px;">Hi ${escapeHtml(clientName)}</h1>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been received.</p>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:13px;color:${EMAIL_TX3};margin:0 0 4px;">${itemCount} Item${itemCount !== 1 ? "s" : ""} Claimed</p>
+      <p style="font-size:22px;font-weight:700;color:${EMAIL_WINE};margin:0;">$${totalClaimed.toLocaleString()} Total Declared Value</p>
+    </div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;">We&apos;ll review your claim within <strong>3 Business Days</strong> and contact you with next steps.</p>
+    <p style="font-size:12px;color:${EMAIL_TX3};margin:0;">Reference: ${escapeHtml(claimNumber)}</p>
+  `;
+  return emailLayout(inner);
+}
+
+/** Claim filed on client's behalf by admin — premium dark layout. */
+export function claimCreatedByAdminEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
+  const inner = `
+    <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Claim Filed</div>
+    <h1 style="font-size:22px;font-weight:700;color:${EMAIL_TX};margin:0 0 8px;">Hi ${escapeHtml(clientName)}</h1>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">A damage claim <strong>${escapeHtml(claimNumber)}</strong> has been filed on your behalf by our team.</p>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:13px;color:${EMAIL_TX3};margin:0 0 4px;">${itemCount} Item${itemCount !== 1 ? "s" : ""} Claimed</p>
+      <p style="font-size:22px;font-weight:700;color:${EMAIL_WINE};margin:0;">$${totalClaimed.toLocaleString()} Total Declared Value</p>
+    </div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;">Our team is already reviewing this claim. We&apos;ll contact you with updates and next steps.</p>
+    <p style="font-size:12px;color:${EMAIL_TX3};margin:0;">Reference: ${escapeHtml(claimNumber)}</p>
+  `;
+  return emailLayout(inner);
+}
+
+/** Claim approved — premium dark layout. */
+export function claimApprovalEmailHtml(claimNumber: string, clientName: string, approvedAmount: number, resolutionNotes: string): string {
+  const notesBlock = resolutionNotes
+    ? `<p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Resolution:</strong> ${escapeHtml(resolutionNotes)}</p>`
+    : "";
+  const inner = `
+    <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Claim Review Complete</div>
+    <h1 style="font-size:22px;font-weight:700;color:${EMAIL_TX};margin:0 0 8px;">Hi ${escapeHtml(clientName)}</h1>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been reviewed.</p>
+    <div style="background:rgba(45,159,90,0.12);border:1px solid rgba(45,159,90,0.3);border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:12px;color:${EMAIL_TX3};margin:0 0 4px;letter-spacing:0.5px;">Approved Amount</p>
+      <p style="font-size:28px;font-weight:700;color:#2D9F5A;margin:0;">$${approvedAmount.toLocaleString()}</p>
+    </div>
+    ${notesBlock}
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0;">Payout will be processed via e-Transfer within 5 Business Days.</p>
+  `;
+  return emailLayout(inner);
+}
+
+/** Claim status update — premium dark layout. */
+export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: string, fromStatus: string, toStatus: string, notes: string | null): string {
+  const fromLabel = fromStatus.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const toLabel = toStatus.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const notesBlock = notes ? `<p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Notes:</strong> ${escapeHtml(notes)}</p>` : "";
+  const inner = `
+    <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Claim Status Update</div>
+    <h1 style="font-size:22px;font-weight:700;color:${EMAIL_TX};margin:0 0 8px;">Hi ${escapeHtml(clientName)}</h1>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">There&apos;s an update on your claim <strong>${escapeHtml(claimNumber)}</strong>.</p>
+    <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:12px;color:${EMAIL_TX3};margin:0 0 4px;">Status</p>
+      <p style="font-size:14px;color:${EMAIL_TX2};margin:0;"><span style="text-decoration:line-through;color:${EMAIL_TX3};">${escapeHtml(fromLabel)}</span> &rarr; <strong style="color:${EMAIL_TX};">${escapeHtml(toLabel)}</strong></p>
+    </div>
+    ${notesBlock}
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0;">If you have any questions, reply to this email and our team will get back to you.</p>
+  `;
+  return emailLayout(inner);
+}
+
+/** Claim denied — premium dark layout. */
+export function claimDenialEmailHtml(claimNumber: string, clientName: string, reason: string): string {
+  const inner = `
+    <div style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Claim Review Complete</div>
+    <h1 style="font-size:22px;font-weight:700;color:${EMAIL_TX};margin:0 0 8px;">Hi ${escapeHtml(clientName)}</h1>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been reviewed.</p>
+    <div style="background:rgba(153,27,27,0.15);border:1px solid rgba(153,27,27,0.3);border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:14px;color:#FCA5A5;line-height:1.6;margin:0;">Unfortunately, we were unable to approve this claim.</p>
+    </div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+    <p style="font-size:13px;color:${EMAIL_TX3};line-height:1.5;margin:0;">If you have additional information to support your claim, please reply to this email.</p>
   `;
   return emailLayout(inner);
 }

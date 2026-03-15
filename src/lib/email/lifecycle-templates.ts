@@ -218,9 +218,16 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     </div>
 
     <div style="margin-bottom:24px">
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">YOUR DOCUMENTS</div>
+      <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 14px">
+        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email — everything is available to download from the link below.
+      </p>
+    </div>
+
+    <div style="margin-bottom:24px">
       <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What&apos;s Next</div>
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
-        <div>1. Your receipts and documents are in your portal</div>
+        <div>1. Download your documents from your portal</div>
         <div>2. We&apos;ll send a brief satisfaction survey</div>
         <div>3. Enjoy your new space!</div>
       </div>
@@ -255,7 +262,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     ${d.referralUrl ? `
       <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
         <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px">Refer a Friend</div>
-        <div style="font-family:serif;font-size:24px;font-weight:700;color:#F5F5F3;margin-bottom:6px">Give $50, Get $50</div>
+        <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#F5F5F3;margin-bottom:6px">Give $50, Get $50</div>
         <p style="font-size:12px;color:#B8B5B0;margin:0 0 14px">
           Share your referral link and you both save on your next move.
         </p>
@@ -455,7 +462,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     </p>
 
     <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
-      <div style="font-family:serif;font-size:32px;font-weight:700;color:#C9A962;margin-bottom:8px">$50</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:700;color:#C9A962;margin-bottom:8px">$50</div>
       <div style="font-size:13px;color:#B8B5B0">for you and your friend</div>
     </div>
 
@@ -599,7 +606,7 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
     ${d.refundAmount && d.refundAmount > 0 ? `
       <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:10px;padding:20px;margin-bottom:20px">
         <div style="font-size:9px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Refund Issued</div>
-        <div style="font-family:serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
+        <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
         <div style="font-size:12px;color:#B8B5B0">
           Your refund has been submitted and will appear on your statement within 3&ndash;5 business days. Depending on your bank, it may take up to 7 business days.
         </div>
@@ -724,7 +731,7 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
         <tr>
           <td style="background:rgba(45,159,90,0.1);border:1px solid rgba(45,159,90,0.3);border-radius:10px;padding:20px;text-align:center">
             <div style="font-size:11px;color:#2D9F5A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">E-Transfer — $0 fee</div>
-            <div style="font-family:serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
+            <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
             <div style="font-size:12px;color:#B8B5B0;line-height:1.6;margin-bottom:14px">
               Send to <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
               Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
@@ -734,7 +741,7 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
         <tr>
           <td style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
             <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card — Includes processing fee</div>
-            <div style="font-family:serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
+            <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
             <a href="${d.paymentPageUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:9px 22px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;margin-top:4px">
               Pay by Credit Card
             </a>

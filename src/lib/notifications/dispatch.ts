@@ -1,10 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { twilioClient } from "@/lib/twilio";
+import { adminNotificationLayout } from "@/lib/email/admin-templates";
 
 interface NotificationData {
   subject?: string;
   body?: string;
+  /** When set, used as the full HTML email body (no wrapper). Use for premium admin emails. */
+  html?: string;
   sourceId?: string;
   quoteId?: string;
   deliveryId?: string;
@@ -56,10 +59,28 @@ export async function sendNotification(
 
   if (emailEnabled && email && data.subject) {
     try {
+      let html: string;
+      if (data.html && typeof data.html === "string" && data.html.trimStart().startsWith("<!DOCTYPE")) {
+        html = data.html;
+      } else {
+        const bodyText =
+          (data.body as string) ||
+          buildNotificationBody(eventSlug, data) ||
+          "";
+        const safeBody = bodyText
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br/>");
+        html = adminNotificationLayout(
+          safeBody ? `<p style="margin:0;">${safeBody}</p>` : "<p style=\"margin:0;color:#666;\">No details.</p>",
+          data.subject as string
+        );
+      }
       const result = await sendEmail({
         to: email,
         subject: data.subject,
-        html: (data.body as string) || "",
+        html,
       });
       results.email = result.success;
     } catch {

@@ -8,7 +8,7 @@ import TrackTipClient from "./TrackTipClient";
 import { GOLD } from "@/lib/client-theme";
 
 export const metadata: Metadata = {
-  title: "Yugo+ | Tip Your Crew",
+  title: "Tip Your Crew",
   robots: "noindex, nofollow",
 };
 export const dynamic = "force-dynamic";

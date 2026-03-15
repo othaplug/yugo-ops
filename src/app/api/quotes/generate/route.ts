@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
+import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
+import { estimateLabourFromScore } from "@/lib/inventory-labour";
 
 // ═══════════════════════════════════════════════
 // Types
@@ -201,6 +203,17 @@ function getDayName(date: Date): string {
   return ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][date.getUTCDay()];
 }
 
+/** Fallback day-of-week multipliers when date_factors has no row (weekend crew costs more). */
+const DEFAULT_DAY_OF_WEEK_MULTIPLIER: Record<string, number> = {
+  monday: 1.0,
+  tuesday: 1.0,
+  wednesday: 1.0,
+  thursday: 1.0,
+  friday: 1.05,
+  saturday: 1.10,
+  sunday: 1.10,
+};
+
 function isMonthEnd(date: Date): boolean {
   const d = date.getUTCDate();
   const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
@@ -230,7 +243,8 @@ async function getDateMultiplier(
   const factors: Record<string, number> = {};
   let combined = 1.0;
 
-  const dayMult = lookup.get(`day_of_week:${getDayName(moveDate)}`) ?? 1.0;
+  const dayName = getDayName(moveDate);
+  const dayMult = lookup.get(`day_of_week:${dayName}`) ?? DEFAULT_DAY_OF_WEEK_MULTIPLIER[dayName] ?? 1.0;
   factors.day_of_week = dayMult;
   combined *= dayMult;
 
@@ -616,8 +630,8 @@ async function calcInventoryModifier(
   moveSize: string,
   inventoryItems: InventoryItem[],
   clientBoxCount?: number,
-): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number }> {
-  const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0 };
+): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }> {
+  const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
   if (!inventoryItems || inventoryItems.length === 0) return noAdj;
 
   const { data: bm } = await sb
@@ -645,53 +659,15 @@ async function calcInventoryModifier(
   const benchmarkScore = Number(bm.benchmark_score);
 
   if (totalItems < Number(bm.min_items_for_adjustment)) {
-    return { modifier: 1.0, inventoryScore, benchmarkScore, totalItems };
+    return { modifier: 1.0, inventoryScore, benchmarkScore, totalItems, maxModifier: Number(bm.max_modifier) };
   }
 
   let modifier = inventoryScore / benchmarkScore;
-  modifier = Math.max(Number(bm.min_modifier), Math.min(Number(bm.max_modifier), modifier));
+  const maxMod = Number(bm.max_modifier);
+  modifier = Math.max(Number(bm.min_modifier), Math.min(maxMod, modifier));
   modifier = Math.round(modifier * 100) / 100;
 
-  return { modifier, inventoryScore, benchmarkScore, totalItems };
-}
-
-function estimateLabour(
-  inventoryScore: number,
-  distanceKm: number,
-  fromAccess?: string,
-  toAccess?: string,
-): { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } {
-  let crewSize = 2;
-  if (inventoryScore > 30) crewSize = 3;
-  if (inventoryScore > 70) crewSize = 4;
-  if (inventoryScore > 110) crewSize = 5;
-
-  const hardAccess = ["walk_up_3", "walk_up_4_plus", "walk_up_4plus"];
-  if (fromAccess && hardAccess.includes(fromAccess)) crewSize += 1;
-  if (toAccess && hardAccess.includes(toAccess)) crewSize += 1;
-  crewSize = Math.min(crewSize, 6);
-
-  const loadHours = inventoryScore / 15;
-  const driveHours = distanceKm / 40;
-  const unloadHours = loadHours * 0.8;
-  let totalHours = loadHours + driveHours + unloadHours;
-  totalHours = Math.max(2, Math.round(totalHours * 2) / 2);
-
-  let truckSize = "16ft";
-  if (inventoryScore > 25) truckSize = "20ft";
-  if (inventoryScore > 50) truckSize = "24ft";
-  if (inventoryScore > 75) truckSize = "26ft";
-  if (inventoryScore > 90) truckSize = "26ft + trailer or 2 trucks";
-
-  const lo = Math.max(2, totalHours - 0.5);
-  const hi = totalHours + 1;
-
-  return {
-    crewSize,
-    estimatedHours: totalHours,
-    hoursRange: `${lo}–${hi} hours`,
-    truckSize,
-  };
+  return { modifier, inventoryScore, benchmarkScore, totalItems, maxModifier: maxMod };
 }
 
 // ═══════════════════════════════════════════════
@@ -760,6 +736,8 @@ async function allocateTruck(
 // RESIDENTIAL — tiered pricing
 // ═══════════════════════════════════════════════
 
+type LabourEstimate = { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null;
+
 async function calcResidential(
   sb: SupabaseAdmin,
   input: QuoteInput,
@@ -769,6 +747,7 @@ async function calcResidential(
   dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
   invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
+  labour: LabourEstimate,
 ) {
   const { data: br } = await sb
     .from("base_rates")
@@ -780,10 +759,16 @@ async function calcResidential(
   const minCrew = br?.min_crew ?? 3;
   const estHours = br?.estimated_hours ?? 5;
 
-  const distBaseKm = cfgNum(config, "distance_base_km", 30);
-  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
+  // FIX 5: Distance surcharge scales with distance; base 10km for local, optional time component
+  const distBaseKm = cfgNum(config, "distance_base_km_local", cfgNum(config, "distance_base_km", 10));
+  const perKmRate = cfgNum(config, "distance_per_km_rate", cfgNum(config, "distance_rate_per_km", 4));
   const distKm = distInfo?.distance_km ?? 0;
-  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
+  const driveMinutes = distInfo?.drive_time_min ?? 0;
+  let distanceSurcharge = distKm <= distBaseKm ? 0 : Math.round((distKm - distBaseKm) * perKmRate);
+  if (driveMinutes > 30) {
+    const timeComponent = Math.round((driveMinutes - 30) * 2);
+    distanceSurcharge = Math.max(distanceSurcharge, timeComponent);
+  }
 
   const [fromAccess, toAccess] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
@@ -798,6 +783,13 @@ async function calcResidential(
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
 
+  // FIX 4: Explicit labour component (crew × hours × rate) so price reflects 4 movers / 10 hrs
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 75);
+  const labourAmount = labour
+    ? Math.round(labour.crewSize * labour.estimatedHours * labourRate)
+    : 0;
+  const subtotalWithLabour = subtotal + labourAmount;
+
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
   // Support both old and new config key names during transition
@@ -808,9 +800,9 @@ async function calcResidential(
   const estateMult = cfgNum(config, "tier_estate_multiplier", 1.85);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
-  let curBase = roundTo(subtotal * curatedMult, rounding);
-  let sigBase = roundTo(subtotal * signatureMult, rounding);
-  let estBase = roundTo(subtotal * estateMult, rounding);
+  let curBase = roundTo(subtotalWithLabour * curatedMult, rounding);
+  let sigBase = roundTo(subtotalWithLabour * signatureMult, rounding);
+  let estBase = roundTo(subtotalWithLabour * estateMult, rounding);
 
   if (curBase < minJob) curBase = minJob;
   if (sigBase < curBase) sigBase = curBase;
@@ -881,6 +873,12 @@ async function calcResidential(
       inventory_score: invResult.inventoryScore,
       inventory_benchmark: invResult.benchmarkScore,
       inventory_items_count: invResult.totalItems,
+      labour_component: labourAmount,
+      labour_crew: labour?.crewSize ?? null,
+      labour_hours: labour?.estimatedHours ?? null,
+      labour_rate_per_mover_hour: labourRate,
+      inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
+      subtotal_before_labour: subtotal,
     },
   };
 }
@@ -1356,13 +1354,44 @@ export async function POST(req: NextRequest) {
   // Inventory volume modifier (residential / long distance only)
   const invResult = (input.service_type === "local_move" || input.service_type === "long_distance")
     ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count)
-    : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0 };
+    : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
 
-  // Labour estimate (informational for coordinators)
-  // When inventory is empty, derive from base_rates (move_size) so coordinators see sensible defaults
+  // FIX 1: Inventory quantity sanity — flag for coordinator review (don't block quote)
+  const inventoryWarnings = validateInventoryQuantities(input.inventory_items ?? []);
+
+  // FIX 3: Specialty items affect crew/hours (boost score for labour estimate only; pricing uses original modifier)
+  const SPECIALTY_CREW_IMPACT: Record<string, number> = {
+    piano_upright: 15,
+    piano_grand: 25,
+    pool_table: 20,
+    safe_under_300lbs: 10,
+    safe_over_300lbs: 20,
+    hot_tub: 25,
+    motorcycle: 15,
+    gym_equipment_per_piece: 5,
+    artwork_per_piece: 3,
+    antique_per_piece: 5,
+    wine_collection: 5,
+    aquarium: 15,
+  };
+  let adjustedScore = invResult.inventoryScore;
+  if (input.specialty_items && input.specialty_items.length > 0) {
+    for (const item of input.specialty_items) {
+      const impact = SPECIALTY_CREW_IMPACT[item.type] ?? 5;
+      adjustedScore += impact * (item.qty || 1);
+    }
+  }
+
+  // Labour estimate (informational for coordinators); uses adjusted score so specialty items increase crew/hours
   let labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
-  if (invResult.inventoryScore > 0) {
-    labour = estimateLabour(invResult.inventoryScore, distInfo?.distance_km ?? 0, input.from_access, input.to_access);
+  if (adjustedScore > 0) {
+    labour = estimateLabourFromScore(
+      adjustedScore,
+      distInfo?.distance_km ?? 0,
+      input.from_access,
+      input.to_access,
+      input.move_size ?? "2br",
+    );
   } else if (input.service_type === "local_move" || input.service_type === "long_distance") {
     const { data: br } = await sb
       .from("base_rates")
@@ -1400,7 +1429,7 @@ export async function POST(req: NextRequest) {
 
   switch (svcType) {
     case "local_move": {
-      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult);
+      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult, labour);
       tiers = res.tiers;
       factors = res.factors;
       // Use labour (inventory-based or base_rates fallback) when available so quote shows correct crew/hours
@@ -1603,6 +1632,7 @@ export async function POST(req: NextRequest) {
       selected_addons: addonResult.breakdown,
       expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
       inventory_items: input.inventory_items ?? [],
+      inventory_warnings: inventoryWarnings.length > 0 ? inventoryWarnings : [],
       inventory_score: invResult.inventoryScore || null,
       inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
       est_crew_size: displayCrew ?? labour?.crewSize ?? null,
@@ -1651,6 +1681,7 @@ export async function POST(req: NextRequest) {
       benchmark: invResult.benchmarkScore,
       totalItems: invResult.totalItems,
     },
+    inventory_warnings: inventoryWarnings,
     labour: labour ?? null,
     truck: {
       primary: truckResult.primary,

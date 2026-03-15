@@ -1,3 +1,4 @@
+export const metadata = { title: "Users" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 

@@ -145,7 +145,8 @@ export async function POST(req: NextRequest) {
                 body.inventory_score as number,
                 0,
                 (body.from_access as string) || undefined,
-                (body.to_access as string) || undefined
+                (body.to_access as string) || undefined,
+                (body.move_size as string) || undefined,
               );
               return {
                 est_crew_size: labour.crewSize,

@@ -281,7 +281,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                     setEditingCard(null);
                     router.refresh();
                     if (v.toLowerCase() === "completed") {
-                      fetch(`/api/admin/moves/${move.id}/ensure-review-request`, { method: "POST" }).catch(() => {});
+                      fetch(`/api/admin/moves/${move.id}/notify-complete`, { method: "POST" }).catch(() => {});
                     }
                     // Sync status to HubSpot deal (and keep deal fields in sync)
                     if (move.hubspot_deal_id) {
@@ -935,7 +935,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Inventory, Files & Media */}
       <MoveInventorySection moveId={move.id} />
-      <MoveFilesSection moveId={move.id} />
+      <MoveFilesSection moveId={move.id} moveStatus={move.status} />
 
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { getEmailLogoUrl } from "@/lib/email-templates";
+import { widgetLeadAdminEmailHtml } from "@/lib/email/admin-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 const SIZE_LABELS: Record<string, string> = {
@@ -247,6 +248,15 @@ export async function POST(req: NextRequest) {
     notifyAdmins("quote_requested", {
       subject: `New Widget Lead: ${trimmedName}`,
       body: `${typeLabel} · ${sizeLabel} · ${priceStr} · ${fromPostal.toUpperCase()} → ${toPostal.toUpperCase()}${extras ? `\n${extras}` : ""}`,
+      html: widgetLeadAdminEmailHtml({
+        name: trimmedName,
+        typeLabel,
+        sizeLabel,
+        priceStr,
+        fromPostal,
+        toPostal,
+        extras: extras || undefined,
+      }),
     }).catch(() => {});
 
     return NextResponse.json({

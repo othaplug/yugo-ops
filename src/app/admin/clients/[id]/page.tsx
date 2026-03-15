@@ -5,6 +5,14 @@ import { notFound } from "next/navigation";
 import ClientDetailClient from "./ClientDetailClient";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const db = createAdminClient();
+  const { data: org } = await db.from("organizations").select("name").eq("id", id).single();
+  const name = org?.name ? `Client ${org.name}` : "Client";
+  return { title: name };
+}
+
 export default async function ClientDetailPage({
   params,
   searchParams,

@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Schedule" };
+
 import CalendarView from "./CalendarView";
 
 export default function CalendarPage() {
