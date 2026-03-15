@@ -25,6 +25,7 @@ const PUBLIC_PATHS = new Set([
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
+  if (pathname.startsWith("/crew/")) return true;
   if (pathname.startsWith("/quote/")) return true;
   if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
@@ -53,7 +54,7 @@ function isPublic(pathname: string): boolean {
   return false;
 }
 
-export default async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const response = NextResponse.next({

@@ -88,7 +88,7 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
 const IN_PROGRESS_STATUSES = [
   "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
   "en_route_to_destination", "arrived_at_destination", "unloading",
-  "in_progress", "dispatched", "in_transit",
+  "in_progress", "in_transit",
 ];
 function isMoveInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
