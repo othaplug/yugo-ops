@@ -68,21 +68,21 @@ export default function TipSection({
       style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}
     >
       <div className="px-3.5 pt-3.5 pb-3 space-y-3">
-        {/* Compact header */}
+        {/* Header — prominent "Tip your crew" */}
         <div>
           <h3
-            className="font-hero text-[14px] font-semibold leading-tight"
+            className="font-heading text-[20px] md:text-[22px] font-bold leading-tight"
             style={{ color: WINE }}
           >
             Tip your crew
           </h3>
-          <p className="text-[10px] mt-0.5" style={{ color: FOREST, opacity: 0.6 }}>
+          <p className="text-[11px] mt-1" style={{ color: FOREST, opacity: 0.6 }}>
             Tips go directly to your movers.
           </p>
         </div>
 
-        {/* Preset cards — compact, sleek */}
-        <div className="grid grid-cols-3 gap-1.5">
+        {/* Preset cards — dollar amount only, narrow */}
+        <div className="grid grid-cols-3 gap-1.5 w-max max-w-full">
           {PER_MOVER_PRESETS.map((perMover) => {
             const total = perMover * crewSize;
             const isSelected = selectedTotal === total;
@@ -94,31 +94,19 @@ export default function TipSection({
                   setSelectedTotal(total);
                   setCustomAmount("");
                 }}
-                className="rounded-lg border text-center py-2 px-1 transition-all duration-150 active:scale-[0.98]"
+                className="rounded-lg border text-center py-2 px-3 min-w-0 transition-all duration-150 active:scale-[0.98]"
                 style={{
                   borderColor: isSelected ? GOLD : `${FOREST}15`,
                   borderWidth: isSelected ? 2 : 1,
                   backgroundColor: isSelected ? `${GOLD}08` : "transparent",
                 }}
               >
-                <div
-                  className="text-[15px] font-bold leading-tight"
+                <span
+                  className="text-[15px] font-bold leading-none"
                   style={{ color: isSelected ? WINE : FOREST }}
                 >
                   ${perMover}
-                </div>
-                <div
-                  className="text-[9px] mt-0.5"
-                  style={{ color: FOREST, opacity: 0.5 }}
-                >
-                  per mover
-                </div>
-                <div
-                  className="text-[9px] font-medium mt-0.5"
-                  style={{ color: isSelected ? GOLD : FOREST, opacity: isSelected ? 1 : 0.55 }}
-                >
-                  ${total} total
-                </div>
+                </span>
               </button>
             );
           })}

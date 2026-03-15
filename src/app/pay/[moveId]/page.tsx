@@ -4,6 +4,14 @@ import BalancePaymentClient from "./BalancePaymentClient";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ moveId: string }> }) {
+  const { moveId } = await params;
+  const supabase = await createClient();
+  const { data: move } = await supabase.from("moves").select("move_code").eq("id", moveId).single();
+  const name = move?.move_code ? `Pay Balance — ${move.move_code}` : "Pay Balance";
+  return { title: name };
+}
+
 export default async function BalancePaymentPage({
   params,
 }: {

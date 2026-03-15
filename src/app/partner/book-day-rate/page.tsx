@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BookDayRateClient from "./BookDayRateClient";
 
+export const metadata = { title: "Book Day Rate" };
+
 export default async function BookDayRatePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

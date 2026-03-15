@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import CrewShell from "../components/CrewShell";
 
+export const metadata = { title: "Crew Dashboard" };
+
 export default async function CrewDashboardLayout({
   children,
 }: {

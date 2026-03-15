@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import PartnerPortalClient from "./PartnerPortalClient";
 
 // Always fetch fresh org so header shows current name (e.g. after Edit Partner saves "Avenue Road")
+export const metadata = { title: "Partner Portal" };
 export const dynamic = "force-dynamic";
 
 export default async function PartnerDashboardPage() {
