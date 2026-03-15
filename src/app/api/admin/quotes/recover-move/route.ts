@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const { data: quote, error: quoteErr } = await db
     .from("quotes")
-    .select("*")
+    .select("*, contacts:contact_id(name, email, phone)")
     .eq("quote_id", quoteId)
     .single();
 
@@ -53,12 +53,18 @@ export async function POST(req: Request) {
     });
   }
 
+  const contact = quote.contacts as { name?: string; email?: string | null; phone?: string | null } | null;
+  const clientEmail = contact?.email?.trim() || undefined;
+  const clientName = contact?.name?.trim() || undefined;
+
   try {
     const result = await createMoveFromQuote({
       quoteId,
       depositAmount: Number(quote.deposit_amount ?? 0),
       selectedTier: quote.selected_tier ?? null,
       selectedAddons: quote.selected_addons ?? [],
+      clientName,
+      clientEmail,
       squareCustomerId: quote.square_customer_id ?? undefined,
       squareCardId: quote.square_card_id ?? undefined,
       squarePaymentId: quote.square_payment_id ?? undefined,

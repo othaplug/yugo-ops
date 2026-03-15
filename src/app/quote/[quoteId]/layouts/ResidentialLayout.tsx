@@ -131,11 +131,17 @@ export default function ResidentialLayout({
 
               {/* Card body — rounded-b-2xl when badge present, full rounded-2xl otherwise */}
               <div
-                className={`flex flex-col flex-1 min-h-0 border-2 overflow-hidden ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
+                className={`flex flex-col flex-1 min-h-0 overflow-hidden ${badgeText ? "rounded-b-2xl" : "rounded-2xl"}`}
                 style={{
                   backgroundColor: cardBg,
+                  borderWidth: 2,
+                  borderStyle: "solid",
                   borderColor: isSelected ? GOLD : isRecommended ? meta.accent : meta.border,
-                  ...(isEstate && { borderLeft: "3px solid #5C1A33" }),
+                  ...(isEstate && {
+                    borderLeftWidth: 3,
+                    borderLeftStyle: "solid",
+                    borderLeftColor: "#5C1A33",
+                  }),
                 }}
               >
               <div className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}>

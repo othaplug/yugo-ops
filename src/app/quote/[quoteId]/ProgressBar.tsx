@@ -42,7 +42,7 @@ export default function ProgressBar({ currentStep, onStepClick }: Props) {
               <button
                 type="button"
                 onClick={() => onStepClick?.(stepNum)}
-                className="flex items-center gap-1 md:gap-1.5 text-[11px] md:text-[12px] font-medium transition-colors hover:opacity-80"
+                className="flex shrink-0 items-center gap-1 md:gap-1.5 text-[11px] md:text-[12px] font-medium transition-colors hover:opacity-80 whitespace-nowrap"
                 style={{
                   color: isComplete ? GOLD : isCurrent ? FOREST : "#AAA",
                   fontWeight: isCurrent ? 700 : 500,

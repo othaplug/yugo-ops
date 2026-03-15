@@ -46,7 +46,7 @@ export async function GET(
 
   let referral = referralRes.data ?? null;
   const isCompleted = move.status === "completed" || move.status === "delivered";
-  if (isCompleted && move.client_email && !referral) {
+  if (isCompleted && !referral) {
     await createClientReferralIfNeeded(admin, move.id);
     const { data: newRef } = await admin
       .from("client_referrals")
@@ -56,6 +56,16 @@ export async function GET(
       .limit(1)
       .maybeSingle();
     referral = newRef ?? null;
+    if (!referral) {
+      const { data: byMove } = await admin
+        .from("client_referrals")
+        .select("id, referral_code, referrer_credit, referred_discount, status, used_at, created_at")
+        .eq("referrer_move_id", move.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      referral = byMove ?? null;
+    }
   }
 
   return NextResponse.json({

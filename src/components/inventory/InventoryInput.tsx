@@ -642,7 +642,7 @@ export default function InventoryInput({
                 {showQtyWarning && (
                   <div className="pl-4 flex items-center gap-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-[10px]">
                     <span className="text-amber-600 dark:text-amber-400">
-                      Max {qtyValidation.maxAllowed} for this item. Did you mean 1?
+                      Max {qtyValidation.maxAllowed} for {item.name || "this item"}. Did you mean 1?
                     </span>
                     <button
                       type="button"

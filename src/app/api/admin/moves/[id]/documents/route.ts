@@ -14,11 +14,14 @@ export async function GET(
   try {
     const { id: moveId } = await params;
     const admin = createAdminClient();
-    const { data: docs, error } = await admin
-      .from("move_documents")
-      .select("id, type, title, storage_path, external_url, created_at")
-      .eq("move_id", moveId)
-      .order("created_at", { ascending: false });
+    const [{ data: docs, error }, { data: move }] = await Promise.all([
+      admin
+        .from("move_documents")
+        .select("id, type, title, storage_path, external_url, created_at")
+        .eq("move_id", moveId)
+        .order("created_at", { ascending: false }),
+      admin.from("moves").select("move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url").eq("id", moveId).single(),
+    ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
@@ -34,7 +37,21 @@ export async function GET(
       })
     );
 
-    return NextResponse.json({ documents: withUrls });
+    const moveRow = move as { move_code?: string | null; summary_pdf_url?: string | null; invoice_pdf_url?: string | null; receipt_pdf_url?: string | null } | null;
+    const code = moveRow?.move_code || moveId.slice(0, 8).toUpperCase();
+    const autoDocs: { id: string; type: string; title: string; view_url: string; external_url: null; created_at: string }[] = [];
+    if (moveRow?.summary_pdf_url) {
+      autoDocs.push({ id: "summary-pdf", type: "document", title: `Move Summary — ${code}.pdf`, view_url: moveRow.summary_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    }
+    if (moveRow?.invoice_pdf_url) {
+      autoDocs.push({ id: "invoice-pdf", type: "invoice", title: `Invoice — ${code}.pdf`, view_url: moveRow.invoice_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    }
+    if (moveRow?.receipt_pdf_url) {
+      autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt — ${code}.pdf`, view_url: moveRow.receipt_pdf_url, external_url: null, created_at: new Date().toISOString() });
+    }
+    const allDocuments = [...autoDocs, ...withUrls];
+
+    return NextResponse.json({ documents: allDocuments });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

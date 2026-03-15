@@ -783,12 +783,27 @@ async function calcResidential(
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
 
-  // FIX 4: Explicit labour component (crew × hours × rate) so price reflects 4 movers / 10 hrs
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 75);
-  const labourAmount = labour
-    ? Math.round(labour.crewSize * labour.estimatedHours * labourRate)
-    : 0;
-  const subtotalWithLabour = subtotal + labourAmount;
+  // Prompt 89: Labour DELTA — only charge when actual man-hours exceed baseline (base rate already includes standard crew/hours)
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 35);
+  let labourDelta = 0;
+  let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
+  if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
+    const { data: bm } = await sb
+      .from("volume_benchmarks")
+      .select("baseline_crew, baseline_hours")
+      .eq("move_size", input.move_size ?? "2br")
+      .single();
+    if (bm && typeof bm.baseline_crew === "number" && typeof bm.baseline_hours === "number") {
+      benchmark = { baseline_crew: bm.baseline_crew, baseline_hours: bm.baseline_hours };
+      const baselineManHours = bm.baseline_crew * bm.baseline_hours;
+      const actualManHours = labour.crewSize * labour.estimatedHours;
+      const deltaManHours = actualManHours - baselineManHours;
+      if (deltaManHours > 0) {
+        labourDelta = Math.round(deltaManHours * labourRate);
+      }
+    }
+  }
+  const subtotalWithLabour = subtotal + labourDelta;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
@@ -873,10 +888,18 @@ async function calcResidential(
       inventory_score: invResult.inventoryScore,
       inventory_benchmark: invResult.benchmarkScore,
       inventory_items_count: invResult.totalItems,
-      labour_component: labourAmount,
-      labour_crew: labour?.crewSize ?? null,
-      labour_hours: labour?.estimatedHours ?? null,
+      labour_delta: labourDelta,
+      labour_component: labourDelta,
+      labour_actual_crew: labour?.crewSize ?? null,
+      labour_actual_hours: labour?.estimatedHours ?? null,
+      labour_baseline_crew: benchmark?.baseline_crew ?? null,
+      labour_baseline_hours: benchmark?.baseline_hours ?? null,
+      labour_rate: labourRate,
       labour_rate_per_mover_hour: labourRate,
+      labour_extra_man_hours:
+        labour && benchmark
+          ? Math.max(0, labour.crewSize * labour.estimatedHours - benchmark.baseline_crew * benchmark.baseline_hours)
+          : null,
       inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
       subtotal_before_labour: subtotal,
     },
@@ -1364,11 +1387,14 @@ export async function POST(req: NextRequest) {
     piano_upright: 15,
     piano_grand: 25,
     pool_table: 20,
+    safe_under_300: 10,
+    safe_over_300: 20,
     safe_under_300lbs: 10,
     safe_over_300lbs: 20,
     hot_tub: 25,
     motorcycle: 15,
     gym_equipment_per_piece: 5,
+    gym_equipment: 5,
     artwork_per_piece: 3,
     antique_per_piece: 5,
     wine_collection: 5,

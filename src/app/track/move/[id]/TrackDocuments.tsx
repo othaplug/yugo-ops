@@ -72,10 +72,22 @@ export default function TrackDocuments({
     );
   }
 
+  const hasAutoPdfs = allDocs.some(
+    (d) =>
+      d.title?.includes("Move Summary") ||
+      d.title?.includes("Invoice —") ||
+      d.title?.includes("Payment Receipt")
+  );
+
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#E7E5E4]">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Documents</h3>
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Your documents</h3>
+        {hasAutoPdfs && (
+          <p className="text-[12px] text-[#666] mt-1">
+            Your move summary, invoice, and receipt are ready to download below.
+          </p>
+        )}
       </div>
       <div className="p-5 space-y-2">
         {allDocs.map((doc) => {

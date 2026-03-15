@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
-import { generatePostMoveDocuments } from "@/lib/post-move-documents";
+import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 
 export async function GET(
   req: NextRequest,
@@ -30,14 +30,16 @@ export async function GET(
 
     let invoices = invRes.data ?? [];
     let documents = docRes.data ?? [];
-    if (isCompleted && documents.length === 0) {
-      await generatePostMoveDocuments(moveId);
-      const [invRetry, docRetry] = await Promise.all([
-        admin.from("invoices").select("id, invoice_number, amount, status, due_date, created_at, client_name").eq("move_id", moveId).order("created_at", { ascending: false }),
-        admin.from("move_documents").select("id, type, title, storage_path, external_url, created_at").eq("move_id", moveId).order("created_at", { ascending: false }),
-      ]);
-      invoices = invRetry.data ?? [];
-      documents = docRetry.data ?? [];
+    // If move is completed but the three PDFs (summary, invoice, receipt) were never generated, generate them now
+    const missingPdfs = isCompleted && !(move as { summary_pdf_url?: string } | null)?.summary_pdf_url;
+    if (missingPdfs) {
+      try {
+        await generateMovePDFs(moveId);
+        const { data: moveRetry } = await admin.from("moves").select("summary_pdf_url, invoice_pdf_url, receipt_pdf_url").eq("id", moveId).single();
+        if (moveRetry) Object.assign(move, moveRetry);
+      } catch {
+        // Non-blocking; client still sees whatever docs exist
+      }
     }
     const bucket = "move-documents";
 

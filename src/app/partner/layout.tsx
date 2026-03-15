@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import { PartnerOrgProvider } from "./PartnerOrgContext";
+
+export const dynamic = "force-dynamic";
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const toggles = await getPlatformToggles();
@@ -26,14 +30,39 @@ export default async function PartnerLayout({ children }: { children: React.Reac
   if (!toggles.partner_portal) redirect("/portal-disabled");
 
   const { data: platformUser } = await supabase.from("platform_users").select("user_id").eq("user_id", user.id).maybeSingle();
-  const { data: partnerRows } = await supabase.from("partner_users").select("user_id").eq("user_id", user.id).limit(1);
+  const { data: partnerRows } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).order("created_at", { ascending: true });
   const hasPartnerAccess = partnerRows != null && partnerRows.length > 0;
 
   if (platformUser && !hasPartnerAccess) redirect("/admin");
 
+  // Fetch org name in layout so header always shows correct name (admin client bypasses RLS)
+  let orgDisplayName = "Partner";
+  const primaryOrgId = partnerRows?.[0]?.org_id;
+  if (primaryOrgId) {
+    try {
+      const admin = createAdminClient();
+      const { data: org } = await admin
+        .from("organizations")
+        .select("name, contact_name, email")
+        .eq("id", primaryOrgId)
+        .single();
+      const fromEmail =
+        org?.email?.trim() &&
+        (() => {
+          const part = org.email!.includes("@") ? org.email!.split("@")[1]?.replace(/\.[^.]*$/, "") : org.email!;
+          return part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : "";
+        })();
+      orgDisplayName = (org?.name || org?.contact_name || fromEmail || "Partner").trim() || "Partner";
+    } catch (_e) {
+      // keep "Partner" if fetch fails
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-[#FAF8F5]">
-      {children}
-    </div>
+    <PartnerOrgProvider orgDisplayName={orgDisplayName}>
+      <div className="min-h-screen bg-[#FAF8F5]">
+        {children}
+      </div>
+    </PartnerOrgProvider>
   );
 }

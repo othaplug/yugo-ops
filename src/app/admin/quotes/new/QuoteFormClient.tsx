@@ -1766,6 +1766,11 @@ function OptimisticTiers({ est }: { est: { curated: number; signature: number; e
   );
 }
 
+const LABOUR_FACTOR_KEYS = new Set([
+  "labour_delta", "labour_component", "labour_actual_crew", "labour_actual_hours",
+  "labour_baseline_crew", "labour_baseline_hours", "labour_rate", "labour_rate_per_mover_hour", "labour_extra_man_hours",
+]);
+
 function FactorsDisplay({
   factors,
   distance,
@@ -1777,8 +1782,14 @@ function FactorsDisplay({
   time: number | null;
   showMultipliers?: boolean;
 }) {
-  const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
-  if (entries.length === 0 && distance == null) return null;
+  const entries = Object.entries(factors).filter(
+    ([key, v]) => !LABOUR_FACTOR_KEYS.has(key) && v !== null && v !== undefined && v !== 0 && v !== 1
+  );
+  const labourDelta = typeof factors.labour_delta === "number" ? factors.labour_delta : typeof factors.labour_component === "number" ? factors.labour_component : null;
+  const labourExtraManHours = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
+  const labourRate = typeof factors.labour_rate === "number" ? factors.labour_rate : typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
+  const hasLabourLine = labourDelta !== null;
+  if (entries.length === 0 && distance == null && !hasLabourLine) return null;
 
   return (
     <div className="space-y-1.5">
@@ -1786,6 +1797,24 @@ function FactorsDisplay({
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">Distance</span>
           <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
+        </div>
+      )}
+      {hasLabourLine && (
+        <div className="flex flex-col gap-0.5 text-[10px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--tx3)]">Labour adjustment</span>
+            <span className={labourDelta > 0 ? "font-semibold text-[var(--gold)]" : "text-[var(--tx3)]"}>
+              {labourDelta > 0 ? `+${fmtPrice(labourDelta)}` : fmtPrice(0)}
+            </span>
+          </div>
+          {labourDelta > 0 && labourExtraManHours != null && labourRate != null && (
+            <p className="text-[9px] text-[var(--gold)]/90">
+              ({labourExtraManHours} extra man-hours × ${labourRate})
+            </p>
+          )}
+          {labourDelta === 0 && (
+            <p className="text-[9px] text-[var(--tx3)]">(within baseline)</p>
+          )}
         </div>
       )}
       {entries.map(([key, val]) => (

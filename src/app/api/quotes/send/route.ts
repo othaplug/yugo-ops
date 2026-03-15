@@ -143,6 +143,17 @@ export async function POST(req: NextRequest) {
       })
       .eq("quote_id", quoteId);
 
+    // Persist the email (and name) we sent to on the contact so moves created from this quote
+    // (e.g. via recover-move) get client_email and referral codes work.
+    if (quote.contact_id && clientEmail) {
+      const contactUpdate: { email: string; name?: string } = { email: clientEmail.trim() };
+      if (fullName.trim()) contactUpdate.name = fullName.trim();
+      await supabase
+        .from("contacts")
+        .update(contactUpdate)
+        .eq("id", quote.contact_id);
+    }
+
     const dealIdRaw = hubspotDealId ?? quote.hubspot_deal_id;
     const dealId = typeof dealIdRaw === "string" ? dealIdRaw : null;
     if (dealId) {

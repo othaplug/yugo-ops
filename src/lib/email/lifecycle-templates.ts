@@ -220,7 +220,7 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     <div style="margin-bottom:24px">
       <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">YOUR DOCUMENTS</div>
       <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 14px">
-        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email — everything is available to download from the link below.
+        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email — everything is available to download from your tracking page (link below).
       </p>
     </div>
 
@@ -549,7 +549,7 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
         <div>&#10003; Lock in your flat-rate price &mdash; no surprises</div>
         <div>&#10003; Secure your preferred date before it&apos;s taken</div>
-        <div>&#10003; Only a $100 deposit to reserve &mdash; balance due later</div>
+        <div>&#10003; Deposit to reserve &mdash; balance due later</div>
         <div>&#10003; Full refund if you cancel within the policy window</div>
       </div>
     </div>

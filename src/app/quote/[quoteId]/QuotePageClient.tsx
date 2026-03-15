@@ -668,7 +668,9 @@ export default function QuotePageClient({
 
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE BADGE ═══ */}
-        <div className="-mt-5 relative z-10 mb-8">
+        <div
+          className={`relative z-10 mb-8 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "-mt-5"}`}
+        >
           <div
             className="rounded-xl px-5 py-3.5 flex items-center gap-3"
             style={{

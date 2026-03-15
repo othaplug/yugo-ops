@@ -286,6 +286,32 @@ function BaseRatesSection() {
   );
 }
 
+/* ────────── S1.5: LABOUR PRICING ────────── */
+function LabourPricingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+  const getVal = (key: string) => rows.find((r) => r.key === key);
+  const row = getVal("labour_rate_per_mover_hour");
+  const rate = Number(row?.value ?? 35);
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Charged when actual crew × hours exceeds the move-size baseline. Higher = more sensitive to crew/hours. Lower = gentler adjustment.
+      </p>
+      {row ? (
+        <div className="flex items-center gap-3">
+          <label className="text-[11px] font-semibold text-[var(--tx)]">Rate per extra mover-hour ($)</label>
+          <EditCell value={rate} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--gold)]" />
+        </div>
+      ) : (
+        <p className="text-[11px] text-[var(--tx3)]">Run migrations to add labour_rate_per_mover_hour to platform_config.</p>
+      )}
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
 /* ────────── S2: TIER MULTIPLIERS ────────── */
 function TierMultipliersSection() {
   const { rows, loading, save, undo, updateRow } = useSection("config");
@@ -1195,6 +1221,8 @@ function InventoryVolumeSection() {
                     <th className={th}>Min Mod</th>
                     <th className={th}>Max Mod</th>
                     <th className={th}>Min Items</th>
+                    <th className={th}>Baseline Crew</th>
+                    <th className={th}>Baseline Hours</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1224,6 +1252,12 @@ function InventoryVolumeSection() {
                       </td>
                       <td className={td}>
                         <EditCell value={Number(r.min_items_for_adjustment)} onChange={(v) => bm.updateRow(String(r.id), "min_items_for_adjustment", Number(v))} type="number" className="w-12" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.baseline_crew ?? 2)} onChange={(v) => bm.updateRow(String(r.id), "baseline_crew", Number(v))} type="number" className="w-14" />
+                      </td>
+                      <td className={td}>
+                        <EditCell value={Number(r.baseline_hours ?? 4)} onChange={(v) => bm.updateRow(String(r.id), "baseline_hours", Number(v))} type="number" className="w-14" />
                       </td>
                     </tr>
                   ))}
@@ -1906,6 +1940,10 @@ export default function PricingControlPanel() {
 
       <Accordion title="Base Rates (Residential)" subtitle={`Move size → base price, crew, hours`} defaultOpen>
         <BaseRatesSection />
+      </Accordion>
+
+      <Accordion title="Labour Pricing" subtitle="Rate per extra mover-hour above baseline (Prompt 89)">
+        <LabourPricingSection />
       </Accordion>
 
       <Accordion title="Tier Multipliers" subtitle="Curated, Signature, Estate pricing tiers">

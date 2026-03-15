@@ -21,6 +21,7 @@ import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
+import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
 
@@ -150,6 +151,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail, portalFeatures }: Props) {
+  const headerOrgName = usePartnerOrgDisplayName();
   const features = getPartnerFeatures(orgType);
   // portal_features from DB override legacy type-based feature detection
   const pf: PortalFeatures = portalFeatures ?? {};
@@ -279,7 +281,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <div className="flex items-center gap-1.5">
           <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
           <span className="text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50">BETA</span>
-          <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">{orgName}</span>
+          <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">{headerOrgName}</span>
         </div>
         <div className="flex items-center gap-3">
           <PartnerNotificationBell

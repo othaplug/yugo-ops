@@ -184,12 +184,7 @@ export async function POST(req: NextRequest) {
     toAddress
   ).catch(() => {});
 
-  // Generate invoice + move snapshot PDFs on completion
-  if (isCompleted && session.job_type === "move") {
-    import("@/lib/post-move-documents")
-      .then(({ generatePostMoveDocuments }) => generatePostMoveDocuments(session.job_id))
-      .catch((err) => console.error("[checkpoint] post-move documents failed:", err));
-  }
+  // Move summary, invoice, and receipt PDFs are generated above via generateMovePDFs (same as signoff/notify-complete)
 
   return NextResponse.json({ ok: true, status, checkpoint: newCheckpoint });
 }

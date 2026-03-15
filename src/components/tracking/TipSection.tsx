@@ -12,7 +12,7 @@ interface TipSectionProps {
   onSkipped: () => void;
 }
 
-const PER_MOVER_PRESETS = [20, 40, 60];
+const TIP_PRESETS = [40, 80, 120];
 
 export default function TipSection({
   crewSize = 2,
@@ -21,9 +21,9 @@ export default function TipSection({
   onTipped,
   onSkipped,
 }: TipSectionProps) {
-  const defaultTotal = 40 * crewSize;
-  const [selectedTotal, setSelectedTotal] = useState<number | null>(defaultTotal);
+  const [selectedTotal, setSelectedTotal] = useState<number | null>(80);
   const [customAmount, setCustomAmount] = useState("");
+  const [showCustomAmount, setShowCustomAmount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,85 +64,97 @@ export default function TipSection({
 
   return (
     <div
-      className="rounded-xl border overflow-hidden"
-      style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}
+      className="rounded-xl border overflow-hidden max-w-[280px] mx-auto w-full"
+      style={{ borderColor: `${FOREST}12`, backgroundColor: "white", boxShadow: "0px 4px 12px 0px rgba(0, 0, 0, 0.15)" }}
     >
-      <div className="px-3.5 pt-3.5 pb-3 space-y-3">
-        {/* Header — prominent "Tip your crew" */}
+      <div className="px-3.5 pt-3.5 pb-3 space-y-3 max-w-[240px] mx-auto">
+        {/* Compact header */}
         <div>
           <h3
-            className="font-heading text-[20px] md:text-[22px] font-bold leading-tight"
+            className="font-hero text-[18px] font-semibold leading-tight"
             style={{ color: WINE }}
           >
             Tip your crew
           </h3>
-          <p className="text-[11px] mt-1" style={{ color: FOREST, opacity: 0.6 }}>
-            Tips go directly to your movers.
+          <p className="text-[10px] mt-0.5" style={{ color: FOREST, opacity: 0.6 }}>
+            100% of tips go to your movers
           </p>
         </div>
 
-        {/* Preset cards — dollar amount only, narrow */}
-        <div className="grid grid-cols-3 gap-1.5 w-max max-w-full">
-          {PER_MOVER_PRESETS.map((perMover) => {
-            const total = perMover * crewSize;
+        {/* Preset cards — $40, $80, $120 total */}
+        <div className="grid grid-cols-3 gap-1.5 max-w-[180px] mx-auto">
+          {TIP_PRESETS.map((total) => {
             const isSelected = selectedTotal === total;
             return (
               <button
-                key={perMover}
+                key={total}
                 type="button"
                 onClick={() => {
                   setSelectedTotal(total);
                   setCustomAmount("");
                 }}
-                className="rounded-lg border text-center py-2 px-3 min-w-0 transition-all duration-150 active:scale-[0.98]"
+                className="rounded-lg border text-center py-1.5 px-1 transition-all duration-150 active:scale-[0.98]"
                 style={{
                   borderColor: isSelected ? GOLD : `${FOREST}15`,
-                  borderWidth: isSelected ? 2 : 1,
+                  borderWidth: 1,
                   backgroundColor: isSelected ? `${GOLD}08` : "transparent",
                 }}
               >
-                <span
-                  className="text-[15px] font-bold leading-none"
+                <div
+                  className="text-[13px] font-normal leading-tight"
                   style={{ color: isSelected ? WINE : FOREST }}
                 >
-                  ${perMover}
-                </span>
+                  ${total}
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* Custom amount — single line */}
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[11px] shrink-0"
-            style={{ color: FOREST, opacity: 0.55 }}
-          >
-            Custom amount
-          </span>
-          <div
-            className="flex-1 flex items-center rounded-lg border px-2.5 py-1.5 min-h-[32px] transition-colors"
-            style={{
-              borderColor: selectedTotal === null ? `${GOLD}50` : `${FOREST}15`,
-              backgroundColor: "transparent",
-            }}
-          >
-            <span className="text-[12px] font-medium mr-1" style={{ color: FOREST, opacity: 0.5 }}>$</span>
-            <input
-              type="number"
-              min={5}
-              step={1}
-              placeholder="0"
-              value={customAmount}
-              onChange={(e) => {
-                setCustomAmount(e.target.value.replace(/[^0-9.]/g, ""));
-                setSelectedTotal(null);
-              }}
-              className="flex-1 bg-transparent text-[13px] font-medium outline-none min-w-0 placeholder:opacity-40"
-              style={{ color: FOREST }}
-            />
+        {/* Custom amount — toggled by "Add custom tip" */}
+        {!showCustomAmount ? (
+          <div className="max-w-[180px] mx-auto text-center">
+            <button
+              type="button"
+              onClick={() => setShowCustomAmount(true)}
+              className="text-[10px] transition-opacity hover:opacity-80 active:opacity-70"
+              style={{ color: FOREST, opacity: 0.55 }}
+            >
+              Add custom tip
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 max-w-[180px] mx-auto">
+            <span
+              className="text-[10px] shrink-0"
+              style={{ color: FOREST, opacity: 0.55 }}
+            >
+              Custom amount
+            </span>
+            <div
+              className="flex-1 flex items-center rounded-lg border px-2 py-1 min-h-[26px] transition-colors min-w-0"
+              style={{
+                borderColor: selectedTotal === null ? `${GOLD}50` : `${FOREST}15`,
+                backgroundColor: "transparent",
+              }}
+            >
+              <span className="text-[11px] font-normal mr-0.5" style={{ color: FOREST, opacity: 0.5 }}>$</span>
+              <input
+                type="number"
+                min={5}
+                step={1}
+                placeholder="0"
+                value={customAmount}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value.replace(/[^0-9.]/g, ""));
+                  setSelectedTotal(null);
+                }}
+                className="flex-1 bg-transparent text-[12px] font-normal outline-none min-w-0 placeholder:opacity-40"
+                style={{ color: FOREST }}
+              />
+            </div>
+          </div>
+        )}
 
         {error && (
           <p className="text-[11px] text-red-600 text-center">{error}</p>
@@ -153,16 +165,16 @@ export default function TipSection({
           type="button"
           onClick={handleSubmit}
           disabled={submitting || currentAmount < 5}
-          className="w-full rounded-full py-2.5 text-[12px] font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+          className="w-full max-w-[150px] mx-auto rounded-lg py-2.5 text-[12px] font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 block"
           style={{
             backgroundColor: GOLD,
-            color: "#1A1A1A",
+            color: "#fafafa",
           }}
         >
           {submitting
             ? "Processing…"
             : currentAmount >= 5
-            ? `Send ${formatCurrency(currentAmount)} tip`
+            ? "Done"
             : "Select an amount"}
         </button>
 
@@ -170,7 +182,7 @@ export default function TipSection({
           type="button"
           onClick={handleSkip}
           className="w-full text-center text-[11px] py-0.5 transition-opacity hover:opacity-80"
-          style={{ color: FOREST, opacity: 0.4 }}
+          style={{ color: "#6B7280" }}
         >
           Skip for now
         </button>

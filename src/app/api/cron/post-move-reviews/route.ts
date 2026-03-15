@@ -166,37 +166,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Referral code generation + VIP check (for each completed move) ──────────
+  // ── VIP / lifetime value update (for each completed move) ───────────────────
+  // Referral codes are created at move completion (checkpoint, signoff, notify-complete)
+  // and on first dashboard load (perks-referral API). This cron no longer creates them.
   for (const move of moves) {
     if (!move.client_email) continue;
     try {
-      // Create referral code if none exists for this client email
-      const { data: existingRef } = await supabase
-        .from("client_referrals")
-        .select("id")
-        .eq("referrer_email", move.client_email)
-        .limit(1);
-
-      if (!existingRef?.length) {
-        const firstName = (move.client_name || "CLIENT")
-          .split(" ")[0]
-          .toUpperCase()
-          .replace(/[^A-Z]/g, "")
-          .slice(0, 8);
-        const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const code = `YUGO-${firstName}-${rand}`;
-
-        await supabase.from("client_referrals").insert({
-          referrer_move_id: move.id,
-          referrer_name: move.client_name,
-          referrer_email: move.client_email,
-          referrer_phone: move.client_phone || null,
-          referral_code: code,
-          status: "active",
-          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        });
-      }
-
       // Auto-VIP check: estate tier OR lifetime value > $5,000
       const { data: allMoves } = await supabase
         .from("moves")
