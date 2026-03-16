@@ -13,6 +13,7 @@ const TYPE_ICONS: Record<string, string> = {
   Client: "users",
   Invoice: "dollarSign",
   Contact: "users",
+  Nav: "mapPin",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -22,7 +23,34 @@ const TYPE_COLORS: Record<string, string> = {
   Client: "var(--pur)",
   Invoice: "var(--grn)",
   Contact: "var(--org)",
+  Nav: "var(--tx2)",
 };
+
+/** Sidebar nav items + settings for command-centre search */
+const NAV_SEARCH_ITEMS: { name: string; href: string; keywords: string[] }[] = [
+  { name: "Command Center", href: "/admin", keywords: ["dashboard", "home", "command", "centre", "center"] },
+  { name: "All Projects", href: "/admin/deliveries", keywords: ["projects", "deliveries", "all"] },
+  { name: "Reports", href: "/admin/reports", keywords: ["reports", "analytics"] },
+  { name: "Calendar", href: "/admin/calendar", keywords: ["calendar", "schedule"] },
+  { name: "Tracking", href: "/admin/crew", keywords: ["tracking", "crew", "map", "live"] },
+  { name: "Deliveries", href: "/admin/deliveries", keywords: ["deliveries", "b2b"] },
+  { name: "Retail", href: "/admin/partners/retail", keywords: ["retail", "partners"] },
+  { name: "Designers", href: "/admin/partners/designers", keywords: ["designers", "partners"] },
+  { name: "Hospitality", href: "/admin/partners/hospitality", keywords: ["hospitality", "partners"] },
+  { name: "Art Gallery", href: "/admin/partners/gallery", keywords: ["gallery", "art", "partners"] },
+  { name: "Realtors", href: "/admin/partners/realtors", keywords: ["realtors", "partners"] },
+  { name: "All Moves", href: "/admin/moves", keywords: ["moves", "all"] },
+  { name: "Quotes", href: "/admin/quotes", keywords: ["quotes"] },
+  { name: "Invoices", href: "/admin/invoices", keywords: ["invoices", "finance"] },
+  { name: "Revenue", href: "/admin/revenue", keywords: ["revenue", "finance"] },
+  { name: "Tips", href: "/admin/tips", keywords: ["tips", "finance"] },
+  { name: "Profitability", href: "/admin/finance/profitability", keywords: ["profitability", "finance"] },
+  { name: "Contacts", href: "/admin/clients", keywords: ["contacts", "clients", "crm"] },
+  { name: "Perks & Referrals", href: "/admin/perks", keywords: ["perks", "referrals", "crm"] },
+  { name: "Settings", href: "/admin/settings", keywords: ["settings", "account", "crm"] },
+  { name: "Platform", href: "/admin/platform", keywords: ["platform", "admin"] },
+  { name: "Notifications", href: "/admin/notifications", keywords: ["notifications"] },
+];
 
 export default function SearchBox() {
   const [query, setQuery] = useState("");
@@ -49,6 +77,15 @@ export default function SearchBox() {
     }
     const term = q.toLowerCase();
     const all: { type: string; name: string; sub?: string; href: string }[] = [];
+
+    // Nav / functions / settings — match first so they appear when typing page names
+    for (const item of NAV_SEARCH_ITEMS) {
+      const matchName = item.name.toLowerCase().includes(term);
+      const matchKeyword = item.keywords.some((k) => k.includes(term) || term.includes(k));
+      if (matchName || matchKeyword) {
+        all.push({ type: "Nav", name: item.name, href: item.href });
+      }
+    }
 
     const [
       { data: deliveries },
@@ -149,7 +186,7 @@ export default function SearchBox() {
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search moves, quotes, clients, addresses..."
+          placeholder="Search moves, quotes, clients, pages, settings..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}

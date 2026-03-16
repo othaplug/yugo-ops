@@ -94,12 +94,14 @@ export async function GET(req: NextRequest) {
     return tA - tB;
   });
 
-  const [{ data: readinessCheck }, { data: crewRow }] = await Promise.all([
+  const [{ data: readinessCheck }, { data: crewRow }, { data: endOfDayReport }] = await Promise.all([
     supabase.from("readiness_checks").select("id").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     supabase.from("crews").select("name").eq("id", payload.teamId).single(),
+    supabase.from("end_of_day_reports").select("id").eq("team_id", payload.teamId).eq("report_date", today).maybeSingle(),
   ]);
 
   const readinessCompleted = !!readinessCheck?.id;
+  const endOfDaySubmitted = !!endOfDayReport?.id;
   const isCrewLead = payload.role === "lead";
   const readinessRequired = !readinessCompleted && (isCrewLead || jobs.length > 0);
   const teamName = crewRow?.name || "Team";
@@ -112,6 +114,7 @@ export async function GET(req: NextRequest) {
     readinessCompleted,
     readinessRequired,
     isCrewLead,
+    endOfDaySubmitted,
   });
 }
 

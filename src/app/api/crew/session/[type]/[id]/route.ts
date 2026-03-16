@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { normalizeDeliveryStatus } from "@/lib/crew-tracking-status";
 
 /** GET tracking session for crew portal (uses crew auth). */
 export async function GET(
@@ -47,16 +48,22 @@ export async function GET(
     return NextResponse.json({ session: null, checkpoints: [], lastLocation: null });
   }
 
+  const normalize = jobType === "delivery"
+    ? (s: string) => normalizeDeliveryStatus(s)
+    : (s: string) => s;
+
+  const rawCheckpoints: { status: string; timestamp: string; note: string | null }[] = session.checkpoints || [];
+
   return NextResponse.json({
     session: {
       id: session.id,
-      status: session.status,
+      status: normalize(session.status),
       isActive: session.is_active,
       startedAt: session.started_at,
       completedAt: session.completed_at,
       lastLocation: session.last_location,
     },
-    checkpoints: session.checkpoints || [],
+    checkpoints: rawCheckpoints.map((c) => ({ ...c, status: normalize(c.status) })),
     lastLocation: session.last_location,
   });
 }

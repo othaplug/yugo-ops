@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import type { CalendarEvent, ViewMode, YearHeatData, CalendarStatus } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
+import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 
 /* ── Interfaces ────────────────────────────────── */
 
@@ -12,6 +13,8 @@ interface Delivery {
   customer_name: string | null;
   client_name: string | null;
   status: string;
+  stage: string | null;
+  created_at: string;
   scheduled_date: string | null;
   time_slot: string | null;
   delivery_address: string | null;
@@ -30,8 +33,13 @@ interface Delivery {
 
 interface Props {
   deliveries: Delivery[];
+  upcomingDeliveries?: Delivery[];
   onSelectDate?: (date: string) => void;
   onDeliveryClick?: (d: Delivery) => void;
+  onShare?: (d: Delivery) => void;
+  onDetailClick?: (d: Delivery) => void;
+  onEditClick?: (d: Delivery) => void;
+  orgType?: string;
 }
 
 /* ── Helpers ────────────────────────────────────── */
@@ -87,7 +95,7 @@ function getWeekDays(anchor: Date): { date: Date; key: string }[] {
 
 /* ── Main Component ───────────────────────────── */
 
-export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliveryClick }: Props) {
+export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = [], onSelectDate, onDeliveryClick, onShare, onDetailClick, onEditClick, orgType = "" }: Props) {
   const [view, setView] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [monthYear, setMonthYear] = useState(() => {
@@ -612,12 +620,27 @@ export default function PartnerCalendarTab({ deliveries, onSelectDate, onDeliver
 
   /* ── RENDER ────────────────────────────────── */
   return (
-    <div>
-      {Header}
-      {view === "month" && <MonthGrid />}
-      {view === "day" && <DayTimeline />}
-      {view === "week" && <WeekGrid />}
-      {view === "year" && <YearHeatMap />}
+    <div className="space-y-8">
+      <div>
+        {Header}
+        {view === "month" && <MonthGrid />}
+        {view === "day" && <DayTimeline />}
+        {view === "week" && <WeekGrid />}
+        {view === "year" && <YearHeatMap />}
+      </div>
+      {onShare && onDetailClick && onEditClick && orgType && (
+        <div className="border-t border-[var(--brd)]/30 pt-6">
+          <h3 className="text-[17px] font-bold font-hero text-[var(--tx)] mb-4">Upcoming Deliveries</h3>
+          <PartnerDeliveriesTab
+            deliveries={upcomingDeliveries}
+            label="upcoming"
+            onShare={onShare}
+            onDetailClick={onDetailClick}
+            onEditClick={onEditClick}
+            orgType={orgType}
+          />
+        </div>
+      )}
     </div>
   );
 }

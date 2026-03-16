@@ -62,6 +62,10 @@ interface DataTableProps<T> {
   tableId?: string;
   selectable?: boolean;
   bulkActions?: BulkAction[];
+  /** Controlled sort — when provided, overrides internal sort state */
+  sortCol?: string | null;
+  sortDir?: "asc" | "desc";
+  onSortChange?: (col: string, dir: "asc" | "desc") => void;
 }
 
 /* ════════════ Helpers ════════════ */
@@ -125,11 +129,16 @@ export default function DataTable<T>({
   tableId = "default",
   selectable = false,
   bulkActions = [],
+  sortCol: sortColProp,
+  sortDir: sortDirProp,
+  onSortChange,
 }: DataTableProps<T>) {
   /* ── State ── */
   const [search, setSearch] = useState("");
-  const [sortCol, setSortCol] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortColInternal, setSortColInternal] = useState<string | null>(null);
+  const [sortDirInternal, setSortDirInternal] = useState<"asc" | "desc">("asc");
+  const sortCol = sortColProp ?? sortColInternal;
+  const sortDir = sortDirProp ?? sortDirInternal;
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(() => loadPerPage(tableId, defaultPerPage));
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
@@ -246,15 +255,16 @@ export default function DataTable<T>({
   /* ── Sort handler ── */
   const handleSort = useCallback(
     (colId: string) => {
-      if (sortCol === colId) {
-        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      const nextDir = sortCol === colId && sortDir === "asc" ? "desc" : "asc";
+      if (onSortChange) {
+        onSortChange(colId, nextDir);
       } else {
-        setSortCol(colId);
-        setSortDir("asc");
+        setSortColInternal(colId);
+        setSortDirInternal(nextDir);
       }
       setPage(1);
     },
-    [sortCol],
+    [sortCol, sortDir, onSortChange],
   );
 
   /* ── Column toggle ── */

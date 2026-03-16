@@ -12,6 +12,8 @@ interface Invoice {
   status: string;
   due_date: string | null;
   created_at: string;
+  delivery_id?: string | null;
+  square_invoice_url?: string | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -139,6 +141,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                 <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Due</th>
                 <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Amount</th>
                 <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Status</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888] hidden sm:table-cell"></th>
               </tr>
             </thead>
             <tbody>
@@ -146,8 +149,13 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                 const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
                 return (
                   <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[#FAF8F5]/50 transition-colors">
-                    <td className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">
-                      {inv.invoice_number || `INV-${inv.id.slice(0, 6)}`}
+                    <td className="px-4 py-3">
+                      <div className="text-[13px] font-semibold text-[#1A1A1A]">
+                        {inv.invoice_number || `INV-${inv.id.slice(0, 6)}`}
+                      </div>
+                      {inv.delivery_id && (
+                        <div className="text-[10px] text-[#888] mt-0.5">Delivery</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[#888] hidden sm:table-cell">
                       {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
@@ -162,6 +170,20 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${badgeClass}`}>
                         {toTitleCase(inv.status)}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right hidden sm:table-cell">
+                      {inv.square_invoice_url && (
+                        <a
+                          href={inv.square_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          View
+                        </a>
+                      )}
                     </td>
                   </tr>
                 );

@@ -1,10 +1,7 @@
 "use client";
 
-/**
- * Horizontal stage progress bar matching screenshot design.
- * Purple line for completed portion, gray for incomplete.
- * Stage labels centered below. Progress starts only when team is en route.
- */
+import { useEffect, useState } from "react";
+
 export default function StageProgressBar({
   stages,
   currentIndex,
@@ -16,63 +13,169 @@ export default function StageProgressBar({
 }) {
   const total = stages.length;
   const completedCount = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, total);
-  const percent = total > 0 ? (completedCount / total) * 100 : 0;
   const isComplete = completedCount >= total;
 
-  const trackBg = variant === "dark" ? "#2A2A2A" : "#E8E4DF";
-  const fillColor = "#8B5CF6";
-  const completedText = variant === "dark" ? "#E8E5E0" : "#1A1A1A";
-  const pendingText = variant === "dark" ? "#6B6B6B" : "#888";
+  // Delay fill animation until after mount so CSS transition fires
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  const isDark = variant === "dark";
 
   return (
-    <div className="w-full">
-      {/* Progress line */}
-      <div
-        className="h-1.5 w-full rounded-full overflow-hidden mb-3"
-        style={{ background: trackBg }}
-      >
-        <div
-          className="h-full rounded-full transition-all duration-500 ease-out"
-          style={{
-            width: `${percent}%`,
-            background: fillColor,
-          }}
-        />
-      </div>
+    <div className="w-full py-5">
 
-      {/* Stage labels */}
-      <div className="flex justify-between">
+
+      {/* ── Nodes + connectors ── */}
+      <div className="flex items-start">
         {stages.map((s, i) => {
           const isDone = i < completedCount;
           const isCurrent = i === completedCount - 1 && !isComplete;
+          const isLast = i === total - 1;
+
           return (
-            <div
-              key={s.label}
-              className="flex-1 text-center min-w-0 px-0.5"
-              style={{
-                color: isDone ? completedText : pendingText,
-                fontWeight: isDone || isCurrent ? 600 : 400,
-              }}
-            >
-              <span className="text-[10px] sm:text-[11px] truncate block">
-                {s.label}
-              </span>
+            <div key={s.label} className="flex items-start flex-1 last:flex-none">
+
+              {/* Node + label */}
+              <div className="flex flex-col items-center min-w-0">
+
+                {/* Circle node */}
+                <div className="relative flex items-center justify-center">
+                  {/* Outer glow ring for active */}
+                  {isCurrent && (
+                    <span
+                      className="absolute rounded-full animate-ping"
+                      style={{
+                        width: 36,
+                        height: 36,
+                        background: "rgba(201,169,98,0.18)",
+                      }}
+                    />
+                  )}
+                  {/* Complete last-node glow */}
+                  {isComplete && isLast && (
+                    <span
+                      className="absolute rounded-full"
+                      style={{
+                        width: 36,
+                        height: 36,
+                        background: "rgba(34,197,94,0.12)",
+                        animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                      }}
+                    />
+                  )}
+
+                  <div
+                    className="relative z-10 flex items-center justify-center rounded-full transition-all duration-500"
+                    style={{
+                      width: isLast && (isDone || isCurrent) ? 28 : 24,
+                      height: isLast && (isDone || isCurrent) ? 28 : 24,
+                      background: isDone
+                        ? isLast && isComplete
+                          ? "#22C55E"
+                          : "rgba(34,197,94,0.15)"
+                        : isCurrent
+                        ? "var(--gold)"
+                        : isDark
+                        ? "rgba(255,255,255,0.04)"
+                        : "rgba(0,0,0,0.05)",
+                      border: isDone
+                        ? `1.5px solid ${isLast && isComplete ? "#22C55E" : "rgba(34,197,94,0.45)"}`
+                        : isCurrent
+                        ? "none"
+                        : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)"}`,
+                      boxShadow: isComplete && isLast
+                        ? "0 0 0 4px rgba(34,197,94,0.12), 0 2px 8px rgba(34,197,94,0.2)"
+                        : isCurrent
+                        ? "0 0 0 4px rgba(201,169,98,0.18), 0 2px 8px rgba(201,169,98,0.25)"
+                        : "none",
+                    }}
+                  >
+                    {isDone ? (
+                      <svg
+                        width={isLast && isComplete ? 12 : 9}
+                        height={isLast && isComplete ? 12 : 9}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={isLast && isComplete ? "#fff" : "#22C55E"}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : isCurrent ? (
+                      <span
+                        className="rounded-full"
+                        style={{ width: 7, height: 7, background: "#1A1A1A", opacity: 0.85 }}
+                      />
+                    ) : (
+                      <span
+                        className="rounded-full"
+                        style={{
+                          width: 5,
+                          height: 5,
+                          background: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)",
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Stage label */}
+                <span
+                  className="mt-2.5 text-[9.5px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
+                  style={{
+                    color: isDone
+                      ? isComplete
+                        ? "#22C55E"
+                        : isDark ? "rgba(232,229,224,0.85)" : "#1A1A1A"
+                      : isCurrent
+                      ? "var(--gold)"
+                      : isDark
+                      ? "rgba(255,255,255,0.22)"
+                      : "rgba(0,0,0,0.25)",
+                  }}
+                >
+                  {s.label}
+                </span>
+              </div>
+
+              {/* Connector line (not after last node) */}
+              {!isLast && (
+                <div
+                  className="flex-1 mx-1 relative overflow-hidden rounded-full"
+                  style={{
+                    height: 2,
+                    marginTop: 11,
+                    background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-all ease-out"
+                    style={{
+                      width: animated
+                        ? isDone
+                          ? "100%"
+                          : isCurrent
+                          ? "50%"
+                          : "0%"
+                        : "0%",
+                      transitionDuration: "700ms",
+                      transitionDelay: `${i * 80}ms`,
+                      background: isComplete
+                        ? "linear-gradient(90deg, #22C55E, #16A34A)"
+                        : "linear-gradient(90deg, var(--gold), #C9A962)",
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* Completion indicator - subtle check at end when complete */}
-      {isComplete && (
-        <div className="mt-2 flex justify-end">
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] font-medium">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Complete
-          </span>
-        </div>
-      )}
     </div>
   );
 }

@@ -81,7 +81,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
     <div className="space-y-6">
       {/* Period toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="text-[18px] font-bold font-heading text-[var(--tx)]">Performance Analytics</h2>
+        <h2 className="text-[18px] font-bold font-hero text-[var(--tx)]">Performance Analytics</h2>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg)]">
           {PERIOD_OPTIONS.map((opt) => (
             <button
@@ -102,8 +102,8 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
         <KPICard label="On-Time Rate" value={`${data.onTimeRate}%`} sublabel="Within scheduled window" accent="#22C55E" />
         <KPICard
           label="Satisfaction"
-          value={data.satisfactionScore != null ? `${data.satisfactionScore.toFixed(1)}/5` : "—"}
-          sublabel={data.satisfactionCount >= 5 ? `${data.satisfactionCount} ratings` : "Collecting data"}
+          value={data.satisfactionScore != null ? `${data.satisfactionScore.toFixed(1)}/5` : "Collecting data"}
+          sublabel={data.satisfactionScore != null ? `${data.satisfactionCount} ratings` : data.satisfactionCount > 0 ? `${data.satisfactionCount} of 5 ratings` : "Need ratings from completed deliveries"}
           accent={GOLD}
         />
         <KPICard label="Damage Rate" value={`${data.damageRate}%`} sublabel="Industry avg: 3-5%" accent={data.damageRate <= 1 ? "#22C55E" : "#EF4444"} />
@@ -142,7 +142,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Zone Distribution */}
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
+        <div>
           <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Zone Distribution</h3>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -176,7 +176,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
         </div>
 
         {/* Satisfaction Breakdown */}
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
+        <div>
           <h3 className="text-[13px] font-bold text-[var(--tx)] mb-4">Satisfaction Breakdown</h3>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">

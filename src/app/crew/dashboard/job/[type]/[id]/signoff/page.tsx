@@ -35,8 +35,131 @@ const NPS_LABELS: Record<number, string> = {
   10: "Absolutely!",
 };
 
+// ── Delivery copy keyed by partner vertical ───────────────────────────────
+type DeliveryCopy = {
+  thankYouSub: string;
+  thankYouNote: string;
+  noIssuesLabel: string;
+  preExistingLabel: string;
+  itemsConfirmSubtitle: string;
+  legalNote: string;
+};
+
+function getDeliveryCopy(vertical: string | null): DeliveryCopy {
+  const base: DeliveryCopy = {
+    thankYouSub: "Your delivery has been completed.",
+    thankYouNote: "A signed delivery record has been saved. If you notice any concealed damage within 24 hours, please contact us immediately.",
+    noIssuesLabel: "No issues experienced during this delivery",
+    preExistingLabel: "Pre-existing conditions were noted before the delivery",
+    itemsConfirmSubtitle: "Review and confirm all items were received in good condition.",
+    legalNote: "By signing, I confirm all items listed were received as described. I understand I have 24 hours from this sign-off to report any concealed damage not visible during the walkthrough.",
+  };
+
+  const v = (vertical || "").toLowerCase();
+
+  if (v === "interior_designer" || v === "designer") {
+    return {
+      ...base,
+      thankYouSub: "Your client's pieces have been placed as directed.",
+      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all pieces were placed per your client's plan.",
+    };
+  }
+
+  if (v === "art_gallery" || v === "gallery" || v === "antique_dealer") {
+    return {
+      ...base,
+      thankYouSub: "Your piece has been delivered and placed with the care it deserves.",
+      thankYouNote: "A signed delivery record has been saved. Please report any damage or concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm each piece was received in the expected condition.",
+      legalNote: "By signing, I confirm all items were received as described. Any concealed damage must be reported within 24 hours.",
+    };
+  }
+
+  if (v === "cabinetry") {
+    return {
+      ...base,
+      thankYouSub: "Your cabinetry has been delivered and placed.",
+      thankYouNote: "A signed delivery record has been saved. Please report any damage within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all cabinetry components were received in good condition.",
+    };
+  }
+
+  if (v === "flooring") {
+    return {
+      ...base,
+      thankYouSub: "Your materials have been delivered.",
+      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all materials were received in good condition.",
+    };
+  }
+
+  if (v === "hospitality") {
+    return {
+      ...base,
+      thankYouSub: "Your items have been delivered and set in place.",
+      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all items were received and placed correctly.",
+    };
+  }
+
+  if (v === "medical_equipment") {
+    return {
+      ...base,
+      thankYouSub: "Your equipment has been delivered and positioned.",
+      thankYouNote: "A signed delivery record has been saved. Please verify equipment condition and report any concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all equipment was received and positioned correctly.",
+    };
+  }
+
+  if (v === "av_technology") {
+    return {
+      ...base,
+      thankYouSub: "Your AV equipment has been delivered and positioned.",
+      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all AV equipment was received in good condition.",
+    };
+  }
+
+  if (v === "appliances") {
+    return {
+      ...base,
+      thankYouSub: "Your appliances have been delivered and placed.",
+      thankYouNote: "A signed delivery record has been saved. Please report any damage within 24 hours.",
+      noIssuesLabel: "No issues experienced during this delivery",
+      preExistingLabel: "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle: "Confirm all appliances were received in good condition.",
+    };
+  }
+
+  // furniture_retailer / retail / default delivery
+  return {
+    ...base,
+    thankYouSub: "Your pieces have been carefully delivered and placed.",
+    thankYouNote: "A signed delivery record has been saved. If you notice any damage within 24 hours, please contact us immediately.",
+    noIssuesLabel: "No issues experienced during this delivery",
+    preExistingLabel: "Pre-existing conditions were noted before this delivery",
+    itemsConfirmSubtitle: "Review and confirm all items were received in good condition.",
+  };
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const SKIP_REASONS = [
-  { value: "client_not_home", label: "Client not home" },
+  { value: "client_not_home", label: "Client not home — doing another route" },
   { value: "client_refused", label: "Client refused to sign" },
   { value: "client_requested_delay", label: "Client requested delay" },
   { value: "emergency", label: "Emergency" },
@@ -119,17 +242,17 @@ function ToggleCard({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`w-full flex items-start gap-3.5 p-4 rounded-2xl border text-left transition-all duration-200 ${
+      className={`w-full flex items-start gap-3.5 p-4 rounded-2xl text-left transition-all duration-200 ${
         checked
-          ? "border-[#C9A962]/40 bg-[#C9A962]/5 shadow-[0_1px_8px_rgba(201,169,98,0.10)]"
-          : "border-[#E8E4DC] bg-white hover:border-[#C9A962]/25"
+          ? "bg-[#C9A962]/5 shadow-[0_1px_8px_rgba(201,169,98,0.10)]"
+          : "bg-white hover:bg-[#FAF8F4]"
       }`}
     >
-      <div
-        className={`mt-0.5 w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all duration-200 ${
-          checked ? "bg-[#C9A962] text-[#1A1A1A]" : "bg-[#F0EDE8] border border-[#D8D3CA] text-transparent"
-        }`}
-      >
+        <div
+          className={`mt-0.5 w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all duration-200 ${
+            checked ? "bg-[#C9A962] text-[#1A1A1A]" : "bg-[#F0EDE8] text-transparent"
+          }`}
+        >
         <CheckMark size={9} />
       </div>
       <div className="min-w-0 flex-1">
@@ -197,6 +320,9 @@ export default function ClientSignOffPage({
   const [noPropertyDamage, setNoPropertyDamage] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState("");
 
+  // Partner vertical (for delivery language)
+  const [partnerVertical, setPartnerVertical] = useState<string | null>(null);
+
   // Phase 3
   const [clientName, setClientName] = useState("");
   const [signature, setSignature] = useState("");
@@ -246,6 +372,7 @@ export default function ClientSignOffPage({
         const photosData = photosRes.ok ? await photosRes.json() : { photos: [] };
         const invData = inventoryRes.ok ? await inventoryRes.json() : { items: [] };
         if (signoffData?.id) setExisting(signoffData);
+        if (signoffData?.partnerVertical) setPartnerVertical(signoffData.partnerVertical);
         const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
         setJobPhotos(photos);
         const items: string[] = invData?.items || [];
@@ -404,6 +531,8 @@ export default function ClientSignOffPage({
     (ic) => ic.condition !== "new_damage" || (ic.notes.trim().length > 0)
   );
 
+  const copy = jobType === "delivery" ? getDeliveryCopy(partnerVertical) : null;
+
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
@@ -449,16 +578,30 @@ export default function ClientSignOffPage({
     walkthroughConductedByClient &&
     ((allItemsReceived && conditionAccepted) || exceptions.trim().length > 0 || itemsLeftBehind.trim().length > 0);
 
-  const phase3Valid =
-    !!rating &&
+  const allConfirmed =
     noIssuesDuringMove &&
     noDamages &&
+    noPropertyDamage &&
     walkthroughCompleted &&
     crewConductedProfessionally &&
-    noPropertyDamage &&
+    crewWoreProtection &&
     itemsPlacedCorrectly &&
     propertyLeftClean &&
-    npsScore !== null;
+    furnitureReassembled !== false;
+  const hasIssuesOrConcerns =
+    !noIssuesDuringMove ||
+    !noDamages ||
+    !noPropertyDamage ||
+    !walkthroughCompleted ||
+    !crewConductedProfessionally ||
+    !crewWoreProtection ||
+    !itemsPlacedCorrectly ||
+    !propertyLeftClean ||
+    furnitureReassembled === false;
+  const phase3Valid =
+    !!rating &&
+    npsScore !== null &&
+    (allConfirmed ? true : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
 
   const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
 
@@ -638,7 +781,7 @@ export default function ClientSignOffPage({
                 Items Confirmation
               </h1>
               <p className="text-[13px] mt-1.5 leading-snug" style={{ color: MUTED }}>
-                Review and confirm all belongings were received in good condition.
+                {copy?.itemsConfirmSubtitle ?? "Review and confirm all belongings were received in good condition."}
               </p>
             </div>
 
@@ -699,7 +842,7 @@ export default function ClientSignOffPage({
               <ToggleCard checked={conditionAccepted} onChange={setConditionAccepted} label="Everything in good condition" />
               <ToggleCard checked={walkthroughConductedByClient} onChange={setWalkthroughConductedByClient} label="Walkthrough conducted by client" />
               <ToggleCard checked={clientPresentDuringUnloading} onChange={setClientPresentDuringUnloading} label="I was present during unloading" />
-              <ToggleCard checked={preExistingConditionsNoted} onChange={setPreExistingConditionsNoted} label="Pre-existing conditions were noted before the move" />
+              <ToggleCard checked={preExistingConditionsNoted} onChange={setPreExistingConditionsNoted} label={copy?.preExistingLabel ?? "Pre-existing conditions were noted before the move"} />
               {!conditionAccepted && (
                 <textarea
                   value={exceptions}
@@ -764,12 +907,12 @@ export default function ClientSignOffPage({
             </div>
 
             {/* NPS */}
-            <div className="mb-6 p-4 rounded-2xl border bg-white" style={{ borderColor: BORDER }}>
+            <div className="mb-6">
               <p className="text-[13px] font-semibold mb-0.5" style={{ color: INK }}>
                 How likely are you to recommend us?
               </p>
               <p className="text-[11px] mb-3.5" style={{ color: MUTED }}>0 = Not at all &nbsp;·&nbsp; 10 = Absolutely</p>
-              <div className="flex flex-nowrap justify-between gap-1 overflow-x-auto pb-1">
+              <div className="flex flex-nowrap justify-center gap-1">
                 {Array.from({ length: 11 }, (_, i) => i).map((n) => {
                   const isSelected = npsScore === n;
                   let bg = BORDER;
@@ -784,7 +927,7 @@ export default function ClientSignOffPage({
                       key={n}
                       type="button"
                       onClick={() => setNpsScore(n)}
-                      className={`shrink-0 w-8 h-8 rounded-full text-[12px] font-bold transition-all ${isSelected ? "scale-115 shadow-sm" : "hover:opacity-80"}`}
+                      className={`shrink-0 w-7 h-7 rounded-full text-[11px] font-bold transition-all ${isSelected ? "scale-110 shadow-sm" : "hover:opacity-80"}`}
                       style={{ backgroundColor: bg, color: textC }}
                     >
                       {n}
@@ -807,8 +950,11 @@ export default function ClientSignOffPage({
               <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
                 Please confirm the following
               </p>
+              <p className="text-[11px] mb-3" style={{ color: MUTED }}>
+                Uncheck any box or select &quot;No&quot; if something wasn&apos;t as expected — you&apos;ll be asked to describe below.
+              </p>
               <div className="space-y-2.5">
-                <ToggleCard checked={noIssuesDuringMove} onChange={setNoIssuesDuringMove} label="No issues experienced during my move" />
+                <ToggleCard checked={noIssuesDuringMove} onChange={setNoIssuesDuringMove} label={copy?.noIssuesLabel ?? "No issues experienced during my move"} />
                 <ToggleCard checked={noDamages} onChange={setNoDamages} label="No damages to my belongings" />
                 <ToggleCard checked={noPropertyDamage} onChange={setNoPropertyDamage} label="No damage to walls, floors, or doorways" />
                 <ToggleCard checked={walkthroughCompleted} onChange={setWalkthroughCompleted} label="Walkthrough completed with the crew" />
@@ -816,31 +962,33 @@ export default function ClientSignOffPage({
                 <ToggleCard checked={crewWoreProtection} onChange={setCrewWoreProtection} label="Crew used floor and wall protection" />
 
                 {/* Furniture reassembly */}
-                <div className="p-4 rounded-2xl border bg-white" style={{ borderColor: BORDER }}>
-                  <p className="text-[13px] font-medium mb-3" style={{ color: INK }}>
+                <div className="flex flex-col gap-4 py-3">
+                  <p className="text-[15px] font-semibold" style={{ color: INK }}>
                     All disassembled furniture was reassembled
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-6">
                     {(["yes", "no", "na"] as const).map((opt) => {
                       const value = opt === "yes" ? true : opt === "no" ? false : null;
                       const isSelected = furnitureReassembled === value;
                       const label = opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A";
                       return (
-                        <button
+                        <label
                           key={opt}
-                          type="button"
-                          onClick={() => setFurnitureReassembled(value)}
-                          className={`flex-1 py-2 rounded-full text-[12px] font-semibold transition-all border ${
-                            isSelected ? "border-transparent" : "border-[#E8E4DC]"
-                          }`}
-                          style={
-                            isSelected
-                              ? { backgroundColor: GOLD, color: "#1A1A1A" }
-                              : { color: MUTED }
-                          }
+                          className="flex items-center gap-3 cursor-pointer"
                         >
-                          {label}
-                        </button>
+                          <input
+                            type="radio"
+                            name="furniture-reassembled"
+                            checked={isSelected}
+                            onChange={() => setFurnitureReassembled(value)}
+                            className="w-5 h-5 rounded-full appearance-none border-0 outline-none cursor-pointer"
+                            style={{
+                              backgroundColor: isSelected ? "#C9A962" : "#E8E4DC",
+                              boxShadow: isSelected ? "inset 0 0 0 3px white" : "none",
+                            }}
+                          />
+                          <span className="text-[15px] font-medium" style={{ color: INK }}>{label}</span>
+                        </label>
                       );
                     })}
                   </div>
@@ -851,14 +999,30 @@ export default function ClientSignOffPage({
               </div>
             </div>
 
-            <textarea
-              value={feedbackNote}
-              onChange={(e) => setFeedbackNote(e.target.value)}
-              placeholder="Optional feedback or comments…"
-              className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors mb-5"
-              style={{ color: INK, borderColor: BORDER }}
-              rows={2}
-            />
+            {hasIssuesOrConcerns ? (
+              <div className="mb-5">
+                <p className="text-[12px] font-semibold mb-2" style={{ color: INK }}>
+                  Please describe your concerns (required)
+                </p>
+                <textarea
+                  value={feedbackNote}
+                  onChange={(e) => setFeedbackNote(e.target.value)}
+                  placeholder="Describe what happened so we can follow up (e.g. damage, missing items, walkthrough not done, property not left clean…)"
+                  className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors"
+                  style={{ color: INK, borderColor: BORDER }}
+                  rows={3}
+                />
+              </div>
+            ) : (
+              <textarea
+                value={feedbackNote}
+                onChange={(e) => setFeedbackNote(e.target.value)}
+                placeholder="Optional feedback or comments…"
+                className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors mb-5"
+                style={{ color: INK, borderColor: BORDER }}
+                rows={2}
+              />
+            )}
 
             <button
               onClick={() => setPhase(4)}
@@ -916,9 +1080,8 @@ export default function ClientSignOffPage({
                 </button>
               </div>
               <div
-                className="relative rounded-2xl overflow-hidden border-2"
+                className="relative rounded-2xl overflow-hidden"
                 style={{
-                  borderColor: BORDER,
                   backgroundColor: "#FDFCF8",
                   boxShadow: "inset 0 1px 6px rgba(0,0,0,0.04)",
                 }}
@@ -958,8 +1121,10 @@ export default function ClientSignOffPage({
               style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}28` }}
             >
               <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
-                By signing, I confirm all items listed were received as described. I understand I have{" "}
-                <strong style={{ color: INK }}>24 hours</strong> from this sign-off to report any concealed damage not visible during the walkthrough. After this period, the condition of items is considered accepted.
+                {copy?.legalNote
+                  ? <>{copy.legalNote} I understand I have <strong style={{ color: INK }}>24 hours</strong> from this sign-off to report any damage. After this period, the condition of items is considered accepted.</>
+                  : <>By signing, I confirm all items listed were received as described. I understand I have <strong style={{ color: INK }}>24 hours</strong> from this sign-off to report any concealed damage not visible during the walkthrough. After this period, the condition of items is considered accepted.</>
+                }
               </p>
             </div>
 
@@ -1006,15 +1171,28 @@ export default function ClientSignOffPage({
             <h1 className="font-hero text-[32px] font-semibold mb-2" style={{ color: INK }}>
               Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!
             </h1>
-            <p className="text-[15px] mb-1" style={{ color: MUTED }}>
-              We hope you love your new space.
-            </p>
-            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
-              Welcome home.
-            </p>
-            <p className="text-[11px] mt-5 mb-8 max-w-[270px] mx-auto leading-relaxed" style={{ color: MUTED }}>
-              A confirmation receipt has been generated. If you notice any concealed damage within 24 hours, please contact us immediately.
-            </p>
+            {copy ? (
+              <>
+                <p className="text-[15px] mb-1" style={{ color: MUTED }}>
+                  {copy.thankYouSub}
+                </p>
+                <p className="text-[11px] mt-5 mb-8 max-w-[270px] mx-auto leading-relaxed" style={{ color: MUTED }}>
+                  {copy.thankYouNote}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[15px] mb-1" style={{ color: MUTED }}>
+                  We hope you love your new space.
+                </p>
+                <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+                  Welcome home.
+                </p>
+                <p className="text-[11px] mt-5 mb-8 max-w-[270px] mx-auto leading-relaxed" style={{ color: MUTED }}>
+                  A confirmation receipt has been generated. If you notice any concealed damage within 24 hours, please contact us immediately.
+                </p>
+              </>
+            )}
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-[14px] transition-opacity hover:opacity-85"
@@ -1044,15 +1222,15 @@ export default function ClientSignOffPage({
                   key={r.value}
                   type="button"
                   onClick={() => setSkipReason(r.value)}
-                  className={`w-full flex items-center gap-3.5 p-4 rounded-2xl border text-left transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-4 rounded-2xl text-left transition-all ${
                     skipReason === r.value
-                      ? "border-red-400/50 bg-red-50"
-                      : "border-[#E8E4DC] bg-white hover:border-red-200"
+                      ? "bg-red-50"
+                      : "bg-white hover:bg-red-50/30"
                   }`}
                 >
                   <div
-                    className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded-full shrink-0 border-2 flex items-center justify-center ${
-                      skipReason === r.value ? "border-red-400 bg-red-400" : "border-[#D8D3CA]"
+                    className={`w-[18px] h-[18px] rounded-full shrink-0 flex items-center justify-center ${
+                      skipReason === r.value ? "bg-red-400" : "bg-[#E8E4DC]"
                     }`}
                   >
                     {skipReason === r.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -1107,10 +1285,10 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(6)}
-              className="text-[11px] transition-colors hover:text-[#C9A962]"
+              className="text-[11px] transition-colors hover:text-[#C9A962] underline underline-offset-2"
               style={{ color: MUTED }}
             >
-              Client not available — skip sign-off
+              Client not around? Skip and do another route
             </button>
           </p>
         )}

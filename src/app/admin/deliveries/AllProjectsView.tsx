@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatMoveDate } from "@/lib/date-format";
-import { getDeliveryDetailPath } from "@/lib/move-code";
+import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
 import RecurringSchedulesView from "./RecurringSchedulesView";
@@ -46,6 +46,8 @@ interface Delivery {
   total_price?: number | null;
   delivery_type?: string | null;
   zone?: number | null;
+  completed_at?: string | null;
+  updated_at?: string | null;
 }
 
 const DELIVERY_STATUS_STYLE: Record<string, string> = {
@@ -60,10 +62,6 @@ const DELIVERY_STATUS_STYLE: Record<string, string> = {
   completed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
   cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
 };
-
-function deliveryTypeLabel(d: Delivery): string {
-  return d.booking_type === "day_rate" ? "Day Rate" : "Delivery";
-}
 
 function deliveryDetailsLabel(d: Delivery): string {
   if (d.booking_type === "day_rate") {
@@ -106,23 +104,10 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     searchable: true,
   },
   {
-    id: "customer",
-    label: "Customer",
-    accessor: (d) => d.customer_name || d.client_name,
-    render: (d) => <span className="text-[var(--tx2)]">{d.customer_name || d.client_name || "—"}</span>,
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "type",
-    label: "Type",
-    accessor: (d) => deliveryTypeLabel(d),
-    render: (d) =>
-      d.booking_type === "day_rate" ? (
-        <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
-      ) : (
-        <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
-      ),
+    id: "delivery_id",
+    label: "Delivery ID",
+    accessor: (d) => d.delivery_number || d.id,
+    render: (d) => <span className="font-mono text-[var(--tx2)]">{formatJobId(d.delivery_number || d.id, "delivery")}</span>,
     sortable: true,
     searchable: true,
   },
@@ -154,12 +139,16 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
 export default function AllDeliveriesView({
   deliveries,
   today,
+  initialView,
+  initialScheduleId,
 }: {
   deliveries: Delivery[];
   today: string;
+  initialView?: "deliveries" | "recurring";
+  initialScheduleId?: string;
 }) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<"deliveries" | "recurring">("deliveries");
+  const [activeView, setActiveView] = useState<"deliveries" | "recurring">(initialView || "deliveries");
   const [partnerType, setPartnerType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
@@ -225,7 +214,9 @@ export default function AllDeliveriesView({
         ))}
       </div>
 
-      {activeView === "recurring" && <RecurringSchedulesView />}
+      {activeView === "recurring" && (
+        <RecurringSchedulesView initialScheduleId={initialScheduleId} />
+      )}
 
       {activeView === "deliveries" && (<>
       {/* Header */}

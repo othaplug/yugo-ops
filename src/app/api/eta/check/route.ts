@@ -5,10 +5,33 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { buildETAMessage } from "@/lib/sms/etaMessages";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { notifyAllAdmins, createPartnerNotification } from "@/lib/notifications";
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const GPS_STALE_MS = 5 * 60 * 1000;
 const ARRIVAL_RADIUS_M = 100;
+const LATE_THRESHOLD_MINUTES = 10;
+
+/** Parse scheduled end time (date + time) into ms. Uses scheduled_end or defaults to 17:00. */
+function getScheduledEndMs(scheduledDate: string | null, scheduledEnd: string | null, timeSlot: string | null): number | null {
+  if (!scheduledDate) return null;
+  let endTime = "17:00"; // 5pm default
+  if (scheduledEnd && typeof scheduledEnd === "string") {
+    const t = scheduledEnd.slice(0, 8); // "HH:MM:SS" or "HH:MM"
+    if (t) endTime = t.slice(0, 5);
+  } else if (timeSlot && typeof timeSlot === "string") {
+    const match = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      if (match[3]?.toUpperCase() === "PM" && h < 12) h += 12;
+      if (match[3]?.toUpperCase() === "AM" && h === 12) h = 0;
+      endTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+  }
+  const d = new Date(`${scheduledDate}T${endTime}:00`);
+  return isNaN(d.getTime()) ? null : d.getTime();
+}
 
 function calculateDistance(
   lat1: number,
@@ -54,7 +77,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const { data: activeMoves } = await admin
     .from("moves")
     .select(
-      "id, client_name, client_phone, from_address, to_address, to_lat, to_lng, tracking_code, tier_selected, dedicated_coordinator, crew_id"
+      "id, client_name, client_phone, from_address, to_address, to_lat, to_lng, tracking_code, tier_selected, dedicated_coordinator, crew_id, scheduled_date, scheduled_end, time_slot"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -62,7 +85,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const { data: activeDeliveries } = await admin
     .from("deliveries")
     .select(
-      "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, stage, tracking_code, organization_id, crew_id"
+      "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, stage, tracking_code, organization_id, crew_id, scheduled_date, scheduled_end, delivery_window, time_slot"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -147,6 +170,52 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
           });
         }
         results.push({ move_id: move.id, action: "eta_15_min_sent" });
+      }
+    }
+
+    // Crew running 10+ mins behind scheduled arrival — notify client, admin
+    const scheduledEndMs = getScheduledEndMs(move.scheduled_date, move.scheduled_end, move.time_slot);
+    const now = Date.now();
+    const isLate = scheduledEndMs != null && etaMinutes >= LATE_THRESHOLD_MINUTES && (now - scheduledEndMs) >= LATE_THRESHOLD_MINUTES * 60 * 1000;
+    if (isLate && smsEnabled) {
+      const { data: existingLate } = await admin
+        .from("eta_sms_log")
+        .select("id")
+        .eq("move_id", move.id)
+        .eq("message_type", "crew_running_late")
+        .limit(1);
+      if (!existingLate?.length) {
+        const msg = buildETAMessage("crew_running_late", {
+          recipientName: move.client_name || "Customer",
+          originAddress: move.from_address || "",
+          destinationAddress: move.to_address || "",
+          etaMinutes,
+          trackingLink,
+        });
+        const sms = await sendSMS(move.client_phone, msg);
+        await admin.from("eta_sms_log").insert({
+          move_id: move.id,
+          recipient_phone: move.client_phone,
+          recipient_name: move.client_name || "",
+          message_type: "crew_running_late",
+          message_body: msg,
+          twilio_sid: sms.sid || null,
+          eta_minutes: etaMinutes,
+          crew_lat: crewPos.lat,
+          crew_lng: crewPos.lng,
+          destination_lat: destLat,
+          destination_lng: destLng,
+        });
+        await notifyAllAdmins({
+          title: "Crew running behind schedule",
+          body: `${move.client_name} · ETA ${etaMinutes} min (10+ mins behind)`,
+          icon: "⚠️",
+          link: `/admin/moves/${move.tracking_code ?? move.id}`,
+          sourceType: "move",
+          sourceId: move.id,
+          eventSlug: "crew_running_late",
+        });
+        results.push({ move_id: move.id, action: "crew_running_late_sent" });
       }
     }
 
@@ -329,6 +398,64 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
           destination_lng: destLng,
         });
         results.push({ delivery_id: delivery.id, action: "eta_15_min_sent" });
+      }
+    }
+
+    // Crew running 10+ mins behind scheduled arrival — notify client, admin, partner
+    const deliveryTimeSlot = delivery.delivery_window || delivery.time_slot;
+    const scheduledEndMs = getScheduledEndMs(delivery.scheduled_date, delivery.scheduled_end, deliveryTimeSlot);
+    const now = Date.now();
+    const isLate = scheduledEndMs != null && etaMinutes >= LATE_THRESHOLD_MINUTES && (now - scheduledEndMs) >= LATE_THRESHOLD_MINUTES * 60 * 1000;
+    if (isLate && smsEnabled) {
+      const { data: existingLate } = await admin
+        .from("eta_sms_log")
+        .select("id")
+        .eq("delivery_id", delivery.id)
+        .eq("message_type", "crew_running_late")
+        .limit(1);
+      if (!existingLate?.length) {
+        const msg = buildETAMessage("crew_running_late", {
+          recipientName: delivery.end_customer_name || "Customer",
+          originAddress: delivery.pickup_address || "",
+          destinationAddress: delivery.delivery_address || "",
+          etaMinutes,
+          trackingLink,
+          partnerName,
+        });
+        const sms = await sendSMS(delivery.end_customer_phone, msg);
+        await admin.from("eta_sms_log").insert({
+          delivery_id: delivery.id,
+          recipient_phone: delivery.end_customer_phone,
+          recipient_name: delivery.end_customer_name || "",
+          message_type: "crew_running_late",
+          message_body: msg,
+          twilio_sid: sms.sid || null,
+          eta_minutes: etaMinutes,
+          crew_lat: crewPos.lat,
+          crew_lng: crewPos.lng,
+          destination_lat: destLat,
+          destination_lng: destLng,
+        });
+        await notifyAllAdmins({
+          title: "Crew running behind schedule",
+          body: `${delivery.end_customer_name || org?.name || "Delivery"} · ETA ${etaMinutes} min (10+ mins behind)`,
+          icon: "⚠️",
+          link: `/admin/deliveries/${delivery.tracking_code ?? delivery.id}`,
+          sourceType: "delivery",
+          sourceId: delivery.id,
+          eventSlug: "crew_running_late",
+        });
+        if (delivery.organization_id) {
+          await createPartnerNotification({
+            orgId: delivery.organization_id,
+            title: "Crew running behind schedule",
+            body: `Delivery to ${delivery.end_customer_name || "customer"} · ETA ${etaMinutes} min (10+ mins behind)`,
+            icon: "⚠️",
+            link: `/partner`,
+            deliveryId: delivery.id,
+          });
+        }
+        results.push({ delivery_id: delivery.id, action: "crew_running_late_sent" });
       }
     }
 

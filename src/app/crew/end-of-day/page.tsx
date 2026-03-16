@@ -53,14 +53,22 @@ export default function CrewEndOfDayPage() {
         ← Back to Dashboard
       </Link>
       <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
-      <p className="text-[12px] text-[var(--tx3)] mt-1">
-        {preview?.alreadySubmitted
-          ? "You already submitted a report for today. Submit again to update it with any new jobs or expenses."
-          : "Submit your daily report. Data is auto-compiled from today's activity."}
-      </p>
+      {preview?.alreadySubmitted ? (
+        <div className="mt-3 flex items-center gap-2 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--grn)] text-white text-[14px]">✓</span>
+          <div>
+            <p className="text-[13px] font-semibold text-[var(--grn)]">End of day submitted</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Need to add something? You can update your report below.</p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-[12px] text-[var(--tx3)] mt-1">
+          Submit your daily report. Data is auto-compiled from today&apos;s activity.
+        </p>
+      )}
 
       {preview?.summary && (
-        <div className="mt-4 p-4 rounded-xl bg-[var(--bg)] border border-[var(--brd)]">
+        <div className="mt-4 p-4 rounded-xl bg-[var(--bg)]">
           <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
@@ -103,7 +111,11 @@ export default function CrewEndOfDayPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
+          className={`w-full py-4 rounded-xl font-semibold text-[15px] disabled:opacity-50 ${
+            preview?.alreadySubmitted
+              ? "bg-transparent border-2 border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+              : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[#D4B56C]"
+          }`}
         >
           {submitting ? (preview?.alreadySubmitted ? "Updating…" : "Submitting…") : preview?.alreadySubmitted ? "Update report" : "Submit & End Day"}
         </button>

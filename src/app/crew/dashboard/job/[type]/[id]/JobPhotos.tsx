@@ -48,8 +48,8 @@ interface PhotoItem {
 
 const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arrived"];
 
-/** No add-photo before arrival at pickup. Photos only after crew taps "Arrived at Pickup". */
-const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route"];
+/** No add-photo while crew is in transit (driving). Photos only at pickup/destination. */
+const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination"];
 
 export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, readOnly = false }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -118,87 +118,107 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
 
   const photosAtCurrentCheckpoint = photos.filter((p) => p.checkpoint === currentStatus).length;
 
+  const photoCount = photos.length;
+  const needsPhoto = requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped;
+
   return (
     <div>
-      <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Photos</h2>
-      {readOnly ? null : !canAddPhotos ? (
-        <p className="text-[11px] text-[var(--tx3)] mb-3">Add photos after arriving at pickup.</p>
-      ) : showPrompt ? (
-        <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)]/20 p-4 mb-3">
-          <p className="text-[12px] font-semibold text-[var(--tx)] mb-2">{prompt}</p>
-          {requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
-            <p className="text-[10px] text-[var(--gold)] mb-3">Take at least {MIN_PHOTOS_AT_ARRIVED} photo to continue, or skip below.</p>
-          )}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className={`flex items-center justify-center w-full py-3 rounded-xl border-2 border-dashed transition-colors ${
-              uploading ? "opacity-50 pointer-events-none border-[var(--brd)]" : "border-[var(--gold)]/50 hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 cursor-pointer"
-            }`}
-          >
-            <span className="text-[13px] font-semibold text-[var(--gold)]">Take Photo ({photosAtCurrentCheckpoint} taken)</span>
-          </button>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4 mb-3">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center justify-center w-full py-3 rounded-xl border-2 border-dashed border-[var(--brd)] hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <span className="text-[13px] font-semibold text-[var(--tx)]">Take Photo ({photos.length} taken)</span>
-          </button>
-        </div>
+      {/* Hidden file input - always present so both empty-state and grid add-photo can trigger it */}
+      {!readOnly && canAddPhotos && (
+        <input
+          ref={fileInputRef}
+          id="job-photos-file-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="sr-only"
+          tabIndex={-1}
+        />
       )}
-      <div className="flex flex-wrap gap-2">
-        {photos.map((p) => (
-          <a
-            key={p.id}
-            href={p.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-20 h-20 rounded-lg overflow-hidden border border-[var(--brd)] bg-[var(--bg)] shrink-0"
-          >
-            <img src={p.url} alt="" className="w-full h-full object-cover" />
-          </a>
-        ))}
+      {/* Header row */}
+      <div className="mb-3">
+        <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Photos</p>
         {!readOnly && canAddPhotos && (
-          <label
-            className={`w-20 h-20 rounded-lg border-2 border-dashed border-[var(--brd)] flex items-center justify-center text-[22px] font-medium text-[var(--tx3)] cursor-pointer shrink-0 transition-colors hover:border-[var(--gold)] hover:bg-[var(--gdim)]/30 hover:text-[var(--gold)] ${
-              uploading ? "opacity-50 pointer-events-none" : ""
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileChange}
-              className="sr-only"
-            />
-            {uploading ? "…" : "+"}
-          </label>
+          <p className="text-[11px] text-[var(--tx2)] mt-0.5">{prompt}</p>
         )}
       </div>
-      <p className="text-[10px] text-[var(--tx3)] mt-2">{photos.length} photo{photos.length !== 1 ? "s" : ""} taken</p>
-      {!readOnly && requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped && (
+
+      {/* Required photo nudge */}
+      {needsPhoto && (
+        <p className="text-[10px] text-[var(--gold)] mb-2.5">
+          Take at least 1 photo to advance — or skip below.
+        </p>
+      )}
+
+      {/* Photo grid */}
+      {photoCount > 0 && (
+        <div className="grid grid-cols-4 gap-2 mb-2">
+          {photos.map((p) => (
+            <a
+              key={p.id}
+              href={p.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block aspect-square rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--bg)]"
+            >
+              <img src={p.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+            </a>
+          ))}
+          {!readOnly && canAddPhotos && (
+            <label
+              htmlFor="job-photos-file-input"
+              className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </label>
+          )}
+        </div>
+      )}
+
+      {/* Empty state: add first photo */}
+      {photoCount === 0 && !readOnly && canAddPhotos && (
         <button
           type="button"
-          onClick={() => {
-            setPhotosSkipped(true);
-            fetch("/api/crew/photos/skip-log", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ jobId, jobType, checkpoint: currentStatus }),
-            }).catch(() => {});
-          }}
-          className="mt-2 text-[10px] text-[var(--tx3)] hover:text-[var(--gold)] underline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className={`w-full flex items-center justify-center gap-2 py-5 rounded-xl border border-dashed transition-all disabled:opacity-40 active:scale-[0.98] ${
+            needsPhoto
+              ? "border-[var(--gold)]/50 text-[var(--gold)] hover:bg-[var(--gold)]/5"
+              : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/30 hover:text-[var(--tx2)]"
+          }`}
         >
-          Skip photos (not recommended)
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span className="text-[12px] font-semibold">{uploading ? "Uploading…" : "Tap to take photo"}</span>
         </button>
       )}
+
+      {/* Count + skip */}
+      <div className="flex items-center justify-between mt-2">
+        {photoCount > 0 && (
+          <p className="text-[10px] text-[var(--tx3)]/60">{photoCount} photo{photoCount !== 1 ? "s" : ""} taken</p>
+        )}
+        {!readOnly && needsPhoto && (
+          <button
+            type="button"
+            onClick={() => {
+              setPhotosSkipped(true);
+              fetch("/api/crew/photos/skip-log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ jobId, jobType, checkpoint: currentStatus }),
+              }).catch(() => {});
+            }}
+            className="ml-auto text-[10px] text-[var(--tx3)]/50 hover:text-[var(--tx3)] underline underline-offset-2"
+          >
+            Skip (not recommended)
+          </button>
+        )}
+      </div>
     </div>
   );
 }

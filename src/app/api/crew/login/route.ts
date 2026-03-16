@@ -4,9 +4,11 @@ import { signCrewToken, hashCrewPin, CREW_COOKIE_NAME, CREW_PIN_LENGTH } from "@
 import { checkLockout, recordFailedAttempt, clearLockout, normalizePhoneForLockout } from "@/lib/crew-lockout";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_MAX = 20;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const _g = globalThis as typeof globalThis & { __crewLoginRateLimit?: Map<string, { count: number; resetAt: number }> };
+if (!_g.__crewLoginRateLimit) _g.__crewLoginRateLimit = new Map();
+const rateLimitMap = _g.__crewLoginRateLimit;
 
 function normalizePhone(phone: string): string {
   return normalizePhoneForLockout(phone);
@@ -15,11 +17,7 @@ function normalizePhone(phone: string): string {
 function checkRateLimit(key: string): boolean {
   const now = Date.now();
   let entry = rateLimitMap.get(key);
-  if (!entry) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (now > entry.resetAt) {
+  if (!entry || now > entry.resetAt) {
     rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return true;
   }

@@ -818,7 +818,7 @@ export default function PartnerB2BProjectsTab({ onScheduleDelivery }: PartnerB2B
       {NewProjectModal}
       {AddItemModal}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[14px] font-bold text-[var(--tx)]">Projects ({projects.length})</h2>
+        <h2 className="text-[14px] font-bold font-hero text-[var(--tx)]">Projects ({projects.length})</h2>
         <button type="button" onClick={() => setShowNewProject(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
           <Plus className="w-[13px] h-[13px]" /> New Project
         </button>

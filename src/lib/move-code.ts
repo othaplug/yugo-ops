@@ -1,3 +1,5 @@
+import { normalizeDeliveryNumber } from "@/lib/delivery-number";
+
 /** Raw job code from DB (e.g. MV3456). Prefers move.move_code; fallback from id only for legacy. */
 export function getMoveCode(move: { move_code?: string | null; move_number?: string | null; id?: string | null } | string | null | undefined): string {
   if (!move) return "MV0000";
@@ -10,13 +12,17 @@ export function getMoveCode(move: { move_code?: string | null; move_number?: str
   return "MV" + String(Math.abs(h) % 10000).padStart(4, "0");
 }
 
-/** Display format: #[PJ|MV](4 digits), e.g. #MV3456, #PJ5435 */
+/** Display format: #MV3456 for moves, #DLV-9146 for deliveries. */
 export function formatJobId(rawCode: string, type: "move" | "delivery" | "partner" = "move"): string {
   const code = String(rawCode || "").trim().replace(/^#/, "");
-  if (!code) return type === "move" ? "#MV0000" : "#PJ0000";
-  const prefix = type === "partner" || type === "delivery" ? "PJ" : "MV";
-  const normalized = code.toUpperCase().startsWith("PJ") ? code.slice(0, 6) : code.toUpperCase().startsWith("MV") ? code.slice(0, 6) : `${prefix}${code.slice(-4).padStart(4, "0")}`;
-  return normalized.startsWith("#") ? normalized : `#${normalized}`;
+  if (!code) return type === "move" ? "#MV0000" : "#DLV-0000";
+  if (type === "move") {
+    const normalized = code.toUpperCase().startsWith("MV") ? code.slice(0, 6) : `MV${code.slice(-4).padStart(4, "0")}`;
+    return normalized.startsWith("#") ? normalized : `#${normalized}`;
+  }
+  // Delivery/partner: always DLV-xxxx
+  const normalized = normalizeDeliveryNumber(code);
+  return `#${normalized}`;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,7 +45,7 @@ export function isUuid(s: string): boolean {
   return UUID_REGEX.test(String(s || "").trim());
 }
 
-/** Canonical admin delivery/project detail URL: /admin/deliveries/PJ1234 (prefers delivery_number). */
+/** Canonical admin delivery/project detail URL: /admin/deliveries/DLV-1234 (prefers delivery_number). */
 export function getDeliveryDetailPath(delivery: { delivery_number?: string | null; id?: string } | null | undefined): string {
   if (!delivery) return "/admin/deliveries";
   const code = delivery.delivery_number?.trim();

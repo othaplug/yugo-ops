@@ -66,9 +66,13 @@ const STATUS_BADGE: Record<string, string> = {
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   pending_approval: "Pending Acceptance",
+  in_progress: "In Progress",
+  "in-transit": "In Transit",
+  delivered: "Completed",
+  completed: "Completed",
 };
 
-const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "approved", "dispatched", "in_progress", "in-transit", "delivered", "completed", "cancelled"];
+const STATUS_OPTIONS = ["all", "pending_approval", "scheduled", "confirmed", "approved", "dispatched", "in_progress", "in-transit", "completed", "cancelled"];
 
 export default function PartnerDeliveriesTab({
   deliveries,
@@ -80,7 +84,7 @@ export default function PartnerDeliveriesTab({
   orgType,
 }: {
   deliveries: Delivery[];
-  label: "today" | "upcoming" | "all";
+  label: "today" | "upcoming" | "history" | "all";
   onShare: (d: Delivery) => void;
   onDetailClick?: (d: Delivery) => void;
   onEditClick?: (d: Delivery) => void;
@@ -93,7 +97,11 @@ export default function PartnerDeliveriesTab({
   const filtered = useMemo(() => {
     let result = deliveries;
     if (statusFilter !== "all") {
-      result = result.filter((d) => (d.status || "").toLowerCase().replace(/ /g, "-") === statusFilter);
+      result = result.filter((d) => {
+        const s = (d.status || "").toLowerCase().replace(/ /g, "-");
+        if (statusFilter === "completed") return s === "completed" || s === "delivered";
+        return s === statusFilter;
+      });
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -127,7 +135,11 @@ export default function PartnerDeliveriesTab({
             className="px-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] font-semibold text-[#1A1A1A] bg-white focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
           >
             {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s === "all" ? "All statuses" : s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+              <option key={s} value={s}>
+                {s === "all"
+                  ? "All statuses"
+                  : (STATUS_LABEL_OVERRIDE[s] ?? s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))}
+              </option>
             ))}
           </select>
         </div>
@@ -136,7 +148,7 @@ export default function PartnerDeliveriesTab({
       {deliveries.length === 0 ? (
         <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
           <p className="text-[14px] text-[#888]">
-            {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : "No deliveries found."}
+            {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : label === "history" ? "No completed deliveries yet." : "No deliveries found."}
           </p>
           {label === "today" && onScheduleDelivery && (
             <button

@@ -13,7 +13,7 @@ type SquareCard = {
 };
 
 type SquarePayments = {
-  card: () => Promise<SquareCard>;
+  card: (opts?: object) => Promise<SquareCard>;
 };
 
 declare global {

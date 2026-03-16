@@ -64,6 +64,7 @@ export async function PATCH(
     "special_handling", "organization_id", "client_name",
     "crew_id", "updated_at", "pickup_access", "delivery_access",
     "admin_adjusted_price", "notes",
+    "project_id", "phase_id",
   ];
 
   const updates: Record<string, unknown> = {};

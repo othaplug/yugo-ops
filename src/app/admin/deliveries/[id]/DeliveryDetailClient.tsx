@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Copy, Send, MapPin, Truck, Clock, Layers, Users, FileText,
+  Send, MapPin, Truck, Clock, Layers, Users, FileText,
   DollarSign, AlertTriangle, Pencil, Trash2, ChevronDown, Phone,
-  Mail, Calendar, Shield, ExternalLink, Hash,
+  Mail, Shield, ExternalLink, Hash,
 } from "lucide-react";
 import BackButton from "../../components/BackButton";
 import EditDeliveryModal from "./EditDeliveryModal";
-import NotifyClientButton from "./NotifyClientButton";
 import DownloadPDFButton from "./DownloadPDFButton";
 import GenerateInvoiceButton from "./GenerateInvoiceButton";
 import { formatPhone } from "@/lib/phone";
@@ -19,6 +18,7 @@ import LiveTrackingMap from "./LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import IncidentsSection from "../../components/IncidentsSection";
 import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
+import DeliveryCrewPhotosSection from "./DeliveryCrewPhotosSection";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
@@ -157,6 +157,13 @@ interface EtaSmsLogEntry {
   twilio_sid: string | null;
 }
 
+interface DeliveryInvoice {
+  id: string;
+  invoice_number: string;
+  square_invoice_url: string | null;
+  status: string;
+}
+
 export default function DeliveryDetailClient({
   delivery: initialDelivery,
   clientEmail,
@@ -164,6 +171,9 @@ export default function DeliveryDetailClient({
   crews = [],
   stops = null,
   etaSmsLog = [],
+  deliveryInvoice = null,
+  isB2BPartner = false,
+  linkedProject = null,
 }: {
   delivery: any;
   clientEmail?: string | null;
@@ -171,6 +181,9 @@ export default function DeliveryDetailClient({
   crews?: Crew[];
   stops?: DeliveryStop[] | null;
   etaSmsLog?: EtaSmsLogEntry[];
+  deliveryInvoice?: DeliveryInvoice | null;
+  isB2BPartner?: boolean;
+  linkedProject?: { id: string; project_number: string; project_name: string; phase_name?: string | null } | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -183,8 +196,6 @@ export default function DeliveryDetailClient({
   const [deleting, setDeleting] = useState(false);
   const [editingStatus, setEditingStatus] = useState(false);
   const [approveDeclineLoading, setApproveDeclineLoading] = useState(false);
-  const [trackingLink, setTrackingLink] = useState<string | null>(null);
-  const [copyingLink, setCopyingLink] = useState(false);
   const [adjustedPrice, setAdjustedPrice] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -251,40 +262,6 @@ export default function DeliveryDetailClient({
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [delivery.id]);
-
-  const fetchTrackingLink = useCallback(async () => {
-    if (trackingLink) return trackingLink;
-    try {
-      const res = await fetch(`/api/admin/deliveries/${delivery.id}/track-link`);
-      const data = await res.json();
-      if (data.url) { setTrackingLink(data.url); return data.url as string; }
-    } catch { /* silent */ }
-    return null;
-  }, [delivery.id, trackingLink]);
-
-  const handleCopyTrackingLink = async () => {
-    setCopyingLink(true);
-    const url = await fetchTrackingLink();
-    if (url) {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast("Tracking link copied", "check");
-      } catch {
-        const ta = document.createElement("textarea");
-        ta.value = url;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        toast("Tracking link copied", "check");
-      }
-    } else {
-      toast("Could not generate tracking link", "alertTriangle");
-    }
-    setCopyingLink(false);
-  };
 
   const assignCrew = async (crewId: string | null) => {
     const crew = crewId ? crews.find((c) => c.id === crewId) : null;
@@ -390,6 +367,30 @@ export default function DeliveryDetailClient({
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
       <BackButton label="Back" />
+
+      {/* ─── PROJECT CONTEXT BANNER ─── */}
+      {linkedProject && (
+        <a
+          href={`/admin/projects/${linkedProject.id}`}
+          className="mt-3 mb-1 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition-colors group"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" className="shrink-0">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <div className="flex-1 min-w-0">
+            <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/60">Part of Project</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[12px] font-semibold text-[var(--tx)]">{linkedProject.project_number} — {linkedProject.project_name}</span>
+              {linkedProject.phase_name && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)]">{linkedProject.phase_name}</span>
+              )}
+            </div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="shrink-0 group-hover:text-[var(--gold)] transition-colors">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      )}
 
       {/* ─── APPROVAL BANNER ─── */}
       {needsApproval && (
@@ -518,10 +519,6 @@ export default function DeliveryDetailClient({
               <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
                 <Pencil className="w-3 h-3" /> Edit
               </button>
-              <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-all disabled:opacity-50">
-                <Copy className="w-3 h-3" /> {copyingLink ? "…" : "Tracking Link"}
-              </button>
-              <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
               <DownloadPDFButton delivery={delivery} />
               <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
                 <Trash2 className="w-3 h-3" /> Delete
@@ -554,15 +551,6 @@ export default function DeliveryDetailClient({
                   </button>
                 )}
               </div>
-              {delivery.client_name && (
-                <MetricPill icon={Users} label="Client" value={delivery.client_name} />
-              )}
-              {delivery.scheduled_date && (
-                <MetricPill icon={Calendar} label="Date" value={formatDate(delivery.scheduled_date)} />
-              )}
-              {selectedCrew && (
-                <MetricPill icon={Truck} label="Crew" value={selectedCrew.name} />
-              )}
             </div>
 
             {delivery.status !== "cancelled" && <ProgressBar status={delivery.status} />}
@@ -754,6 +742,12 @@ export default function DeliveryDetailClient({
               <IncidentsSection jobId={delivery.id} jobType="delivery" />
             </div>
 
+            {/* Crew photos (actual photos taken by crew) */}
+            <div className="border-t border-[var(--brd)]/30 pt-5">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew Photos</div>
+              <DeliveryCrewPhotosSection deliveryId={delivery.id} />
+            </div>
+
             {/* Proof of Delivery */}
             {isDone(delivery.status) && (
               <div className="border-t border-[var(--brd)]/30 pt-5">
@@ -850,12 +844,6 @@ export default function DeliveryDetailClient({
                   <span>{formatPhone(delivery.customer_phone)}</span>
                 </div>
               )}
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                <button type="button" onClick={handleCopyTrackingLink} disabled={copyingLink} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[9px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors disabled:opacity-50">
-                  <ExternalLink className="w-2.5 h-2.5" /> {copyingLink ? "…" : "Share Link"}
-                </button>
-                <NotifyClientButton delivery={delivery} clientEmail={clientEmail} />
-              </div>
             </div>
           </div>
 
@@ -875,9 +863,28 @@ export default function DeliveryDetailClient({
                     Adjusted from {formatCurrency(delivery.total_price || delivery.quoted_price)}
                   </div>
                 )}
-                <div className="mt-3 pt-3 border-t border-[var(--gold)]/15">
-                  <GenerateInvoiceButton delivery={delivery} />
-                </div>
+                {deliveryInvoice ? (
+                  <div className="mt-3 pt-3 border-t border-[var(--gold)]/15">
+                    <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1.5">
+                      <span>Invoice generated</span>
+                      {deliveryInvoice.square_invoice_url && (
+                        <a
+                          href={deliveryInvoice.square_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-[var(--gold)] hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View in Square
+                        </a>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">{deliveryInvoice.invoice_number}</div>
+                  </div>
+                ) : isB2BPartner ? (
+                  <div className="mt-3 pt-3 border-t border-[var(--gold)]/15">
+                    <GenerateInvoiceButton delivery={delivery} onGenerated={() => router.refresh()} />
+                  </div>
+                ) : null}
               </>
             ) : (
               <div>

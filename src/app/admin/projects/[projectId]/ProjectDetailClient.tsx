@@ -47,6 +47,7 @@ interface Phase {
   scheduled_date: string | null;
   completed_date: string | null;
   notes: string | null;
+  address: string | null;
 }
 
 interface InventoryItem {
@@ -282,9 +283,9 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         {activeTab === "Overview" && <OverviewTab data={data} progressPct={progressPct} completedPhases={completedPhases} totalPhases={totalPhases} budgetTotal={budgetTotal} />}
         {activeTab === "Phases" && <PhasesTab data={data} onRefresh={loadProject} projectId={projectId} showAddPhase={showAddPhase} setShowAddPhase={setShowAddPhase} />}
         {activeTab === "Inventory" && <InventoryTab data={data} onRefresh={loadProject} projectId={projectId} showAddItem={showAddItem} setShowAddItem={setShowAddItem} showReceiveItem={showReceiveItem} setShowReceiveItem={setShowReceiveItem} />}
-        {activeTab === "Deliveries" && <DeliveriesTab data={data} />}
+        {activeTab === "Deliveries" && <DeliveriesTab data={data} projectId={projectId} />}
         {activeTab === "Timeline" && <TimelineTab data={data} projectId={projectId} onRefresh={loadProject} showAddNote={showAddNote} setShowAddNote={setShowAddNote} />}
-        {activeTab === "Invoice" && <InvoiceTab data={data} />}
+        {activeTab === "Invoice" && <InvoiceTab data={data} projectId={projectId} />}
       </div>
 
       {/* Delete Confirmation */}
@@ -377,6 +378,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, budgetTo
 function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }: { data: ProjectData; onRefresh: () => void; projectId: string; showAddPhase: boolean; setShowAddPhase: (v: boolean) => void }) {
   const [newPhaseName, setNewPhaseName] = useState("");
   const [newPhaseDate, setNewPhaseDate] = useState("");
+  const [newPhaseAddress, setNewPhaseAddress] = useState("");
   const [expandedPhase, setExpandedPhase] = useState<string | null>(data.phases.find((p) => p.status === "active")?.id || data.phases[0]?.id || null);
 
   const addPhase = async () => {
@@ -384,10 +386,11 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
     await fetch(`/api/admin/projects/${projectId}/phases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phase_name: newPhaseName, scheduled_date: newPhaseDate || null }),
+      body: JSON.stringify({ phase_name: newPhaseName, scheduled_date: newPhaseDate || null, address: newPhaseAddress || null }),
     });
     setNewPhaseName("");
     setNewPhaseDate("");
+    setNewPhaseAddress("");
     setShowAddPhase(false);
     onRefresh();
   };
@@ -419,7 +422,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
               <Icon size={14} className={cfg.text} />
               <div className="text-left">
                 <div className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">{phase.phase_name}</div>
-                <div className="text-[9px] text-[var(--tx3)] capitalize">{phase.status}{phase.scheduled_date ? ` · ${new Date(phase.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}</div>
+                <div className="text-[9px] text-[var(--tx3)] capitalize">{phase.status}{phase.scheduled_date ? ` · ${new Date(phase.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}{phase.address ? ` · ${phase.address.split(",")[0]}` : ""}</div>
               </div>
               {i < data.phases.length - 1 && <span className="text-[var(--tx3)] ml-1">→</span>}
             </button>
@@ -436,12 +439,24 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
 
         return (
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 mb-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+            <div className="flex items-start justify-between mb-4 gap-3">
+              <div className="flex-1 min-w-0">
                 <h3 className="text-[15px] font-bold text-[var(--tx)]">{phase.phase_name}</h3>
                 {phase.description && <p className="text-[12px] text-[var(--tx3)] mt-0.5">{phase.description}</p>}
+                {phase.address && (
+                  <p className="text-[11px] text-[var(--tx3)] mt-1 flex items-center gap-1">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {phase.address}
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Link
+                  href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}&phaseId=${phase.id}`}
+                  className="px-3 py-1 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors flex items-center gap-1"
+                >
+                  <Truck size={11} /> New Delivery
+                </Link>
                 {phase.status === "pending" && (
                   <button onClick={() => updatePhaseStatus(phase.id, "active")} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20">Start Phase</button>
                 )}
@@ -503,8 +518,9 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
       {/* Add Phase */}
       {showAddPhase ? (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
-          <input value={newPhaseName} onChange={(e) => setNewPhaseName(e.target.value)} placeholder="Phase name..." className={fieldInput} autoFocus />
+          <input value={newPhaseName} onChange={(e) => setNewPhaseName(e.target.value)} placeholder="Phase name (e.g. Receiving, Delivery, Installation)…" className={fieldInput} autoFocus />
           <input type="date" value={newPhaseDate} onChange={(e) => setNewPhaseDate(e.target.value)} className={fieldInput} />
+          <input value={newPhaseAddress} onChange={(e) => setNewPhaseAddress(e.target.value)} placeholder="Delivery address for this phase (optional)" className={fieldInput} />
           <div className="flex gap-2">
             <button onClick={addPhase} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add Phase</button>
             <button onClick={() => setShowAddPhase(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
@@ -851,13 +867,13 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
 }
 
 /* ─── DELIVERIES TAB ─── */
-function DeliveriesTab({ data }: { data: ProjectData }) {
+function DeliveriesTab({ data, projectId }: { data: ProjectData; projectId: string }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <div className="text-[12px] text-[var(--tx3)]">{data.deliveries.length} deliver{data.deliveries.length !== 1 ? "ies" : "y"} linked</div>
         <Link
-          href={`/admin/deliveries/new?org=${data.partner_id}`}
+          href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}`}
           className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
         >
           <Plus size={13} /> Create Delivery
@@ -962,18 +978,43 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
 }
 
 /* ─── INVOICE TAB ─── */
-function InvoiceTab({ data }: { data: ProjectData }) {
+function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string }) {
+  const [generating, setGenerating] = useState(false);
+  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState("");
+  const { toast } = useToast();
+
   const activeDeliveries = data.deliveries.filter((d) => d.status !== "cancelled");
   const deliveryTotal = activeDeliveries.reduce((s, d) => s + (d.total_price || 0), 0);
-  // Use estimated budget if no delivery prices are set yet
   const effectiveDeliveryTotal = deliveryTotal > 0 ? deliveryTotal : (data.estimated_budget || 0);
   const mgmtFee = data.project_mgmt_fee || 0;
   const subtotal = effectiveDeliveryTotal + mgmtFee;
   const hst = Math.round(subtotal * 0.13);
   const grandTotal = subtotal + hst;
 
+  const generateInvoice = async () => {
+    setGenerating(true);
+    setInvoiceError("");
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}/invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subtotal, hst, grandTotal }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setInvoiceError(json.error || "Failed to generate invoice"); }
+      else {
+        setInvoiceUrl(json.invoice_url || null);
+        toast("Project invoice generated", "check");
+      }
+    } catch {
+      setInvoiceError("Failed to generate invoice");
+    }
+    setGenerating(false);
+  };
+
   return (
-    <div>
+    <div className="space-y-4">
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-4">Project Invoice</div>
 
@@ -1034,6 +1075,40 @@ function InvoiceTab({ data }: { data: ProjectData }) {
           <div className="text-center py-8 text-[var(--tx3)] text-[12px]">No deliveries linked to this project yet</div>
         )}
       </div>
+
+      {/* Invoice actions */}
+      {grandTotal > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          {invoiceUrl ? (
+            <a
+              href={invoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2 2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View Invoice
+            </a>
+          ) : (
+            <button
+              onClick={generateInvoice}
+              disabled={generating}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+            >
+              <FileText size={13} />
+              {generating ? "Generating…" : "Generate Project Invoice"}
+            </button>
+          )}
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--gold)] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print / Save PDF
+          </button>
+        </div>
+      )}
+      {invoiceError && <p className="text-[11px] text-[var(--red)]">{invoiceError}</p>}
     </div>
   );
 }

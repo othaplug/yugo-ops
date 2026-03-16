@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
+import { isDeliveryId } from "@/lib/delivery-number";
 
 /** GET tracking session for a job. Used by client tracking page (with token) or admin. */
 export async function GET(
@@ -18,7 +19,7 @@ export async function GET(
   const byUuid = isUuid(jobId);
   let entity: { id: string; jobType: "move" | "delivery" } | null = null;
 
-  if (jobTypeParam === "delivery" || jobId.startsWith("PJ")) {
+  if (jobTypeParam === "delivery" || isDeliveryId(jobId)) {
     const { data: d } = byUuid
       ? await admin.from("deliveries").select("id").eq("id", jobId).single()
       : await admin.from("deliveries").select("id").ilike("delivery_number", jobId).single();

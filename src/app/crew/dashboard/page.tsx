@@ -27,6 +27,7 @@ interface DashboardData {
   readinessCompleted?: boolean;
   readinessRequired?: boolean;
   isCrewLead?: boolean;
+  endOfDaySubmitted?: boolean;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -100,7 +101,7 @@ export default function CrewDashboardPage() {
     );
   }
 
-  const { jobs, readinessRequired, readinessCompleted, isCrewLead } = data;
+  const { jobs, readinessRequired, readinessCompleted, isCrewLead, endOfDaySubmitted } = data;
 
   if (readinessRequired && !readinessCompleted) {
     if (isCrewLead) {
@@ -327,14 +328,24 @@ export default function CrewDashboardPage() {
 
         {/* End day button */}
         {jobs.length > 0 && completedCount === totalCount && (
-          <Link
-            href="/crew/end-of-day"
-            className="mt-6 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[14px] text-white transition-all shadow-lg"
-            style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-            Complete Your Day
-          </Link>
+          endOfDaySubmitted ? (
+            <Link
+              href="/crew/end-of-day"
+              className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] transition-all border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--grn)] hover:text-[var(--grn)]"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              End of day submitted — Update report
+            </Link>
+          ) : (
+            <Link
+              href="/crew/end-of-day"
+              className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] text-white transition-all"
+              style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Complete Your Day
+            </Link>
+          )
         )}
         {jobs.length > 0 && completedCount < totalCount && (
           <Link

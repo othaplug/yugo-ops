@@ -35,7 +35,25 @@ export async function GET(
     .eq("job_type", jobType)
     .maybeSingle();
 
-  return NextResponse.json(data || null);
+  // For deliveries, resolve the partner vertical so the sign-off page can use context-aware copy
+  let partnerVertical: string | null = null;
+  if (jobType === "delivery") {
+    const { data: delivery } = await admin
+      .from("deliveries")
+      .select("organization_id")
+      .eq("id", entityId)
+      .maybeSingle();
+    if (delivery?.organization_id) {
+      const { data: org } = await admin
+        .from("organizations")
+        .select("type")
+        .eq("id", delivery.organization_id)
+        .maybeSingle();
+      partnerVertical = org?.type || null;
+    }
+  }
+
+  return NextResponse.json({ ...(data || {}), partnerVertical });
 }
 
 export async function POST(
@@ -341,16 +359,25 @@ export async function POST(
         console.error("[generateMovePDFs] failed:", e);
       }
     }
-    // Fire-and-forget: send "Completed" SMS (ETA system)
-    const origin = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
+  // Fire-and-forget: send "Completed" SMS (ETA system)
+  const origin = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: entityId, jobType }),
+  }).catch((e) => console.error("[eta] send-completed failed:", e));
+
+  // Fire-and-forget: auto-generate invoice for deliveries
+  if (jobType === "delivery") {
+    fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: entityId, jobType }),
-    }).catch((e) => console.error("[eta] send-completed failed:", e));
+      body: JSON.stringify({ deliveryId: entityId }),
+    }).catch((e) => console.error("[auto-invoice] trigger failed:", e));
   }
+}
 
   return NextResponse.json(inserted);
 }

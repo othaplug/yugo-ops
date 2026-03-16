@@ -1,0 +1,37 @@
+---
+description: Never expose raw database variable names in any public-facing UI
+alwaysApply: true
+---
+
+# Never Show DB Variables in Public UI
+
+Raw database column values (e.g. `pending_approval`, `in_progress`, `en_route_to_pickup`) must **never** be displayed directly to end users in any client-facing page or component.
+
+## Rule
+
+Always map DB enum/status values to human-readable labels before rendering.
+
+## Examples
+
+```tsx
+// ❌ BAD — exposes raw DB value
+<span>{delivery.status}</span>
+<option value="pending_approval">pending_approval</option>
+<option value="in_progress">in_progress</option>
+
+// ✅ GOOD — use a label map
+const STATUS_LABELS: Record<string, string> = {
+  pending_approval: "Pending Acceptance",
+  in_progress: "In Progress",
+  en_route_to_pickup: "En Route to Pickup",
+  completed: "Completed",
+};
+<span>{STATUS_LABELS[delivery.status] ?? delivery.status}</span>
+<option value="pending_approval">Pending Acceptance</option>
+```
+
+## Applies To
+
+- All `src/app/partner/**`, `src/app/client/**`, `src/app/crew/**`, `src/app/track/**` pages and components
+- Any dropdown, badge, tag, label, or tooltip that displays a status, stage, or type field from the database
+- API responses that are directly rendered (no raw `snake_case` keys shown to users)

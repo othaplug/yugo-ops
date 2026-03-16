@@ -152,7 +152,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
             )}
-            <h2 className="text-[16px] font-bold text-[var(--tx,#1A1A1A)]">
+            <h2 className="text-[16px] font-bold font-hero text-[var(--tx,#1A1A1A)]">
               {section === "main" ? "Settings" : section === "profile" ? "Edit Profile" : section === "notifications" ? "Notifications" : "Delivery Preferences"}
             </h2>
           </div>

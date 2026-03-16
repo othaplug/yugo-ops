@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
@@ -80,24 +80,14 @@ interface Photo {
   note: string | null;
 }
 
-interface Note {
-  id: string;
-  content: string;
-  author_name: string;
-  created_at: string;
-}
-
 export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onShare, onEdit }: Props) {
   const [liveStage, setLiveStage] = useState<string | null>(d.stage || null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState("");
-  const [sendingNote, setSendingNote] = useState(false);
   const [copied, setCopied] = useState(false);
   const [stops, setStops] = useState<DeliveryStop[]>([]);
   const [stopsLoading, setStopsLoading] = useState(false);
-  const [activeSection, setActiveSection] = useState<"details" | "tracking" | "messages" | "photos" | "pod">("details");
+  const [activeSection, setActiveSection] = useState<"details" | "tracking" | "photos" | "pod">("details");
   const [crewPosition, setCrewPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [mapData, setMapData] = useState<{
     center: { lat: number; lng: number };
@@ -106,8 +96,6 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
     dropoff: { lat: number; lng: number } | null;
     liveStage: string | null;
   } | null>(null);
-  const notesEndRef = useRef<HTMLDivElement>(null);
-
   const isInProgress = ["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase().replace(/-/g, "_"));
   const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
   const isLocked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
@@ -173,19 +161,6 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   }, [d.id, d.booking_type, d.stops_detail]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/partner/deliveries/${d.id}/notes`);
-        if (res.ok) {
-          const data = await res.json();
-          setNotes(data.notes || []);
-        }
-      } catch (err) { console.error("Failed to load delivery notes:", err); }
-    };
-    load();
-  }, [d.id]);
-
-  useEffect(() => {
     if (!d.crew_id) return;
     const poll = async () => {
       try {
@@ -213,25 +188,6 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
     return () => clearInterval(id);
   }, [d.id, d.crew_id]);
 
-  const sendNote = async () => {
-    if (!newNote.trim() || sendingNote) return;
-    setSendingNote(true);
-    try {
-      const res = await fetch(`/api/partner/deliveries/${d.id}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newNote.trim() }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.note) setNotes((prev) => [...prev, data.note]);
-        setNewNote("");
-        setTimeout(() => notesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      }
-    } catch (err) { console.error("Failed to send delivery note:", err); }
-    setSendingNote(false);
-  };
-
   const copyLink = async () => {
     try {
       const res = await fetch("/api/partner/share-tracking", {
@@ -257,10 +213,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
   const isDelivered = ["delivered", "completed"].includes((d.status || "").toLowerCase());
 
-  const sectionTabs: { key: "details" | "tracking" | "messages" | "photos" | "pod"; label: string }[] = [
+  const sectionTabs: { key: "details" | "tracking" | "photos" | "pod"; label: string }[] = [
     { key: "details", label: "Details" },
     ...(d.crew_id ? [{ key: "tracking" as const, label: "Tracking" }] : []),
-    { key: "messages", label: `Messages${notes.length > 0 ? ` (${notes.length})` : ""}` },
     { key: "photos", label: `Photos${photos.length > 0 ? ` (${photos.length})` : ""}` },
     ...(isDelivered ? [{ key: "pod" as const, label: "PoD" }] : []),
   ];
@@ -300,7 +255,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
         {/* Progress bar */}
         {showProgressBar && (
-          <div className="px-5 pt-4">
+          <div className="px-5 pt-4 pb-6">
             <DeliveryProgressBar
               percent={progressPercent}
               label={normalizedStage ? ((STAGE_LABELS[normalizedStage] || liveStage) ?? "Tracking…") : isCompleted ? "Complete" : "Tracking…"}
@@ -311,7 +266,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
         )}
 
         {/* Section tabs */}
-        <div className="flex gap-0 px-5 border-b border-[var(--brd)] shrink-0">
+        <div className="flex justify-center gap-0 px-5 border-b border-[var(--brd)] shrink-0">
           {sectionTabs.map((t) => (
             <button
               key={t.key}
@@ -455,103 +410,75 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
           {activeSection === "tracking" && d.crew_id && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-[var(--brd)]/30">
-                <div className="w-10 h-10 rounded-xl bg-[#C9A962]/15 flex items-center justify-center flex-shrink-0">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-[var(--tx)]">
-                    {liveStage ? (STAGE_LABELS[liveStage] || CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : "Crew assigned"}
+              <>
+                  <div className="flex items-center gap-3 pb-4 border-b border-[var(--brd)]/30">
+                    <div className="w-10 h-10 rounded-xl bg-[#C9A962]/15 flex items-center justify-center flex-shrink-0">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    </div>
+                    <div>
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">
+                        {isCompleted ? "Delivery complete" : liveStage ? (STAGE_LABELS[liveStage] || CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : "Crew assigned"}
+                      </div>
+                      <div className="text-[11px] text-[var(--tx3)]">
+                        {isCompleted ? "Last known crew location" : crewPosition ? "Live GPS tracking active" : "Waiting for crew location…"}
+                      </div>
+                    </div>
+                    {isCompleted ? (
+                      <span className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[#22C55E]/10 text-[#22C55E]">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        Complete
+                      </span>
+                    ) : crewPosition ? (
+                      <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[rgba(45,159,90,0.1)] text-[#2D9F5A]">
+                        <span className="w-2 h-2 rounded-full bg-[#2D9F5A] animate-pulse" />
+                        Live
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)]">
-                    {crewPosition ? "Live GPS tracking active" : "Waiting for crew location…"}
-                  </div>
-                </div>
-                {crewPosition && (
-                  <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[rgba(45,159,90,0.1)] text-[#2D9F5A]">
-                    <span className="w-2 h-2 rounded-full bg-[#2D9F5A] animate-pulse" />
-                    Live
-                  </span>
-                )}
-              </div>
 
-              {mapData ? (
-                <div className="overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
-                  <DeliveryTrackMap
-                    center={mapData.center}
-                    crew={mapData.crew}
-                    pickup={mapData.pickup}
-                    dropoff={mapData.dropoff}
-                    liveStage={mapData.liveStage}
-                  />
-                </div>
-              ) : crewPosition ? (
-                <div className="overflow-hidden h-[240px] bg-[var(--bg)] rounded-lg">
-                  <iframe
-                    title="Crew location"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${crewPosition.lng - 0.02},${crewPosition.lat - 0.015},${crewPosition.lng + 0.02},${crewPosition.lat + 0.015}&layer=mapnik&marker=${crewPosition.lat},${crewPosition.lng}`}
-                  />
-                </div>
-              ) : (
-                <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  </div>
-                  <p className="text-[13px] text-[var(--tx3)]">Crew location not yet available.</p>
-                  <p className="text-[11px] text-[#aaa] mt-0.5">Location updates appear here once the crew starts.</p>
-                </div>
-              )}
+                  {mapData ? (
+                    <div className="overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
+                      <DeliveryTrackMap
+                        center={mapData.center}
+                        crew={isCompleted ? null : mapData.crew}
+                        pickup={mapData.pickup}
+                        dropoff={mapData.dropoff}
+                        liveStage={isCompleted ? "completed" : mapData.liveStage}
+                        lastKnownPos={isCompleted && mapData.crew ? { lat: mapData.crew.current_lat, lng: mapData.crew.current_lng } : null}
+                      />
+                    </div>
+                  ) : crewPosition ? (
+                    <div className="overflow-hidden h-[240px] bg-[var(--bg)] rounded-lg">
+                      <iframe
+                        title="Last known crew location"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${crewPosition.lng - 0.02},${crewPosition.lat - 0.015},${crewPosition.lng + 0.02},${crewPosition.lat + 0.015}&layer=mapnik&marker=${crewPosition.lat},${crewPosition.lng}`}
+                      />
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </div>
+                      <p className="text-[13px] text-[var(--tx3)]">{isCompleted ? "No location data recorded for this delivery." : "Crew location not yet available."}</p>
+                      <p className="text-[11px] text-[#aaa] mt-0.5">{isCompleted ? "" : "Location updates appear here once the crew starts."}</p>
+                    </div>
+                  )}
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--brd)]/30">
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
-                  <div className="text-[12px] text-[var(--tx)] truncate">{d.delivery_address || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
-                  <div className="text-[12px] font-semibold text-[var(--tx)]">{Math.round(progressPercent)}%</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "messages" && (
-            <div className="space-y-3">
-              {notes.length === 0 && (
-                <p className="text-[13px] text-[var(--tx3)] text-center py-4">No messages yet. Add a note below.</p>
-              )}
-              {notes.map((n, i) => (
-                <div key={n.id} className={`py-3 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-semibold text-[var(--tx)]">{n.author_name}</span>
-                    <span className="text-[10px] text-[var(--tx3)]">
-                      {new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                    </span>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--brd)]/30">
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
+                      <div className="text-[12px] text-[var(--tx)] truncate">{d.delivery_address || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
+                      <div className="text-[12px] font-semibold text-[var(--tx)]">{Math.round(progressPercent)}%</div>
+                    </div>
                   </div>
-                  <p className="text-[13px] text-[var(--tx)] whitespace-pre-wrap">{n.content}</p>
-                </div>
-              ))}
-              <div ref={notesEndRef} />
-              <div className="flex gap-2 pt-2">
-                <input
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendNote())}
-                  placeholder="Add a note…"
-                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors"
-                />
-                <button
-                  onClick={sendNote}
-                  disabled={!newNote.trim() || sendingNote}
-                  className="px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50 transition-colors"
-                >
-                  {sendingNote ? "…" : "Send"}
-                </button>
-              </div>
+                </>
             </div>
           )}
 

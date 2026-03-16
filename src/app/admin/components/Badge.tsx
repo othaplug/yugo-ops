@@ -26,6 +26,7 @@ const BADGE_COLORS: Record<string, string> = {
   overdue: "bg-[var(--rdim)] text-[var(--red)]",
   draft: "bg-[var(--brd)] text-[var(--tx3)]",
   cancelled: "bg-[var(--brd)] text-[var(--tx3)]",
+  archived: "bg-[var(--brd)] text-[var(--tx3)]",
   booked: "bg-[var(--bldim)] text-[var(--blue)]",
   lead: "bg-[var(--gdim)] text-[var(--gold)]",
   quoted: "bg-[var(--ordim)] text-[var(--org)]",

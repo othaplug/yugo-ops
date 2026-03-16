@@ -9,7 +9,7 @@ import FilterBar from "@/app/admin/components/FilterBar";
 interface DashboardData {
   completedThisMonth: number;
   onTimeRate: number;
-  damageClaims: number;
+  damageClaims?: number;
   outstandingAmount: number;
   outstandingDueDate: string | null;
   allDeliveries: { id: string; status: string; scheduled_date: string | null }[];
@@ -220,7 +220,7 @@ export default function PartnerBillingTab({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-[var(--brd)]/30">
           <SLACircle value={`${overallOnTime}%`} label="On-Time Rate" sublabel="Industry avg: 82%" />
-          <SLACircle value={`${data.damageClaims > 0 ? ((data.damageClaims / Math.max(totalDeliveries, 1)) * 100).toFixed(1) : "0"}%`} label="Damage Rate" sublabel={`${data.damageClaims} incident${data.damageClaims !== 1 ? "s" : ""} in ${totalDeliveries} deliveries`} />
+          <SLACircle value={`${(data.damageClaims ?? 0) > 0 ? (((data.damageClaims ?? 0) / Math.max(totalDeliveries, 1)) * 100).toFixed(1) : "0"}%`} label="Damage Rate" sublabel={`${data.damageClaims ?? 0} incident${(data.damageClaims ?? 0) !== 1 ? "s" : ""} in ${totalDeliveries} deliveries`} />
           <SLACircle value={formatCurrency(totalPaid)} label="Total Paid" sublabel={`of ${formatCurrency(totalRevenue)} billed`} accent />
           <SLACircle value={String(totalDeliveries)} label="Total Deliveries" sublabel={`${totalCompleted} completed`} />
         </div>
@@ -270,7 +270,7 @@ export default function PartnerBillingTab({
           <ComparisonCard label="On-Time Delivery" yugoValue={`${overallOnTime}%`} industryValue="82%" />
           <ComparisonCard
             label="Damage Rate"
-            yugoValue={`${data.damageClaims > 0 ? ((data.damageClaims / Math.max(totalDeliveries, 1)) * 100).toFixed(2) : "0"}%`}
+            yugoValue={`${(data.damageClaims ?? 0) > 0 ? (((data.damageClaims ?? 0) / Math.max(totalDeliveries, 1)) * 100).toFixed(2) : "0"}%`}
             industryValue="3.2%"
           />
           <ComparisonCard label="Response Time" yugoValue="< 15 min" industryValue="4+ hrs" accent yugoSublabel="Target" />

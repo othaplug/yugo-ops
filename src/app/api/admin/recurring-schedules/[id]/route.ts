@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     "schedule_name", "frequency", "days_of_week", "booking_type",
     "vehicle_type", "day_type", "default_num_stops", "default_services",
     "time_window", "default_pickup_address", "is_active", "is_paused",
-    "next_generation_date",
+    "next_generation_date", "crew_id",
   ];
   const update: Record<string, unknown> = {};
   for (const k of allowed) {

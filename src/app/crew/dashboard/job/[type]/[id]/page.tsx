@@ -26,6 +26,12 @@ interface CrewMember {
   role: string;
 }
 
+interface ProjectContext {
+  projectNumber: string;
+  projectName: string;
+  phaseName: string | null;
+}
+
 interface JobDetail {
   id: string;
   jobId: string;
@@ -48,6 +54,7 @@ interface JobDetail {
   internalNotes: string | null;
   scheduledTime: string | null;
   crewId: string;
+  projectContext?: ProjectContext | null;
 }
 
 interface Session {
@@ -353,26 +360,27 @@ export default function CrewJobPage({
 
   return (
     <PageContent className="max-w-[520px]">
-      {/* Sticky top bar with back + elapsed + GPS */}
-      <div className="flex items-center justify-between gap-2 mb-4">
+
+      {/* ── Top bar ── */}
+      <div className="flex items-center justify-between gap-2 mb-5">
         <Link
           href="/crew/dashboard"
-          className="inline-flex items-center gap-1.5 py-2 px-3 -ml-3 rounded-xl text-[12px] font-medium text-[var(--tx2)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+          className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
           Jobs
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {(session?.isActive || isCompleted) && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
                 {formatElapsed(isCompleted && session?.completedAt && session?.startedAt ? new Date(session.completedAt).getTime() - new Date(session.startedAt).getTime() : elapsedMs)}
               </span>
             </div>
           )}
           {session && !isCompleted && (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${gpsStatus === "on" ? "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25" : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${gpsStatus === "on" ? "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25" : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"}`}>
               <span className="relative flex h-1.5 w-1.5">
                 {gpsStatus === "on" && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />}
                 <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${gpsStatus === "on" ? "bg-[#22C55E]" : "bg-[var(--tx3)]"}`} />
@@ -383,70 +391,82 @@ export default function CrewJobPage({
         </div>
       </div>
 
-      {/* Job header — seamless flow */}
-      <div className="mb-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{job.jobTypeLabel}</p>
-            <h1 className="font-hero text-[30px] font-bold text-[var(--tx)] leading-tight">{job.clientName}</h1>
-            <p className="text-[11px] text-[var(--tx3)] mt-1 font-mono">{job.jobId}</p>
+      {/* ── Job header ── */}
+      <div className="mb-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/60 mb-0.5">{job.jobTypeLabel}</p>
+            <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-tight truncate">{job.clientName}</h1>
+            <p className="text-[10px] text-[var(--tx3)] mt-0.5 font-mono tracking-wide">{job.jobId}</p>
           </div>
           {isCompleted && (
-            <div className="px-3 py-1.5 rounded-xl bg-[#22C55E]/12 border border-[#22C55E]/30">
-              <span className="text-[11px] font-bold text-[#22C55E]">Complete</span>
-            </div>
+            <span className="shrink-0 px-2.5 py-1 rounded-lg bg-[#22C55E]/12 border border-[#22C55E]/30 text-[10px] font-bold text-[#22C55E]">Complete</span>
           )}
         </div>
-
-        {/* Compact route display */}
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
-              <div className="w-px h-4 bg-[var(--brd)]" />
+        <div className="border-t border-[var(--brd)]/50 pt-3 space-y-2">
+          <div className="flex items-start gap-2.5">
+            <div className="mt-1 flex flex-col items-center gap-0.5 shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />
+              <div className="w-px h-3 bg-[var(--brd)]" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pickup</p>
-              <p className="text-[13px] text-[var(--tx)] truncate">{job.fromAddress}</p>
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
+              <p className="text-[14px] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
+              {job.fromAccess && (
+                <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  {job.fromAccess}
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-3 h-3 rounded-full border-2 border-[#22C55E] bg-[#22C55E]/20" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Drop-off</p>
-              <p className="text-[13px] text-[var(--tx)] truncate">{job.toAddress}</p>
+          <div className="flex items-start gap-2.5">
+            <div className="mt-1 shrink-0 w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
+              <p className="text-[14px] text-[var(--tx)] leading-snug">{job.toAddress}</p>
+              {job.toAccess && (
+                <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  {job.toAccess}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-[var(--bg)] rounded-xl p-1 border border-[var(--brd)] mb-4">
+      {/* ── Tabs ── */}
+      <div className="flex justify-center border-b border-[var(--brd)]/40 mb-5">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+            className={`relative px-5 py-3 text-[12px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap ${
               activeTab === t.id
-                ? "bg-[var(--card)] text-[var(--gold)] shadow-sm border border-[var(--brd)]"
-                : "text-[var(--tx3)] hover:text-[var(--tx2)] border border-transparent"
+                ? "text-[var(--gold)]"
+                : "text-[var(--tx3)]/45 hover:text-[var(--tx3)]"
             }`}
           >
-            <span className={activeTab === t.id ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>{t.icon}</span>
-            <span className="hidden sm:inline">{t.label}</span>
+            {t.label}
+            {activeTab === t.id && (
+              <span className="absolute bottom-0 left-3 right-3 h-[1.5px] rounded-full bg-[var(--gold)]" />
+            )}
           </button>
         ))}
       </div>
 
+      {/* ══════════════ STATUS TAB ══════════════ */}
       {activeTab === "status" && (
-        <div className="space-y-4">
-          {/* Progress bar */}
-          <div className="pt-4 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
+        <div className="space-y-3">
+
+          {/* Progress */}
+          <div className="px-2">
             <StageProgressBar
               stages={
                 jobType === "move"
                   ? [{ label: "En Route" }, { label: "Loading" }, { label: "Unloading" }, { label: "Complete" }]
-                  : [{ label: "En Route" }, { label: "Arrived" }, { label: "Delivering" }, { label: "Complete" }]
+                  : [{ label: "En Route" }, { label: "At Pickup" }, { label: "Delivering" }, { label: "Complete" }]
               }
               currentIndex={
                 isCompleted
@@ -454,190 +474,182 @@ export default function CrewJobPage({
                   : progressIdx >= 0
                     ? jobType === "move"
                       ? progressIdx <= 0 ? 0 : progressIdx <= 2 ? 1 : progressIdx <= 5 ? 2 : 3
-                      : Math.min(progressIdx, 3)
+                      : progressIdx <= 0 ? 0 : progressIdx <= 1 ? 1 : progressIdx <= 3 ? 2 : 3
                     : -1
               }
               variant="dark"
             />
           </div>
 
-          {/* Main action */}
-          <div>
-            {showStartButton && (
-              <button
-                onClick={startJob}
-                disabled={advancing}
-                className="w-full py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
+          {/* Advance status / Client Sign-Off button */}
+          {showAdvanceButton && !blockedByPhotos && !blockedByPickupVerification && (
+            nextStatus === "completed" ? (
+              <Link
+                href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
-                {advancing ? "Starting..." : "START JOB"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                Client Sign-Off
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={advanceStatus}
+                disabled={advancing}
+                className="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white disabled:opacity-60 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
+                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+              >
+                {advancing ? "Updating…" : getStatusLabel(nextStatus!)}
               </button>
-            )}
-            {showAdvanceButton && (
-              <>
-                {session?.isActive && (
-                  <JobPhotos
-                    jobId={id}
-                    jobType={jobType}
-                    sessionId={session?.id ?? null}
-                    currentStatus={currentStatus}
-                    onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
-                  />
-                )}
-                {currentStatus === "arrived_at_pickup" && !pickupVerificationDone && (
-                  <button
-                    onClick={() => setPickupModalOpen(true)}
-                    className="w-full mt-3 py-4 rounded-2xl font-bold text-[14px] text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    Verify Inventory & Take Photos
-                  </button>
-                )}
-                <button
-                  onClick={advanceStatus}
-                  disabled={advancing || blockedByPhotos || blockedByPickupVerification}
-                  className="w-full mt-3 py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
-                  style={{
-                    background: blockedByPhotos || blockedByPickupVerification
-                      ? "var(--brd)"
-                      : "linear-gradient(135deg, #C9A962, #8B7332)",
-                    color: blockedByPhotos || blockedByPickupVerification ? "var(--tx3)" : "white",
-                  }}
-                >
-                  {advancing
-                    ? "Updating..."
-                    : blockedByPickupVerification
-                      ? "Complete verification first"
-                      : blockedByPhotos
-                        ? "Take photo to continue"
-                        : nextStatus === "completed"
-                          ? "Complete & Get Client Sign-Off"
-                          : getStatusLabel(nextStatus!)}
-                </button>
-              </>
-            )}
-            {isCompleted && (
-              <div className="w-full py-4 rounded-2xl font-bold text-[15px] text-[#22C55E] text-center bg-[#22C55E]/10 border border-[#22C55E]/25">
-                <div className="flex items-center justify-center gap-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Job Complete
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Note input */}
-          {showAdvanceButton && (
-            <input
-              ref={noteInputRef}
-              type="text"
-              placeholder="Add a note..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-full bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[11px] focus:border-[var(--brd)] outline-none transition-colors"
-            />
+            )
+          )}
+          {showAdvanceButton && (blockedByPhotos || blockedByPickupVerification) && (
+            <p className="text-center text-[11px] text-[var(--tx3)] py-2">
+              {blockedByPickupVerification ? "Complete pickup verification above" : "Take photos in the Photos tab to advance"}
+            </p>
           )}
 
           {/* Timeline */}
-          <div className="pt-6 pb-5 border-t border-[var(--brd)]/30">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-5">Timeline</h2>
-            <div className="relative pl-7 before:content-[''] before:absolute before:left-[7px] before:top-1 before:bottom-1 before:w-0.5 before:bg-[var(--brd)]">
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2">
+              <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50">Timeline</p>
+              {session?.startedAt && (
+                <span className="text-[9px] text-[var(--tx3)]/50 tabular-nums">
+                  Started {formatTime(session.startedAt, { hour: "numeric", minute: "2-digit" })}
+                </span>
+              )}
+            </div>
+            {/* Steps */}
+            <div className="space-y-0">
               {statusFlow.map((s, i) => {
                 const cp = session?.checkpoints?.find((c) => c.status === s);
-                const isCurrent = currentStatus === s;
                 const idx = statusFlow.indexOf(currentStatus as any);
                 const isPast = idx > i || (idx === i && isCompleted);
-                const isLastStep = s === statusFlow[statusFlow.length - 1];
+                const isCurrent = currentStatus === s && !isCompleted;
+                const isLast = i === statusFlow.length - 1;
                 const state = isPast ? "done" : isCurrent ? "act" : "wait";
+
+                /* elapsed between this step and the previous one */
+                const prevCp = i > 0 ? session?.checkpoints?.find((c) => c.status === statusFlow[i - 1]) : null;
+                const stepTs = cp?.timestamp ?? (isLast && isCompleted ? session?.completedAt ?? null : null);
+                const elapsed = stepTs && prevCp?.timestamp
+                  ? Math.round((new Date(stepTs).getTime() - new Date(prevCp.timestamp).getTime()) / 60000)
+                  : null;
+
                 return (
-                  <div key={s} className="relative pb-5 last:pb-0">
-                    <div
-                      className={`absolute -left-[20px] top-0.5 rounded-full border-2 border-[var(--card)] z-10 transition-all ${
-                        state === "done" && isLastStep
-                          ? "w-5 h-5 -left-[23px] bg-[#22C55E]"
-                          : state === "done"
-                            ? "w-3.5 h-3.5 -left-[20px] bg-[#22C55E]"
-                            : state === "act"
-                              ? "w-4 h-4 -left-[21px] bg-[var(--gold)] shadow-[0_0_0_4px_rgba(201,169,98,0.2)]"
-                              : "w-3 h-3 -left-[19px] bg-[var(--brd)]"
-                      }`}
-                    />
-                    <div className="flex items-center justify-between gap-2">
-                      <div className={`text-[13px] font-semibold transition-colors ${state === "done" ? "text-[#22C55E]" : state === "act" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
-                        {getStatusLabel(s)}
-                      </div>
-                      {cp?.timestamp && (
-                        <span className="text-[10px] text-[var(--tx3)] tabular-nums font-medium">
-                          {formatTime(cp.timestamp, { hour: "numeric", minute: "2-digit" })}
-                        </span>
+                  <div key={s} className="relative flex gap-3.5 py-3 last:pb-0">
+                    {/* Connector line */}
+                    {!isLast && (
+                      <span className={`absolute left-[11px] top-[28px] bottom-0 w-px ${state === "done" ? "bg-[#22C55E]/40" : "bg-[var(--brd)]"}`} />
+                    )}
+                    {/* Dot */}
+                    <div className="shrink-0 mt-0.5">
+                      {state === "done" ? (
+                        <div className={`flex items-center justify-center rounded-full ${isLast ? "w-5 h-5 bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.12)]" : "w-4 h-4 bg-[#22C55E]/20 border border-[#22C55E]/50"}`}>
+                          <svg width={isLast ? 10 : 8} height={isLast ? 10 : 8} viewBox="0 0 24 24" fill="none" stroke={isLast ? "#fff" : "#22C55E"} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                      ) : state === "act" ? (
+                        <div className="w-4 h-4 rounded-full bg-[var(--gold)] shadow-[0_0_0_4px_rgba(201,169,98,0.2)] flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-[var(--brd)] bg-[var(--bg)]" />
                       )}
                     </div>
-                    {cp?.note && (
-                      <p className="text-[11px] text-[var(--tx3)] mt-0.5 italic">{cp.note}</p>
-                    )}
-                    {state === "act" && !cp?.timestamp && (
-                      <span className="text-[10px] text-[var(--gold)] font-medium">In progress</span>
-                    )}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[12px] font-semibold leading-tight ${
+                          state === "done" ? "text-[var(--tx)]"
+                          : state === "act" ? "text-[var(--gold)]"
+                          : "text-[var(--tx3)]/40"
+                        }`}>
+                          {getStatusLabel(s)}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {elapsed !== null && elapsed > 0 && (
+                            <span className="text-[9px] text-[var(--tx3)]/40 tabular-nums">{elapsed}m</span>
+                          )}
+                          {(() => {
+                            const ts = cp?.timestamp ?? (isLast && isCompleted ? session?.completedAt ?? null : null);
+                            return ts ? (
+                              <span className={`text-[10px] tabular-nums font-medium ${state === "done" && isLast ? "text-[#22C55E]" : "text-[var(--tx3)]"}`}>
+                                {formatTime(ts, { hour: "numeric", minute: "2-digit" })}
+                              </span>
+                            ) : state === "act" ? (
+                              <span className="text-[9px] font-bold text-[var(--gold)] uppercase tracking-widest">Now</span>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                      {cp?.note && (
+                        <p className="mt-0.5 text-[10px] text-[var(--tx3)] italic leading-snug">{cp.note}</p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
+          {/* Dispatch notes */}
+          {job.internalNotes && (
+            <div className="rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-2">Dispatch Notes</p>
+              <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
+            </div>
+          )}
+
           {/* Quick actions */}
           {!isCompleted && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => noteInputRef.current?.focus()}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all"
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Note
               </button>
               <button
                 onClick={() => setReportModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Issue
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Report Issue
               </button>
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--brd)]/40 active:scale-95 transition-all ml-auto"
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 Dispatch
               </a>
             </div>
           )}
-
-          {/* Dispatch notes */}
-          {job.internalNotes && (
-            <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Dispatch Notes</h2>
-              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
-            </div>
-          )}
-
-          {/* Sign-off CTA */}
-          {["unloading", "delivering", "arrived_at_destination"].includes(currentStatus) && !isCompleted && (
-            <Link
-              href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-[14px] text-white transition-all shadow-lg"
-              style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
-              Client Sign-Off
-            </Link>
-          )}
         </div>
       )}
 
+      {/* ══════════════ DETAILS TAB ══════════════ */}
       {activeTab === "details" && (
-        <div className="space-y-0">
+        <>
+          {/* Project context banner */}
+          {job.projectContext && (
+            <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-0.5">Part of Project</p>
+              <p className="text-[13px] font-semibold text-[var(--tx)]">
+                {job.projectContext.projectNumber} — {job.projectContext.projectName}
+              </p>
+              {job.projectContext.phaseName && (
+                <p className="text-[11px] text-[var(--gold)] mt-0.5">{job.projectContext.phaseName}</p>
+              )}
+            </div>
+          )}
           {(job.scheduledDate || job.arrivalWindow) && (
-            <div className="pt-6 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</h3>
+            <div className="p-4">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</p>
               {job.scheduledDate && (
                 <p className="text-[14px] font-semibold text-[var(--tx)]">
                   {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
@@ -647,43 +659,44 @@ export default function CrewJobPage({
               {job.scheduledTime && <p className="text-[12px] text-[var(--tx3)] mt-0.5">Time: {job.scheduledTime}</p>}
             </div>
           )}
-          <div className="pt-6 pb-4 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Pickup</h3>
-            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
-            {formatAccessForDisplay(job.fromAccess) && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {formatAccessForDisplay(job.fromAccess)}</p>}
+          <div className="p-4">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Pickup</p>
+            <p className="text-[13px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
+            {formatAccessForDisplay(job.fromAccess) && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {formatAccessForDisplay(job.fromAccess)}</p>}
           </div>
-          <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Drop-off</h3>
-            <p className="text-[14px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
-            {formatAccessForDisplay(job.toAccess) && <p className="text-[12px] text-[var(--tx3)] mt-1.5">Access: {formatAccessForDisplay(job.toAccess)}</p>}
+          <div className="p-4">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Drop-off</p>
+            <p className="text-[13px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
+            {formatAccessForDisplay(job.toAccess) && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {formatAccessForDisplay(job.toAccess)}</p>}
           </div>
           {job.accessNotes && (
-            <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Access notes</h3>
-              <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.accessNotes}</p>
+            <div className="p-4">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Access Notes</p>
+              <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.accessNotes}</p>
             </div>
           )}
           {job.crewMembers && job.crewMembers.length > 0 && (
-            <div className="pt-6 pb-4 border-t border-[var(--brd)]/30">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</h3>
-              <div className="space-y-2">
+            <div className="p-4">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</p>
+              <div className="space-y-2.5">
                 {job.crewMembers.map((m, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--gold)]/15 text-[var(--gold)]">
+                  <div key={i} className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--gold)]/15 text-[var(--gold)] shrink-0">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
-                      <span className="text-[11px] text-[var(--tx3)] ml-2">{m.role}</span>
+                      <span className="text-[12px] font-semibold text-[var(--tx)]">{m.name}</span>
+                      <span className="text-[10px] text-[var(--tx3)] ml-2">{m.role}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
+      {/* ══════════════ ITEMS TAB ══════════════ */}
       {activeTab === "items" && hasInventory && (
         <div className="mt-1">
           <JobInventory
@@ -699,16 +712,16 @@ export default function CrewJobPage({
           />
         </div>
       )}
-
       {activeTab === "items" && !hasInventory && (
-        <div className="mt-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
+          <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
-          <p className="text-[13px] text-[var(--tx3)]">No inventory for this job</p>
+          <p className="text-[12px] text-[var(--tx3)]">No inventory for this job</p>
         </div>
       )}
 
+      {/* ══════════════ PHOTOS TAB ══════════════ */}
       {activeTab === "photos" && (
         <div className="mt-1">
           {session?.isActive || isCompleted ? (
@@ -721,11 +734,11 @@ export default function CrewJobPage({
               readOnly={isCompleted}
             />
           ) : (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
+              <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </div>
-              <p className="text-[13px] text-[var(--tx3)]">Start the job to capture photos</p>
+              <p className="text-[12px] text-[var(--tx3)]">Start the job to capture photos</p>
             </div>
           )}
         </div>

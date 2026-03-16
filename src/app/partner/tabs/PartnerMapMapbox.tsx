@@ -20,7 +20,7 @@ function MyLocationButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="absolute bottom-14 right-4 z-10 p-2.5 bg-white rounded-lg shadow-md border border-[#E8E4DF] hover:bg-[#F5F3F0] transition-colors"
+      className="absolute bottom-36 right-3 z-10 p-2.5 bg-white rounded-lg shadow-md border border-[#E8E4DF] hover:bg-[#F5F3F0] transition-colors"
       title="My location"
       aria-label="Center on my location"
     >

@@ -204,7 +204,7 @@ function AdminCreateModal({
 }
 
 /* ─── Main View ─────────────────────────────────── */
-export default function RecurringSchedulesView() {
+export default function RecurringSchedulesView({ initialScheduleId }: { initialScheduleId?: string } = {}) {
   const [schedules, setSchedules] = useState<RecurringSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

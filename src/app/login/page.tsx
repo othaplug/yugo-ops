@@ -13,6 +13,7 @@ export default function AdminLoginPage() {
   const [mode, setMode] = useState<"login" | "forgot" | "sent">("login");
   const [resetLoading, setResetLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -25,6 +26,10 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consentChecked) {
+      setError("Please agree to the Privacy Policy, Terms of Use, and Terms & Conditions to continue.");
+      return;
+    }
     setLoading(true);
     setError("");
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
@@ -147,7 +152,25 @@ export default function AdminLoginPage() {
                 <div style={{ textAlign: "right", marginBottom: 20 }}>
                   <button type="button" className="adm-link" onClick={() => { setMode("forgot"); setError(""); }}>Forgot password?</button>
                 </div>
-                <button type="submit" className="adm-btn" disabled={loading}>
+
+                <div style={{ marginBottom: 18, padding: "11px 13px", background: "rgba(201,169,98,0.04)", borderRadius: 8, border: "1px solid rgba(201,169,98,0.1)" }}>
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={consentChecked}
+                      onChange={(e) => setConsentChecked(e.target.checked)}
+                      style={{ marginTop: 2, width: 13, height: 13, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                    />
+                    <span style={{ fontSize: 10, color: "#4A4A4E", lineHeight: 1.7 }}>
+                      I agree to Yugo&apos;s{" "}
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a>,{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>, and{" "}
+                      <a href="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms & Conditions</a>
+                    </span>
+                  </label>
+                </div>
+
+                <button type="submit" className="adm-btn" disabled={loading || !consentChecked} style={{ opacity: !consentChecked ? 0.5 : undefined }}>
                   {loading ? "Authenticating..." : "Sign In"}
                 </button>
               </form>

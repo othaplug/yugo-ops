@@ -8,6 +8,7 @@ import Badge from "../../components/Badge";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import EditPartnerModal from "./EditPartnerModal";
 import DeliverySummaryModal from "./DeliverySummaryModal";
+import PartnerPaymentTermsSection from "./PartnerPaymentTermsSection";
 import PortalAccessSection from "./PortalAccessSection";
 import PartnerRateCardTab from "./PartnerRateCardTab";
 import AdminPartnerAnalytics from "./AdminPartnerAnalytics";
@@ -241,7 +242,14 @@ export default function ClientDetailClient({
 
       {/* Portal Features tab content */}
       {!isClient && isAdmin && activeTab === "portal" && (
-        <div className="pt-6">
+        <div className="pt-6 space-y-6">
+          <PartnerPaymentTermsSection
+            orgId={client.id}
+            orgName={client.name || "Partner"}
+            initialInvoiceDueDays={client.invoice_due_days ?? 30}
+            initialInvoiceDueDayOfMonth={client.invoice_due_day_of_month ?? null}
+            onSaved={() => router.refresh()}
+          />
           <PartnerPortalFeaturesCard
             orgId={client.id}
             vertical={client.vertical}

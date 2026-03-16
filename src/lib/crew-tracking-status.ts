@@ -25,7 +25,7 @@ export const MOVE_STATUS_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
-/** Delivery/project status progression (two-leg: pickup then client) */
+/** Delivery/project status progression */
 export const DELIVERY_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
@@ -33,6 +33,17 @@ export const DELIVERY_STATUS_FLOW: TrackingStatus[] = [
   "arrived_at_destination",
   "completed",
 ];
+
+/** Map legacy short delivery statuses to the full flow equivalents */
+const DELIVERY_STATUS_COMPAT: Record<string, TrackingStatus> = {
+  en_route: "en_route_to_pickup",
+  arrived: "arrived_at_pickup",
+  delivering: "arrived_at_destination",
+};
+
+export function normalizeDeliveryStatus(status: string): string {
+  return DELIVERY_STATUS_COMPAT[status] ?? status;
+}
 
 export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
   not_started: "Not Started",

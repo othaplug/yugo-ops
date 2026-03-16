@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     const startDate = String(start).slice(0, 10);
     const endDate = String(end).slice(0, 10);
 
-    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult] = await Promise.allSettled([
+    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult, recurringResult] = await Promise.allSettled([
       db
         .from("moves")
         .select("id, move_code, client_name, move_type, status, scheduled_date, crew_id, from_address, to_address")
@@ -87,6 +87,11 @@ export async function GET(req: NextRequest) {
         .select("*")
         .gte("block_date", startDate).lte("block_date", endDate),
       db.from("crews").select("id, name, members"),
+      db
+        .from("recurring_delivery_schedules")
+        .select("id, organization_id, schedule_name, frequency, days_of_week, booking_type, vehicle_type, crew_id, organizations(name)")
+        .eq("is_active", true)
+        .eq("is_paused", false),
     ]);
 
     const moves = movesResult.status === "fulfilled" && !movesResult.value.error ? movesResult.value.data : null;
@@ -94,6 +99,7 @@ export async function GET(req: NextRequest) {
     const phases = phasesResult.status === "fulfilled" && !phasesResult.value.error ? phasesResult.value.data : null;
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
+    const recurringSchedules = recurringResult.status === "fulfilled" && !recurringResult.value.error ? recurringResult.value.data : null;
 
     const diagnostics: { movesError?: string; deliveriesError?: string } = {};
     if (movesResult.status === "rejected") {
@@ -265,6 +271,80 @@ export async function GET(req: NextRequest) {
         itemCount: null,
         scheduleBlockId: b.id,
       });
+    }
+
+    // Recurring delivery schedules — expand to dates in range
+    function getRecurringDatesInRange(
+      start: string,
+      end: string,
+      daysOfWeek: number[],
+      frequency: string
+    ): string[] {
+      const out: string[] = [];
+      const startD = new Date(start + "T12:00:00");
+      const endD = new Date(end + "T12:00:00");
+      const d = new Date(startD);
+      while (d <= endD) {
+        const isoDow = d.getDay() === 0 ? 7 : d.getDay();
+        if (daysOfWeek.includes(isoDow)) {
+          const dateKey = d.toISOString().slice(0, 10);
+          if (frequency === "monthly") {
+            const monthKey = dateKey.slice(0, 7);
+            if (!out.some((x) => x.startsWith(monthKey))) out.push(dateKey);
+          } else if (frequency === "biweekly") {
+            const weekNum = Math.floor((d.getTime() - startD.getTime()) / (7 * 24 * 60 * 60 * 1000));
+            if (weekNum % 2 === 0) out.push(dateKey);
+          } else {
+            out.push(dateKey);
+          }
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      return out;
+    }
+
+    for (const r of recurringSchedules || []) {
+      if (typeFilter && typeFilter !== "delivery") continue;
+      const daysOfWeek = Array.isArray(r.days_of_week) ? r.days_of_week : [];
+      if (daysOfWeek.length === 0) continue;
+      const orgName = (r.organizations as { name?: string } | null)?.name || "Partner";
+      const crew = r.crew_id ? crewListForLookup.find((c) => c.id === r.crew_id) : null;
+      if (crewFilter && r.crew_id !== crewFilter) continue;
+
+      const dates = getRecurringDatesInRange(startDate, endDate, daysOfWeek, r.frequency || "weekly");
+      for (const dk of dates) {
+        const desc =
+          r.booking_type === "day_rate"
+            ? `Day Rate · ${toTitleCase(r.vehicle_type || "")}`
+            : toTitleCase((r.booking_type || "").replace(/_/g, " "));
+        events.push({
+          id: `recurring-${r.id}-${dk}`,
+          type: "delivery",
+          blockType: "delivery",
+          name: orgName,
+          description: `${r.schedule_name} · ${desc}`.trim(),
+          date: dk,
+          start: "08:00",
+          end: null,
+          durationHours: null,
+          crewId: r.crew_id || null,
+          crewName: crew?.name || null,
+          truckId: null,
+          truckName: null,
+          status: "recurring",
+          calendarStatus: "scheduled",
+          color: JOB_COLORS.delivery,
+          href: `/admin/deliveries?view=recurring&schedule=${r.id}`,
+          clientName: orgName,
+          fromAddress: null,
+          toAddress: null,
+          deliveryAddress: null,
+          category: "Recurring",
+          moveSize: null,
+          itemCount: null,
+          scheduleBlockId: null,
+        });
+      }
     }
 
     events.sort((a, b) => {

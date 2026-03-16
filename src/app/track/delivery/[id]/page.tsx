@@ -51,10 +51,19 @@ export default async function TrackDeliveryPage({
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
 
-  const [pickupCoords, dropoffCoords] = await Promise.all([
-    pickupAddr ? geocode(pickupAddr) : null,
-    dropoffAddr ? geocode(dropoffAddr) : null,
+  const [[pickupCoords, dropoffCoords], reviewCfg] = await Promise.all([
+    Promise.all([
+      pickupAddr ? geocode(pickupAddr) : null,
+      dropoffAddr ? geocode(dropoffAddr) : null,
+    ]),
+    supabase
+      .from("platform_config")
+      .select("value")
+      .eq("key", "google_review_url")
+      .maybeSingle(),
   ]);
+
+  const googleReviewUrl = reviewCfg.data?.value || null;
 
   return (
     <TrackDeliveryClient
@@ -62,6 +71,7 @@ export default async function TrackDeliveryPage({
       token={token || ""}
       initialPickup={pickupCoords}
       initialDropoff={dropoffCoords}
+      googleReviewUrl={googleReviewUrl}
     />
   );
 }

@@ -79,6 +79,8 @@ export async function POST(req: NextRequest) {
       recommended_day_type: body.recommended_day_type || null,
       tracking_code: trackingCode,
       crew_id: (body.crew_id || "").trim() || null,
+      project_id: (body.project_id || "").trim() || null,
+      phase_id: (body.phase_id || "").trim() || null,
     };
 
     const { data: created, error: dbError } = await admin

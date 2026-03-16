@@ -78,7 +78,6 @@ export default function ProofOfDeliverySection({
 
   const itemConditions: ItemCondition[] = Array.isArray(pod.item_conditions) ? pod.item_conditions : [];
   const hasNewDamage = itemConditions.some((ic) => ic.condition === "new_damage");
-  const deliveryPhotos = Array.isArray(pod.photos_delivery) ? pod.photos_delivery : [];
 
   return (
     <div className="space-y-5">
@@ -142,20 +141,6 @@ export default function ProofOfDeliverySection({
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Delivery photos */}
-      {deliveryPhotos.length > 0 && (
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Delivery Photos</div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {deliveryPhotos.slice(0, 6).map((p, i) => (
-              <div key={i} className="aspect-square rounded-lg overflow-hidden bg-[var(--brd)]/10">
-                <img src={p.url} alt={p.caption || "Delivery"} className="w-full h-full object-cover" />
-              </div>
-            ))}
           </div>
         </div>
       )}

@@ -2,6 +2,78 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/api-auth";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error: authError } = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    const { data: invoice, error } = await supabase
+      .from("invoices")
+      .select(`
+        id,
+        invoice_number,
+        client_name,
+        amount,
+        move_id,
+        delivery_id,
+        due_date,
+        status,
+        file_path,
+        organization_id,
+        square_invoice_id,
+        square_invoice_url,
+        line_items,
+        created_at,
+        updated_at
+      `)
+      .eq("id", id)
+      .single();
+
+    if (error || !invoice) {
+      return NextResponse.json({ error: error?.message || "Invoice not found" }, { status: 404 });
+    }
+
+    let delivery: Record<string, unknown> | null = null;
+    if (invoice.delivery_id) {
+      const { data: d } = await supabase
+        .from("deliveries")
+        .select("id, delivery_number, customer_name, client_name, delivery_address, pickup_address, scheduled_date, time_slot, status, total_price, admin_adjusted_price, items")
+        .eq("id", invoice.delivery_id)
+        .single();
+      delivery = d as Record<string, unknown> | null;
+    }
+
+    let organization: Record<string, unknown> | null = null;
+    if (invoice.organization_id) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("id, name, email, contact_name, billing_address")
+        .eq("id", invoice.organization_id)
+        .single();
+      organization = org as Record<string, unknown> | null;
+    }
+
+    return NextResponse.json({
+      invoice: {
+        ...invoice,
+        delivery,
+        organization,
+      },
+    });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to fetch" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -1,24 +1,74 @@
 "use client";
 
+import { useCallback } from "react";
 import Link from "next/link";
 import Badge from "../components/Badge";
-import { formatCurrency } from "@/lib/format-currency";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { formatCurrency, calcHST } from "@/lib/format-currency";
+import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { useToast } from "../components/Toast";
 
 export default function InvoicesTable({
   invoices,
   onRowClick,
+  onRefresh,
+  sortCol,
+  sortDir,
+  onSortChange,
 }: {
   invoices: any[];
   onRowClick?: (invoice: any) => void;
+  onRefresh?: () => void;
+  sortCol?: string;
+  sortDir?: "asc" | "desc";
+  onSortChange?: (col: string, dir: "asc" | "desc") => void;
 }) {
+  const { toast } = useToast();
+
+  const runBulk = useCallback(
+    async (action: "archive" | "cancel" | "delete" | "mark_paid", ids: string[]) => {
+      const res = await fetch("/api/admin/invoices/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const labels: Record<string, string> = {
+          archive: "Archived",
+          cancel: "Cancelled",
+          delete: "Deleted",
+          mark_paid: "Marked as paid",
+        };
+        toast(`${labels[action] || action} ${data.updated} invoice${data.updated !== 1 ? "s" : ""}`, "check");
+        onRefresh?.();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, onRefresh]
+  );
+
+  const bulkActions: BulkAction[] = [
+    { label: "Mark as paid", onClick: (ids) => runBulk("mark_paid", ids) },
+    { label: "Archive", onClick: (ids) => runBulk("archive", ids) },
+    { label: "Cancel", onClick: (ids) => runBulk("cancel", ids) },
+    { label: "Delete", onClick: (ids) => runBulk("delete", ids), variant: "danger" },
+  ];
   const columns: ColumnDef<any>[] = [
     {
       id: "invoice_number",
       label: "Invoice",
       accessor: (r) => r.invoice_number,
       render: (r) => (
-        <span className="font-mono font-semibold">{r.invoice_number}</span>
+        <div>
+          <span className="font-mono font-semibold">{r.invoice_number}</span>
+          {r.delivery_id && (
+            <span className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)]">Delivery</span>
+          )}
+          {r.move_id && !r.delivery_id && (
+            <span className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">Move</span>
+          )}
+        </div>
       ),
       searchable: true,
     },
@@ -47,7 +97,7 @@ export default function InvoicesTable({
           <>
             <span className="font-bold">{formatCurrency(r.amount)}</span>
             {amt > 0 && (
-              <span className="text-[8px] text-[var(--tx3)] ml-1">+{formatCurrency(Math.round(amt * 0.13))} HST</span>
+              <span className="text-[8px] text-[var(--tx3)] ml-1">+{formatCurrency(calcHST(amt))} HST</span>
             )}
           </>
         );
@@ -69,6 +119,24 @@ export default function InvoicesTable({
       render: (r) => <Badge status={r.status} />,
       sortable: true,
     },
+    {
+      id: "square",
+      label: "Square",
+      accessor: (r) => r.square_invoice_url || "",
+      render: (r) =>
+        r.square_invoice_url ? (
+          <a
+            href={r.square_invoice_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View
+          </a>
+        ) : null,
+    },
   ];
 
   return (
@@ -84,7 +152,11 @@ export default function InvoicesTable({
       exportFilename="yugo-invoices"
       columnToggle
       selectable
+      bulkActions={bulkActions}
       onRowClick={onRowClick}
+      {...(sortCol != null && sortDir != null && onSortChange
+        ? { sortCol, sortDir, onSortChange }
+        : {})}
     />
   );
 }

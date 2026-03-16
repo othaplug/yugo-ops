@@ -39,6 +39,19 @@ export async function GET(
       const toAccess = (d as any).delivery_access || (d as any).to_access || null;
       const accessParts = [fromAccess, toAccess].filter(Boolean);
       const access = accessParts.length ? accessParts.join(" -> ") : null;
+
+      // Fetch project context if linked
+      let projectContext: { projectName: string; projectNumber: string; phaseName: string | null } | null = null;
+      if ((d as any).project_id) {
+        const { data: proj } = await admin.from("projects").select("project_number, project_name").eq("id", (d as any).project_id).maybeSingle();
+        let phaseName: string | null = null;
+        if ((d as any).phase_id) {
+          const { data: ph } = await admin.from("project_phases").select("phase_name").eq("id", (d as any).phase_id).maybeSingle();
+          phaseName = ph?.phase_name ?? null;
+        }
+        if (proj) projectContext = { projectNumber: proj.project_number, projectName: proj.project_name, phaseName };
+      }
+
       return NextResponse.json({
         id: d.id,
         jobId: d.delivery_number || d.id,
@@ -61,6 +74,7 @@ export async function GET(
         internalNotes: d.instructions || d.next_action || null,
         scheduledTime: d.time_slot || null,
         crewId: d.crew_id,
+        projectContext,
       });
     }
   }

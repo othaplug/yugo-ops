@@ -6,6 +6,7 @@ import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
+const CONSENT_KEY = "yugo-crew-consent-accepted";
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
 type LoginContext = {
@@ -29,12 +30,18 @@ export default function CrewLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showMemberPicker, setShowMemberPicker] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const pinInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const id = typeof window !== "undefined" ? localStorage.getItem(DEVICE_STORAGE_KEY) : null;
+    if (typeof window === "undefined") return;
+    const id = localStorage.getItem(DEVICE_STORAGE_KEY);
     setDeviceId(id);
+    const accepted = localStorage.getItem(CONSENT_KEY) === "true";
+    setConsentAccepted(accepted);
+    if (accepted) setConsentChecked(true);
   }, []);
 
   useEffect(() => {
@@ -62,8 +69,17 @@ export default function CrewLoginPage() {
     return () => { cancelled = true; };
   }, [deviceId]);
 
+  const handleConsentChange = (checked: boolean) => {
+    setConsentChecked(checked);
+    if (checked && typeof window !== "undefined") {
+      localStorage.setItem(CONSENT_KEY, "true");
+      setConsentAccepted(true);
+    }
+  };
+
   const handleLogin = async () => {
     if (!selectedMember || submitting) return;
+    if (!consentChecked) return;
     const len = selectedMember.pinLength;
     if (pin.length !== len) return;
     setSubmitting(true);
@@ -77,6 +93,7 @@ export default function CrewLoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Login failed");
+        setPin("");
         setSubmitting(false);
         return;
       }
@@ -84,6 +101,7 @@ export default function CrewLoginPage() {
       router.refresh();
     } catch {
       setError("Connection error");
+      setPin("");
     }
     setSubmitting(false);
   };
@@ -92,12 +110,12 @@ export default function CrewLoginPage() {
   handleLoginRef.current = handleLogin;
 
   useEffect(() => {
-    if (!selectedMember || submitting) return;
+    if (!selectedMember || submitting || !consentChecked) return;
     const len = selectedMember.pinLength;
     if (pin.length === len) {
       handleLoginRef.current?.();
     }
-  }, [pin, selectedMember, submitting]);
+  }, [pin, selectedMember, submitting, consentChecked]);
 
   useEffect(() => {
     if (selectedMember && context?.hasDevice && !showMemberPicker) {
@@ -499,6 +517,25 @@ export default function CrewLoginPage() {
               }}
             >
               {error}
+            </div>
+          )}
+
+          {!consentAccepted && (
+            <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => handleConsentChange(e.target.checked)}
+                  style={{ marginTop: 2, width: 15, height: 15, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                />
+                <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                  I agree to Yugo&apos;s{" "}
+                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a>,{" "}
+                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>, and{" "}
+                  <a href="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms & Conditions</a>
+                </span>
+              </label>
             </div>
           )}
 

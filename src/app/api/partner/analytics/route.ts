@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
           }
         }
       }
-      satisfactionScore = satisfactionCount >= 5 ? Math.round((sum / satisfactionCount) * 10) / 10 : null;
+      satisfactionScore = satisfactionCount > 0 ? Math.round((sum / satisfactionCount) * 10) / 10 : null;
     }
   }
 

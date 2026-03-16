@@ -7,7 +7,21 @@ import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Layers } from "lucide-react";
+
+interface ProjectOption {
+  id: string;
+  project_number: string;
+  project_name: string;
+  status: string;
+}
+
+interface PhaseOption {
+  id: string;
+  phase_name: string;
+  phase_order: number;
+  address: string | null;
+}
 
 interface Org {
   id: string;
@@ -48,11 +62,20 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const dateFromUrl = searchParams.get("date") || "";
   const typeFromUrl = searchParams.get("type") || "";
   const orgFromUrl = searchParams.get("org") || "";
+  const projectIdFromUrl = searchParams.get("projectId") || "";
+  const phaseIdFromUrl = searchParams.get("phaseId") || "";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [projectType, setProjectType] = useState(["retail", "designer", "hospitality", "gallery"].includes(typeFromUrl) ? typeFromUrl : "retail");
   const [organizationId, setOrganizationId] = useState(orgFromUrl);
+
+  // Project linking
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [linkedProjectId, setLinkedProjectId] = useState(projectIdFromUrl);
+  const [linkedPhaseId, setLinkedPhaseId] = useState(phaseIdFromUrl);
+  const [phases, setPhases] = useState<PhaseOption[]>([]);
   const [contactSearch, setContactSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -104,8 +127,58 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         if (!customerEmail) setCustomerEmail(org.email || "");
         if (!customerPhone && org.phone) setCustomerPhone(formatPhone(org.phone));
       }
+      // Fetch projects for this org
+      setLoadingProjects(true);
+      setLinkedProjectId(projectIdFromUrl);
+      setLinkedPhaseId(phaseIdFromUrl);
+      setProjects([]);
+      setPhases([]);
+      fetch(`/api/admin/projects?partner_id=${organizationId}`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => {
+          const raw = Array.isArray(data.projects) ? data.projects : Array.isArray(data) ? data : [];
+          setProjects(raw.filter((p: ProjectOption) => p.status !== "cancelled"));
+        })
+        .catch(() => setProjects([]))
+        .finally(() => setLoadingProjects(false));
+    } else {
+      setProjects([]);
+      setLinkedProjectId("");
+      setLinkedPhaseId("");
+      setPhases([]);
     }
-  }, [organizationId, organizations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId]);
+
+  // Fetch phases when project is selected
+  useEffect(() => {
+    if (!linkedProjectId) { setPhases([]); setLinkedPhaseId(""); return; }
+    fetch(`/api/admin/projects/${linkedProjectId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.phases) {
+          setPhases(data.phases);
+          // If phaseIdFromUrl is set, pre-select it
+          if (phaseIdFromUrl && data.phases.find((p: PhaseOption) => p.id === phaseIdFromUrl)) {
+            setLinkedPhaseId(phaseIdFromUrl);
+          }
+        } else {
+          setPhases([]);
+        }
+      })
+      .catch(() => setPhases([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedProjectId]);
+
+  // Auto-fill delivery address from phase address when phase is selected
+  useEffect(() => {
+    if (!linkedPhaseId) return;
+    const phase = phases.find((p) => p.id === linkedPhaseId);
+    if (phase?.address && !deliveryAddress) {
+      setDeliveryAddress(phase.address);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedPhaseId, phases]);
 
   const addInventoryItem = () => {
     if (!newItemName.trim() || !newRoom) return;
@@ -166,6 +239,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
       category: projectType || org?.type || "retail",
+      project_id: linkedProjectId || null,
+      phase_id: linkedPhaseId || null,
     };
 
     const res = await fetch("/api/admin/deliveries/create", {
@@ -250,6 +325,54 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             </Field>
           </div>
         </section>
+
+        {/* Section: Link to Project (optional, shown when org is selected and has projects) */}
+        {organizationId && (loadingProjects || projects.length > 0) && (
+          <section className="space-y-2">
+            <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-[var(--gold)]" />
+              Link to Project
+              <span className="text-[9px] font-normal text-[var(--tx3)] normal-case ml-1">optional</span>
+            </h3>
+            {loadingProjects ? (
+              <p className="text-[11px] text-[var(--tx3)]">Loading projects…</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Field label="Project">
+                  <select
+                    value={linkedProjectId}
+                    onChange={(e) => { setLinkedProjectId(e.target.value); setLinkedPhaseId(""); }}
+                    className={fieldInput}
+                  >
+                    <option value="">— None —</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.project_number} — {p.project_name}</option>
+                    ))}
+                  </select>
+                </Field>
+                {linkedProjectId && phases.length > 0 && (
+                  <Field label="Phase">
+                    <select
+                      value={linkedPhaseId}
+                      onChange={(e) => setLinkedPhaseId(e.target.value)}
+                      className={fieldInput}
+                    >
+                      <option value="">— No phase —</option>
+                      {phases.map((ph) => (
+                        <option key={ph.id} value={ph.id}>{ph.phase_name}</option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+              </div>
+            )}
+            {linkedProjectId && (
+              <p className="text-[10px] text-[var(--tx3)]">
+                This delivery will appear in the project&apos;s Deliveries tab and be included in the project invoice.
+              </p>
+            )}
+          </section>
+        )}
 
         {/* Section: Customer details */}
         <section className="space-y-2">

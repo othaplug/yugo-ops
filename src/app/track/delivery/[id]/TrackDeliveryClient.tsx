@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import YugoLogo from "@/components/YugoLogo";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 import { toTitleCase } from "@/lib/format-text";
@@ -36,19 +35,19 @@ const CLIENT_STAGE_LABELS: Record<string, string> = {
   en_route_to_pickup: "En route to pick up",
   arrived_at_pickup: "En route to pick up",
   en_route_to_destination: "On the way to you",
-  arrived_at_destination: "Delivering/Installing",
+  arrived_at_destination: "Delivering",
   completed: "Complete",
   en_route: "En route to pick up",
   arrived: "En route to pick up",
-  delivering: "Delivering/Installing",
+  delivering: "Delivering",
 };
 
 /** 4 separate client steps: pick up → on the way to you → delivering → complete */
-const CLIENT_MAIN_STEPS = ["En route to pick up", "On the way to you", "Delivering/Installing", "Complete"] as const;
+const CLIENT_MAIN_STEPS = ["En route to pick up", "On the way to you", "Delivering", "Complete"] as const;
 const CLIENT_MAIN_STEP_ICONS: Record<string, string> = {
   "En route to pick up": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z",
   "On the way to you": "M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l5 4H1",
-  "Delivering/Installing": "M20 7H4a2 2 0 00-2 2v10h20V9a2 2 0 00-2-2zM12 3v4",
+  "Delivering": "M20 7H4a2 2 0 00-2 2v10h20V9a2 2 0 00-2-2zM12 3v4",
   "Complete": "M20 6L9 17l-5-5",
 };
 
@@ -84,6 +83,8 @@ function injectStyles() {
   style.textContent = `
     @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes routePulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+    @keyframes stepPing { 0% { transform: scale(1); opacity: 0.7; } 70% { transform: scale(2.2); opacity: 0; } 100% { transform: scale(2.2); opacity: 0; } }
+    @keyframes stepBounceIn { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
     .anim-slide-up { animation: fadeSlideUp 0.6s cubic-bezier(0.16,1,0.3,1) both; }
     .anim-delay-1 { animation-delay: 0.08s; }
     .anim-delay-2 { animation-delay: 0.16s; }
@@ -91,11 +92,13 @@ function injectStyles() {
     .anim-delay-4 { animation-delay: 0.32s; }
     .anim-delay-5 { animation-delay: 0.40s; }
     .route-dot-pulse { animation: routePulse 1.8s ease-in-out infinite; }
+    .step-ping { animation: stepPing 2s cubic-bezier(0,0,0.2,1) infinite; }
+    .step-bounce-in { animation: stepBounceIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
   `;
   document.head.appendChild(style);
 }
 
-function PostDeliveryRating({ deliveryId, token }: { deliveryId: string; token: string }) {
+function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId: string; token: string; googleReviewUrl?: string | null }) {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -130,16 +133,34 @@ function PostDeliveryRating({ deliveryId, token }: { deliveryId: string; token: 
   };
 
   if (submitted) {
+    const finalRating = rating || existingRating || 0;
     return (
-      <div className="text-center py-6">
+      <div className="text-center py-4">
         <div className="flex justify-center gap-1 mb-2">
           {[1, 2, 3, 4, 5].map((n) => (
-            <svg key={n} width="22" height="22" viewBox="0 0 24 24" fill={n <= (rating || 0) ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
+            <svg key={n} width="22" height="22" viewBox="0 0 24 24" fill={n <= finalRating ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           ))}
         </div>
         <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Thank you for your feedback!</p>
+        {finalRating >= 5 && googleReviewUrl && (
+          <a
+            href={googleReviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full text-[12px] font-semibold border transition-all hover:opacity-80"
+            style={{ borderColor: `${GOLD}40`, color: GOLD, backgroundColor: `${GOLD}08` }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Leave a Google Review
+          </a>
+        )}
       </div>
     );
   }
@@ -181,11 +202,13 @@ export default function TrackDeliveryClient({
   token,
   initialPickup,
   initialDropoff,
+  googleReviewUrl,
 }: {
   delivery: any;
   token: string;
   initialPickup?: { lat: number; lng: number } | null;
   initialDropoff?: { lat: number; lng: number } | null;
+  googleReviewUrl?: string | null;
 }) {
   const [liveStage, setLiveStage] = useState<string | null>(delivery.stage || null);
   const [crewLoc, setCrewLoc] = useState<CrewPos>(null);
@@ -348,63 +371,62 @@ export default function TrackDeliveryClient({
           </div>
         </div>
 
-        {/* Progress bar — 3-step: On the way to you | At your address | Complete */}
+        {/* Stage timeline — 4 main steps */}
         {(isInProgress || isCompleted) && (
-          <div className="mb-6 anim-slide-up anim-delay-2">
-            <DeliveryProgressBar
-              percent={progressPercent}
-              sublabel={`${Math.round(progressPercent)}%`}
-              label={
-                isCompleted
-                  ? "Complete"
-                  : (normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] : "Tracking…") || CLIENT_MAIN_STEPS[clientMainStepIdx]
-              }
-              variant="light"
-            />
-          </div>
-        )}
-
-        {/* Stage timeline — 3 main steps; show secondary detail when on first step and pre-client */}
-        {(isInProgress || isCompleted) && (
-          <div className="flex items-center gap-0 mb-7 overflow-x-auto pb-1 anim-slide-up anim-delay-2">
-            {CLIENT_MAIN_STEPS.map((label, i) => {
-              const isPast = clientMainStepIdx > i || isCompleted;
-              const isCurrent = clientMainStepIdx === i && !isCompleted;
-              const iconPath = CLIENT_MAIN_STEP_ICONS[label];
-              return (
-                <div key={label} className="flex items-center gap-0 flex-shrink-0">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all border"
-                      style={
-                        isPast
-                          ? { backgroundColor: "#22C55E", color: "white", borderColor: "transparent" }
-                          : isCurrent
-                            ? { backgroundColor: GOLD, color: CREAM, borderColor: "transparent", boxShadow: `0 0 0 3px ${GOLD}30` }
-                            : { backgroundColor: CREAM, color: `${FOREST}50`, borderColor: `${FOREST}18` }
-                      }
-                    >
-                      {isPast ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      ) : iconPath ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={iconPath}/></svg>
-                      ) : (
-                        i + 1
-                      )}
+          <div className="flex justify-center mb-7 anim-slide-up anim-delay-2">
+            <div className="flex items-center gap-0">
+              {CLIENT_MAIN_STEPS.map((label, i) => {
+                const isPast = clientMainStepIdx > i || isCompleted;
+                const isCurrent = clientMainStepIdx === i && !isCompleted;
+                const iconPath = CLIENT_MAIN_STEP_ICONS[label];
+                return (
+                  <div key={label} className="flex items-center gap-0 flex-shrink-0">
+                    <div className="flex flex-col items-center">
+                      {/* Node */}
+                      <div className="relative">
+                        {isCurrent && (
+                          <span
+                            className="step-ping absolute inset-0 rounded-full"
+                            style={{ backgroundColor: GOLD, opacity: 0.35 }}
+                          />
+                        )}
+                        <div
+                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold transition-all border ${isPast ? "step-bounce-in" : ""}`}
+                          style={
+                            isPast
+                              ? { backgroundColor: "#22C55E", color: "white", borderColor: "transparent" }
+                              : isCurrent
+                                ? { backgroundColor: GOLD, color: CREAM, borderColor: "transparent", boxShadow: `0 0 0 4px ${GOLD}25` }
+                                : { backgroundColor: CREAM, color: `${FOREST}40`, borderColor: `${FOREST}15` }
+                          }
+                        >
+                          {isPast ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          ) : iconPath ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={iconPath}/></svg>
+                          ) : (
+                            <span className="text-[11px]">{i + 1}</span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Label */}
+                      <div
+                        className="text-[11px] mt-2 font-semibold whitespace-nowrap text-center max-w-[76px] leading-tight"
+                        style={{ color: isCurrent ? GOLD : isPast ? "rgba(0,0,0,1)" : `${FOREST}40` }}
+                      >
+                        {label}
+                      </div>
                     </div>
-                    <div
-                      className="text-[9px] mt-1.5 font-semibold whitespace-nowrap text-center max-w-[80px]"
-                      style={{ color: isCurrent ? GOLD : isPast ? "#22C55E" : `${FOREST}50` }}
-                    >
-                      {label}
-                    </div>
+                    {i < CLIENT_MAIN_STEPS.length - 1 && (
+                      <div
+                        className="w-8 sm:w-10 h-[2px] mx-1.5 mb-5 rounded-full transition-all duration-700"
+                        style={{ backgroundColor: isPast ? "#22C55E" : `${FOREST}12` }}
+                      />
+                    )}
                   </div>
-                  {i < CLIENT_MAIN_STEPS.length - 1 && (
-                    <div className="w-8 sm:w-12 h-[2px] mx-1.5 mt-[-16px] rounded-full transition-colors" style={{ backgroundColor: isPast ? "#22C55E" : `${FOREST}15` }} />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -765,33 +787,10 @@ export default function TrackDeliveryClient({
           </div>
         )}
 
-        {/* Post-delivery rating + tipping */}
+        {/* Post-delivery rating */}
         {isCompleted && (
           <div className="rounded-2xl border p-5 mb-5 anim-slide-up anim-delay-5" style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}>
-            <PostDeliveryRating deliveryId={delivery.id} token={token} />
-            <div className="border-t pt-4 mt-4" style={{ borderColor: `${FOREST}08` }}>
-              <h3 className="text-[14px] font-bold mb-2" style={{ color: FOREST }}>Tip Your Crew</h3>
-              <div className="flex flex-wrap gap-2">
-                {[5, 10, 15, 20].map((amt) => (
-                  <a
-                    key={amt}
-                    href={`/track/tip/${delivery.id}?amount=${amt}&token=${encodeURIComponent(token)}`}
-                    className="px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors hover:opacity-80"
-                    style={{ borderColor: `${GOLD}40`, color: GOLD }}
-                  >
-                    ${amt}
-                  </a>
-                ))}
-                <a
-                  href={`/track/tip/${delivery.id}?token=${encodeURIComponent(token)}`}
-                  className="px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors hover:opacity-80"
-                  style={{ borderColor: `${GOLD}40`, color: GOLD }}
-                >
-                  Custom
-                </a>
-              </div>
-              <p className="text-[10px] mt-2 opacity-50" style={{ color: FOREST }}>100% goes to your crew</p>
-            </div>
+            <PostDeliveryRating deliveryId={delivery.id} token={token} googleReviewUrl={googleReviewUrl} />
           </div>
         )}
 

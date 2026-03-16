@@ -58,6 +58,17 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
         data.trackingLink
       );
 
+    case "crew_running_late":
+      return (
+        "Your " +
+        partner +
+        "Yugo crew is running about " +
+        data.etaMinutes +
+        " minutes behind the estimated arrival time. " +
+        "We apologize for the delay. Track live: " +
+        data.trackingLink
+      );
+
     default:
       return "";
   }

@@ -61,7 +61,7 @@ export async function GET() {
       .limit(20),
     admin
       .from("invoices")
-      .select("id, invoice_number, client_name, amount, status, due_date, created_at")
+      .select("id, invoice_number, client_name, amount, status, due_date, created_at, delivery_id, square_invoice_url")
       .in("organization_id", orgIds)
       .order("created_at", { ascending: false }),
     orgType === "realtor"
@@ -164,17 +164,23 @@ export async function GET() {
   const completedRefs = refs.filter((r) => r.status === "completed" || r.status === "booked");
   const totalEarned = completedRefs.reduce((s, r) => s + Number(r.commission || 0), 0);
 
-  // Damage claims: count claims linked to this partner's deliveries or moves
+  // Satisfaction score from proof_of_delivery
   const deliveryIds = dels.map((d) => d.id);
-  const moveIds = (recentMoves || []).map((m) => m.id);
-  let damageClaims = 0;
+  let satisfactionScore: number | null = null;
   if (deliveryIds.length > 0) {
-    const { count: c1 } = await admin.from("claims").select("id", { count: "exact", head: true }).in("delivery_id", deliveryIds);
-    damageClaims += c1 ?? 0;
-  }
-  if (moveIds.length > 0) {
-    const { count: c2 } = await admin.from("claims").select("id", { count: "exact", head: true }).in("move_id", moveIds);
-    damageClaims += c2 ?? 0;
+    const { data: pods } = await admin
+      .from("proof_of_delivery")
+      .select("satisfaction_rating")
+      .in("delivery_id", deliveryIds)
+      .not("satisfaction_rating", "is", null);
+    if (pods && pods.length > 0) {
+      let sum = 0, count = 0;
+      for (const p of pods) {
+        const r = p.satisfaction_rating;
+        if (r >= 1 && r <= 5) { sum += r; count++; }
+      }
+      if (count > 0) satisfactionScore = Math.round((sum / count) * 10) / 10;
+    }
   }
 
   return NextResponse.json({
@@ -183,7 +189,7 @@ export async function GET() {
     movesCount: (recentMoves || []).length,
     completedThisMonth,
     onTimeRate,
-    damageClaims,
+    satisfactionScore,
     outstandingAmount,
     outstandingDueDate,
     todayDeliveries,

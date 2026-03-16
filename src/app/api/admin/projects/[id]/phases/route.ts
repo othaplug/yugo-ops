@@ -29,6 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         phase_order: body.phase_order ?? nextOrder,
         scheduled_date: body.scheduled_date || null,
         notes: body.notes || null,
+        address: body.address || null,
       })
       .select()
       .single();
@@ -60,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!body.phase_id) return NextResponse.json({ error: "phase_id required" }, { status: 400 });
 
     const updates: Record<string, unknown> = {};
-    for (const key of ["phase_name", "description", "phase_order", "status", "scheduled_date", "completed_date", "notes"]) {
+    for (const key of ["phase_name", "description", "phase_order", "status", "scheduled_date", "completed_date", "notes", "address"]) {
       if (key in body) updates[key] = body[key];
     }
 

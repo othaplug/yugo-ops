@@ -25,6 +25,16 @@ export async function PATCH(
     if (body.portal_features && typeof body.portal_features === "object" && !Array.isArray(body.portal_features)) {
       updates.portal_features = body.portal_features;
     }
+    if (body.invoice_due_days !== undefined) {
+      const v = Number(body.invoice_due_days);
+      if (v === 15 || v === 30) updates.invoice_due_days = v;
+      else if (body.invoice_due_days === null) updates.invoice_due_days = null;
+    }
+    if (body.invoice_due_day_of_month !== undefined) {
+      const v = Number(body.invoice_due_day_of_month);
+      if (v === 15 || v === 30) updates.invoice_due_day_of_month = v;
+      else if (body.invoice_due_day_of_month === null || body.invoice_due_day_of_month === "") updates.invoice_due_day_of_month = null;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

@@ -15,6 +15,22 @@ type CrewPos = { current_lat: number; current_lng: number; name?: string } | nul
 const GOLD = "#C9A94E";
 const GREEN = "#22C55E";
 
+function lastKnownIcon() {
+  return L.divIcon({
+    className: "custom-marker",
+    html: `<div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:0;border-radius:50%;background:#22C55E;opacity:0.18;animation:crew-ring 2.4s ease-out infinite"></span>
+      <span style="position:absolute;inset:4px;border-radius:50%;background:#22C55E;opacity:0.3"></span>
+      <span style="position:relative;width:16px;height:16px;border-radius:50%;background:#22C55E;border:3px solid #fff;box-shadow:0 2px 10px rgba(34,197,94,.5);display:flex;align-items:center;justify-content:center">
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+    </div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20],
+  });
+}
+
 const pickupIcon = L.divIcon({
   className: "custom-marker",
   html: `<div style="width:12px;height:12px;background:${GOLD};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
@@ -95,12 +111,14 @@ export default function DeliveryTrackMap({
   pickup,
   dropoff,
   liveStage,
+  lastKnownPos,
 }: {
   center: Coord;
   crew: CrewPos;
   pickup?: Coord | null;
   dropoff?: Coord | null;
   liveStage?: string | null;
+  lastKnownPos?: Coord | null;
 }) {
   const animCrew = useAnimatedCrewPos(crew);
 
@@ -214,6 +232,11 @@ export default function DeliveryTrackMap({
       {animCrew && (
         <Marker position={[animCrew.current_lat, animCrew.current_lng]} icon={crewIcon()}>
           <Popup>{animCrew.name || "Crew"}</Popup>
+        </Marker>
+      )}
+      {lastKnownPos && (
+        <Marker position={[lastKnownPos.lat, lastKnownPos.lng]} icon={lastKnownIcon()}>
+          <Popup>Job completed here</Popup>
         </Marker>
       )}
     </MapContainer>

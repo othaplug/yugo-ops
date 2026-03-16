@@ -130,10 +130,12 @@ export function getPartnerFeatures(type: string) {
   const isDelivery = profile === "delivery";
   const isReferral = profile === "referral";
 
+  const isDesigner = v === "interior_designer" || v === "designer";
   return {
     canCreateDelivery: isDelivery,
     canSubmitReferral: isReferral,
-    showProjects: v === "interior_designer" || v === "art_gallery",
+    showProjects: v === "interior_designer" || v === "art_gallery" || v === "designer",
+    showDayRates: !isDesigner,
     showCommission: isReferral,
     showMoves: v === "interior_designer",
     showDeliveries: isDelivery,

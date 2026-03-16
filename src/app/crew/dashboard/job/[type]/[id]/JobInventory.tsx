@@ -57,6 +57,7 @@ export default function JobInventory({
   const [extraQty, setExtraQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  const [verifiedNoidKeys, setVerifiedNoidKeys] = useState<Set<string>>(new Set());
 
   const isUnloading = ["unloading", "arrived_at_destination", "delivering", "completed"].includes(currentStatus);
   const isCompleted = currentStatus === "completed";
@@ -93,7 +94,8 @@ export default function JobInventory({
   }).length;
   const verifiedCount = allItemsWithId.filter((item) => {
     const id = "id" in item ? item.id : "";
-    return typeof id === "string" && !id.startsWith("noid-") && verifiedIds.has(id);
+    if (typeof id !== "string") return false;
+    return !id.startsWith("noid-") ? verifiedIds.has(id) : verifiedNoidKeys.has(id);
   }).length;
   const totalCount = isRoomBasedVerification ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
 
@@ -112,8 +114,8 @@ export default function JobInventory({
       onCountChange?.(completedFullyVerifiedCount, verifiableCount);
     } else if (isRoomBasedVerification) {
       onCountChange?.(verifiedRooms.size, roomsToConfirm.length);
-    } else if (verifiableCount > 0) {
-      onCountChange?.(verifiedCount, verifiableCount);
+    } else if (verifiableCount > 0 || allItemsWithId.length > 0) {
+      onCountChange?.(verifiedCount, Math.max(verifiableCount, allItemsWithId.length));
     } else {
       onCountChange?.(0, totalCount);
     }
@@ -144,6 +146,16 @@ export default function JobInventory({
       if (!res.ok) throw new Error("Failed");
       setVerifiedIds((prev) => new Set([...prev, moveInventoryId]));
     } catch {}
+  };
+
+  const toggleNoidVerify = (key: string) => {
+    if (readOnly || isCompleted) return;
+    setVerifiedNoidKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
   const handleAddExtra = async (e: React.FormEvent) => {
@@ -212,28 +224,21 @@ export default function JobInventory({
             return (
               <label
                 key={room}
-                className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${!readOnly && !isCompleted ? "cursor-pointer hover:border-[var(--gold)]/40" : ""} ${
-                  isCompleted ? (bothVerified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]") : verified ? "bg-[var(--grn)]/10 border-[var(--grn)]/30" : "bg-[var(--bg)] border-[var(--brd)]"
-                }`}
+                className={`flex items-center gap-2.5 py-1.5 ${!readOnly && !isCompleted ? "cursor-pointer" : ""}`}
               >
-                {!isCompleted && (
-                  <input
-                    type="checkbox"
-                    checked={verified}
-                    onChange={() => !readOnly && toggleRoomVerify(room)}
-                    disabled={readOnly}
-                    className="rounded border-[var(--brd)]"
-                  />
-                )}
-                {isCompleted && <span className="w-4" />}
+                <input
+                  type="checkbox"
+                  checked={isCompleted ? bothVerified : verified}
+                  onChange={() => !readOnly && !isCompleted && toggleRoomVerify(room)}
+                  disabled={readOnly}
+                  className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                />
                 <span className="text-[13px] text-[var(--tx)] flex-1">{room}</span>
-                {isCompleted ? (
+                {isCompleted && (
                   <span className="flex items-center gap-2 text-[10px] font-medium">
                     <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Pickup {verifiedAtPickup ? "✓" : "—"}</span>
                     <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Delivery {verifiedAtDelivery ? "✓" : "—"}</span>
                   </span>
-                ) : (
-                  verified && <span className="ml-auto text-[var(--grn)]">&#10003;</span>
                 )}
               </label>
             );
@@ -285,39 +290,30 @@ export default function JobInventory({
                   const rawName = "item_name" in item ? item.item_name : String(item);
                   const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
                   const hasId = typeof id === "string" && !id.startsWith("noid-");
-                  const verified = hasId ? verifiedIds.has(id) : false;
+                  const verified = hasId ? verifiedIds.has(id) : verifiedNoidKeys.has(id);
                   const verifiedAtPickup = hasId && verifiedIdsLoading.has(id);
                   const verifiedAtDelivery = hasId && verifiedIdsUnloading.has(id);
                   const bothVerified = verifiedAtPickup && verifiedAtDelivery;
+                  const canToggle = !readOnly && !isCompleted;
+                  const checked = isCompleted ? (hasId ? bothVerified : false) : verified;
                   return (
                     <label
                       key={id}
-                      className={`flex items-center gap-2 py-1.5 px-3 rounded-lg border transition-colors ${
-                        isCompleted
-                          ? bothVerified
-                            ? "bg-[var(--grn)]/10 border-[var(--grn)]/30"
-                            : "bg-[var(--bg)] border-[var(--brd)]"
-                          : verified
-                            ? "bg-[var(--grn)]/10 border-[var(--grn)]/30"
-                            : "bg-[var(--bg)] border-[var(--brd)]"
-                      } ${hasId && !readOnly && !isCompleted ? "cursor-pointer hover:border-[var(--gold)]/40" : ""}`}
+                      className={`flex items-center gap-2.5 py-1.5 ${canToggle ? "cursor-pointer" : ""}`}
                     >
-                      {!isCompleted && hasId ? (
-                        <input
-                          type="checkbox"
-                          checked={verified}
-                          onChange={() => !readOnly && toggleVerify(id)}
-                          disabled={readOnly}
-                          className="rounded border-[var(--brd)]"
-                        />
-                      ) : !isCompleted ? (
-                        <span className="w-4" />
-                      ) : (
-                        <span className="w-4" />
-                      )}
-                      <span className="text-[13px] text-[var(--tx)] flex-1">{rawName}</span>
-                      <span className="text-[11px] text-[var(--tx3)] tabular-nums w-6 text-right">{qty}</span>
-                      {isCompleted ? (
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          if (!canToggle) return;
+                          hasId ? toggleVerify(id) : toggleNoidVerify(id);
+                        }}
+                        disabled={readOnly}
+                        className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                      />
+                      <span className="text-[13px] flex-1 text-[var(--tx)]">{rawName}</span>
+                      <span className="text-[11px] text-[var(--tx3)] tabular-nums">{qty}</span>
+                      {isCompleted && hasId && (
                         <span className="flex items-center gap-2 text-[10px] font-medium">
                           <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
                             Pickup {verifiedAtPickup ? "✓" : "—"}
@@ -326,8 +322,6 @@ export default function JobInventory({
                             Delivery {verifiedAtDelivery ? "✓" : "—"}
                           </span>
                         </span>
-                      ) : (
-                        verified && <span className="text-[var(--grn)]">&#10003;</span>
                       )}
                     </label>
                   );

@@ -58,7 +58,7 @@ interface DashboardData {
   movesCount: number;
   completedThisMonth: number;
   onTimeRate: number;
-  damageClaims: number;
+  satisfactionScore: number | null;
   outstandingAmount: number;
   outstandingDueDate: string | null;
   todayDeliveries: Delivery[];
@@ -239,12 +239,16 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const dayStr = formatDate(today, { weekday: "long", month: "long", day: "numeric" });
   const isReturning = loginInfo && !loginInfo.isFirstLogin && loginInfo.loginCount > 1;
 
-  // Resolve feature visibility: DB portal_features take precedence over legacy type-based detection
-  // If portal_features was never set (pf is empty {}), fall back to legacy flags
-  const hasPfOverride = Object.keys(pf).length > 0;
-  const showProjects = hasPfOverride ? (pf.projects === true) : features.showProjects;
-  const showDayRates = hasPfOverride ? (pf.day_rates === true) : true;
-  const showRecurring = hasPfOverride ? (pf.recurring_schedules === true) : true;
+  // Resolve feature visibility:
+  // - DB portal_features only override when the key is explicitly set (not just present)
+  // - Type-based defaults still apply for keys not present in portal_features
+  const hasPfProjects = pf.projects !== undefined;
+  const hasPfDayRates = pf.day_rates !== undefined;
+  const hasPfRecurring = pf.recurring_schedules !== undefined;
+  const showProjects = hasPfProjects ? (pf.projects === true) : features.showProjects;
+  const showDayRates = hasPfDayRates ? (pf.day_rates === true) : features.showDayRates ?? true;
+  const showRecurring = hasPfRecurring ? (pf.recurring_schedules === true) : true;
+  const isDesignerOrg = orgType === "interior_designer" || orgType === "designer";
 
   const tabs = features.showReferrals
     ? [
@@ -253,12 +257,13 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         { key: "materials", label: "Materials" },
       ]
     : [
-        ...(showProjects ? [{ key: "b2b-projects", label: "Projects" }] : []),
-        ...(features.showProjects ? [{ key: "projects", label: `Gallery (${data?.projects?.length ?? 0})` }] : []),
         { key: "today", label: `Today (${data?.todayDeliveries.length ?? 0})` },
-        { key: "upcoming", label: `Upcoming (${data?.upcomingDeliveries.length ?? 0})` },
+        { key: "history", label: `History (${data?.allDeliveries?.filter((d) => ["completed", "delivered"].includes((d.status || "").toLowerCase())).length ?? 0})` },
         { key: "calendar", label: "Calendar" },
         { key: "tracking", label: "Live Map" },
+        ...(showProjects ? [{ key: "b2b-projects", label: "Projects" }] : []),
+        // Old gallery projects tab: only for art_gallery org type, not designers
+        ...(!isDesignerOrg && features.showProjects ? [{ key: "projects", label: `Gallery (${data?.projects?.length ?? 0})` }] : []),
         { key: "invoices", label: "Invoices" },
         { key: "billing", label: "Monthly Report" },
         ...(showRecurring ? [{ key: "recurring", label: "Recurring" }] : []),
@@ -569,7 +574,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                 </button>
               </div>
 
-              <div className="px-5 pb-4 grid gap-3 sm:grid-cols-2">
+              <div className={`px-5 pb-4 grid gap-3 ${showDayRates ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
                 <button
                   type="button"
                   onClick={() => { setBookServiceModalOpen(false); setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
@@ -581,17 +586,19 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                     Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </div>
                 </button>
-                <Link
-                  href="/partner/book-day-rate"
-                  onClick={() => setBookServiceModalOpen(false)}
-                  className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
-                >
-                  <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
-                  <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
-                  <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
-                    Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                  </div>
-                </Link>
+                {showDayRates && (
+                  <Link
+                    href="/partner/book-day-rate"
+                    onClick={() => setBookServiceModalOpen(false)}
+                    className="text-left p-5 rounded-2xl border-2 border-[var(--brd)] hover:border-[var(--gold)]/40 bg-[var(--bg)] hover:bg-[var(--gold)]/[0.04] transition-all group block"
+                  >
+                    <div className="text-[15px] font-bold text-[var(--tx)] mb-1">Book Day Rate</div>
+                    <div className="text-[11px] text-[var(--tx3)] leading-relaxed">Dedicated truck and crew for the full day. Best for 4+ stops.</div>
+                    <div className="flex items-center gap-1 mt-3 text-[11px] font-semibold text-[var(--gold)] group-hover:gap-2 transition-all">
+                      Get started <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </div>
+                  </Link>
+                )}
               </div>
 
               <div className="px-5 pb-6 pt-1 sm:hidden">
@@ -704,18 +711,18 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             <PartnerDeliveriesTab
               deliveries={data.todayDeliveries}
               label="today"
-              onShare={(d) => setShareTarget(d)}
+              onShare={(d) => setShareTarget(d as Delivery)}
               onDetailClick={(d) => setDetailTarget(d)}
               onEditClick={(d) => setEditTarget(d)}
               onScheduleDelivery={() => { setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }}
               orgType={orgType}
             />
           )}
-          {activeTab === "upcoming" && data && (
+          {activeTab === "history" && data && (
             <PartnerDeliveriesTab
-              deliveries={data.upcomingDeliveries}
-              label="upcoming"
-              onShare={(d) => setShareTarget(d)}
+              deliveries={data.allDeliveries.filter((d) => ["completed", "delivered"].includes((d.status || "").toLowerCase()))}
+              label="history"
+              onShare={(d) => setShareTarget(d as Delivery)}
               onDetailClick={(d) => setDetailTarget(d)}
               onEditClick={(d) => setEditTarget(d)}
               orgType={orgType}
@@ -724,12 +731,17 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
           {activeTab === "calendar" && data && (
             <PartnerCalendarTab
               deliveries={data.allDeliveries}
+              upcomingDeliveries={data.upcomingDeliveries}
               onSelectDate={(date) => {
                 setScheduleInitialDate(date);
                 setScheduleModalKey((k) => k + 1);
                 setScheduleOpen(true);
               }}
               onDeliveryClick={(d) => setDetailTarget(d as Delivery)}
+              onShare={(d) => setShareTarget(d as Delivery)}
+              onDetailClick={(d) => setDetailTarget(d as Delivery)}
+              onEditClick={(d) => setEditTarget(d as Delivery)}
+              orgType={orgType}
             />
           )}
           {activeTab === "tracking" && (
@@ -826,34 +838,26 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Performance</div>
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6">
-        <div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
           <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
-        <div>
+        <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[#22C55E] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
         </div>
-        <div>
+        <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Satisfaction</div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{(data as DashboardData & { satisfactionScore?: number | null })?.satisfactionScore ?? "—"}</div>
-          <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{data?.satisfactionScore ?? "—"}</div>
+          {data?.satisfactionScore != null && (
+            <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
+          )}
         </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Rate</div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{(data as DashboardData & { damageRate?: number })?.damageRate ?? 0}%</div>
-          <div className="text-[11px] text-[var(--tx3)] mt-0.5">Industry: 3-5%</div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage Claims</div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.damageClaims ?? 0}</div>
-        </div>
-        <div>
+        <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (

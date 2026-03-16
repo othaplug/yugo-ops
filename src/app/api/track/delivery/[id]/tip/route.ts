@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
-import { SquareClient, SquareEnvironment } from "square";
+import { squareClient } from "@/lib/square";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 /**
  * POST /api/track/delivery/[id]/tip
- * Client-facing tip for a delivery. Verifies delivery token, resolves move from
- * proof_of_delivery (if any), and charges tip to the move's card.
+ * Client-facing tip for a delivery.
+ * Accepts a Square sourceId (from the Web Payments SDK card tokenization) so
+ * any customer can tip regardless of whether they have a card on file.
  */
 export async function POST(
   req: NextRequest,
@@ -26,11 +28,16 @@ export async function POST(
     );
   }
 
-  let body: { amountCents?: number; amount?: number };
+  let body: { sourceId?: string; amountCents?: number; amount?: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const sourceId = (body.sourceId || "").trim();
+  if (!sourceId) {
+    return NextResponse.json({ error: "Payment token is required" }, { status: 400 });
   }
 
   const amountCents =
@@ -51,7 +58,7 @@ export async function POST(
 
   const { data: delivery, error: deliveryError } = await admin
     .from("deliveries")
-    .select("id")
+    .select("id, customer_name, client_name")
     .eq("id", deliveryId)
     .single();
 
@@ -59,74 +66,8 @@ export async function POST(
     return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
   }
 
-  const { data: pod } = await admin
-    .from("proof_of_delivery")
-    .select("move_id")
-    .eq("delivery_id", deliveryId)
-    .not("move_id", "is", null)
-    .limit(1)
-    .maybeSingle();
-
-  const moveId = pod?.move_id ?? null;
-  if (!moveId) {
-    return NextResponse.json(
-      { error: "Tipping is not available for this delivery. Thank you for your feedback." },
-      { status: 400 }
-    );
-  }
-
-  const envOverride = (process.env.SQUARE_ENVIRONMENT || "").toLowerCase();
-  const useProduction =
-    envOverride === "production" ||
-    (process.env.NODE_ENV === "production" && envOverride !== "sandbox");
-  const squareClient = new SquareClient({
-    token: accessToken,
-    environment: useProduction ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-  });
-
   try {
-    const { data: move, error: moveError } = await admin
-      .from("moves")
-      .select("id, client_name, move_code, square_customer_id, square_card_id")
-      .eq("id", moveId)
-      .single();
-
-    if (moveError || !move) {
-      return NextResponse.json(
-        { error: "Tipping is not available for this delivery." },
-        { status: 400 }
-      );
-    }
-
-    let cardId = move.square_card_id ?? null;
-    const customerId = move.square_customer_id ?? null;
-
-    if (!cardId && customerId) {
-      try {
-        const listRes = await squareClient.cards.list({ customerId });
-        const payload = listRes as unknown as { cards?: { id?: string }[] };
-        const cards = Array.isArray(payload.cards) ? payload.cards : [];
-        cardId = cards.length > 0 ? (cards[0].id ?? null) : null;
-      } catch {
-        // ignore
-      }
-    }
-
-    if (!cardId) {
-      return NextResponse.json(
-        {
-          error:
-            "No card on file. Please contact us to add a payment method before tipping.",
-        },
-        { status: 400 }
-      );
-    }
-
-    let locationId = (process.env.SQUARE_LOCATION_ID || "").trim();
-    if (!locationId) {
-      const listRes = await squareClient.locations.list();
-      locationId = listRes.locations?.[0]?.id ?? "";
-    }
+    const { locationId } = await getSquarePaymentConfig();
     if (!locationId) {
       return NextResponse.json(
         { error: "Payment location not configured. Please contact support." },
@@ -136,31 +77,23 @@ export async function POST(
 
     const idempotencyKey = `tip-delivery-${deliveryId}-${Date.now()}`;
     const paymentRes = await squareClient.payments.create({
-      sourceId: cardId,
+      sourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
-      customerId: customerId ?? undefined,
-      referenceId: moveId,
-      note: `Tip (delivery) – ${move.client_name || moveId}`,
+      referenceId: deliveryId,
+      note: `Tip (delivery) – ${delivery.customer_name || delivery.client_name || deliveryId}`,
       idempotencyKey,
       locationId,
     });
 
     if (paymentRes.errors && paymentRes.errors.length > 0) {
-      const first = paymentRes.errors[0] as {
-        code?: string;
-        message?: string;
-        detail?: string;
-      };
+      const first = paymentRes.errors[0] as { code?: string; message?: string; detail?: string };
       const msg = first?.message || first?.detail || "Payment failed";
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
     if (!paymentRes.payment?.id) {
       return NextResponse.json(
-        {
-          error:
-            "Payment could not be completed. Please try again or contact support.",
-        },
+        { error: "Payment could not be completed. Please try again or contact support." },
         { status: 500 }
       );
     }
@@ -173,10 +106,7 @@ export async function POST(
   } catch (err: unknown) {
     console.error("[delivery tip]", err);
     return NextResponse.json(
-      {
-        error:
-          err instanceof Error ? err.message : "An error occurred. Please try again.",
-      },
+      { error: err instanceof Error ? err.message : "An error occurred. Please try again." },
       { status: 500 }
     );
   }

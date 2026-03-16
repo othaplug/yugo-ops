@@ -49,10 +49,7 @@ type SquareCard = {
   tokenize: () => Promise<{ status: string; token?: string; errors?: { message: string }[] }>;
   destroy: () => void;
 };
-type SquarePayments = { card: () => Promise<SquareCard> };
-declare global {
-  interface Window { Square?: { payments: (appId: string, locationId: string) => SquarePayments } }
-}
+type SquarePayments = { card: (opts?: object) => Promise<SquareCard> };
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";

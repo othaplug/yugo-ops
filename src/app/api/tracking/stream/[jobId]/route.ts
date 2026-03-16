@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
+import { isDeliveryId } from "@/lib/delivery-number";
 
 const POLL_MS = 5000;
 
@@ -18,7 +19,7 @@ export async function GET(
   let entityId: string;
   let jobType: "move" | "delivery";
 
-  if (jobTypeParam === "delivery" || jobId.startsWith("PJ")) {
+  if (jobTypeParam === "delivery" || isDeliveryId(jobId)) {
     const { data: d } = isUuid(jobId)
       ? await admin.from("deliveries").select("id").eq("id", jobId).single()
       : await admin.from("deliveries").select("id").ilike("delivery_number", jobId).single();
