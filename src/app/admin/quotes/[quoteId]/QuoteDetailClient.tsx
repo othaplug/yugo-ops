@@ -189,7 +189,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div>
           <button
             type="button"
-            onClick={() => router.push("/admin/quotes")}
+            onClick={() => router.back()}
             className="p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)]"
           >
             <ArrowLeft className="w-4 h-4" />

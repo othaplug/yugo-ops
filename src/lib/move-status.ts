@@ -13,31 +13,37 @@ export type MoveStatus = (typeof MOVE_STATUS_OPTIONS)[number]["value"];
 /** Live tracking progress (day-of-move). Pending = not in progress yet. */
 export const LIVE_TRACKING_STAGES = [
   { key: "pending", label: "Pending" },
-  { key: "on_route", label: "En Route" },
-  { key: "arrived_on_site", label: "Arrived On-Site" },
+  { key: "en_route_to_pickup", label: "En Route to Pickup" },
+  { key: "arrived_at_pickup", label: "Arrived at Pickup" },
   { key: "loading", label: "Loading" },
-  { key: "in_transit", label: "In Transit" },
+  { key: "en_route_to_destination", label: "En Route to Destination" },
+  { key: "arrived_at_destination", label: "Arrived" },
   { key: "unloading", label: "Unloading" },
   { key: "job_complete", label: "Job Complete" },
+  // Legacy keys kept for backward compatibility
+  { key: "on_route", label: "En Route to Pickup" },
+  { key: "arrived_on_site", label: "Arrived at Pickup" },
+  { key: "in_transit", label: "En Route to Destination" },
 ] as const;
 
 export type LiveTrackingStage = (typeof LIVE_TRACKING_STAGES)[number]["key"];
 
-/** Index for progress bar: pending = -1 (0%), then 0–5 for the six active stages. */
+/** Index for progress bar: pending = -1 (0%), then 0–6 for the seven active stages. */
 export const LIVE_STAGE_MAP: Record<string, number> = {
   pending: -1,
-  on_route: 0,
-  arrived_on_site: 1,
-  loading: 2,
-  in_transit: 3,
-  unloading: 4,
-  job_complete: 5,
-  // Crew portal tracking status mapping
+  // Primary crew tracking statuses
   en_route_to_pickup: 0,
   arrived_at_pickup: 1,
+  loading: 2,
   en_route_to_destination: 3,
   arrived_at_destination: 4,
-  completed: 5,
+  unloading: 5,
+  job_complete: 6,
+  completed: 6,
+  // Legacy keys
+  on_route: 0,
+  arrived_on_site: 1,
+  in_transit: 3,
 };
 
 /** Map crew tracking status to client display label */

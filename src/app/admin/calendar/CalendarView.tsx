@@ -118,6 +118,7 @@ export default function CalendarView() {
               crews={cal.crews}
               onEventClick={handleEventClick}
               onEmptyClick={handleEmptyClick}
+              onEventRescheduled={cal.refetch}
             />
           )}
 
@@ -155,7 +156,9 @@ export default function CalendarView() {
 
       <JobDetailPanel
         event={detailEvent}
+        crews={cal.crews}
         onClose={() => setDetailEvent(null)}
+        onRescheduled={() => { cal.refetch(); setDetailEvent(null); }}
       />
     </div>
   );

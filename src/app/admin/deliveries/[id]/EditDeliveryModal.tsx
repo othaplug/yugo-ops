@@ -80,6 +80,8 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState(delivery?.crew_id || "");
+  const [deliveryAccess, setDeliveryAccess] = useState(delivery?.delivery_access || "elevator");
+  const [itemWeightCategory, setItemWeightCategory] = useState(delivery?.item_weight_category || "standard");
   const [customerPhone, setCustomerPhone] = useState(delivery?.customer_phone ? formatPhone(delivery.customer_phone) : "");
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
   const router = useRouter();
@@ -95,6 +97,8 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
       setQuotedPrice(formatNumberInput(effectivePrice) || "");
       setCrewId(delivery.crew_id || "");
       setCustomerPhone(delivery.customer_phone ? formatPhone(delivery.customer_phone) : "");
+      setDeliveryAccess(delivery.delivery_access || "elevator");
+      setItemWeightCategory(delivery.item_weight_category || "standard");
     }
   }, [open, delivery]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -298,6 +302,29 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
                   )}
                 </p>
               )}
+            </div>
+            <div>
+              <label className={labelCls}>Delivery Access</label>
+              <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={selectCls}>
+                <option value="elevator">Elevator</option>
+                <option value="ground_floor">Ground Floor / Loading Dock</option>
+                <option value="loading_dock">Loading Dock</option>
+                <option value="walk_up_2nd">Walk-up (2nd floor)</option>
+                <option value="walk_up_3rd">Walk-up (3rd floor)</option>
+                <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>
+                <option value="long_carry">Long Carry (50m+)</option>
+                <option value="narrow_stairs">Narrow Stairs</option>
+                <option value="no_parking">No Parking Nearby</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Item Weight</label>
+              <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={selectCls}>
+                <option value="standard">Standard (under 100 lbs)</option>
+                <option value="heavy">Heavy (100–250 lbs)</option>
+                <option value="very_heavy">Very Heavy (250–500 lbs)</option>
+                <option value="oversized_fragile">Oversized / Fragile</option>
+              </select>
             </div>
             <div>
               <label className={labelCls}>Status</label>

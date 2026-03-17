@@ -23,13 +23,13 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your YUGO+ crew is on the way!",
+    clientMessage: "Your YUGO+ crew is en route to the pickup location — they're on their way!",
   },
   arrived_at_pickup: {
-    notifyClient: false,
+    notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your crew has arrived at the pickup location.",
+    clientMessage: "Your crew has arrived at the pickup address and is ready to begin loading.",
   },
   loading: {
     notifyClient: false,
@@ -41,13 +41,13 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your items are on the way to your new home!",
+    clientMessage: "Loading complete! Your crew is now en route to the destination with your items.",
   },
   arrived_at_destination: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your crew has arrived!",
+    clientMessage: "Your crew has arrived at the destination and is ready to unload.",
   },
   unloading: {
     notifyClient: false,

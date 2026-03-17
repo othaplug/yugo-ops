@@ -110,9 +110,9 @@ export default function ClientDetailClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <Link href={backHref} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
+      <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
         ← Back
-      </Link>
+      </button>
 
       {/* Hero + actions */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 mb-5">

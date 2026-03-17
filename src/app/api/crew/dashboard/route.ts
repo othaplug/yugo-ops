@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const [movesRes, deliveriesRes] = await Promise.all([
     supabase
       .from("moves")
-      .select("id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id")
+      .select("id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name")
       .eq("crew_id", payload.teamId)
       .gte("scheduled_date", today)
       .lte("scheduled_date", today)
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       .order("scheduled_time"),
     supabase
       .from("deliveries")
-      .select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id")
+      .select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, recurring_schedule_id, booking_type")
       .eq("crew_id", payload.teamId)
       .gte("scheduled_date", today)
       .lte("scheduled_date", today)
@@ -50,12 +50,21 @@ export async function GET(req: NextRequest) {
     scheduledTime: string;
     status: string;
     completedAt?: string | null;
+    isRecurring?: boolean;
+    bookingType?: string | null;
+    eventPhase?: string | null;
+    eventName?: string | null;
   };
 
   const jobs: Job[] = [];
 
   for (const m of moves) {
     const time = m.scheduled_time || "9:00 AM";
+    const eventPhase = (m.event_phase as string | null) || null;
+    const eventName = (m.event_name as string | null) || null;
+    const eventJobTypeLabel = eventName
+      ? `${eventName} — ${eventPhase === "delivery" ? "Delivery & Setup" : eventPhase === "return" ? "Teardown & Return" : eventPhase === "setup" ? "Setup" : "Event"}`
+      : null;
     jobs.push({
       id: m.id,
       jobId: m.move_code || m.id,
@@ -63,16 +72,21 @@ export async function GET(req: NextRequest) {
       clientName: m.client_name || "—",
       fromAddress: m.from_address || "—",
       toAddress: m.to_address || "—",
-      jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Residential",
+      jobTypeLabel: eventJobTypeLabel ?? (m.move_type === "office" ? "Office · Commercial" : "Residential"),
       scheduledTime: time,
       status: m.status || "scheduled",
       completedAt: null,
+      eventPhase,
+      eventName,
     });
   }
 
   for (const d of deliveries) {
     const items = Array.isArray(d.items) ? d.items : [];
     const time = d.time_slot || "2:00 PM";
+    const isRec = !!(d.recurring_schedule_id);
+    const bType = (d.booking_type as string | null) || null;
+    const typeLabel = bType === "day_rate" ? "Day Rate" : "Delivery";
     jobs.push({
       id: d.id,
       jobId: d.delivery_number || d.id,
@@ -80,11 +94,13 @@ export async function GET(req: NextRequest) {
       clientName: `${d.customer_name || "—"}${d.client_name ? ` (${d.client_name})` : ""}`,
       fromAddress: d.pickup_address || "Warehouse",
       toAddress: d.delivery_address || "—",
-      jobTypeLabel: `Delivery · ${items.length} items`,
+      jobTypeLabel: `${typeLabel}${items.length > 0 ? ` · ${items.length} items` : ""}`,
       itemCount: items.length,
       scheduledTime: time,
       status: d.status || "scheduled",
       completedAt: null,
+      isRecurring: isRec,
+      bookingType: bType,
     });
   }
 

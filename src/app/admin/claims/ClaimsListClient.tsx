@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import CreateButton from "../components/CreateButton";
 
 interface Claim {
   id: string;
@@ -176,12 +177,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
           <h1 className="text-[22px] font-bold text-[var(--tx)]">Claims</h1>
           <p className="text-[13px] text-[var(--tx3)]">Damage claims and valuation protection payouts</p>
         </div>
-        <Link
-          href="/admin/claims/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
-        >
-          + New Claim
-        </Link>
+        <CreateButton href="/admin/claims/new" title="New Claim" />
       </div>
 
       {/* Stats row — bare */}

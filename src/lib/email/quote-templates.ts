@@ -131,6 +131,21 @@ export interface QuoteTemplateData {
   coordinatorName?: string | null;
   coordinatorPhone?: string | null;
   recommendedTier?: string | null;
+  // Event
+  eventName?: string | null;
+  eventReturnDate?: string | null;
+  eventDeliveryCharge?: number | null;
+  eventSetupFee?: number | null;
+  eventReturnCharge?: number | null;
+  // Labour Only
+  labourCrewSize?: number | null;
+  labourHours?: number | null;
+  labourRate?: number | null;
+  labourVisits?: number | null;
+  labourDescription?: string | null;
+  // B2B One-Off
+  b2bBusinessName?: string | null;
+  b2bItems?: string | null;
 }
 
 /* ─── Building blocks ─── */
@@ -490,6 +505,115 @@ function specialtyTemplate(d: QuoteTemplateData): string {
   `);
 }
 
+/* Event */
+function eventTemplate(d: QuoteTemplateData): string {
+  const rows: [string, string][] = [];
+  if (d.eventName) rows.push(["Event", d.eventName]);
+  if (d.toAddress) rows.push(["Venue", d.toAddress]);
+  if (d.fromAddress) rows.push(["Origin", d.fromAddress]);
+  rows.push(["Delivery", dateDisplay(d.moveDate)]);
+  if (d.eventReturnDate) rows.push(["Return", dateDisplay(d.eventReturnDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} movers`]);
+  if (d.truckSize) rows.push(["Truck", d.truckSize]);
+
+  const total = d.customPrice ?? 0;
+  const tax = Math.round(total * 0.13);
+  const deposit = Math.max(300, Math.round((total + tax) * 0.25));
+
+  const breakdown: string[] = [];
+  if (d.eventDeliveryCharge) breakdown.push(`Delivery: ${formatCurrency(d.eventDeliveryCharge)}`);
+  if (d.eventSetupFee) breakdown.push(`Setup at venue: ${formatCurrency(d.eventSetupFee)}`);
+  if (d.eventReturnCharge) breakdown.push(`Return: ${formatCurrency(d.eventReturnCharge)}`);
+  const breakdownHtml = breakdown.length > 0
+    ? `<div style="font-size:11px;color:${TX2};line-height:1.9;margin-bottom:8px">${breakdown.join(`<br/>`)}</div>`
+    : "";
+
+  return quoteEmailLayout(`
+    ${subHeading("Event Logistics Quote")}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${bodyText("Your event logistics quote is ready. We handle delivery to venue, on-site setup, and return teardown \u2014 same crew both days so they know the layout.")}
+    ${expiryNote(d.expiresAt)}
+    ${detailsPlain(rows)}
+    <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+      <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Event Quote</div>
+      ${breakdownHtml}
+      <div style="border-top:1px solid ${CARD_BORDER};margin:10px 0 12px"></div>
+      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(total)}</div>
+      <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
+      <div style="font-size:11px;color:${TX3};margin-top:4px">Deposit to confirm both dates: <strong style="color:${TX}">${formatCurrency(deposit)}</strong></div>
+    </div>
+    ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
+    ${ctaButton(d.quoteUrl, "View Quote & Confirm Event")}
+    ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
+  `);
+}
+
+/* Labour Only */
+function labourOnlyTemplate(d: QuoteTemplateData): string {
+  const rows: [string, string][] = [];
+  if (d.labourDescription) rows.push(["Work", d.labourDescription]);
+  if (d.fromAddress) rows.push(["Location", d.fromAddress]);
+  rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.labourCrewSize != null && d.labourHours != null) {
+    rows.push(["Crew", `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hours`]);
+  }
+  if (d.labourVisits != null && d.labourVisits >= 2) rows.push(["Visits", "2 visits scheduled"]);
+
+  const total = d.customPrice ?? 0;
+  const tax = Math.round(total * 0.13);
+  const deposit = Math.max(200, Math.round((total + tax) * 0.50));
+
+  const labourNote = d.labourCrewSize && d.labourHours && d.labourRate
+    ? `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hrs \u00d7 $${d.labourRate}/hr`
+    : "";
+
+  return quoteEmailLayout(`
+    ${subHeading("Your Service Quote")}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${bodyText("Your labour service quote is ready. Professional crew with all tools included \u2014 no truck needed.")}
+    ${expiryNote(d.expiresAt)}
+    ${detailsPlain(rows)}
+    <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+      <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Labour Service</div>
+      ${labourNote ? `<div style="font-size:12px;color:${TX2};margin-bottom:10px">${labourNote}</div>` : ""}
+      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(total)}</div>
+      <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
+      <div style="font-size:11px;color:${TX3};margin-top:4px">Deposit to book: <strong style="color:${TX}">${formatCurrency(deposit)}</strong> (50%)</div>
+    </div>
+    ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
+    ${ctaButton(d.quoteUrl, "View Quote & Book")}
+    ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
+  `);
+}
+
+/* B2B One-Off */
+function b2bOneOffTemplate(d: QuoteTemplateData): string {
+  const rows: [string, string][] = [];
+  if (d.b2bBusinessName) rows.push(["Business", d.b2bBusinessName]);
+  if (d.b2bItems) rows.push(["Items", d.b2bItems]);
+  if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
+  if (d.toAddress) rows.push(["Delivery", d.toAddress]);
+  rows.push(["Date", dateDisplay(d.moveDate)]);
+
+  const total = d.customPrice ?? 0;
+  const tax = Math.round(total * 0.13);
+
+  return quoteEmailLayout(`
+    ${subHeading("Your Delivery Quote")}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${bodyText("Your commercial delivery quote is ready. Professional crew with full equipment \u2014 flat-rate, no hidden fees.")}
+    ${expiryNote(d.expiresAt)}
+    ${detailsPlain(rows)}
+    ${priceCard("Delivery — All Inclusive", total, `+${formatCurrency(tax)} HST \u00b7 Full payment at booking`)}
+    ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
+    ${ctaButton(d.quoteUrl, "View Quote & Confirm Payment")}
+    <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 20px;line-height:1.6">
+      Need regular deliveries? Ask about our <strong style="color:${TX}">Partner Program</strong> for volume pricing and a dedicated portal.
+    </p>
+    ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
+  `);
+}
+
 /* ─── Template registry ─── */
 
 const TEMPLATE_MAP: Record<string, (d: QuoteTemplateData) => string> = {
@@ -499,6 +623,9 @@ const TEMPLATE_MAP: Record<string, (d: QuoteTemplateData) => string> = {
   "quote-singleitem": singleItemTemplate,
   "quote-whiteglove": whiteGloveTemplate,
   "quote-specialty": specialtyTemplate,
+  "quote-event": eventTemplate,
+  "quote-labouronly": labourOnlyTemplate,
+  "quote-b2boneoff": b2bOneOffTemplate,
 };
 
 export function renderQuoteTemplate(template: string, data: QuoteTemplateData): string {

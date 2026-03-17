@@ -31,8 +31,8 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!consentChecked) {
-      setError("Please agree to the Privacy Policy, Terms of Use, and Terms & Conditions to continue.");
+    if (isWelcome && !consentChecked) {
+      setError("Please agree to the Privacy Policy and Terms of Use to continue.");
       return;
     }
     setLoading(true);
@@ -186,24 +186,25 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                   <button type="button" className="ptr-link" onClick={() => { setMode("forgot"); setError(""); }}>Forgot password?</button>
                 </div>
 
-                <div style={{ marginBottom: 20, padding: "12px 14px", background: "#F7F5F0", borderRadius: 10, border: "1px solid #E8E4DC" }}>
-                  <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={consentChecked}
-                      onChange={(e) => setConsentChecked(e.target.checked)}
-                      style={{ marginTop: 3, width: 15, height: 15, accentColor: "#2D6A4F", flexShrink: 0, cursor: "pointer" }}
-                    />
-                    <span style={{ fontSize: 12, color: "#777", lineHeight: 1.6 }}>
-                      I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a>,{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>, and{" "}
-                      <a href="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms & Conditions</a>
-                    </span>
-                  </label>
-                </div>
+                {isWelcome && (
+                  <div style={{ marginBottom: 20, padding: "12px 14px", background: "#F7F5F0", borderRadius: 10, border: "1px solid #E8E4DC" }}>
+                    <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={consentChecked}
+                        onChange={(e) => setConsentChecked(e.target.checked)}
+                        style={{ marginTop: 3, width: 15, height: 15, accentColor: "#2D6A4F", flexShrink: 0, cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: 12, color: "#777", lineHeight: 1.6 }}>
+                        I agree to Yugo&apos;s{" "}
+                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                      </span>
+                    </label>
+                  </div>
+                )}
 
-                <button type="submit" className="ptr-btn" disabled={loading || !consentChecked} style={{ opacity: !consentChecked ? 0.5 : undefined }}>
+                <button type="submit" className="ptr-btn" disabled={loading || (isWelcome && !consentChecked)} style={{ opacity: isWelcome && !consentChecked ? 0.5 : undefined }}>
                   {loading ? "Signing in..." : "Sign in to your portal"}
                 </button>
               </form>

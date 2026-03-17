@@ -62,7 +62,7 @@ export async function PATCH(
     "scheduled_date", "time_slot", "delivery_window",
     "instructions", "items", "quoted_price", "total_price", "status",
     "special_handling", "organization_id", "client_name",
-    "crew_id", "updated_at", "pickup_access", "delivery_access",
+    "crew_id", "updated_at", "pickup_access", "delivery_access", "item_weight_category",
     "admin_adjusted_price", "notes",
     "project_id", "phase_id",
   ];
@@ -104,6 +104,65 @@ export async function PATCH(
       link: `/partner`,
       deliveryId: id,
     }).catch(() => {});
+  }
+
+  // Auto-update project inventory items when delivery is completed
+  if (
+    (newStatus === "completed" || newStatus === "delivered") &&
+    newStatus !== oldStatus &&
+    data?.project_id
+  ) {
+    const projectId = data.project_id;
+    const phaseId = data.phase_id;
+
+    // Find yugo-handled items in this project that are scheduled for delivery
+    const { data: scheduledItems } = await admin
+      .from("project_inventory")
+      .select("id, item_name, phase_id")
+      .eq("project_id", projectId)
+      .eq("handled_by", "yugo")
+      .in("item_status", ["scheduled_delivery", "stored", "inspected"]);
+
+    const itemsToUpdate = (scheduledItems || []).filter(
+      (item) => !phaseId || item.phase_id === phaseId || item.phase_id === null
+    );
+
+    if (itemsToUpdate.length > 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      await admin
+        .from("project_inventory")
+        .update({
+          item_status: "delivered",
+          status: "delivered",
+          delivered_date: today,
+          status_updated_at: new Date().toISOString(),
+          status_notes: `Auto-updated: delivery ${data.delivery_number || id} completed`,
+        })
+        .in("id", itemsToUpdate.map((i) => i.id));
+
+      // Log to project_status_log
+      const logRows = itemsToUpdate.map((item) => ({
+        project_id: projectId,
+        item_id: item.id,
+        old_status: "scheduled_delivery",
+        new_status: "delivered",
+        changed_by: "system",
+        notes: `Delivery ${data.delivery_number || id} completed`,
+      }));
+      try { await admin.from("project_status_log").insert(logRows); } catch { /* non-fatal */ }
+
+      // Timeline entry
+      try {
+        await admin
+          .from("project_timeline")
+          .insert({
+            project_id: projectId,
+            event_type: "item_delivered",
+            event_description: `${itemsToUpdate.length} item${itemsToUpdate.length > 1 ? "s" : ""} delivered — delivery ${data.delivery_number || id} completed`,
+            phase_id: phaseId || null,
+          });
+      } catch { /* non-fatal */ }
+    }
   }
 
   return NextResponse.json({ ok: true, delivery: data });

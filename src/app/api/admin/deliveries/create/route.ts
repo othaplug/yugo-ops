@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const organizationId = (body.organization_id || "").trim() || null;
+    const isB2BOneOff = body.booking_type === "one_off";
+    const organizationId = isB2BOneOff ? null : ((body.organization_id || "").trim() || null);
 
     const admin = createAdminClient();
 
@@ -19,10 +20,16 @@ export async function POST(req: NextRequest) {
       ? await admin.from("organizations").select("name, type, pricing_tier").eq("id", organizationId).single()
       : { data: null };
 
-    const customerName = (body.customer_name || "").trim();
+    const customerName = (body.customer_name || body.contact_name || "").trim();
     const deliveryAddress = (body.delivery_address || "").trim();
     const scheduledDate = (body.scheduled_date || "").trim();
+    const businessName = (body.business_name || "").trim();
 
+    if (isB2BOneOff) {
+      if (!businessName) return NextResponse.json({ error: "Business name is required" }, { status: 400 });
+      if (!(body.contact_name || "").trim()) return NextResponse.json({ error: "Contact name is required" }, { status: 400 });
+      if (!(body.contact_phone || "").trim()) return NextResponse.json({ error: "Contact phone is required" }, { status: 400 });
+    }
     if (!customerName) return NextResponse.json({ error: "Customer name is required" }, { status: 400 });
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
@@ -40,7 +47,11 @@ export async function POST(req: NextRequest) {
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
       organization_id: organizationId || null,
-      client_name: (body.client_name || org?.name || "").trim() || "",
+      client_name: isB2BOneOff ? businessName : ((body.client_name || org?.name || "").trim() || ""),
+      business_name: isB2BOneOff ? businessName : null,
+      contact_name: isB2BOneOff ? (body.contact_name || "").trim() || null : null,
+      contact_phone: isB2BOneOff ? (body.contact_phone || "").trim() || null : null,
+      contact_email: isB2BOneOff ? (body.contact_email || "").trim() || null : null,
       customer_name: customerName,
       customer_email: (body.customer_email || "").trim() || null,
       customer_phone: (body.customer_phone || "").trim() || null,
@@ -56,13 +67,17 @@ export async function POST(req: NextRequest) {
       category: (body.category || org?.type || "retail").trim() || "retail",
       created_by_source: "admin",
       created_by_user: null,
-      booking_type: body.booking_type || null,
+      booking_type: isB2BOneOff ? "one_off" : (body.booking_type || null),
       rate_card_id: rateLookup.rateCardId || null,
       vehicle_type: body.vehicle_type || null,
       day_type: body.day_type || null,
       num_stops: body.num_stops || null,
       delivery_type: body.delivery_type || null,
       zone: body.zone || null,
+      pickup_access: body.pickup_access || null,
+      delivery_access: body.delivery_access || null,
+      item_weight_category: body.item_weight_category || null,
+      pricing_breakdown: Array.isArray(body.pricing_breakdown) ? body.pricing_breakdown : null,
       base_price: body.base_price || 0,
       overage_price: body.overage_price || 0,
       services_price: body.services_price || 0,

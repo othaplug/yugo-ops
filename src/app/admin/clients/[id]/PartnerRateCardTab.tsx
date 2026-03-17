@@ -69,7 +69,9 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const DELIVERY_TYPE_LABELS: Record<string, string> = {
   single_item: "Single Item", multi_piece: "Multi-Piece", full_room: "Full Room Setup",
-  curbside: "Curbside Drop", oversized: "Oversized/Fragile",
+  multi_stop: "Multi-Stop", curbside: "Curbside Drop", oversized: "Oversized/Fragile",
+  day_rate: "Day Rate", b2b: "B2B", b2b_delivery: "B2B", delivery: "Standard Delivery",
+  designer: "Designer", retail: "Retail", hospitality: "Hospitality", gallery: "Gallery", project: "Project",
 };
 const OVERAGE_TIER_LABELS: Record<string, string> = {
   full_7_10: "Full Day 7–10 stops", full_11_plus: "Full Day 11+",
@@ -438,6 +440,9 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   /* ─── Render ─── */
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+      <p className="text-[11px] text-[var(--tx3)] mb-4">
+        Rates shown are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply to per-delivery bookings.
+      </p>
       {/* Header */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-2">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -582,11 +587,11 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 const hasOverride = pm.source === "override" || pmx?.source === "override";
                 return (
                   <tr key={r.id} className="hover:bg-[var(--bgsub)]/50 transition-colors">
-                    <td className="px-3 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{DELIVERY_TYPE_LABELS[r.delivery_type] || r.delivery_type}</td>
+                    <td className="px-3 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">Zone {r.zone}</td>
-                    <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={() => openCell("delivery_rates", r.id, "price_min", `${DELIVERY_TYPE_LABELS[r.delivery_type] || r.delivery_type} Z${r.zone} Min`, r.price_min)} />
+                    <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={() => openCell("delivery_rates", r.id, "price_min", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Min`, r.price_min)} />
                     {pmx ? (
-                      <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("delivery_rates", r.id, "price_max", `${DELIVERY_TYPE_LABELS[r.delivery_type] || r.delivery_type} Z${r.zone} Max`, r.price_max!)} />
+                      <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("delivery_rates", r.id, "price_max", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Max`, r.price_max!)} />
                     ) : (
                       <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">—</td>
                     )}

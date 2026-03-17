@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { StatPctChange } from "../components/StatPctChange";
+import CreateMovesDropdown from "../components/CreateMovesDropdown";
 import MoveNotifyButton from "./MoveNotifyButton";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatMoveDate } from "@/lib/date-format";
@@ -55,6 +56,7 @@ const TYPE_FILTERS = [
   { value: "single_item", label: "Single Item" },
   { value: "white_glove", label: "White Glove" },
   { value: "specialty", label: "Specialty" },
+  { value: "event", label: "Event" },
   { value: "b2b", label: "B2B" },
 ];
 
@@ -73,8 +75,11 @@ function normalizeType(move: Move): string {
   if (mt.includes("office") || mt.includes("commercial")) return "office";
   if (mt.includes("single")) return "single_item";
   if (mt.includes("white")) return "white_glove";
+  if (mt === "specialty") return "specialty";
+  if (mt.includes("event")) return "event";
   if (mt.includes("special")) return "specialty";
   if (mt.includes("b2b")) return "b2b";
+  if (mt.includes("labour_only") || mt.includes("labour only")) return "labour_only";
   if (mt.includes("residential") || mt.includes("local")) return "residential";
   return mt || "residential";
 }
@@ -86,7 +91,9 @@ function typeLabel(type: string): string {
     single_item: "Single Item",
     white_glove: "White Glove",
     specialty: "Specialty",
+    event: "Event",
     b2b: "B2B",
+    labour_only: "Labour Only",
   };
   return map[type] || type;
 }
@@ -153,7 +160,9 @@ function serviceTypeLabel(st: string): string {
     single_item: "Single Item",
     white_glove: "White Glove",
     specialty: "Specialty",
+    event: "Event",
     b2b_delivery: "B2B",
+    labour_only: "Labour Only",
   };
   return map[st] || st;
 }
@@ -426,18 +435,7 @@ export default function AllMovesClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin/quotes/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors whitespace-nowrap"
-          >
-            New Quote
-          </Link>
-          <Link
-            href="/admin/moves/new"
-            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
-          >
-            + New Move
-          </Link>
+          <CreateMovesDropdown />
         </div>
       </div>
 

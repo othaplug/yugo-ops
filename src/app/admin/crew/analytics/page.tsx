@@ -34,10 +34,37 @@ export default async function CrewAnalyticsPage({
   const signOffs = signOffsRes.data || [];
   const sessions = sessionsRes.data || [];
 
+  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const moveIds = completedSessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
+  const deliveryIds = completedSessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
+
+  const [podsMoveRes, podsDeliveryRes] = await Promise.all([
+    moveIds.length > 0
+      ? admin.from("proof_of_delivery").select("move_id, satisfaction_rating").in("move_id", moveIds).not("satisfaction_rating", "is", null)
+      : Promise.resolve({ data: [] }),
+    deliveryIds.length > 0
+      ? admin.from("proof_of_delivery").select("delivery_id, satisfaction_rating").in("delivery_id", deliveryIds).not("satisfaction_rating", "is", null)
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const signOffByJob = new Map<string, { rating: number | null }>();
   signOffs.forEach((s) => signOffByJob.set(`${s.job_id}:${s.job_type}`, { rating: s.satisfaction_rating }));
 
-  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const podRatingByMove = new Map<string, number>();
+  (podsMoveRes.data || []).forEach((p) => {
+    if (p.move_id && p.satisfaction_rating != null) podRatingByMove.set(p.move_id, p.satisfaction_rating);
+  });
+  const podRatingByDelivery = new Map<string, number>();
+  (podsDeliveryRes.data || []).forEach((p) => {
+    if (p.delivery_id && p.satisfaction_rating != null) podRatingByDelivery.set(p.delivery_id, p.satisfaction_rating);
+  });
+
+  function getRating(jobId: string, jobType: string): number | null {
+    const so = signOffByJob.get(`${jobId}:${jobType}`);
+    if (so?.rating != null) return so.rating;
+    if (jobType === "move") return podRatingByMove.get(jobId) ?? null;
+    return podRatingByDelivery.get(jobId) ?? null;
+  }
   const byCrew = new Map<
     string,
     { jobs: number; signOffs: number; totalDuration: number; ratings: number[] }
@@ -52,10 +79,9 @@ export default async function CrewAnalyticsPage({
     if (!stats) return;
     stats.jobs += 1;
     const so = signOffByJob.get(`${s.job_id}:${s.job_type}`);
-    if (so) {
-      stats.signOffs += 1;
-      if (so.rating != null) stats.ratings.push(so.rating);
-    }
+    if (so) stats.signOffs += 1;
+    const rating = getRating(s.job_id, s.job_type);
+    if (rating != null) stats.ratings.push(rating);
     const start = s.started_at ? new Date(s.started_at).getTime() : 0;
     const end = (s.checkpoints as { timestamp?: string }[])?.[(s.checkpoints as unknown[]).length - 1];
     const endTime =

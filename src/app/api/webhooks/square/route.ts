@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WebhooksHelper } from "square";
+import { squareClient } from "@/lib/square";
 
 const NOTIFICATION_URL = (() => {
   const base = (process.env.NEXT_PUBLIC_APP_URL || "").trim();
@@ -48,10 +49,45 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
 
     let logStatus: "processed" | "ignored" = "ignored";
-    if (eventType === "invoice.payment_made" || eventType === "payment.completed") {
-      const invoiceId = body.data?.object?.invoice?.id || body.data?.id;
 
-      if (invoiceId) {
+    // payment.completed: update move.square_receipt_url when payment has reference_id (move_code or moveId)
+    if (eventType === "payment.completed") {
+      const paymentId = (body.data?.object as { payment?: { id?: string } })?.payment?.id ?? body.data?.id;
+      if (paymentId && typeof paymentId === "string") {
+        try {
+          const payRes = await squareClient.payments.get({ paymentId });
+          const payment = (payRes as { payment?: { receiptUrl?: string; referenceId?: string } }).payment;
+          const receiptUrl = payment?.receiptUrl;
+          const referenceId = payment?.referenceId;
+          if (receiptUrl && referenceId) {
+            const ref = String(referenceId).trim();
+            const { data: moveByCode } = await admin
+              .from("moves")
+              .select("id")
+              .ilike("move_code", ref.replace(/^#/, "").toUpperCase())
+              .maybeSingle();
+            const { data: moveById } = ref.length >= 30
+              ? await admin.from("moves").select("id").eq("id", ref).maybeSingle()
+              : { data: null };
+            const moveId = moveByCode?.id ?? moveById?.id ?? null;
+            if (moveId) {
+              await admin
+                .from("moves")
+                .update({ square_receipt_url: receiptUrl, updated_at: new Date().toISOString() })
+                .eq("id", moveId);
+              logStatus = "processed";
+            }
+          }
+        } catch (e) {
+          console.warn("[webhooks/square] payment.completed receipt update failed:", e);
+        }
+      }
+    }
+
+    if (eventType === "invoice.payment_made") {
+      const invoiceId = body.data?.object?.invoice?.id ?? body.data?.id;
+
+      if (invoiceId && typeof invoiceId === "string") {
         const { data: invoice } = await supabase
           .from("invoices")
           .select("*")
@@ -59,10 +95,51 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (invoice) {
+          let receiptUrl: string | null = null;
+
+          // Fetch Square receipt URL when invoice is paid via Square-hosted page
+          try {
+            const invRes = await squareClient.invoices.get({ invoiceId });
+            const sqInvoice = (invRes as { invoice?: { orderId?: string; locationId?: string } }).invoice;
+            const orderId = sqInvoice?.orderId;
+            const locationId = sqInvoice?.locationId;
+            if (orderId && locationId) {
+              const end = new Date();
+              const begin = new Date(end.getTime() - 15 * 60 * 1000);
+              const listRes = await squareClient.payments.list({
+                beginTime: begin.toISOString(),
+                endTime: end.toISOString(),
+                locationId,
+                limit: 50,
+              });
+              const payments: { orderId?: string; receiptUrl?: string }[] = [];
+              for await (const p of listRes) {
+                payments.push(p as { orderId?: string; receiptUrl?: string });
+                if (payments.length >= 50) break;
+              }
+              const match = payments.find((p) => p.orderId === orderId);
+              if (match?.receiptUrl) receiptUrl = match.receiptUrl;
+            }
+          } catch (e) {
+            console.warn("[webhooks/square] Could not fetch receipt_url:", e);
+          }
+
           await supabase
             .from("invoices")
-            .update({ status: "paid", updated_at: new Date().toISOString() })
+            .update({
+              status: "paid",
+              updated_at: new Date().toISOString(),
+              ...(receiptUrl && { square_receipt_url: receiptUrl }),
+            })
             .eq("id", invoice.id);
+
+          // Update move.square_receipt_url when invoice is linked to a move
+          if (receiptUrl && invoice.move_id) {
+            await admin
+              .from("moves")
+              .update({ square_receipt_url: receiptUrl, updated_at: new Date().toISOString() })
+              .eq("id", invoice.move_id);
+          }
 
           await supabase.from("status_events").insert({
             entity_type: "invoice",

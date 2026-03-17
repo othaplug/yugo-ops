@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import CreateButton from "../../components/CreateButton";
 import { StatPctChange } from "../../components/StatPctChange";
 import MoveNotifyButton from "../MoveNotifyButton";
 import MoveDateFilter, { getDateRangeFromPreset } from "../../components/MoveDateFilter";
@@ -196,9 +197,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               )}
             </div>
           </div>
-          <Link href="/admin/moves/new" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap shrink-0">
-            + New Move
-          </Link>
+          <CreateButton href="/admin/moves/new" title="New Move" />
         </div>
 
         {filterOpen && (

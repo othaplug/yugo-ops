@@ -10,13 +10,12 @@ import { createClient } from "@/lib/supabase/client";
 const NAV = [
   { label: "Dashboard", items: [
     { name: "Command Center", icon: "home", href: "/admin" },
-    { name: "All Projects", icon: "projects", href: "/admin/deliveries" },
     { name: "Reports", icon: "fileText", href: "/admin/reports" },
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
   { label: "B2B Partners", items: [
-    { name: "Deliveries", icon: "truck", href: "/admin/deliveries", badge: "pending_deliveries" },
+    { name: "Jobs", icon: "truck", href: "/admin/deliveries", badge: "pending_deliveries" },
     { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
     { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
     { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },

@@ -19,6 +19,10 @@ interface Job {
   scheduledTime: string;
   status: string;
   completedAt?: string | null;
+  isRecurring?: boolean;
+  bookingType?: string | null;
+  eventPhase?: string | null;
+  eventName?: string | null;
 }
 
 interface DashboardData {
@@ -274,8 +278,24 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Type + items */}
-                    <div className="ml-[38px] mt-2 flex items-center gap-3 text-[10px] text-[var(--tx3)]">
+                    <div className="ml-[38px] mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[var(--tx3)]">
                       <span className="px-2 py-0.5 rounded-md bg-[var(--bg)] font-medium">{job.jobTypeLabel}</span>
+                      {job.eventPhase && (
+                        <span
+                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          style={{
+                            background: job.eventPhase === "delivery" ? "#7C3AED22" : job.eventPhase === "return" ? "#05966922" : "#F59E0B22",
+                            color: job.eventPhase === "delivery" ? "#7C3AED" : job.eventPhase === "return" ? "#059669" : "#F59E0B",
+                          }}
+                        >
+                          {job.eventPhase === "delivery" ? "Event Delivery" : job.eventPhase === "return" ? "Event Return" : "Event Setup"}
+                        </span>
+                      )}
+                      {job.isRecurring && (
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider" style={{ background: "#0D948820", color: "#0D9488" }}>
+                          Recurring
+                        </span>
+                      )}
                       {job.itemCount != null && job.itemCount > 0 && (
                         <span>{job.itemCount} items</span>
                       )}

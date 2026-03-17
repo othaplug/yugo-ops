@@ -6,8 +6,12 @@ import {
   claimDenialEmailHtml,
   claimStatusUpdateEmailHtml,
 } from "@/lib/email-templates";
+import { requireRole } from "@/lib/auth/check-role";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error: authErr } = await requireRole("coordinator");
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     const supabase = createAdminClient();
@@ -29,6 +33,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error: authErr } = await requireRole("coordinator");
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     const body = await req.json();

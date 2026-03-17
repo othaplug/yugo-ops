@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { organization_id, booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend, oversized_count } = body;
+    const { organization_id, booking_type, vehicle_type, day_type, num_stops, delivery_type, distance_km, services, is_after_hours, is_weekend, oversized_count, delivery_access, item_weight_category } = body;
 
     if (!organization_id) return NextResponse.json({ error: "organization_id required" }, { status: 400 });
 
@@ -61,6 +61,8 @@ export async function POST(req: NextRequest) {
         isWeekend: !!is_weekend,
         pricingTier,
         lookup,
+        deliveryAccess: delivery_access || null,
+        itemWeightCategory: item_weight_category || null,
       });
 
       // Check volume discount

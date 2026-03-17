@@ -432,6 +432,35 @@ export default function AdminPageClient({
         {/* ── RIGHT: Intelligence Column ── */}
         <div className="min-w-0 space-y-0">
 
+          {/* Quick Actions — prominent, above revenue */}
+          <div className="pb-6 grid grid-cols-2 gap-2">
+            <h2 className="col-span-2 text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Quick Actions</h2>
+            <Link
+                href="/admin/quotes/new"
+                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
+              >
+                New quote
+              </Link>
+              <Link
+                href="/admin/moves/new"
+                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
+              >
+                New move
+              </Link>
+              <Link
+                href="/admin/deliveries"
+                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
+              >
+                Deliveries
+              </Link>
+              <Link
+                href="/admin/reports"
+                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
+              >
+                Reports
+              </Link>
+          </div>
+
           {/* Revenue (multi-source) */}
           <div className="pb-6">
             <div className="flex items-center justify-between mb-3">
@@ -545,26 +574,6 @@ export default function AdminPageClient({
 
           {/* Activity — live feed */}
           <LiveActivityFeed initialEvents={activityEvents} />
-
-          {/* Quick links */}
-          <div className="grid grid-cols-2 gap-2 pt-6 border-t border-[var(--brd)]/30">
-            <Link href="/admin/quotes/new" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
-              <Icon name="fileText" className="w-3.5 h-3.5 text-[var(--tx3)]" />
-              <span className="text-[11px] font-medium text-[var(--tx2)]">New quote</span>
-            </Link>
-            <Link href="/admin/moves/new" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
-              <Icon name="package" className="w-3.5 h-3.5 text-[var(--tx3)]" />
-              <span className="text-[11px] font-medium text-[var(--tx2)]">New move</span>
-            </Link>
-            <Link href="/admin/deliveries" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
-              <Icon name="truck" className="w-3.5 h-3.5 text-[var(--tx3)]" />
-              <span className="text-[11px] font-medium text-[var(--tx2)]">Deliveries</span>
-            </Link>
-            <Link href="/admin/reports" className="flex items-center gap-2 px-3 py-2.5 hover:bg-[var(--card)]/30 transition-colors rounded">
-              <Icon name="target" className="w-3.5 h-3.5 text-[var(--tx3)]" />
-              <span className="text-[11px] font-medium text-[var(--tx2)]">Reports</span>
-            </Link>
-          </div>
         </div>
       </div>
     </div>

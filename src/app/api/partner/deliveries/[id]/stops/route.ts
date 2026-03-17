@@ -27,7 +27,7 @@ export async function GET(
 
   const { data: stops } = await admin
     .from("delivery_stops")
-    .select("id, stop_number, address, customer_name, customer_phone, items_description, special_instructions")
+    .select("id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, stop_status, stop_type, arrived_at, completed_at")
     .eq("delivery_id", delivery.id)
     .order("stop_number");
 

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import CreateButton from "../components/CreateButton";
 import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
@@ -10,6 +11,7 @@ import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
 import RecurringSchedulesView from "./RecurringSchedulesView";
+import ProjectsListClient from "../projects/ProjectsListClient";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -138,17 +140,21 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
 
 export default function AllDeliveriesView({
   deliveries,
+  projects,
+  partners,
   today,
   initialView,
   initialScheduleId,
 }: {
   deliveries: Delivery[];
+  projects: { id: string; project_number: string; project_name: string; status: string; active_phase: string | null; partner_id: string; end_client_name: string | null; estimated_budget: number | null; actual_cost: number | null; start_date: string | null; target_end_date: string | null; created_at: string; organizations: { name: string; type: string } | null }[];
+  partners: { id: string; name: string; type: string }[];
   today: string;
-  initialView?: "deliveries" | "recurring";
+  initialView?: "deliveries" | "projects" | "recurring";
   initialScheduleId?: string;
 }) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<"deliveries" | "recurring">(initialView || "deliveries");
+  const [activeView, setActiveView] = useState<"deliveries" | "projects" | "recurring">(initialView || "deliveries");
   const [partnerType, setPartnerType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
@@ -198,6 +204,7 @@ export default function AllDeliveriesView({
       <div className="flex gap-0 border-b border-[var(--brd)]/30 mb-5 -mx-1">
         {([
           { key: "deliveries" as const, label: "All Deliveries" },
+          { key: "projects" as const, label: "All Projects" },
           { key: "recurring" as const, label: "Recurring Schedules" },
         ]).map((t) => (
           <button
@@ -218,16 +225,15 @@ export default function AllDeliveriesView({
         <RecurringSchedulesView initialScheduleId={initialScheduleId} />
       )}
 
+      {activeView === "projects" && (
+        <ProjectsListClient projects={projects} partners={partners} />
+      )}
+
       {activeView === "deliveries" && (<>
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Deliveries</h1>
-        <Link
-          href="/admin/deliveries/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
-        >
-          + New Delivery
-        </Link>
+        <CreateButton href="/admin/deliveries/new?choice=single" title="New Delivery" />
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 

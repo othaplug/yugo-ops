@@ -371,61 +371,95 @@ export default function TrackDeliveryClient({
           </div>
         </div>
 
-        {/* Stage timeline — 4 main steps */}
+        {/* ── Gold progress bar with stage icons ── */}
         {(isInProgress || isCompleted) && (
-          <div className="flex justify-center mb-7 anim-slide-up anim-delay-2">
-            <div className="flex items-center gap-0">
-              {CLIENT_MAIN_STEPS.map((label, i) => {
-                const isPast = clientMainStepIdx > i || isCompleted;
-                const isCurrent = clientMainStepIdx === i && !isCompleted;
-                const iconPath = CLIENT_MAIN_STEP_ICONS[label];
-                return (
-                  <div key={label} className="flex items-center gap-0 flex-shrink-0">
-                    <div className="flex flex-col items-center">
-                      {/* Node */}
+          <div className="mb-7 anim-slide-up anim-delay-2">
+            {/* Header: current stage + percent */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[13px] font-bold" style={{ color: FOREST }}>
+                {isCompleted ? "Complete" : CLIENT_MAIN_STEPS[clientMainStepIdx]}
+              </span>
+              <span className="text-[13px] font-semibold opacity-60" style={{ color: FOREST }}>
+                {Math.round(progressPercent)}%
+              </span>
+            </div>
+
+            {/* Progress bar with stage nodes */}
+            <div className="relative" style={{ paddingBottom: 30 }}>
+              {/* Track */}
+              <div
+                className="absolute rounded-full"
+                style={{
+                  top: 15,
+                  left: 15,
+                  right: 15,
+                  height: 5,
+                  backgroundColor: `${FOREST}10`,
+                  zIndex: 0,
+                }}
+              />
+              {/* Gold fill */}
+              <div
+                className="absolute rounded-full transition-all duration-700 ease-out"
+                style={{
+                  top: 15,
+                  left: 15,
+                  height: 5,
+                  width: `calc(${(isCompleted ? 1 : clientMainStepIdx / (CLIENT_MAIN_STEPS.length - 1))} * (100% - 30px))`,
+                  background: `linear-gradient(90deg, ${GOLD}, ${GOLD}CC)`,
+                  zIndex: 1,
+                }}
+              />
+              {/* Stage nodes */}
+              <div className="flex justify-between items-start" style={{ position: "relative", zIndex: 2 }}>
+                {CLIENT_MAIN_STEPS.map((label, i) => {
+                  const isPast = clientMainStepIdx > i || isCompleted;
+                  const isCurrent = clientMainStepIdx === i && !isCompleted;
+                  const iconPath = CLIENT_MAIN_STEP_ICONS[label];
+                  return (
+                    <div key={label} className="flex flex-col items-center">
                       <div className="relative">
                         {isCurrent && (
                           <span
                             className="step-ping absolute inset-0 rounded-full"
-                            style={{ backgroundColor: GOLD, opacity: 0.35 }}
+                            style={{ backgroundColor: GOLD, opacity: 0.3 }}
                           />
                         )}
                         <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold transition-all border ${isPast ? "step-bounce-in" : ""}`}
-                          style={
-                            isPast
-                              ? { backgroundColor: "#22C55E", color: "white", borderColor: "transparent" }
-                              : isCurrent
-                                ? { backgroundColor: GOLD, color: CREAM, borderColor: "transparent", boxShadow: `0 0 0 4px ${GOLD}25` }
-                                : { backgroundColor: CREAM, color: `${FOREST}40`, borderColor: `${FOREST}15` }
-                          }
+                          className={`flex items-center justify-center rounded-full transition-all duration-500 ${isPast ? "step-bounce-in" : ""}`}
+                          style={{
+                            width: 30,
+                            height: 30,
+                            backgroundColor: isPast ? "#22C55E" : isCurrent ? GOLD : CREAM,
+                            border: !isPast && !isCurrent ? `1.5px solid ${FOREST}18` : "none",
+                            boxShadow: isCurrent ? `0 0 0 4px ${GOLD}25` : undefined,
+                          }}
                         >
                           {isPast ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
                           ) : iconPath ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={iconPath}/></svg>
-                          ) : (
-                            <span className="text-[11px]">{i + 1}</span>
-                          )}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isCurrent ? CREAM : `${FOREST}35`} strokeWidth="2" strokeLinecap="round">
+                              <path d={iconPath}/>
+                            </svg>
+                          ) : null}
                         </div>
                       </div>
-                      {/* Label */}
                       <div
-                        className="text-[11px] mt-2 font-semibold whitespace-nowrap text-center max-w-[76px] leading-tight"
-                        style={{ color: isCurrent ? GOLD : isPast ? "rgba(0,0,0,1)" : `${FOREST}40` }}
+                        className="mt-2 text-center leading-tight font-semibold"
+                        style={{
+                          fontSize: 9.5,
+                          maxWidth: 68,
+                          color: isCurrent ? GOLD : isPast ? FOREST : `${FOREST}35`,
+                        }}
                       >
                         {label}
                       </div>
                     </div>
-                    {i < CLIENT_MAIN_STEPS.length - 1 && (
-                      <div
-                        className="w-8 sm:w-10 h-[2px] mx-1.5 mb-5 rounded-full transition-all duration-700"
-                        style={{ backgroundColor: isPast ? "#22C55E" : `${FOREST}12` }}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

@@ -16,6 +16,7 @@ import PageContent from "@/app/admin/components/PageContent";
 import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
+import DayRateStopFlow from "./DayRateStopFlow";
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
@@ -32,12 +33,31 @@ interface ProjectContext {
   phaseName: string | null;
 }
 
+interface DeliveryStop {
+  id: string;
+  stop_number: number;
+  address: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  client_phone: string | null;
+  items_description: string | null;
+  special_instructions: string | null;
+  notes: string | null;
+  stop_status: string;
+  stop_type: string;
+  arrived_at: string | null;
+  completed_at: string | null;
+}
+
 interface JobDetail {
   id: string;
   jobId: string;
   jobType: "move" | "delivery";
+  bookingType?: string | null;
+  stopsCompleted?: number;
   moveType?: string;
   status?: string;
+  stops?: DeliveryStop[];
   clientName: string;
   fromAddress: string;
   toAddress: string;
@@ -337,6 +357,34 @@ export default function CrewJobPage({
             <span aria-hidden>←</span> Back to Jobs
           </Link>
         </div>
+      </PageContent>
+    );
+  }
+
+  // Day rate with stops — render dedicated multi-stop flow
+  const isDayRate = job.bookingType === "day_rate" && job.stops && job.stops.length > 0;
+  if (isDayRate) {
+    return (
+      <PageContent className="max-w-[520px]">
+        <div className="flex items-center gap-2 mb-5">
+          <Link
+            href="/crew/dashboard"
+            className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+            Jobs
+          </Link>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
+            Day Rate
+          </span>
+        </div>
+        <DayRateStopFlow
+          stops={job.stops!}
+          delivery={{ id: job.id, bookingType: job.bookingType ?? null, stopsCompleted: job.stopsCompleted ?? 0, totalStops: job.stops!.length, clientName: job.clientName, deliveryNumber: job.jobId }}
+          partnerName={job.clientName}
+          vehicleType={null}
+          onStopUpdated={() => { fetchJob(); }}
+        />
       </PageContent>
     );
   }

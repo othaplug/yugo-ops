@@ -18,6 +18,9 @@ import {
   TABLE_ALT_ROW,
   setBodyText,
   setSectionLabel,
+  drawPageTemplate,
+  drawSectionHeading,
+  MARGIN,
 } from "./pdf-brand";
 
 export function generateInvoicePDF(invoice: {
@@ -95,74 +98,50 @@ export function generateDeliveryPDF(delivery: {
   special_handling?: boolean;
 }) {
   const doc = new jsPDF();
-  const gold = [201, 169, 98] as [number, number, number];
-  const dark = [13, 13, 13] as [number, number, number];
-  const gray = [100, 100, 100] as [number, number, number];
+  const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Header
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text("YUGO+", 20, 22);
-  doc.setFontSize(8);
-  doc.setTextColor(...gray);
-  doc.text("Project Overview", 20, 28);
+  let y = drawPageTemplate(doc, { useWineBar: true });
 
-  // Project number & status
+  // Document title
+  doc.setFont("times", "bold");
   doc.setFontSize(16);
+  doc.setTextColor(...WINE);
+  doc.text("Delivery Order", pageWidth / 2, y, { align: "center" });
+  y += 6;
+
+  // Delivery number + status
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text(delivery.delivery_number, 20, 42);
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  doc.text(delivery.delivery_number, MARGIN, y);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(...gray);
-  doc.text(`Status: ${delivery.status}`, 100, 42);
+  doc.setTextColor(...GRAY);
+  doc.text(`Status: ${delivery.status}`, 115, y);
   if (delivery.special_handling) {
     doc.setTextColor(245, 158, 11);
-    doc.text("Special Handling Required", 130, 42);
+    doc.text("Special Handling Required", 155, y);
   }
-
-  // Divider
-  doc.setDrawColor(220, 220, 220);
-  doc.line(20, 48, 190, 48);
-
-  let y = 58;
-
-  // Customer Information
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gray);
-  doc.text("CUSTOMER INFORMATION", 20, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...dark);
-  doc.text(`Name: ${delivery.customer_name}`, 20, y);
-  y += 5;
-  if (delivery.customer_email) {
-    doc.text(`Email: ${delivery.customer_email}`, 20, y);
-    y += 5;
-  }
-  if (delivery.customer_phone) {
-    doc.text(`Phone: ${formatPhone(delivery.customer_phone)}`, 20, y);
-    y += 5;
-  }
-  doc.text(`Client: ${delivery.client_name}`, 20, y);
   y += 10;
 
-  // Delivery Details
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gray);
-  doc.text("DELIVERY DETAILS", 20, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...dark);
-  doc.text(`Scheduled: ${delivery.scheduled_date}${delivery.delivery_window ? ` • ${delivery.delivery_window}` : ""}`, 20, y);
-  y += 6;
-  doc.text(`Pickup: ${delivery.pickup_address || "Not specified"}`, 20, y);
-  y += 5;
-  doc.text(`Delivery: ${delivery.delivery_address || "Not specified"}`, 20, y);
-  y += 10;
+  // Customer + Delivery columns
+  y = drawSectionHeading(doc, "Customer", MARGIN, y, 85);
+  setBodyText(doc, 9);
+  doc.text(delivery.customer_name, MARGIN, y); y += 5;
+  if (delivery.customer_email) { doc.setFontSize(8); doc.setTextColor(...GRAY); doc.text(delivery.customer_email, MARGIN, y); y += 4; }
+  if (delivery.customer_phone) { doc.text(formatPhone(delivery.customer_phone), MARGIN, y); y += 4; }
+  setBodyText(doc, 8); doc.setTextColor(...GRAY);
+  doc.text(`Partner: ${delivery.client_name}`, MARGIN, y); y += 10;
 
-  // Items
+  y = drawSectionHeading(doc, "Delivery Details", MARGIN, y, 170);
+  setBodyText(doc, 9);
+  doc.text(`Scheduled: ${delivery.scheduled_date}${delivery.delivery_window ? `  ·  ${delivery.delivery_window}` : ""}`, MARGIN, y); y += 5;
+  const pickupLines = doc.splitTextToSize(`Pickup:  ${delivery.pickup_address || "Not specified"}`, 170);
+  doc.text(pickupLines, MARGIN, y); y += pickupLines.length * 4 + 3;
+  const delivLines = doc.splitTextToSize(`Delivery:  ${delivery.delivery_address || "Not specified"}`, 170);
+  doc.text(delivLines, MARGIN, y); y += delivLines.length * 4 + 8;
+
+  // Items table
   const items = delivery.items || [];
   if (items.length > 0) {
     const itemRows = items.map((item, i) => {
@@ -170,46 +149,38 @@ export function generateDeliveryPDF(delivery: {
       const qty = typeof item === "object" && (item as { qty?: number })?.qty != null ? (item as { qty: number }).qty : 1;
       return [i + 1, name, String(qty)];
     });
+    const headStyles = getTableHeadStyles(true);
     autoTable(doc, {
       startY: y,
       head: [["#", "Item", "Qty"]],
       body: itemRows,
-      theme: "grid",
-      headStyles: { fillColor: gold, textColor: dark, fontStyle: "bold" },
-      styles: { fontSize: 9 },
+      theme: "plain",
+      headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: TABLE_ALT_ROW },
+      columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20, halign: "center" } },
     });
     y = (doc as any).lastAutoTable?.finalY + 8;
   }
 
   // Pricing
   if (delivery.quoted_price != null) {
+    y = drawSectionHeading(doc, "Pricing", MARGIN, y, 170);
+    setBodyText(doc, 10);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gray);
-    doc.text("PRICING", 20, y);
-    y += 6;
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...dark);
-    doc.text(`Quoted: $${Number(delivery.quoted_price).toFixed(2)}`, 20, y);
+    doc.text(`Quoted: $${Number(delivery.quoted_price).toFixed(2)}`, MARGIN, y);
     y += 10;
   }
 
   // Instructions
   if (delivery.instructions) {
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gray);
-    doc.text("SPECIAL INSTRUCTIONS", 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...dark);
+    if (y > 240) { doc.addPage(); y = 30; }
+    y = drawSectionHeading(doc, "Special Instructions", MARGIN, y, 170);
+    setBodyText(doc, 9);
     const lines = doc.splitTextToSize(delivery.instructions, 170);
-    doc.text(lines, 20, y);
-    y += lines.length * 5 + 5;
+    doc.text(lines, MARGIN, y);
+    y += lines.length * 4 + 5;
   }
-
-  // Footer
-  doc.setFontSize(8);
-  doc.setTextColor(...gray);
-  doc.text("YUGO+ • opsplus.co", 20, 285);
 
   return doc;
 }
@@ -237,46 +208,36 @@ export interface SignOffReceiptData {
 
 export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
   const doc = new jsPDF();
-  const gold = [201, 169, 98] as [number, number, number];
-  const dark = [13, 13, 13] as [number, number, number];
-  const gray = [100, 100, 100] as [number, number, number];
+  const pageWidth = doc.internal.pageSize.getWidth();
   const red = [220, 38, 38] as [number, number, number];
   const green = [22, 163, 74] as [number, number, number];
 
-  // Header
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text("YUGO+", 20, 22);
-  doc.setFontSize(8);
-  doc.setTextColor(...gray);
-  doc.text("Client Sign-Off Receipt", 20, 28);
+  let y = drawPageTemplate(doc, { useWineBar: true });
 
-  // Job info
-  doc.setFontSize(14);
+  // Document title
+  doc.setFont("times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...WINE);
+  doc.text("Client Sign-Off Receipt", pageWidth / 2, y, { align: "center" });
+  y += 6;
+
+  // Job reference
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...dark);
-  doc.text(data.displayId, 20, 42);
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  doc.text(data.displayId, MARGIN, y);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(...gray);
-  doc.text(`Type: ${data.jobType}`, 100, 42);
-
-  doc.setDrawColor(220, 220, 220);
-  doc.line(20, 48, 190, 48);
-
-  let y = 58;
+  doc.setTextColor(...GRAY);
+  doc.text(`Type: ${data.jobType}`, 115, y);
+  y += 10;
 
   // Sign-off details
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...gray);
-  doc.text("SIGN-OFF DETAILS", 20, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...dark);
-  doc.text(`Signed by: ${data.signedBy}`, 20, y); y += 5;
-  if (data.clientName) { doc.text(`Client: ${data.clientName}`, 20, y); y += 5; }
-  doc.text(`Date: ${new Date(data.signedAt).toLocaleString("en-US")}`, 20, y); y += 5;
+  y = drawSectionHeading(doc, "Sign-Off Details", MARGIN, y, 170);
+  setBodyText(doc, 9);
+  doc.text(`Signed by: ${data.signedBy}`, MARGIN, y); y += 5;
+  if (data.clientName) { doc.text(`Client: ${data.clientName}`, MARGIN, y); y += 5; }
+  doc.text(`Date: ${new Date(data.signedAt).toLocaleString("en-US")}`, MARGIN, y); y += 5;
   if (data.signedLat != null && data.signedLng != null) {
     doc.text(`Location: ${data.signedLat.toFixed(5)}, ${data.signedLng.toFixed(5)}`, 20, y); y += 5;
   }
@@ -296,27 +257,29 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
   if (data.damageReportDeadline) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...red);
-    doc.text(`Damage report deadline: ${new Date(data.damageReportDeadline).toLocaleString("en-US")}`, 20, y);
+    doc.text(`Damage report deadline: ${new Date(data.damageReportDeadline).toLocaleString("en-US")}`, MARGIN, y);
     y += 8;
   }
 
   // Confirmations table
   if (data.confirmations.length > 0) {
+    const headStyles = getTableHeadStyles(true);
     const body = data.confirmations.map((c) => [c.label, c.valueLabel ?? (c.value ? "Yes" : "No")]);
     autoTable(doc, {
       startY: y,
       head: [["Confirmation", "Status"]],
       body,
-      theme: "grid",
-      headStyles: { fillColor: gold, textColor: dark, fontStyle: "bold" },
+      theme: "plain",
+      headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE },
       styles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: TABLE_ALT_ROW },
       columnStyles: {
         1: { cellWidth: 25, halign: "center" },
       },
       didParseCell: (hookData) => {
         if (hookData.section === "body" && hookData.column.index === 1) {
           const val = (hookData.row.raw as string[])?.[1];
-          const color = val === "Yes" ? green : val === "N/A" ? gray : red;
+          const color = val === "Yes" ? green : val === "N/A" ? GRAY : red;
           (hookData.cell.styles as { textColor?: number[] }).textColor = color;
         }
       },
@@ -326,62 +289,55 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
 
   // Feedback & exceptions
   if (data.feedbackNote) {
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gray);
-    doc.text("FEEDBACK", 20, y); y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...dark);
+    if (y > 250) { doc.addPage(); y = 30; }
+    y = drawSectionHeading(doc, "Feedback", MARGIN, y, 170);
+    setBodyText(doc, 9);
     const lines = doc.splitTextToSize(data.feedbackNote, 170);
-    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+    doc.text(lines, MARGIN, y); y += lines.length * 4 + 5;
   }
 
   if (data.exceptions) {
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...red);
-    doc.text("EXCEPTIONS / ISSUES", 20, y); y += 5;
+    if (y > 250) { doc.addPage(); y = 30; }
+    y = drawSectionHeading(doc, "Exceptions / Issues", MARGIN, y, 170);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...dark);
+    doc.setFontSize(9);
+    doc.setTextColor(...red);
     const lines = doc.splitTextToSize(data.exceptions, 170);
-    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+    doc.text(lines, MARGIN, y); y += lines.length * 4 + 5;
   }
 
   // Escalation warning
   if (data.escalationTriggered && data.escalationReason) {
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...red);
-    doc.text("ESCALATION TRIGGERED", 20, y); y += 5;
+    if (y > 245) { doc.addPage(); y = 30; }
+    y = drawSectionHeading(doc, "Escalation Triggered", MARGIN, y, 170);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...red);
     const lines = doc.splitTextToSize(data.escalationReason, 170);
-    doc.text(lines, 20, y); y += lines.length * 4 + 5;
+    doc.text(lines, MARGIN, y); y += lines.length * 4 + 5;
   }
 
   // Discrepancy flags
   if (data.discrepancyFlags && data.discrepancyFlags.length > 0) {
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(245, 158, 11);
-    doc.text("DISCREPANCY FLAGS", 20, y); y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...dark);
+    if (y > 245) { doc.addPage(); y = 30; }
+    y = drawSectionHeading(doc, "Discrepancy Flags", MARGIN, y, 170);
+    setBodyText(doc, 9);
     data.discrepancyFlags.forEach((f) => {
       const lines = doc.splitTextToSize(`• ${f}`, 170);
-      doc.text(lines, 20, y); y += lines.length * 4 + 2;
+      doc.text(lines, MARGIN, y); y += lines.length * 4 + 2;
     });
   }
 
-  // Legal footer
-  if (y > 265) { doc.addPage(); y = 20; }
-  y = Math.max(y + 5, 270);
+  // Legal disclaimer
+  if (y > 258) { doc.addPage(); y = 30; }
+  y = Math.max(y + 6, 258);
   doc.setFontSize(7);
-  doc.setTextColor(...gray);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
   doc.text(
     "By signing, the client confirms all items were received as described. Concealed damage must be reported within 24 hours.",
-    20, y, { maxWidth: 170 }
+    MARGIN, y, { maxWidth: 170 },
   );
-  doc.text("YUGO+ • opsplus.co", 20, 285);
 
   return doc;
 }

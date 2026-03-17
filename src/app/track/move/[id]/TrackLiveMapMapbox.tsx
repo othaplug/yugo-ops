@@ -150,10 +150,17 @@ export function TrackLiveMapMapbox({
   const [completedCoords, setCompletedCoords] = useState<[number, number][] | null>(null);
   const [remainingCoords, setRemainingCoords] = useState<[number, number][] | null>(null);
 
+  // During pickup stages: route runs from crew → pickup address.
+  // During destination stages: route runs from pickup → dropoff (full planned route).
+  const isPickupPhase = PICKUP_STAGES.includes(liveStage || "");
+  const routeOrigin = isPickupPhase && animatedCrew ? animatedCrew : pickup;
+  const routeDest = isPickupPhase ? pickup : dropoff;
+
   // Fetch real driving route: client-side Mapbox (no auth) so public track page works
   const fetchRoute = useCallback(async () => {
-    if (!pickup || !dropoff || !mapboxAccessToken) return;
-    const coords = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
+    if (!routeOrigin || !routeDest || !mapboxAccessToken) return;
+    if (routeOrigin === routeDest) return;
+    const coords = `${routeOrigin.lng},${routeOrigin.lat};${routeDest.lng},${routeDest.lat}`;
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${mapboxAccessToken}`;
     try {
       const res = await fetch(url);
@@ -168,7 +175,9 @@ export function TrackLiveMapMapbox({
       console.warn("[TrackLiveMap] Failed to fetch directions, using straight line", err);
       setRouteCoords(null);
     }
-  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, mapboxAccessToken]);
+  // During pickup phase we re-fetch as crew moves (every ~30s via parent poll)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeOrigin?.lat, routeOrigin?.lng, routeDest?.lat, routeDest?.lng, mapboxAccessToken]);
 
   useEffect(() => { fetchRoute(); }, [fetchRoute]);
 
@@ -215,18 +224,18 @@ export function TrackLiveMapMapbox({
     };
   }, [remainingCoords]);
 
-  // When Mapbox returns no route, show straight line from pickup to dropoff so route is always visible
+  // When Mapbox returns no route, show straight line from origin to destination
   const fallbackGeoJson = useMemo(() => {
-    if (routeCoords != null || !pickup || !dropoff) return null;
+    if (routeCoords != null || !routeOrigin || !routeDest) return null;
     return {
       type: "Feature" as const,
       properties: {},
       geometry: {
         type: "LineString" as const,
-        coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]] as [number, number][],
+        coordinates: [[routeOrigin.lng, routeOrigin.lat], [routeDest.lng, routeDest.lat]] as [number, number][],
       },
     };
-  }, [routeCoords, pickup, dropoff]);
+  }, [routeCoords, routeOrigin, routeDest]);
 
   return (
     <Map
@@ -284,17 +293,32 @@ export function TrackLiveMapMapbox({
         </Source>
       )}
 
-      {/* Pickup marker (green dot) */}
+      {/* Pickup marker:
+          - During pickup phase: gold pulsing "active destination" pin
+          - During destination phase: small green dot (origin reference) */}
       {pickup && (
-        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
-          <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-white shadow-md" />
+        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor={isPickupPhase ? "bottom" : "center"}>
+          {isPickupPhase ? (
+            <div className="flex flex-col items-center">
+              <div className="w-9 h-9 rounded-full bg-[#C9A962] border-2 border-white shadow-lg flex items-center justify-center relative">
+                <div className="absolute -inset-1.5 rounded-full bg-[#C9A962] opacity-25 animate-ping" style={{ animationDuration: "2s" }} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                </svg>
+              </div>
+              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#C9A962] -mt-0.5" />
+            </div>
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-white shadow-md" />
+          )}
         </Marker>
       )}
 
-      {/* Destination — Home icon (dark, pin-style) */}
+      {/* Destination — Home icon (dark, pin-style); dimmed during pickup phase */}
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center" style={{ opacity: isPickupPhase ? 0.45 : 1 }}>
             <div className="w-9 h-9 rounded-full bg-[#1A1A1A] border-2 border-white shadow-lg flex items-center justify-center">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>

@@ -1,9 +1,189 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createScheduleBlock } from "@/lib/calendar/conflict-check";
+import { createScheduleBlock, checkCrewConflict } from "@/lib/calendar/conflict-check";
 import { requireStaff } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** PATCH: Reschedule an event (move, delivery, blocked, or recurring) to a new time and/or team */
+export async function PATCH(req: NextRequest) {
+  const { error: authError } = await requireStaff();
+  if (authError) return authError;
+
+  const db = createAdminClient();
+  const body = await req.json();
+  const { event_id, event_type, crew_id, date, start, end } = body;
+
+  if (!event_id || !event_type || !crew_id || !date || !start || !end) {
+    return NextResponse.json(
+      { error: "event_id, event_type, crew_id, date, start, end required" },
+      { status: 400 }
+    );
+  }
+
+  const validTypes = ["move", "delivery", "blocked"];
+  if (!validTypes.includes(event_type)) {
+    return NextResponse.json(
+      { error: "event_type must be move, delivery, or blocked" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    // Recurring events: event_id = "recurring-{scheduleId}-{date}"
+    const recurringMatch = String(event_id).match(/^recurring-([0-9a-f-]{36})-(\d{4}-\d{2}-\d{2})$/i);
+    if (recurringMatch) {
+      const [, scheduleId, instanceDate] = recurringMatch;
+      const { error } = await db
+        .from("recurring_delivery_schedules")
+        .update({ crew_id })
+        .eq("id", scheduleId);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    // Non-UUID event_id (e.g. malformed) — reject early
+    if (!UUID_REGEX.test(String(event_id))) {
+      return NextResponse.json(
+        { error: "Invalid event ID format." },
+        { status: 400 }
+      );
+    }
+
+    let excludeBlockId: string | undefined;
+
+    if (event_type === "blocked") {
+      const { data: block } = await db
+        .from("crew_schedule_blocks")
+        .select("id")
+        .eq("id", event_id)
+        .single();
+
+      if (!block) {
+        return NextResponse.json({ error: "Block not found" }, { status: 404 });
+      }
+      excludeBlockId = block.id;
+    } else {
+      const { data: block } = await db
+        .from("crew_schedule_blocks")
+        .select("id")
+        .eq("reference_type", event_type)
+        .eq("reference_id", event_id)
+        .maybeSingle();
+      excludeBlockId = block?.id;
+    }
+
+    const conflict = await checkCrewConflict(
+      db,
+      { crew_id, date, start, end },
+      excludeBlockId
+    );
+
+    if (conflict.hasConflict) {
+      const details = conflict.conflicts
+        .map((c) => `${c.start}-${c.end} (${c.reference_label})`)
+        .join(", ");
+      return NextResponse.json(
+        { error: `CONFLICT: Crew is booked ${details}` },
+        { status: 409 }
+      );
+    }
+
+    if (event_type === "blocked") {
+      const { error } = await db
+        .from("crew_schedule_blocks")
+        .update({
+          crew_id,
+          block_date: date,
+          block_start: start,
+          block_end: end,
+        })
+        .eq("id", event_id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+    } else {
+      const table = event_type === "move" ? "moves" : "deliveries";
+      const { data: existing } = await db
+        .from(table)
+        .select("status, calendar_status, crew_id, scheduled_start, scheduled_end")
+        .eq("id", event_id)
+        .single();
+
+      if (existing) {
+        const status = (existing.calendar_status || existing.status || "") as string;
+        if (status === "completed") {
+          const hasTime = !!(existing.scheduled_start || existing.scheduled_end);
+          const hasTeam = !!existing.crew_id;
+          if (hasTime || hasTeam) {
+            return NextResponse.json(
+              { error: "Completed jobs with time or team assigned cannot be edited." },
+              { status: 403 }
+            );
+          }
+        }
+      }
+
+      const { error: refError } = await db
+        .from(table)
+        .update({
+          crew_id,
+          scheduled_date: date,
+          scheduled_start: start,
+          scheduled_end: end,
+          calendar_status: "scheduled",
+        })
+        .eq("id", event_id);
+
+      if (refError) {
+        return NextResponse.json({ error: refError.message }, { status: 500 });
+      }
+
+      const { data: existingBlock } = await db
+        .from("crew_schedule_blocks")
+        .select("id")
+        .eq("reference_type", event_type)
+        .eq("reference_id", event_id)
+        .maybeSingle();
+
+      if (existingBlock) {
+        await db
+          .from("crew_schedule_blocks")
+          .update({
+            crew_id,
+            block_date: date,
+            block_start: start,
+            block_end: end,
+          })
+          .eq("id", existingBlock.id);
+      } else {
+        await createScheduleBlock(db, {
+          crew_id,
+          date,
+          start,
+          end,
+          type: event_type,
+          reference_id: event_id,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to reschedule";
+    const isConflict = message.startsWith("CONFLICT:");
+    return NextResponse.json(
+      { error: message },
+      { status: isConflict ? 409 : 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { error: authError } = await requireStaff();

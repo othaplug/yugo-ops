@@ -6,6 +6,7 @@ import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
 import { logAudit } from "@/lib/audit";
+import { getDistance } from "@/lib/maps/distance";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
@@ -127,6 +128,14 @@ export async function POST(req: NextRequest) {
     if (!fromAddress) return NextResponse.json({ error: "From address is required" }, { status: 400 });
     if (!toAddress) return NextResponse.json({ error: "To address is required" }, { status: 400 });
 
+    // Auto-calculate driving distance via Mapbox (cached in distance_cache table)
+    let distanceKm: number | null = null;
+    let driveTimeMin: number | null = null;
+    try {
+      const dist = await getDistance(fromAddress, toAddress);
+      if (dist) { distanceKm = dist.distance_km; driveTimeMin = dist.drive_time_min; }
+    } catch { /* non-blocking — move still creates without distance */ }
+
     const moveSize =
       moveType === "residential"
         ? ((body.move_size as string)?.trim() || "2br")
@@ -203,6 +212,10 @@ export async function POST(req: NextRequest) {
         client_box_count: typeof body.box_count === "number" && body.box_count > 0 ? body.box_count : null,
         move_size: moveSize ?? null,
         truck_primary: truckPrimary ?? null,
+        distance_km: distanceKm,
+        drive_time_min: driveTimeMin,
+        est_crew_size: body.est_crew_size ? Number(body.est_crew_size) : null,
+        est_hours: body.est_hours ? Number(body.est_hours) : null,
         ...(typeof body.inventory_score === "number" && body.inventory_score > 0
           ? (() => {
               const labour = estimateLabourFromScore(

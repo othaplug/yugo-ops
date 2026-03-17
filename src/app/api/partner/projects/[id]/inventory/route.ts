@@ -10,7 +10,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const db = createAdminClient();
 
-  // Verify partner owns project
   const { data: project } = await db
     .from("projects")
     .select("id")
@@ -30,15 +29,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       project_id: projectId,
       phase_id: body.phase_id || null,
       item_name: body.item_name.trim(),
-      vendor: body.vendor?.trim() || null,
-      description: body.description?.trim() || null,
+      // Vendor info
+      vendor: body.vendor_name?.trim() || body.vendor?.trim() || null,
+      vendor_name: body.vendor_name?.trim() || body.vendor?.trim() || null,
+      vendor_contact_name: body.vendor_contact_name?.trim() || null,
+      vendor_contact_phone: body.vendor_contact_phone?.trim() || null,
+      vendor_contact_email: body.vendor_contact_email?.trim() || null,
+      vendor_order_number: body.vendor_order_number?.trim() || null,
+      vendor_pickup_address: body.vendor_pickup_address?.trim() || null,
+      vendor_pickup_window: body.vendor_pickup_window?.trim() || null,
+      vendor_delivery_method: body.vendor_delivery_method || "yugo_pickup",
+      // Delivery handler — derive from delivery method if not explicit
+      handled_by:
+        body.handled_by ||
+        (body.vendor_delivery_method === "yugo_pickup" ? "yugo" : "vendor_direct"),
+      // Item details
       quantity: Number(body.quantity) || 1,
-      estimated_value: body.estimated_value ? Number(body.estimated_value) : null,
-      expected_delivery_date: body.expected_delivery_date || null,
-      handled_by: body.handled_by || "yugo",
+      item_status: body.item_status || "ordered",
+      status: "expected",
+      status_updated_at: new Date().toISOString(),
+      status_notes: body.status_notes || null,
+      room_destination: body.room_destination?.trim() || null,
+      item_value: body.item_value ? Number(body.item_value) : null,
+      item_dimensions: body.item_dimensions?.trim() || null,
+      requires_crating: body.requires_crating ?? false,
+      requires_assembly: body.requires_assembly ?? false,
+      special_handling_notes: body.special_handling_notes?.trim() || null,
+      // Legacy fields
+      description: body.description?.trim() || null,
       vendor_carrier: body.vendor_carrier?.trim() || null,
       vendor_tracking_number: body.vendor_tracking_number?.trim() || null,
-      status: "expected",
+      expected_delivery_date: body.expected_delivery_date || null,
     })
     .select()
     .single();
@@ -47,18 +68,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: insertErr?.message || "Failed to add item" }, { status: 500 });
   }
 
-  // Timeline entry
   await db.from("project_timeline").insert({
     project_id: projectId,
     event_type: "item_added",
-    event_description: `${body.item_name} added to project`,
+    event_description: `${body.item_name.trim()} added${body.vendor_name ? ` (${body.vendor_name})` : ""}${body.room_destination ? ` — ${body.room_destination}` : ""}`,
     phase_id: body.phase_id || null,
   });
 
   return NextResponse.json(item, { status: 201 });
 }
 
-/** PATCH: Update VENDOR/CARRIER inventory items (partners cannot change Yugo items) */
+/** PATCH: Update an inventory item.
+ *  Partners can update item_status for any item.
+ *  Vendor-specific fields (tracking, carrier, etc.) can only be updated for
+ *  non-Yugo items.
+ */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = await params;
   const { orgIds, error } = await requirePartner();
@@ -66,7 +90,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const db = createAdminClient();
 
-  // Verify partner owns project
   const { data: project } = await db
     .from("projects")
     .select("id")
@@ -78,24 +101,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   if (!body.item_id) return NextResponse.json({ error: "item_id required" }, { status: 400 });
 
-  // Fetch item to verify it's VENDOR/CARRIER
-  const { data: item, error: fetchErr } = await db
+  const { data: existing, error: fetchErr } = await db
     .from("project_inventory")
-    .select("id, item_name, phase_id, handled_by")
+    .select("id, item_name, phase_id, handled_by, item_status")
     .eq("id", body.item_id)
     .eq("project_id", projectId)
     .single();
 
-  if (fetchErr || !item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
-  const handledBy = item.handled_by || "yugo";
-  if (handledBy === "yugo") {
-    return NextResponse.json({ error: "Cannot update Yugo-handled items" }, { status: 403 });
-  }
+  if (fetchErr || !existing) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
-  const allowedKeys = ["status", "vendor_tracking_number", "vendor_carrier", "expected_delivery_date", "inspection_notes", "received_date", "delivered_date"];
   const updates: Record<string, unknown> = {};
-  for (const key of allowedKeys) {
-    if (key in body) updates[key] = body[key];
+
+  // Any item can have status + notes updated
+  if ("item_status" in body) {
+    updates.item_status = body.item_status;
+    updates.status_updated_at = new Date().toISOString();
+  }
+  if ("status_notes" in body) updates.status_notes = body.status_notes;
+
+  // Vendor-specific fields (non-Yugo items only)
+  const handledBy = existing.handled_by || "yugo";
+  if (handledBy !== "yugo") {
+    const vendorKeys = [
+      "vendor_tracking_number",
+      "vendor_carrier",
+      "expected_delivery_date",
+      "received_date",
+      "delivered_date",
+      "inspection_notes",
+      "condition_on_receipt",
+    ];
+    for (const key of vendorKeys) {
+      if (key in body) updates[key] = body[key];
+    }
+    // Legacy status sync
+    if ("item_status" in body) {
+      const legacyMap: Record<string, string> = {
+        received_warehouse: "received",
+        inspected: "inspected",
+        stored: "stored",
+        scheduled_delivery: "scheduled_for_delivery",
+        delivered: "delivered",
+        installed: "installed",
+      };
+      if (legacyMap[body.item_status]) {
+        updates.status = legacyMap[body.item_status];
+      }
+    }
   }
 
   const { data, error: updateErr } = await db
@@ -108,22 +160,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
-  // Timeline entry for status changes
-  if (body.status === "received") {
-    await db.from("project_timeline").insert({
-      project_id: projectId,
-      event_type: "item_received",
-      event_description: `${data.item_name} — received`,
-      phase_id: data.phase_id,
-    });
-  }
-  if (body.status === "delivered") {
-    await db.from("project_timeline").insert({
-      project_id: projectId,
-      event_type: "item_delivered",
-      event_description: `${data.item_name} — delivered`,
-      phase_id: data.phase_id,
-    });
+  // Timeline event on key status changes
+  if ("item_status" in body) {
+    const timelineEvents: Record<string, string> = {
+      received_warehouse: "item_received",
+      delivered: "item_delivered",
+      issue_reported: "issue_flagged",
+    };
+    const eventType = timelineEvents[body.item_status];
+    if (eventType) {
+      await db.from("project_timeline").insert({
+        project_id: projectId,
+        event_type: eventType,
+        event_description: `${existing.item_name} — ${body.item_status.replace(/_/g, " ")}${body.status_notes ? `: ${body.status_notes}` : ""}`,
+        phase_id: existing.phase_id,
+      });
+    }
   }
 
   return NextResponse.json(data);

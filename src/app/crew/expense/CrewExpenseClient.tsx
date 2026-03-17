@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import PageContent from "@/app/admin/components/PageContent";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -27,6 +27,7 @@ type Expense = {
 };
 
 export default function CrewExpenseClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const jobFromUrl = searchParams.get("job") || "";
   const [category, setCategory] = useState("parking");
@@ -134,9 +135,9 @@ export default function CrewExpenseClient() {
 
   return (
     <PageContent>
-      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]">
-        ← Back to Dashboard
-      </Link>
+      <button type="button" onClick={() => router.back()} className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
+        ← Back
+      </button>
       <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] mt-2">Log Expense</h1>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 

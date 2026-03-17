@@ -193,3 +193,53 @@ export function drawInfoBox(doc: jsPDF, options: { x: number; y: number; width: 
  */
 export const SECTION_GAP = 10;
 export const SUB_SECTION_GAP = 6;
+
+/**
+ * Standard left margin for all PDFs.
+ */
+export const MARGIN = 20;
+
+/**
+ * Set up a full page with top accent bar, Yugo header, and schedule the footer/bottom bar.
+ * Call once per page at the start of each new page.
+ * Returns the y position where body content should begin.
+ *
+ * @param useWineBar - true for wine top bar (default), false for gold
+ */
+export function drawPageTemplate(
+  doc: jsPDF,
+  options: { useWineBar?: boolean; logoBase64?: string } = {},
+): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
+  drawTopAccentBar(doc, options.useWineBar ?? true);
+  const y = drawYugoHeader(doc, {
+    yStart: 16,
+    centerX,
+    margin: MARGIN,
+    logoBase64: options.logoBase64,
+  });
+  drawYugoFooter(doc);
+  drawBottomAccentBar(doc, options.useWineBar ?? true);
+  return y + 4;
+}
+
+/**
+ * Draw a section label + gold underline rule for semantic document sections.
+ */
+export function drawSectionHeading(
+  doc: jsPDF,
+  label: string,
+  x: number,
+  y: number,
+  width = 170,
+): number {
+  doc.setFont(FONT_BODY, "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GOLD);
+  doc.text(label.toUpperCase(), x, y);
+  doc.setDrawColor(...GOLD_DARK);
+  doc.setLineWidth(0.25);
+  doc.line(x, y + 2, x + width, y + 2);
+  return y + 8;
+}

@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { Trash2 } from "lucide-react";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import CreateButton from "../components/CreateButton";
 
 interface Quote {
   id: string;
@@ -51,7 +52,8 @@ function statusBadge(status: string): string {
 function serviceLabel(st: string): string {
   const map: Record<string, string> = {
     local_move: "Residential", long_distance: "Long Distance", office_move: "Office",
-    single_item: "Single Item", white_glove: "White Glove", specialty: "Specialty", b2b_delivery: "B2B",
+    single_item: "Single Item", white_glove: "White Glove", specialty: "Specialty",
+    event: "Event", b2b_delivery: "B2B", labour_only: "Labour Only",
   };
   return map[st] || st;
 }
@@ -265,12 +267,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">Quotes</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-0.5">All proposals & pricing</p>
         </div>
-        <Link
-          href="/admin/quotes/new"
-          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
-        >
-          + New Quote
-        </Link>
+        <CreateButton href="/admin/quotes/new" title="New Quote" />
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-6">

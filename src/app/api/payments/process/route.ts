@@ -116,6 +116,7 @@ export async function POST(req: Request) {
     }
     const paymentSourceId = squareCardId ?? sourceId;
     let squarePaymentId: string | undefined;
+    let squareReceiptUrl: string | null = null;
 
     try {
       const paymentRes = await squareClient.payments.create({
@@ -128,6 +129,7 @@ export async function POST(req: Request) {
         locationId,
       });
       squarePaymentId = paymentRes.payment?.id;
+      squareReceiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
 
       if (!squarePaymentId) {
         return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
@@ -164,6 +166,7 @@ export async function POST(req: Request) {
         squareCustomerId,
         squareCardId,
         squarePaymentId,
+        squareReceiptUrl,
       });
       moveId = moveResult.moveId;
       moveCode = moveResult.moveCode;

@@ -426,14 +426,38 @@ export default function TrackMoveClient({
   const useSandbox = process.env.NEXT_PUBLIC_SQUARE_USE_SANDBOX === "true";
   const squareScriptUrl = useSandbox ? SQUARE_SDK_SANDBOX : SQUARE_SDK_PRODUCTION;
 
+  const serviceType = (move.service_type || move.move_type || "residential") as string;
+  const isB2BOneOff = serviceType === "b2b_oneoff" || serviceType === "b2b_delivery";
+  const isSingleItem = serviceType === "single_item";
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
     { key: "track" as TabKey, label: "Live Tracking" },
-    { key: "inv", label: "Inventory" },
+    ...(isSingleItem ? [] : [{ key: "inv" as TabKey, label: "Inventory" }]),
     { key: "files", label: "Files" },
   ];
 
   const moveTotal = Number(move.amount || move.estimate || 0);
+
+  // B2B one-off: no client tracking page — managed through partner portal
+  if (isB2BOneOff) {
+    return (
+      <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
+        <div className="max-w-md w-full text-center">
+          <h1 className="font-hero text-[26px] sm:text-[30px] font-semibold mb-2" style={{ color: WINE }}>Partner-Managed Delivery</h1>
+          <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
+            This delivery is managed through your partner portal.
+          </p>
+          <Link
+            href="/partner"
+            className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
+            style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+          >
+            Go to Partner Portal
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (linkExpired) {
     return (
@@ -514,7 +538,16 @@ export default function TrackMoveClient({
             <p className="text-[11px] mt-0.5 font-sans opacity-40 flex items-center gap-1.5" style={{ color: FOREST }}>
               {displayCode}
               {(() => {
-                const label = tierDisplayLabel(move.tier_selected || move.tier || move.service_tier);
+                const isOffice = serviceType === "office_move";
+                const isWhiteGlove = serviceType === "white_glove";
+                const isSpecialty = serviceType === "specialty";
+                const label = isOffice
+                  ? "Commercial Move"
+                  : isWhiteGlove
+                    ? "White Glove Service"
+                    : isSpecialty
+                      ? "Specialty Move"
+                      : tierDisplayLabel(move.tier_selected || move.tier || move.service_tier);
                 return label ? (
                   <span
                     className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
@@ -658,9 +691,9 @@ export default function TrackMoveClient({
 
               {showMoveDetails && (
                 <div className="border-t px-4 pb-5 pt-3" style={{ borderColor: `${FOREST}10`, boxShadow: "none" }}>
-                  {/* Sub-tab nav: Details | Photos & Documents | Inventory */}
+                  {/* Sub-tab nav: Details | Photos & Documents | Inventory (hidden for single_item) */}
                   <div className="flex gap-4 mb-4 border-b pb-2" style={{ borderColor: `${FOREST}08` }}>
-                    {(["details", "photos_docs", "inv"] as const).map((t) => {
+                    {(["details", "photos_docs", ...(isSingleItem ? [] : ["inv"])] as ("details" | "photos_docs" | "inv")[]).map((t) => {
                       const label = t === "inv" ? "Inventory" : t === "photos_docs" ? "Photos & Documents" : "Details";
                       return (
                         <button
@@ -683,6 +716,20 @@ export default function TrackMoveClient({
                   {/* Details */}
                   {detailsSubTab === "details" && (
                     <div className="space-y-4">
+                      {isSingleItem && (move as { item_description?: string | null }).item_description && (
+                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
+                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>Item</div>
+                          <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{(move as { item_description?: string | null }).item_description}</div>
+                        </div>
+                      )}
+                      {(serviceType === "white_glove" || serviceType === "specialty") && (
+                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
+                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1" style={{ color: FOREST }}>Your service included</div>
+                          <p className="text-[11px] leading-relaxed opacity-90" style={{ color: FOREST }}>
+                            White glove handling, custom crating when needed, and specialty care for high-value items.
+                          </p>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
                         <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>Total balance</span>
                         <span className="text-[14px] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
@@ -750,19 +797,20 @@ export default function TrackMoveClient({
                       <TrackDocuments moveId={move.id} token={token} refreshTrigger={paymentRecorded} />
                     </div>
                   )}
-                  {detailsSubTab === "inv" && (
+                  {detailsSubTab === "inv" && !isSingleItem && (
                     <div className="mt-1"><TrackInventory moveId={move.id} token={token} moveComplete={true} /></div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* ── Your offers (hero): perks + referral ── */}
+            {/* ── Your offers (hero): perks + referral (hidden for single_item, business copy for office) ── */}
+            {!isSingleItem && (
             <div className="space-y-5">
               <h2 className="font-hero text-[20px] sm:text-[22px] font-semibold leading-tight" style={{ color: WINE }}>
                 Your offers
               </h2>
-              {perks.length > 0 ? (
+              {perks.length > 0 && serviceType !== "office_move" ? (
                 <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scroll-smooth snap-x snap-mandatory">
                   {perks.map((perk) => (
                     <div
@@ -823,19 +871,21 @@ export default function TrackMoveClient({
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : serviceType !== "office_move" ? (
                 <p className="text-[11px] opacity-70 rounded-2xl border p-4" style={{ color: FOREST, borderColor: `${FOREST}15`, backgroundColor: `${FOREST}04` }}>
                   No active perks right now. Check back later for partner offers.
                 </p>
-              )}
+              ) : null}
 
-              {/* Refer a Friend (under same hero) */}
+              {/* Referral: personal (residential) or business (office) */}
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
-                  Refer a friend & earn cash
+                  {serviceType === "office_move" ? "Refer another business" : "Refer a friend & earn cash"}
                 </div>
                 <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
-                  Share your code — your friend saves, you earn credit when they book.
+                  {serviceType === "office_move"
+                    ? "Know another business that's moving? Refer them to Yugo and earn a $200 credit on your next move."
+                    : "Share your code — your friend saves, you earn credit when they book."}
                 </p>
                 {!referral ? (
                 <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
@@ -920,41 +970,55 @@ export default function TrackMoveClient({
               )}
               </div>
             </div>
+            )}
 
-            {/* ── Need Yugo Again? (tier-smart CTAs) ── */}
+            {/* ── Need Yugo Again? (service-type + tier-smart CTAs) ── */}
             {(() => {
+              const isOffice = serviceType === "office_move";
               const raw = (move.tier_selected || move.tier || move.service_tier || "").toLowerCase().trim().replace(/\s+/g, "_");
-              // Normalize legacy names so tier-smart CTAs show for older moves
-              const tier =
-                raw === "essentials" ? "curated"
-                : raw === "premier" ? "signature"
-                : raw;
-              const ctas: { label: string; sub: string; href: string }[] =
-                tier === "curated"
-                  ? [
-                      { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://yugoplus.co" },
-                      { label: "Single Item Delivery", sub: "Sofa, piano, art piece — we deliver one item too", href: "https://yugoplus.co" },
-                    ]
-                  : tier === "signature"
+              const tier = raw === "essentials" ? "curated" : raw === "premier" ? "signature" : raw;
+              let ctas: { label: string; sub: string; href: string }[];
+              let title = "Moving again? We've got you.";
+              let heading = "Need Yugo again?";
+              if (isOffice) {
+                heading = "Planning another office move?";
+                title = "Get a quote for your next relocation.";
+                ctas = [{ label: "Get a Quote", sub: "Office relocation or commercial move", href: "https://yugoplus.co" }];
+              } else if (isSingleItem) {
+                heading = "Need to move more?";
+                title = "Book a full move or another single item.";
+                ctas = [
+                  { label: "Book a Full Move", sub: "Local or long distance", href: "https://yugoplus.co" },
+                  { label: "Another Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
+                ];
+              } else {
+                ctas =
+                  tier === "curated"
                     ? [
-                        { label: "Go Estate Next Time", sub: "White glove & dedicated coordinator", href: "https://yugoplus.co" },
-                        { label: "Single Item Delivery", sub: "One piece? We&apos;ve got you", href: "https://yugoplus.co" },
+                        { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://yugoplus.co" },
+                        { label: "Single Item Delivery", sub: "Sofa, piano, art piece — we deliver one item too", href: "https://yugoplus.co" },
                       ]
-                    : tier === "estate"
+                    : tier === "signature"
                       ? [
-                          { label: "Book again", sub: "Local or long distance", href: "https://yugoplus.co" },
-                          { label: "Refer a friend", sub: "Give $50, get $50", href: "https://yugoplus.co" },
+                          { label: "Go Estate Next Time", sub: "White glove & dedicated coordinator", href: "https://yugoplus.co" },
+                          { label: "Single Item Delivery", sub: "One piece? We&apos;ve got you", href: "https://yugoplus.co" },
                         ]
-                      : [
-                          { label: "Book a Move", sub: "Local or long distance", href: "https://yugoplus.co" },
-                          { label: "Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
-                          { label: "White Glove Service", sub: "Premium packing & placement", href: "https://yugoplus.co" },
-                        ];
+                      : tier === "estate"
+                        ? [
+                            { label: "Book again", sub: "Local or long distance", href: "https://yugoplus.co" },
+                            { label: "Refer a friend", sub: "Give $50, get $50", href: "https://yugoplus.co" },
+                          ]
+                        : [
+                            { label: "Book a Move", sub: "Local or long distance", href: "https://yugoplus.co" },
+                            { label: "Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
+                            { label: "White Glove Service", sub: "Premium packing & placement", href: "https://yugoplus.co" },
+                          ];
+              }
               return (
                 <div className="rounded-2xl border p-5 sm:p-6 text-left" style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}03`, boxShadow: "0px 4px 12px 0px rgba(0, 0, 0, 0.15)" }}>
-                  <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1.5" style={{ color: FOREST }}>Need Yugo again?</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1.5" style={{ color: FOREST }}>{heading}</div>
                   <h3 className="font-hero text-[18px] sm:text-[20px] font-semibold mb-4 leading-tight" style={{ color: WINE }}>
-                    Moving again? We&apos;ve got you.
+                    {title}
                   </h3>
                   <div className={`grid gap-2.5 ${ctas.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
                     {ctas.map(({ label, sub, href }) => (
@@ -1160,6 +1224,75 @@ export default function TrackMoveClient({
             {additionalFeesCents > 0 && !isPaid && (
               <div className="pb-4 text-[11px] opacity-70" style={{ color: FOREST }}>
                 Additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved changes.
+              </div>
+            )}
+
+            {/* ── Event Phases (shown when move is part of an event booking) ── */}
+            {move.event_name && (
+              <div className="rounded-2xl p-4 mb-4 space-y-3" style={{ background: "#7C3AED11", border: "1px solid #7C3AED30" }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#7C3AED" }}>
+                  Event · {move.event_name}
+                </div>
+                <div className="space-y-2">
+                  {/* Delivery phase */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                      style={{
+                        background: move.event_phase === "delivery" && move.status === "completed" ? "#22C55E22" : move.event_phase === "delivery" ? "#7C3AED22" : "#E5E7EB22",
+                        border: `1.5px solid ${move.event_phase === "delivery" && move.status === "completed" ? "#22C55E" : move.event_phase === "delivery" ? "#7C3AED" : "#9CA3AF"}`,
+                      }}
+                    >
+                      {move.event_phase === "delivery" && move.status === "completed" ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full" style={{ background: move.event_phase === "delivery" ? "#7C3AED" : "#9CA3AF" }} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                        Delivery — {move.event_phase === "delivery" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Deliver to venue"}
+                      </div>
+                      {move.event_phase !== "delivery" && (
+                        <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Items transported to venue</div>
+                      )}
+                      {move.event_phase === "delivery" && (
+                        <div className="text-[10px] font-medium" style={{ color: move.status === "completed" ? "#22C55E" : "#7C3AED" }}>
+                          {move.status === "completed" ? "Completed" : "This booking"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Return phase indicator */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                      style={{
+                        background: move.event_phase === "return" && move.status === "completed" ? "#22C55E22" : move.event_phase === "return" ? "#05966922" : "#E5E7EB22",
+                        border: `1.5px solid ${move.event_phase === "return" && move.status === "completed" ? "#22C55E" : move.event_phase === "return" ? "#059669" : "#9CA3AF"}`,
+                      }}
+                    >
+                      {move.event_phase === "return" && move.status === "completed" ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full" style={{ background: move.event_phase === "return" ? "#059669" : "#9CA3AF" }} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                        Return — {move.event_phase === "return" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Teardown & return"}
+                      </div>
+                      {move.event_phase !== "return" && (
+                        <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Items returned from venue</div>
+                      )}
+                      {move.event_phase === "return" && (
+                        <div className="text-[10px] font-medium" style={{ color: move.status === "completed" ? "#22C55E" : "#059669" }}>
+                          {move.status === "completed" ? "Completed" : "Upcoming"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

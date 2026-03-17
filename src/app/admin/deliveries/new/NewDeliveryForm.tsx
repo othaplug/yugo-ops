@@ -64,6 +64,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const orgFromUrl = searchParams.get("org") || "";
   const projectIdFromUrl = searchParams.get("projectId") || "";
   const phaseIdFromUrl = searchParams.get("phaseId") || "";
+  const pickupFromUrl = searchParams.get("pickup") || "";
+  const deliveryFromUrl = searchParams.get("delivery") || "";
+  const customerFromUrl = searchParams.get("customer") || "";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -80,12 +83,12 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState(customerFromUrl);
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
-  const [pickupAddress, setPickupAddress] = useState("");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [pickupAddress, setPickupAddress] = useState(pickupFromUrl);
+  const [deliveryAddress, setDeliveryAddress] = useState(deliveryFromUrl);
   const [scheduledDate, setScheduledDate] = useState(dateFromUrl);
   const [timeSlot, setTimeSlot] = useState("");
   const [deliveryWindow, setDeliveryWindow] = useState("");
@@ -95,6 +98,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [specialHandling, setSpecialHandling] = useState(false);
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState("");
+  const [deliveryAccess, setDeliveryAccess] = useState("elevator");
+  const [itemWeightCategory, setItemWeightCategory] = useState("standard");
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>([]);
 
   const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
@@ -238,6 +243,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       special_handling: specialHandling,
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
+      delivery_access: deliveryAccess || null,
+      item_weight_category: itemWeightCategory || null,
       category: projectType || org?.type || "retail",
       project_id: linkedProjectId || null,
       phase_id: linkedPhaseId || null,
@@ -452,6 +459,27 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 inputMode="decimal"
                 className={fieldInput}
               />
+            </Field>
+            <Field label="Delivery Access">
+              <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
+                <option value="elevator">Elevator</option>
+                <option value="ground_floor">Ground Floor / Loading Dock</option>
+                <option value="loading_dock">Loading Dock</option>
+                <option value="walk_up_2nd">Walk-up (2nd floor)</option>
+                <option value="walk_up_3rd">Walk-up (3rd floor)</option>
+                <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>
+                <option value="long_carry">Long Carry (50m+)</option>
+                <option value="narrow_stairs">Narrow Stairs</option>
+                <option value="no_parking">No Parking Nearby</option>
+              </select>
+            </Field>
+            <Field label="Item Weight">
+              <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
+                <option value="standard">Standard (under 100 lbs)</option>
+                <option value="heavy">Heavy (100–250 lbs)</option>
+                <option value="very_heavy">Very Heavy (250–500 lbs)</option>
+                <option value="oversized_fragile">Oversized / Fragile</option>
+              </select>
             </Field>
           </div>
         </section>

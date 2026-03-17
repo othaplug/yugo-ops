@@ -60,8 +60,14 @@ interface DeliveryStop {
   address: string;
   customer_name: string | null;
   customer_phone: string | null;
+  client_phone?: string | null;
   items_description: string | null;
   special_instructions: string | null;
+  notes?: string | null;
+  stop_status?: string | null;
+  stop_type?: string | null;
+  arrived_at?: string | null;
+  completed_at?: string | null;
 }
 
 interface Props {
@@ -310,16 +316,38 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           {stops.length} stop{stops.length !== 1 ? "s" : ""}
                         </div>
                         <ul className="space-y-3">
-                          {stops.map((stop) => (
-                            <li key={stop.id} className="flex gap-2">
-                              <span className="text-[10px] font-bold text-[#C9A962] shrink-0 pt-0.5">{stop.stop_number}.</span>
-                              <div>
-                                <div className="text-[13px] font-medium text-[var(--tx)]">{stop.address || "—"}</div>
-                                {stop.customer_name && <div className="text-[11px] text-[var(--tx3)]">{stop.customer_name}</div>}
-                                {stop.items_description && <div className="text-[11px] text-[var(--tx3)]">{stop.items_description}</div>}
-                              </div>
-                            </li>
-                          ))}
+                          {stops.map((stop) => {
+                            const sStatus = stop.stop_status || "pending";
+                            const isDone = sStatus === "completed";
+                            const isCurrent = ["current", "arrived", "in_progress"].includes(sStatus);
+                            const statusIcon = isDone ? "done" : isCurrent ? "active" : "pending";
+                            const completedTime = stop.completed_at
+                              ? new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })
+                              : null;
+                            return (
+                              <li key={stop.id} className="flex gap-2">
+                                <span className="text-[10px] font-bold text-[#C9A962] shrink-0 pt-0.5">{stop.stop_number}.</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[9px] font-semibold text-[var(--tx3)] flex items-center">
+                                      {statusIcon === "done" && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                      {statusIcon === "active" && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
+                                      {statusIcon === "pending" && <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />}
+                                    </span>
+                                    {isDone && completedTime && (
+                                      <span className="text-[9px] text-[#22C55E]">Done {completedTime}</span>
+                                    )}
+                                    {isCurrent && (
+                                      <span className="text-[9px] text-[#F59E0B] font-semibold">In Progress</span>
+                                    )}
+                                  </div>
+                                  <div className="text-[13px] font-medium text-[var(--tx)]">{stop.address || "—"}</div>
+                                  {stop.customer_name && <div className="text-[11px] text-[var(--tx3)]">{stop.customer_name}</div>}
+                                  {stop.items_description && <div className="text-[11px] text-[var(--tx3)]">{stop.items_description}</div>}
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ) : (

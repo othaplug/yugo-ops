@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
 import BackButton from "../../components/BackButton";
+import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import { toTitleCase } from "@/lib/format-text";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -121,19 +122,12 @@ export default function DesignerDashboard({
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <Link href="/admin/projects/new?partnerType=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create Project
-          </Link>
-          <Link href="/admin/deliveries/new?type=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--card)] transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create Delivery
-          </Link>
-          <Link href="/admin/clients/new?type=partner&partnerType=designer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-            Add Partner
-          </Link>
+        <div className="flex items-center gap-2">
+          <CreateDeliveryDropdown
+            type="designer"
+            createProjectHref="/admin/projects/new?partnerType=designer"
+            addPartnerHref="/admin/clients/new?type=partner&partnerType=designer"
+          />
         </div>
       </div>
 
@@ -189,7 +183,7 @@ export default function DesignerDashboard({
           <div>
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
               <span>Projects</span>
-              <Link href="/admin/projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
+              <Link href="/admin/deliveries?view=projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
             </div>
             <div className="divide-y divide-[var(--brd)]/30">
               {allProjects.length === 0 ? (

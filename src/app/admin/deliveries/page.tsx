@@ -1,4 +1,4 @@
-export const metadata = { title: "Deliveries" };
+export const metadata = { title: "Jobs" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -14,18 +14,27 @@ export default async function DeliveriesPage({
   const db = createAdminClient();
   const today = getTodayString();
   const params = await searchParams;
-  const { data: deliveries } = await db
-    .from("deliveries")
-    .select("*")
-    .order("completed_at", { ascending: false, nullsFirst: false })
-    .order("updated_at", { ascending: false });
+
+  const [
+    { data: deliveries },
+    { data: projects },
+    { data: partners },
+  ] = await Promise.all([
+    db.from("deliveries").select("*").order("completed_at", { ascending: false, nullsFirst: false }).order("updated_at", { ascending: false }),
+    db.from("projects").select("*, organizations:partner_id(name, type)").order("created_at", { ascending: false }),
+    db.from("organizations").select("id, name, type").not("type", "eq", "b2c").order("name"),
+  ]);
+
+  const initialView = params.view === "recurring" ? "recurring" : params.view === "projects" ? "projects" : undefined;
 
   return (
     <div className="max-w-[1100px] mx-auto px-3 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <AllDeliveriesView
         deliveries={deliveries || []}
+        projects={projects || []}
+        partners={partners || []}
         today={today}
-        initialView={params.view === "recurring" ? "recurring" : undefined}
+        initialView={initialView}
         initialScheduleId={params.schedule || undefined}
       />
     </div>

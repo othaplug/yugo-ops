@@ -325,7 +325,7 @@ export async function POST(
   // Complete the job
   const { data: activeSession } = await admin
     .from("tracking_sessions")
-    .select("id")
+    .select("id, started_at")
     .eq("job_id", entityId)
     .eq("job_type", jobType)
     .eq("is_active", true)
@@ -337,6 +337,10 @@ export async function POST(
       .from("tracking_sessions")
       .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
       .eq("id", activeSession.id);
+    // Calculate actual hours from session start to now (same logic as checkpoint route)
+    const sessionStart = activeSession.started_at ? new Date(activeSession.started_at as string).getTime() : null;
+    const sessionEnd = new Date(now).getTime();
+    const actualHours = sessionStart ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100 : null;
     const table = jobType === "move" ? "moves" : "deliveries";
     await admin
       .from(table)
@@ -346,6 +350,7 @@ export async function POST(
         completed_at: now,
         updated_at: now,
         eta_tracking_active: false,
+        ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
       })
       .eq("id", entityId);
     if (jobType === "move") {

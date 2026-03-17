@@ -201,9 +201,9 @@ export default function ClaimDetailClient({
   return (
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
       {/* Back + Header */}
-      <Link href="/admin/claims" className="inline-flex items-center gap-1.5 text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] mb-4 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Claims
-      </Link>
+      <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] mb-4 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <div>

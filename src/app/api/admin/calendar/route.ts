@@ -66,16 +66,16 @@ export async function GET(req: NextRequest) {
     const startDate = String(start).slice(0, 10);
     const endDate = String(end).slice(0, 10);
 
-    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult, recurringResult] = await Promise.allSettled([
+    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult] = await Promise.allSettled([
       db
         .from("moves")
-        .select("id, move_code, client_name, move_type, status, scheduled_date, crew_id, from_address, to_address")
+        .select("id, move_code, client_name, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .neq("status", "cancelled"),
       db
         .from("deliveries")
-        .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, crew_id, pickup_address, delivery_address, items")
+        .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, items")
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
@@ -92,10 +92,28 @@ export async function GET(req: NextRequest) {
         .select("id, organization_id, schedule_name, frequency, days_of_week, booking_type, vehicle_type, crew_id, organizations(name)")
         .eq("is_active", true)
         .eq("is_paused", false),
+      db.from("volume_benchmarks").select("move_size, baseline_hours"),
+      db.from("duration_defaults").select("job_type, sub_type, default_hours").eq("job_type", "delivery"),
     ]);
 
     const moves = movesResult.status === "fulfilled" && !movesResult.value.error ? movesResult.value.data : null;
     const deliveries = deliveriesResult.status === "fulfilled" && !deliveriesResult.value.error ? deliveriesResult.value.data : null;
+
+    const baselineBySize = new Map<string, number>();
+    const benchmarks = benchmarksResult.status === "fulfilled" && !(benchmarksResult.value as { error?: unknown })?.error ? (benchmarksResult.value as { data?: { move_size?: string; baseline_hours?: number }[] }).data : null;
+    for (const b of benchmarks || []) {
+      if (b.move_size != null && b.baseline_hours != null) {
+        baselineBySize.set(String(b.move_size), Number(b.baseline_hours));
+      }
+    }
+
+    const deliveryDurationByType = new Map<string, number>();
+    const durationDefaults = durationDefaultsResult.status === "fulfilled" && !(durationDefaultsResult.value as { error?: unknown })?.error ? (durationDefaultsResult.value as { data?: { sub_type?: string; default_hours?: number }[] }).data : null;
+    for (const dd of durationDefaults || []) {
+      if (dd.sub_type != null && dd.default_hours != null) {
+        deliveryDurationByType.set(String(dd.sub_type), Number(dd.default_hours));
+      }
+    }
     const phases = phasesResult.status === "fulfilled" && !phasesResult.value.error ? phasesResult.value.data : null;
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
@@ -135,32 +153,51 @@ export async function GET(req: NextRequest) {
       if (statusFilter && (m.status || "scheduled") !== statusFilter) continue;
 
       const crew = m.crew_id ? crewListForLookup.find((c) => c.id === m.crew_id) : null;
+      const moveStart = (m.scheduled_start as string | null) || null;
+      const moveEnd = (m.scheduled_end as string | null) || null;
+      const moveSize = (m.move_size as string | null)?.toLowerCase() || null;
+      const moveDuration =
+        moveStart && moveEnd
+          ? null
+          : (m.est_hours != null ? Number(m.est_hours) : null) ?? baselineBySize.get(moveSize || "") ?? baselineBySize.get("2br") ?? 4;
+      const eventPhase = (m.event_phase as "delivery" | "setup" | "return" | "single_day" | null) || null;
+      const eventName = (m.event_name as string | null) || null;
+      const eventGroupId = (m.event_group_id as string | null) || null;
+      // Build display name: event moves prefix with event name + phase
+      const moveName = eventName
+        ? `${eventName} — ${eventPhase === "delivery" ? "Delivery" : eventPhase === "return" ? "Return" : eventPhase === "setup" ? "Setup" : "Event"}`
+        : (m.client_name || "Move");
       events.push({
         id: m.id,
         type: "move",
         blockType: "move",
-        name: m.client_name || "Move",
-        description: `${toTitleCase(m.move_type || "")} Move`.trim(),
+        name: moveName,
+        description: eventName
+          ? `${toTitleCase(eventPhase || "event")} · ${m.client_name || ""}`
+          : `${toTitleCase(m.move_type || "")} Move`.trim(),
         date: dk,
-        start: null,
-        end: null,
-        durationHours: null,
+        start: moveStart,
+        end: moveEnd,
+        durationHours: moveDuration,
         crewId: m.crew_id || null,
         crewName: crew?.name || null,
         truckId: null,
         truckName: null,
         status: m.status || "scheduled",
         calendarStatus: (m.status || "scheduled") as CalendarStatus,
-        color: JOB_COLORS.move,
+        color: eventGroupId ? "#7C3AED" : JOB_COLORS.move,
         href: getMoveDetailPath(m),
         clientName: m.client_name || null,
         fromAddress: m.from_address || null,
         toAddress: m.to_address || null,
         deliveryAddress: null,
         category: m.move_type || "residential",
-        moveSize: null,
+        moveSize: moveSize || null,
         itemCount: null,
         scheduleBlockId: null,
+        eventGroupId,
+        eventPhase,
+        eventName,
       });
     }
 
@@ -173,6 +210,26 @@ export async function GET(req: NextRequest) {
 
       const crewD = d.crew_id ? crewListForLookup.find((c) => c.id === d.crew_id) : null;
       const itemCount = Array.isArray(d.items) ? d.items.length : null;
+      const delStart = (d.scheduled_start as string | null) || (d.time_slot as string | null) || null;
+      const delEnd = (d.scheduled_end as string | null) || null;
+      const delTypeRaw = ((d.delivery_type || d.category) as string | null)?.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") || "standard";
+      const DELIVERY_TYPE_MAP: Record<string, string> = {
+        single_item: "standard",
+        assembly: "assembly_req",
+        assembly_required: "assembly_req",
+        art: "art_specialty",
+        medical: "medical",
+        multi_piece: "multi_piece",
+        multipiece: "multi_piece",
+      };
+      const delType = DELIVERY_TYPE_MAP[delTypeRaw] ?? delTypeRaw;
+      const delDuration =
+        delStart && delEnd
+          ? null
+          : (d.estimated_duration_hours != null ? Number(d.estimated_duration_hours) : null) ??
+            deliveryDurationByType.get(delType) ??
+            deliveryDurationByType.get("standard") ??
+            1.5;
       events.push({
         id: d.id,
         type: "delivery",
@@ -180,9 +237,9 @@ export async function GET(req: NextRequest) {
         name: d.client_name || d.customer_name || d.delivery_number || "Delivery",
         description: `${itemCount ? itemCount + "pc " : ""}${toTitleCase(d.delivery_type || d.category || "")} Delivery`.trim(),
         date: dk,
-        start: d.time_slot || null,
-        end: null,
-        durationHours: null,
+        start: delStart,
+        end: delEnd,
+        durationHours: delDuration,
         crewId: d.crew_id || null,
         crewName: crewD?.name || null,
         truckId: null,
@@ -312,9 +369,13 @@ export async function GET(req: NextRequest) {
       if (crewFilter && r.crew_id !== crewFilter) continue;
 
       const dates = getRecurringDatesInRange(startDate, endDate, daysOfWeek, r.frequency || "weekly");
+      const isDayRate = r.booking_type === "day_rate";
+      const recurringStart = "08:00";
+      const recurringEnd = isDayRate ? "14:00" : "10:00";
+      const recurringHours = isDayRate ? 6 : 2;
       for (const dk of dates) {
         const desc =
-          r.booking_type === "day_rate"
+          isDayRate
             ? `Day Rate · ${toTitleCase(r.vehicle_type || "")}`
             : toTitleCase((r.booking_type || "").replace(/_/g, " "));
         events.push({
@@ -324,16 +385,16 @@ export async function GET(req: NextRequest) {
           name: orgName,
           description: `${r.schedule_name} · ${desc}`.trim(),
           date: dk,
-          start: "08:00",
-          end: null,
-          durationHours: null,
+          start: recurringStart,
+          end: recurringEnd,
+          durationHours: recurringHours,
           crewId: r.crew_id || null,
           crewName: crew?.name || null,
           truckId: null,
           truckName: null,
           status: "recurring",
           calendarStatus: "scheduled",
-          color: JOB_COLORS.delivery,
+          color: JOB_COLORS.recurring,
           href: `/admin/deliveries?view=recurring&schedule=${r.id}`,
           clientName: orgName,
           fromAddress: null,
@@ -343,6 +404,8 @@ export async function GET(req: NextRequest) {
           moveSize: null,
           itemCount: null,
           scheduleBlockId: null,
+          isRecurring: true,
+          scheduleName: r.schedule_name,
         });
       }
     }

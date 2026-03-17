@@ -5,6 +5,7 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import {
@@ -30,6 +31,8 @@ export interface ColumnDef<T> {
   defaultHidden?: boolean;
   align?: "left" | "right" | "center";
   minWidth?: string;
+  /** Default width in px for resizable columns */
+  defaultWidth?: number;
   exportAccessor?: (row: T) => string | number;
 }
 
@@ -105,6 +108,26 @@ function savePerPage(tableId: string, n: number) {
   } catch { /* ignore */ }
 }
 
+function loadColWidths(tableId: string, colIds: string[], defaults: number[]): number[] {
+  if (typeof window === "undefined") return defaults;
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tableId}_widths`);
+    if (raw) {
+      const stored: Record<string, number> = JSON.parse(raw);
+      return colIds.map((id, i) => Math.max(40, stored[id] ?? defaults[i] ?? 100));
+    }
+  } catch { /* ignore */ }
+  return defaults;
+}
+
+function saveColWidths(tableId: string, colIds: string[], widths: number[]) {
+  try {
+    const obj: Record<string, number> = {};
+    colIds.forEach((id, i) => { obj[id] = widths[i]; });
+    localStorage.setItem(`${STORAGE_PREFIX}${tableId}_widths`, JSON.stringify(obj));
+  } catch { /* ignore */ }
+}
+
 /* ════════════ Component ════════════ */
 
 export default function DataTable<T>({
@@ -164,6 +187,65 @@ export default function DataTable<T>({
     () => columns.filter((c) => !hiddenCols.has(c.id)),
     [columns, hiddenCols],
   );
+
+  /* ── Column resize ── */
+  const colIds = useMemo(() => visibleCols.map((c) => c.id), [visibleCols]);
+  const defaultWidths = useMemo(
+    () => visibleCols.map((c) => c.defaultWidth ?? (c.minWidth ? parseInt(c.minWidth, 10) || 100 : 120)),
+    [visibleCols],
+  );
+  const [colWidths, setColWidths] = useState<number[]>(() =>
+    loadColWidths(tableId, colIds, defaultWidths),
+  );
+  const dragging = useRef<{ col: number; startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    const loaded = loadColWidths(tableId, colIds, defaultWidths);
+    setColWidths((prev) => (prev.length !== colIds.length ? loaded : prev));
+  }, [tableId, colIds.join(","), defaultWidths.join(",")]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = e.clientX - dragging.current.startX;
+      setColWidths((prev) => {
+        const next = [...prev];
+        next[dragging.current!.col] = Math.max(40, dragging.current!.startW + delta);
+        return next;
+      });
+    };
+    const onUp = () => {
+      if (dragging.current != null) {
+        setColWidths((prev) => {
+          saveColWidths(tableId, colIds, prev);
+          return prev;
+        });
+        dragging.current = null;
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [tableId, colIds]);
+
+  const onResizeStart = useCallback((col: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging.current = { col, startX: e.clientX, startW: colWidths[col] };
+  }, [colWidths]);
+
+  const ResizeHandle = useCallback(({ col }: { col: number }) => (
+    <span
+      onMouseDown={onResizeStart(col)}
+      className="absolute right-0 top-0 h-full w-[5px] cursor-col-resize select-none flex items-center justify-center group z-10"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span className="w-px h-3/4 bg-[var(--brd)] group-hover:bg-[var(--gold)]/60 transition-colors rounded-full" />
+    </span>
+  ), [onResizeStart]);
 
   /* ── Search ── */
   const searchCols = useMemo(
@@ -441,7 +523,14 @@ export default function DataTable<T>({
 
       {/* ── Table header ── */}
       <div className={`overflow-x-auto ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}>
-        <table className="w-full border-collapse min-w-[600px]">
+        <table
+          className="border-collapse min-w-[600px] text-[12px]"
+          style={{ tableLayout: "fixed", width: selectable ? 40 + colWidths.reduce((a, b) => a + b, 0) : colWidths.reduce((a, b) => a + b, 0) }}
+        >
+          <colgroup>
+            {selectable && <col style={{ width: 40 }} />}
+            {colWidths.map((w, i) => <col key={visibleCols[i]?.id ?? i} style={{ width: w }} />)}
+          </colgroup>
           <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)]" : ""}>
             <tr className="border-b border-[var(--brd)]/50">
               {selectable && (
@@ -455,14 +544,14 @@ export default function DataTable<T>({
                   />
                 </th>
               )}
-              {visibleCols.map((col) => {
+              {visibleCols.map((col, idx) => {
                 const isActive = sortCol === col.id;
                 const isSortable = col.sortable !== false;
                 return (
                   <th
                     key={col.id}
                     onClick={isSortable ? () => handleSort(col.id) : undefined}
-                    className={`text-[9px] font-bold tracking-[0.12em] uppercase py-2.5 px-3 whitespace-nowrap select-none transition-colors ${
+                    className={`relative text-[9px] font-bold tracking-[0.12em] uppercase py-2.5 px-3 whitespace-nowrap select-none transition-colors ${
                       col.align === "right"
                         ? "text-right"
                         : col.align === "center"
@@ -477,7 +566,6 @@ export default function DataTable<T>({
                         ? "text-[var(--gold)]"
                         : "text-[var(--tx3)]/60"
                     }`}
-                    style={col.minWidth ? { minWidth: col.minWidth } : undefined}
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.label}
@@ -493,6 +581,7 @@ export default function DataTable<T>({
                         )
                       )}
                     </span>
+                    <ResizeHandle col={idx} />
                   </th>
                 );
               })}
@@ -554,7 +643,7 @@ export default function DataTable<T>({
                   {visibleCols.map((col) => (
                     <td
                       key={col.id}
-                      className={`py-3 px-3 text-[12px] ${
+                      className={`py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap ${
                         col.align === "right"
                           ? "text-right"
                           : col.align === "center"

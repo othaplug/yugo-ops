@@ -141,12 +141,13 @@ export default function NewClaimClient({
 
   return (
     <div className="p-4 sm:p-6 max-w-[800px] mx-auto">
-      <Link
-        href="/admin/claims"
+      <button
+        type="button"
+        onClick={() => router.back()}
         className="inline-flex items-center gap-1.5 text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] mb-4 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" /> Back to Claims
-      </Link>
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
 
       <h1 className="text-[22px] font-bold text-[var(--tx)] mb-1">New Claim</h1>
       <p className="text-[13px] text-[var(--tx3)] mb-6">

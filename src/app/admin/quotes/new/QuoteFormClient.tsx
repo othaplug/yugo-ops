@@ -8,7 +8,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
-import { Home, Building2, ArrowUpRight, Gem, Star, ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Users, Clock, Truck, Plus } from "lucide-react";
+import { ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Users, Clock, Truck, Plus, Trash2 } from "lucide-react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 // ─── Types ──────────────────────────────────────
@@ -86,12 +86,14 @@ interface ItemWeight {
 // ─── Constants ──────────────────────────────────
 
 const SERVICE_TYPES = [
-  { value: "local_move", Icon: Home, label: "Residential", desc: "Local or long distance home move" },
-  { value: "office_move", Icon: Building2, label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-  { value: "single_item", Icon: ArrowUpRight, label: "Single Item", desc: "One item or small batch delivery" },
-  { value: "white_glove", Icon: Gem, label: "White Glove", desc: "Premium handling, assembly, placement" },
-  { value: "specialty", Icon: Star, label: "Specialty / Event", desc: "Art, piano, trade show, staging, estate" },
-  { value: "b2b_delivery", Icon: Truck, label: "B2B One-Off", desc: "One-off delivery from a business source" },
+  { value: "local_move", label: "Residential", desc: "Local or long distance home move" },
+  { value: "office_move", label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
+  { value: "single_item", label: "Single Item", desc: "One item or small batch delivery" },
+  { value: "white_glove", label: "White Glove", desc: "Premium handling, assembly, placement" },
+  { value: "specialty", label: "Specialty", desc: "Art, piano, trade show, staging, estate" },
+  { value: "event", label: "Event", desc: "Round-trip venue delivery, setup & teardown" },
+  { value: "b2b_delivery", label: "B2B One-Off", desc: "One-off delivery from a business source" },
+  { value: "labour_only", label: "Labour Only", desc: "Crew work at one location — no transit" },
 ] as const;
 
 const MOVE_SIZES = [
@@ -102,6 +104,13 @@ const MOVE_SIZES = [
   { value: "4br", label: "4 Bedroom" },
   { value: "5br_plus", label: "5+ Bedroom" },
   { value: "partial", label: "Partial Move" },
+];
+
+const B2B_WEIGHT_OPTIONS = [
+  { value: "standard", label: "Standard (under 100 lbs)" },
+  { value: "heavy", label: "Heavy (100–250 lbs)" },
+  { value: "very_heavy", label: "Very Heavy (250–500 lbs)" },
+  { value: "oversized_fragile", label: "Oversized / Fragile" },
 ];
 
 const ACCESS_OPTIONS = [
@@ -122,6 +131,53 @@ const SPECIALTY_ITEM_TYPES = [
   "hot_tub", "artwork_per_piece", "antique_per_piece", "wine_collection",
   "gym_equipment_per_piece", "motorcycle", "aquarium",
 ];
+
+const SPECIALTY_TYPES = [
+  { value: "piano_upright",   label: "Piano (upright)" },
+  { value: "piano_grand",     label: "Piano (grand)" },
+  { value: "art_sculpture",   label: "Art / Sculpture" },
+  { value: "antiques_estate", label: "Antiques / Estate Contents" },
+  { value: "safe_vault",      label: "Safe / Vault" },
+  { value: "pool_table",      label: "Pool Table" },
+  { value: "hot_tub",         label: "Hot Tub / Spa" },
+  { value: "wine_collection", label: "Wine Collection" },
+  { value: "aquarium",        label: "Aquarium" },
+  { value: "trade_show",      label: "Trade Show / Exhibition Materials" },
+  { value: "medical_lab",     label: "Medical / Lab Equipment" },
+  { value: "other",           label: "Other (describe below)" },
+];
+
+const SPECIALTY_WEIGHT_OPTIONS = [
+  { value: "under_100",   label: "Under 100 lbs" },
+  { value: "100_250",     label: "100–250 lbs" },
+  { value: "250_500",     label: "250–500 lbs" },
+  { value: "500_1000",    label: "500–1000 lbs" },
+  { value: "over_1000",   label: "Over 1000 lbs" },
+];
+
+const SPECIALTY_REQUIREMENTS = [
+  { value: "custom_crating",         label: "Custom crating required" },
+  { value: "climate_controlled",     label: "Climate-controlled transport" },
+  { value: "white_glove_handling",   label: "White glove handling" },
+  { value: "elevated_insurance",     label: "Insurance above standard coverage" },
+  { value: "disassembly_reassembly", label: "Disassembly / reassembly" },
+  { value: "crane_rigging",          label: "Crane or rigging needed" },
+];
+
+const SPECIALTY_BASE_PRICES: Record<string, { min: number; max: number }> = {
+  piano_upright:   { min: 400,  max: 800 },
+  piano_grand:     { min: 800,  max: 2000 },
+  art_sculpture:   { min: 300,  max: 1500 },
+  antiques_estate: { min: 500,  max: 3000 },
+  safe_vault:      { min: 400,  max: 1200 },
+  pool_table:      { min: 600,  max: 1500 },
+  hot_tub:         { min: 800,  max: 2000 },
+  wine_collection: { min: 400,  max: 1500 },
+  aquarium:        { min: 500,  max: 1500 },
+  trade_show:      { min: 500,  max: 2000 },
+  medical_lab:     { min: 600,  max: 2500 },
+  other:           { min: 300,  max: 2000 },
+};
 
 const ITEM_CATEGORIES = [
   { value: "standard_furniture", label: "Standard furniture" },
@@ -160,6 +216,18 @@ function cfgNum(config: Record<string, string>, key: string, fb: number) {
   const v = config[key];
   return v !== undefined ? Number(v) : fb;
 }
+
+function parseCfgJson<T>(config: Record<string, string>, key: string, fallback: T): T {
+  try { const v = config[key]; return v ? (JSON.parse(v) as T) : fallback; } catch { return fallback; }
+}
+
+const CRATING_SIZE_LABELS: Record<string, string> = {
+  small: 'Small (under 24")',
+  medium: 'Medium (24–48")',
+  large: 'Large (48–72")',
+  oversized: 'Oversized (72"+)',
+};
+const CRATING_SIZE_FALLBACK: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
 
 // Frontend-only quick estimate (optimistic, before API call)
 function quickEstimate(
@@ -250,11 +318,50 @@ export default function QuoteFormClient({
   // White glove
   const [declaredValue, setDeclaredValue] = useState("");
 
-  // Specialty
-  const [projectType, setProjectType] = useState("Custom");
-  const [timelineHours, setTimelineHours] = useState(4);
-  const [cratingPieces, setCratingPieces] = useState(0);
-  const [climateControl, setClimateControl] = useState(false);
+  // Specialty (dedicated item move)
+  const [specialtyType, setSpecialtyType] = useState("");
+  const [specialtyItemDescription, setSpecialtyItemDescription] = useState("");
+  const [specialtyDimL, setSpecialtyDimL] = useState("");
+  const [specialtyDimW, setSpecialtyDimW] = useState("");
+  const [specialtyDimH, setSpecialtyDimH] = useState("");
+  const [specialtyWeightClass, setSpecialtyWeightClass] = useState("");
+  const [specialtyRequirements, setSpecialtyRequirements] = useState<string[]>([]);
+  const [specialtyNotes, setSpecialtyNotes] = useState("");
+
+  // Event fields
+  const [eventName, setEventName] = useState("");
+  const [venueAddress, setVenueAddress] = useState("");
+  const [eventReturnDate, setEventReturnDate] = useState("");
+  const [eventSetupRequired, setEventSetupRequired] = useState(false);
+  const [eventSetupHours, setEventSetupHours] = useState(2);
+  const [eventSetupInstructions, setEventSetupInstructions] = useState("");
+  const [eventSameDay, setEventSameDay] = useState(false);
+  const [eventPickupTimeAfter, setEventPickupTimeAfter] = useState("Evening 6–9 PM");
+  const [eventItems, setEventItems] = useState<{ name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[]>([]);
+  const [eventAdditionalServices, setEventAdditionalServices] = useState<string[]>([]);
+
+  // B2B One-Off fields
+  const [b2bBusinessName, setB2bBusinessName] = useState("");
+  const [b2bItems, setB2bItems] = useState<{ name: string; qty: number }[]>([]);
+  const [b2bNewItemName, setB2bNewItemName] = useState("");
+  const [b2bNewItemQty, setB2bNewItemQty] = useState(1);
+  const [b2bWeightCategory, setB2bWeightCategory] = useState("standard");
+  const [b2bSpecialInstructions, setB2bSpecialInstructions] = useState("");
+
+  // Labour Only fields
+  const [workAddress, setWorkAddress] = useState("");
+  const [workAccess, setWorkAccess] = useState("");
+  const [labourDescription, setLabourDescription] = useState("");
+  const [labourCrewSize, setLabourCrewSize] = useState(2);
+  const [labourHours, setLabourHours] = useState(3);
+  const [labourTruckRequired, setLabourTruckRequired] = useState(false);
+  const [labourVisits, setLabourVisits] = useState(1);
+  const [labourSecondVisitDate, setLabourSecondVisitDate] = useState("");
+  const [labourContext, setLabourContext] = useState("");
+
+  // Custom crating (all service types — coordinator decides per quote)
+  const [cratingRequired, setCratingRequired] = useState(false);
+  const [cratingItems, setCratingItems] = useState<{ description: string; size: "small" | "medium" | "large" | "oversized" }[]>([]);
 
   // Recommended tier (coordinator judgment)
   const [recommendedTier, setRecommendedTier] = useState<"curated" | "signature" | "estate">("signature");
@@ -487,6 +594,21 @@ export default function QuoteFormClient({
     });
   }, []);
 
+  // ── Auto-remove packing materials kit when Estate is recommended ─────────────
+  useEffect(() => {
+    if (recommendedTier === "estate") {
+      const packingAddon = allAddons.find((a) => a.slug === "packing_materials_kit" || a.name.toLowerCase().includes("packing materials"));
+      if (packingAddon) {
+        setSelectedAddons((prev) => {
+          if (!prev.has(packingAddon.id)) return prev;
+          const next = new Map(prev);
+          next.delete(packingAddon.id);
+          return next;
+        });
+      }
+    }
+  }, [recommendedTier, allAddons]);
+
   // ── Toggle specialty item ─────────────────
   const toggleSpecialtyItem = useCallback((type: string) => {
     setSpecialtyItems((prev) => {
@@ -537,6 +659,10 @@ export default function QuoteFormClient({
         }));
       }
     }
+    // Custom crating applies to all service types
+    if (cratingRequired && cratingItems.length > 0) {
+      base.crating_pieces = cratingItems;
+    }
     if (serviceType === "office_move") {
       base.square_footage = Number(sqft) || undefined;
       base.workstation_count = Number(wsCount) || undefined;
@@ -571,23 +697,95 @@ export default function QuoteFormClient({
       base.stair_flights = stairFlights;
     }
     if (serviceType === "specialty") {
-      base.project_type = projectType;
-      base.timeline_hours = timelineHours;
-      base.custom_crating_pieces = cratingPieces > 0 ? cratingPieces : undefined;
-      base.climate_control = climateControl;
+      base.project_type = specialtyType || "other";
+      base.item_description = specialtyItemDescription.trim() || undefined;
+      base.item_weight_class = specialtyWeightClass || undefined;
+      base.climate_control = specialtyRequirements.includes("climate_controlled");
+      base.special_equipment = specialtyRequirements.includes("crane_rigging") ? ["crane_rigging"] : undefined;
+      base.specialty_item_description = specialtyItemDescription.trim() || undefined;
+      base.specialty_requirements = specialtyRequirements.length > 0 ? specialtyRequirements : undefined;
+      base.specialty_notes = specialtyNotes.trim() || undefined;
+      const dims = [specialtyDimL, specialtyDimW, specialtyDimH].filter(Boolean);
+      base.specialty_dimensions = dims.length === 3 ? `${specialtyDimL}×${specialtyDimW}×${specialtyDimH} in` : undefined;
+    }
+    if (serviceType === "event") {
+      // from_address = origin, to_address = venue
+      base.from_address = fromAddress;
+      base.to_address = venueAddress || toAddress;
+      base.event_name = eventName.trim() || undefined;
+      base.event_return_date = eventSameDay ? moveDate : (eventReturnDate || undefined);
+      base.event_setup_required = eventSetupRequired;
+      base.event_setup_hours = eventSetupRequired ? eventSetupHours : undefined;
+      base.event_setup_instructions = eventSetupInstructions.trim() || undefined;
+      base.event_same_day = eventSameDay;
+      base.event_pickup_time_after = eventSameDay ? eventPickupTimeAfter : undefined;
+      base.event_items = eventItems.length > 0 ? eventItems : undefined;
+      base.event_additional_services = eventAdditionalServices.length > 0 ? eventAdditionalServices : undefined;
+    }
+    if (serviceType === "labour_only") {
+      // from_address = to_address = work address
+      base.from_address = workAddress || fromAddress;
+      base.to_address = workAddress || fromAddress;
+      base.from_access = workAccess || fromAccess || undefined;
+      base.labour_crew_size = labourCrewSize;
+      base.labour_hours = labourHours;
+      base.labour_truck_required = labourTruckRequired;
+      base.labour_visits = labourVisits;
+      base.labour_second_visit_date = labourVisits >= 2 ? labourSecondVisitDate : undefined;
+      base.labour_description = labourDescription.trim() || undefined;
+    }
+    if (serviceType === "b2b_delivery") {
+      base.b2b_business_name = b2bBusinessName.trim() || undefined;
+      base.b2b_items = b2bItems.length > 0 ? b2bItems.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`) : undefined;
+      base.b2b_weight_category = b2bWeightCategory || undefined;
+      base.b2b_special_instructions = b2bSpecialInstructions.trim() || undefined;
     }
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
     selectedAddons, recommendedTier, moveSize, clientBoxCount, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     hasReception, timingPref, itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
-    numItems, declaredValue, projectType, timelineHours, cratingPieces, climateControl,
-    firstName, lastName, email, phone,
+    numItems, declaredValue, specialtyType, specialtyItemDescription, specialtyWeightClass, specialtyRequirements,
+    specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
+    firstName, lastName, email, phone, cratingRequired, cratingItems,
+    eventName, venueAddress, eventReturnDate, eventSetupRequired, eventSetupHours, eventSetupInstructions,
+    eventSameDay, eventPickupTimeAfter, eventItems, eventAdditionalServices,
+    workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
+    labourVisits, labourSecondVisitDate, labourContext,
+    b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
   const handleGenerate = async () => {
-    if (!fromAddress || !toAddress || !moveDate) {
+    if (serviceType === "event") {
+      if (!fromAddress || !venueAddress || !moveDate) {
+        toast("Please fill Origin, Venue address and Delivery date", "alertTriangle");
+        return;
+      }
+      if (!eventSameDay && !eventReturnDate) {
+        toast("Please fill Return date (or check Same Day)", "alertTriangle");
+        return;
+      }
+    } else if (serviceType === "labour_only") {
+      if (!workAddress || !moveDate) {
+        toast("Please fill Work address and Move date", "alertTriangle");
+        return;
+      }
+    } else if (serviceType === "b2b_delivery") {
+      const clientName = [firstName, lastName].filter(Boolean).join(" ");
+      if (!b2bBusinessName.trim() || !fromAddress || !toAddress || !moveDate) {
+        toast("Please fill Business name, Pickup, Delivery address and Date", "alertTriangle");
+        return;
+      }
+      if (!clientName.trim()) {
+        toast("Please fill Contact name (First / Last)", "alertTriangle");
+        return;
+      }
+      if (!phone?.trim()) {
+        toast("Please fill Contact phone", "alertTriangle");
+        return;
+      }
+    } else if (!fromAddress || !toAddress || !moveDate) {
       toast("Please fill addresses and move date", "alertTriangle");
       return;
     }
@@ -731,9 +929,6 @@ export default function QuoteFormClient({
                         }`}
                       >
                         <div className="flex items-start gap-2">
-                          <div className={`shrink-0 mt-0.5 w-6 h-6 flex items-center justify-center rounded-md transition-colors ${sel ? "bg-white/20" : "bg-[var(--bg)]"}`}>
-                            <card.Icon className={`w-3.5 h-3.5 ${sel ? "text-white" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
-                          </div>
                           <div className="min-w-0 flex-1">
                             <div className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}>
                               {card.label}
@@ -847,15 +1042,20 @@ export default function QuoteFormClient({
 
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                  {serviceType === "event" ? "Origin" : serviceType === "labour_only" ? "Work Location" : serviceType === "b2b_delivery" ? "Pickup & Delivery" : "Addresses"}
+                </h3>
+
+                {/* Event / Labour Only addresses are handled in their own sections below */}
+                {serviceType !== "labour_only" && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
                       value={fromAddress}
                       onRawChange={setFromAddress}
                       onChange={(r) => setFromAddress(r.fullAddress)}
-                      placeholder="Origin address"
-                      label="From"
+                      placeholder={serviceType === "event" ? "Where items come from (office/warehouse/home)" : serviceType === "b2b_delivery" ? "Pickup address" : "Origin address"}
+                      label={serviceType === "event" ? "Origin Address *" : serviceType === "b2b_delivery" ? "Pickup *" : "From"}
                       required
                       className={fieldInput}
                     />
@@ -868,6 +1068,8 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                 </div>
+                )}
+                {serviceType !== "event" && serviceType !== "labour_only" && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
@@ -888,20 +1090,26 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                 </div>
+                )}
               </div>
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 4. Move details ── */}
+              {/* Event and labour_only manage their own date fields */}
+              {serviceType !== "event" && (
               <div>
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h3>
+                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+                  {serviceType === "labour_only" ? "Scheduling" : "Move Details"}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Field label="Move Date *">
+                  <Field label={serviceType === "labour_only" ? "Date *" : "Move Date *"}>
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
                   </Field>
                   <Field label="Preferred Time">
                     <input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput} />
                   </Field>
+                  {serviceType !== "labour_only" && (
                   <Field label="Arrival Window">
                     <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
                       <option value="morning">Morning (7 AM – 12 PM)</option>
@@ -910,6 +1118,7 @@ export default function QuoteFormClient({
                       <option value="evening">Evening (5 PM – 9 PM)</option>
                     </select>
                   </Field>
+                  )}
                   {(serviceType === "local_move" || serviceType === "long_distance") && (
                     <Field label="Move Size">
                       <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
@@ -992,6 +1201,7 @@ export default function QuoteFormClient({
                   </p>
                 )}
               </div>
+              )}
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
@@ -1038,7 +1248,82 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── 5b. Inventory (Residential / Long distance / Office) ── */}
+              {/* ── 5b. Custom crating (all service types — coordinator decides) ── */}
+              {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove" || serviceType === "specialty") && (
+                <div className="space-y-2 mt-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Custom Crating</h3>
+                    <label className="flex items-center gap-1.5 ml-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cratingRequired}
+                        onChange={(e) => {
+                          setCratingRequired(e.target.checked);
+                          if (!e.target.checked) setCratingItems([]);
+                        }}
+                        className="accent-[var(--gold)] w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] text-[var(--tx2)]">Crating required</span>
+                    </label>
+                  </div>
+
+                  {cratingRequired && (
+                    <div className="space-y-2 pl-1">
+                      {cratingItems.map((piece, idx) => {
+                        const priceMap = parseCfgJson<Record<string, number>>(config, "crating_prices", CRATING_SIZE_FALLBACK);
+                        const piecePrice = priceMap[piece.size] ?? CRATING_SIZE_FALLBACK[piece.size] ?? 250;
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--tx3)] w-14 shrink-0">Piece {idx + 1}</span>
+                            <input
+                              type="text"
+                              value={piece.description}
+                              onChange={(e) => setCratingItems((prev) => prev.map((p, i) => i === idx ? { ...p, description: e.target.value } : p))}
+                              placeholder="e.g. Painting 48x36"
+                              className={`${fieldInput} flex-1 min-w-0`}
+                            />
+                            <select
+                              value={piece.size}
+                              onChange={(e) => setCratingItems((prev) => prev.map((p, i) => i === idx ? { ...p, size: e.target.value as "small" | "medium" | "large" | "oversized" } : p))}
+                              className={`${fieldInput} w-40 shrink-0`}
+                            >
+                              {Object.entries(CRATING_SIZE_LABELS).map(([k, label]) => (
+                                <option key={k} value={k}>{label} — ${(priceMap[k] ?? CRATING_SIZE_FALLBACK[k]).toLocaleString()}</option>
+                              ))}
+                            </select>
+                            <span className="text-[10px] text-[var(--gold)] w-14 text-right shrink-0">${piecePrice.toLocaleString()}</span>
+                            <button
+                              type="button"
+                              onClick={() => setCratingItems((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-[var(--tx3)] hover:text-red-400 text-[13px] shrink-0"
+                              title="Remove"
+                            >×</button>
+                          </div>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => setCratingItems((prev) => [...prev, { description: "", size: "medium" }])}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                      >
+                        <Plus className="w-3 h-3" /> Add piece
+                      </button>
+                      {cratingItems.length > 0 && (
+                        <p className="text-[10px] text-[var(--tx3)]">
+                          Crating total: <strong className="text-[var(--gold)]">
+                            ${cratingItems.reduce((sum, p) => {
+                              const pm = parseCfgJson<Record<string, number>>(config, "crating_prices", CRATING_SIZE_FALLBACK);
+                              return sum + (pm[p.size] ?? CRATING_SIZE_FALLBACK[p.size] ?? 250);
+                            }, 0).toLocaleString()}
+                          </strong> ({cratingItems.length} piece{cratingItems.length !== 1 ? "s" : ""})
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── 5c. Inventory (Residential / Long distance / Office) ── */}
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
                 <>
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
@@ -1192,27 +1477,374 @@ export default function QuoteFormClient({
 
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
-                <div className="space-y-2">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
-                    <Field label="Project Type">
-                      <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={`${fieldInput} min-w-0`}>
-                        {PROJECT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                <div className="space-y-4">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Move</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Specialty Type">
+                      <select value={specialtyType} onChange={(e) => setSpecialtyType(e.target.value)} className={`${fieldInput} min-w-0`}>
+                        <option value="">Select…</option>
+                        {SPECIALTY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                       </select>
                     </Field>
-                    <Field label="Timeline (hrs)">
-                      <input type="number" min={1} max={80} value={timelineHours} onChange={(e) => setTimelineHours(Number(e.target.value) || 4)} className={`${fieldInput} w-20 min-w-0`} />
+                    <Field label="Estimated Weight">
+                      <select value={specialtyWeightClass} onChange={(e) => setSpecialtyWeightClass(e.target.value)} className={`${fieldInput} min-w-0`}>
+                        <option value="">Select…</option>
+                        {SPECIALTY_WEIGHT_OPTIONS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
+                      </select>
                     </Field>
-                    <Field label="Crating (pcs)">
-                      <input type="number" min={0} value={cratingPieces} onChange={(e) => setCratingPieces(Number(e.target.value) || 0)} className={`${fieldInput} w-16 min-w-0`} />
-                    </Field>
+                  </div>
+
+                  <Field label="Item Description *">
+                    <textarea
+                      value={specialtyItemDescription}
+                      onChange={(e) => setSpecialtyItemDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Grand piano, Steinway Model B, approximately 700 lbs. Currently on main floor, needs to go through patio door."
+                      className={`${fieldInput} resize-none`}
+                      required
+                    />
+                  </Field>
+
+                  <div>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Item Dimensions (optional)</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Climate Control</span>
-                      <button type="button" role="switch" aria-checked={climateControl} onClick={() => setClimateControl(!climateControl)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${climateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${climateControl ? "translate-x-4" : ""}`} />
+                      <input type="text" value={specialtyDimL} onChange={(e) => setSpecialtyDimL(e.target.value)} placeholder="L" className={`${fieldInput} w-16 text-center`} />
+                      <span className="text-[var(--tx3)] text-[11px]">×</span>
+                      <input type="text" value={specialtyDimW} onChange={(e) => setSpecialtyDimW(e.target.value)} placeholder="W" className={`${fieldInput} w-16 text-center`} />
+                      <span className="text-[var(--tx3)] text-[11px]">×</span>
+                      <input type="text" value={specialtyDimH} onChange={(e) => setSpecialtyDimH(e.target.value)} placeholder="H" className={`${fieldInput} w-16 text-center`} />
+                      <span className="text-[10px] text-[var(--tx3)]">inches</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Special Requirements</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {SPECIALTY_REQUIREMENTS.map((req) => (
+                        <label key={req.value} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={specialtyRequirements.includes(req.value)}
+                            onChange={(e) => setSpecialtyRequirements((prev) =>
+                              e.target.checked ? [...prev, req.value] : prev.filter((r) => r !== req.value)
+                            )}
+                            className="accent-[var(--gold)] w-3.5 h-3.5 shrink-0"
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">{req.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Field label="Additional Notes">
+                    <textarea
+                      value={specialtyNotes}
+                      onChange={(e) => setSpecialtyNotes(e.target.value)}
+                      rows={2}
+                      placeholder="Narrow hallway, 90-degree turn at landing. Building requires certificate of insurance before move day."
+                      className={`${fieldInput} resize-none`}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {/* ── Event fields ── */}
+              {serviceType === "event" && (
+                <div className="space-y-4">
+                  {/* Event Details */}
+                  <div className="space-y-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
+                    <Field label="Event Name">
+                      <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. L'Oréal Beauty Event" className={fieldInput} />
+                    </Field>
+                    <AddressAutocomplete
+                      value={venueAddress}
+                      onRawChange={setVenueAddress}
+                      onChange={(r) => setVenueAddress(r.fullAddress)}
+                      placeholder="Restaurant XYZ, 100 King St W"
+                      label="Venue / Event Address *"
+                      required
+                      className={fieldInput}
+                    />
+                  </div>
+
+                  {/* Delivery (Day 1) */}
+                  <div className="space-y-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Delivery Date *">
+                        <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
+                      </Field>
+                      <Field label="Delivery Time">
+                        <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
+                          <option value="morning">Morning (7 AM – 12 PM)</option>
+                          <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
+                          <option value="evening">Evening (5 PM – 9 PM)</option>
+                        </select>
+                      </Field>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
+                      <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
+                      </button>
+                    </div>
+                    {eventSetupRequired && (
+                      <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                        <Field label="Setup Duration">
+                          <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                            <option value={1}>1 hour — $150</option>
+                            <option value={2}>2 hours — $275</option>
+                            <option value={3}>3 hours — $400</option>
+                            <option value={99}>Half day — $600</option>
+                          </select>
+                        </Field>
+                        <Field label="Setup Instructions">
+                          <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Return (Day 2+) */}
+                  <div className="space-y-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
+                      <span className="text-[11px] text-[var(--tx2)]">Same Day Event — delivery and return on same day</span>
+                    </label>
+                    {!eventSameDay ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Field label="Return Date *">
+                          <input type="date" value={eventReturnDate} onChange={(e) => setEventReturnDate(e.target.value)} required={!eventSameDay} className={fieldInput} />
+                        </Field>
+                        <Field label="Return Time">
+                          <select value={preferredTime || "morning"} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput}>
+                            <option value="morning">Morning (7 AM – 12 PM)</option>
+                            <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
+                            <option value="evening">Evening (5 PM – 9 PM)</option>
+                          </select>
+                        </Field>
+                      </div>
+                    ) : (
+                      <Field label="Pickup Time After Event">
+                        <select value={eventPickupTimeAfter} onChange={(e) => setEventPickupTimeAfter(e.target.value)} className={`${fieldInput} w-56`}>
+                          <option value="Evening 6–9 PM">Evening 6–9 PM</option>
+                          <option value="Evening 8–10 PM">Evening 8–10 PM</option>
+                          <option value="After midnight">After midnight</option>
+                          <option value="Next morning">Next morning</option>
+                        </select>
+                      </Field>
+                    )}
+                  </div>
+
+                  {/* Event Items */}
+                  <div className="space-y-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
+                    <div className="space-y-1.5">
+                      {eventItems.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, name: e.target.value } : it))}
+                            placeholder="e.g. Display tables"
+                            className={`${fieldInput} flex-1 min-w-0`}
+                          />
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: Number(e.target.value) || 1 } : it))}
+                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)]"
+                          />
+                          <select
+                            value={item.weight_category}
+                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, weight_category: e.target.value as "light" | "medium" | "heavy" } : it))}
+                            className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                          >
+                            <option value="light">Light</option>
+                            <option value="medium">Medium</option>
+                            <option value="heavy">Heavy</option>
+                          </select>
+                          <button type="button" onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))} className="text-[var(--tx3)] hover:text-red-400 text-[14px] shrink-0">×</button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setEventItems((prev) => [...prev, { name: "", quantity: 1, weight_category: "medium" }])}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                      >
+                        <Plus className="w-3 h-3" /> Add item
                       </button>
                     </div>
                   </div>
+
+                  {/* Additional Services */}
+                  <div className="space-y-2">
+                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Additional Services</h3>
+                    {[
+                      "Furniture assembly at venue",
+                      "Signage installation",
+                      "Staging and arrangement",
+                      "Overnight storage at Yugo facility",
+                    ].map((svc) => (
+                      <label key={svc} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={eventAdditionalServices.includes(svc)}
+                          onChange={(e) => setEventAdditionalServices((prev) =>
+                            e.target.checked ? [...prev, svc] : prev.filter((s) => s !== svc)
+                          )}
+                          className="accent-[var(--gold)] w-3.5 h-3.5"
+                        />
+                        <span className="text-[11px] text-[var(--tx2)]">{svc}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Labour Only fields ── */}
+              {serviceType === "labour_only" && (
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
+                  <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                    <div className="flex-1 min-w-0">
+                      <AddressAutocomplete
+                        value={workAddress}
+                        onRawChange={setWorkAddress}
+                        onChange={(r) => setWorkAddress(r.fullAddress)}
+                        placeholder="55 Avenue Rd, Unit 2801"
+                        label="Work Address *"
+                        required
+                        className={fieldInput}
+                      />
+                    </div>
+                    <div className="w-full min-[400px]:w-[150px] shrink-0">
+                      <Field label="Access">
+                        <select value={workAccess} onChange={(e) => setWorkAccess(e.target.value)} className={fieldInput}>
+                          {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </Field>
+                    </div>
+                  </div>
+                  <Field label="Description of Work *">
+                    <textarea
+                      value={labourDescription}
+                      onChange={(e) => setLabourDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Rearrange living room furniture, assemble new bookshelf…"
+                      className={`${fieldInput} resize-none`}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <Field label="Crew Size">
+                      <select value={labourCrewSize} onChange={(e) => setLabourCrewSize(Number(e.target.value))} className={fieldInput}>
+                        <option value={2}>2 movers</option>
+                        <option value={3}>3 movers</option>
+                        <option value={4}>4 movers</option>
+                        <option value={5}>5 movers</option>
+                      </select>
+                    </Field>
+                    <Field label="Estimated Hours">
+                      <select value={labourHours} onChange={(e) => setLabourHours(Number(e.target.value))} className={fieldInput}>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+                          <option key={h} value={h}>{h === 8 ? "Full day (8h)" : `${h} hour${h > 1 ? "s" : ""}`}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Truck Required">
+                      <select value={labourTruckRequired ? "yes" : "no"} onChange={(e) => setLabourTruckRequired(e.target.value === "yes")} className={fieldInput}>
+                        <option value="no">No truck</option>
+                        <option value="yes">Yes — truck needed</option>
+                      </select>
+                    </Field>
+                    <Field label="Number of Visits">
+                      <select value={labourVisits} onChange={(e) => setLabourVisits(Number(e.target.value))} className={fieldInput}>
+                        <option value={1}>1 visit</option>
+                        <option value={2}>2 visits (return)</option>
+                      </select>
+                    </Field>
+                  </div>
+                  {labourVisits >= 2 && (
+                    <Field label="Second Visit Date">
+                      <input type="date" value={labourSecondVisitDate} onChange={(e) => setLabourSecondVisitDate(e.target.value)} className={`${fieldInput} w-40`} />
+                    </Field>
+                  )}
+                  <Field label="Additional Context (for coordinator)">
+                    <textarea
+                      value={labourContext}
+                      onChange={(e) => setLabourContext(e.target.value)}
+                      rows={2}
+                      placeholder="Client is renovating kitchen. Moving all kitchen items to garage temporarily…"
+                      className={`${fieldInput} resize-none`}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {/* ── B2B One-Off fields ── */}
+              {serviceType === "b2b_delivery" && (
+                <div className="space-y-3">
+                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off</h3>
+                  <p className="text-[10px] text-[var(--tx3)]">Contact info uses Client name, Email and Phone above.</p>
+                  <Field label="Business Name *">
+                    <input
+                      value={b2bBusinessName}
+                      onChange={(e) => setB2bBusinessName(e.target.value)}
+                      placeholder="Acme Corp"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field label="Items">
+                    <div className="space-y-2">
+                      {b2bItems.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-[11px] text-[var(--tx2)] flex-1 min-w-0 truncate">{item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
+                          <button type="button" onClick={() => setB2bItems((p) => p.filter((_, i) => i !== idx))} className="p-1 text-[var(--tx3)] hover:text-red-500" title="Remove">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 min-w-0">
+                          <input
+                            value={b2bNewItemName}
+                            onChange={(e) => setB2bNewItemName(e.target.value)}
+                            placeholder="Item name"
+                            className={fieldInput}
+                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), b2bNewItemName.trim() && (setB2bItems((p) => [...p, { name: b2bNewItemName.trim(), qty: b2bNewItemQty }]), setB2bNewItemName(""), setB2bNewItemQty(1)))}
+                          />
+                        </div>
+                        <div className="w-16 shrink-0">
+                          <input type="number" min={1} value={b2bNewItemQty} onChange={(e) => setB2bNewItemQty(Number(e.target.value) || 1)} className={fieldInput} title="Qty" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => b2bNewItemName.trim() && (setB2bItems((p) => [...p, { name: b2bNewItemName.trim(), qty: b2bNewItemQty }]), setB2bNewItemName(""), setB2bNewItemQty(1))}
+                          className="px-2 py-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </Field>
+                  <Field label="Weight Category">
+                    <select value={b2bWeightCategory} onChange={(e) => setB2bWeightCategory(e.target.value)} className={fieldInput}>
+                      {B2B_WEIGHT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Special Instructions">
+                    <textarea
+                      value={b2bSpecialInstructions}
+                      onChange={(e) => setB2bSpecialInstructions(e.target.value)}
+                      rows={2}
+                      placeholder="Loading dock hours, fragile handling, etc."
+                      className={`${fieldInput} resize-none`}
+                    />
+                  </Field>
                 </div>
               )}
 
@@ -1222,6 +1854,11 @@ export default function QuoteFormClient({
               {applicableAddons.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
+                  {recommendedTier === "estate" && serviceType === "local_move" && (
+                    <p className="text-[10px] text-[var(--tx3)] bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--brd)]">
+                      Packing supplies are included with Estate. The &quot;Packing materials kit&quot; add-on is not needed.
+                    </p>
+                  )}
                   <div className="space-y-2">
                     {popularAddons.map((addon) => {
                       const sel = selectedAddons.get(addon.id);
@@ -1443,6 +2080,12 @@ export default function QuoteFormClient({
                   <>
                     {quoteResult.tiers ? (
                       <TiersDisplay tiers={quoteResult.tiers} recommendedTier={recommendedTier} />
+                    ) : quoteResult.custom_price && serviceType === "event" ? (
+                      <EventPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
+                    ) : quoteResult.custom_price && serviceType === "labour_only" ? (
+                      <LabourOnlyPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
+                    ) : quoteResult.custom_price && (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") ? (
+                      <B2BPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
                     ) : quoteResult.custom_price ? (
                       <SinglePriceDisplay price={quoteResult.custom_price} label={toTitleCase(serviceType)} />
                     ) : null}
@@ -1459,12 +2102,22 @@ export default function QuoteFormClient({
                       </div>
                     )}
 
-                    <FactorsDisplayCollapsible factors={quoteResult.factors} distance={quoteResult.distance_km} time={quoteResult.drive_time_min} showMultipliers={userRole === "owner" || userRole === "admin"} />
+                    <FactorsDisplayCollapsible
+                      factors={quoteResult.factors}
+                      distance={quoteResult.distance_km}
+                      time={quoteResult.drive_time_min}
+                      showMultipliers={userRole === "owner" || userRole === "admin"}
+                      tiers={quoteResult.tiers}
+                      moveSize={moveSize}
+                    />
 
                     {/* FIX 6: Algorithm anomaly warnings for coordinator review */}
                     {(quoteResult.inventory_warnings?.length ?? 0) > 0 && (
                       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1.5 text-[11px]">
-                        <p className="font-semibold text-amber-600 dark:text-amber-400">⚠ Check inventory quantities</p>
+                        <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          Check inventory quantities
+                        </p>
                         <ul className="list-disc list-inside text-[var(--tx2)]">
                           {quoteResult.inventory_warnings!.map((w, i) => (
                             <li key={i}>{w}</li>
@@ -1490,6 +2143,34 @@ export default function QuoteFormClient({
                   <>
                     {liveEstimate && "curated" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} />
+                    ) : serviceType === "specialty" && specialtyType ? (
+                      (() => {
+                        const range = SPECIALTY_BASE_PRICES[specialtyType];
+                        const craneAdd = specialtyRequirements.includes("crane_rigging") ? 750 : 0;
+                        const cratingAdd = specialtyRequirements.includes("custom_crating") ? 300 : 0;
+                        const min = (range?.min ?? 300) + craneAdd + cratingAdd;
+                        const max = (range?.max ?? 2000) + craneAdd + cratingAdd;
+                        const typeLabel = SPECIALTY_TYPES.find((t) => t.value === specialtyType)?.label ?? specialtyType;
+                        const weightLabel = SPECIALTY_WEIGHT_OPTIONS.find((w) => w.value === specialtyWeightClass)?.label;
+                        return (
+                          <div className="space-y-2">
+                            <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
+                              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Suggested Range</p>
+                              <p className="text-[18px] font-bold text-[var(--gold)]">
+                                {fmtPrice(min)} – {fmtPrice(max)}
+                              </p>
+                              <p className="text-[10px] text-[var(--tx3)] mt-1">
+                                Based on: {typeLabel}{weightLabel ? `, ${weightLabel}` : ""}
+                                {craneAdd > 0 ? " + crane/rigging" : ""}
+                                {cratingAdd > 0 ? " + custom crating" : ""}
+                              </p>
+                            </div>
+                            <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                              Click Generate for a final price. Coordinator sets the custom quote amount.
+                            </p>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <div className="text-center py-5">
                         <div className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center mx-auto mb-2">
@@ -1742,6 +2423,175 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   );
 }
 
+function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: Record<string, unknown> }) {
+  const deliveryCharge = factors.delivery_charge as number | undefined;
+  const returnCharge = factors.return_charge as number | undefined;
+  const setupFee = factors.setup_fee as number | undefined;
+  const returnDiscount = factors.return_discount as number | undefined;
+  const eventCrew = factors.event_crew as number | undefined;
+  const eventHours = factors.event_hours as number | undefined;
+  const returnDate = factors.return_date as string | undefined;
+  const deliveryDate = factors.delivery_date as string | undefined;
+
+  return (
+    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold text-[#B8962E]">Event Quote</span>
+        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+      </div>
+      {/* Breakdown */}
+      <div className="space-y-1.5 text-[11px]">
+        {deliveryCharge !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">
+              Delivery ({deliveryDate ?? "TBD"})
+              {eventCrew && eventHours ? <span className="ml-1 text-[var(--tx3)]/70">{eventCrew} movers, {eventHours}hr</span> : null}
+            </span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(deliveryCharge)}</span>
+          </div>
+        )}
+        {(setupFee ?? 0) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Setup service</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(setupFee!)}</span>
+          </div>
+        )}
+        {returnCharge !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">
+              Return ({returnDate ?? "TBD"})
+              {returnDiscount !== undefined ? <span className="ml-1 text-[var(--tx3)]/70">{Math.round(returnDiscount * 100)}% of delivery</span> : null}
+            </span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(returnCharge)}</span>
+          </div>
+        )}
+        <div className="pt-1.5 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
+          <span className="text-[var(--tx3)]">Subtotal</span>
+          <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--tx3)]">Deposit to book (25%)</span>
+        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+    </div>
+  );
+}
+
+function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Record<string, unknown> }) {
+  const baseFee = factors.base_fee as number | undefined;
+  const distMod = factors.distance_modifier as number | undefined;
+  const distKm = factors.distance_km as number | undefined;
+  const accessSurcharge = (factors.access_surcharge as number | undefined) ?? 0;
+  const weightSurcharge = (factors.weight_surcharge as number | undefined) ?? 0;
+  const weightCategory = factors.weight_category as string | undefined;
+
+  return (
+    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold text-[#B8962E]">B2B One-Off</span>
+        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+      </div>
+      <div className="space-y-1.5 text-[11px]">
+        {baseFee !== undefined && distMod !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Base ${baseFee} × {distMod.toFixed(2)} (distance)</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(Math.round(baseFee * distMod))}</span>
+          </div>
+        )}
+        {accessSurcharge > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Access surcharge</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(accessSurcharge)}</span>
+          </div>
+        )}
+        {weightSurcharge > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Weight ({weightCategory ?? "—"})</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(weightSurcharge)}</span>
+          </div>
+        )}
+        {distKm !== undefined && distKm > 0 && (
+          <div className="text-[var(--tx3)]">{distKm.toFixed(1)} km</div>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--tx3)]">Deposit to book</span>
+        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+    </div>
+  );
+}
+
+function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; factors: Record<string, unknown> }) {
+  const crewSize = factors.crew_size as number | undefined;
+  const hours = factors.hours as number | undefined;
+  const labourRate = factors.labour_rate as number | undefined;
+  const truckFee = (factors.truck_fee as number | undefined) ?? 0;
+  const accessSurcharge = (factors.access_surcharge as number | undefined) ?? 0;
+  const visits = (factors.visits as number | undefined) ?? 1;
+  const visit1Price = factors.visit1_price as number | undefined;
+  const visit2Price = factors.visit2_price as number | undefined;
+  const visit2Date = factors.visit2_date as string | undefined;
+
+  return (
+    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold text-[#B8962E]">Labour Only</span>
+        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+      </div>
+      <div className="space-y-1.5 text-[11px]">
+        {crewSize && hours && labourRate && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">{crewSize} movers × {hours}hr × ${labourRate}/hr</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(crewSize * hours * labourRate)}</span>
+          </div>
+        )}
+        {truckFee > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Truck</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(truckFee)}</span>
+          </div>
+        )}
+        {accessSurcharge > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Access surcharge</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(accessSurcharge)}</span>
+          </div>
+        )}
+        {visits >= 2 && visit2Price !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Visit 2 ({visit2Date ?? "TBD"}) — return discount</span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(visit2Price)}</span>
+          </div>
+        )}
+        {visits >= 2 && visit1Price !== undefined && (
+          <div className="pt-1 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
+            <span className="text-[var(--tx3)]">Subtotal</span>
+            <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--tx3)]">Deposit to book</span>
+        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+    </div>
+  );
+}
+
 function OptimisticTiers({ est }: { est: { curated: number; signature: number; estate: number } }) {
   const tiers = [
     { name: "Curated", price: est.curated },
@@ -1770,83 +2620,175 @@ function OptimisticTiers({ est }: { est: { curated: number; signature: number; e
   );
 }
 
-const LABOUR_FACTOR_KEYS = new Set([
-  "labour_delta", "labour_component", "labour_actual_crew", "labour_actual_hours",
-  "labour_baseline_crew", "labour_baseline_hours", "labour_rate", "labour_rate_per_mover_hour", "labour_extra_man_hours",
-  "packing_supplies_included",
-]);
+// ─── Price Breakdown (Coordinator view, Section 8) ──────────────────────────
 
-function FactorsDisplay({
+function fmtMod(v: number) {
+  if (v === 1.0) return <span className="text-[var(--tx3)]">×1.0</span>;
+  const pct = Math.round((v - 1) * 100);
+  const color = v < 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400";
+  return <span className={`font-semibold ${color}`}>×{v.toFixed(2)} ({pct > 0 ? "+" : ""}{pct}%)</span>;
+}
+
+function PriceBreakdownResidential({
   factors,
   distance,
   time,
-  showMultipliers = true,
+  moveSize,
+  curatedPrice,
+  signaturePrice,
+  estatePrice,
 }: {
   factors: Record<string, unknown>;
   distance: number | null;
   time: number | null;
-  showMultipliers?: boolean;
+  moveSize?: string | null;
+  curatedPrice?: number;
+  signaturePrice?: number;
+  estatePrice?: number;
 }) {
-  const entries = Object.entries(factors).filter(
-    ([key, v]) => !LABOUR_FACTOR_KEYS.has(key) && v !== null && v !== undefined && v !== 0 && v !== 1
+  const baseRate      = typeof factors.base_rate === "number" ? factors.base_rate : null;
+  const invMod        = typeof factors.inventory_modifier === "number" ? factors.inventory_modifier : null;
+  const distMod       = typeof factors.distance_modifier === "number" ? factors.distance_modifier : null;
+  const dateMult      = typeof factors.date_multiplier === "number" ? factors.date_multiplier : null;
+  const neighMult     = typeof factors.neighbourhood_multiplier === "number" ? factors.neighbourhood_multiplier : null;
+  const neighTier     = typeof factors.neighbourhood_tier === "string" ? factors.neighbourhood_tier : null;
+  const accessSurch   = typeof factors.access_surcharge === "number" ? factors.access_surcharge : 0;
+  const specialtySurch = typeof factors.specialty_surcharge === "number" ? factors.specialty_surcharge : 0;
+  const labourDelta   = typeof factors.labour_delta === "number" ? factors.labour_delta : null;
+  const labourMH      = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
+  const labourRate    = typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
+  const deadheadSurch = typeof factors.deadhead_surcharge === "number" ? factors.deadhead_surcharge : 0;
+  const deadheadKm    = typeof factors.deadhead_km === "number" ? factors.deadhead_km : 0;
+  const packingSupplies = typeof factors.packing_supplies_included === "number" ? factors.packing_supplies_included : null;
+  const subtotalPre   = typeof factors.subtotal_before_labour === "number" ? factors.subtotal_before_labour : null;
+  const invScore      = typeof factors.inventory_score === "number" ? factors.inventory_score : null;
+  const invBenchmark  = typeof factors.inventory_benchmark === "number" ? factors.inventory_benchmark : null;
+  const cratingTotal  = typeof factors.crating_total === "number" ? factors.crating_total : 0;
+
+  // Inventory label
+  let invLabel = "standard";
+  if (invMod !== null) {
+    if (invMod < 0.80) invLabel = "light";
+    else if (invMod > 1.20) invLabel = "heavy";
+  }
+
+  // Distance label
+  let distLabel = "";
+  if (distance !== null) {
+    if (distance <= 2) distLabel = "ultra-short ≤2km";
+    else if (distance <= 5) distLabel = "short ≤5km";
+    else if (distance <= 20) distLabel = "local baseline";
+    else if (distance <= 40) distLabel = "medium ≤40km";
+    else if (distance <= 60) distLabel = "long ≤60km";
+    else if (distance <= 100) distLabel = "very long ≤100km";
+    else distLabel = "extreme >100km";
+  }
+
+  const Row = ({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) => (
+    <div className="flex items-start justify-between gap-2 py-1">
+      <div>
+        <span className="text-[10px] text-[var(--tx2)]">{label}</span>
+        {sub && <p className="text-[9px] text-[var(--tx3)]">{sub}</p>}
+      </div>
+      <span className="text-[10px] text-right shrink-0">{value}</span>
+    </div>
   );
-  const labourDelta = typeof factors.labour_delta === "number" ? factors.labour_delta : typeof factors.labour_component === "number" ? factors.labour_component : null;
-  const labourExtraManHours = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
-  const labourRate = typeof factors.labour_rate === "number" ? factors.labour_rate : typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
-  const hasLabourLine = labourDelta !== null;
-  const packingSuppliesIncluded = typeof factors.packing_supplies_included === "number" ? factors.packing_supplies_included : null;
-  if (entries.length === 0 && distance == null && !hasLabourLine && packingSuppliesIncluded == null) return null;
+
+  const Divider = () => <div className="border-t border-[var(--brd)] my-1" />;
 
   return (
-    <div className="space-y-1.5">
-      {packingSuppliesIncluded != null && packingSuppliesIncluded > 0 && (
-        <div className="flex justify-between text-[10px]">
-          <span className="text-[var(--tx3)]">Packing supplies (included)</span>
-          <span className="text-[var(--tx)] font-medium">{fmtPrice(packingSuppliesIncluded)}</span>
-        </div>
-      )}
+    <div className="space-y-0.5 text-[10px]">
+      {/* Distance & time */}
       {distance != null && (
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-[var(--tx3)]">Distance</span>
-          <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
-        </div>
+        <Row label="Distance" value={<span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>} />
       )}
-      {hasLabourLine && (
-        <div className="flex flex-col gap-0.5 text-[10px]">
-          <div className="flex items-center justify-between">
-            <span className="text-[var(--tx3)]">Labour adjustment</span>
-            <span className={labourDelta > 0 ? "font-semibold text-[var(--gold)]" : "text-[var(--tx3)]"}>
-              {labourDelta > 0 ? `+${fmtPrice(labourDelta)}` : fmtPrice(0)}
-            </span>
+
+      {/* Multiplicative chain */}
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] pt-1">Pricing factors</p>
+      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
+        {baseRate !== null && (
+          <Row
+            label={`Base rate${moveSize ? ` (${moveSize.replace("br", "BR").replace("_plus", "+")})` : ""}`}
+            value={<span className="font-semibold text-[var(--tx)]">{fmtPrice(baseRate)}</span>}
+          />
+        )}
+        {invMod !== null && (
+          <Row
+            label="Inventory modifier"
+            value={fmtMod(invMod)}
+            sub={invScore != null && invBenchmark != null ? `score ${invScore.toFixed(1)} / benchmark ${invBenchmark.toFixed(1)} — ${invLabel}` : invLabel}
+          />
+        )}
+        {distMod !== null && (
+          <Row label="Distance modifier" value={fmtMod(distMod)} sub={distLabel} />
+        )}
+        {dateMult !== null && (
+          <Row label="Date factor" value={fmtMod(dateMult)} />
+        )}
+        {neighMult !== null && (
+          <Row label="Neighbourhood tier" value={fmtMod(neighMult)} sub={neighTier ?? undefined} />
+        )}
+        {subtotalPre !== null && (
+          <>
+            <Divider />
+            <Row
+              label="Subtotal (multiplied)"
+              value={<span className="font-bold text-[var(--tx)]">{fmtPrice(subtotalPre)}</span>}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Flat additions */}
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] pt-2">Flat additions</p>
+      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
+        <Row
+          label="Access surcharge"
+          value={accessSurch > 0
+            ? <span className="font-semibold text-amber-600">+{fmtPrice(accessSurch)}</span>
+            : <span className="text-[var(--tx3)]">$0 — no hard access</span>}
+        />
+        {specialtySurch > 0 && (
+          <Row label="Specialty surcharge" value={<span className="font-semibold text-amber-600">+{fmtPrice(specialtySurch)}</span>} />
+        )}
+        <Row
+          label="Labour delta"
+          value={labourDelta != null && labourDelta > 0
+            ? <span className="font-semibold text-[var(--gold)]">+{fmtPrice(labourDelta)}</span>
+            : <span className="text-[var(--tx3)]">$0 — below baseline{labourDelta === 0 && labourMH != null ? ` (${labourMH} extra hr)` : ""}</span>}
+          sub={labourDelta != null && labourDelta > 0 && labourMH != null && labourRate != null
+            ? `${labourMH} extra man-hours × $${labourRate}/hr`
+            : undefined}
+        />
+        <Row
+          label="Deadhead surcharge"
+          value={deadheadSurch > 0
+            ? <span className="font-semibold text-amber-600">+{fmtPrice(deadheadSurch)}</span>
+            : <span className="text-[var(--tx3)]">$0{deadheadKm > 0 ? ` (${deadheadKm.toFixed(1)}km — within free zone)` : ""}</span>}
+        />
+        {cratingTotal > 0 && (
+          <Row label="Custom crating" value={<span className="font-semibold text-amber-600">+{fmtPrice(cratingTotal)}</span>} />
+        )}
+        {packingSupplies != null && packingSupplies > 0 && (
+          <Row label="Packing supplies (Estate)" value={<span className="text-[var(--tx)]">+{fmtPrice(packingSupplies)}</span>} />
+        )}
+      </div>
+
+      {/* Tier formula summary */}
+      {curatedPrice != null && (
+        <>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] pt-2">Tier prices</p>
+          <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
+            <Row label="Curated (×1.0)" value={<span className="font-bold text-[var(--tx)]">{fmtPrice(curatedPrice)}</span>} />
+            {signaturePrice != null && (
+              <Row label="Signature (×1.50)" value={<span className="font-bold text-[#B8962E]">{fmtPrice(signaturePrice)}</span>} />
+            )}
+            {estatePrice != null && (
+              <Row label="Estate (×3.15)" value={<span className="font-bold text-[#C9A84C]">{fmtPrice(estatePrice)}</span>} />
+            )}
           </div>
-          {labourDelta > 0 && labourExtraManHours != null && labourRate != null && (
-            <p className="text-[9px] text-[var(--gold)]/90">
-              ({labourExtraManHours} extra man-hours × ${labourRate})
-            </p>
-          )}
-          {labourDelta === 0 && (
-            <p className="text-[9px] text-[var(--tx3)]">(within baseline)</p>
-          )}
-        </div>
+        </>
       )}
-      {entries.map(([key, val]) => (
-        <div key={key} className="flex items-center justify-between text-[10px]">
-          <span className="text-[var(--tx3)]">{toTitleCase(key)}</span>
-          <span className="text-[var(--tx)] font-medium">
-            {showMultipliers
-              ? typeof val === "number"
-                ? val >= 10
-                  ? fmtPrice(val)
-                  : `×${val}`
-                : String(val)
-              : typeof val === "number" && val < 10
-                ? "Applied"
-                : typeof val === "number"
-                  ? fmtPrice(val)
-                  : String(val)}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -1856,26 +2798,105 @@ function FactorsDisplayCollapsible({
   distance,
   time,
   showMultipliers = true,
+  tiers,
+  moveSize,
 }: {
   factors: Record<string, unknown>;
   distance: number | null;
   time: number | null;
   showMultipliers?: boolean;
+  tiers?: Record<string, TierResult>;
+  moveSize?: string | null;
 }) {
-  const entries = Object.entries(factors).filter(([, v]) => v !== null && v !== undefined && v !== 0 && v !== 1);
-  const hasContent = entries.length > 0 || distance != null;
+  // Use rich residential breakdown when the new formula fields are present (distance_modifier)
+  const isNewResidential = typeof factors.distance_modifier === "number";
+  const hasContent = Object.keys(factors).length > 0 || distance != null;
   if (!hasContent) return null;
 
   return (
     <details className="pt-3 border-t border-[var(--brd)] group" defaultValue={undefined}>
       <summary className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
         <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
-        Factors applied
+        Price Breakdown
       </summary>
       <div className="mt-2">
-        <FactorsDisplay factors={factors} distance={distance} time={time} showMultipliers={showMultipliers} />
+        {isNewResidential ? (
+          <PriceBreakdownResidential
+            factors={factors}
+            distance={distance}
+            time={time}
+            moveSize={moveSize}
+            curatedPrice={tiers?.curated?.price}
+            signaturePrice={tiers?.signature?.price}
+            estatePrice={tiers?.estate?.price}
+          />
+        ) : (
+          <LegacyFactorsDisplay factors={factors} distance={distance} time={time} showMultipliers={showMultipliers} />
+        )}
       </div>
     </details>
+  );
+}
+
+// Legacy display for non-residential / old-format quotes
+function LegacyFactorsDisplay({
+  factors,
+  distance,
+  time,
+  showMultipliers = true,
+}: {
+  factors: Record<string, unknown>;
+  distance: number | null;
+  time: number | null;
+  showMultipliers?: boolean;
+}) {
+  const HIDDEN_KEYS = new Set([
+    "labour_delta", "labour_component", "labour_actual_crew", "labour_actual_hours",
+    "labour_baseline_crew", "labour_baseline_hours", "labour_rate", "labour_rate_per_mover_hour", "labour_extra_man_hours",
+    "packing_supplies_included", "distance_modifier", "inventory_modifier", "deadhead_km", "return_km",
+    "subtotal_before_labour",
+  ]);
+  const entries = Object.entries(factors).filter(
+    ([key, v]) => !HIDDEN_KEYS.has(key) && v !== null && v !== undefined && v !== 0 && v !== 1
+  );
+  const labourDelta = typeof factors.labour_delta === "number" ? factors.labour_delta
+    : typeof factors.labour_component === "number" ? factors.labour_component : null;
+  const labourExtraManHours = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
+  const labourRate = typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
+
+  return (
+    <div className="space-y-1.5">
+      {distance != null && (
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">Distance</span>
+          <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
+        </div>
+      )}
+      {labourDelta !== null && (
+        <div className="flex flex-col gap-0.5 text-[10px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--tx3)]">Labour adjustment</span>
+            <span className={labourDelta > 0 ? "font-semibold text-[var(--gold)]" : "text-[var(--tx3)]"}>
+              {labourDelta > 0 ? `+${fmtPrice(labourDelta)}` : "$0"}
+            </span>
+          </div>
+          {labourDelta > 0 && labourExtraManHours != null && labourRate != null && (
+            <p className="text-[9px] text-[var(--gold)]/90">({labourExtraManHours} extra man-hours × ${labourRate})</p>
+          )}
+          {labourDelta === 0 && <p className="text-[9px] text-[var(--tx3)]">(within baseline)</p>}
+        </div>
+      )}
+      {entries.map(([key, val]) => (
+        <div key={key} className="flex items-center justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">{toTitleCase(key)}</span>
+          <span className="text-[var(--tx)] font-medium">
+            {showMultipliers
+              ? typeof val === "number" ? val >= 10 ? fmtPrice(val) : `×${val}` : String(val)
+              : typeof val === "number" && val < 10 ? "Applied" : typeof val === "number" ? fmtPrice(val) : String(val)}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -55,10 +55,37 @@ interface QuoteInput {
   custom_crating_pieces?: number;
   climate_control?: boolean;
   special_equipment?: string[];
-  // B2B
+  specialty_item_description?: string;
+  specialty_dimensions?: string;
+  specialty_requirements?: string[];
+  specialty_notes?: string;
+  // B2B One-Off
   delivery_type?: string;
+  b2b_business_name?: string;
+  b2b_items?: string[];
+  b2b_weight_category?: string;
+  b2b_special_instructions?: string;
+  // Event (round-trip venue delivery)
+  event_name?: string;
+  event_return_date?: string;
+  event_setup_required?: boolean;
+  event_setup_hours?: number; // 1, 2, 3, or 99 = half-day
+  event_setup_instructions?: string;
+  event_same_day?: boolean;
+  event_pickup_time_after?: string;
+  event_additional_services?: string[];
+  event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
+  // Labour Only
+  labour_crew_size?: number;
+  labour_hours?: number;
+  labour_truck_required?: boolean;
+  labour_visits?: number;
+  labour_second_visit_date?: string;
+  labour_description?: string;
   // Recommended tier (coordinator's manual selection)
   recommended_tier?: "curated" | "signature" | "estate";
+  // Custom crating (all service types)
+  crating_pieces?: { description?: string; size: "small" | "medium" | "large" | "oversized" }[];
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -109,6 +136,19 @@ function cfgNum(config: Map<string, string>, key: string, fallback: number): num
   return v !== undefined ? Number(v) : fallback;
 }
 
+function cfgStr(config: Map<string, string>, key: string, fallback: string): string {
+  return config.get(key) ?? fallback;
+}
+
+function parseJsonConfig<T>(config: Map<string, string>, key: string, fallback: T): T {
+  try {
+    const v = config.get(key);
+    return v ? (JSON.parse(v) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // ═══════════════════════════════════════════════
 // Mapbox geocoding + directions
 // ═══════════════════════════════════════════════
@@ -153,6 +193,9 @@ async function getDistance(
     drive_time_min: Math.round(route.duration / 60),
   };
 }
+
+/** Yugo operations base — used for deadhead and return-trip calculations. */
+const YUGO_BASE_ADDRESS = "507 King Street East, Toronto, ON";
 
 // ═══════════════════════════════════════════════
 // Postal extraction & neighbourhood tier
@@ -642,6 +685,10 @@ async function calcInventoryModifier(
   moveSize: string,
   inventoryItems: InventoryItem[],
   clientBoxCount?: number,
+  /** Override floor from platform_config (inventory_modifier_floor). Falls back to bm.min_modifier. */
+  modifierFloor?: number,
+  /** Override cap from platform_config (inventory_modifier_cap). Falls back to bm.max_modifier. */
+  modifierCap?: number,
 ): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number; boxCount?: number }> {
   const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
   if (!inventoryItems || inventoryItems.length === 0) return noAdj;
@@ -675,8 +722,10 @@ async function calcInventoryModifier(
   }
 
   let modifier = inventoryScore / benchmarkScore;
-  const maxMod = Number(bm.max_modifier);
-  modifier = Math.max(Number(bm.min_modifier), Math.min(maxMod, modifier));
+  // Section 1: use config floor (default 0.65) — light moves get up to 35% discount
+  const floor = modifierFloor ?? Number(bm.min_modifier);
+  const maxMod = modifierCap ?? Number(bm.max_modifier);
+  modifier = Math.max(floor, Math.min(maxMod, modifier));
   modifier = Math.round(modifier * 100) / 100;
 
   return { modifier, inventoryScore, benchmarkScore, totalItems, maxModifier: maxMod, boxCount };
@@ -760,6 +809,8 @@ async function calcResidential(
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
   invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
   labour: LabourEstimate,
+  deadheadInfo: { distance_km: number; drive_time_min: number } | null,
+  returnInfo: { distance_km: number; drive_time_min: number } | null,
 ) {
   const { data: br } = await sb
     .from("base_rates")
@@ -771,17 +822,42 @@ async function calcResidential(
   const minCrew = br?.min_crew ?? 3;
   const estHours = br?.estimated_hours ?? 5;
 
-  // FIX 5: Distance surcharge scales with distance; base 10km for local, optional time component
-  const distBaseKm = cfgNum(config, "distance_base_km_local", cfgNum(config, "distance_base_km", 10));
-  const perKmRate = cfgNum(config, "distance_per_km_rate", cfgNum(config, "distance_rate_per_km", 4));
+  // ── Section 4A/4B: Distance modifier (replaces flat per-km surcharge) ──────
   const distKm = distInfo?.distance_km ?? 0;
-  const driveMinutes = distInfo?.drive_time_min ?? 0;
-  let distanceSurcharge = distKm <= distBaseKm ? 0 : Math.round((distKm - distBaseKm) * perKmRate);
-  if (driveMinutes > 30) {
-    const timeComponent = Math.round((driveMinutes - 30) * 2);
-    distanceSurcharge = Math.max(distanceSurcharge, timeComponent);
+  let distanceModifier = 1.0;
+
+  // Read thresholds from config (with hardcoded fallbacks)
+  const distUltraShortKm  = cfgNum(config, "dist_ultra_short_km",  2);
+  const distShortKm        = cfgNum(config, "dist_short_km",        5);
+  const distBaselineKm     = cfgNum(config, "dist_baseline_km",     20);
+  const distMediumKm       = cfgNum(config, "dist_medium_km",       40);
+  const distLongKm         = cfgNum(config, "dist_long_km",         60);
+  const distVeryLongKm     = cfgNum(config, "dist_very_long_km",    100);
+
+  const distModUltraShort  = cfgNum(config, "dist_mod_ultra_short", 0.92);
+  const distModShort       = cfgNum(config, "dist_mod_short",       0.95);
+  const distModMedium      = cfgNum(config, "dist_mod_medium",      1.08);
+  const distModLong        = cfgNum(config, "dist_mod_long",        1.15);
+  const distModVeryLong    = cfgNum(config, "dist_mod_very_long",   1.25);
+  const distModExtreme     = cfgNum(config, "dist_mod_extreme",     1.35);
+
+  if (distKm <= distUltraShortKm) {
+    distanceModifier = distModUltraShort;  // 8% discount for ultra-short (≤2 km)
+  } else if (distKm <= distShortKm) {
+    distanceModifier = distModShort;       // 5% discount for short (≤5 km)
+  } else if (distKm <= distBaselineKm) {
+    distanceModifier = 1.0;               // baseline (≤20 km)
+  } else if (distKm <= distMediumKm) {
+    distanceModifier = distModMedium;      // 8% surcharge (≤40 km)
+  } else if (distKm <= distLongKm) {
+    distanceModifier = distModLong;        // 15% surcharge (≤60 km)
+  } else if (distKm <= distVeryLongKm) {
+    distanceModifier = distModVeryLong;    // 25% surcharge (≤100 km)
+  } else {
+    distanceModifier = distModExtreme;     // 35% surcharge (>100 km)
   }
 
+  // ── Access + specialty surcharges (flat — not multiplied by tier) ──────────
   const [fromAccess, toAccess] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
     getAccessSurcharge(sb, input.to_access),
@@ -790,12 +866,18 @@ async function calcResidential(
 
   const specialtySurcharge = await getSpecialtySurcharge(sb, input.specialty_items ?? []);
 
-  let subtotal = baseRate + distanceSurcharge + accessSurcharge + specialtySurcharge;
+  // ── Section 4A-B: New multiplicative formula ──────────────────────────────
+  // subtotal = baseRate × invModifier × distModifier × dateFactor × neighbourhoodMult
+  // Access and specialty added FLAT after (not scaled by tier multiplier)
+  let subtotal = baseRate;
   subtotal = Math.round(subtotal * invResult.modifier);
+  subtotal = Math.round(subtotal * distanceModifier);
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
+  // Add flat surcharges AFTER multiplicative chain
+  subtotal += accessSurcharge + specialtySurcharge;
 
-  // Labour delta: flat amount for extra man-hours above baseline; applied AFTER tier multiplication (crew time does not scale by tier). Rate $45/mover-hour (incremental).
+  // ── Labour delta (Section 3): extra man-hours above baseline, floored at 0 ─
   const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
   let labourDelta = 0;
   let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
@@ -809,12 +891,18 @@ async function calcResidential(
       benchmark = { baseline_crew: bm.baseline_crew, baseline_hours: bm.baseline_hours };
       const baselineManHours = bm.baseline_crew * bm.baseline_hours;
       const actualManHours = labour.crewSize * labour.estimatedHours;
-      const deltaManHours = actualManHours - baselineManHours;
-      if (deltaManHours > 0) {
-        labourDelta = Math.round(deltaManHours * labourRate);
-      }
+      // Section 3: floor at 0 — light moves get cheaper price through inventory modifier, not negative labour delta
+      labourDelta = Math.max(0, Math.round((actualManHours - baselineManHours) * labourRate));
     }
   }
+
+  // ── Section 4D: Deadhead surcharge (flat addition, not tier-multiplied) ────
+  const deadheadFreeKm = cfgNum(config, "deadhead_free_km", 15);
+  const deadheadPerKm  = cfgNum(config, "deadhead_per_km",  2.50);
+  const deadheadKm     = deadheadInfo?.distance_km ?? 0;
+  const deadheadSurcharge = deadheadKm > deadheadFreeKm
+    ? Math.round((deadheadKm - deadheadFreeKm) * deadheadPerKm)
+    : 0;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
@@ -826,26 +914,33 @@ async function calcResidential(
   const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
-  // Tier base = subtotal × multiplier; labour delta added after (same flat amount for all tiers).
-  let curBase = roundTo(subtotal * curatedMult, rounding) + labourDelta;
-  let sigBase = roundTo(subtotal * signatureMult, rounding) + labourDelta;
-  let estBase = roundTo(subtotal * estateMult, rounding) + labourDelta;
+  // Tier base = round(subtotal × multiplier) + labourDelta + deadheadSurcharge (both flat, not tier-scaled)
+  let curBase = roundTo(subtotal * curatedMult, rounding) + labourDelta + deadheadSurcharge;
+  let sigBase = roundTo(subtotal * signatureMult, rounding) + labourDelta + deadheadSurcharge;
+  let estBase = roundTo(subtotal * estateMult, rounding) + labourDelta + deadheadSurcharge;
 
-  // Estate-only: packing supplies allowance (base from config, scaled by move size and complexity).
-  const estateSuppliesBase = cfgNum(config, "estate_supplies_allowance", 250);
-  const ESTATE_SUPPLIES_SIZE_MULT: Record<string, number> = {
-    studio: 1.0,
-    "1br": 1.2,
-    "2br": 1.5,
-    "3br": 2.3,
-    "4br": 3.4,
-    "5br_plus": 4.4,
-    partial: 0.9,
+  // Estate-only: packing supplies allowance — lookup by move size from config JSON.
+  const suppliesBySize = parseJsonConfig<Record<string, number>>(config, "estate_supplies_by_size", {});
+  const SUPPLIES_FALLBACK: Record<string, number> = {
+    studio: 250, "1br": 300, "2br": 375, "3br": 575, "4br": 850, "5br_plus": 1100, partial: 150,
   };
-  const sizeMult = ESTATE_SUPPLIES_SIZE_MULT[input.move_size ?? "2br"] ?? 1.25;
-  const complexityMult = Math.min(1.3, 0.9 + 0.1 * Math.min(invResult.modifier, 1.5));
-  const estateSuppliesAllowance = Math.max(0, roundTo(estateSuppliesBase * sizeMult * complexityMult, 25));
+  const estateSuppliesAllowance = suppliesBySize[input.move_size ?? "2br"]
+    ?? SUPPLIES_FALLBACK[input.move_size ?? "2br"]
+    ?? 375;
   estBase += estateSuppliesAllowance;
+
+  // Custom crating — applies to ALL tiers (coordinator-selected per quote).
+  const cratingBySize = parseJsonConfig<Record<string, number>>(config, "crating_prices", {});
+  const CRATING_FALLBACK: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
+  let cratingTotal = 0;
+  if (input.crating_pieces && input.crating_pieces.length > 0) {
+    for (const piece of input.crating_pieces) {
+      cratingTotal += cratingBySize[piece.size] ?? CRATING_FALLBACK[piece.size] ?? 250;
+    }
+  }
+  curBase += cratingTotal;
+  sigBase += cratingTotal;
+  estBase += cratingTotal;
 
   if (curBase < minJob) curBase = minJob;
   if (sigBase < curBase) sigBase = curBase;
@@ -906,18 +1001,21 @@ async function calcResidential(
     estHours,
     factors: {
       base_rate: baseRate,
-      distance_surcharge: distanceSurcharge,
-      access_surcharge: accessSurcharge,
+      inventory_modifier: invResult.modifier,
+      distance_modifier: distanceModifier,
       date_multiplier: dateMult.multiplier,
-      specialty_surcharge: specialtySurcharge,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
-      inventory_modifier: invResult.modifier,
+      access_surcharge: accessSurcharge,
+      specialty_surcharge: specialtySurcharge,
+      labour_delta: labourDelta,
+      labour_component: labourDelta,
+      deadhead_surcharge: deadheadSurcharge,
+      deadhead_km: deadheadKm,
+      return_km: returnInfo?.distance_km ?? 0,
       inventory_score: invResult.inventoryScore,
       inventory_benchmark: invResult.benchmarkScore,
       inventory_items_count: invResult.totalItems,
-      labour_delta: labourDelta,
-      labour_component: labourDelta,
       labour_actual_crew: labour?.crewSize ?? null,
       labour_actual_hours: labour?.estimatedHours ?? null,
       labour_baseline_crew: benchmark?.baseline_crew ?? null,
@@ -929,9 +1027,13 @@ async function calcResidential(
           ? Math.max(0, labour.crewSize * labour.estimatedHours - benchmark.baseline_crew * benchmark.baseline_hours)
           : null,
       inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
-      subtotal_before_labour: subtotal,
+      subtotal_before_labour: subtotal - accessSurcharge - specialtySurcharge,
       packing_supplies_included: estateSuppliesAllowance,
+      crating_total: cratingTotal,
+      crating_pieces_count: input.crating_pieces?.length ?? 0,
     },
+    cratingTotal,
+    estateSuppliesAllowance,
   };
 }
 
@@ -1219,9 +1321,22 @@ async function calcWhiteGlove(
 // ═══════════════════════════════════════════════
 
 const SPECIALTY_BASE: Record<string, number> = {
+  // New specialty type keys (from redesigned form)
+  piano_upright:   600,
+  piano_grand:     1400,
+  art_sculpture:   900,
+  antiques_estate: 1750,
+  safe_vault:      800,
+  pool_table:      1050,
+  hot_tub:         1400,
+  wine_collection: 950,
+  aquarium:        1000,
+  trade_show:      1250,
+  medical_lab:     1550,
+  other:           500,
+  // Legacy keys (backward compat)
   art_installation: 800,
   "Art installation": 800,
-  trade_show: 1200,
   "Trade show": 1200,
   estate_cleanout: 600,
   "Estate cleanout": 600,
@@ -1231,8 +1346,8 @@ const SPECIALTY_BASE: Record<string, number> = {
   "Wine transport": 400,
   medical_equip: 800,
   "Medical equipment": 800,
-  piano_move: 350,
-  "Piano move": 350,
+  piano_move: 600,
+  "Piano move": 600,
   event_setup: 600,
   "Event setup/teardown": 600,
   custom: 500,
@@ -1263,6 +1378,7 @@ async function calcSpecialty(
   if (input.climate_control) price += 150;
 
   const equipSurcharges: Record<string, number> = {
+    crane_rigging: 750,
     "A-frame cart": 40,
     "Crating kit": 80,
     "Climate truck": 150,
@@ -1312,8 +1428,30 @@ async function calcSpecialty(
 }
 
 // ═══════════════════════════════════════════════
-// B2B ONE-OFF — white glove base, no premium
+// B2B ONE-OFF — base + distance modifier + access + weight surcharges
 // ═══════════════════════════════════════════════
+
+function getDistanceModifier(config: Map<string, string>, distKm: number): number {
+  const distUltraShortKm = cfgNum(config, "dist_ultra_short_km", 2);
+  const distShortKm = cfgNum(config, "dist_short_km", 5);
+  const distBaselineKm = cfgNum(config, "dist_baseline_km", 20);
+  const distMediumKm = cfgNum(config, "dist_medium_km", 40);
+  const distLongKm = cfgNum(config, "dist_long_km", 60);
+  const distVeryLongKm = cfgNum(config, "dist_very_long_km", 100);
+  const distModUltraShort = cfgNum(config, "dist_mod_ultra_short", 0.92);
+  const distModShort = cfgNum(config, "dist_mod_short", 0.95);
+  const distModMedium = cfgNum(config, "dist_mod_medium", 1.08);
+  const distModLong = cfgNum(config, "dist_mod_long", 1.15);
+  const distModVeryLong = cfgNum(config, "dist_mod_very_long", 1.25);
+  const distModExtreme = cfgNum(config, "dist_mod_extreme", 1.35);
+  if (distKm <= distUltraShortKm) return distModUltraShort;
+  if (distKm <= distShortKm) return distModShort;
+  if (distKm <= distBaselineKm) return 1.0;
+  if (distKm <= distMediumKm) return distModMedium;
+  if (distKm <= distLongKm) return distModLong;
+  if (distKm <= distVeryLongKm) return distModVeryLong;
+  return distModExtreme;
+}
 
 async function calcB2bOneoff(
   sb: SupabaseAdmin,
@@ -1322,13 +1460,24 @@ async function calcB2bOneoff(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const wgResult = await calcWhiteGlove(sb, input, config, distInfo, {
-    total: 0,
-    breakdown: [],
-    byTierExclusion: new Map(),
-  });
+  const baseFee = cfgNum(config, "b2b_oneoff_base", 350);
+  const distKm = distInfo?.distance_km ?? 0;
+  const distanceModifier = getDistanceModifier(config, distKm);
 
-  let price = wgResult.custom_price.price;
+  const accessMap = parseJsonConfig<Record<string, number>>(config, "b2b_access_surcharges", {});
+  const weightMap = parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {});
+  const accessKey = (k: string | undefined): string => (k === "no_parking_nearby" ? "no_parking" : (k ?? ""));
+  const fromAccess = input.from_access ? (accessMap[accessKey(input.from_access)] ?? 0) : 0;
+  const toAccess = input.to_access ? (accessMap[accessKey(input.to_access)] ?? 0) : 0;
+  const accessSurcharge = fromAccess + toAccess;
+
+  const weightCategory = input.b2b_weight_category || "standard";
+  const weightSurcharge = weightMap[weightCategory] ?? 0;
+
+  let price = Math.round(baseFee * distanceModifier) + accessSurcharge + weightSurcharge;
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  price = roundTo(price, rounding);
+  if (price < 200) price = 200;
 
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -1342,7 +1491,11 @@ async function calcB2bOneoff(
   }
 
   const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
-  const b2bIncludes = b2bFeatures.length > 0 ? b2bFeatures : wgResult.custom_price.includes;
+  const b2bIncludes = b2bFeatures.length > 0 ? b2bFeatures : [
+    "Professional crew",
+    "Loading and unloading",
+    "Basic protection",
+  ];
 
   return {
     custom_price: {
@@ -1352,7 +1505,188 @@ async function calcB2bOneoff(
       total: price + tax,
       includes: b2bIncludes,
     } as TierResult,
-    factors: wgResult.factors,
+    factors: {
+      base_fee: baseFee,
+      distance_modifier: distanceModifier,
+      distance_km: distKm,
+      access_surcharge: accessSurcharge,
+      weight_surcharge: weightSurcharge,
+      weight_category: weightCategory,
+      b2b_business_name: input.b2b_business_name || null,
+      b2b_items: input.b2b_items || null,
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════
+// EVENT — round-trip delivery + optional setup
+// ═══════════════════════════════════════════════
+
+const EVENT_WEIGHT_MAP: Record<string, number> = { light: 0.5, medium: 2.0, heavy: 5.0 };
+
+async function calcEvent(
+  sb: SupabaseAdmin,
+  input: QuoteInput,
+  config: Map<string, string>,
+  distInfo: { distance_km: number; drive_time_min: number } | null,
+  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+) {
+  // Build inventory-style score from event items
+  let eventScore = 0;
+  for (const item of input.event_items ?? []) {
+    const w = EVENT_WEIGHT_MAP[item.weight_category] ?? 2.0;
+    eventScore += w * (item.quantity || 1);
+  }
+
+  const distBaseKm = cfgNum(config, "dist_baseline_km", cfgNum(config, "distance_base_km", 30));
+  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
+  const distKm = distInfo?.distance_km ?? 0;
+  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
+
+  // Labour estimate from event items
+  const labour = eventScore > 0
+    ? estimateLabourFromScore(eventScore, distKm, input.from_access, input.to_access, "2br", {
+        driveTimeMinutes: distInfo?.drive_time_min,
+      })
+    : { crewSize: 2, estimatedHours: 3, hoursRange: "2.5–4 hours", truckSize: "20ft" };
+
+  // Delivery charge: crew × hours × labour rate + distance surcharge
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  let deliveryCharge = Math.round(labour.crewSize * labour.estimatedHours * labourRate * 1.4); // 1.4 ops overhead factor
+  deliveryCharge += distanceSurcharge;
+  deliveryCharge = roundTo(deliveryCharge, rounding);
+  if (deliveryCharge < 350) deliveryCharge = 350;
+
+  // Return charge (simpler: items already inventoried, no re-wrap)
+  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
+  const returnCharge = roundTo(Math.round(deliveryCharge * returnDiscount), rounding);
+  const returnHours = Math.ceil(labour.estimatedHours * returnDiscount);
+
+  // Setup fee
+  let setupFee = 0;
+  let setupLabel = "";
+  if (input.event_setup_required) {
+    const sh = input.event_setup_hours ?? 2;
+    const setupPrices: Record<number, number> = {
+      1:  cfgNum(config, "event_setup_fee_1hr",     150),
+      2:  cfgNum(config, "event_setup_fee_2hr",     275),
+      3:  cfgNum(config, "event_setup_fee_3hr",     400),
+      99: cfgNum(config, "event_setup_fee_halfday", 600),
+    };
+    setupFee = setupPrices[sh] ?? setupPrices[2];
+    setupLabel = sh === 99 ? "Half-day setup" : `${sh}hr setup`;
+  }
+
+  let price = deliveryCharge + returnCharge + setupFee + addonResult.total;
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const tax = Math.round(price * taxRate);
+  const total = price + tax;
+  const deposit = Math.max(150, Math.round(total * 0.25));
+
+  const eventIncludes = [
+    `Delivery (${input.move_date ?? "TBD"}): ${labour.crewSize} movers, ${labour.estimatedHours}hr`,
+    ...(input.event_setup_required ? [`Setup service: ${setupLabel}`] : []),
+    `Return (${input.event_return_date ?? "TBD"}): same crew, ~${returnHours}hr`,
+    "Round-trip — same crew knows the layout",
+    "All items inventoried and protected",
+  ];
+
+  return {
+    custom_price: {
+      price,
+      deposit,
+      tax,
+      total,
+      includes: eventIncludes,
+    } as TierResult,
+    factors: {
+      event_name: input.event_name || null,
+      delivery_date: input.move_date || null,
+      return_date: input.event_return_date || null,
+      delivery_charge: deliveryCharge,
+      return_charge: returnCharge,
+      return_discount: returnDiscount,
+      setup_fee: setupFee,
+      setup_label: setupLabel || null,
+      distance_surcharge: distanceSurcharge,
+      event_crew: labour.crewSize,
+      event_hours: labour.estimatedHours,
+      same_day: input.event_same_day ?? false,
+    },
+    labour,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// LABOUR ONLY — crew at one location, no transit
+// ═══════════════════════════════════════════════
+
+async function calcLabourOnly(
+  sb: SupabaseAdmin,
+  input: QuoteInput,
+  config: Map<string, string>,
+  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+) {
+  const labourRate = cfgNum(config, "labour_only_rate", 85);
+  const crewSize = input.labour_crew_size ?? 2;
+  const hours = input.labour_hours ?? 3;
+  const truckFee = input.labour_truck_required ? cfgNum(config, "labour_only_truck_fee", 150) : 0;
+  const accessSurcharge = await getAccessSurcharge(sb, input.from_access);
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+
+  const basePrice = crewSize * hours * labourRate;
+  let visit1Price = roundTo(basePrice + truckFee + accessSurcharge, rounding);
+
+  const visit2Discount = cfgNum(config, "labour_only_visit2_discount", 0.85);
+  let visit2Price = 0;
+  if ((input.labour_visits ?? 1) >= 2) {
+    visit2Price = roundTo(Math.round(basePrice * visit2Discount) + truckFee + accessSurcharge, rounding);
+  }
+
+  let price = visit1Price + visit2Price + addonResult.total;
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const tax = Math.round(price * taxRate);
+  const total = price + tax;
+  const deposit = Math.max(100, Math.round(total * 0.25));
+
+  const labourIncludes = [
+    `${crewSize} movers × ${hours} hours`,
+    `Labour rate: $${labourRate}/mover/hr`,
+    input.labour_truck_required ? `Truck included (+$${truckFee})` : "No truck required (crew arrives in van)",
+    ...(accessSurcharge > 0 ? [`Access surcharge: $${accessSurcharge}`] : []),
+    ...((input.labour_visits ?? 1) >= 2
+      ? [`Visit 1 (${input.move_date ?? "TBD"}): $${visit1Price}`, `Visit 2 (${input.labour_second_visit_date ?? "TBD"}): $${visit2Price} (return visit discount)`]
+      : []),
+  ];
+
+  return {
+    custom_price: {
+      price,
+      deposit,
+      tax,
+      total,
+      includes: labourIncludes,
+    } as TierResult,
+    factors: {
+      crew_size: crewSize,
+      hours,
+      labour_rate: labourRate,
+      base_price: basePrice,
+      truck_fee: truckFee,
+      access_surcharge: accessSurcharge,
+      visits: input.labour_visits ?? 1,
+      visit1_price: visit1Price,
+      visit2_price: visit2Price,
+      visit2_date: input.labour_second_visit_date || null,
+      labour_description: input.labour_description || null,
+    },
+    labour: {
+      crewSize,
+      estimatedHours: hours,
+      hoursRange: `${hours}hr`,
+      truckSize: input.labour_truck_required ? "20ft" : "Van",
+    },
   };
 }
 
@@ -1374,25 +1708,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!input.service_type || !input.from_address || !input.to_address || !input.move_date) {
+  // Labour-only: to_address may equal from_address (work at one location)
+  const effectiveToAddress = input.to_address || (input.service_type === "labour_only" ? input.from_address : undefined);
+  if (!input.service_type || !input.from_address || !effectiveToAddress || !input.move_date) {
     return NextResponse.json(
-      { error: "service_type, from_address, to_address, and move_date are required" },
+      { error: "service_type, from_address, to_address (or work_address for labour_only), and move_date are required" },
       { status: 400 },
     );
+  }
+  if (!input.to_address && input.service_type === "labour_only") {
+    input = { ...input, to_address: input.from_address };
   }
 
   const sb = createAdminClient();
   const config = await loadConfig(sb);
 
-  const [distInfo, neighbourhood, dateMult] = await Promise.all([
+  // Section 5: Batch all Mapbox distance calls (job route + deadhead + return trip)
+  const isResidential = input.service_type === "local_move" || input.service_type === "long_distance";
+  const [distInfo, neighbourhood, dateMult, deadheadInfo, returnInfo] = await Promise.all([
     getDistance(input.from_address, input.to_address),
     getNeighbourhood(sb, input.from_address),
     getDateMultiplier(sb, input.move_date),
+    // Section 4D: Yugo base → pickup (deadhead)
+    isResidential ? getDistance(YUGO_BASE_ADDRESS, input.from_address) : Promise.resolve(null),
+    // Section 4E: drop-off → Yugo base (return trip)
+    isResidential ? getDistance(input.to_address, YUGO_BASE_ADDRESS) : Promise.resolve(null),
   ]);
 
   // Pre-compute a rough base for percent-type add-ons (use base_rate as proxy)
   let roughBase = 1000;
-  if (input.service_type === "local_move" || input.service_type === "long_distance") {
+  if (isResidential) {
     const { data: br } = await sb
       .from("base_rates")
       .select("base_price")
@@ -1403,9 +1748,13 @@ export async function POST(req: NextRequest) {
 
   const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
 
+  // Section 1: Inventory modifier floor/cap from platform_config (default 0.65 floor, 1.50 cap)
+  const invModFloor = cfgNum(config, "inventory_modifier_floor", 0.65);
+  const invModCap   = cfgNum(config, "inventory_modifier_cap",   1.50);
+
   // Inventory volume modifier (residential / long distance only)
-  const invResult = (input.service_type === "local_move" || input.service_type === "long_distance")
-    ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count)
+  const invResult = isResidential
+    ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count, invModFloor, invModCap)
     : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
 
   // FIX 1: Inventory quantity sanity — flag for coordinator review (don't block quote)
@@ -1441,6 +1790,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Labour estimate (informational for coordinators); uses adjusted score so specialty items increase crew/hours
+  // Section 4C: pass drive_time_min (actual minutes × 2.5) instead of distanceKm
+  // Section 4E: pass return info for long drop-offs
+  // Section 2: pass specialty items directly so crew is correctly sized
   let labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
   if (adjustedScore > 0) {
     labour = estimateLabourFromScore(
@@ -1449,8 +1801,14 @@ export async function POST(req: NextRequest) {
       input.from_access,
       input.to_access,
       input.move_size ?? "2br",
+      {
+        driveTimeMinutes: distInfo?.drive_time_min,
+        specialtyItems: input.specialty_items,
+        dropoffToBaseKm: returnInfo?.distance_km,
+        returnDriveMinutes: returnInfo?.drive_time_min,
+      },
     );
-  } else if (input.service_type === "local_move" || input.service_type === "long_distance") {
+  } else if (isResidential) {
     const { data: br } = await sb
       .from("base_rates")
       .select("min_crew, estimated_hours")
@@ -1469,10 +1827,22 @@ export async function POST(req: NextRequest) {
     };
   }
 
+  // Global crating calculation (applies to all service types)
+  const cratingBySize = parseJsonConfig<Record<string, number>>(config, "crating_prices", {});
+  const CRATING_PRICE_FALLBACK: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
+  let globalCratingTotal = 0;
+  if (input.crating_pieces && input.crating_pieces.length > 0) {
+    for (const piece of input.crating_pieces) {
+      globalCratingTotal += cratingBySize[piece.size] ?? CRATING_PRICE_FALLBACK[piece.size] ?? 250;
+    }
+  }
+
   type FactorsObj = Record<string, unknown>;
   let tiers: Record<string, TierResult> | undefined;
   let custom_price: TierResult | undefined;
   let factors: FactorsObj = {};
+  let residentialCratingTotal = 0;
+  let estateSuppliesAllowance = 0;
   /** For local moves: crew/hours shown to client (from base_rates). Used so ops matches client. */
   let displayCrew: number | null = null;
   let displayHours: number | null = null;
@@ -1487,9 +1857,11 @@ export async function POST(req: NextRequest) {
 
   switch (svcType) {
     case "local_move": {
-      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult, labour);
+      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult, labour, deadheadInfo, returnInfo);
       tiers = res.tiers;
       factors = res.factors;
+      residentialCratingTotal = res.cratingTotal;
+      estateSuppliesAllowance = res.estateSuppliesAllowance;
       // Use labour (inventory-based or base_rates fallback) when available so quote shows correct crew/hours
       displayCrew = labour ? labour.crewSize : res.minCrew;
       displayHours = labour ? labour.estimatedHours : res.estHours;
@@ -1532,8 +1904,46 @@ export async function POST(req: NextRequest) {
       factors = res.factors;
       break;
     }
+    case "event": {
+      const res = await calcEvent(sb, input, config, distInfo, addonResult);
+      custom_price = res.custom_price;
+      factors = res.factors;
+      labour = res.labour;
+      break;
+    }
+    case "labour_only": {
+      const res = await calcLabourOnly(sb, input, config, addonResult);
+      custom_price = res.custom_price;
+      factors = res.factors;
+      labour = res.labour;
+      break;
+    }
     default:
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
+  }
+
+  // For non-residential services, apply crating cost to custom_price
+  if (custom_price && globalCratingTotal > 0) {
+    custom_price = {
+      ...custom_price,
+      price: custom_price.price + globalCratingTotal,
+      total: custom_price.total + globalCratingTotal + Math.round(globalCratingTotal * cfgNum(config, "tax_rate", TAX_RATE_FALLBACK)),
+      tax: custom_price.tax + Math.round(globalCratingTotal * cfgNum(config, "tax_rate", TAX_RATE_FALLBACK)),
+    };
+    factors = { ...factors, crating_total: globalCratingTotal, crating_pieces_count: input.crating_pieces?.length ?? 0 };
+  }
+
+  // Add crating line item to tier includes when crating is present
+  const cratingForDisplay = svcType === "local_move" ? residentialCratingTotal : globalCratingTotal;
+  if (cratingForDisplay > 0 && input.crating_pieces && input.crating_pieces.length > 0) {
+    const cratingLine = `Custom crating for ${input.crating_pieces.length} item${input.crating_pieces.length === 1 ? "" : "s"}: $${cratingForDisplay.toLocaleString()}`;
+    if (tiers) {
+      for (const t of Object.values(tiers)) {
+        t.includes.push(cratingLine);
+      }
+    } else if (custom_price) {
+      custom_price.includes.push(cratingLine);
+    }
   }
 
   const TRUCK_DISPLAY: Record<string, string> = {
@@ -1678,7 +2088,7 @@ export async function POST(req: NextRequest) {
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
       contact_id: contactId,
-      service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType,
+      service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType === "event" ? "event" : svcType === "labour_only" ? "labour_only" : svcType,
       status: "draft",
       from_address: input.from_address,
       from_access: input.from_access || null,
@@ -1707,6 +2117,9 @@ export async function POST(req: NextRequest) {
       truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
       recommended_tier: input.recommended_tier || "signature",
+      crating_pieces: input.crating_pieces ?? [],
+      crating_total: cratingForDisplay,
+      supplies_allowance: estateSuppliesAllowance,
     };
 
     if (isUpdate) {

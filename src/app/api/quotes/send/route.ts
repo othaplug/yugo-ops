@@ -14,14 +14,29 @@ const SERVICE_TO_TEMPLATE: Record<string, string> = {
   single_item: "quote-singleitem",
   white_glove: "quote-whiteglove",
   specialty: "quote-specialty",
-  b2b_oneoff: "quote-specialty",
-  b2b_delivery: "quote-specialty",
+  b2b_oneoff: "quote-b2boneoff",
+  b2b_delivery: "quote-b2boneoff",
+  event: "quote-event",
+  labour_only: "quote-labouronly",
 };
 
-/** Subject for all quote emails: "FirstName, Your Move Quote is Here - QuoteID" */
-function quoteSubject(firstName: string, quoteId: string): string {
+const SERVICE_SUBJECT: Record<string, string> = {
+  local_move: "Your Move Quote is Ready",
+  long_distance: "Your Long Distance Move Quote",
+  office_move: "Your Office Move Quote",
+  single_item: "Your Delivery Quote",
+  white_glove: "Your White Glove Service Quote",
+  specialty: "Your Specialty Move Quote",
+  b2b_oneoff: "Your Delivery Quote from Yugo",
+  b2b_delivery: "Your Delivery Quote from Yugo",
+  event: "Your Event Logistics Quote",
+  labour_only: "Your Service Quote",
+};
+
+function quoteSubject(firstName: string, quoteId: string, serviceType: string): string {
   const namePart = firstName ? `${firstName}, ` : "";
-  return `${namePart}Your Move Quote is Here - ${quoteId}`;
+  const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
+  return `${namePart}${subjectBase} \u2014 ${quoteId}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -65,7 +80,6 @@ export async function POST(req: NextRequest) {
       phone: string | null;
     } | null;
 
-    // Use contact email from DB when present; otherwise use email from request body (form input)
     const clientEmail = (contact?.email?.trim() || bodyEmail?.trim()) || null;
     if (!clientEmail) {
       return NextResponse.json({ error: "Contact has no email address. Enter the client email in the form and try again." }, { status: 400 });
@@ -96,9 +110,8 @@ export async function POST(req: NextRequest) {
     const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
-    const subject = quoteSubject(firstName, quoteId);
+    const subject = quoteSubject(firstName, quoteId, serviceType);
 
-    // If quote is stored as 1br but inventory suggests 2br+ (e.g. wrong prefill from deal), use 2br for email and persist
     const storedMoveSize = (quote.move_size as string | null) ?? null;
     const inventoryScore = (quote.inventory_score as number | null) ?? (factors.inventory_score as number | null) ?? null;
     const inventoryItems = (quote.inventory_items as { quantity?: number }[] | null) ?? [];
@@ -138,6 +151,23 @@ export async function POST(req: NextRequest) {
         coordinatorName,
         coordinatorPhone,
         recommendedTier: quote.recommended_tier ?? "signature",
+        // Event
+        eventName: (factors.event_name as string) ?? null,
+        eventReturnDate: (factors.return_date as string) ?? null,
+        eventDeliveryCharge: (factors.delivery_charge as number) ?? null,
+        eventSetupFee: (factors.setup_fee as number) ?? null,
+        eventReturnCharge: (factors.return_charge as number) ?? null,
+        // Labour Only
+        labourCrewSize: (factors.crew_size as number) ?? null,
+        labourHours: (factors.hours as number) ?? null,
+        labourRate: (factors.labour_rate as number) ?? null,
+        labourVisits: (factors.visits as number) ?? null,
+        labourDescription: (factors.labour_description as string) ?? null,
+        // B2B One-Off
+        b2bBusinessName: (factors.b2b_business_name as string) ?? null,
+        b2bItems: Array.isArray(factors.b2b_items)
+          ? (factors.b2b_items as string[]).join(", ")
+          : null,
       },
     });
 
@@ -159,8 +189,6 @@ export async function POST(req: NextRequest) {
       })
       .eq("quote_id", quoteId);
 
-    // Persist the email (and name) we sent to on the contact so moves created from this quote
-    // (e.g. via recover-move) get client_email and referral codes work.
     if (quote.contact_id && clientEmail) {
       const contactUpdate: { email: string; name?: string } = { email: clientEmail.trim() };
       if (fullName.trim()) contactUpdate.name = fullName.trim();
@@ -180,16 +208,15 @@ export async function POST(req: NextRequest) {
           (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
           quote.custom_price;
 
-        const fullName = (contact?.name?.trim() || bodyClientName?.trim()) || "";
-        const first = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
-        const last = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
+        const fName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
+        const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
 
         const dealProps: Record<string, string> = {
           quote_url: quoteUrl,
         };
         if (curatedPrice != null) dealProps.amount = String(curatedPrice);
-        if (first) dealProps.firstname = first;
-        if (last) dealProps.lastname = last;
+        if (fName) dealProps.firstname = fName;
+        if (lName) dealProps.lastname = lName;
         if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
         if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
         if (quote.from_access?.trim()) dealProps.access_from = quote.from_access.trim();

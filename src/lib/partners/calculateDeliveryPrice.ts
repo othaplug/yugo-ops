@@ -209,9 +209,11 @@ export async function calculatePerDelivery(opts: {
   isWeekend: boolean;
   pricingTier: "standard" | "partner";
   lookup?: RateCardLookup;
+  deliveryAccess?: string | null;
+  itemWeightCategory?: string | null;
 }): Promise<DeliveryPriceResult> {
   const db = createAdminClient();
-  const { rateCardId, deliveryType, zone, services, isAfterHours, isWeekend, pricingTier } = opts;
+  const { rateCardId, deliveryType, zone, services, isAfterHours, isWeekend, pricingTier, deliveryAccess, itemWeightCategory } = opts;
   const lookup = opts.lookup || { rateCardId, templateId: null };
 
   const breakdown: PriceBreakdownItem[] = [];
@@ -230,12 +232,15 @@ export async function calculatePerDelivery(opts: {
   if (!rate) throw new Error(`No rate found for ${deliveryType} zone ${lookupZone} / ${pricingTier}`);
 
   const typeLabels: Record<string, string> = {
-    single_item: "Single Item", multi_piece: "Multi-Piece",
+    single_item: "Single Item", multi_piece: "Multi-Piece", multi_stop: "Multi-Stop",
     full_room: "Full Room Setup", curbside: "Curbside Drop", oversized: "Oversized/Fragile",
+    day_rate: "Day Rate", b2b: "B2B", b2b_delivery: "B2B", delivery: "Standard Delivery",
+    designer: "Designer", retail: "Retail", hospitality: "Hospitality", gallery: "Gallery", project: "Project",
   };
+  const toReadable = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const basePrice = rate.price_min;
-  breakdown.push({ label: `${typeLabels[deliveryType] || deliveryType} Delivery`, amount: basePrice, detail: `Zone ${lookupZone}` });
+  breakdown.push({ label: `${typeLabels[deliveryType] ?? toReadable(deliveryType)} Delivery`, amount: basePrice, detail: `Zone ${lookupZone}` });
 
   // 2. Zone surcharge for Z3+
   let zoneSurcharge = 0;
@@ -324,7 +329,36 @@ export async function calculatePerDelivery(opts: {
     }
   }
 
-  const totalPrice = basePrice + zoneSurcharge + servicesPrice + afterHoursSurcharge;
+  // 5. B2B access surcharge (per-delivery only)
+  let accessSurcharge = 0;
+  if (deliveryAccess) {
+    const { data: cfg } = await db.from("platform_config").select("value").eq("key", "b2b_access_surcharges").single();
+    const accessMap = cfg?.value ? (JSON.parse(cfg.value) as Record<string, number>) : {};
+    accessSurcharge = accessMap[deliveryAccess] ?? 0;
+    if (accessSurcharge > 0) {
+      const accessLabels: Record<string, string> = {
+        walk_up_2nd: "Walk-up 2nd", walk_up_3rd: "Walk-up 3rd", walk_up_4th_plus: "Walk-up 4th+",
+        long_carry: "Long Carry", narrow_stairs: "Narrow Stairs", no_parking: "No Parking",
+      };
+      breakdown.push({ label: `Access surcharge (${accessLabels[deliveryAccess] || deliveryAccess})`, amount: accessSurcharge });
+    }
+  }
+
+  // 6. B2B weight surcharge (per-delivery only)
+  let weightSurcharge = 0;
+  if (itemWeightCategory && itemWeightCategory !== "standard") {
+    const { data: cfg } = await db.from("platform_config").select("value").eq("key", "b2b_weight_surcharges").single();
+    const weightMap = cfg?.value ? (JSON.parse(cfg.value) as Record<string, number>) : {};
+    weightSurcharge = weightMap[itemWeightCategory] ?? 0;
+    if (weightSurcharge > 0) {
+      const weightLabels: Record<string, string> = {
+        heavy: "Heavy (100-250 lbs)", very_heavy: "Very Heavy (250-500 lbs)", oversized_fragile: "Oversized/Fragile",
+      };
+      breakdown.push({ label: `Weight surcharge (${weightLabels[itemWeightCategory] || itemWeightCategory})`, amount: weightSurcharge });
+    }
+  }
+
+  const totalPrice = basePrice + zoneSurcharge + servicesPrice + afterHoursSurcharge + accessSurcharge + weightSurcharge;
 
   return {
     basePrice,

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: session, error: fetchErr } = await admin
     .from("tracking_sessions")
-    .select("id, job_id, job_type, team_id, status, checkpoints, is_active, last_location")
+    .select("id, job_id, job_type, team_id, status, checkpoints, is_active, last_location, started_at")
     .eq("id", sessionId)
     .single();
 
@@ -120,6 +120,11 @@ export async function POST(req: NextRequest) {
   const table = session.job_type === "move" ? "moves" : "deliveries";
   const enRouteStatuses = ["en_route_to_pickup", "en_route_to_destination", "on_route", "en_route"];
   if (isCompleted) {
+    // Calculate actual job duration from session timestamps and write to move/delivery record
+    const sessionStart = session.started_at ? new Date(session.started_at as string).getTime() : null;
+    const sessionEnd = new Date(now).getTime();
+    const actualHours = sessionStart ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100 : null;
+
     await admin
       .from(table)
       .update({
@@ -128,6 +133,7 @@ export async function POST(req: NextRequest) {
         completed_at: now,
         updated_at: now,
         eta_tracking_active: false,
+        ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
       })
       .eq("id", session.job_id);
     if (session.job_type === "move") {

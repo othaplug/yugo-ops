@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import ModalOverlay from "../components/ModalOverlay";
+import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
 
 /* ─── Types ─── */
@@ -23,7 +24,9 @@ interface TemplateRates {
 const VEHICLE_LABELS: Record<string, string> = { sprinter: "Sprinter", "16ft": "16ft", "20ft": "20ft", "26ft": "26ft" };
 const DELIVERY_TYPE_LABELS: Record<string, string> = {
   single_item: "Single Item", multi_piece: "Multi-Piece", full_room: "Full Room Setup",
-  curbside: "Curbside Drop", oversized: "Oversized/Fragile",
+  multi_stop: "Multi-Stop", curbside: "Curbside Drop", oversized: "Oversized/Fragile",
+  day_rate: "Day Rate", b2b: "B2B", b2b_delivery: "B2B", delivery: "Standard Delivery",
+  designer: "Designer", retail: "Retail", hospitality: "Hospitality", gallery: "Gallery", project: "Project",
 };
 const OVERAGE_LABELS: Record<string, string> = {
   full_7_10: "Full Day 7–10 stops", full_11_plus: "Full Day 11+",
@@ -219,7 +222,7 @@ function TemplateRateEditor({
                 <tbody className="divide-y divide-[var(--brd)]/30">
                   {data.deliveryRates.map((r) => (
                     <tr key={r.id}>
-                      <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{DELIVERY_TYPE_LABELS[r.delivery_type] || r.delivery_type}</td>
+                      <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</td>
                       <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
                       <td className="px-2 py-2 text-[10px] text-[var(--tx3)]">Z{r.zone}</td>
                       <EditableCell table="delivery_rates" id={r.id} field="price_min" original={r.price_min} />
@@ -707,12 +710,7 @@ export default function RateTemplatesPanel() {
           <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Rate Card Templates</h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Industry templates applied to partners. Changes affect all partners on the template.</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white hover:opacity-90 transition-opacity"
-        >
-          + New Template
-        </button>
+        <CreateButton onClick={() => setCreateOpen(true)} title="New Template" />
       </div>
 
       <div className="space-y-3">

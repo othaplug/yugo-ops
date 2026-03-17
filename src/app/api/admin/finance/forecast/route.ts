@@ -89,7 +89,7 @@ export async function GET(req: Request) {
     leadsRes, crewsRes, quotesMetricsRes, claimsRes, leadsCountRes,
   ] = await Promise.all([
     db.from("moves")
-      .select("id, estimate, amount, status, service_type, move_type, scheduled_date")
+      .select("id, estimate, amount, status, service_type, move_type, scheduled_date, payment_marked_paid")
       .gte("scheduled_date", lastMonthStart).lte("scheduled_date", endDate)
       .not("status", "eq", "cancelled"),
 
@@ -264,20 +264,20 @@ export async function GET(req: Request) {
 
   /* ══════════ KEY METRICS ══════════ */
 
-  const revenueStatuses = new Set(["confirmed", "scheduled", "completed", "delivered", "done", "paid"]);
-  const dlvRevenueStatuses = new Set(["confirmed", "scheduled", "delivered", "completed"]);
+  const revenueStatuses = new Set(["confirmed", "scheduled", "completed", "delivered", "done", "paid", "in_progress", "dispatched"]);
+  const dlvRevenueStatuses = new Set(["confirmed", "scheduled", "delivered", "completed", "in_progress", "dispatched", "in-transit"]);
 
   const thisMonthMoves = allMoves.filter(
-    (m) => m.scheduled_date >= thisMonthStart && m.scheduled_date <= today && revenueStatuses.has(m.status),
+    (m) => m.scheduled_date >= thisMonthStart && m.scheduled_date <= today && (revenueStatuses.has(m.status) || m.payment_marked_paid === true),
   );
   const lastMonthMoves = allMoves.filter(
-    (m) => m.scheduled_date >= lastMonthStart && m.scheduled_date <= lastMonthEnd && revenueStatuses.has(m.status),
+    (m) => m.scheduled_date >= lastMonthStart && m.scheduled_date <= lastMonthEnd && (revenueStatuses.has(m.status) || m.payment_marked_paid === true),
   );
   const thisMonthDlvs = allDeliveries.filter(
-    (d) => d.scheduled_date >= thisMonthStart && d.scheduled_date <= today && dlvRevenueStatuses.has(d.status),
+    (d) => d.scheduled_date >= thisMonthStart && d.scheduled_date <= today && dlvRevenueStatuses.has(d.status) && Number(d.total_price || d.admin_adjusted_price || d.quoted_price || 0) > 0,
   );
   const lastMonthDlvs = allDeliveries.filter(
-    (d) => d.scheduled_date >= lastMonthStart && d.scheduled_date <= lastMonthEnd && dlvRevenueStatuses.has(d.status),
+    (d) => d.scheduled_date >= lastMonthStart && d.scheduled_date <= lastMonthEnd && dlvRevenueStatuses.has(d.status) && Number(d.total_price || d.admin_adjusted_price || d.quoted_price || 0) > 0,
   );
 
   const thisMonthConfirmed = thisMonthMoves.reduce((s, m) => s + movRev(m), 0) +

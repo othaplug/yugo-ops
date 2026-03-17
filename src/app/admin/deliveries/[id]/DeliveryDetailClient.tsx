@@ -146,8 +146,14 @@ export interface DeliveryStop {
   address: string;
   customer_name: string | null;
   customer_phone: string | null;
+  client_phone?: string | null;
   items_description: string | null;
   special_instructions: string | null;
+  notes?: string | null;
+  stop_status?: string | null;
+  stop_type?: string | null;
+  arrived_at?: string | null;
+  completed_at?: string | null;
 }
 
 interface EtaSmsLogEntry {
@@ -403,29 +409,44 @@ export default function DeliveryDetailClient({
           </div>
 
           {delivery.total_price > 0 && (
-            <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-              {delivery.booking_type && (
+            <div className="mb-3 space-y-2">
+              <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                {delivery.booking_type && (
+                  <div>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Type</span>
+                    <span className="font-medium text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"}</span>
+                  </div>
+                )}
+                {delivery.base_price > 0 && (
+                  <div>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Base</span>
+                    <span className="font-medium text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
+                  </div>
+                )}
+                {(delivery.services_price > 0 || delivery.overage_price > 0) && (
+                  <div>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Add-ons</span>
+                    <span className="font-medium text-[var(--tx)]">{formatCurrency((delivery.services_price || 0) + (delivery.overage_price || 0))}</span>
+                  </div>
+                )}
                 <div>
-                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Type</span>
-                  <span className="font-medium text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"}</span>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Total</span>
+                  <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
                 </div>
-              )}
-              {delivery.base_price > 0 && (
-                <div>
-                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Base</span>
-                  <span className="font-medium text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
-                </div>
-              )}
-              {(delivery.services_price > 0 || delivery.overage_price > 0) && (
-                <div>
-                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Add-ons</span>
-                  <span className="font-medium text-[var(--tx)]">{formatCurrency((delivery.services_price || 0) + (delivery.overage_price || 0))}</span>
-                </div>
-              )}
-              <div>
-                <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Total</span>
-                <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
               </div>
+              {Array.isArray(delivery.pricing_breakdown) && delivery.pricing_breakdown.length > 0 && (
+                <div className="rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/30 p-3 text-[11px]">
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Price breakdown</div>
+                  <div className="space-y-1">
+                    {delivery.pricing_breakdown.map((b: { label: string; amount: number; detail?: string }, i: number) => (
+                      <div key={i} className="flex justify-between text-[var(--tx)]">
+                        <span>{b.label}{b.detail ? ` (${b.detail})` : ""}</span>
+                        <span className={b.amount < 0 ? "text-emerald-600" : ""}>{formatCurrency(b.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -681,23 +702,51 @@ export default function DeliveryDetailClient({
                     {delivery.pickup_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
                   </div>
                 </div>
-                {/* Day rate: list each stop */}
+                {/* Day rate: list each stop with status */}
                 {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? (
-                  stops.map((stop, i) => (
-                    <div key={stop.id} className="flex items-start gap-3.5">
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
-                        {i < stops.length - 1 && <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />}
+                  stops.map((stop, i) => {
+                    const sStatus = stop.stop_status || "pending";
+                    const isDoneStop = sStatus === "completed";
+                    const isCurrentStop = ["current", "arrived", "in_progress"].includes(sStatus);
+                    const dotColor = isDoneStop ? "#22C55E" : isCurrentStop ? "#F59E0B" : "var(--brd)";
+                    const statusIcon = isDoneStop ? "done" : isCurrentStop ? "active" : "pending";
+                    const completedTime = stop.completed_at
+                      ? new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })
+                      : null;
+                    return (
+                      <div key={stop.id} className="flex items-start gap-3.5">
+                        <div className="flex flex-col items-center shrink-0">
+                          <div className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[8px]" style={{ borderColor: dotColor, backgroundColor: `${dotColor}20` }} />
+                          {i < stops.length - 1 && <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />}
+                        </div>
+                        <div className="flex-1 min-w-0 pb-4">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 flex items-center gap-1">
+                              {statusIcon === "done" && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                              {statusIcon === "active" && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
+                              {statusIcon === "pending" && <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />}
+                              Stop {stop.stop_number}
+                            </div>
+                            {stop.stop_type && (
+                              <span className="text-[8px] uppercase font-semibold text-[var(--tx3)]/60">
+                                {stop.stop_type}
+                              </span>
+                            )}
+                            {isDoneStop && completedTime && (
+                              <span className="text-[8px] text-[#22C55E] ml-auto">Done {completedTime}</span>
+                            )}
+                            {isCurrentStop && (
+                              <span className="text-[8px] text-[#F59E0B] ml-auto">In Progress</span>
+                            )}
+                          </div>
+                          <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "—"}</div>
+                          {stop.customer_name && <div className="text-[11px] text-[var(--tx3)] mt-0.5">{stop.customer_name}</div>}
+                          {stop.items_description && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{stop.items_description}</div>}
+                          {(stop.special_instructions || stop.notes) && <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">Note: {stop.special_instructions || stop.notes}</div>}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0 pb-4">
-                        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Stop {stop.stop_number}</div>
-                        <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "—"}</div>
-                        {stop.customer_name && <div className="text-[11px] text-[var(--tx3)] mt-0.5">{stop.customer_name}</div>}
-                        {stop.items_description && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{stop.items_description}</div>}
-                        {stop.special_instructions && <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">Note: {stop.special_instructions}</div>}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   /* Single drop-off */
                   <div className="flex items-start gap-3.5">

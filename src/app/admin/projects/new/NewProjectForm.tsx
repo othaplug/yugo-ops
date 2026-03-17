@@ -25,7 +25,7 @@ interface Phase {
 const fieldInput =
   "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
-const STEPS = ["Partner & Client", "Phases", "Budget", "Review"];
+const STEPS = ["Partner & Client", "Phases", "Estimate", "Review"];
 
 export default function NewProjectForm({ partners, currentUserId, partnerFilter }: { partners: Partner[]; currentUserId: string | null; partnerFilter?: string }) {
   const router = useRouter();
@@ -115,10 +115,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
   return (
     <div className="px-4 sm:px-6 py-5 max-w-[720px] mx-auto">
-      <BackButton
-        href={partnerFilter === "designer" ? "/admin/partners/designers" : "/admin/projects"}
-        label={partnerFilter === "designer" ? "Designers" : "Projects"}
-      />
+      <BackButton label="Back" />
 
       <h1 className="font-heading text-[20px] font-bold text-[var(--tx)] mt-4 mb-6">New Project</h1>
 
@@ -250,11 +247,14 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
         </div>
       )}
 
-      {/* Step 3: Budget */}
+      {/* Step 3: Estimate */}
       {step === 2 && (
         <div className="space-y-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-4">
-            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Budget</div>
+            <div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Initial Estimate</div>
+              <p className="text-[11px] text-[var(--tx3)] mt-1">This is a rough starting estimate. The actual project cost will update automatically as deliveries are created and priced.</p>
+            </div>
 
             {selectedPartner && (
               <div className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
@@ -265,7 +265,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             )}
 
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Estimated Delivery Cost</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Estimated Delivery & Logistics Cost</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
                 <input
@@ -340,8 +340,8 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             </div>
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Budget</div>
-              <Row label="Estimated Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "—"} />
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Initial Estimate</div>
+              <Row label="Logistics Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "—"} />
               <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
               <Row label="HST (13%)" value={formatCurrency(hst)} />
               <div className="flex justify-between text-[13px] font-bold pt-2 border-t border-[var(--brd)] mt-2">

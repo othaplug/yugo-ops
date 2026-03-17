@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toTitleCase } from "@/lib/format-text";
+import CreateButton from "../components/CreateButton";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -262,12 +263,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
           <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">Recurring Schedules</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-0.5">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
-        >
-          + New Schedule
-        </button>
+        <CreateButton onClick={() => setCreateOpen(true)} title="New Schedule" />
       </div>
 
       {/* Search */}

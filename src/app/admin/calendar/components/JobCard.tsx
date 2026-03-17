@@ -78,10 +78,26 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         <span className={`text-[12px] font-bold text-[var(--tx)] truncate ${isCancelled ? "line-through" : ""}`}>
           {event.name}
         </span>
+        {event.isRecurring && (
+          <span className="ml-auto shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
+            RECURRING
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)] pl-3.5">
         <Icon name={TYPE_ICON_MAP[event.type] || "calendar"} className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current" />
         <span className="truncate">{toTitleCase(event.description)}</span>
+        {event.eventPhase && (
+          <span
+            className="shrink-0 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full ml-1"
+            style={{
+              background: event.eventPhase === "delivery" ? "#7C3AED22" : event.eventPhase === "return" ? "#059669" + "22" : "#F59E0B22",
+              color: event.eventPhase === "delivery" ? "#7C3AED" : event.eventPhase === "return" ? "#059669" : "#F59E0B",
+            }}
+          >
+            {event.eventPhase === "delivery" ? "Deliver" : event.eventPhase === "return" ? "Return" : event.eventPhase}
+          </span>
+        )}
         {event.crewName && (
           <>
             <span>·</span>

@@ -9,7 +9,7 @@ import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { Plus, Trash2, FileText, Home, Building2, ArrowUpRight, Gem, Star, Truck } from "lucide-react";
+import { Plus, Trash2, FileText } from "lucide-react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 interface Org {
@@ -149,6 +149,8 @@ export default function CreateMoveForm({
   const [coordinatorName, setCoordinatorName] = useState("");
   const [crewId, setCrewId] = useState("");
   const [truckPrimary, setTruckPrimary] = useState("");
+  const [estCrewSize, setEstCrewSize] = useState("2");
+  const [estHours, setEstHours] = useState("4");
   const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>([]);
   const [teamMembers, setTeamMembers] = useState<Set<string>>(new Set());
   const selectedCrewMembers = crewId ? (crews.find((c) => c.id === crewId)?.members || []) : [];
@@ -319,6 +321,18 @@ export default function CreateMoveForm({
       alert("Please fill in the delivery (to) address.");
       return;
     }
+    if (moveType === "residential" && !moveSize) {
+      alert("Move size is required for residential moves.");
+      return;
+    }
+    if (!estCrewSize || Number(estCrewSize) < 1) {
+      alert("Estimated crew size is required.");
+      return;
+    }
+    if (!estHours || Number(estHours) < 0.5) {
+      alert("Estimated hours is required (minimum 0.5).");
+      return;
+    }
 
     // If no client selected, check for duplicate before creating (proceed to create if check fails so API can respond)
     if (!organizationId) {
@@ -374,6 +388,8 @@ export default function CreateMoveForm({
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
       formData.append("truck_primary", truckPrimary || "");
+      formData.append("est_crew_size", estCrewSize);
+      formData.append("est_hours", estHours);
       formData.append("items", JSON.stringify(
         inventoryItems.map((i) => ({
           slug: i.slug,
@@ -496,15 +512,15 @@ export default function CreateMoveForm({
             <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
               {(["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const).map((val) => {
-                const META: Record<string, { Icon: React.ElementType; label: string; desc: string }> = {
-                  residential: { Icon: Home,        label: "Residential",        desc: "Local or long distance home move" },
-                  office:      { Icon: Building2,   label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-                  single_item: { Icon: ArrowUpRight, label: "Single Item",        desc: "One item or small batch delivery" },
-                  white_glove: { Icon: Gem,          label: "White Glove",        desc: "Premium handling, assembly, placement" },
-                  specialty:   { Icon: Star,         label: "Specialty / Event",  desc: "Art, piano, trade show, staging, estate" },
-                  b2b_oneoff:  { Icon: Truck,        label: "B2B One-Off",        desc: "One-off delivery from a business source" },
+                const META: Record<string, { label: string; desc: string }> = {
+                  residential: { label: "Residential",        desc: "Local or long distance home move" },
+                  office:      { label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
+                  single_item: { label: "Single Item",        desc: "One item or small batch delivery" },
+                  white_glove: { label: "White Glove",        desc: "Premium handling, assembly, placement" },
+                  specialty:   { label: "Specialty",          desc: "Piano, art, antiques, estate contents, trade show" },
+                  b2b_oneoff:  { label: "B2B One-Off",        desc: "One-off delivery from a business source" },
                 };
-                const { Icon: CardIcon, label, desc } = META[val];
+                const { label, desc } = META[val];
                 const sel = moveType === val;
                 return (
                   <button
@@ -518,9 +534,6 @@ export default function CreateMoveForm({
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <div className={`shrink-0 mt-0.5 w-6 h-6 flex items-center justify-center rounded-md transition-colors ${sel ? "bg-white/20" : "bg-[var(--bg)]"}`}>
-                        <CardIcon className={`w-3.5 h-3.5 ${sel ? "text-white" : "text-[var(--tx3)]"}`} strokeWidth={1.8} />
-                      </div>
                       <div className="min-w-0 flex-1">
                         <div className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}>
                           {label}
@@ -806,7 +819,7 @@ export default function CreateMoveForm({
           {/* Specialty: project info */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty / Event Details</h3>
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Project Type *">
                   <select value={spProjectType} onChange={(e) => setSpProjectType(e.target.value)} className={fieldInput}>
@@ -953,8 +966,13 @@ export default function CreateMoveForm({
             <div className="space-y-2">
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
-                <Field label="Move Size">
-                  <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
+                <Field label="Move Size *">
+                  <select
+                    value={moveSize}
+                    onChange={(e) => setMoveSize(e.target.value)}
+                    className={`${fieldInput} ${moveType === "residential" && !moveSize ? "border-amber-400/60" : ""}`}
+                    required={moveType === "residential"}
+                  >
                     <option value="">Select size…</option>
                     {MOVE_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -1369,19 +1387,43 @@ export default function CreateMoveForm({
                 </select>
               </Field>
               <Field label="Vehicle">
-              <select
-                name="truck_primary"
-                value={truckPrimary}
-                onChange={(e) => setTruckPrimary(e.target.value)}
-                className={fieldInput}
-              >
-                <option value="">Auto-assign…</option>
-                <option value="sprinter">Sprinter Van</option>
-                <option value="16ft">16ft Box Truck</option>
-                <option value="20ft">20ft Box Truck</option>
-                <option value="24ft">24ft Box Truck</option>
-                <option value="26ft">26ft Box Truck</option>
-              </select>
+                <select
+                  name="truck_primary"
+                  value={truckPrimary}
+                  onChange={(e) => setTruckPrimary(e.target.value)}
+                  className={fieldInput}
+                >
+                  <option value="">Auto-assign by size…</option>
+                  <option value="sprinter">Sprinter Van</option>
+                  <option value="16ft">16ft Box Truck</option>
+                  <option value="20ft">20ft Box Truck</option>
+                  <option value="24ft">24ft Box Truck</option>
+                  <option value="26ft">26ft Box Truck</option>
+                </select>
+              </Field>
+              <Field label="Est. Crew Size *">
+                <select
+                  value={estCrewSize}
+                  onChange={(e) => setEstCrewSize(e.target.value)}
+                  className={fieldInput}
+                  required
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n} crew members</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Est. Hours *">
+                <select
+                  value={estHours}
+                  onChange={(e) => setEstHours(e.target.value)}
+                  className={fieldInput}
+                  required
+                >
+                  {[2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 12].map((h) => (
+                    <option key={h} value={h}>{h} hrs</option>
+                  ))}
+                </select>
               </Field>
             </div>
             <Field label="Team Members">

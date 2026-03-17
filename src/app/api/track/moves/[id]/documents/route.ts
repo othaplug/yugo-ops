@@ -17,7 +17,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, status, move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url")
+      .select("id, status, move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url, square_receipt_url")
       .eq("id", moveId)
       .single();
     const isCompleted = move?.status === "completed" || move?.status === "delivered";
@@ -94,7 +94,10 @@ export async function GET(
     }
     const allDocuments = [...autoDocs, ...docsWithUrls];
 
+    const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;
+
     return NextResponse.json({
+      square_receipt_url: squareReceiptUrl,
       invoices: invoices.map((i) => ({
         id: i.id,
         type: "invoice",

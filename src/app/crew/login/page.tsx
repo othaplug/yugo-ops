@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 
@@ -34,6 +34,9 @@ export default function CrewLoginPage() {
   const [consentChecked, setConsentChecked] = useState(false);
   const pinInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isWelcome = useMemo(() => searchParams.get("welcome") === "1", [searchParams]);
+  const consentRequired = isWelcome ? consentChecked : true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -79,7 +82,7 @@ export default function CrewLoginPage() {
 
   const handleLogin = async () => {
     if (!selectedMember || submitting) return;
-    if (!consentChecked) return;
+    if (!consentRequired) return;
     const len = selectedMember.pinLength;
     if (pin.length !== len) return;
     setSubmitting(true);
@@ -110,12 +113,12 @@ export default function CrewLoginPage() {
   handleLoginRef.current = handleLogin;
 
   useEffect(() => {
-    if (!selectedMember || submitting || !consentChecked) return;
+    if (!selectedMember || submitting || !consentRequired) return;
     const len = selectedMember.pinLength;
     if (pin.length === len) {
       handleLoginRef.current?.();
     }
-  }, [pin, selectedMember, submitting, consentChecked]);
+  }, [pin, selectedMember, submitting, consentRequired]);
 
   useEffect(() => {
     if (selectedMember && context?.hasDevice && !showMemberPicker) {
@@ -520,7 +523,7 @@ export default function CrewLoginPage() {
             </div>
           )}
 
-          {!consentAccepted && (
+          {isWelcome && !consentAccepted && (
             <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
               <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                 <input
@@ -531,9 +534,8 @@ export default function CrewLoginPage() {
                 />
                 <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
                   I agree to Yugo&apos;s{" "}
-                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a>,{" "}
-                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>, and{" "}
-                  <a href="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms & Conditions</a>
+                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
                 </span>
               </label>
             </div>

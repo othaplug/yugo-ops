@@ -4,8 +4,12 @@ import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { newClaimAdminEmailHtml } from "@/lib/email/admin-templates";
 import { claimCreatedByAdminEmailHtml } from "@/lib/email-templates";
+import { requireRole } from "@/lib/auth/check-role";
 
 export async function POST(req: NextRequest) {
+  const { error: authErr } = await requireRole("coordinator");
+  if (authErr) return authErr;
+
   try {
     const body = await req.json();
     const {

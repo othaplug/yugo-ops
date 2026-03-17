@@ -155,7 +155,10 @@ export const SERVICE_LABEL: Record<string, string> = {
   single_item: "Single Item Delivery",
   white_glove: "White Glove Service",
   specialty: "Specialty Service",
-  b2b_oneoff: "Delivery",
+  b2b_oneoff: "Commercial Delivery",
+  b2b_delivery: "Commercial Delivery",
+  event: "Event Logistics",
+  labour_only: "Labour Service",
 };
 
 export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }> = {
@@ -192,6 +195,18 @@ export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }>
   b2b_oneoff: {
     headline: "Your Delivery Quote",
     subtitle: "Professional logistics for your delivery needs.",
+  },
+  b2b_delivery: {
+    headline: "Your Delivery Quote",
+    subtitle: "Professional logistics for your commercial delivery.",
+  },
+  event: {
+    headline: "Your Event Logistics Quote",
+    subtitle: "Round-trip event logistics — delivery, setup, and return handled by the same crew.",
+  },
+  labour_only: {
+    headline: "Your Service Quote",
+    subtitle: "Professional crew for your labour needs — no truck required.",
   },
 };
 
@@ -290,8 +305,13 @@ export function calculateDeposit(serviceType: string, total: number, tier?: stri
     case "specialty":
       return total < 5000 ? Math.round(total * 0.3) : Math.round(total * 0.5);
     case "b2b_oneoff":
+    case "b2b_delivery":
       if (total < 300) return total;
       return 100;
+    case "event":
+      return Math.max(300, Math.round(total * 0.25));
+    case "labour_only":
+      return Math.max(200, Math.round(total * 0.50));
     default:
       if (total < 500) return total;
       if (total < 3000) return 150;

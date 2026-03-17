@@ -44,8 +44,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "B2B Partners",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.users, minRole: "coordinator" },
-      { href: "/admin/deliveries", label: "All Deliveries", Icon: Icons.truck, minRole: "coordinator" },
-      { href: "/admin/projects", label: "Projects", Icon: Icons.clipboardList, minRole: "admin" },
+      { href: "/admin/deliveries", label: "Jobs", Icon: Icons.truck, minRole: "coordinator" },
       { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },
       { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, minRole: "admin" },
       { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, minRole: "admin" },

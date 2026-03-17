@@ -79,7 +79,7 @@ export default function ResidentialLayout({
           const isRecommended = tierKey === recTier;
 
           const isEstate = tierKey === "estate";
-          const cardBg = isEstate ? "#1a1612" : meta.bg;
+          const cardBg = isEstate ? "rgba(45, 12, 26, 1)" : meta.bg;
 
           const isCollapsed = hasSelection && !isSelected;
 
@@ -104,7 +104,16 @@ export default function ResidentialLayout({
               >
               <div
                 className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}
-                style={isEstate ? { backgroundColor: "#1a1612" } : undefined}
+                style={
+                  isEstate
+                    ? {
+                        backgroundColor: "rgba(45, 12, 26, 1)",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: "rgba(0, 0, 0, 1)",
+                      }
+                    : undefined
+                }
               >
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">

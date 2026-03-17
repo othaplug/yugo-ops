@@ -14,6 +14,7 @@ interface Invoice {
   created_at: string;
   delivery_id?: string | null;
   square_invoice_url?: string | null;
+  square_receipt_url?: string | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -172,18 +173,31 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
-                      {inv.square_invoice_url && (
-                        <a
-                          href={inv.square_invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                          View
-                        </a>
-                      )}
+                      <div className="flex items-center justify-end gap-1">
+                        {inv.square_invoice_url && (
+                          <a
+                            href={inv.square_invoice_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            View
+                          </a>
+                        )}
+                        {inv.status === "paid" && inv.square_receipt_url && (
+                          <a
+                            href={inv.square_receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E]/20 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Receipt
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

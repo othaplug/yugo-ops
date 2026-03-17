@@ -61,6 +61,8 @@ import SingleItemLayout from "./layouts/SingleItemLayout";
 import WhiteGloveLayout from "./layouts/WhiteGloveLayout";
 import SpecialtyLayout from "./layouts/SpecialtyLayout";
 import B2BOneOffLayout from "./layouts/B2BOneOffLayout";
+import EventLayout from "./layouts/EventLayout";
+import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
 
 /* ═══════════════════════════════════════════════════
    Main Client Component
@@ -784,7 +786,7 @@ export default function QuotePageClient({
             />
             <SpecialtyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
-        ) : quote.service_type === "b2b_oneoff" ? (
+        ) : (quote.service_type === "b2b_oneoff" || quote.service_type === "b2b_delivery") ? (
           <>
             <InclusionsShowcase
               ref={comparisonRef}
@@ -795,6 +797,30 @@ export default function QuotePageClient({
               crewSize={quote.est_crew_size}
             />
             <B2BOneOffLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
+        ) : quote.service_type === "event" ? (
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <EventLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+          </>
+        ) : quote.service_type === "labour_only" ? (
+          <>
+            <InclusionsShowcase
+              ref={comparisonRef}
+              selectedTier={selectedTier}
+              isResidential={isResidential}
+              truckPrimary={quote.truck_primary}
+              truckSecondary={quote.truck_secondary}
+              crewSize={quote.est_crew_size}
+            />
+            <LabourOnlyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.custom_price != null ? (
           <>

@@ -76,6 +76,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const [deliveryType, setDeliveryType] = useState("single_item");
   const [zone, setZone] = useState(1);
   const [heavyItems, setHeavyItems] = useState<HeavyItem[]>([]);
+  const [deliveryAccess, setDeliveryAccess] = useState("elevator");
+  const [itemWeightCategory, setItemWeightCategory] = useState("standard");
 
   // Common
   const [form, setForm] = useState({
@@ -163,6 +165,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           is_after_hours: isAfterHours,
           is_weekend: isWeekend,
           heavy_items: heavyItems.filter((h) => h.count > 0),
+          delivery_access: bookingType === "per_delivery" ? deliveryAccess : undefined,
+          item_weight_category: bookingType === "per_delivery" ? itemWeightCategory : undefined,
         }),
       });
       const data = await res.json();
@@ -179,7 +183,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     } finally {
       setPricingLoading(false);
     }
-  }, [bookingType, vehicleType, dayType, numStops, deliveryType, zone, selectedServices, stairFlights, isAfterHours, isWeekend, heavyItems]);
+  }, [bookingType, vehicleType, dayType, numStops, deliveryType, zone, selectedServices, stairFlights, isAfterHours, isWeekend, heavyItems, deliveryAccess, itemWeightCategory]);
 
   useEffect(() => {
     if (step === "config" || step === "review") {
@@ -266,6 +270,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           num_stops: bookingType === "day_rate" ? numStops : null,
           delivery_type: bookingType === "per_delivery" ? deliveryType : null,
           zone: bookingType === "per_delivery" ? zone : null,
+          delivery_access: bookingType === "per_delivery" ? deliveryAccess : null,
+          item_weight_category: bookingType === "per_delivery" ? itemWeightCategory : null,
           base_price: pricing?.basePrice || 0,
           overage_price: pricing?.overagePrice || 0,
           services_price: pricing?.servicesPrice || 0,
@@ -273,6 +279,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
           total_price: pricing?.totalPrice || 0,
           services_selected: svcList,
+          pricing_breakdown: pricing?.breakdown || null,
         }),
       });
       const data = await res.json();
@@ -429,6 +436,31 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   <option value={2}>Zone 2 — Outer GTA (40–70 km) — + $120–$145</option>
                   <option value={3}>Zone 3 — Extended (70–100 km) — + $210–$245</option>
                   <option value={4}>Zone 4 — Remote (100+ km) — Custom</option>
+                </select>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Delivery Access</h3>
+                <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
+                  <option value="elevator">Elevator</option>
+                  <option value="ground_floor">Ground Floor / Loading Dock</option>
+                  <option value="loading_dock">Loading Dock</option>
+                  <option value="walk_up_2nd">Walk-up (2nd floor)</option>
+                  <option value="walk_up_3rd">Walk-up (3rd floor)</option>
+                  <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>
+                  <option value="long_carry">Long Carry (50m+)</option>
+                  <option value="narrow_stairs">Narrow Stairs</option>
+                  <option value="no_parking">No Parking Nearby</option>
+                </select>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Weight</h3>
+                <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
+                  <option value="standard">Standard (under 100 lbs)</option>
+                  <option value="heavy">Heavy (100–250 lbs) — +$50</option>
+                  <option value="very_heavy">Very Heavy (250–500 lbs) — +$100</option>
+                  <option value="oversized_fragile">Oversized / Fragile (3+ crew) — +$175</option>
                 </select>
               </section>
 
@@ -773,6 +805,11 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
               <div className="text-[11px] text-[#888] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
+            )}
+            {bookingType === "per_delivery" && (
+              <p className="text-[10px] text-[#888] mt-2 pt-2 border-t border-[#C9A962]/20">
+                Rates shown are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply.
+              </p>
             )}
           </>
         ) : (

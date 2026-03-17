@@ -61,7 +61,7 @@ export async function GET() {
       .limit(20),
     admin
       .from("invoices")
-      .select("id, invoice_number, client_name, amount, status, due_date, created_at, delivery_id, square_invoice_url")
+      .select("id, invoice_number, client_name, amount, status, due_date, created_at, delivery_id, square_invoice_url, square_receipt_url")
       .in("organization_id", orgIds)
       .order("created_at", { ascending: false }),
     orgType === "realtor"

@@ -15,6 +15,7 @@ export const JOB_COLORS = {
   training: "#64748B",
   break: "#64748B",
   time_off: "#78716C",
+  recurring: "#0D9488",
 } as const;
 
 export const STATUS_DOT_COLORS: Record<string, string> = {
@@ -51,6 +52,12 @@ export interface CalendarEvent {
   moveSize: string | null;
   itemCount: number | null;
   scheduleBlockId: string | null;
+  isRecurring?: boolean;
+  scheduleName?: string | null;
+  // Event booking fields
+  eventGroupId?: string | null;
+  eventPhase?: "delivery" | "setup" | "return" | "single_day" | null;
+  eventName?: string | null;
 }
 
 export interface ScheduleBlock {

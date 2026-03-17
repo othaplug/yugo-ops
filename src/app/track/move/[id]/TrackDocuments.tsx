@@ -26,6 +26,7 @@ export default function TrackDocuments({
 }) {
   const [invoices, setInvoices] = useState<DocItem[]>([]);
   const [documents, setDocuments] = useState<DocItem[]>([]);
+  const [squareReceiptUrl, setSquareReceiptUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,14 +38,16 @@ export default function TrackDocuments({
         if (cancelled) return;
         setInvoices(data.invoices ?? []);
         setDocuments(data.documents ?? []);
+        setSquareReceiptUrl(data.square_receipt_url ?? null);
       })
       .catch(() => {
-        if (!cancelled) setInvoices([]); setDocuments([]);
+        if (!cancelled) { setInvoices([]); setDocuments([]); setSquareReceiptUrl(null); }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [moveId, token, refreshTrigger]);
 
+  // Client view: exclude invoices — client sees only Move Summary + Payment Receipt
   const allDocs = [
     ...invoices.map((d) => ({ ...d, isInvoice: true })),
     ...documents.map((d) => ({
@@ -52,7 +55,12 @@ export default function TrackDocuments({
       isInvoice: d.type === "invoice",
       status: d.title?.startsWith("Payment Receipt") ? "paid" : d.status,
     })),
-  ];
+  ].filter(
+    (doc) =>
+      doc.type !== "invoice" &&
+      !doc.title?.includes("Invoice —") &&
+      !doc.title?.toLowerCase().includes("invoice ")
+  );
 
   if (loading) {
     return (
@@ -75,7 +83,6 @@ export default function TrackDocuments({
   const hasAutoPdfs = allDocs.some(
     (d) =>
       d.title?.includes("Move Summary") ||
-      d.title?.includes("Invoice —") ||
       d.title?.includes("Payment Receipt")
   );
 
@@ -85,11 +92,30 @@ export default function TrackDocuments({
         <h3 className="text-[14px] font-bold text-[#1A1A1A]">Your documents</h3>
         {hasAutoPdfs && (
           <p className="text-[12px] text-[#666] mt-1">
-            Your move summary, invoice, and receipt are ready to download below.
+            Your move summary and receipt are ready to download below.
           </p>
         )}
       </div>
       <div className="p-5 space-y-2">
+        {squareReceiptUrl && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors">
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium text-[#1A1A1A]">Payment Receipt (Square)</div>
+              <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">PAID</span>
+                Official payment processor receipt
+              </div>
+            </div>
+            <a
+              href={squareReceiptUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
+            >
+              View Receipt
+            </a>
+          </div>
+        )}
         {allDocs.map((doc) => {
           const url = doc.view_url ?? doc.external_url;
           const dateStr = doc.created_at ? new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : doc.due_date || "";

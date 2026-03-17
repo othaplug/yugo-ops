@@ -265,7 +265,18 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
         setPodFiles([]);
       }
 
-      // Documents = move_documents + system-generated PDFs from move_files
+      // Documents = move_documents + system-generated PDFs from move_files + Square receipt link
+      const squareReceipt = docsRes.square_receipt_url
+        ? [{
+            id: "square-receipt",
+            url: docsRes.square_receipt_url,
+            name: "Payment Receipt (Square)",
+            type: "other" as const,
+            badge: "doc" as const,
+            date: new Date().toISOString(),
+            deletable: false,
+          }]
+        : [];
       const docFromApi: FileEntry[] = (docsRes.documents ?? []).map((d: { id: string; view_url?: string; storage_path?: string; external_url?: string; title: string; type: string; created_at?: string }) => ({
         id: d.id,
         url: d.view_url || d.storage_path || d.external_url || "#",
@@ -284,7 +295,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
         badge: "doc" as const,
         date: f.created_at,
       }));
-      setDocuments([...docFromSystem, ...docFromApi]);
+      setDocuments([...squareReceipt, ...docFromSystem, ...docFromApi]);
 
       // Admin uploads (exclude system-generated so they only show under Documents)
       const adminOnly = (adminRes.files ?? []).filter((f: { source?: string }) => f.source !== "system");

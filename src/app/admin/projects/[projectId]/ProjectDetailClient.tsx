@@ -4,11 +4,24 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
+import CreateButton from "../../components/CreateButton";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2 } from "lucide-react";
+import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2, Package, Wrench, Lock, MapPin, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { getTrackingUrl } from "@/lib/tracking-url";
+import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
+import {
+  DELIVERY_METHOD_LABELS,
+  PROJECT_ITEM_RECEIVED_STATUSES,
+  PROJECT_ITEM_TRANSIT_STATUSES,
+  PROJECT_ITEM_WAREHOUSE_STATUSES,
+  type ProjectItemStatus,
+  VALID_PROJECT_ITEM_STATUSES,
+  getProjectItemStatus,
+  getProjectItemStatusLabel,
+  getProjectItemStatusUi,
+} from "@/lib/project-item-status";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -28,7 +41,6 @@ interface ProjectData {
   actual_end_date: string | null;
   estimated_budget: number | null;
   project_mgmt_fee: number | null;
-  actual_cost: number | null;
   notes: string | null;
   created_at: string;
   organizations: { name: string; type: string; email: string | null; contact_name: string | null } | null;
@@ -56,6 +68,23 @@ interface InventoryItem {
   item_name: string;
   description: string | null;
   vendor: string | null;
+  vendor_name: string | null;
+  vendor_contact_name: string | null;
+  vendor_contact_phone: string | null;
+  vendor_contact_email: string | null;
+  vendor_order_number: string | null;
+  vendor_pickup_address: string | null;
+  vendor_pickup_window: string | null;
+  vendor_delivery_method: string | null;
+  item_status: string | null;
+  status_updated_at: string | null;
+  status_notes: string | null;
+  room_destination: string | null;
+  item_value: number | null;
+  item_dimensions: string | null;
+  requires_crating: boolean | null;
+  requires_assembly: boolean | null;
+  special_handling_notes: string | null;
   quantity: number;
   status: string;
   received_date: string | null;
@@ -117,21 +146,22 @@ const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof Chec
   skipped: { bg: "bg-[var(--tx3)]/5", text: "text-[var(--tx3)]/50", icon: Clock },
 };
 
-const INV_STATUS_COLORS: Record<string, string> = {
-  expected: "text-[var(--tx3)]",
-  shipped: "text-amber-500",
-  received: "text-blue-500",
-  inspected: "text-blue-600",
-  stored: "text-purple-500",
-  scheduled_for_delivery: "text-amber-500",
-  delivered: "text-emerald-500",
-  installed: "text-emerald-600",
-  returned: "text-orange-500",
-  damaged: "text-red-500",
-};
-
-const TABS = ["Overview", "Phases", "Inventory", "Deliveries", "Timeline", "Invoice"];
+const TABS = ["Overview", "Phases", "Inventory", "Vendor Tracker", "Deliveries", "Timeline", "Invoice"];
 const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+const PROJECT_ITEM_STATUS_OPTIONS = [...VALID_PROJECT_ITEM_STATUSES];
+const ROOM_OPTIONS = [
+  "Living Room",
+  "Dining Room",
+  "Kitchen",
+  "Master Bedroom",
+  "Bedroom 2",
+  "Bedroom 3",
+  "Home Office",
+  "Bathroom",
+  "Entryway",
+  "Outdoor / Terrace",
+  "Other",
+];
 
 export default function ProjectDetailClient({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -140,7 +170,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
   const fromDesigners = searchParams.get("from") === "designers";
   const [data, setData] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState(fromDesigners ? "Vendor Tracker" : "Overview");
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -183,7 +213,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         return;
       }
       toast("Project deleted", "check");
-      router.push(fromDesigners ? "/admin/partners/designers" : "/admin/projects");
+      router.back();
       router.refresh();
     } catch {
       toast("Failed to delete", "alertTriangle");
@@ -202,14 +232,14 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
   const completedPhases = data.phases.filter((p) => p.status === "completed").length;
   const totalPhases = data.phases.length;
   const progressPct = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
-  const budgetTotal = (data.estimated_budget || 0) + (data.project_mgmt_fee || 0);
+  const activeDeliveryTotal = data.deliveries.filter((d) => d.status !== "cancelled").reduce((s, d) => s + (d.total_price || 0), 0);
+  const projectEstimate = activeDeliveryTotal > 0 ? activeDeliveryTotal + (data.project_mgmt_fee || 0) : (data.estimated_budget || 0) + (data.project_mgmt_fee || 0);
+  const estimateFromDeliveries = activeDeliveryTotal > 0;
+  const manualItemsExist = data.inventory.some((i) => i.handled_by && i.handled_by !== "yugo");
 
   return (
     <div className="px-4 sm:px-6 py-5">
-      <BackButton
-        href={fromDesigners ? "/admin/partners/designers" : "/admin/projects"}
-        label={fromDesigners ? "Designers" : "Projects"}
-      />
+      <BackButton label="Back" />
 
       {/* Header */}
       <div className="mt-4 mb-6">
@@ -225,7 +255,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           <span>Partner: <span className="text-[var(--tx)] font-medium">{data.organizations?.name}</span></span>
           {data.end_client_name && <span>Client: <span className="text-[var(--tx)] font-medium">{data.end_client_name}</span></span>}
           {data.active_phase && <span>Phase: <span className="text-[var(--tx)] font-medium capitalize">{data.active_phase}</span></span>}
-          <span>Budget: <span className="text-[var(--tx)] font-medium">{formatCurrency(data.actual_cost || 0)} / {formatCurrency(budgetTotal)}</span></span>
+          <span>Estimate: <span className="text-[var(--tx)] font-medium">{formatCurrency(projectEstimate)}{estimateFromDeliveries ? "" : " (initial)"}</span></span>
         </div>
 
         {/* Status actions */}
@@ -263,6 +293,27 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         </div>
       </div>
 
+      {/* Upsell Banner */}
+      {manualItemsExist && (
+        <div className="mb-4 flex items-start gap-3 p-4 rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5">
+          <Boxes size={16} className="text-[var(--gold)] mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold text-[var(--tx)]">
+              {data.inventory.filter((i) => i.handled_by && i.handled_by !== "yugo").length} items are being tracked manually
+            </p>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+              Want Yugo to handle pickup and delivery with full tracking, photos, and proof of delivery?
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveTab("Deliveries")}
+            className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
+          >
+            Convert to Yugo →
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 mb-5">
         {TABS.map((t) => (
@@ -280,10 +331,11 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
       {/* Tab Content */}
       <div className="tab-content">
-        {activeTab === "Overview" && <OverviewTab data={data} progressPct={progressPct} completedPhases={completedPhases} totalPhases={totalPhases} budgetTotal={budgetTotal} />}
+        {activeTab === "Overview" && <OverviewTab data={data} progressPct={progressPct} completedPhases={completedPhases} totalPhases={totalPhases} projectEstimate={projectEstimate} estimateFromDeliveries={estimateFromDeliveries} />}
         {activeTab === "Phases" && <PhasesTab data={data} onRefresh={loadProject} projectId={projectId} showAddPhase={showAddPhase} setShowAddPhase={setShowAddPhase} />}
         {activeTab === "Inventory" && <InventoryTab data={data} onRefresh={loadProject} projectId={projectId} showAddItem={showAddItem} setShowAddItem={setShowAddItem} showReceiveItem={showReceiveItem} setShowReceiveItem={setShowReceiveItem} />}
-        {activeTab === "Deliveries" && <DeliveriesTab data={data} projectId={projectId} />}
+        {activeTab === "Vendor Tracker" && <VendorTrackerTab data={data} projectId={projectId} onRefresh={loadProject} />}
+        {activeTab === "Deliveries" && <DeliveriesTab data={data} projectId={projectId} onRefresh={loadProject} />}
         {activeTab === "Timeline" && <TimelineTab data={data} projectId={projectId} onRefresh={loadProject} showAddNote={showAddNote} setShowAddNote={setShowAddNote} />}
         {activeTab === "Invoice" && <InvoiceTab data={data} projectId={projectId} />}
       </div>
@@ -309,11 +361,12 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 }
 
 /* ─── OVERVIEW TAB ─── */
-function OverviewTab({ data, progressPct, completedPhases, totalPhases, budgetTotal }: { data: ProjectData; progressPct: number; completedPhases: number; totalPhases: number; budgetTotal: number }) {
+function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectEstimate, estimateFromDeliveries }: { data: ProjectData; progressPct: number; completedPhases: number; totalPhases: number; projectEstimate: number; estimateFromDeliveries: boolean }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="space-y-5">
+      <div className="divide-y divide-[var(--brd)]/50 pt-0 pb-6 lg:pb-0 lg:pr-6">
         {/* Progress */}
+        <section className="py-5 first:pt-0">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
           <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Progress</div>
           <div className="relative h-3 bg-[var(--bg)] rounded-full overflow-hidden mb-2">
@@ -324,8 +377,10 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, budgetTo
             <span>{completedPhases} of {totalPhases} phases done</span>
           </div>
         </div>
+        </section>
 
         {/* Project Details */}
+        <section className="py-5">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-2">
           <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Details</div>
           {data.description && <InfoRow label="Description" value={data.description} />}
@@ -336,27 +391,49 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, budgetTo
           <InfoRow label="Start" value={data.start_date ? new Date(data.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBD"} />
           <InfoRow label="Target End" value={data.target_end_date ? new Date(data.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBD"} />
         </div>
+        </section>
+
+        {/* Vendor Status — compact table */}
+        {data.inventory.length > 0 && (
+          <section className="py-5">
+            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Vendor Status</div>
+            <VendorStatusCompactTable inventory={data.inventory} />
+          </section>
+        )}
       </div>
 
-      <div className="space-y-5">
-        {/* Budget */}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Budget</div>
-          <div className="text-[28px] font-bold text-[var(--tx)] font-hero">{formatCurrency(data.actual_cost || 0)}</div>
-          <div className="text-[12px] text-[var(--tx3)]">of {formatCurrency(budgetTotal)} estimated</div>
-          <div className="relative h-2 bg-[var(--bg)] rounded-full overflow-hidden mt-3">
-            <div className="absolute inset-y-0 left-0 bg-[var(--gold)] rounded-full transition-all" style={{ width: `${budgetTotal > 0 ? Math.min(((data.actual_cost || 0) / budgetTotal) * 100, 100) : 0}%` }} />
+      <div className="divide-y divide-[var(--brd)]/50 border-t lg:border-t-0 lg:border-l border-[var(--brd)]/50 pt-5 lg:pt-0 pl-0 lg:pl-6">
+        {/* Estimate */}
+        <section className="py-5 first:pt-0">
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Project Estimate</div>
+          <div className="text-[28px] font-bold text-[var(--tx)] font-hero">{formatCurrency(projectEstimate)}</div>
+          <div className="text-[12px] text-[var(--tx3)] mt-1">
+            {estimateFromDeliveries
+              ? `Based on ${data.deliveries.filter((d) => d.status !== "cancelled").length} linked deliver${data.deliveries.filter((d) => d.status !== "cancelled").length === 1 ? "y" : "ies"}${data.project_mgmt_fee ? " + mgmt fee" : ""}`
+              : "Initial estimate — no deliveries yet"}
           </div>
-        </div>
+          {data.project_mgmt_fee ? (
+            <div className="mt-3 pt-3 border-t border-[var(--brd)] flex justify-between text-[11px]">
+              <span className="text-[var(--tx3)]">Mgmt Fee</span>
+              <span className="text-[var(--tx)]">{formatCurrency(data.project_mgmt_fee)}</span>
+            </div>
+          ) : null}
+        </section>
 
         {/* Quick Stats */}
+        <section className="py-5">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Inventory Items" value={String(data.inventory.length)} sub={`${data.inventory.filter((i) => i.status !== "expected").length} received`} />
+          <StatCard
+            label="Inventory Items"
+            value={String(data.inventory.length)}
+            sub={`${data.inventory.filter((i) => PROJECT_ITEM_RECEIVED_STATUSES.includes(getProjectItemStatus(i))).length} received`}
+          />
           <StatCard label="Deliveries" value={String(data.deliveries.length)} sub={`${data.deliveries.filter((d) => d.status === "delivered" || d.status === "completed").length} completed`} />
         </div>
+        </section>
 
         {/* Recent Activity */}
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+        <section className="py-5 last:pb-0">
           <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Recent Activity</div>
           {data.timeline.slice(0, 5).map((e) => (
             <div key={e.id} className="flex gap-3 py-2 text-[12px]">
@@ -368,9 +445,99 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, budgetTo
             </div>
           ))}
           {data.timeline.length === 0 && <div className="text-[12px] text-[var(--tx3)]">No activity yet</div>}
-        </div>
+        </section>
       </div>
     </div>
+  );
+}
+
+/* ─── PHASE ITEM ROW (inline editable) ─── */
+function PhaseItemRow({ item, status, cfg, projectId, onRefresh }: { item: InventoryItem; status: string; cfg: { bg: string; color: string; label: string }; projectId: string; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const [condition, setCondition] = useState(item.condition_on_receipt || "");
+  const [storage, setStorage] = useState(item.storage_location || "");
+  const [saving, setSaving] = useState(false);
+  const [condTimeout, setCondTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [storTimeout, setStorTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  const patchItem = async (patch: Record<string, string | null>) => {
+    setSaving(true);
+    await fetch(`/api/admin/projects/${projectId}/inventory`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: item.id, ...patch }),
+    });
+    setSaving(false);
+    onRefresh();
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    setSaving(true);
+    const res = await fetch(`/api/admin/projects/${projectId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: item.id, item_status: newStatus }),
+    });
+    if (res.ok) { onRefresh(); toast("Status updated", "check"); }
+    else toast("Failed to update", "alertTriangle");
+    setSaving(false);
+  };
+
+  const handleCondition = (val: string) => {
+    setCondition(val);
+    if (condTimeout) clearTimeout(condTimeout);
+    setCondTimeout(setTimeout(() => patchItem({ condition_on_receipt: val || null }), 800));
+  };
+
+  const handleStorage = (val: string) => {
+    setStorage(val);
+    if (storTimeout) clearTimeout(storTimeout);
+    setStorTimeout(setTimeout(() => patchItem({ storage_location: val || null }), 800));
+  };
+
+  return (
+    <tr className="border-b border-[var(--brd)]/50 hover:bg-[var(--gdim)]/10">
+      <td className="px-2 py-2 text-[12px] font-medium text-[var(--tx)]">{item.item_name}</td>
+      <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{item.vendor_name || item.vendor || "—"}</td>
+      <td className="px-2 py-2">
+        <select
+          value={status}
+          disabled={saving}
+          onChange={(e) => handleStatusChange(e.target.value)}
+          className={`text-[9px] font-semibold bg-transparent border-0 outline-none cursor-pointer disabled:opacity-50 ${cfg.color}`}
+        >
+          {VALID_PROJECT_ITEM_STATUSES.map((s) => {
+            const scfg = getProjectItemStatusUi(s);
+            return <option key={s} value={s}>{scfg.label}</option>;
+          })}
+        </select>
+      </td>
+      <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">
+        {item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+      </td>
+      <td className="px-2 py-2">
+        <select
+          value={condition}
+          onChange={(e) => handleCondition(e.target.value)}
+          className="text-[11px] bg-transparent border-0 outline-none cursor-pointer text-[var(--tx3)] hover:text-[var(--tx)]"
+        >
+          <option value="">—</option>
+          <option value="perfect">Perfect</option>
+          <option value="good">Good</option>
+          <option value="minor_damage">Minor Damage</option>
+          <option value="damaged">Damaged</option>
+          <option value="wrong_item">Wrong Item</option>
+        </select>
+      </td>
+      <td className="px-2 py-2">
+        <input
+          value={storage}
+          onChange={(e) => handleStorage(e.target.value)}
+          placeholder="e.g. Rack B-3"
+          className="text-[11px] bg-transparent border-0 outline-none text-[var(--tx3)] hover:text-[var(--tx)] w-full placeholder:text-[var(--tx3)]/40"
+        />
+      </td>
+    </tr>
   );
 }
 
@@ -405,9 +572,10 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
   };
 
   return (
-    <div>
+    <div className="divide-y divide-[var(--brd)]/50">
       {/* Visual Timeline */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <section className="py-5 first:pt-0">
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {data.phases.map((phase, i) => {
           const cfg = PHASE_COLORS[phase.status] || PHASE_COLORS.pending;
           const Icon = cfg.icon;
@@ -429,9 +597,12 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
           );
         })}
       </div>
+      </section>
 
       {/* Expanded Phase Detail */}
-      {expandedPhase && (() => {
+      {expandedPhase && (
+      <section className="py-5">
+      {(() => {
         const phase = data.phases.find((p) => p.id === expandedPhase);
         if (!phase) return null;
         const phaseItems = data.inventory.filter((i) => i.phase_id === phase.id);
@@ -452,7 +623,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Link
-                  href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}&phaseId=${phase.id}`}
+                  href={`/admin/deliveries/new?choice=single&org=${data.partner_id}&projectId=${projectId}&phaseId=${phase.id}`}
                   className="px-3 py-1 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors flex items-center gap-1"
                 >
                   <Truck size={11} /> New Delivery
@@ -478,18 +649,20 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                     </tr>
                   </thead>
                   <tbody>
-                    {phaseItems.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--brd)]/50">
-                        <td className="px-2 py-2 text-[12px] font-medium text-[var(--tx)]">{item.item_name}</td>
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{item.vendor || "—"}</td>
-                        <td className="px-2 py-2">
-                          <span className={`text-[10px] font-semibold capitalize ${INV_STATUS_COLORS[item.status] || ""}`}>{item.status.replace(/_/g, " ")}</span>
-                        </td>
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</td>
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)] capitalize">{item.condition_on_receipt?.replace(/_/g, " ") || "—"}</td>
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{item.storage_location || "—"}</td>
-                      </tr>
-                    ))}
+                    {phaseItems.map((item) => {
+                      const status = getProjectItemStatus(item);
+                      const cfg = getProjectItemStatusUi(status);
+                      return (
+                        <PhaseItemRow
+                          key={item.id}
+                          item={item}
+                          status={status}
+                          cfg={cfg}
+                          projectId={projectId}
+                          onRefresh={onRefresh}
+                        />
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -514,8 +687,11 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
           </div>
         );
       })()}
+      </section>
+      )}
 
       {/* Add Phase */}
+      <section className="py-5 last:pb-0">
       {showAddPhase ? (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
           <input value={newPhaseName} onChange={(e) => setNewPhaseName(e.target.value)} placeholder="Phase name (e.g. Receiving, Delivery, Installation)…" className={fieldInput} autoFocus />
@@ -531,6 +707,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
           <Plus size={14} /> Add Phase
         </button>
       )}
+      </section>
     </div>
   );
 }
@@ -543,12 +720,25 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
 }) {
   const [newItemName, setNewItemName] = useState("");
   const [newItemVendor, setNewItemVendor] = useState("");
+  const [newItemContactName, setNewItemContactName] = useState("");
+  const [newItemContactPhone, setNewItemContactPhone] = useState("");
+  const [newItemContactEmail, setNewItemContactEmail] = useState("");
+  const [newItemOrderNumber, setNewItemOrderNumber] = useState("");
+  const [newItemPickupAddress, setNewItemPickupAddress] = useState("");
+  const [newItemPickupWindow, setNewItemPickupWindow] = useState("");
   const [newItemPhase, setNewItemPhase] = useState("");
   const [newItemQty, setNewItemQty] = useState("1");
-  const [newItemHandledBy, setNewItemHandledBy] = useState<string>("yugo");
+  const [newItemStatus, setNewItemStatus] = useState("ordered");
+  const [newItemRoom, setNewItemRoom] = useState("");
+  const [newItemDeliveryMethod, setNewItemDeliveryMethod] = useState("yugo_pickup");
   const [newItemCarrier, setNewItemCarrier] = useState("");
   const [newItemTrackingNum, setNewItemTrackingNum] = useState("");
   const [newItemExpectedDate, setNewItemExpectedDate] = useState("");
+  const [newItemValue, setNewItemValue] = useState("");
+  const [newItemDimensions, setNewItemDimensions] = useState("");
+  const [newItemCrating, setNewItemCrating] = useState(false);
+  const [newItemAssembly, setNewItemAssembly] = useState(false);
+  const [newItemNotes, setNewItemNotes] = useState("");
   const [search, setSearch] = useState("");
 
   // Receive item form
@@ -561,7 +751,39 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
   const [updateStatus, setUpdateStatus] = useState("");
   const [updateTracking, setUpdateTracking] = useState("");
   const [updateCarrier, setUpdateCarrier] = useState("");
+  const [updateExpectedDate, setUpdateExpectedDate] = useState("");
   const [updateNotes, setUpdateNotes] = useState("");
+
+  const getStatus = (item: InventoryItem) => getProjectItemStatus(item);
+  const isComplete = (status: string) => status === "delivered" || status === "installed";
+  const canReceive = (status: string) =>
+    !PROJECT_ITEM_RECEIVED_STATUSES.includes(status as (typeof PROJECT_ITEM_RECEIVED_STATUSES)[number]) &&
+    !isComplete(status) &&
+    status !== "issue_reported";
+
+  const resetAddItem = () => {
+    setNewItemName("");
+    setNewItemVendor("");
+    setNewItemContactName("");
+    setNewItemContactPhone("");
+    setNewItemContactEmail("");
+    setNewItemOrderNumber("");
+    setNewItemPickupAddress("");
+    setNewItemPickupWindow("");
+    setNewItemPhase("");
+    setNewItemQty("1");
+    setNewItemStatus("ordered");
+    setNewItemRoom("");
+    setNewItemDeliveryMethod("yugo_pickup");
+    setNewItemCarrier("");
+    setNewItemTrackingNum("");
+    setNewItemExpectedDate("");
+    setNewItemValue("");
+    setNewItemDimensions("");
+    setNewItemCrating(false);
+    setNewItemAssembly(false);
+    setNewItemNotes("");
+  };
 
   const addItem = async () => {
     if (!newItemName.trim()) return;
@@ -570,36 +792,50 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         item_name: newItemName,
-        vendor: newItemVendor || null,
+        vendor_name: newItemVendor || null,
+        vendor_contact_name: newItemContactName || null,
+        vendor_contact_phone: newItemContactPhone || null,
+        vendor_contact_email: newItemContactEmail || null,
+        vendor_order_number: newItemOrderNumber || null,
+        vendor_pickup_address: newItemPickupAddress || null,
+        vendor_pickup_window: newItemPickupWindow || null,
         phase_id: newItemPhase || null,
         quantity: parseInt(newItemQty) || 1,
-        handled_by: newItemHandledBy || "yugo",
+        item_status: newItemStatus,
+        room_destination: newItemRoom || null,
+        vendor_delivery_method: newItemDeliveryMethod,
         vendor_carrier: newItemCarrier || null,
         vendor_tracking_number: newItemTrackingNum || null,
         expected_delivery_date: newItemExpectedDate || null,
+        item_value: newItemValue ? parseFloat(newItemValue) : null,
+        item_dimensions: newItemDimensions || null,
+        requires_crating: newItemCrating,
+        requires_assembly: newItemAssembly,
+        special_handling_notes: newItemNotes || null,
+        status_notes: newItemNotes || null,
       }),
     });
-    setNewItemName("");
-    setNewItemVendor("");
-    setNewItemPhase("");
-    setNewItemQty("1");
-    setNewItemHandledBy("yugo");
-    setNewItemCarrier("");
-    setNewItemTrackingNum("");
-    setNewItemExpectedDate("");
+    resetAddItem();
     setShowAddItem(false);
     onRefresh();
   };
 
   const receiveItem = async () => {
     if (!showReceiveItem) return;
+    await fetch(`/api/admin/projects/${projectId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        item_id: showReceiveItem,
+        item_status: "received_warehouse",
+        notes: receiveNotes || null,
+      }),
+    });
     await fetch(`/api/admin/projects/${projectId}/inventory`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         item_id: showReceiveItem,
-        status: "received",
-        received_date: new Date().toISOString().slice(0, 10),
         condition_on_receipt: receiveCondition,
         storage_location: receiveStorage || null,
         inspection_notes: receiveNotes || null,
@@ -614,26 +850,31 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
 
   const updateVendorItem = async () => {
     if (!updateVendorItemId) return;
-    const payload: Record<string, unknown> = {
-      item_id: updateVendorItemId,
-      status: updateStatus,
-      vendor_tracking_number: updateTracking || null,
-      vendor_carrier: updateCarrier || null,
-      inspection_notes: updateNotes || null,
-    };
-    if (updateStatus === "received" || updateStatus === "delivered") {
-      payload.received_date = new Date().toISOString().slice(0, 10);
-      if (updateStatus === "delivered") payload.delivered_date = new Date().toISOString().slice(0, 10);
-    }
+    await fetch(`/api/admin/projects/${projectId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        item_id: updateVendorItemId,
+        item_status: updateStatus,
+        notes: updateNotes || null,
+      }),
+    });
     await fetch(`/api/admin/projects/${projectId}/inventory`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        item_id: updateVendorItemId,
+        vendor_tracking_number: updateTracking || null,
+        vendor_carrier: updateCarrier || null,
+        expected_delivery_date: updateExpectedDate || null,
+        inspection_notes: updateNotes || null,
+      }),
     });
     setUpdateVendorItemId(null);
     setUpdateStatus("");
     setUpdateTracking("");
     setUpdateCarrier("");
+    setUpdateExpectedDate("");
     setUpdateNotes("");
     onRefresh();
   };
@@ -641,47 +882,80 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
   const filtered = data.inventory.filter((i) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return i.item_name.toLowerCase().includes(q) || (i.vendor || "").toLowerCase().includes(q);
+    return (
+      i.item_name.toLowerCase().includes(q) ||
+      (i.vendor_name || i.vendor || "").toLowerCase().includes(q) ||
+      (i.room_destination || "").toLowerCase().includes(q) ||
+      (i.vendor_order_number || "").toLowerCase().includes(q)
+    );
   });
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-3 mb-4">
+    <div className="divide-y divide-[var(--brd)]/50">
+      <section className="py-5 first:pt-0">
+      <div className="flex flex-wrap gap-3">
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items..." className={`${fieldInput} w-[220px]`} />
-        <button onClick={() => setShowAddItem(true)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
-          <Plus size={13} /> Add Item
-        </button>
+        <CreateButton onClick={() => setShowAddItem(true)} title="Add Item" />
       </div>
+      </section>
 
       {/* Add Item Form */}
       {showAddItem && (
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 space-y-3">
+        <section className="py-5">
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Item name" className={fieldInput} autoFocus />
             <input value={newItemVendor} onChange={(e) => setNewItemVendor(e.target.value)} placeholder="Vendor" className={fieldInput} />
+            <input value={newItemContactName} onChange={(e) => setNewItemContactName(e.target.value)} placeholder="Vendor contact name" className={fieldInput} />
+            <input value={newItemContactPhone} onChange={(e) => setNewItemContactPhone(e.target.value)} placeholder="Vendor contact phone" className={fieldInput} />
+            <input value={newItemContactEmail} onChange={(e) => setNewItemContactEmail(e.target.value)} placeholder="Vendor contact email" className={fieldInput} />
+            <input value={newItemOrderNumber} onChange={(e) => setNewItemOrderNumber(e.target.value)} placeholder="Order number" className={fieldInput} />
+            <input value={newItemPickupAddress} onChange={(e) => setNewItemPickupAddress(e.target.value)} placeholder="Pickup address" className={fieldInput} />
+            <input value={newItemPickupWindow} onChange={(e) => setNewItemPickupWindow(e.target.value)} placeholder="Pickup window" className={fieldInput} />
             <select value={newItemPhase} onChange={(e) => setNewItemPhase(e.target.value)} className={fieldInput}>
               <option value="">No phase</option>
               {data.phases.map((p) => <option key={p.id} value={p.id}>{p.phase_name}</option>)}
             </select>
             <input type="number" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)} placeholder="Qty" min="1" className={fieldInput} />
-            <select value={newItemHandledBy} onChange={(e) => setNewItemHandledBy(e.target.value)} className={fieldInput}>
-              <option value="yugo">Yugo (white-glove)</option>
-              <option value="vendor_direct">Vendor Direct</option>
-              <option value="other_carrier">Other Carrier</option>
+            <select value={newItemStatus} onChange={(e) => setNewItemStatus(e.target.value)} className={fieldInput}>
+              {PROJECT_ITEM_STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {getProjectItemStatusLabel(status)}
+                </option>
+              ))}
             </select>
-            {newItemHandledBy !== "yugo" && (
-              <>
-                <input value={newItemCarrier} onChange={(e) => setNewItemCarrier(e.target.value)} placeholder="Carrier (e.g., FedEx, DHL)" className={fieldInput} />
-                <input value={newItemTrackingNum} onChange={(e) => setNewItemTrackingNum(e.target.value)} placeholder="Tracking number" className={fieldInput} />
-                <input type="date" value={newItemExpectedDate} onChange={(e) => setNewItemExpectedDate(e.target.value)} placeholder="Expected delivery" className={fieldInput} />
-              </>
-            )}
+            <select value={newItemRoom} onChange={(e) => setNewItemRoom(e.target.value)} className={fieldInput}>
+              <option value="">Room destination</option>
+              {ROOM_OPTIONS.map((room) => <option key={room} value={room}>{room}</option>)}
+            </select>
+            <select value={newItemDeliveryMethod} onChange={(e) => setNewItemDeliveryMethod(e.target.value)} className={fieldInput}>
+              {Object.entries(DELIVERY_METHOD_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+            <input value={newItemCarrier} onChange={(e) => setNewItemCarrier(e.target.value)} placeholder="Carrier (e.g., FedEx, DHL)" className={fieldInput} />
+            <input value={newItemTrackingNum} onChange={(e) => setNewItemTrackingNum(e.target.value)} placeholder="Tracking number" className={fieldInput} />
+            <input type="date" value={newItemExpectedDate} onChange={(e) => setNewItemExpectedDate(e.target.value)} placeholder="Expected delivery" className={fieldInput} />
+            <input type="number" min="0" value={newItemValue} onChange={(e) => setNewItemValue(e.target.value)} placeholder="Declared value" className={fieldInput} />
+            <input value={newItemDimensions} onChange={(e) => setNewItemDimensions(e.target.value)} placeholder="Dimensions" className={fieldInput} />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
+              <input type="checkbox" checked={newItemCrating} onChange={(e) => setNewItemCrating(e.target.checked)} />
+              Crating required
+            </label>
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
+              <input type="checkbox" checked={newItemAssembly} onChange={(e) => setNewItemAssembly(e.target.checked)} />
+              Assembly required
+            </label>
+          </div>
+          <textarea value={newItemNotes} onChange={(e) => setNewItemNotes(e.target.value)} placeholder="Special handling / status notes" rows={3} className={fieldInput} />
           <div className="flex gap-2">
             <button onClick={addItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
-            <button onClick={() => setShowAddItem(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
+            <button onClick={() => { resetAddItem(); setShowAddItem(false); }} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
           </div>
         </div>
+        </section>
       )}
 
       {/* Update Vendor Item Form */}
@@ -689,16 +963,18 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
         const item = data.inventory.find((i) => i.id === updateVendorItemId);
         if (!item || (item.handled_by || "yugo") === "yugo") return null;
         return (
-          <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 mb-4 space-y-3">
+          <section className="py-5">
+          <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 space-y-3">
             <div className="text-[13px] font-semibold text-[var(--tx)]">Update: {item.item_name}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] text-[var(--tx3)] mb-1 block">Status</label>
                 <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} className={fieldInput}>
-                  <option value="expected">Expected</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="received">Received</option>
-                  <option value="delivered">Delivered</option>
+                  {PROJECT_ITEM_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {getProjectItemStatusLabel(status)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -708,6 +984,10 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               <div>
                 <label className="text-[10px] text-[var(--tx3)] mb-1 block">Tracking number</label>
                 <input value={updateTracking} onChange={(e) => setUpdateTracking(e.target.value)} placeholder="Tracking #" className={fieldInput} />
+              </div>
+              <div>
+                <label className="text-[10px] text-[var(--tx3)] mb-1 block">Expected date</label>
+                <input type="date" value={updateExpectedDate} onChange={(e) => setUpdateExpectedDate(e.target.value)} className={fieldInput} />
               </div>
             </div>
             <div>
@@ -719,15 +999,17 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               <button onClick={() => setUpdateVendorItemId(null)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
             </div>
           </div>
+          </section>
         );
       })()}
 
-      {/* Receive Item Modal */}
+      {/* Receive Item */}
       {showReceiveItem && (() => {
         const item = data.inventory.find((i) => i.id === showReceiveItem);
         if (!item) return null;
         return (
-          <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 mb-4 space-y-3">
+          <section className="py-5">
+          <div className="bg-[var(--card)] border border-[var(--gold)]/30 rounded-xl p-4 space-y-3">
             <div className="text-[13px] font-semibold text-[var(--tx)]">Receive: {item.item_name}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -750,10 +1032,12 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               <button onClick={() => setShowReceiveItem(null)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
             </div>
           </div>
+          </section>
         );
       })()}
 
       {/* Items Table */}
+      <section className="py-5 last:pb-0">
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No inventory items yet</div>
       ) : (
@@ -770,18 +1054,20 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               {filtered.map((item) => {
                 const handler = item.handled_by || "yugo";
                 const badge = HANDLER_BADGE[handler] || HANDLER_BADGE.yugo;
+                const status = getStatus(item);
+                const statusCfg = getProjectItemStatusUi(status);
                 return (
                   <tr key={item.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--gdim)]/20">
                     <td className="px-2 py-2.5">
                       <div className="text-[12px] font-medium text-[var(--tx)]">{item.item_name}</div>
                       {item.quantity > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
                     </td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.vendor || "—"}</td>
+                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.vendor_name || item.vendor || "—"}</td>
                     <td className="px-2 py-2.5">
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge.bg} ${badge.text}`}>{badge.label}</span>
                     </td>
                     <td className="px-2 py-2.5">
-                      <span className={`text-[10px] font-semibold capitalize ${INV_STATUS_COLORS[item.status] || ""}`}>{item.status.replace(/_/g, " ")}</span>
+                      <span className={`text-[10px] font-semibold ${statusCfg.color}`}>{statusCfg.label}</span>
                     </td>
                     <td className="px-2 py-2.5 text-[11px]">
                       {handler === "yugo" ? (
@@ -801,30 +1087,31 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                     </td>
                     <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : item.expected_delivery_date ? `ETA ${new Date(item.expected_delivery_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "—"}</td>
                     <td className="px-2 py-2.5">
-                      {handler === "yugo" && item.status !== "delivered" && item.status !== "installed" && (
+                      {handler === "yugo" && !isComplete(status) && (
                         <span className="text-[10px] text-[var(--tx3)]">Auto-tracked</span>
                       )}
-                      {handler === "yugo" && (item.status === "delivered" || item.status === "installed") && (
+                      {handler === "yugo" && isComplete(status) && (
                         <span className="text-[10px] text-emerald-500 font-semibold">View PoD</span>
                       )}
-                      {handler !== "yugo" && item.status !== "delivered" && item.status !== "installed" && (
+                      {handler !== "yugo" && !isComplete(status) && (
                         <>
                           <button
                             onClick={() => {
                               setUpdateVendorItemId(item.id);
-                              setUpdateStatus(item.status);
+                              setUpdateStatus(status);
                               setUpdateTracking(item.vendor_tracking_number || "");
                               setUpdateCarrier(item.vendor_carrier || "");
-                              setUpdateNotes(item.inspection_notes || "");
+                              setUpdateExpectedDate(item.expected_delivery_date || "");
+                              setUpdateNotes(item.status_notes || item.inspection_notes || "");
                             }}
                             className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                           >
                             Update
                           </button>
-                          {item.status === "expected" && (
+                          {canReceive(status) && (
                             <span className="text-[var(--tx3)] mx-1">·</span>
                           )}
-                          {item.status === "expected" && (
+                          {canReceive(status) && (
                             <button onClick={() => setShowReceiveItem(item.id)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Receive</button>
                           )}
                         </>
@@ -850,7 +1137,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                       Want guaranteed white-glove handling with real-time tracking, photo documentation, and proof of delivery?
                     </p>
                     <Link
-                      href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}`}
+                      href={`/admin/deliveries/new?choice=single&org=${data.partner_id}&projectId=${projectId}`}
                       className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
                     >
                       <Truck size={13} /> Schedule these with Yugo
@@ -862,24 +1149,100 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
           })()}
         </div>
       )}
+      </section>
     </div>
   );
 }
 
-/* ─── DELIVERIES TAB ─── */
-function DeliveriesTab({ data, projectId }: { data: ProjectData; projectId: string }) {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-[12px] text-[var(--tx3)]">{data.deliveries.length} deliver{data.deliveries.length !== 1 ? "ies" : "y"} linked</div>
-        <Link
-          href={`/admin/deliveries/new?org=${data.partner_id}&projectId=${projectId}`}
-          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
-        >
-          <Plus size={13} /> Create Delivery
-        </Link>
-      </div>
+const DELIVERY_STATUS_OPTIONS = [
+  { value: "pending_acceptance", label: "Pending Acceptance" },
+  { value: "accepted",           label: "Accepted" },
+  { value: "scheduled",          label: "Scheduled" },
+  { value: "in_progress",        label: "In Progress" },
+  { value: "en_route_to_pickup", label: "En Route to Pickup" },
+  { value: "picked_up",          label: "Picked Up" },
+  { value: "en_route",           label: "En Route" },
+  { value: "delivered",          label: "Delivered" },
+  { value: "completed",          label: "Completed" },
+  { value: "cancelled",          label: "Cancelled" },
+];
 
+const DELIVERY_STATUS_COLORS: Record<string, string> = {
+  pending_acceptance: "text-[var(--tx3)]",
+  accepted:          "text-sky-500",
+  scheduled:         "text-blue-500",
+  in_progress:       "text-amber-500",
+  en_route_to_pickup:"text-amber-500",
+  picked_up:         "text-amber-600",
+  en_route:          "text-amber-500",
+  delivered:         "text-emerald-500",
+  completed:         "text-emerald-500",
+  cancelled:         "text-red-500",
+};
+
+/* ─── DELIVERIES TAB ─── */
+function DeliveriesTab({ data, projectId, onRefresh }: { data: ProjectData; projectId: string; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const [updatingDelivery, setUpdatingDelivery] = useState<string | null>(null);
+
+  const updateDeliveryStatus = async (deliveryId: string, status: string) => {
+    setUpdatingDelivery(deliveryId);
+    const res = await fetch(`/api/admin/deliveries/${deliveryId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) { onRefresh(); toast("Delivery status updated", "check"); }
+    else toast("Failed to update status", "alertTriangle");
+    setUpdatingDelivery(null);
+  };
+
+  // Build a pre-filled URL for new delivery
+  const buildDeliveryUrl = (phaseId?: string, pickupAddr?: string) => {
+    const params = new URLSearchParams({
+      choice: "single",
+      org: data.partner_id,
+      projectId,
+    });
+    if (phaseId) params.set("phaseId", phaseId);
+    if (pickupAddr) params.set("pickup", pickupAddr);
+    if (data.site_address) params.set("delivery", data.site_address);
+    if (data.end_client_name) params.set("customer", data.end_client_name);
+    return `/admin/deliveries/new?${params.toString()}`;
+  };
+
+  // Collect ready items grouped by vendor pickup address
+  const readyItems = data.inventory.filter((i) => {
+    const st = (i as any).item_status || i.status;
+    return st === "ready_for_pickup" || PROJECT_ITEM_WAREHOUSE_STATUSES.includes(st);
+  });
+  const pickupGroups = Array.from(new Set(readyItems.map((i: any) => i.vendor_pickup_address || ""))).filter(Boolean) as string[];
+
+  return (
+    <div className="divide-y divide-[var(--brd)]/50">
+      <section className="py-5 first:pt-0">
+      <div className="flex justify-between items-center">
+        <div className="text-[12px] text-[var(--tx3)]">{data.deliveries.length} deliver{data.deliveries.length !== 1 ? "ies" : "y"} linked</div>
+        <div className="flex gap-2">
+          {pickupGroups.length > 0 && pickupGroups.map((addr) => {
+            const count = readyItems.filter((i: any) => i.vendor_pickup_address === addr).length;
+            const short = addr.split(",")[0];
+            return (
+              <Link key={addr}
+                href={buildDeliveryUrl(undefined, addr)}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"
+                title={`Pickup from ${addr}`}
+              >
+                <Truck size={12} /> {count} item{count !== 1 ? "s" : ""} from {short}
+              </Link>
+            );
+          })}
+          <CreateButton href={buildDeliveryUrl()} title="Create Delivery" />
+        </div>
+      </div>
+      </section>
+
+      <section className="py-5 last:pb-0">
       {data.deliveries.length === 0 ? (
         <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No deliveries linked to this project</div>
       ) : (
@@ -905,7 +1268,18 @@ function DeliveriesTab({ data, projectId }: { data: ProjectData; projectId: stri
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</td>
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{itemCount} item{itemCount !== 1 ? "s" : ""}</td>
                     <td className="px-3 py-2.5 text-[12px] font-medium text-[var(--tx)]">{d.total_price ? formatCurrency(d.total_price) : "—"}</td>
-                    <td className="px-3 py-2.5 text-[10px] font-semibold capitalize text-[var(--tx3)]">{d.status}</td>
+                    <td className="px-3 py-2.5">
+                      <select
+                        value={d.status}
+                        disabled={updatingDelivery === d.id}
+                        onChange={(e) => updateDeliveryStatus(d.id, e.target.value)}
+                        className={`text-[10px] font-semibold bg-transparent border-0 outline-none cursor-pointer disabled:opacity-50 ${DELIVERY_STATUS_COLORS[d.status] || "text-[var(--tx3)]"}`}
+                      >
+                        {DELIVERY_STATUS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </td>
                   </tr>
                 );
               })}
@@ -913,6 +1287,7 @@ function DeliveriesTab({ data, projectId }: { data: ProjectData; projectId: stri
           </table>
         </div>
       )}
+      </section>
     </div>
   );
 }
@@ -936,12 +1311,15 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
   };
 
   return (
-    <div>
-      <button onClick={() => setShowAddNote(!showAddNote)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] mb-4">
+    <div className="divide-y divide-[var(--brd)]/50">
+      <section className="py-5 first:pt-0">
+      <button onClick={() => setShowAddNote(!showAddNote)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
         <Plus size={13} /> Add Note
       </button>
+      </section>
 
       {showAddNote && (
+      <section className="py-5">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 space-y-3">
           <select value={noteType} onChange={(e) => setNoteType(e.target.value)} className={fieldInput}>
             <option value="note_added">Note</option>
@@ -953,17 +1331,25 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
             <button onClick={() => setShowAddNote(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
           </div>
         </div>
+      </section>
       )}
 
       {/* Timeline List */}
-      <div className="relative pl-6">
-        <div className="absolute left-2 top-0 bottom-0 w-px bg-[var(--brd)]" />
+      <section className="py-5 last:pb-0">
+      <div className="relative">
+        {data.timeline.length > 0 && (
+          <div
+            className="absolute top-0 bottom-0 w-px bg-[var(--brd)]"
+            style={{ left: "11px" }}
+            aria-hidden
+          />
+        )}
         {data.timeline.map((e) => (
-          <div key={e.id} className="relative pb-5">
-            <div className="absolute left-[-16px] top-1">
+          <div key={e.id} className="flex gap-3 pb-5 last:pb-0">
+            <div className="relative flex shrink-0 w-6 items-start justify-center pt-0.5">
               <TimelineIcon type={e.event_type} />
             </div>
-            <div className="ml-4">
+            <div className="flex-1 min-w-0">
               <div className="text-[12px] font-medium text-[var(--tx)]">{e.event_description}</div>
               <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                 {new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
@@ -971,8 +1357,9 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
             </div>
           </div>
         ))}
-        {data.timeline.length === 0 && <div className="text-[12px] text-[var(--tx3)] ml-4">No activity yet</div>}
+        {data.timeline.length === 0 && <div className="text-[12px] text-[var(--tx3)]">No activity yet</div>}
       </div>
+      </section>
     </div>
   );
 }
@@ -1014,7 +1401,8 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-[var(--brd)]/50">
+      <section className="py-5 first:pt-0">
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-4">Project Invoice</div>
 
@@ -1075,8 +1463,10 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
           <div className="text-center py-8 text-[var(--tx3)] text-[12px]">No deliveries linked to this project yet</div>
         )}
       </div>
+      </section>
 
       {/* Invoice actions */}
+      <section className="py-5 last:pb-0">
       {grandTotal > 0 && (
         <div className="flex flex-wrap items-center gap-3">
           {invoiceUrl ? (
@@ -1109,6 +1499,441 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
         </div>
       )}
       {invoiceError && <p className="text-[11px] text-[var(--red)]">{invoiceError}</p>}
+      </section>
+    </div>
+  );
+}
+
+/* ─── VENDOR TRACKER TAB ─── */
+
+const VT_RECEIVED = PROJECT_ITEM_RECEIVED_STATUSES;
+const VT_TRANSIT = PROJECT_ITEM_TRANSIT_STATUSES;
+
+const VT_STATUS_GROUPS = [
+  { key: "needs_action",        label: "Needs Action",          color: "text-amber-500",  statuses: ["ready_for_pickup"] },
+  { key: "ordered",             label: "Ordered / In Production", color: "text-sky-400",  statuses: ["spec_selected", "ordered", "in_production"] },
+  { key: "in_transit",          label: "In Transit",            color: "text-blue-500",   statuses: ["shipped", "in_transit"] },
+  { key: "received",            label: "Received & Stored",     color: "text-emerald-500",statuses: VT_RECEIVED },
+  { key: "delivered",           label: "Delivered & Installed", color: "text-purple-500", statuses: ["delivered", "installed"] },
+  { key: "issues",              label: "Issues",                color: "text-red-500",    statuses: ["issue_reported"] },
+] as const;
+
+function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: InventoryItem; projectId: string; deliveries: DeliveryLink[]; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [trackingNum, setTrackingNum] = useState(item.vendor_tracking_number || "");
+  const [carrier, setCarrier] = useState(item.vendor_carrier || "");
+  const [trackTimeout, setTrackTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const st = getProjectItemStatus(item);
+  const cfg = getProjectItemStatusUi(st);
+  const isYugo = item.handled_by === "yugo" || item.vendor_delivery_method === "yugo_pickup";
+  const isCarrier = item.handled_by === "other_carrier" || item.vendor_delivery_method === "shipped_carrier";
+  const isVendorDirect = item.handled_by === "vendor_direct" || item.vendor_delivery_method === "vendor_direct";
+
+  // Find linked Yugo delivery for this item (by phase match or items array)
+  const linkedDelivery = isYugo ? deliveries.find((d) => {
+    if (Array.isArray(d.items)) {
+      return d.items.some((di: any) => di?.id === item.id || di?.item_id === item.id || di === item.id);
+    }
+    return false;
+  }) || (item.phase_id ? deliveries.find((d) => d.phase_id === item.phase_id && d.status !== "cancelled") : null)
+  : null;
+
+  const quickStatus = async (newStatus: string) => {
+    setUpdatingStatus(true);
+    const res = await fetch(`/api/admin/projects/${projectId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: item.id, item_status: newStatus }),
+    });
+    if (res.ok) { onRefresh(); toast(`Status updated`, "check"); }
+    else toast("Failed to update status", "alertTriangle");
+    setUpdatingStatus(false);
+  };
+
+  const saveTracking = (num: string, car: string) => {
+    if (trackTimeout) clearTimeout(trackTimeout);
+    setTrackTimeout(setTimeout(async () => {
+      await fetch(`/api/admin/projects/${projectId}/inventory`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_id: item.id,
+          vendor_tracking_number: num.trim() || null,
+          vendor_carrier: car.trim() || null,
+        }),
+      });
+    }, 800));
+  };
+
+  const handleTrackingNum = (val: string) => { setTrackingNum(val); saveTracking(val, carrier); };
+  const handleCarrier = (val: string) => { setCarrier(val); saveTracking(trackingNum, val); };
+
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
+
+  return (
+    <div className="py-2.5 space-y-2">
+      {/* Row 1: Name + status */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[12px] font-semibold text-[var(--tx)]">{item.item_name}</span>
+            {(item.quantity || 1) > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
+            {isYugo && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)]">YUGO</span>}
+            {isCarrier && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400">CARRIER</span>}
+            {isVendorDirect && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400">VENDOR SHIP</span>}
+            {item.requires_crating && <span title="Crating required" className="text-[var(--tx3)]"><Package size={11} /></span>}
+            {item.requires_assembly && <span title="Assembly required" className="text-[var(--tx3)]"><Wrench size={11} /></span>}
+          </div>
+          {item.room_destination && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{item.room_destination}</p>}
+        </div>
+
+        {/* Status badge — click to change */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowStatusPicker((v) => !v)}
+            disabled={updatingStatus}
+            className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50 ${cfg.bg} ${cfg.color}`}
+          >
+            {cfg.label}
+            <ChevronDown size={9} />
+          </button>
+          {showStatusPicker && (
+            <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden min-w-[160px]">
+              {VALID_PROJECT_ITEM_STATUSES.map((s) => {
+                const scfg = getProjectItemStatusUi(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={async () => { setShowStatusPicker(false); await quickStatus(s); }}
+                    className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-[var(--bg)] transition-colors ${s === st ? `${scfg.color} font-bold` : "text-[var(--tx3)]"}`}
+                  >
+                    {scfg.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: Tracking */}
+      {isYugo ? (
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gold)]">Yugo Job</span>
+          {linkedDelivery ? (
+            <Link
+              href={`/admin/deliveries/${linkedDelivery.id}`}
+              className="text-[10px] font-mono text-[var(--gold)] hover:underline flex items-center gap-1"
+            >
+              {linkedDelivery.delivery_number || linkedDelivery.id.slice(0, 8).toUpperCase()}
+              <ChevronRight size={9} />
+            </Link>
+          ) : (
+            <Link
+              href={`/admin/deliveries/new?choice=single&org=${projectId}&projectId=${projectId}${item.phase_id ? `&phaseId=${item.phase_id}` : ""}`}
+              className="text-[10px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors flex items-center gap-1"
+            >
+              No delivery linked — schedule pickup <ChevronRight size={9} />
+            </Link>
+          )}
+        </div>
+      ) : (isCarrier || isVendorDirect) ? (
+        <div className="flex items-end gap-2">
+          <div className="shrink-0" style={{ width: "5.5rem" }}>
+            <label className="text-[9px] font-semibold uppercase tracking-wide text-purple-400 block mb-0.5">Carrier</label>
+            <input
+              value={carrier}
+              onChange={(e) => handleCarrier(e.target.value)}
+              placeholder="FedEx, UPS…"
+              className="w-full text-[10px] bg-transparent border-b border-[var(--brd)] px-0 py-1 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 outline-none focus:border-purple-400/50 transition-colors"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <label className="text-[9px] font-semibold uppercase tracking-wide text-purple-400 block mb-0.5">Tracking #</label>
+            <input
+              value={trackingNum}
+              onChange={(e) => handleTrackingNum(e.target.value)}
+              placeholder="Enter tracking number…"
+              className="w-full text-[10px] font-mono bg-transparent border-b border-[var(--brd)] px-0 py-1 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 outline-none focus:border-purple-400/50 transition-colors"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Row 3: Notes */}
+      {(item.status_notes || item.special_handling_notes) && (
+        <div className="space-y-0.5">
+          {item.status_notes && <p className="text-[10px] text-[var(--tx3)] italic">&quot;{item.status_notes}&quot;</p>}
+          {item.special_handling_notes && (
+            <p className="text-[10px] text-amber-500 flex items-center gap-1">
+              <AlertTriangle size={10} className="shrink-0" />
+              {item.special_handling_notes}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; projectId: string; onRefresh: () => void }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [groupBy, setGroupBy] = useState<"vendor" | "room" | "status">("vendor");
+  const [viewMode, setViewMode] = useState<"compact" | "detailed">("compact");
+  const [internalNote, setInternalNote] = useState(data.notes || "");
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteTimeout, setNoteTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const inv = data.inventory;
+
+  const saveInternalNote = async (val: string) => {
+    setSavingNote(true);
+    await fetch(`/api/admin/projects/${projectId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: val }),
+    });
+    setSavingNote(false);
+    onRefresh();
+  };
+
+  const handleNoteChange = (val: string) => {
+    setInternalNote(val);
+    if (noteTimeout) clearTimeout(noteTimeout);
+    setNoteTimeout(setTimeout(() => saveInternalNote(val), 1200));
+  };
+
+  const getStatus = (item: InventoryItem) => getProjectItemStatus(item);
+  const getVendor = (item: InventoryItem) => item.vendor_name || item.vendor || "No Vendor";
+
+  const totalItems = inv.length;
+  // Yugo flow stages (left → right, delivered = final)
+  const stageOrdered     = inv.filter((i) => ["spec_selected", "ordered", "in_production"].includes(getStatus(i))).length;
+  const stageReadyPickup = inv.filter((i) => getStatus(i) === "ready_for_pickup").length;
+  const stageInTransit   = inv.filter((i) => VT_TRANSIT.includes(getStatus(i))).length;
+  const stageWarehouse   = inv.filter((i) => ["received_warehouse", "inspected", "stored"].includes(getStatus(i))).length;
+  const stageScheduled   = inv.filter((i) => getStatus(i) === "scheduled_delivery").length;
+  const stageDelivered   = inv.filter((i) => ["delivered", "installed"].includes(getStatus(i))).length;
+  const stageUnassigned  = inv.filter((i) => !i.item_status || i.item_status === "pending").length;
+  const issues           = inv.filter((i) => getStatus(i) === "issue_reported").length;
+  const viaCarrier       = inv.filter((i) => i.handled_by === "other_carrier" || i.vendor_delivery_method === "shipped_carrier").length;
+
+  const YUGO_STAGES = [
+    { key: "ordered",   label: "Ordered", color: "#6B7280" },
+    { key: "pickup",    label: "Ready Pickup", color: "#F59E0B" },
+    { key: "transit",   label: "In Transit", color: "#3B82F6" },
+    { key: "warehouse",  label: "At Warehouse", color: "#14B8A6" },
+    { key: "scheduled", label: "Scheduled", color: "#8B5CF6" },
+    { key: "delivered", label: "Delivered", color: "#22C55E" },
+    { key: "pending",   label: "Pending", color: "#4B5563" },
+  ] as const;
+
+  const toggleCollapse = (key: string) =>
+    setCollapsed((p) => { const n = new Set(p); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+
+  // Build groups based on view mode
+  const groups: { key: string; name: string; items: InventoryItem[]; meta?: string }[] =
+    groupBy === "vendor"
+      ? Array.from(new Set(inv.map(getVendor))).map((name) => ({ key: name, name, items: inv.filter((i) => getVendor(i) === name) }))
+      : groupBy === "room"
+      ? Array.from(new Set(inv.map((i) => i.room_destination || "No Room Assigned"))).sort().map((room) => ({ key: room, name: room, items: inv.filter((i) => (i.room_destination || "No Room Assigned") === room) }))
+      : VT_STATUS_GROUPS.map((g) => ({ key: g.key, name: g.label, items: inv.filter((i) => g.statuses.includes(getStatus(i) as never)), meta: g.color })).filter((g) => g.items.length > 0);
+
+  return (
+    <div className="divide-y divide-[var(--brd)]/50">
+      {/* Stats */}
+      <section className="py-5 first:pt-0">
+      <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+        {[
+          { label: "Total",          value: totalItems,       color: "text-[var(--tx)]" },
+          { label: "Delivered ✓",    value: stageDelivered,  color: "text-emerald-500" },
+          { label: "At Warehouse",   value: stageWarehouse,  color: "text-teal-500" },
+          { label: "Ready Pickup",   value: stageReadyPickup,color: "text-amber-500" },
+          { label: "In Transit",     value: stageInTransit,  color: "text-sky-500" },
+          { label: "Via Carrier",    value: viaCarrier,      color: viaCarrier > 0 ? "text-purple-400" : "text-[var(--tx3)]" },
+          { label: "Issues",         value: issues,          color: issues > 0 ? "text-red-500" : "text-[var(--tx3)]" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="text-center py-2">
+            <div className={`text-[20px] font-bold ${color}`}>{value}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--tx3)] mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+      </section>
+
+      {/* Yugo flow progress bar — fills only as items move toward delivery, 100% = all delivered */}
+      <section className="py-5">
+      <div className="py-2">
+        {(() => {
+          const stageWeight = (st: ProjectItemStatus) =>
+            st === "delivered" || st === "installed" ? 100 : st === "scheduled_delivery" ? 85 : ["received_warehouse", "inspected", "stored"].includes(st) ? 70 : st === "ready_for_pickup" ? 45 : VT_TRANSIT.includes(st) ? 55 : ["spec_selected", "ordered", "in_production"].includes(st) ? 15 : 0;
+          const avgProgress = totalItems > 0 ? inv.reduce((sum, i) => sum + stageWeight(getStatus(i)), 0) / totalItems : 0;
+          return (
+            <>
+              <div className="flex justify-between text-[10px] text-[var(--tx3)] mb-1.5">
+                <span className="font-semibold text-[var(--tx)]">{stageDelivered} of {totalItems} delivered</span>
+                <span className="font-medium">{Math.round(avgProgress)}%</span>
+              </div>
+              <div className="h-1.5 bg-[var(--brd)]/30 rounded-full overflow-hidden relative">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
+                  style={{ width: `${avgProgress}%` }}
+                />
+              </div>
+            </>
+          );
+        })()}
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+          {YUGO_STAGES.map((s) => {
+            const count = s.key === "ordered" ? stageOrdered : s.key === "pickup" ? stageReadyPickup : s.key === "transit" ? stageInTransit : s.key === "warehouse" ? stageWarehouse : s.key === "scheduled" ? stageScheduled : s.key === "delivered" ? stageDelivered : stageUnassigned;
+            return count > 0 ? (
+              <span key={s.key} className="text-[9px] font-medium flex items-center gap-1" style={{ color: s.color }}>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                {s.label}: {count}
+              </span>
+            ) : null;
+          })}
+        </div>
+      </div>
+      </section>
+
+      {/* View toggle: Compact | Detailed */}
+      <section className="py-5">
+      <div className="inline-flex p-1 rounded-xl bg-[var(--brd)]/20 border border-[var(--brd)]/40">
+        {(["compact", "detailed"] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setViewMode(mode)}
+            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 capitalize ${
+              viewMode === mode
+                ? "text-[var(--tx)] bg-[var(--card)] shadow-sm border border-[var(--brd)]/50"
+                : "text-[var(--tx3)] hover:text-[var(--tx2)] hover:bg-[var(--bg)]/50"
+            }`}
+          >
+            {mode === "compact" ? "Compact" : "Detailed"}
+          </button>
+        ))}
+      </div>
+      </section>
+
+      {/* Compact view: flat table */}
+      {viewMode === "compact" && (
+        <section className="py-5">
+        {inv.length === 0 ? (
+          <p className="text-center py-10 text-[var(--tx3)] text-[13px]">No inventory items yet</p>
+        ) : (
+          <VendorStatusCompactTable inventory={inv} />
+        )}
+        </section>
+      )}
+
+      {/* Detailed view: group-by toggles */}
+      {viewMode === "detailed" && (
+      <>
+      <section className="py-5">
+      <div className="inline-flex p-1 rounded-xl bg-[var(--brd)]/20 border border-[var(--brd)]/40">
+        {(["vendor", "room", "status"] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setGroupBy(mode)}
+            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 capitalize ${
+              groupBy === mode
+                ? "text-[var(--tx)] bg-[var(--card)] shadow-sm border border-[var(--brd)]/50"
+                : "text-[var(--tx3)] hover:text-[var(--tx2)] hover:bg-[var(--bg)]/50"
+            }`}
+          >
+            By {mode === "status" ? "Status" : mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
+      </div>
+      </section>
+
+      {/* Groups */}
+      <section className="py-5">
+      {inv.length === 0 ? (
+        <p className="text-center py-10 text-[var(--tx3)] text-[13px]">No inventory items yet</p>
+      ) : (
+        <div className="space-y-3">
+          {groups.map((group) => {
+            const isCollapsed = collapsed.has(group.key);
+            const gReceived = group.items.filter((i) => VT_RECEIVED.includes(getStatus(i))).length;
+            const gTransit = group.items.filter((i) => VT_TRANSIT.includes(getStatus(i))).length;
+            const gIssues = group.items.filter((i) => getStatus(i) === "issue_reported").length;
+            const contactItem = groupBy === "vendor" ? group.items.find((i) => i.vendor_contact_phone || i.vendor_contact_email) : null;
+
+            return (
+              <div key={group.key} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleCollapse(group.key)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[var(--bg)]/50 transition-colors rounded-lg"
+                >
+                  <div className="flex items-center gap-2.5">
+                    {isCollapsed
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--tx3)]"><path d="M9 18l6-6-6-6" /></svg>
+                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--tx3)]"><path d="M6 9l6 6 6-6" /></svg>}
+                    <span className={`text-[12px] font-bold uppercase tracking-wide ${group.meta || "text-[var(--tx)]"}`}>{group.name}</span>
+                    <span className="text-[11px] text-[var(--tx3)]">({group.items.length})</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] font-semibold">
+                    {gIssues > 0 && <span className="text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{gIssues} issue{gIssues > 1 ? "s" : ""}</span>}
+                    {gReceived > 0 && <span className="text-emerald-500">{gReceived} received</span>}
+                    {gTransit > 0 && <span className="text-sky-500">{gTransit} in transit</span>}
+                  </div>
+                </button>
+
+                {!isCollapsed && (
+                  <div className="pl-3 pt-1 space-y-2">
+                    {/* Contact strip (vendor view only) */}
+                    {contactItem && (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-[var(--tx3)]">
+                        {contactItem.vendor_contact_name && <span className="font-semibold text-[var(--tx)]">{contactItem.vendor_contact_name}</span>}
+                        {contactItem.vendor_contact_phone && (
+                          <a href={`tel:${contactItem.vendor_contact_phone}`} className="text-[var(--gold)] hover:underline">{contactItem.vendor_contact_phone}</a>
+                        )}
+                        {contactItem.vendor_contact_email && (
+                          <a href={`mailto:${contactItem.vendor_contact_email}`} className="text-[var(--gold)] hover:underline">{contactItem.vendor_contact_email}</a>
+                        )}
+                        {contactItem.vendor_pickup_address && <span className="text-[var(--tx3)] flex items-center gap-1"><MapPin size={10} className="shrink-0" />{contactItem.vendor_pickup_address}</span>}
+                        {contactItem.vendor_pickup_window && <span className="text-[var(--tx3)] flex items-center gap-1"><Clock size={10} className="shrink-0" />{contactItem.vendor_pickup_window}</span>}
+                      </div>
+                    )}
+
+                    {/* Items */}
+                    {group.items.map((item) => (
+                      <VtItemCard key={item.id} item={item} projectId={projectId} deliveries={data.deliveries} onRefresh={onRefresh} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      </section>
+
+      {/* Internal notes (admin-only) */}
+      <section className="py-5 last:pb-0">
+      <div className="py-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <Lock size={11} /> Internal Notes (Admin Only)
+          </span>
+          {savingNote && <span className="text-[10px] text-[var(--tx3)]">Saving…</span>}
+        </div>
+        <textarea
+          value={internalNote}
+          onChange={(e) => handleNoteChange(e.target.value)}
+          rows={3}
+          placeholder="Internal notes not visible to the designer. Issues, scheduling notes, logistics remarks…"
+          className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] outline-none resize-none focus:border-amber-500/50 transition-colors"
+        />
+      </div>
+      </section>
+      </>
+      )}
     </div>
   );
 }
@@ -1125,7 +1950,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
+    <div>
       <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</div>
       <div className="text-[24px] font-bold text-[var(--tx)] mt-1 font-hero">{value}</div>
       <div className="text-[11px] text-[var(--tx3)]">{sub}</div>

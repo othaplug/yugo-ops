@@ -52,11 +52,21 @@ export async function GET(
         if (proj) projectContext = { projectNumber: proj.project_number, projectName: proj.project_name, phaseName };
       }
 
+      // Fetch delivery stops for day_rate bookings
+      const bookingType = (d as any).booking_type as string | null;
+      const { data: stops } = await admin
+        .from("delivery_stops")
+        .select("id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at")
+        .eq("delivery_id", d.id)
+        .order("stop_number");
+
       return NextResponse.json({
         id: d.id,
         jobId: d.delivery_number || d.id,
         jobType: "delivery",
+        bookingType,
         status: d.status || "scheduled",
+        stopsCompleted: (d as any).stops_completed || 0,
         clientName: `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "—",
         fromAddress: d.pickup_address || "Warehouse",
         toAddress: d.delivery_address || "—",
@@ -67,8 +77,13 @@ export async function GET(
         scheduledDate: (d as any).scheduled_date || null,
         access,
         crewMembers: crewWithRoles,
-        jobTypeLabel: `Delivery · ${rawItems.length} items`,
+        jobTypeLabel: bookingType === "day_rate" ? `Day Rate · ${(stops || []).length} stops` : `Delivery · ${rawItems.length} items`,
         itemCount: rawItems.length,
+        stops: (stops || []).map((s) => ({
+          ...s,
+          stop_status: s.stop_status || s.status || "pending",
+          stop_type: s.stop_type || "delivery",
+        })),
         inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
         extraItems: extra || [],
         internalNotes: d.instructions || d.next_action || null,

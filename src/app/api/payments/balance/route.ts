@@ -89,6 +89,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
     }
 
+    const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+
     const paidAt = new Date().toISOString();
     await supabase
       .from("moves")
@@ -100,6 +102,7 @@ export async function POST(req: Request) {
         payment_marked_paid: true,
         payment_marked_paid_at: paidAt,
         payment_marked_paid_by: "client",
+        square_receipt_url: receiptUrl,
         updated_at: paidAt,
       })
       .eq("id", moveId);

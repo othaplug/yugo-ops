@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import GalleryItemsPanel from "./GalleryItemsPanel";
 
 const PROJECT_TYPES = [
   { value: "exhibition", label: "Exhibition" },
@@ -61,6 +62,7 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"details" | "items">("details");
   const [name, setName] = useState("");
   const [galleryOrgId, setGalleryOrgId] = useState("");
   const [details, setDetails] = useState("");
@@ -140,7 +142,34 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
   if (!project) return null;
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Edit project" maxWidth="md">
+    <ModalOverlay open={open} onClose={onClose} title="Edit project" maxWidth="lg">
+      {/* Tab bar */}
+      <div className="flex border-b border-[var(--brd)] px-5 gap-1">
+        {(["details", "items"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-3 py-2.5 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
+              activeTab === tab
+                ? "border-[var(--gold)] text-[var(--gold)]"
+                : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
+            }`}
+          >
+            {tab === "details" ? "Project Details" : "Artwork & Condition"}
+          </button>
+        ))}
+      </div>
+
+      {/* Items panel */}
+      {activeTab === "items" && (
+        <div className="p-5 max-h-[80vh] overflow-y-auto">
+          <GalleryItemsPanel projectId={project.id} />
+        </div>
+      )}
+
+      {/* Details form */}
+      {activeTab === "details" && (
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project name *</label>
@@ -221,6 +250,7 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
           <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
         </div>
       </form>
+      )}
     </ModalOverlay>
   );
 }

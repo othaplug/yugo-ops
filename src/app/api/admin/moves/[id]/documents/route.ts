@@ -20,7 +20,7 @@ export async function GET(
         .select("id, type, title, storage_path, external_url, created_at")
         .eq("move_id", moveId)
         .order("created_at", { ascending: false }),
-      admin.from("moves").select("move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url").eq("id", moveId).single(),
+      admin.from("moves").select("move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url, square_receipt_url").eq("id", moveId).single(),
     ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -73,8 +73,9 @@ export async function GET(
       autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/receipt`, external_url: null, created_at: new Date().toISOString() });
     }
     const allDocuments = [...autoDocs, ...withUrls];
+    const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;
 
-    return NextResponse.json({ documents: allDocuments });
+    return NextResponse.json({ documents: allDocuments, square_receipt_url: squareReceiptUrl });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

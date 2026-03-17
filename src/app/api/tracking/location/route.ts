@@ -24,8 +24,13 @@ const GEOFENCE_TRANSITIONS: Record<
   string,
   { nearField: "pickup" | "delivery"; newSessionStatus: string }
 > = {
+  // Primary statuses (moves + deliveries)
   en_route_to_pickup: { nearField: "pickup", newSessionStatus: "arrived_at_pickup" },
   en_route_to_destination: { nearField: "delivery", newSessionStatus: "arrived_at_destination" },
+  // Legacy/variant statuses (moves)
+  on_route: { nearField: "pickup", newSessionStatus: "arrived_on_site" },
+  en_route: { nearField: "pickup", newSessionStatus: "arrived" },
+  in_transit: { nearField: "delivery", newSessionStatus: "arrived_at_destination" },
 };
 
 function mapSessionStatus(status: string | null, isActive: boolean): string {
@@ -203,6 +208,58 @@ export async function POST(req: NextRequest) {
         } else if (transition.nearField === "delivery" && move.to_lat && move.to_lng) {
           targetLat = Number(move.to_lat);
           targetLng = Number(move.to_lng);
+        }
+
+        if (targetLat != null && targetLng != null) {
+          const distM = haversineM(latNum, lngNum, targetLat, targetLng);
+          if (distM < GEOFENCE_RADIUS_M) {
+            sessionStatus = transition.newSessionStatus;
+            autoAdvanced = true;
+
+            const checkpoints = Array.isArray(session.checkpoints) ? [...session.checkpoints] : [];
+            checkpoints.push({
+              status: transition.newSessionStatus,
+              timestamp: ts,
+              lat: latNum,
+              lng: lngNum,
+              note: `Auto-detected arrival (${Math.round(distM)}m from location)`,
+            });
+
+            await admin
+              .from("tracking_sessions")
+              .update({
+                status: transition.newSessionStatus,
+                checkpoints,
+                last_location: lastLocation,
+                updated_at: ts,
+              })
+              .eq("id", sessionId);
+          }
+        }
+      }
+    }
+  }
+
+  // Delivery geofencing: auto-detect arrival at pickup or delivery (same as moves)
+  if (session.is_active && session.job_type === "delivery" && session.job_id && !autoAdvanced) {
+    const { data: delivery } = await admin
+      .from("deliveries")
+      .select("id, pickup_lat, pickup_lng, delivery_lat, delivery_lng")
+      .eq("id", session.job_id as string)
+      .single();
+
+    if (delivery) {
+      const transition = sessionStatus ? GEOFENCE_TRANSITIONS[sessionStatus] : undefined;
+      if (transition) {
+        let targetLat: number | null = null;
+        let targetLng: number | null = null;
+
+        if (transition.nearField === "pickup" && delivery.pickup_lat != null && delivery.pickup_lng != null) {
+          targetLat = Number(delivery.pickup_lat);
+          targetLng = Number(delivery.pickup_lng);
+        } else if (transition.nearField === "delivery" && delivery.delivery_lat != null && delivery.delivery_lng != null) {
+          targetLat = Number(delivery.delivery_lat);
+          targetLng = Number(delivery.delivery_lng);
         }
 
         if (targetLat != null && targetLng != null) {

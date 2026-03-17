@@ -26,6 +26,7 @@ export interface CreateMoveFromQuoteInput {
   squareCustomerId?: string;
   squareCardId?: string;
   squarePaymentId?: string;
+  squareReceiptUrl?: string | null;
   contractSignedAt?: string;
   contractPdfUrl?: string;
 }
@@ -239,6 +240,7 @@ export async function createMoveFromQuote(
       square_customer_id: input.squareCustomerId ?? null,
       square_card_id: input.squareCardId ?? null,
       square_payment_id: input.squarePaymentId ?? null,
+      square_receipt_url: input.squareReceiptUrl ?? null,
 
       contract_signed: true,
       contract_signed_at: contractSignedAt,

@@ -1719,7 +1719,8 @@ const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
   { key: "office_move",   label: "Office / Commercial",  tiers: ["custom"] },
   { key: "single_item",   label: "Single Item Delivery", tiers: ["custom"] },
   { key: "white_glove",   label: "White Glove",          tiers: ["custom"] },
-  { key: "specialty",     label: "Specialty / Event",    tiers: ["custom"] },
+  { key: "specialty",     label: "Specialty",            tiers: ["custom"] },
+  { key: "event",         label: "Event",                tiers: ["custom"] },
   { key: "b2b_delivery",  label: "B2B One-Off",          tiers: ["custom"] },
 ];
 
@@ -1945,6 +1946,279 @@ function TierFeaturesSection() {
   );
 }
 
+/* ────────── SUPPLIES & CRATING ────────── */
+function SuppliesAndCratingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const getVal = (key: string) => rows.find((r) => r.key === key);
+  const suppliesRow = getVal("estate_supplies_by_size");
+  const cratingRow = getVal("crating_prices");
+
+  const SUPPLIES_DEFAULTS: Record<string, number> = {
+    studio: 250, "1br": 300, "2br": 375, "3br": 575, "4br": 850, "5br_plus": 1100, partial: 150,
+  };
+  const SUPPLIES_LABELS: Record<string, string> = {
+    studio: "Studio", "1br": "1 Bedroom", "2br": "2 Bedroom", "3br": "3 Bedroom",
+    "4br": "4 Bedroom", "5br_plus": "5 Bedroom+", partial: "Partial Move",
+  };
+  const CRATING_DEFAULTS: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
+  const CRATING_LABELS: Record<string, string> = {
+    small: 'Small (under 24")', medium: 'Medium (24–48")', large: 'Large (48–72")', oversized: 'Oversized (72"+)',
+  };
+
+  const parseJson = (row: Row | undefined, defaults: Record<string, number>) => {
+    try { return row?.value ? (JSON.parse(String(row.value)) as Record<string, number>) : defaults; }
+    catch { return defaults; }
+  };
+
+  const suppliesMap = parseJson(suppliesRow, SUPPLIES_DEFAULTS);
+  const cratingMap = parseJson(cratingRow, CRATING_DEFAULTS);
+
+  const handleSuppliesChange = (key: string, val: string) => {
+    if (!suppliesRow) return;
+    const updated = { ...suppliesMap, [key]: Number(val) || 0 };
+    updateRow(String(suppliesRow.id), "value", JSON.stringify(updated));
+  };
+
+  const handleCratingChange = (key: string, val: string) => {
+    if (!cratingRow) return;
+    const updated = { ...cratingMap, [key]: Number(val) || 0 };
+    updateRow(String(cratingRow.id), "value", JSON.stringify(updated));
+  };
+
+  return (
+    <div className="pt-4 space-y-5">
+      {/* Estate Supplies */}
+      <div>
+        <p className="text-[11px] font-semibold text-[var(--tx)] mb-2">Estate Supplies Allowance</p>
+        <p className="text-[10px] text-[var(--tx3)] mb-3">
+          Included in Estate tier price. Covers boxes, tape, bubble wrap, wardrobe boxes, mattress bags, packing paper.
+        </p>
+        <table className={tbl}>
+          <thead><tr><th className={th}>Move Size</th><th className={th}>Allowance ($)</th></tr></thead>
+          <tbody>
+            {Object.entries(SUPPLIES_LABELS).map(([key, label]) => (
+              <tr key={key}>
+                <td className={td}><span className="text-[12px] font-medium text-[var(--tx)]">{label}</span></td>
+                <td className={td}>
+                  <EditCell
+                    value={suppliesMap[key] ?? SUPPLIES_DEFAULTS[key]}
+                    onChange={(v) => handleSuppliesChange(key, v)}
+                    type="number"
+                    className="font-semibold text-[var(--gold)]"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!suppliesRow && <p className="text-[10px] text-[var(--tx3)] mt-2">Run migrations to add estate_supplies_by_size to platform_config.</p>}
+      </div>
+
+      {/* Crating Rates */}
+      <div>
+        <p className="text-[11px] font-semibold text-[var(--tx)] mb-2">Custom Crating Rates</p>
+        <p className="text-[10px] text-[var(--tx3)] mb-3">
+          Per-piece cost applied when coordinator marks crating required on a quote. Applies to all service tiers.
+        </p>
+        <table className={tbl}>
+          <thead><tr><th className={th}>Crate Size</th><th className={th}>Price per Piece ($)</th><th className={th}>Notes</th></tr></thead>
+          <tbody>
+            {Object.entries(CRATING_LABELS).map(([key, label]) => (
+              <tr key={key}>
+                <td className={td}><span className="text-[12px] font-medium text-[var(--tx)]">{label}</span></td>
+                <td className={td}>
+                  <EditCell
+                    value={cratingMap[key] ?? CRATING_DEFAULTS[key]}
+                    onChange={(v) => handleCratingChange(key, v)}
+                    type="number"
+                    className="font-semibold text-[var(--gold)]"
+                  />
+                </td>
+                <td className={td}>
+                  <span className="text-[10px] text-[var(--tx3)]">
+                    {key === "small" ? "Art under 24in" : key === "medium" ? "Art/mirrors 24–48in" : key === "large" ? "Furniture/sculptures 48–72in" : "72in+"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!cratingRow && <p className="text-[10px] text-[var(--tx3)] mt-2">Run migrations to add crating_prices to platform_config.</p>}
+      </div>
+
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
+/* ────────── INVENTORY MODIFIER FLOOR/CAP (Section 1 + 10) ────────── */
+function InventoryModifierSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const getVal = (key: string) => rows.find((r) => r.key === key);
+  const floorRow = getVal("inventory_modifier_floor");
+  const capRow   = getVal("inventory_modifier_cap");
+  const floor    = Number(floorRow?.value ?? 0.65);
+  const cap      = Number(capRow?.value ?? 1.50);
+
+  return (
+    <div className="pt-4 space-y-5">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Controls the minimum and maximum price adjustment from inventory volume. Floor 0.65 = light moves get up to 35% discount. Cap 1.50 = heavy moves pay up to 50% more.
+      </p>
+
+      <div className="grid grid-cols-2 gap-4">
+        {floorRow ? (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-[var(--tx)]">Floor (minimum)</label>
+            <EditCell value={floor} onChange={(v) => updateRow(String(floorRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--grn)]" />
+            <p className="text-[9px] text-[var(--tx3)]">e.g. 0.65 → 35% max discount</p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-[var(--tx3)] col-span-2">Run migration to add <code>inventory_modifier_floor</code> to platform_config.</p>
+        )}
+        {capRow ? (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-[var(--tx)]">Cap (maximum)</label>
+            <EditCell value={cap} onChange={(v) => updateRow(String(capRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-amber-600" />
+            <p className="text-[9px] text-[var(--tx3)]">e.g. 1.50 → 50% max premium</p>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Live preview */}
+      {floorRow && capRow && (
+        <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-[11px] space-y-1">
+          <p className="font-semibold text-[var(--tx)]">Live example — 2BR base $1,199</p>
+          <p className="text-[var(--tx3)]">Light move (17 items): modifier ≈ {floor} → <span className="font-semibold text-[var(--tx)]">{currency(Math.round(1199 * floor))}</span></p>
+          <p className="text-[var(--tx3)]">Heavy move (55+ items): modifier ≈ {cap} → <span className="font-semibold text-[var(--tx)]">{currency(Math.round(1199 * cap))}</span></p>
+        </div>
+      )}
+
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
+/* ────────── DISTANCE INTELLIGENCE + DEADHEAD (Section 4 + 10) ────────── */
+function DistanceDeadheadSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const getNum = (key: string, fallback: number) => Number(rows.find((r) => r.key === key)?.value ?? fallback);
+  const getRow = (key: string) => rows.find((r) => r.key === key);
+
+  const modifiers = [
+    { key: "dist_mod_ultra_short", label: "≤2 km (ultra-short)",  fallback: 0.92, hint: "−8% discount" },
+    { key: "dist_mod_short",       label: "≤5 km (short)",         fallback: 0.95, hint: "−5% discount" },
+    { key: "dist_mod_medium",      label: "≤40 km (medium)",        fallback: 1.08, hint: "+8% surcharge" },
+    { key: "dist_mod_long",        label: "≤60 km (long)",          fallback: 1.15, hint: "+15% surcharge" },
+    { key: "dist_mod_very_long",   label: "≤100 km (very long)",    fallback: 1.25, hint: "+25% surcharge" },
+    { key: "dist_mod_extreme",     label: ">100 km (extreme)",       fallback: 1.35, hint: "+35% surcharge" },
+  ];
+
+  const deadheadFreeKmRow = getRow("deadhead_free_km");
+  const deadheadPerKmRow  = getRow("deadhead_per_km");
+  const deadheadFreeKm    = getNum("deadhead_free_km", 15);
+  const deadheadPerKm     = getNum("deadhead_per_km", 2.50);
+
+  return (
+    <div className="pt-4 space-y-6">
+      {/* Distance modifiers */}
+      <div>
+        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-1">Distance Modifiers</h4>
+        <p className="text-[11px] text-[var(--tx3)] mb-3">
+          Applied multiplicatively to base rate. Replaces the old flat per-km surcharge. Baseline (6–20 km) = ×1.0.
+        </p>
+        <table className="w-full text-[11px] border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left pb-1 text-[var(--tx3)] font-medium pr-4">Distance range</th>
+              <th className="text-left pb-1 text-[var(--tx3)] font-medium pr-4">Modifier</th>
+              <th className="text-left pb-1 text-[var(--tx3)] font-medium">Effect on $1,199 base</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--brd)]">
+            {modifiers.map(({ key, label, fallback, hint }) => {
+              const row = getRow(key);
+              const val = getNum(key, fallback);
+              return (
+                <tr key={key}>
+                  <td className="py-1.5 pr-4 text-[var(--tx2)]">{label}</td>
+                  <td className="py-1.5 pr-4">
+                    {row ? (
+                      <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="w-16" />
+                    ) : (
+                      <span className="text-[var(--tx3)]">{fallback} (not in config)</span>
+                    )}
+                  </td>
+                  <td className={`py-1.5 text-[9px] font-medium ${val < 1 ? "text-emerald-600" : val > 1 ? "text-amber-600" : "text-[var(--tx3)]"}`}>
+                    {currency(Math.round(1199 * val))} &nbsp;{hint}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!modifiers.some(({ key }) => getRow(key)) && (
+          <p className="text-[11px] text-[var(--tx3)] mt-2">Run migration to add distance modifier keys to platform_config.</p>
+        )}
+      </div>
+
+      {/* Deadhead */}
+      <div>
+        <h4 className="text-[11px] font-bold text-[var(--tx)] mb-1">Deadhead Surcharge</h4>
+        <p className="text-[11px] text-[var(--tx3)] mb-3">
+          Charged when pickup address is more than the free-zone km from Yugo base (507 King St E). Crew travel cost. Applied flat — not multiplied by tier.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-[var(--tx)]">Free zone (km)</label>
+            {deadheadFreeKmRow ? (
+              <EditCell value={deadheadFreeKm} onChange={(v) => updateRow(String(deadheadFreeKmRow.id), "value", v)} type="number" className="w-16" />
+            ) : (
+              <span className="text-[10px] text-[var(--tx3)]">15 (not in config)</span>
+            )}
+            <p className="text-[9px] text-[var(--tx3)]">No charge within this radius</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-[var(--tx)]">Rate per excess km ($)</label>
+            {deadheadPerKmRow ? (
+              <EditCell value={deadheadPerKm} onChange={(v) => updateRow(String(deadheadPerKmRow.id), "value", v)} type="number" className="w-16" />
+            ) : (
+              <span className="text-[10px] text-[var(--tx3)]">2.50 (not in config)</span>
+            )}
+            <p className="text-[9px] text-[var(--tx3)]">Charged per km beyond free zone</p>
+          </div>
+        </div>
+        {/* Deadhead examples */}
+        <div className="mt-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-[11px] space-y-0.5">
+          <p className="font-semibold text-[var(--tx)] mb-1">Examples</p>
+          {[
+            { label: "Midtown Toronto (8 km)", km: 8 },
+            { label: "Etobicoke (20 km)", km: 20 },
+            { label: "Mississauga (25 km)", km: 25 },
+            { label: "Markham (35 km)", km: 35 },
+          ].map(({ label, km }) => {
+            const charge = km > deadheadFreeKm ? Math.round((km - deadheadFreeKm) * deadheadPerKm) : 0;
+            return (
+              <div key={label} className="flex justify-between text-[var(--tx3)]">
+                <span>{label}</span>
+                <span className={charge > 0 ? "text-amber-600 font-medium" : ""}>{charge > 0 ? `+${currency(charge)}` : "$0"}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
@@ -1997,6 +2271,14 @@ export default function PricingControlPanel() {
         <AddOnsSection />
       </Accordion>
 
+      <Accordion title="Inventory Modifier Floor & Cap" subtitle="Light move discount floor (0.65) and heavy move premium cap (1.50)">
+        <InventoryModifierSection />
+      </Accordion>
+
+      <Accordion title="Distance Intelligence & Deadhead" subtitle="Short-move discounts, long-distance surcharges, crew deadhead cost">
+        <DistanceDeadheadSection />
+      </Accordion>
+
       <Accordion title="Inventory & Volume" subtitle="Item weight scores and volume benchmarks per move size">
         <InventoryVolumeSection />
       </Accordion>
@@ -2004,6 +2286,115 @@ export default function PricingControlPanel() {
       <Accordion title="Package & Tier Features" subtitle="What's included in each move package — shown on customer quotes">
         <TierFeaturesSection />
       </Accordion>
+
+      <Accordion title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">
+        <B2BSurchargesSection />
+      </Accordion>
+
+      <Accordion title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size + custom crating rates per piece">
+        <SuppliesAndCratingSection />
+      </Accordion>
+    </div>
+  );
+}
+
+/* ────────── B2B SURCHARGES (platform_config JSON) ────────── */
+function B2BSurchargesSection() {
+  const [access, setAccess] = useState<{ key: string; label: string; surcharge: number }[]>([]);
+  const [weight, setWeight] = useState<{ key: string; label: string; surcharge: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetch("/api/admin/pricing/b2b-surcharges")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.access) setAccess(d.access);
+        if (d.weight) setWeight(d.weight);
+      })
+      .catch(() => toast("Failed to load B2B surcharges", "x"))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/pricing/b2b-surcharges", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access, weight }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast("B2B surcharges saved", "check");
+    } catch {
+      toast("Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAccess = (key: string, surcharge: number) => {
+    setAccess((prev) => prev.map((a) => (a.key === key ? { ...a, surcharge } : a)));
+  };
+  const updateWeight = (key: string, surcharge: number) => {
+    setWeight((prev) => prev.map((w) => (w.key === key ? { ...w, surcharge } : w)));
+  };
+
+  if (loading) return <div className="text-[11px] text-[var(--tx3)] py-4">Loading…</div>;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Rates shown on the rate card are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply to per-delivery bookings.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">B2B Access Surcharges</h4>
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-[var(--brd)]">
+                <th className="text-left py-2 font-semibold text-[var(--tx)]">Access Type</th>
+                <th className="text-right py-2 font-semibold text-[var(--tx)]">Surcharge</th>
+              </tr>
+            </thead>
+            <tbody>
+              {access.map((a) => (
+                <tr key={a.key} className="border-b border-[var(--brd)]/50">
+                  <td className="py-2 text-[var(--tx)]">{a.label}</td>
+                  <td className="py-2 text-right">
+                    <EditCell type="number" value={a.surcharge} onChange={(v) => updateAccess(a.key, parseInt(v, 10) || 0)} className="text-right" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">B2B Weight Surcharges</h4>
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-[var(--brd)]">
+                <th className="text-left py-2 font-semibold text-[var(--tx)]">Category</th>
+                <th className="text-right py-2 font-semibold text-[var(--tx)]">Surcharge</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weight.map((w) => (
+                <tr key={w.key} className="border-b border-[var(--brd)]/50">
+                  <td className="py-2 text-[var(--tx)]">{w.label}</td>
+                  <td className="py-2 text-right">
+                    <EditCell type="number" value={w.surcharge} onChange={(v) => updateWeight(w.key, parseInt(v, 10) || 0)} className="text-right" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50">
+        {saving ? "Saving…" : "Save B2B Surcharges"}
+      </button>
     </div>
   );
 }

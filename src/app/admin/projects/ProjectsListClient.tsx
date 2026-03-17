@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import CreateButton from "../components/CreateButton";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 
@@ -133,18 +134,12 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
   return (
     <div className="px-4 sm:px-6 py-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-1">
         <div>
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">Projects</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{projects.length} project{projects.length !== 1 ? "s" : ""} across all partners</p>
+          <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Projects</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5 mb-5 font-medium">{projects.length} project{projects.length !== 1 ? "s" : ""} across all partners</p>
         </div>
-        <Link
-          href="/admin/projects/new"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          New Project
-        </Link>
+        <CreateButton href="/admin/projects/new" title="New Project" />
       </div>
 
       {/* Filters */}

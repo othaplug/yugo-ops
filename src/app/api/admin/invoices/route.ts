@@ -10,7 +10,7 @@ export async function GET() {
     const supabase = await createClient();
     const { data: invoices, error } = await supabase
       .from("invoices")
-      .select("id, invoice_number, client_name, amount, move_id, delivery_id, due_date, status, file_path, organization_id, square_invoice_id, square_invoice_url, created_at")
+      .select("id, invoice_number, client_name, amount, move_id, delivery_id, due_date, status, file_path, organization_id, square_invoice_id, square_invoice_url, square_receipt_url, created_at")
       .order("created_at", { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
