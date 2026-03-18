@@ -5,17 +5,17 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { Plus, Trash2, Truck, Send, Calendar, DollarSign } from "lucide-react";
+import { Plus, Trash2, Truck, Send, Calendar } from "lucide-react";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
-const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string }[] = [
-  { value: "sprinter", label: "Cargo Van (Sprinter)", capacity: "370 cu ft" },
-  { value: "16ft", label: "16ft Truck", capacity: "800 cu ft" },
-  { value: "20ft", label: "20ft Truck", capacity: "1,100 cu ft" },
-  { value: "26ft", label: "26ft Truck", capacity: "1,600 cu ft" },
+const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string; payload: string }[] = [
+  { value: "sprinter", label: "Cargo Van (Sprinter)", capacity: "370 cu ft", payload: "3,500 lbs" },
+  { value: "16ft", label: "16ft Truck", capacity: "800 cu ft", payload: "5,000 lbs" },
+  { value: "20ft", label: "20ft Truck", capacity: "1,100 cu ft", payload: "7,000 lbs" },
+  { value: "26ft", label: "26ft Truck", capacity: "1,600 cu ft", payload: "10,000 lbs" },
 ];
 
 const DELIVERY_TYPES = [
@@ -293,34 +293,34 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   };
 
   const fieldInput =
-    "w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "w-full text-[14px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
 
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[640px] max-h-[92vh] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
+        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[640px] max-h-[92vh] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
+        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
           <div className="min-w-0 flex-1">
-            <h2 className="font-hero text-[26px] sm:text-[30px] font-bold text-[#1A1A1A]">Schedule Delivery</h2>
+            <h2 className="font-hero text-[26px] sm:text-[30px] font-bold text-[var(--tx)]">Schedule Delivery</h2>
             {/* Toggle: Day Rate | Per Delivery — only when on config step */}
             {step === "config" && (
               <div className="flex gap-1 mt-2">
                 <button
                   type="button"
                   onClick={() => setBookingType("day_rate")}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "day_rate" ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "day_rate" ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}
                 >
                   Day Rate
                 </button>
                 <button
                   type="button"
                   onClick={() => setBookingType("per_delivery")}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "per_delivery" ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${bookingType === "per_delivery" ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}
                 >
                   Per Delivery
                 </button>
@@ -329,19 +329,19 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             {step !== "config" && step !== "day_flow" && bookingType === "per_delivery" && (
               <div className="flex gap-1.5 mt-1">
                 {(["config", "details", "review"] as const).map((s, i) => (
-                  <div key={s} className={`h-1 rounded-full transition-all ${i <= ["config", "details", "review"].indexOf(step) ? "bg-[#C9A962] w-8" : "bg-[#E8E4DF] w-4"}`} />
+                  <div key={s} className={`h-1 rounded-full transition-all ${i <= ["config", "details", "review"].indexOf(step) ? "bg-[#C9A962] w-8" : "bg-[var(--brd)] w-4"}`} />
                 ))}
               </div>
             )}
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666] shrink-0" aria-label="Close">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)] shrink-0" aria-label="Close">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-5">
           {error && (
-            <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{error}</div>
+            <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-[13px] text-red-600 dark:text-red-400">{error}</div>
           )}
 
           {/* ════ Day rate: after config, show DeliveryDayForm (date → stops → delivery day → review) ════ */}
@@ -361,46 +361,47 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "day_rate" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vehicle</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Vehicle</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {VEHICLE_TYPES.map((v) => (
                     <button
                       key={v.value}
                       type="button"
                       onClick={() => setVehicleType(v.value as VehicleType)}
-                      className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${vehicleType === v.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
+                      className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${vehicleType === v.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[var(--brd)] hover:border-[#C9A962]/50"}`}
                     >
-                      <Truck className={`w-4 h-4 mb-1 ${vehicleType === v.value ? "text-[#C9A962]" : "text-[#999]"}`} />
-                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{v.label}</div>
-                      <div className="text-[10px] text-[#888]">{v.capacity}</div>
+                      <Truck className={`w-4 h-4 mb-1 ${vehicleType === v.value ? "text-[#C9A962]" : "text-[var(--tx3)]"}`} />
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">{v.label}</div>
+                      <div className="text-[10px] text-[var(--tx3)]">{v.capacity}</div>
+                      <div className="text-[10px] text-[var(--tx3)]">Max payload: {v.payload}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Duration</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Duration</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {([["full_day", "Full Day", "6 stops incl."], ["half_day", "Half Day", "3 stops incl."]] as const).map(([val, label, desc]) => (
                     <button
                       key={val}
                       type="button"
                       onClick={() => setDayType(val)}
-                      className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${dayType === val ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
+                      className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${dayType === val ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[var(--brd)] hover:border-[#C9A962]/50"}`}
                     >
-                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{label}</div>
-                      <div className="text-[10px] text-[#888]">{desc}</div>
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">{label}</div>
+                      <div className="text-[10px] text-[var(--tx3)]">{desc}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Number of Stops</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Number of Stops</h3>
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setNumStops((n) => Math.max(1, n - 1))} className="w-9 h-9 rounded-lg border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]">-</button>
-                  <span className="text-[22px] font-bold text-[#1A1A1A] w-10 text-center">{numStops}</span>
-                  <button type="button" onClick={() => setNumStops((n) => n + 1)} className="w-9 h-9 rounded-lg border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]">+</button>
+                  <button type="button" onClick={() => setNumStops((n) => Math.max(1, n - 1))} className="w-9 h-9 rounded-lg border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)]">-</button>
+                  <span className="text-[22px] font-bold text-[var(--tx)] w-10 text-center">{numStops}</span>
+                  <button type="button" onClick={() => setNumStops((n) => n + 1)} className="w-9 h-9 rounded-lg border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)]">+</button>
                 </div>
               </section>
 
@@ -413,24 +414,24 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {step === "config" && bookingType === "per_delivery" && (
             <div className="space-y-5">
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Delivery Type</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Delivery Type</h3>
                 <div className="space-y-2">
                   {DELIVERY_TYPES.map((dt) => (
                     <button
                       key={dt.value}
                       type="button"
                       onClick={() => setDeliveryType(dt.value)}
-                      className={`w-full px-4 py-3 rounded-xl border-2 text-left transition-all ${deliveryType === dt.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[#E8E4DF] hover:border-[#C9A962]/50"}`}
+                      className={`w-full px-4 py-3 rounded-xl border-2 text-left transition-all ${deliveryType === dt.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[var(--brd)] hover:border-[#C9A962]/50"}`}
                     >
-                      <div className="text-[13px] font-semibold text-[#1A1A1A]">{dt.label}</div>
-                      <div className="text-[10px] text-[#888]">{dt.desc}</div>
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">{dt.label}</div>
+                      <div className="text-[10px] text-[var(--tx3)]">{dt.desc}</div>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Zone</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Zone</h3>
                 <select value={zone} onChange={(e) => setZone(Number(e.target.value))} className={fieldInput}>
                   <option value={1}>Zone 1 — GTA (0–40 km) — Included</option>
                   <option value={2}>Zone 2 — Outer GTA (40–70 km) — + $120–$145</option>
@@ -440,7 +441,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Delivery Access</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Delivery Access</h3>
                 <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
                   <option value="elevator">Elevator</option>
                   <option value="ground_floor">Ground Floor / Loading Dock</option>
@@ -455,7 +456,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Weight</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Item Weight</h3>
                 <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
                   <option value="standard">Standard (under 100 lbs)</option>
                   <option value="heavy">Heavy (100–250 lbs) — +$50</option>
@@ -466,8 +467,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Heavy Items */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Heavy / Oversized Items</h3>
-                <p className="text-[11px] text-[#888]">Items over 250 lbs incur additional surcharges.</p>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Heavy / Oversized Items</h3>
+                <p className="text-[11px] text-[var(--tx3)]">Items over 250 lbs incur additional surcharges.</p>
                 <div className="space-y-2">
                   {([
                     { label: "250–400 lbs", tier: "250_400" as const },
@@ -476,8 +477,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                     const existing = heavyItems.find((h) => h.tier === t.tier);
                     const count = existing?.count ?? 0;
                     return (
-                      <div key={t.tier} className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-[#E8E4DF]">
-                        <span className="text-[13px] text-[#1A1A1A]">{t.label}</span>
+                      <div key={t.tier} className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-[var(--brd)]">
+                        <span className="text-[13px] text-[var(--tx)]">{t.label}</span>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -489,11 +490,11 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                               })
                             }
                             disabled={count === 0}
-                            className="w-7 h-7 rounded border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0] disabled:opacity-30"
+                            className="w-7 h-7 rounded border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)] disabled:opacity-30"
                           >
                             -
                           </button>
-                          <span className="w-6 text-center text-[14px] font-bold text-[#1A1A1A]">{count}</span>
+                          <span className="w-6 text-center text-[14px] font-bold text-[var(--tx)]">{count}</span>
                           <button
                             type="button"
                             onClick={() =>
@@ -503,7 +504,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                                 return updated;
                               })
                             }
-                            className="w-7 h-7 rounded border border-[#E8E4DF] flex items-center justify-center text-[#666] hover:bg-[#F5F3F0]"
+                            className="w-7 h-7 rounded border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)]"
                           >
                             +
                           </button>
@@ -525,7 +526,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="space-y-5">
               {/* Client */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Client / Recipient</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Client / Recipient</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <FormField label="Name" required>
                     <input value={form.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Full name" className={fieldInput} />
@@ -541,7 +542,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Addresses */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Addresses</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Addresses</h3>
                 <FormField label="Pickup Address">
                   <AddressAutocomplete value={form.pickup_address || pickupRaw} onRawChange={setPickupRaw} onChange={(r) => set("pickup_address", r.fullAddress)} placeholder="Warehouse or store" className={fieldInput} />
                 </FormField>
@@ -552,7 +553,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Schedule */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Schedule</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
                 <div className="grid grid-cols-1 gap-y-3">
                   <FormField label="Date" required>
                     <input type="date" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} className={fieldInput} />
@@ -573,20 +574,20 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               {/* Inventory */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Inventory</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Inventory</h3>
                 {inventory.length > 0 && (
                   <ul className="space-y-1.5 mb-2">
                     {inventory.map((item, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[#FAF8F5] border border-[#E8E4DF]">
-                        <span className="text-[12px] text-[#1A1A1A]">{item}</span>
-                        <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[#888] hover:text-red-600" aria-label="Remove"><Trash2 className="w-[14px] h-[14px]" /></button>
+                      <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--bg2)] border border-[var(--brd)]">
+                        <span className="text-[12px] text-[var(--tx)]">{item}</span>
+                        <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[var(--tx3)] hover:text-red-600" aria-label="Remove"><Trash2 className="w-[14px] h-[14px]" /></button>
                       </li>
                     ))}
                   </ul>
                 )}
                 <div className="flex items-center gap-2 mb-2">
-                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Single add</button>
-                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[#F5F3F0] text-[#666] hover:bg-[#E8E4DF]"}`}>Bulk add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Single add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Bulk add</button>
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
@@ -609,10 +610,10 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
 
               {/* Complexity */}
               <section className="space-y-2">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Complexity</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Complexity</h3>
                 <div className="flex flex-wrap gap-2">
                   {COMPLEXITY_PRESETS.map((preset) => (
-                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-white text-[#666] border-[#E8E4DF] hover:border-[#C9A962]/50"}`}>
+                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-[var(--card)] text-[var(--tx3)] border-[var(--brd)] hover:border-[#C9A962]/50"}`}>
                       {preset}
                     </button>
                   ))}
@@ -621,13 +622,13 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
 
               {/* Notes */}
               <section className="space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Notes</h3>
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Notes</h3>
                 <FormField label="Instructions / access">
                   <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-[13px]`} />
                 </FormField>
                 <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-                  <span className="text-[13px] text-[#1A1A1A]">Requires special handling (fragile, high-value)</span>
+                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+                  <span className="text-[13px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
                 </label>
               </section>
             </div>
@@ -636,44 +637,44 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
           {/* ════ Step 4: Review ════ */}
           {step === "review" && (
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E8E4DF] p-4 space-y-3">
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Summary</h3>
+              <div className="rounded-xl border border-[var(--brd)] p-4 space-y-3">
+                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Summary</h3>
                 <div className="grid grid-cols-2 gap-2 text-[13px]">
-                  <div className="text-[#888]">Type</div>
-                  <div className="font-semibold text-[#1A1A1A]">{bookingType === "day_rate" ? "Day Rate" : "Per Delivery"}</div>
+                  <div className="text-[var(--tx3)]">Type</div>
+                  <div className="font-semibold text-[var(--tx)]">{bookingType === "day_rate" ? "Day Rate" : "Per Delivery"}</div>
                   {bookingType === "day_rate" && <>
-                    <div className="text-[#888]">Vehicle</div>
-                    <div className="font-semibold text-[#1A1A1A]">{VEHICLE_TYPES.find((v) => v.value === vehicleType)?.label}</div>
-                    <div className="text-[#888]">Duration</div>
-                    <div className="font-semibold text-[#1A1A1A]">{dayType === "full_day" ? "Full Day" : "Half Day"}</div>
-                    <div className="text-[#888]">Stops</div>
-                    <div className="font-semibold text-[#1A1A1A]">{numStops}</div>
+                    <div className="text-[var(--tx3)]">Vehicle</div>
+                    <div className="font-semibold text-[var(--tx)]">{VEHICLE_TYPES.find((v) => v.value === vehicleType)?.label}</div>
+                    <div className="text-[var(--tx3)]">Duration</div>
+                    <div className="font-semibold text-[var(--tx)]">{dayType === "full_day" ? "Full Day" : "Half Day"}</div>
+                    <div className="text-[var(--tx3)]">Stops</div>
+                    <div className="font-semibold text-[var(--tx)]">{numStops}</div>
                   </>}
                   {bookingType === "per_delivery" && <>
-                    <div className="text-[#888]">Delivery Type</div>
-                    <div className="font-semibold text-[#1A1A1A]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</div>
-                    <div className="text-[#888]">Zone</div>
-                    <div className="font-semibold text-[#1A1A1A]">Zone {zone}</div>
+                    <div className="text-[var(--tx3)]">Delivery Type</div>
+                    <div className="font-semibold text-[var(--tx)]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</div>
+                    <div className="text-[var(--tx3)]">Zone</div>
+                    <div className="font-semibold text-[var(--tx)]">Zone {zone}</div>
                   </>}
-                  <div className="text-[#888]">Customer</div>
-                  <div className="font-semibold text-[#1A1A1A]">{form.customer_name || "—"}</div>
-                  <div className="text-[#888]">Date</div>
-                  <div className="font-semibold text-[#1A1A1A]">{form.scheduled_date || "—"}</div>
-                  <div className="text-[#888]">Delivery To</div>
-                  <div className="font-semibold text-[#1A1A1A] truncate">{form.delivery_address || "—"}</div>
+                  <div className="text-[var(--tx3)]">Customer</div>
+                  <div className="font-semibold text-[var(--tx)]">{form.customer_name || "—"}</div>
+                  <div className="text-[var(--tx3)]">Date</div>
+                  <div className="font-semibold text-[var(--tx)]">{form.scheduled_date || "—"}</div>
+                  <div className="text-[var(--tx3)]">Delivery To</div>
+                  <div className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "—"}</div>
                 </div>
               </div>
 
               {renderPricePreview()}
 
-              <p className="text-[11px] text-[#888] text-center">Your rates are locked in per your partnership agreement.</p>
+              <p className="text-[11px] text-[var(--tx3)] text-center">Your rates are locked in per your partnership agreement.</p>
             </div>
           )}
         </div>
 
         {/* Footer buttons — hidden when day_rate flow (DeliveryDayForm has its own) */}
         {step !== "day_flow" && (
-          <div className="sticky bottom-0 bg-white border-t border-[#E8E4DF] px-4 sm:px-6 py-3 flex gap-3 shrink-0">
+          <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-4 sm:px-6 py-3 flex gap-3 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -681,7 +682,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
                 else if (step === "details") setStep("config");
                 else if (step === "review") setStep("details");
               }}
-              className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
+              className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] transition-colors"
             >
               Back
             </button>
@@ -718,15 +719,15 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
   function renderSurcharges() {
     return (
       <section className="space-y-2">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Surcharges</h3>
+        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Surcharges</h3>
         <div className="flex gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-            <span className="text-[13px] text-[#1A1A1A]">After Hours (+20%)</span>
+            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+            <span className="text-[13px] text-[var(--tx)]">After Hours (+20%)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]" />
-            <span className="text-[13px] text-[#1A1A1A]">Weekend (+10%)</span>
+            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+            <span className="text-[13px] text-[var(--tx)]">Weekend (+10%)</span>
           </label>
         </div>
       </section>
@@ -738,23 +739,23 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
     if (displayServices.length === 0) return null;
     return (
       <section className="space-y-2">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Add-on Services</h3>
+        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Add-on Services</h3>
         <div className="space-y-1.5">
           {displayServices.map((svc) => (
-            <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[#E8E4DF] hover:border-[#C9A962]/40 transition-colors cursor-pointer">
+            <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[var(--brd)] hover:border-[#C9A962]/40 transition-colors cursor-pointer">
               <div className="flex items-center gap-2.5">
                 <input
                   type="checkbox"
                   checked={!!selectedServices[svc.slug]?.enabled}
                   onChange={() => toggleService(svc.slug)}
-                  className="rounded border-[#D4D0CB] text-[#C9A962] focus:ring-[#C9A962]"
+                  className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]"
                 />
                 <div>
-                  <div className="text-[13px] text-[#1A1A1A]">{svc.service_name}</div>
+                  <div className="text-[13px] text-[var(--tx)]">{svc.service_name}</div>
                   {svc.slug === "stair_carry" && selectedServices[svc.slug]?.enabled && (
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-[#888]">Flights:</span>
-                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-14 text-[12px] bg-white border border-[#E8E4DF] rounded px-2 py-1" />
+                      <span className="text-[10px] text-[var(--tx3)]">Flights:</span>
+                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-14 text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]" />
                     </div>
                   )}
                 </div>
@@ -775,45 +776,44 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
     const hst = pricing ? Math.round(pricing.totalPrice * 0.13) : 0;
     const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
-      <div className="rounded-xl border border-[#C9A962]/30 bg-[#FFFDF7] p-4 space-y-2">
+      <div className="rounded-xl border border-[#C9A962]/30 bg-[var(--gdim)] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
-          <DollarSign className="w-4 h-4 text-[#C9A962]" />
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#8B6914]">Price Preview</h3>
-          {pricingLoading && <span className="text-[10px] text-[#888]">Calculating…</span>}
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Price Preview</h3>
+          {pricingLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
         </div>
         {pricing ? (
           <>
             {pricing.breakdown.map((item, i) => (
               <div key={i} className="flex justify-between text-[13px]">
-                <span className="text-[#666]">{item.label}</span>
-                <span className={`font-semibold ${item.amount < 0 ? "text-green-600" : "text-[#1A1A1A]"}`}>
+                <span className="text-[var(--tx3)]">{item.label}</span>
+                <span className={`font-semibold ${item.amount < 0 ? "text-green-600" : "text-[var(--tx)]"}`}>
                   {item.amount < 0 ? `-${fmtCurrency(Math.abs(item.amount))}` : fmtCurrency(item.amount)}
                 </span>
               </div>
             ))}
             <div className="flex justify-between text-[13px] pt-1">
-              <span className="text-[#888]">Subtotal</span>
-              <span className="font-semibold text-[#1A1A1A]">{fmtCurrency(pricing.totalPrice)}</span>
+              <span className="text-[var(--tx3)]">Subtotal</span>
+              <span className="font-semibold text-[var(--tx)]">{fmtCurrency(pricing.totalPrice)}</span>
             </div>
             <div className="flex justify-between text-[13px]">
-              <span className="text-[#888]">HST (13%)</span>
-              <span className="font-semibold text-[#1A1A1A]">{fmtCurrency(hst)}</span>
+              <span className="text-[var(--tx3)]">HST (13%)</span>
+              <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
             </div>
             <div className="border-t border-[#C9A962]/20 pt-2 mt-1 flex justify-between">
-              <span className="text-[14px] font-bold text-[#1A1A1A]">Total incl. HST</span>
+              <span className="text-[14px] font-bold text-[var(--tx)]">Total incl. HST</span>
               <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
-              <div className="text-[11px] text-[#888] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
+              <div className="text-[11px] text-[var(--tx3)] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
             )}
             {bookingType === "per_delivery" && (
-              <p className="text-[10px] text-[#888] mt-2 pt-2 border-t border-[#C9A962]/20">
+              <p className="text-[10px] text-[var(--tx3)] mt-2 pt-2 border-t border-[#C9A962]/20">
                 Rates shown are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply.
               </p>
             )}
           </>
         ) : (
-          <div className={`text-[12px] ${pricingError ? "text-red-600" : "text-[#888]"}`}>
+          <div className={`text-[12px] ${pricingError ? "text-red-600" : "text-[var(--tx3)]"}`}>
             {pricingLoading ? "Loading rates…" : pricingError || "Configure options above to see pricing"}
           </div>
         )}
@@ -825,7 +825,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
 function FormField({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-[9px] font-semibold tracking-wider uppercase text-[#888] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       {children}
     </div>
   );

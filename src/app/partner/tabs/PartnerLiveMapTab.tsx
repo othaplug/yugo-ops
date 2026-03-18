@@ -78,7 +78,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[26px] font-bold text-[#1A1A1A] font-hero">Live Delivery Tracking</h3>
+        <h3 className="text-[26px] font-bold text-white font-hero">Live Delivery Tracking</h3>
         <div className="flex items-center gap-2">
           {hasAny && (
             <span className="flex items-center gap-1.5 text-[11px] text-[#2D9F5A] font-medium">
@@ -91,58 +91,58 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           )}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+            className="p-2 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors text-[#888] dark:text-[var(--tx3)]"
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             )}
           </button>
         </div>
       </div>
 
-      <div className={`relative rounded-xl border border-[#E8E4DF] overflow-hidden bg-white ${isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""}`} style={isFullscreen ? undefined : { height: 480 }}>
+      <div className={`relative rounded-xl border border-[#E8E4DF] dark:border-[var(--brd)] overflow-hidden bg-white dark:bg-[var(--card)] ${isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""}`} style={isFullscreen ? undefined : { height: 480 }}>
         {isFullscreen && (
           <button
             onClick={() => setIsFullscreen(false)}
-            className="absolute top-4 right-4 z-20 p-2 bg-white rounded-lg shadow-md border border-[#E8E4DF] hover:bg-[#F5F3F0] transition-colors"
+            className="absolute top-4 right-4 z-20 p-2 bg-white dark:bg-[var(--card)] rounded-lg shadow-md border border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#F5F3F0] dark:hover:bg-[var(--bg)] transition-colors text-[#888] dark:text-[var(--tx3)]"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         )}
 
         {/* Status overlay — only when crew has started (live signal on) */}
         {crewHasStarted && selected && (
-          <div className="absolute top-4 left-4 z-10 bg-white rounded-xl border border-[#E8E4DF] p-4 shadow-lg max-w-[280px]">
+          <div className="absolute top-4 left-4 z-10 bg-white dark:bg-[var(--card)] rounded-xl border border-[#E8E4DF] dark:border-[var(--brd)] p-4 shadow-lg max-w-[280px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2D9F5A] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2D9F5A]" />
               </span>
-              <span className="text-[13px] font-bold text-[#1A1A1A]">
+              <span className="text-[13px] font-bold text-[#1A1A1A] dark:text-[var(--tx)]">
                 {CREW_STATUS_TO_LABEL[selected.live_stage || ""] || toTitleCase(selected.live_stage || "") || "Active"}
               </span>
             </div>
-            <div className="text-[12px] text-[#1A1A1A] font-semibold">{selected.customer_name || selected.delivery_number}</div>
-            <div className="text-[11px] text-[#888] mt-0.5">{selected.delivery_address || "—"}</div>
+            <div className="text-[12px] text-[#1A1A1A] dark:text-[var(--tx)] font-semibold">{selected.customer_name || selected.delivery_number}</div>
+            <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-0.5">{selected.delivery_address || "—"}</div>
             {selected.crew_name && (
-              <div className="text-[11px] text-[#888] mt-1">Crew: {selected.crew_name}</div>
+              <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-1">Crew: {selected.crew_name}</div>
             )}
-            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] font-semibold hover:underline">
+            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] dark:text-[var(--gold)] font-semibold hover:underline">
               Close
             </button>
           </div>
         )}
 
         {loading ? (
-          <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888]">Loading map...</div>
+          <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888] dark:text-[var(--tx3)]">Loading map...</div>
         ) : !hasAny ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D4D0CB" strokeWidth="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7Z"/></svg>
-            <p className="text-[14px] text-[#888] mt-3">No confirmed deliveries scheduled for today.</p>
-            <p className="text-[12px] text-[#aaa] mt-1">Confirmed or dispatched deliveries will appear on the map here.</p>
+          <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#D4D0CB] dark:text-[var(--tx3)]">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7Z"/></svg>
+            <p className="text-[14px] text-[#888] dark:text-[var(--tx3)] mt-3">No confirmed deliveries scheduled for today.</p>
+            <p className="text-[12px] text-[#aaa] dark:text-[var(--tx3)]/80 mt-1">Confirmed or dispatched deliveries will appear on the map here.</p>
           </div>
         ) : (
           <>
@@ -162,9 +162,9 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             )}
             {/* Blur overlay when no crew has started — live signal off */}
             {!crewHasStarted && (
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
-                <span className="text-[14px] font-semibold text-[#1A1A1A]">Live signal off</span>
-                <span className="text-[12px] text-[#666] mt-1">Map and tracking will appear when crew start their job</span>
+              <div className="absolute inset-0 bg-white/70 dark:bg-[var(--card)]/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
+                <span className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">Live signal off</span>
+                <span className="text-[12px] text-[#666] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start their job</span>
               </div>
             )}
           </>
@@ -183,11 +183,11 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               <div
                 key={d.id}
                 onClick={() => hasGPS ? setSelected(d) : undefined}
-                className={`bg-white border rounded-xl p-4 flex items-center justify-between transition-colors ${
+                className={`bg-white dark:bg-[var(--card)] border rounded-xl p-4 flex items-center justify-between transition-colors ${
                   isCurrent
-                    ? "border-[#C9A962] ring-1 ring-[#C9A962]/30"
-                    : "border-[#E8E4DF]"
-                } ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40" : ""}`}
+                    ? "border-[#C9A962] dark:border-[var(--gold)] ring-1 ring-[#C9A962]/30 dark:ring-[var(--gold)]/30"
+                    : "border-[#E8E4DF] dark:border-[var(--brd)]"
+                } ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40 dark:hover:border-[var(--gold)]/40" : ""}`}
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -195,22 +195,22 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                       index === 0
                         ? "bg-[#2D9F5A] text-white"
                         : index === 1
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-[#F5F3F0] text-[#888]"
+                          ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400"
+                          : "bg-[#F5F3F0] dark:bg-[var(--bg)] text-[#888] dark:text-[var(--tx3)]"
                     }`}
                   >
                     {slotLabel}
                   </span>
                   <div>
-                    <div className="text-[14px] font-semibold text-[#1A1A1A]">
+                    <div className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
                       {d.customer_name || d.delivery_number}
                     </div>
                     {crewHasStarted ? (
-                      <div className="text-[12px] text-[#888] mt-0.5">
+                      <div className="text-[12px] text-[#888] dark:text-[var(--tx3)] mt-0.5">
                         {d.delivery_address || "—"}
                       </div>
                     ) : (
-                      <div className="text-[11px] text-[#999] mt-0.5">
+                      <div className="text-[11px] text-[#999] dark:text-[var(--tx3)] mt-0.5">
                         Live signal off, details when crew starts
                       </div>
                     )}
@@ -218,7 +218,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 </div>
                 <div className="flex items-center gap-2">
                   {crewHasStarted && d.crew_name && (
-                    <span className="text-[11px] text-[#888]">{d.crew_name}</span>
+                    <span className="text-[11px] text-[#888] dark:text-[var(--tx3)]">{d.crew_name}</span>
                   )}
                   {hasGPS ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
@@ -226,7 +226,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                       Live
                     </span>
                   ) : (
-                    <span className="text-[10px] text-[#888]">Awaiting GPS</span>
+                    <span className="text-[10px] text-[#888] dark:text-[var(--tx3)]">Awaiting GPS</span>
                   )}
                 </div>
               </div>

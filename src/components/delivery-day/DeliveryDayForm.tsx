@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react
 import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
 import {
   Clock, Sun, Sunset, MapPin, Plus, Trash2,
-  AlertTriangle, ChevronRight, DollarSign, X, ArrowLeft, Sparkles,
+  AlertTriangle, ChevronRight, X, ArrowLeft, Sparkles,
 } from "lucide-react";
 import {
   ITEM_CATALOG, SIZE_LABELS, VEHICLE_OPTIONS, TIME_WINDOW_CHOICES,
@@ -686,10 +686,7 @@ export default function DeliveryDayForm({
           ))}
           {pricing && (
             <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)] p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-[var(--gold)]" />
-                <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Price Summary</h3>
-              </div>
+              <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] dark:text-[var(--tx)]">Price Summary</h3>
               <div className="border-t border-[var(--gold)]/20 pt-2 flex justify-between">
                 <span className="text-[14px] font-bold text-[var(--tx)]">Total</span>
                 <span className="text-[18px] font-bold text-[var(--gold)]">{fmt(pricing.totalPrice)}</span>

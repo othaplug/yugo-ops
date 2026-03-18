@@ -30,8 +30,8 @@ export async function PATCH(
   const allowed = [
     "customer_name", "customer_email", "customer_phone",
     "pickup_address", "delivery_address", "scheduled_date",
-    "time_slot", "delivery_window", "items", "instructions",
-    "special_handling",
+    "time_slot", "delivery_window", "scheduled_start", "scheduled_end",
+    "items", "instructions", "special_handling",
   ];
 
   for (const f of allowed) {

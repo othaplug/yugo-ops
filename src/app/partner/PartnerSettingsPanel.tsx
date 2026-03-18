@@ -435,7 +435,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                         : "bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20"
                     }`}
                   >
-                    {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent ✓" : summaryTestResult === "error" ? "Failed" : "Send Test"}
+                    {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent" : summaryTestResult === "error" ? "Failed" : "Send Test"}
                   </button>
                 </div>
               )}

@@ -6,7 +6,6 @@ import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
   Boxes,
-  Truck,
   Plus,
   X,
   ChevronDown,
@@ -129,11 +128,11 @@ const ITEM_STATUS_CONFIG: Record<string, { label: string; color: string; bg: str
   shipped:            { label: "Shipped",            color: "text-sky-500",            bg: "bg-sky-500/10" },
   in_transit:         { label: "In Transit",         color: "text-sky-500",            bg: "bg-sky-500/10" },
   received_warehouse: { label: "Received",           color: "text-emerald-500",        bg: "bg-emerald-500/10" },
-  inspected:          { label: "Inspected ✓",        color: "text-emerald-600",        bg: "bg-emerald-500/10" },
+  inspected:          { label: "Inspected",          color: "text-emerald-600",        bg: "bg-emerald-500/10" },
   stored:             { label: "Stored",             color: "text-emerald-500",        bg: "bg-emerald-500/10" },
   scheduled_delivery: { label: "Delivery Scheduled", color: "text-amber-500",          bg: "bg-amber-500/10" },
-  delivered:          { label: "Delivered ✓",        color: "text-emerald-500",        bg: "bg-emerald-500/10" },
-  installed:          { label: "Installed ✓",        color: "text-emerald-600",        bg: "bg-emerald-600/10" },
+  delivered:          { label: "Delivered",          color: "text-emerald-500",        bg: "bg-emerald-500/10" },
+  installed:          { label: "Installed",         color: "text-emerald-600",        bg: "bg-emerald-600/10" },
   issue_reported:     { label: "Issue",               color: "text-red-500",            bg: "bg-red-500/10" },
 };
 
@@ -280,6 +279,7 @@ export default function PartnerB2BProjectsTab({
   // ── Photo viewer ──────────────────────────────────────────────────────────
   const [viewPhotos, setViewPhotos] = useState<string[] | null>(null);
   const [viewPhotoIdx, setViewPhotoIdx] = useState(0);
+  const [viewPhotosLoading, setViewPhotosLoading] = useState(false);
 
   // ── Schedule pickup prompt ────────────────────────────────────────────────
   const [scheduleItem, setScheduleItem] = useState<InventoryItem | null>(null);
@@ -996,9 +996,6 @@ export default function PartnerB2BProjectsTab({
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
-        <div className="w-12 h-12 rounded-full bg-[#C9A962]/10 flex items-center justify-center mx-auto mb-4">
-          <Truck className="w-6 h-6 text-[#C9A962]" />
-        </div>
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for Pickup!" : "Schedule Delivery?"}
         </h3>
@@ -1037,10 +1034,10 @@ export default function PartnerB2BProjectsTab({
 
   // Photo lightbox
   const PhotoLightbox = viewPhotos && viewPhotos.length > 0 ? (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90" onClick={() => setViewPhotos(null)}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25" onClick={() => setViewPhotos(null)}>
       <button
         type="button"
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+        className="absolute top-4 right-4 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
         onClick={() => setViewPhotos(null)}
       >
         <X className="w-5 h-5" />
@@ -1049,14 +1046,14 @@ export default function PartnerB2BProjectsTab({
         <>
           <button
             type="button"
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.max(0, i - 1)); }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <button
             type="button"
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.min(viewPhotos.length - 1, i + 1)); }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
@@ -1071,7 +1068,7 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       />
       {viewPhotos.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-[11px]">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full bg-black/30 text-white text-[11px]">
           {viewPhotoIdx + 1} / {viewPhotos.length}
         </div>
       )}
@@ -1206,14 +1203,14 @@ export default function PartnerB2BProjectsTab({
             {st === "ready_for_pickup" && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("pickup"); }}
                 className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
-                ⚡ Schedule Pickup
+                Schedule Pickup
               </button>
             )}
 
             {WAREHOUSE_STATUSES.includes(st) && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("delivery"); }}
                 className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
-                <Truck className="inline w-3 h-3 mr-1 -mt-0.5" />Schedule Delivery
+                Schedule Delivery
               </button>
             )}
 
@@ -1228,8 +1225,23 @@ export default function PartnerB2BProjectsTab({
             {hasPhotos && (
               <button
                 type="button"
-                onClick={() => { setViewPhotos(item.photo_urls!); setViewPhotoIdx(0); }}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] transition-colors"
+                onClick={async () => {
+                  setViewPhotoIdx(0);
+                  if (!selectedProject) return;
+                  setViewPhotosLoading(true);
+                  try {
+                    const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory/${item.id}/photos`);
+                    const data = res.ok ? await res.json() : null;
+                    const urls = data?.urls ?? item.photo_urls ?? [];
+                    setViewPhotos(urls);
+                  } catch {
+                    setViewPhotos(item.photo_urls ?? []);
+                  } finally {
+                    setViewPhotosLoading(false);
+                  }
+                }}
+                disabled={viewPhotosLoading}
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] transition-colors disabled:opacity-60"
               >
                 <Camera className="inline w-3 h-3 mr-1 -mt-0.5" />Photos ({item.photo_urls!.length})
               </button>
@@ -1239,7 +1251,7 @@ export default function PartnerB2BProjectsTab({
               type="button"
               onClick={() => deleteItem(item.id)}
               disabled={deletingItemId === item.id}
-              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               title="Remove item"
             >
               <Trash2 className="inline w-3 h-3 mr-1 -mt-0.5" />Delete
@@ -1455,12 +1467,12 @@ export default function PartnerB2BProjectsTab({
               </span>
               {readyItems > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-500">
-                  {readyItems} ready for pickup ⚡
+                  {readyItems} ready for pickup
                 </span>
               )}
               {warehouseItems > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500">
-                  {warehouseItems} ready to deliver 🚚
+                  {warehouseItems} ready to deliver
                 </span>
               )}
               </div>
@@ -1534,7 +1546,7 @@ export default function PartnerB2BProjectsTab({
                   </p>
                   <button onClick={() => onScheduleDelivery(nonYugoItems.map((i) => i.item_name).join(", "))}
                     className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
-                    <Truck size={12} /> Convert to Yugo Delivery →
+                    Convert to Yugo Delivery →
                   </button>
                 </div>
               </div>

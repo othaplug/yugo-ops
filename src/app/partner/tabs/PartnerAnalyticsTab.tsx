@@ -43,7 +43,7 @@ function KPICard({ label, value, sublabel, accent }: { label: string; value: str
   return (
     <div className="p-4 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
       <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{label}</div>
-      <div className="text-[24px] font-bold font-heading" style={{ color: accent || "var(--tx)" }}>{value}</div>
+      <div className="text-[24px] font-bold font-hero" style={{ color: accent || "var(--tx)" }}>{value}</div>
       {sublabel && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sublabel}</div>}
     </div>
   );
@@ -81,7 +81,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
     <div className="space-y-6">
       {/* Period toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="text-[18px] font-bold font-hero text-[var(--tx)]">Performance Analytics</h2>
+        <h2 className="text-[24px] font-bold font-hero text-[var(--tx)]">Performance Analytics</h2>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg)]">
           {PERIOD_OPTIONS.map((opt) => (
             <button
@@ -182,7 +182,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.ratingDistribution} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="stars" tick={{ fontSize: 11, fill: "#888" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}★`} />
+                <YAxis type="category" dataKey="stars" tick={{ fontSize: 11, fill: "#888" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} star${v === 1 ? "" : "s"}`} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E8E4DC" }} />
                 <Bar dataKey="count" fill={GOLD} radius={[0, 4, 4, 0]} name="Ratings" />
               </BarChart>
@@ -241,11 +241,11 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
                 <td className="py-2 pr-3 text-[var(--tx3)]">Z{d.zone}</td>
                 <td className="py-2 pr-3 text-[var(--tx3)]">{d.minutes}m</td>
                 <td className="py-2 pr-3">
-                  <span className={d.onTime ? "text-emerald-500" : "text-red-500"}>{d.onTime ? "✓" : "✗"}</span>
+                  <span className={d.onTime ? "text-emerald-500" : "text-red-500"}>{d.onTime ? "Yes" : "No"}</span>
                 </td>
-                <td className="py-2 pr-3 text-[var(--tx3)]">{d.rating ? `${d.rating}★` : "—"}</td>
+                <td className="py-2 pr-3 text-[var(--tx3)]">{d.rating ? `${d.rating} stars` : "—"}</td>
                 <td className="py-2">
-                  <span className={d.hasDamage ? "text-red-500" : "text-emerald-500"}>{d.hasDamage ? "✗" : "✓"}</span>
+                  <span className={d.hasDamage ? "text-red-500" : "text-emerald-500"}>{d.hasDamage ? "Yes" : "No"}</span>
                 </td>
               </tr>
             ))}

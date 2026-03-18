@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types";
-import { formatTime12, timeToMinutes, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
+import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
@@ -61,6 +61,7 @@ interface Props {
   onShare?: (d: Delivery) => void;
   onDetailClick?: (d: Delivery) => void;
   onEditClick?: (d: Delivery) => void;
+  onRescheduled?: () => void;
   orgType?: string;
 }
 
@@ -117,7 +118,18 @@ function getWeekDays(anchor: Date): { date: Date; key: string }[] {
 
 /* ── Main Component ───────────────────────────── */
 
-export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = [], onSelectDate, onDeliveryClick, onShare, onDetailClick, onEditClick, orgType = "" }: Props) {
+const HOUR_HEIGHT = 60;
+const DAY_START_HOUR = 6;
+const DAY_END_HOUR = 20;
+const DRAG_THRESHOLD = 6;
+
+function yToTime(y: number): string {
+  const rawMins = DAY_START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
+  const snapped = Math.round(rawMins / 15) * 15;
+  return minutesToTime(Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - 15, snapped)));
+}
+
+export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = [], onSelectDate, onDeliveryClick, onShare, onDetailClick, onEditClick, onRescheduled, orgType = "" }: Props) {
   const [view, setView] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [monthYear, setMonthYear] = useState(() => {
@@ -281,7 +293,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             {timeStr && <span className="text-[#666] dark:text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
             {d.customer_name || d.delivery_number}
           </span>
-          {isCompleted && <span className="text-[#22C55E] ml-auto shrink-0">✓</span>}
+          {isCompleted && <span className="text-[#22C55E] ml-auto shrink-0 text-[10px] font-semibold">Done</span>}
         </button>
       );
     }
@@ -448,22 +460,103 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     );
   };
 
-  /* ── DAY VIEW ──────────────────────────────── */
+  /* ── DAY VIEW (with draggable) ──────────────────────────────── */
+  const dayTimelineRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ delivery: Delivery; startX: number; startY: number; isDragging: boolean } | null>(null);
+  const [draggingDelivery, setDraggingDelivery] = useState<Delivery | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [rescheduling, setRescheduling] = useState(false);
+
+  const onDeliveryClickRef = useRef(onDeliveryClick);
+  onDeliveryClickRef.current = onDeliveryClick;
+  const onRescheduledRef = useRef(onRescheduled);
+  onRescheduledRef.current = onRescheduled;
+  const reschedulingRef = useRef(rescheduling);
+  reschedulingRef.current = rescheduling;
+
+  const doReschedule = useCallback(async (d: Delivery, newStart: string) => {
+    const dur = d.estimated_duration_hours || 1.5;
+    const durMins = Math.round(dur * 60);
+    const startMins = timeToMinutes(newStart);
+    const endMins = Math.min(startMins + durMins, DAY_END_HOUR * 60);
+    const newEnd = minutesToTime(endMins);
+
+    setRescheduling(true);
+    try {
+      const res = await fetch(`/api/partner/deliveries/${d.id}/update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduled_start: newStart, scheduled_end: newEnd }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onRescheduledRef.current?.();
+      } else {
+        alert(data.error || "Failed to reschedule");
+      }
+    } catch {
+      alert("Network error while rescheduling");
+    } finally {
+      setRescheduling(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || reschedulingRef.current) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (!d.isDragging) {
+        if (Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return;
+        d.isDragging = true;
+        setDraggingDelivery(d.delivery);
+      }
+      setDragPos({ x: e.clientX, y: e.clientY });
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (!d) return;
+      setDraggingDelivery(null);
+      setDragPos(null);
+      if (!d.isDragging) {
+        onDeliveryClickRef.current?.(d.delivery);
+        return;
+      }
+      if (reschedulingRef.current) return;
+      const container = dayTimelineRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const scrollTop = container.scrollTop || 0;
+      const y = e.clientY - rect.top + scrollTop;
+      if (y >= 0) {
+        const newStart = yToTime(y);
+        doReschedule(d.delivery, newStart);
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [doReschedule]);
+
   const DayTimeline = () => {
     const dayDels = deliveriesByDate[selectedDate] || [];
     const dayProjects = projectEventsByDate[selectedDate] || [];
-    const HOUR_HEIGHT = 60;
-    const START_HOUR = 6;
-    const END_HOUR = 20;
-    const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+    const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR + 1 }, (_, i) => DAY_START_HOUR + i);
     const isToday = selectedDate === todayKey;
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
-    const showNow = isToday && nowMins >= START_HOUR * 60 && nowMins <= END_HOUR * 60;
-    const nowTop = ((nowMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+    const showNow = isToday && nowMins >= DAY_START_HOUR * 60 && nowMins <= DAY_END_HOUR * 60;
+    const nowTop = ((nowMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
 
     return (
-      <div>
+      <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-[var(--tx3)]/30 mb-3 flex justify-center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></div>
@@ -477,7 +570,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             </button>
           </div>
         ) : (
-          <div className="relative overflow-y-auto max-h-[calc(100vh-320px)]" style={{ minHeight: (END_HOUR - START_HOUR) * HOUR_HEIGHT }}>
+          <div ref={dayTimelineRef} className="relative overflow-y-auto max-h-[calc(100vh-320px)]" style={{ minHeight: (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT }}>
             {/* Project blocks (all-day, no time) */}
             {dayProjects.length > 0 && (
               <div className="mb-4 flex flex-wrap gap-2">
@@ -494,7 +587,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             )}
             {/* Hour lines */}
             {HOURS.map((h) => (
-              <div key={h} className="absolute w-full flex items-start" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}>
+              <div key={h} className="absolute w-full flex items-start" style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}>
                 <div className="w-16 shrink-0 text-right pr-3 text-[10px] text-[#999] dark:text-[var(--tx3)] font-medium -mt-1.5">
                   {formatTime12(`${String(h).padStart(2, "0")}:00`)}
                 </div>
@@ -508,16 +601,27 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
               const hasStructuredTime = !!d.scheduled_start;
               const startMins = hasStructuredTime ? timeToMinutes(startTime) : 8 * 60;
               const dur = d.estimated_duration_hours || 1.5;
-              const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+              const top = ((startMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
               const height = Math.max(dur * HOUR_HEIGHT, 60);
               const style = getStatusStyle(d.status || "pending");
+              const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
+              const isCancelled = (d.status || "").toLowerCase() === "cancelled";
+              const canDrag = !rescheduling && !isCompleted && !isCancelled;
+              const isBeingDragged = draggingDelivery?.id === d.id;
 
               return (
-                <button
+                <div
                   key={d.id}
-                  type="button"
-                  onClick={() => onDeliveryClick?.(d)}
-                  className="absolute left-16 right-2 rounded-xl overflow-hidden text-left hover:shadow-lg transition-all cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onPointerDown={(e) => {
+                    if (!canDrag) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragRef.current = { delivery: d, startX: e.clientX, startY: e.clientY, isDragging: false };
+                  }}
+                  onClick={() => { if (!canDrag) onDeliveryClick?.(d); }}
+                  className={`absolute left-16 right-2 rounded-xl overflow-hidden text-left hover:shadow-lg transition-all ${canDrag ? "cursor-grab" : "cursor-pointer"} ${isBeingDragged ? "opacity-30 pointer-events-none" : ""}`}
                   style={{ top, height, borderLeft: `4px solid ${style.border}`, background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
                 >
                   <div className="p-3 h-full flex flex-col">
@@ -537,7 +641,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                       </span>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
 
@@ -548,6 +652,44 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                 <div className="flex-1 h-[2px] bg-red-400/60" />
               </div>
             )}
+          </div>
+        )}
+
+        {/* Floating drag preview */}
+        {draggingDelivery && dragPos && (
+          <div
+            className="fixed z-[9999] pointer-events-none"
+            style={{ left: dragPos.x + 14, top: dragPos.y - 16 }}
+          >
+            <div
+              className="px-2.5 py-1.5 rounded-md shadow-2xl text-[11px] font-bold max-w-[180px] truncate border"
+              style={{
+                borderLeft: "4px solid #2C3E2D",
+                background: "#2C3E2Dcc",
+                color: "#fff",
+                borderColor: "#2C3E2D",
+              }}
+            >
+              {draggingDelivery.customer_name || draggingDelivery.delivery_number}
+              {(draggingDelivery.scheduled_start || draggingDelivery.time_slot) && (
+                <span className="ml-1 opacity-70 font-normal">
+                  {formatTime12(draggingDelivery.scheduled_start || draggingDelivery.time_slot || "08:00")}
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 text-[9px] font-semibold text-green-400 pl-1">
+              Drag to reschedule
+            </div>
+          </div>
+        )}
+
+        {/* Saving overlay */}
+        {rescheduling && (
+          <div className="fixed inset-0 z-[9998] pointer-events-none flex items-center justify-center">
+            <div className="bg-white dark:bg-[var(--card)] border border-[#E8E4DF] dark:border-[var(--brd)] px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-[13px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
+              <div className="w-4 h-4 border-2 border-[#2C3E2D] border-t-transparent rounded-full animate-spin" />
+              Saving…
+            </div>
           </div>
         )}
       </div>

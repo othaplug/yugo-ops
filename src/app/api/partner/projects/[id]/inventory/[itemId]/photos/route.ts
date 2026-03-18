@@ -4,6 +4,58 @@ import { requirePartner } from "@/lib/partner-auth";
 
 const BUCKET = "job-photos";
 
+/** Extract storage path from Supabase public URL (bucket is private, so we need signed URLs). */
+function pathFromPublicUrl(url: string): string | null {
+  const match = url.match(/\/object\/public\/job-photos\/(.+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * GET /api/partner/projects/[id]/inventory/[itemId]/photos
+ * Returns signed URLs for the item's photos (bucket is private).
+ */
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string; itemId: string }> }
+) {
+  const { id: projectId, itemId } = await params;
+  const { orgIds, error } = await requirePartner();
+  if (error) return error;
+
+  const db = createAdminClient();
+
+  const { data: project } = await db
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .in("partner_id", orgIds)
+    .single();
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: item } = await db
+    .from("project_inventory")
+    .select("photo_urls")
+    .eq("id", itemId)
+    .eq("project_id", projectId)
+    .single();
+  if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+
+  const urls: string[] = Array.isArray(item.photo_urls) ? item.photo_urls : [];
+  const signedUrls: string[] = [];
+
+  for (const url of urls) {
+    const path = pathFromPublicUrl(url);
+    if (!path) {
+      signedUrls.push(url);
+      continue;
+    }
+    const { data: signed } = await db.storage.from(BUCKET).createSignedUrl(path, 3600);
+    if (signed?.signedUrl) signedUrls.push(signed.signedUrl);
+  }
+
+  return NextResponse.json({ urls: signedUrls });
+}
+
 /**
  * POST /api/partner/projects/[id]/inventory/[itemId]/photos
  * Upload a reference photo for a project inventory item.

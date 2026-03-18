@@ -284,7 +284,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       {/* Header */}
       <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-1.5">
-          <YugoLogo size={19} variant={partnerTheme === "dark" ? "gold" : "black"} />
+          <YugoLogo size={19} variant="gold" />
           <span className="text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50">BETA</span>
           <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">{headerOrgName}</span>
         </div>
@@ -294,16 +294,6 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
             onToggle={() => setNotifOpen(!notifOpen)}
             onClose={() => setNotifOpen(false)}
           />
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
-            title="Settings"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </button>
           <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer" onClick={() => setSettingsOpen(true)}>
             {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase() || contactName.charAt(1)?.toUpperCase() || ""}
           </div>
@@ -313,7 +303,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       {/* First-time Welcome Overlay */}
       {showWelcome && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden" style={{ animation: "fadeSlideUp 0.4s ease" }}>
+          <div className="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden" style={{ animation: "fadeSlideUp 0.4s ease" }}>
             <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
 
             {/* Progress dots */}
@@ -321,7 +311,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="rounded-full transition-all duration-300" style={{
                   width: i === welcomeStep ? 24 : 8, height: 8,
-                  background: i === welcomeStep ? "#2D6A4F" : i < welcomeStep ? "#C9A962" : "#E8E4DF",
+                  background: i === welcomeStep ? "#2D6A4F" : i < welcomeStep ? "#C9A962" : "var(--brd)",
                 }} />
               ))}
             </div>
@@ -332,8 +322,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
                     <span className="text-[30px]" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-hero text-[36px] font-semibold text-[#1A1714] mb-2">Welcome to YUGO+, {contactName}!</h2>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[380px] mx-auto">
+                  <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">Welcome to YUGO+, {contactName}!</h2>
+                  <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>
                 </div>
@@ -341,7 +331,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
               {welcomeStep === 1 && (
                 <div>
-                  <h3 className="font-hero text-[26px] font-semibold text-[#1A1714] mb-5">Here&apos;s what you can do</h3>
+                  <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
                       { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
@@ -357,8 +347,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                           </svg>
                         </div>
                         <div>
-                          <div className="text-[13px] font-semibold text-[#1A1714]">{item.title}</div>
-                          <div className="text-[12px] text-[#888]">{item.desc}</div>
+                          <div className="text-[13px] font-semibold text-[var(--tx)]">{item.title}</div>
+                          <div className="text-[12px] text-[var(--tx3)]">{item.desc}</div>
                         </div>
                       </div>
                     ))}
@@ -371,8 +361,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
-                  <h3 className="font-hero text-[26px] font-semibold text-[#1A1714] mb-2">Secure your account</h3>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto mb-4">
+                  <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">Secure your account</h3>
+                  <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto mb-4">
                     For your security, we strongly recommend changing your password to something personal and memorable.
                   </p>
                   <a
@@ -397,8 +387,8 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h3 className="font-hero text-[26px] font-semibold text-[#1A1714] mb-2">You&apos;re all set!</h3>
-                  <p className="text-[14px] text-[#888] leading-relaxed max-w-[360px] mx-auto">
+                  <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">You&apos;re all set!</h3>
+                  <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto">
                     Your portal is ready. If you need help at any time, reach out to your Yugo account manager.
                   </p>
                 </div>
@@ -412,7 +402,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
                   {welcomeStep > 0 && (
                     <button
                       onClick={() => setWelcomeStep(welcomeStep - 1)}
-                      className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors"
+                      className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] transition-colors"
                     >
                       Back
                     </button>
@@ -737,6 +727,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               onShare={(d) => setShareTarget(d as Delivery)}
               onDetailClick={(d) => setDetailTarget(d as Delivery)}
               onEditClick={(d) => setEditTarget(d as Delivery)}
+              onRescheduled={loadData}
               orgType={orgType}
             />
           )}

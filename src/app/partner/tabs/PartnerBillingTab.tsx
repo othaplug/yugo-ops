@@ -263,7 +263,7 @@ export default function PartnerBillingTab({
       {/* Industry Comparison */}
       <div>
         <h3 className="text-[26px] font-bold text-[var(--tx)] font-hero mb-3 flex items-center gap-2">
-          <YugoLogo size={18} variant="black" />
+          <YugoLogo size={18} variant="gold" />
           <span>vs Industry Standards</span>
         </h3>
         <div className="pt-4 border-t border-[var(--brd)]/30">
@@ -345,7 +345,7 @@ function ComparisonCard({
         <div>
           <span className={`text-[24px] font-bold font-hero ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{yugoValue}</span>
           <div className="mt-0.5 flex items-center gap-1.5">
-            <YugoLogo size={12} variant="black" />
+            <YugoLogo size={12} variant="gold" />
             {yugoSublabel && (
               <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--tx3)]">{yugoSublabel}</span>
             )}
