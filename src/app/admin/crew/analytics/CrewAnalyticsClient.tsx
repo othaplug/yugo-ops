@@ -276,10 +276,10 @@ export default function CrewAnalyticsClient({
           Crew Performance
         </h1>
         <Link
-          href="/admin/crew"
+          href="/admin/reports"
           className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
         >
-          Live Tracking
+          End of Day Reports
         </Link>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">

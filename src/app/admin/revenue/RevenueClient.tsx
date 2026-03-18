@@ -15,14 +15,18 @@ import BackButton from "../components/BackButton";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { TrendingUp, TrendingDown, Minus, ArrowUpRight, X } from "lucide-react";
 
-type Period = "6mo" | "year" | "ytd" | "monthly";
+type Period = "6mo" | "year" | "ytd" | "monthly" | "all";
 
 const PERIOD_OPTIONS: { key: Period; label: string }[] = [
   { key: "6mo", label: "6 Mo" },
   { key: "ytd", label: "YTD" },
   { key: "year", label: "12 Mo" },
+  { key: "all", label: "All Time" },
   { key: "monthly", label: "Daily" },
 ];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_YEAR - 3];
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -175,8 +179,18 @@ export default function RevenueClient({
   clientNameToOrgId = {},
 }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+
+  const handlePeriodChange = (key: Period) => {
+    setSelectedYear(null);
+    setPeriod(key);
+  };
+  const handleYearSelect = (y: number) => {
+    setSelectedYear(y);
+    setPeriod("year");
+  };
 
   const all = invoices || [];
   const paid = all.filter((i) => i.status === "paid");
@@ -210,6 +224,43 @@ export default function RevenueClient({
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
+
+    // All Time: aggregate by year
+    if (period === "all") {
+      const byYear: Record<number, number> = {};
+      paid.forEach((inv) => {
+        const y = getInvoiceRevenueDate(inv).getFullYear();
+        byYear[y] = (byYear[y] || 0) + Number(inv.amount);
+      });
+      paidMovesList.forEach((m) => {
+        const y = getMoveRevenueDate(m).getFullYear();
+        byYear[y] = (byYear[y] || 0) + Number(m.estimate || 0);
+      });
+      const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+      return years.map((y) => ({
+        label: String(y),
+        value: byYear[y] || 0,
+        fullLabel: String(y),
+      }));
+    }
+
+    // Specific year selected: monthly breakdown for that year
+    if (selectedYear !== null) {
+      const result: { label: string; value: number; fullLabel: string }[] = [];
+      for (let m = 0; m < 12; m++) {
+        let sum = 0;
+        paid.forEach((inv) => {
+          const d = getInvoiceRevenueDate(inv);
+          if (d.getFullYear() === selectedYear && d.getMonth() === m) sum += Number(inv.amount);
+        });
+        paidMovesList.forEach((move) => {
+          const d = getMoveRevenueDate(move);
+          if (d.getFullYear() === selectedYear && d.getMonth() === m) sum += Number(move.estimate || 0);
+        });
+        result.push({ label: MONTH_LABELS[m], value: sum, fullLabel: `${MONTH_LABELS[m]} ${selectedYear}` });
+      }
+      return result;
+    }
 
     if (period === "monthly") {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -258,7 +309,7 @@ export default function RevenueClient({
       result.push({ label: MONTH_LABELS[m], value: sum, fullLabel: `${MONTH_LABELS[m]} ${y}` });
     }
     return result;
-  }, [period, paid, paidMovesList]);
+  }, [period, selectedYear, paid, paidMovesList]);
 
   const byTypeRaw: Record<string, number> = {};
   paid.forEach((i) => {
@@ -415,23 +466,44 @@ export default function RevenueClient({
               ? `Jan – ${currentMonthLabel} ${now.getFullYear()}`
               : period === "6mo"
               ? "Last 6 Months"
-              : `12-Month View`}
+              : period === "all"
+              ? "All Time"
+              : selectedYear !== null
+              ? `${selectedYear}`
+              : "12-Month View"}
           </h2>
         </div>
-        <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setPeriod(opt.key)}
-              className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
-                period === opt.key
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
-                  : "text-[var(--tx3)] hover:text-[var(--tx)]"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => handlePeriodChange(opt.key)}
+                className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                  period === opt.key && selectedYear === null
+                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
+                    : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
+            {YEAR_OPTIONS.map((y) => (
+              <button
+                key={y}
+                onClick={() => handleYearSelect(y)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                  selectedYear === y
+                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
+                    : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                }`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

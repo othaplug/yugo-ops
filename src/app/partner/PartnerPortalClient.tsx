@@ -38,6 +38,7 @@ interface Props {
   contactName: string;
   userEmail: string;
   portalFeatures?: PortalFeatures | null;
+  initialProjectId?: string;
 }
 
 interface ProjectData {
@@ -150,7 +151,7 @@ const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail, portalFeatures }: Props) {
+export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail, portalFeatures, initialProjectId }: Props) {
   const headerOrgName = usePartnerOrgDisplayName();
   const features = getPartnerFeatures(orgType);
   // portal_features from DB override legacy type-based feature detection
@@ -158,7 +159,9 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [portalError, setPortalError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(features.showReferrals ? "active" : "today");
+  const [activeTab, setActiveTab] = useState(
+    initialProjectId && (portalFeatures?.projects ?? features.showProjects) ? "b2b-projects" : (features.showReferrals ? "active" : "today")
+  );
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleInitialDate, setScheduleInitialDate] = useState("");
   const [scheduleSuggestedItems, setScheduleSuggestedItems] = useState<string | null>(null);
@@ -654,6 +657,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <div key={activeTab} className="p-4 sm:p-6 tab-content">
           {activeTab === "b2b-projects" && (
             <PartnerB2BProjectsTab
+              initialProjectId={initialProjectId}
               onScheduleDelivery={(suggestedItems) => {
                 setScheduleSuggestedItems(suggestedItems || null);
                 setScheduleModalKey((k) => k + 1);

@@ -229,11 +229,50 @@ export default function ReportsClient({
   const dateLabel = from === to ? formatDateShort(date) : `${formatDateShort(from)} – ${formatDateShort(to)}`;
   const hasActiveFilters = filterJobType !== "all" || filterTeamId !== "all";
 
+  const applyPreset = (preset: "day" | "week" | "month" | "year") => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    let newFrom: string;
+    let newTo: string;
+    if (preset === "day") {
+      newFrom = todayStr;
+      newTo = todayStr;
+    } else if (preset === "week") {
+      const mon = new Date(today);
+      mon.setDate(mon.getDate() - mon.getDay() + (mon.getDay() === 0 ? -6 : 1));
+      newFrom = mon.toISOString().split("T")[0];
+      newTo = todayStr;
+    } else if (preset === "month") {
+      newFrom = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+      newTo = todayStr;
+    } else {
+      newFrom = `${today.getFullYear()}-01-01`;
+      newTo = todayStr;
+    }
+    setDate(newTo);
+    setFrom(newFrom);
+    setTo(newTo);
+    router.push(`/admin/reports?from=${newFrom}&to=${newTo}`);
+    setFilterOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">End-of-Day Reports</h1>
         <div className="flex items-center gap-2" ref={filterRef}>
+          <div className="flex items-center gap-1.5">
+            {(["day", "week", "month", "year"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => applyPreset(p)}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--gdim)]/30 transition-colors capitalize"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
           <div className="relative">
             <button
               type="button"

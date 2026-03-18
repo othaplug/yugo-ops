@@ -217,10 +217,12 @@ function toDate(s: string | null | undefined): Date | null {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface PartnerB2BProjectsTabProps {
+  initialProjectId?: string;
   onScheduleDelivery?: (suggestedItems?: string) => void;
 }
 
 export default function PartnerB2BProjectsTab({
+  initialProjectId,
   onScheduleDelivery,
 }: PartnerB2BProjectsTabProps = {}) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
@@ -328,6 +330,10 @@ export default function PartnerB2BProjectsTab({
     } catch { /* graceful fail */ }
     setLoadingDetail(false);
   }, []);
+
+  useEffect(() => {
+    if (initialProjectId) viewProject(initialProjectId);
+  }, [initialProjectId, viewProject]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 

@@ -104,10 +104,6 @@ export default function NotificationDropdown() {
                         </span>
                       )}
                     </div>
-                    {/* Icon */}
-                    <div className="flex-shrink-0 mt-0.5 text-[var(--tx2)]">
-                      <Icon name={notif.icon} className="w-[15px] h-[15px] shrink-0 stroke-[1.75] stroke-current" />
-                    </div>
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">

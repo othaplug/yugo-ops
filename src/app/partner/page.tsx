@@ -8,7 +8,12 @@ export const metadata = { title: "Partner Portal" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function PartnerDashboardPage() {
+export default async function PartnerDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project: projectId } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/partner/login");
@@ -60,6 +65,7 @@ export default async function PartnerDashboardPage() {
       contactName={firstName}
       userEmail={user.email || ""}
       portalFeatures={org?.portal_features ?? null}
+      initialProjectId={projectId || undefined}
     />
   );
 }

@@ -241,11 +241,6 @@ export default function AdminNotificationsPage() {
                   )}
                 </div>
 
-                {/* Icon */}
-                <div className="flex-shrink-0 mt-0.5 text-[var(--tx2)]">
-                  <Icon name={notif.icon || "bell"} className="w-[16px] h-[16px] stroke-current stroke-[1.75]" />
-                </div>
-
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
