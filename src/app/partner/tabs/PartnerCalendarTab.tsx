@@ -1,9 +1,31 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import type { CalendarEvent, ViewMode, YearHeatData, CalendarStatus } from "@/lib/calendar/types";
+import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
+
+const DELIVERY_STATUS_LABELS: Record<string, string> = {
+  scheduled: "Scheduled",
+  confirmed: "Confirmed",
+  accepted: "Accepted",
+  approved: "Approved",
+  dispatched: "Dispatched",
+  in_transit: "In Transit",
+  "in-transit": "In Transit",
+  in_progress: "In Progress",
+  delivered: "Delivered",
+  completed: "Completed",
+  pending: "Pending",
+  pending_approval: "Pending Acceptance",
+  en_route_to_pickup: "En Route to Pickup",
+  cancelled: "Cancelled",
+  booked: "Booked",
+  new: "New",
+};
+function fmtDeliveryStatus(s: string) {
+  return DELIVERY_STATUS_LABELS[s.toLowerCase().replace(/-/g, "_")] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 /* ── Interfaces ────────────────────────────────── */
 
@@ -106,8 +128,46 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
   const [yearView, setYearView] = useState(new Date().getFullYear());
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
 
   const todayKey = getToday();
+
+  // Fetch calendar events (projects, phases) for the visible date range
+  useEffect(() => {
+    let startStr: string;
+    let endStr: string;
+    if (view === "year") {
+      startStr = `${yearView}-01-01`;
+      endStr = `${yearView}-12-31`;
+    } else if (view === "month") {
+      const start = new Date(monthYear.year, monthYear.month, 1);
+      const end = new Date(monthYear.year, monthYear.month + 1, 0);
+      startStr = start.toISOString().slice(0, 10);
+      endStr = end.toISOString().slice(0, 10);
+    } else if (view === "week") {
+      const days = getWeekDays(weekAnchor);
+      startStr = days[0].key;
+      endStr = days[6].key;
+    } else {
+      startStr = selectedDate;
+      endStr = selectedDate;
+    }
+    fetch(`/api/partner/calendar?start=${startStr}&end=${endStr}`)
+      .then((r) => r.ok ? r.json() : { events: [] })
+      .then((d) => setCalendarEvents(d.events || []))
+      .catch(() => setCalendarEvents([]));
+  }, [view, monthYear.year, monthYear.month, weekAnchor, selectedDate, yearView]);
+
+  const projectEventsByDate = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    for (const e of calendarEvents) {
+      if ((e.type === "project" || e.type === "project_phase") && e.date) {
+        if (!map[e.date]) map[e.date] = [];
+        map[e.date].push(e);
+      }
+    }
+    return map;
+  }, [calendarEvents]);
 
   const deliveriesByDate = useMemo(() => {
     const map: Record<string, Delivery[]> = {};
@@ -246,7 +306,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full capitalize"
             style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}30` }}
           >
-            {(d.status || "pending").replace(/_/g, " ")}
+            {fmtDeliveryStatus(d.status || "pending")}
           </span>
         </div>
       </button>
@@ -258,7 +318,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     <div className="mb-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero">{headerLabel}</h3>
+          <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero" suppressHydrationWarning>{headerLabel}</h3>
           <div className="flex items-center gap-0.5">
             <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -336,6 +396,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           if (day === null) return <div key={`e-${i}`} className="bg-white dark:bg-[var(--card)] min-h-[90px]" />;
           const dk = `${monthYear.year}-${String(monthYear.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayDels = deliveriesByDate[dk] || [];
+          const dayProjects = projectEventsByDate[dk] || [];
           const isToday = dk === todayKey;
 
           return (
@@ -351,15 +412,26 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                 {day}
               </button>
               <div className="space-y-0.5">
-                {dayDels.slice(0, 3).map((d) => (
+                {dayProjects.slice(0, 2).map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => switchToDay(dk)}
+                    className="w-full text-left px-1.5 py-0.5 rounded text-[9px] font-medium truncate transition-colors hover:opacity-80"
+                    style={{ backgroundColor: (e.color || "#7C3AED") + "22", color: e.color || "#7C3AED", borderLeft: `2px solid ${e.color || "#7C3AED"}` }}
+                  >
+                    {e.name}: {e.description}
+                  </button>
+                ))}
+                {dayDels.slice(0, Math.max(0, 3 - dayProjects.length)).map((d) => (
                   <DeliveryCard key={d.id} d={d} compact />
                 ))}
-                {dayDels.length > 3 && (
+                {(dayDels.length + dayProjects.length) > 3 && (
                   <button type="button" onClick={() => switchToDay(dk)} className="text-[8px] text-[#C9A962] font-semibold pl-1 hover:underline">
-                    +{dayDels.length - 3} more
+                    +{dayDels.length + dayProjects.length - 3} more
                   </button>
                 )}
-                {dayDels.length === 0 && (
+                {dayDels.length === 0 && dayProjects.length === 0 && (
                   <button
                     type="button"
                     onClick={() => onSelectDate?.(dk)}
@@ -379,6 +451,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
   /* ── DAY VIEW ──────────────────────────────── */
   const DayTimeline = () => {
     const dayDels = deliveriesByDate[selectedDate] || [];
+    const dayProjects = projectEventsByDate[selectedDate] || [];
     const HOUR_HEIGHT = 60;
     const START_HOUR = 6;
     const END_HOUR = 20;
@@ -391,10 +464,10 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
 
     return (
       <div>
-        {dayDels.length === 0 ? (
+        {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-[var(--tx3)]/30 mb-3 flex justify-center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></div>
-            <div className="text-[14px] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries scheduled</div>
+            <div className="text-[14px] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"
@@ -405,6 +478,20 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           </div>
         ) : (
           <div className="relative overflow-y-auto max-h-[calc(100vh-320px)]" style={{ minHeight: (END_HOUR - START_HOUR) * HOUR_HEIGHT }}>
+            {/* Project blocks (all-day, no time) */}
+            {dayProjects.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {dayProjects.map((e) => (
+                  <div
+                    key={e.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold"
+                    style={{ backgroundColor: (e.color || "#7C3AED") + "18", color: e.color || "#7C3AED", borderLeft: `3px solid ${e.color || "#7C3AED"}` }}
+                  >
+                    {e.name}: {e.description}
+                  </div>
+                ))}
+              </div>
+            )}
             {/* Hour lines */}
             {HOURS.map((h) => (
               <div key={h} className="absolute w-full flex items-start" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}>
@@ -445,8 +532,8 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     <div className="flex items-center gap-2 mt-auto text-[10px] text-[#888]">
                       {d.vehicle_type && <span className="inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /></svg> {d.vehicle_type}</span>}
                       {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> {d.estimated_duration_hours}h</span>}
-                      <span className="capitalize font-semibold" style={{ color: style.text }}>
-                        {(d.status || "pending").replace(/_/g, " ")}
+                      <span className="font-semibold" style={{ color: style.text }}>
+                        {fmtDeliveryStatus(d.status || "pending")}
                       </span>
                     </div>
                   </div>
@@ -481,11 +568,13 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <div className="w-12 shrink-0" />
           {weekDays.map(({ date, key }, i) => {
             const isToday = key === todayKey;
-            const count = (deliveriesByDate[key] || []).length;
+            const delCount = (deliveriesByDate[key] || []).length;
+            const projCount = (projectEventsByDate[key] || []).length;
+            const count = delCount + projCount;
             return (
               <button key={key} type="button" onClick={() => switchToDay(key)} className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}>
                 <div className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#999] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
-                {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{count} delivery{count > 1 ? "s" : ""}</div>}
+                {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{delCount > 0 && `${delCount} del${delCount > 1 ? "s" : ""}`}{delCount > 0 && projCount > 0 ? " · " : ""}{projCount > 0 && `${projCount} proj`}</div>}
               </button>
             );
           })}
@@ -501,11 +590,17 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             </div>
             {weekDays.map(({ key }) => {
               const dayDels = deliveriesByDate[key] || [];
+              const dayProjects = projectEventsByDate[key] || [];
               const isToday = key === todayKey;
               return (
                 <div key={key} className={`flex-1 relative border-l border-[#E8E4DF] dark:border-[var(--brd)] ${isToday ? "bg-[#C9A962]/3" : ""}`} onClick={() => switchToDay(key)}>
                   {HOURS.map((h) => (
                     <div key={h} className="absolute w-full border-t border-[#F0EDE8] dark:border-[var(--brd)]/15" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }} />
+                  ))}
+                  {dayProjects.slice(0, 2).map((e, idx) => (
+                    <div key={e.id} className="absolute left-0.5 right-0.5 rounded text-[7px] font-semibold truncate px-1 flex items-center" style={{ top: 2 + idx * 18, height: 16, backgroundColor: (e.color || "#7C3AED") + "30", color: e.color || "#7C3AED", borderLeft: `2px solid ${e.color || "#7C3AED"}` }}>
+                      {e.name}
+                    </div>
                   ))}
                   {dayDels.map((d) => {
                     const startTime = d.scheduled_start || "08:00";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
@@ -8,8 +9,9 @@ import CreateButton from "../../components/CreateButton";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2, Package, Wrench, Lock, MapPin, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2, Lock, MapPin, AlertTriangle, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { getTrackingUrl } from "@/lib/tracking-url";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
   DELIVERY_METHOD_LABELS,
@@ -148,6 +150,129 @@ const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof Chec
 
 const TABS = ["Overview", "Phases", "Inventory", "Vendor Tracker", "Deliveries", "Timeline", "Invoice"];
 const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+
+function EditProjectModal({ open, onClose, data, onSaved }: { open: boolean; onClose: () => void; data: ProjectData; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [projectName, setProjectName] = useState(data.project_name);
+  const [description, setDescription] = useState(data.description || "");
+  const [endClientName, setEndClientName] = useState(data.end_client_name || "");
+  const [endClientContact, setEndClientContact] = useState(data.end_client_contact || "");
+  const [siteAddress, setSiteAddress] = useState(data.site_address || "");
+  const [startDate, setStartDate] = useState(data.start_date || "");
+  const [targetEndDate, setTargetEndDate] = useState(data.target_end_date || "");
+  const [estimatedBudget, setEstimatedBudget] = useState(data.estimated_budget != null ? String(data.estimated_budget) : "");
+  const [projectMgmtFee, setProjectMgmtFee] = useState(data.project_mgmt_fee != null ? String(data.project_mgmt_fee) : "");
+  const [notes, setNotes] = useState(data.notes || "");
+
+  useEffect(() => {
+    if (open) {
+      setProjectName(data.project_name);
+      setDescription(data.description || "");
+      setEndClientName(data.end_client_name || "");
+      setEndClientContact(data.end_client_contact || "");
+      setSiteAddress(data.site_address || "");
+      setStartDate(data.start_date || "");
+      setTargetEndDate(data.target_end_date || "");
+      setEstimatedBudget(data.estimated_budget != null ? String(data.estimated_budget) : "");
+      setProjectMgmtFee(data.project_mgmt_fee != null ? String(data.project_mgmt_fee) : "");
+      setNotes(data.notes || "");
+    }
+  }, [open, data]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectName.trim()) {
+      toast("Project name is required", "x");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/projects/${data.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_name: projectName.trim(),
+          description: description.trim() || null,
+          end_client_name: endClientName.trim() || null,
+          end_client_contact: endClientContact.trim() || null,
+          site_address: siteAddress.trim() || null,
+          start_date: startDate || null,
+          target_end_date: targetEndDate || null,
+          estimated_budget: estimatedBudget ? parseFloat(estimatedBudget) : null,
+          project_mgmt_fee: projectMgmtFee ? parseFloat(projectMgmtFee) : null,
+          notes: notes.trim() || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to update project");
+      toast("Project updated", "check");
+      onSaved();
+      onClose();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed to update project", "x");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ModalOverlay open={open} onClose={onClose} title="Edit Project" maxWidth="md">
+      <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
+          <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Project name" required className={fieldInput} />
+        </div>
+        <div>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Project description" rows={3} className={fieldInput} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client</label>
+            <input type="text" value={endClientName} onChange={(e) => setEndClientName(e.target.value)} placeholder="Client name" className={fieldInput} />
+          </div>
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Contact</label>
+            <input type="text" value={endClientContact} onChange={(e) => setEndClientContact(e.target.value)} placeholder="Contact info" className={fieldInput} />
+          </div>
+        </div>
+        <div>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
+          <AddressAutocomplete value={siteAddress} onChange={(r) => setSiteAddress(r.fullAddress)} placeholder="Primary delivery location" className={fieldInput} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldInput} />
+          </div>
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
+            <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className={fieldInput} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Estimated Budget</label>
+            <input type="number" step="0.01" min="0" value={estimatedBudget} onChange={(e) => setEstimatedBudget(e.target.value)} placeholder="0" className={fieldInput} />
+          </div>
+          <div>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Mgmt Fee</label>
+            <input type="number" step="0.01" min="0" value={projectMgmtFee} onChange={(e) => setProjectMgmtFee(e.target.value)} placeholder="0" className={fieldInput} />
+          </div>
+        </div>
+        <div>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Notes</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes" rows={2} className={fieldInput} />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
+          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
+        </div>
+      </form>
+    </ModalOverlay>
+  );
+}
 const PROJECT_ITEM_STATUS_OPTIONS = [...VALID_PROJECT_ITEM_STATUSES];
 const ROOM_OPTIONS = [
   "Living Room",
@@ -180,6 +305,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
   const [showReceiveItem, setShowReceiveItem] = useState<string | null>(null);
   const [showAddPhase, setShowAddPhase] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
 
   const loadProject = useCallback(async () => {
     const res = await fetch(`/api/admin/projects/${projectId}`);
@@ -287,11 +413,17 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
             </button>
           )}
           </div>
+          <button type="button" onClick={() => setShowEditProject(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] transition-colors shrink-0">
+            <Pencil size={12} className="inline mr-1" /> Edit
+          </button>
           <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-colors shrink-0">
             <Trash2 size={12} className="inline mr-1" /> Delete
           </button>
         </div>
       </div>
+
+      {/* Edit Project Modal */}
+      <EditProjectModal open={showEditProject} onClose={() => setShowEditProject(false)} data={data} onSaved={loadProject} />
 
       {/* Upsell Banner */}
       {manualItemsExist && (
@@ -848,6 +980,28 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
     onRefresh();
   };
 
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+
+  const deleteItem = async (itemId: string) => {
+    if (deletingItemId) return;
+    if (!confirm("Remove this item from the project?")) return;
+    setDeletingItemId(itemId);
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}/inventory`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id: itemId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to remove item");
+      onRefresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to remove item");
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
   const updateVendorItem = async () => {
     if (!updateVendorItemId) return;
     await fetch(`/api/admin/projects/${projectId}/status`, {
@@ -1116,6 +1270,14 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                           )}
                         </>
                       )}
+                      <span className="text-[var(--tx3)] mx-1">·</span>
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        disabled={deletingItemId === item.id}
+                        className="text-[10px] font-semibold text-red-500 hover:underline disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 );
@@ -1521,6 +1683,7 @@ const VT_STATUS_GROUPS = [
 function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: InventoryItem; projectId: string; deliveries: DeliveryLink[]; onRefresh: () => void }) {
   const { toast } = useToast();
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [trackingNum, setTrackingNum] = useState(item.vendor_tracking_number || "");
   const [carrier, setCarrier] = useState(item.vendor_carrier || "");
   const [trackTimeout, setTrackTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -1570,6 +1733,53 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
   const handleCarrier = (val: string) => { setCarrier(val); saveTracking(trackingNum, val); };
 
   const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!showStatusPicker || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const w = 160;
+    const itemCount = VALID_PROJECT_ITEM_STATUSES.length;
+    const approxHeight = itemCount * 28 + 16;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove = spaceBelow < approxHeight && rect.top > approxHeight;
+    setDropdownRect({
+      top: openAbove ? rect.top - approxHeight - 4 : rect.bottom + 4,
+      left: Math.max(8, rect.right - w),
+      width: w,
+    });
+  }, [showStatusPicker]);
+
+  useEffect(() => {
+    if (!showStatusPicker) return;
+    const close = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || (e.target as HTMLElement)?.closest?.("[data-status-picker]")) return;
+      setShowStatusPicker(false);
+    };
+    const t = setTimeout(() => document.addEventListener("click", close), 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("click", close);
+    };
+  }, [showStatusPicker]);
+
+  const deleteItem = async () => {
+    if (deleting || !confirm("Remove this item from the project?")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}/inventory`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id: item.id }),
+      });
+      if (res.ok) { onRefresh(); toast("Item removed", "check"); }
+      else toast("Failed to remove item", "alertTriangle");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="py-2.5 space-y-2">
@@ -1582,8 +1792,6 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
             {isYugo && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)]">YUGO</span>}
             {isCarrier && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400">CARRIER</span>}
             {isVendorDirect && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400">VENDOR SHIP</span>}
-            {item.requires_crating && <span title="Crating required" className="text-[var(--tx3)]"><Package size={11} /></span>}
-            {item.requires_assembly && <span title="Assembly required" className="text-[var(--tx3)]"><Wrench size={11} /></span>}
           </div>
           {item.room_destination && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{item.room_destination}</p>}
         </div>
@@ -1591,31 +1799,42 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
         {/* Status badge — click to change */}
         <div className="relative shrink-0">
           <button
+            ref={triggerRef}
             type="button"
-            onClick={() => setShowStatusPicker((v) => !v)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowStatusPicker((v) => !v);
+            }}
             disabled={updatingStatus}
             className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50 ${cfg.bg} ${cfg.color}`}
           >
             {cfg.label}
             <ChevronDown size={9} />
           </button>
-          {showStatusPicker && (
-            <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden min-w-[160px]">
-              {VALID_PROJECT_ITEM_STATUSES.map((s) => {
-                const scfg = getProjectItemStatusUi(s);
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={async () => { setShowStatusPicker(false); await quickStatus(s); }}
-                    className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-[var(--bg)] transition-colors ${s === st ? `${scfg.color} font-bold` : "text-[var(--tx3)]"}`}
-                  >
-                    {scfg.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {showStatusPicker && dropdownRect && typeof document !== "undefined" &&
+            createPortal(
+              <div
+                data-status-picker
+                className="fixed z-[9999] bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-xl overflow-hidden min-w-[160px]"
+                style={{ top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {VALID_PROJECT_ITEM_STATUSES.map((s) => {
+                  const scfg = getProjectItemStatusUi(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={async () => { setShowStatusPicker(false); await quickStatus(s); }}
+                      className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-[var(--bg)] transition-colors first:pt-2 last:pb-2 ${s === st ? `${scfg.color} font-bold` : "text-[var(--tx3)]"}`}
+                    >
+                      {scfg.label}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body
+            )}
         </div>
       </div>
 
@@ -1675,6 +1894,18 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
           )}
         </div>
       )}
+
+      {/* Delete */}
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={deleteItem}
+          disabled={deleting}
+          className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-500 hover:underline disabled:opacity-50"
+        >
+          <Trash2 size={10} /> Delete
+        </button>
+      </div>
     </div>
   );
 }

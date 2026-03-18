@@ -60,7 +60,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
 
   return (
     <PartnerOrgProvider orgDisplayName={orgDisplayName}>
-      <div className="min-h-screen bg-[#FAF8F5]">
+      <div className="min-h-screen bg-[#FAF8F5]" suppressHydrationWarning>
         {children}
       </div>
     </PartnerOrgProvider>

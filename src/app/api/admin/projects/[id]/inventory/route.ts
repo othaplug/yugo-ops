@@ -248,3 +248,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   return NextResponse.json(data);
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error: authErr } = await requireStaff();
+  if (authErr) return authErr;
+  const { id } = await params;
+  const db = createAdminClient();
+  const body = await req.json();
+  if (!body.item_id) return NextResponse.json({ error: "item_id required" }, { status: 400 });
+
+  const { data: existing, error: fetchErr } = await db
+    .from("project_inventory")
+    .select("id, item_name")
+    .eq("id", body.item_id)
+    .eq("project_id", id)
+    .single();
+  if (fetchErr || !existing) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+
+  const { error: deleteErr } = await db
+    .from("project_inventory")
+    .delete()
+    .eq("id", body.item_id)
+    .eq("project_id", id);
+  if (deleteErr) return NextResponse.json({ error: deleteErr.message }, { status: 500 });
+
+  await db.from("project_timeline").insert({
+    project_id: id,
+    event_type: "item_removed",
+    event_description: `${existing.item_name} removed`,
+  });
+
+  return NextResponse.json({ ok: true });
+}

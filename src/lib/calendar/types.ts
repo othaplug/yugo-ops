@@ -1,7 +1,7 @@
 export type ViewMode = "day" | "week" | "month" | "year";
 export type CalendarRole = "admin" | "partner";
 
-export type JobType = "move" | "delivery" | "project_phase";
+export type JobType = "move" | "delivery" | "project_phase" | "project";
 export type BlockType = JobType | "maintenance" | "training" | "break" | "blocked" | "time_off";
 
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
@@ -10,6 +10,7 @@ export const JOB_COLORS = {
   move: "#C9A962",
   delivery: "#4A9E6B",
   project_phase: "#9B5DE5",
+  project: "#7C3AED",
   blocked: "#6B7280",
   maintenance: "#6B7280",
   training: "#64748B",

@@ -47,7 +47,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "start and end required" }, { status: 400 });
   }
 
-  const [{ data: deliveries }, { data: phases }, { data: recurringSchedules }] = await Promise.all([
+  const startDate = String(start).slice(0, 10);
+  const endDate = String(end).slice(0, 10);
+
+  const [{ data: deliveries }, { data: phases }, { data: projects }, { data: recurringSchedules }] = await Promise.all([
     db.from("deliveries")
       .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, calendar_status, calendar_color, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, item_count, items, vehicle_type, recurring_schedule_id, crews(name)")
       .in("organization_id", orgIds)
@@ -59,6 +62,10 @@ export async function GET(req: NextRequest) {
       .lte("scheduled_date", end)
       .not("status", "eq", "skipped")
       .in("projects.partner_id", orgIds),
+    db.from("projects")
+      .select("id, project_number, project_name, start_date, target_end_date")
+      .in("partner_id", orgIds)
+      .not("status", "eq", "cancelled"),
     db.from("recurring_delivery_schedules")
       .select("id, schedule_name, frequency, days_of_week, booking_type, vehicle_type, crew_id, organizations(name)")
       .in("organization_id", orgIds)
@@ -211,6 +218,58 @@ export async function GET(req: NextRequest) {
       itemCount: null,
       scheduleBlockId: null,
     });
+  }
+
+  // Projects as date-range events (start_date → target_end_date)
+  function toDateKey(d: string | Date | null | undefined): string | null {
+    if (d == null) return null;
+    if (typeof d === "string") return d.slice(0, 10);
+    if (d instanceof Date) return d.toISOString().slice(0, 10);
+    return null;
+  }
+  for (const proj of projects || []) {
+    const pStart = toDateKey(proj.start_date as string | Date | null);
+    const pEndRaw = toDateKey(proj.target_end_date as string | Date | null);
+    const pEnd = pStart ? (pEndRaw || pStart) : pEndRaw;
+    if (!pStart && !pEnd) continue;
+    const projStart = (pStart || pEnd)!;
+    const projEnd = pEnd || projStart;
+    const rangeStart = projStart < startDate ? startDate : projStart;
+    const rangeEnd = projEnd > endDate ? endDate : projEnd;
+    if (rangeStart > rangeEnd) continue;
+    const d = new Date(rangeStart + "T12:00:00");
+    const endD = new Date(rangeEnd + "T12:00:00");
+    while (d <= endD) {
+      const dk = d.toISOString().slice(0, 10);
+      events.push({
+        id: `project-${proj.id}-${dk}`,
+        type: "project",
+        blockType: "project",
+        name: proj.project_number || "Project",
+        description: proj.project_name || "Project",
+        date: dk,
+        start: null,
+        end: null,
+        durationHours: null,
+        crewId: null,
+        crewName: null,
+        truckId: null,
+        truckName: null,
+        status: "scheduled",
+        calendarStatus: "scheduled",
+        color: JOB_COLORS.project,
+        href: `/partner?tab=b2b-projects&project=${proj.id}`,
+        clientName: null,
+        fromAddress: null,
+        toAddress: null,
+        deliveryAddress: null,
+        category: "project",
+        moveSize: null,
+        itemCount: null,
+        scheduleBlockId: null,
+      });
+      d.setDate(d.getDate() + 1);
+    }
   }
 
   events.sort((a, b) => {

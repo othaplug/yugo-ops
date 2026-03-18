@@ -98,19 +98,26 @@ export async function POST(req: NextRequest) {
   const orgName = org?.name || "a partner";
   const body = await req.json();
 
-  const { project_name, client_name, client_address, end_date } = body;
+  const { project_name, client_name, client_address, start_date, end_date } = body;
 
   if (!project_name?.trim()) {
     return NextResponse.json({ error: "Project name is required" }, { status: 400 });
   }
 
+  // Generate project number PRJ-XXXX based on existing count
+  const { count } = await db.from("projects").select("id", { count: "exact", head: true });
+  const nextNum = (count ?? 0) + 1;
+  const projectNumber = `PRJ-${String(nextNum).padStart(4, "0")}`;
+
   const { data: project, error: insertErr } = await db
     .from("projects")
     .insert({
+      project_number: projectNumber,
       partner_id: orgIds[0],
       project_name: project_name.trim(),
       end_client_name: client_name?.trim() || null,
       site_address: client_address?.trim() || null,
+      start_date: start_date || null,
       target_end_date: end_date || null,
       status: "active",
     })

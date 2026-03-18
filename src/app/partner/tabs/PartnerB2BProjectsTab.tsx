@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
@@ -10,11 +11,11 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Package,
   MessageSquare,
   Camera,
-  Wrench,
   AlertTriangle,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -85,6 +86,7 @@ interface ProjectDetail {
   id: string;
   project_number: string;
   project_name: string;
+  description?: string | null;
   end_client_name: string | null;
   site_address: string | null;
   status: string;
@@ -234,6 +236,7 @@ export default function PartnerB2BProjectsTab({
   const [npName, setNpName] = useState("");
   const [npClientName, setNpClientName] = useState("");
   const [npAddress, setNpAddress] = useState("");
+  const [npStartDate, setNpStartDate] = useState("");
   const [npEndDate, setNpEndDate] = useState("");
   const [npSaving, setNpSaving] = useState(false);
   const [npError, setNpError] = useState("");
@@ -242,7 +245,6 @@ export default function PartnerB2BProjectsTab({
 
   // ── Add item form ─────────────────────────────────────────────────────────
   const [showAddItem, setShowAddItem] = useState(false);
-  const [aiName, setAiName] = useState("");
   const [aiVendorName, setAiVendorName] = useState("");
   const [aiShowContact, setAiShowContact] = useState(false);
   const [aiContactName, setAiContactName] = useState("");
@@ -254,11 +256,12 @@ export default function PartnerB2BProjectsTab({
   const [aiRoom, setAiRoom] = useState("");
   const [aiDeliveryMethod, setAiDeliveryMethod] = useState("yugo_pickup");
   const [aiValue, setAiValue] = useState("");
-  const [aiDims, setAiDims] = useState("");
   const [aiCrating, setAiCrating] = useState(false);
   const [aiAssembly, setAiAssembly] = useState(false);
   const [aiNotes, setAiNotes] = useState("");
-  const [aiQty, setAiQty] = useState("1");
+  const [aiItems, setAiItems] = useState<{ name: string; qty: string; dimensions: string; showDims: boolean }[]>([
+    { name: "", qty: "1", dimensions: "", showDims: false },
+  ]);
   const [aiPhoto, setAiPhoto] = useState<File | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -286,6 +289,20 @@ export default function PartnerB2BProjectsTab({
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteType, setNoteType] = useState("note_added");
+
+  // ── Delete item ───────────────────────────────────────────────────────────
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+
+  // ── Edit project ───────────────────────────────────────────────────────────
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [epName, setEpName] = useState("");
+  const [epClientName, setEpClientName] = useState("");
+  const [epAddress, setEpAddress] = useState("");
+  const [epStartDate, setEpStartDate] = useState("");
+  const [epEndDate, setEpEndDate] = useState("");
+  const [epDescription, setEpDescription] = useState("");
+  const [epSaving, setEpSaving] = useState(false);
+  const [epError, setEpError] = useState("");
 
   // ── Data fetching ─────────────────────────────────────────────────────────
 
@@ -338,6 +355,7 @@ export default function PartnerB2BProjectsTab({
           project_name: npName,
           client_name: npClientName || null,
           client_address: npAddress || null,
+          start_date: npStartDate || null,
           end_date: npEndDate || null,
           phases: [],
         }),
@@ -345,7 +363,7 @@ export default function PartnerB2BProjectsTab({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create project");
       setShowNewProject(false);
-      setNpName(""); setNpClientName(""); setNpAddress(""); setNpEndDate("");
+      setNpName(""); setNpClientName(""); setNpAddress(""); setNpStartDate(""); setNpEndDate("");
       await loadProjects();
       viewProject(data.id);
     } catch (e) {
@@ -356,54 +374,92 @@ export default function PartnerB2BProjectsTab({
   };
 
   const resetAddItem = () => {
-    setAiName(""); setAiVendorName(""); setAiShowContact(false);
+    setAiItems([{ name: "", qty: "1", dimensions: "", showDims: false }]);
+    setAiVendorName(""); setAiShowContact(false);
     setAiContactName(""); setAiContactPhone(""); setAiContactEmail("");
     setAiPickupAddr(""); setAiPickupWindow(""); setAiOrderNum("");
     setAiRoom(""); setAiDeliveryMethod("yugo_pickup");
-    setAiValue(""); setAiDims("");
+    setAiValue("");
     setAiCrating(false); setAiAssembly(false); setAiNotes("");
-    setAiQty("1"); setAiPhoto(null); setAiError("");
+    setAiPhoto(null); setAiError("");
   };
 
+  const addItemRow = () =>
+    setAiItems((prev) => [...prev, { name: "", qty: "1", dimensions: "", showDims: false }]);
+  const updateItemRow = (idx: number, field: "name" | "qty" | "dimensions", val: string) =>
+    setAiItems((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r)));
+  const toggleItemDims = (idx: number) =>
+    setAiItems((prev) => prev.map((r, i) => (i === idx ? { ...r, showDims: !r.showDims } : r)));
+  const removeItemRow = (idx: number) =>
+    setAiItems((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
+
   const addItem = async () => {
-    if (!selectedProject || !aiName.trim()) { setAiError("Item name is required"); return; }
+    const validItems = aiItems.filter((r) => r.name.trim());
+    if (!selectedProject || validItems.length === 0) {
+      setAiError("At least one item name is required");
+      return;
+    }
+    if (aiSaving) return; // Prevent double submission
     setAiSaving(true);
     setAiError("");
     try {
-      // 1. Create the item
-      const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item_name: aiName,
-          vendor_name: aiVendorName || null,
-          vendor_contact_name: aiContactName || null,
-          vendor_contact_phone: aiContactPhone || null,
-          vendor_contact_email: aiContactEmail || null,
-          vendor_pickup_address: aiPickupAddr || null,
-          vendor_pickup_window: aiPickupWindow || null,
-          vendor_order_number: aiOrderNum || null,
-          room_destination: aiRoom || null,
-          vendor_delivery_method: aiDeliveryMethod,
-          quantity: parseInt(aiQty) || 1,
-          item_value: aiValue ? parseFloat(aiValue) : null,
-          item_dimensions: aiDims || null,
-          requires_crating: aiCrating,
-          requires_assembly: aiAssembly,
-          special_handling_notes: aiNotes || null,
-          item_status: "ordered",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add item");
+      // Merge rows with the same item name (case-insensitive) — sum quantities, use first dimensions
+      const merged = new Map<string, { name: string; qty: number; dimensions: string }>();
+      for (const r of validItems) {
+        const key = r.name.trim().toLowerCase();
+        const qty = parseInt(r.qty) || 1;
+        const existing = merged.get(key);
+        if (existing) {
+          existing.qty += qty;
+          if (r.dimensions?.trim() && !existing.dimensions) existing.dimensions = r.dimensions.trim();
+        } else {
+          merged.set(key, {
+            name: r.name.trim(),
+            qty,
+            dimensions: r.dimensions?.trim() || "",
+          });
+        }
+      }
+      const toCreate = Array.from(merged.values());
 
-      // 2. Upload photo if provided
-      if (aiPhoto && data.id) {
+      let firstItemId: string | null = null;
+      for (let i = 0; i < toCreate.length; i++) {
+        const row = toCreate[i];
+        const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_name: row.name,
+            vendor_name: aiVendorName || null,
+            vendor_contact_name: aiContactName || null,
+            vendor_contact_phone: aiContactPhone || null,
+            vendor_contact_email: aiContactEmail || null,
+            vendor_pickup_address: aiPickupAddr || null,
+            vendor_pickup_window: aiPickupWindow || null,
+            vendor_order_number: aiOrderNum || null,
+            room_destination: aiRoom || null,
+            vendor_delivery_method: aiDeliveryMethod,
+            quantity: row.qty,
+            item_value: aiValue ? parseFloat(aiValue) : null,
+            item_dimensions: row.dimensions || null,
+            requires_crating: aiCrating,
+            requires_assembly: aiAssembly,
+            special_handling_notes: aiNotes || null,
+            item_status: "ordered",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to add item");
+        if (i === 0) firstItemId = data.id;
+      }
+
+      // Upload photo if provided (attach to first item)
+      if (aiPhoto && firstItemId) {
         const fd = new FormData();
         fd.append("file", aiPhoto);
-        fd.append("item_id", data.id);
+        fd.append("item_id", firstItemId);
         fd.append("project_id", selectedProject.id);
-        await fetch(`/api/partner/projects/${selectedProject.id}/inventory/${data.id}/photos`, {
+        await fetch(`/api/partner/projects/${selectedProject.id}/inventory/${firstItemId}/photos`, {
           method: "POST",
           body: fd,
         }).catch(() => {});
@@ -495,6 +551,62 @@ export default function PartnerB2BProjectsTab({
     });
   };
 
+  const deleteItem = async (itemId: string) => {
+    if (!selectedProject || deletingItemId) return;
+    if (!confirm("Remove this item from the project?")) return;
+    setDeletingItemId(itemId);
+    try {
+      const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory/${itemId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to remove item");
+      await viewProject(selectedProject.id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to remove item");
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
+  const openEditProject = () => {
+    if (!selectedProject) return;
+    setEpName(selectedProject.project_name);
+    setEpClientName(selectedProject.end_client_name || "");
+    setEpAddress(selectedProject.site_address || "");
+    setEpStartDate(selectedProject.start_date || "");
+    setEpEndDate(selectedProject.target_end_date || "");
+    setEpDescription(selectedProject.description || "");
+    setEpError("");
+    setShowEditProject(true);
+  };
+
+  const updateProject = async () => {
+    if (!selectedProject || !epName.trim()) { setEpError("Project name is required"); return; }
+    setEpSaving(true);
+    setEpError("");
+    try {
+      const res = await fetch(`/api/partner/projects/${selectedProject.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_name: epName.trim(),
+          end_client_name: epClientName.trim() || null,
+          site_address: epAddress.trim() || null,
+          start_date: epStartDate || null,
+          target_end_date: epEndDate || null,
+          description: epDescription.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update project");
+      setShowEditProject(false);
+      await viewProject(selectedProject.id);
+    } catch (e) {
+      setEpError(e instanceof Error ? e.message : "Failed to update project");
+    } finally {
+      setEpSaving(false);
+    }
+  };
+
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -506,36 +618,106 @@ export default function PartnerB2BProjectsTab({
 
   // ── Modals ────────────────────────────────────────────────────────────────
 
-  const NewProjectModal = showNewProject ? (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.55)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[440px] shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]">
-          <h3 className="text-[16px] font-bold text-[var(--tx)]">New Project</h3>
-          <button type="button" onClick={() => setShowNewProject(false)} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors">
-            <X className="w-4 h-4 text-[var(--tx3)]" />
+  const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowNewProject(false)}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
+          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">New Project</h2>
+          <button type="button" onClick={() => setShowNewProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666]" aria-label="Close">
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
+          {npError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{npError}</div>}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Project Name *</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. Wilson Residence"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" autoFocus />
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Client Name</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="Sarah & James Wilson"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
           <div className="relative">
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Site Address</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
             <input value={npAddress} onChange={(e) => { setNpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
               placeholder="Start typing address…"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             {addressSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-lg mt-1 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
                 {addressSuggestions.map((s, i) => (
                   <button key={i} type="button" onClick={() => { setNpAddress(s.place_name); setAddressSuggestions([]); }}
-                    className="w-full text-left px-4 py-2.5 text-[12px] hover:bg-[var(--bg)] transition-colors border-b border-[var(--brd)]/30 last:border-0">
+                    className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
+                    {s.place_name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
+              <input type="date" value={npStartDate} onChange={(e) => setNpStartDate(e.target.value)}
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
+              <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)}
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setShowNewProject(false)}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
+            <button type="button" onClick={createProject} disabled={npSaving}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              {npSaving ? "Creating…" : "Create Project"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowEditProject(false)}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
+          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">Edit Project</h2>
+          <button type="button" onClick={() => setShowEditProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666]" aria-label="Close">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
+          {epError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{epError}</div>}
+          <div>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
+            <input value={epName} onChange={(e) => setEpName(e.target.value)} placeholder="e.g. Wilson Residence"
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
+          </div>
+          <div>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
+            <input value={epClientName} onChange={(e) => setEpClientName(e.target.value)} placeholder="Sarah & James Wilson"
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+          </div>
+          <div className="relative">
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
+            <input value={epAddress} onChange={(e) => { setEpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
+              placeholder="Start typing address…"
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+            {addressSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
+                {addressSuggestions.map((s, i) => (
+                  <button key={i} type="button" onClick={() => { setEpAddress(s.place_name); setAddressSuggestions([]); }}
+                    className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
                     {s.place_name}
                   </button>
                 ))}
@@ -543,90 +725,134 @@ export default function PartnerB2BProjectsTab({
             )}
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Target Completion Date</label>
-            <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)}
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
+            <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder="Project description"
+              rows={2} className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors resize-none" />
           </div>
-          {npError && <p className="text-[11px] text-red-500">{npError}</p>}
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={() => setShowNewProject(false)}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-            <button type="button" onClick={createProject} disabled={npSaving}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
-              {npSaving ? "Creating…" : "Create Project"}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
+              <input type="date" value={epStartDate} onChange={(e) => setEpStartDate(e.target.value)}
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
+              <input type="date" value={epEndDate} onChange={(e) => setEpEndDate(e.target.value)}
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setShowEditProject(false)}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
+            <button type="button" onClick={updateProject} disabled={epSaving}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              {epSaving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   ) : null;
 
-  const AddItemModal = showAddItem && selectedProject ? (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.55)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl z-10">
-          <h3 className="text-[16px] font-bold text-[var(--tx)]">Add Item</h3>
+  const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
+          <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
           <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors">
-            <X className="w-4 h-4 text-[var(--tx3)]" />
+            className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666]">
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
           {/* Item name + qty */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Item Name *</label>
-              <input value={aiName} onChange={(e) => setAiName(e.target.value)} placeholder="e.g. Cloud Sectional Sofa"
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" autoFocus />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Name *</label>
+              <button type="button" onClick={addItemRow}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C9A962] hover:underline">
+                <Plus className="w-3.5 h-3.5" /> Add item
+              </button>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Qty</label>
-              <input type="number" min="1" value={aiQty} onChange={(e) => setAiQty(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+            <div className="space-y-2">
+              {aiItems.map((row, idx) => (
+                <div key={idx} className="space-y-1.5">
+                  <div className="grid grid-cols-[1fr_56px_44px] gap-2 items-end">
+                    <input value={row.name} onChange={(e) => updateItemRow(idx, "name", e.target.value)}
+                      placeholder="e.g. Cloud Sectional Sofa"
+                      className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      autoFocus={idx === 0} />
+                    <input type="number" min="1" value={row.qty} onChange={(e) => updateItemRow(idx, "qty", e.target.value)}
+                      className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      aria-label="Quantity" />
+                    <button type="button" onClick={() => removeItemRow(idx)} title="Remove item"
+                      className={`p-2.5 rounded-lg border transition-colors ${aiItems.length > 1 ? "border-[#E8E4DF] text-[#666] hover:bg-red-50 hover:border-red-200 hover:text-red-500" : "border-transparent text-[#ccc] cursor-default"}`}
+                      disabled={aiItems.length <= 1}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {row.showDims ? (
+                    <div className="flex items-center gap-2">
+                      <input value={row.dimensions} onChange={(e) => updateItemRow(idx, "dimensions", e.target.value)}
+                        placeholder='e.g. 84 × 42 × 30"'
+                        className="flex-1 text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none"
+                        autoFocus />
+                      <button type="button" onClick={() => toggleItemDims(idx)}
+                        className="text-[11px] text-[#666] hover:underline shrink-0">− Hide</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => toggleItemDims(idx)}
+                      className="text-[11px] text-[#C9A962] hover:underline">
+                      + Add dimensions (optional)
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Vendor */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">Vendor *</label>
+              <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vendor *</label>
               <button type="button" onClick={() => setAiShowContact(!aiShowContact)}
-                className="text-[10px] text-[var(--gold)] hover:underline">
+                className="text-[11px] text-[#C9A962] hover:underline">
                 {aiShowContact ? "– Hide contact details" : "+ Add vendor contact"}
               </button>
             </div>
             <input value={aiVendorName} onChange={(e) => setAiVendorName(e.target.value)} placeholder="e.g. Poliform, RH, local vendor"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
 
           {aiShowContact && (
-            <div className="space-y-3 p-4 bg-[var(--bg)] rounded-xl border border-[var(--brd)]">
+            <div className="space-y-3 p-4 bg-[#F5F3F0] rounded-xl border border-[#E8E4DF]">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Contact Name</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#666] mb-1">Contact Name</label>
                   <input value={aiContactName} onChange={(e) => setAiContactName(e.target.value)} placeholder="Sales rep name"
-                    className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Phone</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#666] mb-1">Phone</label>
                   <input value={aiContactPhone} onChange={(e) => setAiContactPhone(e.target.value)} placeholder="+1 (416) …"
-                    className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Email</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#666] mb-1">Email</label>
                 <input value={aiContactEmail} onChange={(e) => setAiContactEmail(e.target.value)} placeholder="vendor@example.com"
-                  className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Pickup Address</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#666] mb-1">Pickup Address</label>
                 <input value={aiPickupAddr} onChange={(e) => setAiPickupAddr(e.target.value)} placeholder="200 King St W, Toronto"
-                  className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Pickup Window</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#666] mb-1">Pickup Window</label>
                 <input value={aiPickupWindow} onChange={(e) => setAiPickupWindow(e.target.value)} placeholder="Mon–Fri 9am–4pm, loading dock"
-                  className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none" />
               </div>
             </div>
           )}
@@ -634,14 +860,14 @@ export default function PartnerB2BProjectsTab({
           {/* Order # + Room */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Order Number</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Order Number</label>
               <input value={aiOrderNum} onChange={(e) => setAiOrderNum(e.target.value)} placeholder="PF-4521"
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Room Destination</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Room Destination</label>
               <select value={aiRoom} onChange={(e) => setAiRoom(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none">
+                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
                 <option value="">Select room…</option>
                 {ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -650,56 +876,49 @@ export default function PartnerB2BProjectsTab({
 
           {/* Delivery method */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Delivery Method</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Delivery Method</label>
             <select value={aiDeliveryMethod} onChange={(e) => setAiDeliveryMethod(e.target.value)}
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none">
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
               {Object.entries(DELIVERY_METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
 
-          {/* Value + Dimensions */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Declared Value ($)</label>
-              <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="8,200"
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Dimensions</label>
-              <input value={aiDims} onChange={(e) => setAiDims(e.target.value)} placeholder='84 × 42 × 30"'
-                className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] focus:border-[var(--gold)] outline-none" />
-            </div>
+          {/* Declared Value */}
+          <div>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Declared Value ($)</label>
+            <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="8,200"
+              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
 
           {/* Special handling */}
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">Special Handling</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Special Handling</label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={aiCrating} onChange={(e) => setAiCrating(e.target.checked)} className="w-4 h-4 accent-[var(--gold)]" />
-              <span className="text-[12px] text-[var(--tx2)] flex items-center gap-1"><Package size={12} /> Crating required</span>
+              <input type="checkbox" checked={aiCrating} onChange={(e) => setAiCrating(e.target.checked)} className="w-4 h-4 accent-[#C9A962]" />
+              <span className="text-[13px] text-[#444]">Crating required</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={aiAssembly} onChange={(e) => setAiAssembly(e.target.checked)} className="w-4 h-4 accent-[var(--gold)]" />
-              <span className="text-[12px] text-[var(--tx2)] flex items-center gap-1"><Wrench size={12} /> Assembly required</span>
+              <input type="checkbox" checked={aiAssembly} onChange={(e) => setAiAssembly(e.target.checked)} className="w-4 h-4 accent-[#C9A962]" />
+              <span className="text-[13px] text-[#444]">Assembly required</span>
             </label>
             <textarea value={aiNotes} onChange={(e) => setAiNotes(e.target.value)} rows={2}
               placeholder="Special notes (e.g. legs ship separately, white glove only)…"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none resize-none" />
+              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none resize-none" />
           </div>
 
           {/* Photo */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">
               <Camera className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
               Reference Photo (optional)
             </label>
             {aiPhoto ? (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-[var(--tx2)] truncate max-w-[200px]">{aiPhoto.name}</span>
-                <button type="button" onClick={() => setAiPhoto(null)} className="text-[10px] text-red-500 hover:underline shrink-0">Remove</button>
+                <span className="text-[12px] text-[#444] truncate max-w-[200px]">{aiPhoto.name}</span>
+                <button type="button" onClick={() => setAiPhoto(null)} className="text-[11px] text-red-500 hover:underline shrink-0">Remove</button>
               </div>
             ) : (
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--brd)] text-[11px] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#E8E4DF] text-[12px] text-[#999] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
                 <Camera className="w-3.5 h-3.5" />
                 Upload photo
                 <input type="file" accept="image/*" className="hidden"
@@ -708,35 +927,36 @@ export default function PartnerB2BProjectsTab({
             )}
           </div>
 
-          {aiError && <p className="text-[11px] text-red-500">{aiError}</p>}
+          {aiError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{aiError}</div>}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={addItem} disabled={aiSaving}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {aiSaving ? "Adding…" : "Add Item"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   ) : null;
 
-  const StatusUpdateModal = statusItem ? (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.55)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[420px] shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]">
+  const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setStatusItem(null)}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>
-            <h3 className="text-[15px] font-bold text-[var(--tx)]">Update Status</h3>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5 truncate max-w-[260px]">{statusItem.item_name}</p>
+            <h3 className="font-hero text-[20px] font-bold text-[#1A1A1A]">Update Status</h3>
+            <p className="text-[12px] text-[#666] mt-0.5 truncate max-w-[260px]">{statusItem.item_name}</p>
           </div>
-          <button type="button" onClick={() => setStatusItem(null)} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors">
-            <X className="w-4 h-4 text-[var(--tx3)]" />
+          <button type="button" onClick={() => setStatusItem(null)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#666]">
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-2">New Status</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-2">New Status</label>
             <div className="grid grid-cols-2 gap-1.5">
               {ALL_ITEM_STATUSES.map((s) => {
                 const cfg = statusCfg(s);
@@ -744,8 +964,8 @@ export default function PartnerB2BProjectsTab({
                   <button key={s} type="button" onClick={() => setNewStatus(s)}
                     className={`px-2.5 py-2 rounded-lg text-[11px] font-semibold border transition-colors text-left ${
                       newStatus === s
-                        ? `border-[var(--gold)] bg-[var(--gdim)] ${cfg.color}`
-                        : `border-[var(--brd)] ${cfg.color} opacity-60 hover:opacity-100`
+                        ? `border-[#C9A962] bg-[#C9A962]/10 ${cfg.color}`
+                        : `border-[#E8E4DF] ${cfg.color} opacity-60 hover:opacity-100`
                     }`}>
                     {cfg.label}
                   </button>
@@ -754,43 +974,44 @@ export default function PartnerB2BProjectsTab({
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Notes (optional)</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Notes (optional)</label>
             <textarea value={statusNotes} onChange={(e) => setStatusNotes(e.target.value)} rows={2}
               placeholder="e.g. Received in perfect condition"
-              className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none resize-none" />
+              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none resize-none" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 pb-1">
             <button type="button" onClick={() => setStatusItem(null)}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={submitStatusUpdate} disabled={statusSaving || !newStatus}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {statusSaving ? "Updating…" : "Update"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   ) : null;
 
-  const SchedulePromptModal = scheduleItem ? (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[380px] shadow-2xl p-6 text-center">
-        <div className="w-12 h-12 rounded-full bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
-          <Truck className="w-6 h-6 text-[var(--gold)]" />
+  const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 rounded-full bg-[#C9A962]/10 flex items-center justify-center mx-auto mb-4">
+          <Truck className="w-6 h-6 text-[#C9A962]" />
         </div>
-        <h3 className="text-[16px] font-bold text-[var(--tx)] mb-2">
+        <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for Pickup!" : "Schedule Delivery?"}
         </h3>
-        <p className="text-[12px] text-[var(--tx3)] mb-5">
+        <p className="text-[13px] text-[#666] mb-5">
           {scheduleMode === "pickup" ? (
-            <><strong className="text-[var(--tx)]">{scheduleItem.item_name}</strong> is ready at {scheduleItem.vendor_name || scheduleItem.vendor || "the vendor"}. Schedule a Yugo pickup now?</>
+            <><strong className="text-[#1A1A1A]">{scheduleItem.item_name}</strong> is ready at {scheduleItem.vendor_name || scheduleItem.vendor || "the vendor"}. Schedule a Yugo pickup now?</>
           ) : (
-            <><strong className="text-[var(--tx)]">{scheduleItem.item_name}</strong> is now in storage. Ready to schedule final delivery to the client site?</>
+            <><strong className="text-[#1A1A1A]">{scheduleItem.item_name}</strong> is now in storage. Ready to schedule final delivery to the client site?</>
           )}
         </p>
         <div className="flex gap-2">
           <button type="button" onClick={() => setScheduleItem(null)}
-            className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Later</button>
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#666] hover:bg-[#F5F3F0] transition-colors">Later</button>
           <button
             type="button"
             onClick={() => {
@@ -805,12 +1026,13 @@ export default function PartnerB2BProjectsTab({
               }
               setScheduleItem(null);
             }}
-            className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] transition-colors">
             Schedule →
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   ) : null;
 
   // Photo lightbox
@@ -911,8 +1133,6 @@ export default function PartnerB2BProjectsTab({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[13px] font-semibold text-[var(--tx)]">{item.item_name}</span>
                 {item.quantity > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
-                {item.requires_crating && <span title="Crating required" className="text-[var(--tx3)]"><Package size={12} /></span>}
-                {item.requires_assembly && <span title="Assembly required" className="text-[var(--tx3)]"><Wrench size={12} /></span>}
               </div>
               {item.room_destination && <p className="text-[11px] text-[var(--tx3)] mt-0.5">{item.room_destination}</p>}
             </div>
@@ -1014,6 +1234,16 @@ export default function PartnerB2BProjectsTab({
                 <Camera className="inline w-3 h-3 mr-1 -mt-0.5" />Photos ({item.photo_urls!.length})
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => deleteItem(item.id)}
+              disabled={deletingItemId === item.id}
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+              title="Remove item"
+            >
+              <Trash2 className="inline w-3 h-3 mr-1 -mt-0.5" />Delete
+            </button>
           </div>
         </div>
       );
@@ -1201,6 +1431,7 @@ export default function PartnerB2BProjectsTab({
 
     return (
       <>
+        {EditProjectModal}
         {AddItemModal}
         {StatusUpdateModal}
         {SchedulePromptModal}
@@ -1216,8 +1447,9 @@ export default function PartnerB2BProjectsTab({
 
           {/* Header */}
           <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${PROJECT_STATUS_COLORS[p.status] || ""}`}>
                 {PROJECT_STATUS_LABELS[p.status] || p.status}
               </span>
@@ -1231,6 +1463,11 @@ export default function PartnerB2BProjectsTab({
                   {warehouseItems} ready to deliver 🚚
                 </span>
               )}
+              </div>
+              <button type="button" onClick={openEditProject}
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] hover:border-[var(--gold)]/40 transition-colors">
+                <Pencil size={12} /> Edit
+              </button>
             </div>
             <h2 className="text-[20px] font-bold text-[var(--tx)] font-hero">{p.project_name}</h2>
             {p.end_client_name && <p className="text-[12px] text-[var(--tx3)] mt-0.5">{p.end_client_name}</p>}
@@ -1386,7 +1623,6 @@ export default function PartnerB2BProjectsTab({
 
               {inv.length === 0 ? (
                 <div className="text-center py-12">
-                  <Package className="w-10 h-10 mx-auto mb-3 text-[var(--tx3)]/40" />
                   <p className="text-[13px] text-[var(--tx3)]">No items yet</p>
                   <p className="text-[11px] text-[var(--tx3)]/60 mt-1">Click "Add Item" to start tracking your pieces</p>
                 </div>
@@ -1419,9 +1655,6 @@ export default function PartnerB2BProjectsTab({
       <>
         {NewProjectModal}
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center">
-            <Boxes className="w-7 h-7 text-[var(--gold)]" />
-          </div>
           <p className="text-[14px] text-[var(--tx3)]">No active projects</p>
           <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Create your first project to start coordinating multi-vendor deliveries</p>
           <button type="button" onClick={() => setShowNewProject(true)}

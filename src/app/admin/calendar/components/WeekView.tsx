@@ -48,7 +48,7 @@ function getHeight(start: string | null, end: string | null, dur: number | null)
   return 1.5 * HOUR_HEIGHT;
 }
 
-const TYPE_ICON_MAP: Record<string, string> = { move: "truck", delivery: "package", project_phase: "palette", blocked: "lock" };
+const TYPE_ICON_MAP: Record<string, string> = { move: "truck", delivery: "package", project_phase: "palette", project: "projects", blocked: "lock" };
 
 export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick, onDayClick }: Props) {
   const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);

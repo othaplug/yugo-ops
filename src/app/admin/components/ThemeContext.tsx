@@ -24,16 +24,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute("data-theme", theme);
     const root = document.documentElement.style;
     if (theme === "light") {
-      root.setProperty("--bg", "#F5F5F2");
-      root.setProperty("--bg2", "#FFF");
-      root.setProperty("--card", "#FFF");
+      /* Match partner light mode: warm off-white/beige palette */
+      root.setProperty("--bg", "#FAF8F5");
+      root.setProperty("--bg2", "#F5F3F0");
+      root.setProperty("--card", "#FFFFFF");
       root.setProperty("--tx", "#1A1A1A");
-      root.setProperty("--tx2", "#555");
-      root.setProperty("--tx3", "#999");
-      root.setProperty("--brd", "#E0DDD8");
+      root.setProperty("--tx2", "#444");
+      root.setProperty("--tx3", "#888");
+      root.setProperty("--brd", "#E8E4DF");
       root.setProperty("--gdim", "rgba(201,169,98,0.2)");
       root.setProperty("--btn-text-on-accent", "#FFFFFF");
-      root.setProperty("--gold2", "#7A5E25");
+      root.setProperty("--gold2", "#B89A52");
     } else {
       root.setProperty("--bg", "#0F0F0F");
       root.setProperty("--bg2", "#1A1A1A");

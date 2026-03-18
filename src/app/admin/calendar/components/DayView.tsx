@@ -44,6 +44,7 @@ const TYPE_ICON_MAP: Record<string, string> = {
   move: "truck",
   delivery: "package",
   project_phase: "palette",
+  project: "projects",
   blocked: "lock",
 };
 

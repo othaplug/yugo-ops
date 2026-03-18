@@ -123,8 +123,8 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
@@ -155,7 +155,7 @@ function ScheduleModal({
                   onClick={() => setFrequency(f)}
                   className={`flex-1 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
                     frequency === f
-                      ? "bg-[var(--gold)] border-[var(--gold)] text-[#0D0D0D]"
+                      ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
                       : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
                   }`}
                 >
@@ -179,7 +179,7 @@ function ScheduleModal({
                     onClick={() => toggleDay(dow)}
                     className={`w-9 h-9 rounded-lg text-[11px] font-bold border transition-colors ${
                       active
-                        ? "bg-[var(--gold)] border-[var(--gold)] text-[#0D0D0D]"
+                        ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
                         : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
                     }`}
                   >
@@ -200,7 +200,7 @@ function ScheduleModal({
                   onClick={() => setBookingType(val)}
                   className={`flex-1 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
                     bookingType === val
-                      ? "bg-[var(--gold)] border-[var(--gold)] text-[#0D0D0D]"
+                      ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
                       : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
                   }`}
                 >
@@ -281,7 +281,7 @@ function ScheduleModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)] hover:text-[var(--tx)]"
           >
             Cancel
           </button>
@@ -289,7 +289,7 @@ function ScheduleModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[#0D0D0D] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}
           </button>
@@ -376,7 +376,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
           <p className="text-[12px] text-[var(--tx3)] mb-4 max-w-[280px] mx-auto">Set up a recurring schedule and we'll auto-create draft deliveries before each run.</p>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[#0D0D0D]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
           >
             + Create First Schedule
           </button>

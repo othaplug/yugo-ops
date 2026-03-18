@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   move: "Move",
   delivery: "Delivery",
   project_phase: "Project Phase",
+  project: "Project",
   blocked: "Blocked Time",
 };
 

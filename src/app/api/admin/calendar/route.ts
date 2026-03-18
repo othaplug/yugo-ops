@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     const startDate = String(start).slice(0, 10);
     const endDate = String(end).slice(0, 10);
 
-    const [movesResult, deliveriesResult, phasesResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult] = await Promise.allSettled([
+    const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult] = await Promise.allSettled([
       db
         .from("moves")
         .select("id, move_code, client_name, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
@@ -83,6 +83,12 @@ export async function GET(req: NextRequest) {
         .select("id, project_id, phase_name, phase_order, status, scheduled_date, projects!inner(project_number, start_date)")
         .gte("scheduled_date", startDate).lte("scheduled_date", endDate)
         .not("status", "eq", "skipped"),
+      db.from("projects")
+        .select("id, project_number, project_name, start_date, target_end_date")
+        .not("start_date", "is", null)
+        .lte("start_date", endDate)
+        .or(`target_end_date.gte.${startDate},target_end_date.is.null`)
+        .not("status", "eq", "cancelled"),
       db.from("crew_schedule_blocks")
         .select("*")
         .gte("block_date", startDate).lte("block_date", endDate),
@@ -115,6 +121,7 @@ export async function GET(req: NextRequest) {
       }
     }
     const phases = phasesResult.status === "fulfilled" && !phasesResult.value.error ? phasesResult.value.data : null;
+    const projects = projectsResult.status === "fulfilled" && !projectsResult.value.error ? projectsResult.value.data : null;
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
     const recurringSchedules = recurringResult.status === "fulfilled" && !recurringResult.value.error ? recurringResult.value.data : null;
@@ -293,6 +300,49 @@ export async function GET(req: NextRequest) {
         itemCount: null,
         scheduleBlockId: null,
       });
+    }
+
+    // Projects as date-range events (start_date → target_end_date)
+    for (const proj of projects || []) {
+      if (typeFilter && typeFilter !== "project_phase" && typeFilter !== "project") continue;
+      const pStart = toDateKey(proj.start_date as string | Date | null);
+      if (!pStart) continue;
+      const pEnd = toDateKey(proj.target_end_date as string | Date | null) || pStart;
+      const rangeStart = pStart < startDate ? startDate : pStart;
+      const rangeEnd = pEnd > endDate ? endDate : pEnd;
+      const d = new Date(rangeStart + "T12:00:00");
+      const endD = new Date(rangeEnd + "T12:00:00");
+      while (d <= endD) {
+        const dk = d.toISOString().slice(0, 10);
+        events.push({
+          id: `project-${proj.id}-${dk}`,
+          type: "project",
+          blockType: "project",
+          name: proj.project_number || "Project",
+          description: proj.project_name || "Project",
+          date: dk,
+          start: null,
+          end: null,
+          durationHours: null,
+          crewId: null,
+          crewName: null,
+          truckId: null,
+          truckName: null,
+          status: "scheduled",
+          calendarStatus: "scheduled",
+          color: JOB_COLORS.project,
+          href: `/admin/projects/${proj.id}`,
+          clientName: null,
+          fromAddress: null,
+          toAddress: null,
+          deliveryAddress: null,
+          category: "project",
+          moveSize: null,
+          itemCount: null,
+          scheduleBlockId: null,
+        });
+        d.setDate(d.getDate() + 1);
+      }
     }
 
     for (const b of blocks || []) {

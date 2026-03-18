@@ -23,6 +23,17 @@ interface PhaseOption {
   address: string | null;
 }
 
+interface ProjectInventoryItem {
+  id: string;
+  item_name: string;
+  quantity: number;
+  room_destination: string | null;
+  vendor_name: string | null;
+  vendor_pickup_address: string | null;
+  handled_by: string | null;
+  vendor_delivery_method: string | null;
+}
+
 interface Org {
   id: string;
   name: string;
@@ -80,6 +91,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [linkedProjectId, setLinkedProjectId] = useState(projectIdFromUrl);
   const [linkedPhaseId, setLinkedPhaseId] = useState(phaseIdFromUrl);
   const [phases, setPhases] = useState<PhaseOption[]>([]);
+  const [projectInventory, setProjectInventory] = useState<ProjectInventoryItem[]>([]);
+  const [selectedProjectItemIds, setSelectedProjectItemIds] = useState<Set<string>>(new Set());
   const [contactSearch, setContactSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -156,23 +169,34 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
-  // Fetch phases when project is selected
+  // Fetch phases and inventory when project is selected
   useEffect(() => {
-    if (!linkedProjectId) { setPhases([]); setLinkedPhaseId(""); return; }
+    if (!linkedProjectId) {
+      setPhases([]);
+      setLinkedPhaseId("");
+      setProjectInventory([]);
+      setSelectedProjectItemIds(new Set());
+      return;
+    }
     fetch(`/api/admin/projects/${linkedProjectId}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.phases) {
           setPhases(data.phases);
-          // If phaseIdFromUrl is set, pre-select it
           if (phaseIdFromUrl && data.phases.find((p: PhaseOption) => p.id === phaseIdFromUrl)) {
             setLinkedPhaseId(phaseIdFromUrl);
           }
         } else {
           setPhases([]);
         }
+        const inv = Array.isArray(data?.inventory) ? data.inventory : [];
+        setProjectInventory(inv);
+        setSelectedProjectItemIds(new Set());
       })
-      .catch(() => setPhases([]));
+      .catch(() => {
+        setPhases([]);
+        setProjectInventory([]);
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedProjectId]);
 
@@ -206,6 +230,39 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     });
     setInventory((prev) => [...prev, ...items]);
     setBulkText("");
+  };
+
+  const isYugoItem = (i: ProjectInventoryItem) =>
+    i.handled_by === "yugo" || i.vendor_delivery_method === "yugo_pickup";
+  const yugoProjectItems = projectInventory.filter(isYugoItem);
+
+  const addFromProjectInventory = () => {
+    if (selectedProjectItemIds.size === 0) return;
+    const toAdd = yugoProjectItems.filter((i) => selectedProjectItemIds.has(i.id));
+    const newItems = toAdd.flatMap((i) => {
+      const room = i.room_destination || "Other";
+      const name = (i.quantity || 1) > 1 ? `${i.item_name} x${i.quantity}` : i.item_name;
+      return { room, item_name: name };
+    });
+    setInventory((prev) => [...prev, ...newItems]);
+    setSelectedProjectItemIds(new Set());
+    const firstWithPickup = toAdd.find((i) => i.vendor_pickup_address?.trim());
+    if (firstWithPickup?.vendor_pickup_address?.trim() && !pickupAddress.trim()) {
+      setPickupAddress(firstWithPickup.vendor_pickup_address.trim());
+    }
+  };
+
+  const toggleProjectItemSelection = (id: string) => {
+    setSelectedProjectItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllYugoItems = () => {
+    setSelectedProjectItemIds(new Set(yugoProjectItems.map((i) => i.id)));
   };
 
   const toggleComplexity = (p: string) => {
@@ -488,6 +545,56 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         {/* Section: Inventory */}
         <section className="space-y-3">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Inventory</h3>
+
+          {/* Add from project inventory (Yugo items only) */}
+          {linkedProjectId && yugoProjectItems.length > 0 && (
+            <div className="p-3 rounded-lg bg-[var(--gold)]/5 border border-[var(--gold)]/20 space-y-2">
+              <div className="text-[11px] font-semibold text-[var(--tx)] flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-[var(--gold)]" />
+                Add from project inventory
+              </div>
+              <p className="text-[10px] text-[var(--tx3)]">
+                Select items added by the design partner (Yugo pickup) to auto-fill inventory and pickup address.
+              </p>
+              <div className="flex flex-wrap gap-3 items-start">
+                <div className="flex-1 min-w-[200px] max-h-[160px] overflow-y-auto border border-[var(--brd)] rounded-lg p-2 space-y-1.5">
+                  {yugoProjectItems.map((i) => (
+                    <label key={i.id} className="flex items-center gap-2 cursor-pointer hover:bg-[var(--bg)]/50 rounded px-2 py-1 -mx-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedProjectItemIds.has(i.id)}
+                        onChange={() => toggleProjectItemSelection(i.id)}
+                        className="rounded border-[var(--brd)] text-[var(--gold)]"
+                      />
+                      <span className="text-[11px] text-[var(--tx)]">
+                        {i.room_destination || "Other"}: {i.item_name}
+                        {(i.quantity || 1) > 1 ? ` ×${i.quantity}` : ""}
+                        {i.vendor_name && <span className="text-[var(--tx3)]"> · {i.vendor_name}</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={selectAllYugoItems}
+                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addFromProjectInventory}
+                    disabled={selectedProjectItemIds.size === 0}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                  >
+                    <Plus className="w-[12px] h-[12px]" /> Add selected
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {inventory.length > 0 && (
             <ul className="space-y-1.5 mb-2">
               {inventory.map((item, idx) => (

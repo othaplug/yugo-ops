@@ -64,3 +64,31 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     deliveries: deliveries || [],
   });
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { orgIds, error } = await requirePartner();
+  if (error) return error;
+
+  const db = createAdminClient();
+
+  const { data: project, error: fetchErr } = await db
+    .from("projects")
+    .select("id")
+    .eq("id", id)
+    .in("partner_id", orgIds)
+    .single();
+
+  if (fetchErr || !project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const body = await req.json();
+  const allowed = ["project_name", "description", "end_client_name", "site_address", "start_date", "target_end_date"];
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const key of allowed) {
+    if (key in body) updates[key] = body[key];
+  }
+
+  const { data, error: updateErr } = await db.from("projects").update(updates).eq("id", id).select().single();
+  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  return NextResponse.json(data);
+}

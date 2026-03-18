@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { VERTICAL_LABELS } from "@/lib/partner-type";
 
 type Theme = "light" | "dark" | "system";
 
@@ -53,6 +54,8 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
     notification_message: "",
   });
   const [prefsSaved, setPrefsSaved] = useState(false);
+  const [summaryTestSending, setSummaryTestSending] = useState(false);
+  const [summaryTestResult, setSummaryTestResult] = useState<"sent" | "error" | null>(null);
 
   useEffect(() => {
     setTheme(getStoredTheme());
@@ -75,6 +78,23 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
   useEffect(() => {
     if (open && section === "profile") loadProfile();
   }, [open, section, loadProfile]);
+
+  useEffect(() => {
+    if (open && section === "notifications") {
+      fetch("/api/partner/settings/notifications")
+        .then((r) => r.json())
+        .then((d) => {
+          if (typeof d.email_delivery_updates === "boolean") {
+            setNotifPrefs({
+              email_delivery_updates: d.email_delivery_updates,
+              email_daily_summary: d.email_daily_summary ?? false,
+              email_invoice_ready: d.email_invoice_ready ?? true,
+            });
+          }
+        })
+        .catch(() => { /* fall back to localStorage */ });
+    }
+  }, [open, section]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -105,8 +125,21 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
     setProfileLoading(false);
   };
 
-  const saveNotifPrefs = () => {
+  const saveNotifPrefs = async () => {
     localStorage.setItem("partner-notif-prefs", JSON.stringify(notifPrefs));
+    try {
+      await fetch("/api/partner/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_notifications_enabled: deliveryPrefs.customer_notifications,
+          customer_notification_message: deliveryPrefs.notification_message || null,
+          email_delivery_updates: notifPrefs.email_delivery_updates,
+          email_daily_summary: notifPrefs.email_daily_summary,
+          email_invoice_ready: notifPrefs.email_invoice_ready,
+        }),
+      });
+    } catch { /* graceful fail — localStorage already saved */ }
     setPrefsSaved(true);
     setTimeout(() => setPrefsSaved(false), 2000);
   };
@@ -152,7 +185,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
             )}
-            <h2 className="text-[16px] font-bold font-hero text-[var(--tx,#1A1A1A)]">
+            <h2 className="text-[24px] font-medium font-hero text-[var(--tx,#1A1A1A)]">
               {section === "main" ? "Settings" : section === "profile" ? "Edit Profile" : section === "notifications" ? "Notifications" : "Delivery Preferences"}
             </h2>
           </div>
@@ -166,27 +199,29 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             <div className="p-5 space-y-5">
               {/* Account */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Account</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Account</div>
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] overflow-hidden">
                   <div className="px-4 py-3.5 flex items-center gap-3 bg-[var(--card,#fff)]">
                     <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
                       {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[14px] font-semibold text-[var(--tx,#1A1A1A)] truncate">{contactName}</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)] truncate">{userEmail}</div>
+                      <div className="text-[15px] font-semibold text-[var(--tx,#1A1A1A)] truncate">{contactName}</div>
+                      <div className="text-[12px] text-[var(--tx3,#888)] truncate">{userEmail}</div>
                     </div>
                   </div>
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
-                    <span className="text-[11px] text-[var(--tx3,#888)]">{orgName}</span>
-                    <span className="text-[10px] font-semibold text-[#C9A962] uppercase tracking-wide">{orgType}</span>
+                    <span className="text-[12px] text-[var(--tx3,#888)]">{orgName}</span>
+                    <span className="text-[11px] font-semibold text-[#C9A962] uppercase tracking-wide">
+                      {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ")}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Theme */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Theme</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Theme</div>
                 <div className="flex gap-2">
                   {([
                     { key: "light" as Theme, label: "Light", icon: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" },
@@ -213,7 +248,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Menu items */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Manage</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Manage</div>
                 <div className="space-y-1">
                   {[
                     { key: "profile" as const, icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2", circle: true, label: "Edit Profile", desc: "Name, email, phone" },
@@ -244,7 +279,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Quick links */}
               <div>
-                <div className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Quick Links</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Quick Links</div>
                 <div className="space-y-1">
                   <a
                     href="/update-password"
@@ -324,7 +359,9 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div className="rounded-xl bg-[var(--hover,#F5F3F0)] border border-[var(--brd,#E8E4DF)] px-4 py-3">
                   <div className="text-[10px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider mb-0.5">Organization</div>
                   <div className="text-[14px] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
-                  <div className="text-[11px] text-[var(--tx3,#888)]">Type: {orgType} · Login: {userEmail}</div>
+                  <div className="text-[12px] text-[var(--tx3,#888)]">
+                    {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {userEmail}
+                  </div>
                 </div>
               </div>
               <button
@@ -368,6 +405,40 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               >
                 {prefsSaved ? "Saved!" : "Save Preferences"}
               </button>
+
+              {notifPrefs.email_daily_summary && (
+                <div className="rounded-xl border border-[var(--brd,#E8E4DF)] px-4 py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Test Daily Summary</div>
+                    <div className="text-[11px] text-[var(--tx3,#888)]">Send yourself a preview email right now</div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={summaryTestSending}
+                    onClick={async () => {
+                      setSummaryTestSending(true);
+                      setSummaryTestResult(null);
+                      try {
+                        const r = await fetch("/api/partner/daily-summary", { method: "POST" });
+                        setSummaryTestResult(r.ok ? "sent" : "error");
+                      } catch {
+                        setSummaryTestResult("error");
+                      }
+                      setSummaryTestSending(false);
+                      setTimeout(() => setSummaryTestResult(null), 4000);
+                    }}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                      summaryTestResult === "sent"
+                        ? "bg-green-500/10 text-green-600"
+                        : summaryTestResult === "error"
+                        ? "bg-red-500/10 text-red-500"
+                        : "bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20"
+                    }`}
+                  >
+                    {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent ✓" : summaryTestResult === "error" ? "Failed" : "Send Test"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
