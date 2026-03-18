@@ -9,16 +9,18 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import BackButton from "../components/BackButton";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { TrendingUp, TrendingDown, Minus, ArrowUpRight, X } from "lucide-react";
 
 type Period = "6mo" | "year" | "ytd" | "monthly";
 
 const PERIOD_OPTIONS: { key: Period; label: string }[] = [
-  { key: "6mo", label: "6 Month" },
-  { key: "year", label: "Year" },
+  { key: "6mo", label: "6 Mo" },
   { key: "ytd", label: "YTD" },
+  { key: "year", label: "12 Mo" },
   { key: "monthly", label: "Daily" },
 ];
 
@@ -31,21 +33,150 @@ interface RevenueClientProps {
   clientNameToOrgId?: Record<string, string>;
 }
 
-/** Get revenue date for a paid invoice (when payment was received) */
 function getInvoiceRevenueDate(inv: any): Date {
   const ts = inv.updated_at || inv.created_at;
   return ts ? new Date(ts) : new Date(0);
 }
 
-/** Get revenue date for a paid move (when payment was marked) */
 function getMoveRevenueDate(m: any): Date {
   const ts = m.payment_marked_paid_at;
   return ts ? new Date(ts) : new Date(0);
 }
 
-export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap = {}, clientNameToOrgId = {} }: RevenueClientProps) {
+// ─── Section Divider ────────────────────────────────────────────────────────
+function SectionDivider({ label }: { label?: string }) {
+  if (!label) return <div className="border-t border-[var(--brd)] my-8" />;
+  return (
+    <div className="relative my-8">
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-[var(--brd)]" />
+      </div>
+      <div className="relative flex justify-start">
+        <span className="bg-[var(--bg)] pr-4 text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 select-none">
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── KPI Card ────────────────────────────────────────────────────────────────
+function KpiCard({
+  label,
+  value,
+  sub,
+  delta,
+  href,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  delta?: number;
+  href?: string;
+  accent?: boolean;
+}) {
+  const inner = (
+    <div className="group cursor-default">
+      <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">
+        {label}
+      </p>
+      <p
+        className={`text-[28px] font-bold font-heading leading-none ${
+          accent ? "text-[var(--grn)]" : "text-[var(--tx)]"
+        }`}
+      >
+        {value}
+      </p>
+      {sub && <p className="text-[9px] text-[var(--tx3)] mt-1.5">{sub}</p>}
+      {delta !== undefined && delta !== 0 && (
+        <div
+          className={`inline-flex items-center gap-1 mt-2 text-[10px] font-semibold ${
+            delta >= 0 ? "text-[var(--grn)]" : "text-red-500"
+          }`}
+        >
+          {delta >= 0 ? (
+            <TrendingUp className="w-3 h-3" />
+          ) : (
+            <TrendingDown className="w-3 h-3" />
+          )}
+          {delta >= 0 ? "+" : ""}
+          {delta}% vs prev
+        </div>
+      )}
+      {delta === 0 && (
+        <div className="inline-flex items-center gap-1 mt-2 text-[10px] text-[var(--tx3)]">
+          <Minus className="w-3 h-3" />
+          No change
+        </div>
+      )}
+    </div>
+  );
+  if (href)
+    return (
+      <Link href={href} className="block hover:opacity-80 transition-opacity">
+        {inner}
+      </Link>
+    );
+  return inner;
+}
+
+// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+function CustomTooltip({ active, payload, label: _label }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0];
+  const fullLabel = p?.payload?.fullLabel ?? _label;
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl px-3.5 py-2.5 shadow-xl text-[11px]">
+      <p className="text-[var(--tx3)] mb-1 font-medium">{fullLabel}</p>
+      <p className="font-bold text-[var(--tx)]">{formatCurrency(p.value ?? 0)}</p>
+    </div>
+  );
+}
+
+// ─── Source Pill ─────────────────────────────────────────────────────────────
+function SourcePill({
+  color,
+  label,
+  value,
+  pct,
+}: {
+  color: string;
+  label: string;
+  value: number;
+  pct: number;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="w-1.5 h-7 rounded-full shrink-0" style={{ background: color }} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[11px] font-medium text-[var(--tx2)]">{label}</span>
+          <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(value)}</span>
+        </div>
+        <div className="h-[3px] bg-[var(--brd)] rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${pct}%`, background: color }}
+          />
+        </div>
+      </div>
+      <span className="text-[10px] font-bold text-[var(--tx3)] w-8 text-right shrink-0">
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
+export default function RevenueClient({
+  invoices,
+  paidMoves = [],
+  clientTypeMap = {},
+  clientNameToOrgId = {},
+}: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   const all = invoices || [];
   const paid = all.filter((i) => i.status === "paid");
@@ -54,6 +185,9 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
   const invoiceRevenue = paid.reduce((s, i) => s + Number(i.amount), 0);
   const moveRevenue = paidMovesList.reduce((s, m) => s + Number(m.estimate || 0), 0);
   const paidTotal = invoiceRevenue + moveRevenue;
+  const totalSource = Math.max(1, invoiceRevenue + moveRevenue);
+  const invPct = Math.round((invoiceRevenue / totalSource) * 100);
+  const movePct = 100 - invPct;
 
   const outstanding = all
     .filter((i) => i.status === "sent" || i.status === "overdue")
@@ -69,9 +203,9 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
   });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+    .slice(0, 6);
+  const maxClientAmount = Math.max(1, topClients[0]?.[1] ?? 1);
 
-  /** Build real revenue data from paid invoices + move payments, grouped by month or day */
   const chartData = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -84,38 +218,34 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
       paid.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === year && d.getMonth() === month) {
-          const day = d.getDate();
-          byDay[day] = (byDay[day] || 0) + Number(inv.amount);
+          byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(inv.amount);
         }
       });
       paidMovesList.forEach((m) => {
         const d = getMoveRevenueDate(m);
         if (d.getFullYear() === year && d.getMonth() === month) {
-          const day = d.getDate();
-          byDay[day] = (byDay[day] || 0) + Number(m.estimate || 0);
+          byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(m.estimate || 0);
         }
       });
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
-        return { label: String(day), value: byDay[day] || 0, fullLabel: `${now.toLocaleString("en-US", { month: "short" })} ${day}` };
+        return {
+          label: String(day),
+          value: byDay[day] || 0,
+          fullLabel: `${now.toLocaleString("en-US", { month: "short" })} ${day}`,
+        };
       });
     }
 
-    const monthsToShow =
-      period === "6mo" ? 6 : period === "ytd" ? month + 1 : 12;
+    const monthsToShow = period === "6mo" ? 6 : period === "ytd" ? month + 1 : 12;
     const startMonth = period === "6mo" ? month - 5 : 0;
     const result: { label: string; value: number; fullLabel: string }[] = [];
 
     for (let i = 0; i < monthsToShow; i++) {
       let m = startMonth + i;
       let y = year;
-      if (m < 0) {
-        m += 12;
-        y -= 1;
-      } else if (m >= 12) {
-        m -= 12;
-        y += 1;
-      }
+      if (m < 0) { m += 12; y -= 1; }
+      else if (m >= 12) { m -= 12; y += 1; }
       let sum = 0;
       paid.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
@@ -125,11 +255,7 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
         const d = getMoveRevenueDate(move);
         if (d.getFullYear() === y && d.getMonth() === m) sum += Number(move.estimate || 0);
       });
-      result.push({
-        label: MONTH_LABELS[m],
-        value: sum,
-        fullLabel: `${MONTH_LABELS[m]} ${y}`,
-      });
+      result.push({ label: MONTH_LABELS[m], value: sum, fullLabel: `${MONTH_LABELS[m]} ${y}` });
     }
     return result;
   }, [period, paid, paidMovesList]);
@@ -140,14 +266,16 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
     byTypeRaw[t] = (byTypeRaw[t] || 0) + Number(i.amount);
   });
   const byType = [
-    { key: "retail", label: "Retail", amount: byTypeRaw.retail || 0, color: "var(--gold)" },
-    { key: "designer", label: "Designer", amount: byTypeRaw.designer || 0, color: "var(--gold)" },
-    { key: "hospitality", label: "Hospitality", amount: byTypeRaw.hospitality || 0, color: "var(--grn)" },
-    { key: "gallery", label: "Gallery", amount: byTypeRaw.gallery || 0, color: "var(--tx3)" },
-    { key: "realtor", label: "Realtor", amount: byTypeRaw.realtor || 0, color: "var(--tx3)" },
-    { key: "b2c", label: "B2C Moves", amount: byTypeRaw.b2c || 0, color: "var(--tx3)" },
+    { key: "retail",      label: "Retail",      amount: byTypeRaw.retail      || 0, color: "var(--gold)" },
+    { key: "designer",    label: "Designer",     amount: byTypeRaw.designer    || 0, color: "#a78bfa" },
+    { key: "hospitality", label: "Hospitality",  amount: byTypeRaw.hospitality || 0, color: "var(--grn)" },
+    { key: "gallery",     label: "Gallery",      amount: byTypeRaw.gallery     || 0, color: "#60a5fa" },
+    { key: "realtor",     label: "Realtor",      amount: byTypeRaw.realtor     || 0, color: "#f472b6" },
+    { key: "b2c",         label: "B2C Moves",    amount: byTypeRaw.b2c         || 0, color: "var(--tx3)" },
   ];
   const maxByType = Math.max(1, ...byType.map((t) => t.amount));
+  const totalByType = byType.reduce((s, t) => s + t.amount, 0) || 1;
+
   const invoicesByType = useMemo(() => {
     if (!selectedType) return [];
     return all.filter((i) => (clientTypeMap[i.client_name] || "retail") === selectedType);
@@ -155,252 +283,354 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
 
   const now = new Date();
   const currentMonthRevenue = useMemo(() => {
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const invSum = paid
-      .filter((inv) => {
-        const d = getInvoiceRevenueDate(inv);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList
-      .filter((move) => {
-        const d = getMoveRevenueDate(move);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const y = now.getFullYear(); const m = now.getMonth();
+    const invSum = paid.filter((inv) => { const d = getInvoiceRevenueDate(inv); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, i) => s + Number(i.amount), 0);
+    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.estimate || 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
+
   const prevMonthRevenue = useMemo(() => {
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const y = prev.getFullYear();
-    const m = prev.getMonth();
-    const invSum = paid
-      .filter((inv) => {
-        const d = getInvoiceRevenueDate(inv);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList
-      .filter((move) => {
-        const d = getMoveRevenueDate(move);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const y = prev.getFullYear(); const m = prev.getMonth();
+    const invSum = paid.filter((inv) => { const d = getInvoiceRevenueDate(inv); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, i) => s + Number(i.amount), 0);
+    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.estimate || 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
+
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
-    const invSum = paid
-      .filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y)
-      .reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList
-      .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
-      .reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const invSum = paid.filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y).reduce((s, i) => s + Number(i.amount), 0);
+    const moveSum = paidMovesList.filter((move) => getMoveRevenueDate(move).getFullYear() === y).reduce((s, m) => s + Number(m.estimate || 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
+
   const totalPaidItems = paid.length + paidMovesList.length;
   const avgJob = totalPaidItems > 0 ? Math.round(paidTotal / totalPaidItems) : 0;
-  const pctChange =
-    prevMonthRevenue > 0
-      ? Math.round(((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100)
-      : currentMonthRevenue > 0
-        ? 100
-        : 0;
+  const pctChange = prevMonthRevenue > 0
+    ? Math.round(((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100)
+    : currentMonthRevenue > 0 ? 100 : 0;
+  const currentMonthLabel = now.toLocaleString("en-US", { month: "long" });
 
-  const currentMonthLabel = now.toLocaleString("en-US", { month: "short" });
+  // Chart max for bar highlight
+  const chartMax = Math.max(1, ...chartData.map((d) => d.value));
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
-      {/* KPI Stats — bare */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
-        <Link href="/admin/invoices" className="block group">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{currentMonthLabel} Revenue</div>
-          <div className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(currentMonthRevenue)}</div>
-          {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mt-0.5">Before HST</div>}
-          {pctChange !== 0 && (
-            <div className={`text-[10px] font-semibold mt-0.5 ${pctChange >= 0 ? "text-[var(--grn)]" : "text-red-500"}`}>
-              {pctChange >= 0 ? "↑" : "↓"}{Math.abs(pctChange)}% vs last month
-            </div>
-          )}
-        </Link>
-        <Link href="/admin/invoices" className="block group">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">YTD</div>
-          <div className="text-[24px] font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(ytdRevenue)}</div>
-        </Link>
-        <Link href="/admin/invoices" className="block group">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
-          <div className="text-[24px] font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(outstanding)}</div>
-        </Link>
-        <Link href="/admin/invoices" className="block group">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Avg Job</div>
-          <div className="text-[24px] font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(avgJob)}</div>
+    <div className="max-w-[1100px] mx-auto px-5 md:px-8 py-6 md:py-8 animate-fade-up">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="mb-6">
+        <BackButton label="Back" />
+      </div>
+      <div className="flex items-end justify-between gap-4 mb-2">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">
+            Financial Overview
+          </p>
+          <h1 className="font-heading text-[26px] font-bold text-[var(--tx)] leading-none">
+            Revenue
+          </h1>
+        </div>
+        <Link
+          href="/admin/invoices"
+          className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wide text-[var(--gold)] hover:opacity-70 transition-opacity"
+        >
+          All Invoices <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
-      {/* Revenue breakdown: Move vs Invoice */}
+      {/* ── Section 1: KPI Summary ─────────────────────────────────────────── */}
+      <SectionDivider label="Summary" />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
+        <KpiCard
+          label={`${currentMonthLabel} Revenue`}
+          value={formatCompactCurrency(currentMonthRevenue)}
+          sub="Before HST"
+          delta={pctChange}
+          href="/admin/invoices"
+          accent
+        />
+        <KpiCard
+          label={`${now.getFullYear()} YTD`}
+          value={formatCompactCurrency(ytdRevenue)}
+          sub={`${paid.length + paidMovesList.length} paid jobs`}
+          href="/admin/invoices"
+        />
+        <KpiCard
+          label="Outstanding"
+          value={formatCompactCurrency(outstanding)}
+          sub="Sent + overdue"
+          href="/admin/invoices"
+        />
+        <KpiCard
+          label="Avg Job Value"
+          value={formatCompactCurrency(avgJob)}
+          sub={`Across ${totalPaidItems} jobs`}
+        />
+      </div>
+
+      {/* ── Section 2: Revenue by Source ──────────────────────────────────── */}
       {(invoiceRevenue > 0 || moveRevenue > 0) && (
-        <div className="mb-6">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Revenue by Source</div>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />
-              <span className="text-[11px] text-[var(--tx2)]">Invoice payments</span>
-              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(invoiceRevenue)}</span>
+        <>
+          <SectionDivider label="Revenue by Source" />
+          <div className="grid sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
+            <div className="sm:pr-8 pb-4 sm:pb-0">
+              <SourcePill
+                color="var(--gold)"
+                label="Invoice Payments"
+                value={invoiceRevenue}
+                pct={invPct}
+              />
+              <SourcePill
+                color="var(--grn)"
+                label="Move Payments"
+                value={moveRevenue}
+                pct={movePct}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[var(--grn)]" />
-              <span className="text-[11px] text-[var(--tx2)]">Move payments</span>
-              <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(moveRevenue)}</span>
+            <div className="sm:pl-8 pt-4 sm:pt-0 flex flex-col justify-center">
+              <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-1">
+                Combined
+              </p>
+              <p className="text-[32px] font-bold font-heading text-[var(--tx)] leading-none">
+                {formatCompactCurrency(paidTotal)}
+              </p>
+              <p className="text-[10px] text-[var(--tx3)] mt-1.5">
+                {totalPaidItems} paid transactions
+              </p>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Revenue Trend - real interactive chart */}
-      <div className="mb-6">
-        <h3 className="font-heading text-[15px] font-bold text-[var(--tx)] mb-1">
-          Revenue Trend{period === "monthly" ? ` — ${now.toLocaleString("en-US", { month: "long", year: "numeric" })}` : ` — ${now.getFullYear()}`}
-        </h3>
-        <div className="flex flex-wrap items-center gap-3 mb-5">
-          <div className="flex gap-0.5 p-1 bg-[var(--bg)]/80 rounded-full">
-            {PERIOD_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setPeriod(opt.key)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 ${
-                  period === opt.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+      {/* ── Section 3: Revenue Trend Chart ────────────────────────────────── */}
+      <SectionDivider label="Revenue Trend" />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+            {period === "monthly"
+              ? now.toLocaleString("en-US", { month: "long", year: "numeric" })
+              : period === "ytd"
+              ? `Jan – ${currentMonthLabel} ${now.getFullYear()}`
+              : period === "6mo"
+              ? "Last 6 Months"
+              : `12-Month View`}
+          </h2>
         </div>
-        <div className="h-[260px] w-full min-w-0">
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 8, right: 8, left: 8, bottom: 4 }}
-              >
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10, fill: "var(--tx3)" }}
-                  tickLine={false}
-                  axisLine={{ stroke: "var(--brd)" }}
-                  interval={period === "monthly" ? Math.max(0, Math.floor(chartData.length / 15)) : 0}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "var(--tx3)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => (v >= 1000 ? `$${v / 1000}K` : `$${v}`)}
-                  width={40}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--brd)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                  labelStyle={{ color: "var(--tx)" }}
-                  formatter={(value: number | undefined) => [formatCurrency(value ?? 0), "Revenue"]}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.fullLabel ?? ""}
-                  cursor={{ fill: "rgba(201,169,98,0.08)" }}
-                />
-                <Bar
-                  dataKey="value"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={48}
-                  fill="rgba(201,169,98,0.5)"
-                  stroke="var(--gold)"
-                  strokeWidth={1}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-[13px] text-[var(--tx3)]">
-              No paid revenue in this period. Revenue appears when invoices are marked paid or moves are marked paid.
-            </div>
-          )}
+        <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setPeriod(opt.key)}
+              className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                period === opt.key
+                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
+                  : "text-[var(--tx3)] hover:text-[var(--tx)]"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* By Type + Top Clients */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="h-[220px] w-full min-w-0">
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              onMouseLeave={() => setHoveredBar(null)}
+            >
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: "var(--tx3)" }}
+                tickLine={false}
+                axisLine={{ stroke: "var(--brd)" }}
+                interval={period === "monthly" ? Math.max(0, Math.floor(chartData.length / 15)) : 0}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "var(--tx3)" }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => (v >= 1000 ? `$${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `$${v}`)}
+                width={42}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(201,169,98,0.06)" }} />
+              <Bar
+                dataKey="value"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={44}
+                onMouseEnter={(_, index) => setHoveredBar(index)}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={
+                      entry.value === chartMax && chartMax > 0
+                        ? "var(--gold)"
+                        : hoveredBar === index
+                        ? "rgba(201,169,98,0.75)"
+                        : "rgba(201,169,98,0.35)"
+                    }
+                    stroke={entry.value === chartMax && chartMax > 0 ? "var(--gold)" : "rgba(201,169,98,0.5)"}
+                    strokeWidth={1}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-[12px] text-[var(--tx3)] text-center max-w-[280px]">
+              No revenue in this period. Revenue appears when invoices or moves are marked paid.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 4: By Type + Top Clients ──────────────────────────────── */}
+      <SectionDivider label="Breakdown" />
+
+      <div className="grid md:grid-cols-2 gap-10 md:gap-14">
+
+        {/* By Service Type */}
         <div>
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-1">By Type</h3>
-          <p className="text-[10px] text-[var(--tx3)] mb-4">Revenue by service stream (Retail, Designer, B2C Moves, etc.)</p>
-          <div className="space-y-3">
-            {byType.map((t) => (
+          <div className="mb-5">
+            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)]">By Service Type</h2>
+            <p className="text-[10px] text-[var(--tx3)] mt-0.5">Invoice revenue by client category</p>
+          </div>
+          <div className="space-y-1 divide-y divide-[var(--brd)]">
+            {byType.map((t) => {
+              const pct = Math.round((t.amount / totalByType) * 100);
+              return (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setSelectedType(t.key)}
-                  className="block w-full text-left group"
+                  className="block w-full text-left group py-3"
                 >
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{t.label}</span>
-                    <span className="text-[11px] font-bold text-[var(--tx)]">{formatCurrency(t.amount)}</span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: t.amount > 0 ? t.color : "var(--brd)" }}
+                      />
+                      <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
+                        {t.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {t.amount > 0 && (
+                        <span className="text-[9px] text-[var(--tx3)]">{pct}%</span>
+                      )}
+                      <span className="text-[11px] font-bold text-[var(--tx)]">
+                        {formatCurrency(t.amount)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-[var(--bg)] rounded-full overflow-hidden">
+                  <div className="h-[3px] bg-[var(--brd)] rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-500 group-hover:opacity-90"
-                      style={{ width: `${(t.amount / maxByType) * 100}%`, background: t.color }}
+                      className="h-full rounded-full transition-all duration-700 group-hover:opacity-80"
+                      style={{
+                        width: `${(t.amount / maxByType) * 100}%`,
+                        background: t.amount > 0 ? t.color : "transparent",
+                      }}
                     />
                   </div>
                 </button>
-              ))}
+              );
+            })}
           </div>
         </div>
 
+        {/* Top Clients */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">Top Clients</h3>
-            <Link href="/admin/clients" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-              View all →
+          <div className="flex items-end justify-between mb-5">
+            <div>
+              <h2 className="font-heading text-[14px] font-bold text-[var(--tx)]">Top Clients</h2>
+              <p className="text-[10px] text-[var(--tx3)] mt-0.5">Ranked by lifetime revenue</p>
+            </div>
+            <Link
+              href="/admin/clients"
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--gold)] hover:opacity-70 transition-opacity"
+            >
+              All clients <ArrowUpRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-0 divide-y divide-[var(--brd)]">
             {topClients.length > 0 ? (
-              topClients.map(([name, amount]) => {
+              topClients.map(([name, amount], idx) => {
                 const orgId = clientNameToOrgId[name];
                 const href = orgId ? `/admin/clients/${orgId}/revenue` : "/admin/clients";
+                const barPct = Math.round((amount / maxClientAmount) * 100);
                 return (
                   <Link
                     key={name}
                     href={href}
-                    className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg border border-transparent border-b border-[var(--brd)] last:border-0 hover:bg-[var(--gdim)] hover:border-[var(--gold)]/40 hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                    className="group flex items-center gap-4 py-3 hover:bg-[var(--gdim)] -mx-3 px-3 rounded-lg transition-colors"
                   >
-                    <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{name}</span>
-                    <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{formatCurrency(amount)}</span>
+                    <span className="text-[10px] font-bold text-[var(--tx3)] w-4 shrink-0 tabular-nums">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate pr-3">
+                          {name}
+                        </span>
+                        <span className="text-[11px] font-bold text-[var(--tx)] shrink-0">
+                          {formatCurrency(amount)}
+                        </span>
+                      </div>
+                      <div className="h-[3px] bg-[var(--brd)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--gold)]/50 group-hover:bg-[var(--gold)] rounded-full transition-all duration-500"
+                          style={{ width: `${barPct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </Link>
                 );
               })
             ) : (
-              <div className="text-[11px] text-[var(--tx3)] py-4">No paid invoices or moves yet</div>
+              <p className="text-[11px] text-[var(--tx3)] py-6">
+                No paid invoices or moves yet.
+              </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Invoices by type modal */}
+      {/* ── Modal: Invoices by Type ────────────────────────────────────────── */}
       {selectedType != null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedType(null)} aria-hidden="true" />
-          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--brd)] shrink-0">
-              <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
-                Invoices — {byType.find((t) => t.key === selectedType)?.label ?? selectedType}
-              </h3>
-              <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" aria-modal="true">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelectedType(null)}
+            aria-hidden="true"
+          />
+          <div
+            className="relative bg-[var(--card)] border border-[var(--brd)] rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[var(--brd)] shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: byType.find((t) => t.key === selectedType)?.color ?? "var(--gold)" }}
+                />
+                <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
+                  {byType.find((t) => t.key === selectedType)?.label ?? selectedType}
+                </h3>
+              </div>
+              <div className="flex items-center gap-3">
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[var(--tx)]"
+                  className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx)] focus:outline-none"
                 >
                   {byType.map((t) => (
                     <option key={t.key} value={t.key}>{t.label}</option>
@@ -409,28 +639,59 @@ export default function RevenueClient({ invoices, paidMoves = [], clientTypeMap 
                 <button
                   type="button"
                   onClick={() => setSelectedType(null)}
-                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--bg)] hover:bg-[var(--brd)] transition-colors text-[var(--tx3)] hover:text-[var(--tx)]"
                 >
-                  View all
+                  <X className="w-3.5 h-3.5" />
                 </button>
-                <button type="button" onClick={() => setSelectedType(null)} className="text-[var(--tx3)] hover:text-[var(--tx)] text-lg leading-none">&times;</button>
               </div>
             </div>
+
+            {/* Modal body */}
             <div className="p-4 overflow-y-auto flex-1 min-h-0">
               {invoicesByType.length > 0 ? (
-                <ul className="space-y-2">
+                <ul className="space-y-0 divide-y divide-[var(--brd)]">
                   {invoicesByType.map((inv) => (
-                    <li key={inv.id} className="flex items-center justify-between py-2 border-b border-[var(--brd)] last:border-0 text-[11px]">
-                      <span className="font-mono font-semibold text-[var(--tx)]">{inv.invoice_number}</span>
-                      <span className="text-[var(--tx2)]">{inv.client_name}</span>
-                      <span className="font-bold text-[var(--tx)]">{formatCurrency(inv.amount)}</span>
+                    <li
+                      key={inv.id}
+                      className="flex items-center justify-between py-2.5 gap-3 text-[11px]"
+                    >
+                      <span className="font-mono font-semibold text-[var(--tx3)] text-[10px] w-20 shrink-0">
+                        {inv.invoice_number}
+                      </span>
+                      <span className="flex-1 text-[var(--tx2)] truncate">{inv.client_name}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide shrink-0 ${
+                          inv.status === "paid"
+                            ? "bg-[var(--grn)]/15 text-[var(--grn)]"
+                            : inv.status === "overdue"
+                            ? "bg-red-500/15 text-red-500"
+                            : "bg-[var(--gold)]/15 text-[var(--gold)]"
+                        }`}
+                      >
+                        {inv.status}
+                      </span>
+                      <span className="font-bold text-[var(--tx)] shrink-0">{formatCurrency(inv.amount)}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-[11px] text-[var(--tx3)]">No invoices for this type.</p>
+                <p className="text-[11px] text-[var(--tx3)] py-8 text-center">
+                  No invoices for this category.
+                </p>
               )}
             </div>
+
+            {/* Modal footer total */}
+            {invoicesByType.length > 0 && (
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--brd)] shrink-0">
+                <span className="text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
+                  {invoicesByType.length} invoice{invoicesByType.length !== 1 ? "s" : ""}
+                </span>
+                <span className="text-[13px] font-bold text-[var(--tx)]">
+                  {formatCurrency(invoicesByType.reduce((s, i) => s + Number(i.amount), 0))}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
