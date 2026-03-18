@@ -585,6 +585,7 @@ async function residentialIncludes(
     "Zero-damage commitment",
     "Basic disassembly & reassembly",
     "Debris & packaging removal",
+    "Room of choice placement",
   ];
   const estate = [
     truckLabel,
@@ -599,7 +600,7 @@ async function residentialIncludes(
     "Debris & packaging removal",
     "All packing supplies included (boxes, wrapping, protection materials)",
     "Pre-move inventory walkthrough",
-    "Premium gloves handling",
+    "White glove item handling & precision placement",
     "Dedicated move coordinator",
     "30 day concierge support",
     "Exclusive partner offers & perks",

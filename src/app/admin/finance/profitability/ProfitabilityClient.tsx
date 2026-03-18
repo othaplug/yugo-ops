@@ -572,8 +572,9 @@ export default function ProfitabilityClient() {
     showToast("Cost override saved", "success");
   }, [showToast]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  // silent=true → background refresh (realtime / interval) — never blanks the page
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const { from, to } = getRange(preset);
     try {
       const [profRes, cfgRes] = await Promise.all([
@@ -591,20 +592,28 @@ export default function ProfitabilityClient() {
         setOverheadConfig(config ?? {});
       }
     } catch { /* silent */ }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [preset]);
 
+  // Always hold a ref to the latest fetchData so subscriptions never re-run
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
+
+  // Preset change → show loading skeleton and refresh
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Realtime + polling: mount once, use ref so channel is never re-created
   useEffect(() => {
     const supabase = createClient();
+    const silentRefresh = () => fetchDataRef.current(true);
     const channel = supabase.channel("profitability-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, fetchData)
-      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, fetchData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, silentRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, silentRefresh)
       .subscribe();
-    const interval = setInterval(fetchData, 60_000);
+    const interval = setInterval(silentRefresh, 60_000);
     return () => { supabase.removeChannel(channel); clearInterval(interval); };
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ─── derived ─── */
   const target = summary?.targetMargin ?? 40;

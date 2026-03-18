@@ -18,6 +18,7 @@ import {
   Hand,
   Trash2,
   ChevronDown,
+  ChevronUp,
   Plus,
   X,
   Gift,
@@ -1276,6 +1277,9 @@ const InclusionsShowcase = React.forwardRef<
     crewSize: number | null;
   }
 >(function InclusionsShowcase({ selectedTier, isResidential, truckPrimary, truckSecondary, crewSize }, ref) {
+  const INITIAL_VISIBLE = 6;
+  const [expanded, setExpanded] = React.useState(false);
+
   const tier = (isResidential ? (selectedTier ?? "curated") : "curated") as keyof typeof TIER_FEATURES;
 
   const truckLabel = truckPrimary
@@ -1303,6 +1307,8 @@ const InclusionsShowcase = React.forwardRef<
 
   // Universal features always appear at the bottom of every tier's expanded section
   const allItems = [...hydratedFeatures, ...UNIVERSAL_FEATURES];
+  const hasMore = allItems.length > INITIAL_VISIBLE;
+  const visibleItems = expanded || !hasMore ? allItems : allItems.slice(0, INITIAL_VISIBLE);
 
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
@@ -1318,7 +1324,7 @@ const InclusionsShowcase = React.forwardRef<
       <div className="w-10 h-px mx-auto mb-8" style={{ backgroundColor: GOLD }} />
 
       <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
-        {allItems.map((item, i) => (
+        {visibleItems.map((item, i) => (
           <div key={i} className="flex items-start gap-3.5 py-3 px-1">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -1338,6 +1344,25 @@ const InclusionsShowcase = React.forwardRef<
         ))}
       </div>
 
+      {hasMore && (
+        <div className="text-center mt-6">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-4 py-2 rounded-full border transition-colors"
+            style={{
+              borderColor: `${GOLD}40`,
+              color: `${FOREST}99`,
+              backgroundColor: `${GOLD}08`,
+            }}
+          >
+            {expanded ? (
+              <>Show less<ChevronUp className="w-3.5 h-3.5" /></>
+            ) : (
+              <>View all {allItems.length} features<ChevronDown className="w-3.5 h-3.5" /></>
+            )}
+          </button>
+        </div>
+      )}
     </section>
   );
 });

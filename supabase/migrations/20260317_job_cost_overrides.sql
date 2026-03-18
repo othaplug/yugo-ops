@@ -21,6 +21,7 @@ create index if not exists job_cost_overrides_job_id_idx on job_cost_overrides (
 -- RLS: only authenticated admins can read/write (adjust to match your policies)
 alter table job_cost_overrides enable row level security;
 
+drop policy if exists "admins_all" on job_cost_overrides;
 create policy "admins_all" on job_cost_overrides
   for all
   using (true)

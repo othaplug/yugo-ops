@@ -234,6 +234,17 @@ const DEFAULT_INVENTORY_SCORE: Record<string, number> = {
   studio: 8, "1br": 16, "2br": 28, "3br": 45, "4br": 60, "5br_plus": 80, partial: 6,
 };
 
+// Mirrors DEFAULT_DAY_OF_WEEK_MULTIPLIER from generate/route.ts
+const DOW_MULTIPLIER: Record<string, number> = {
+  sunday: 1.10,
+  monday: 1.0,
+  tuesday: 1.0,
+  wednesday: 1.0,
+  thursday: 1.0,
+  friday: 1.05,
+  saturday: 1.10,
+};
+
 // Access type time penalty (hours added to estimate)
 const ACCESS_PENALTY: Record<string, number> = {
   elevator: 0.25,
@@ -263,8 +274,9 @@ function quickEstimate(
   toAccess?: string,
   inventoryScore?: number,
   specialtyItems?: { type: string; qty: number }[],
+  moveDate?: string,
 ): { curated: number; signature: number; estate: number } | null {
-  if (serviceType !== "local_move") return null;
+  if (serviceType !== "local_move" && serviceType !== "long_distance") return null;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
@@ -300,7 +312,15 @@ function quickEstimate(
   totalHrs = Math.round(totalHrs * 2) / 2;
   totalHrs = Math.max(MIN_HRS[moveSize] ?? 3.0, totalHrs);
 
-  const baseLabour = crew * totalHrs * labourRate;
+  // Day-of-week multiplier (matches server-side DEFAULT_DAY_OF_WEEK_MULTIPLIER)
+  let dateMult = 1.0;
+  if (moveDate) {
+    const d = new Date(moveDate + "T00:00:00");
+    const dayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()];
+    dateMult = DOW_MULTIPLIER[dayName] ?? 1.0;
+  }
+
+  const baseLabour = crew * totalHrs * labourRate * dateMult;
   const curBase = Math.max(roundTo(baseLabour, rounding), minAmt);
   const sig = roundTo(curBase * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.50)), rounding);
   const est = roundTo(curBase * cfgNum(config, "tier_estate_multiplier", 3.15), rounding);
@@ -629,9 +649,9 @@ export default function QuoteFormClient({
       toAccess || undefined,
       inventoryScoreWithBoxes > 0 ? inventoryScoreWithBoxes : undefined,
       specialtyItems.length > 0 ? specialtyItems : undefined,
+      moveDate || undefined,
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [config, serviceType, moveSize, addonSubtotal, fromAccess, toAccess, inventoryScoreWithBoxes, specialtyItems],
+    [config, serviceType, moveSize, addonSubtotal, fromAccess, toAccess, inventoryScoreWithBoxes, specialtyItems, moveDate],
   );
 
   // ── Toggle add-on ─────────────────────────
@@ -2213,7 +2233,7 @@ export default function QuoteFormClient({
                   /* ── Optimistic live preview ── */
                   <>
                     {liveEstimate && "curated" in liveEstimate ? (
-                      <OptimisticTiers est={liveEstimate} />
+                      <OptimisticTiers est={liveEstimate} isLongDistance={serviceType === "long_distance"} />
                     ) : serviceType === "specialty" && specialtyType ? (
                       (() => {
                         const range = SPECIALTY_BASE_PRICES[specialtyType];
@@ -2663,7 +2683,7 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
   );
 }
 
-function OptimisticTiers({ est }: { est: { curated: number; signature: number; estate: number } }) {
+function OptimisticTiers({ est, isLongDistance }: { est: { curated: number; signature: number; estate: number }; isLongDistance?: boolean }) {
   const tiers = [
     { name: "Curated", price: est.curated },
     { name: "Signature", price: est.signature },
@@ -2671,7 +2691,9 @@ function OptimisticTiers({ est }: { est: { curated: number; signature: number; e
   ];
   return (
     <div className="space-y-2">
-      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Estimated Pricing</p>
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+        Estimated Pricing{isLongDistance ? " (excl. drive time)" : ""}
+      </p>
       {tiers.map((t) => {
         const tax = Math.round(t.price * TAX_RATE);
         return (
@@ -2685,7 +2707,9 @@ function OptimisticTiers({ est }: { est: { curated: number; signature: number; e
         );
       })}
       <p className="text-[9px] text-[var(--tx3)] italic text-center">
-        Estimate only — generate quote for exact pricing with distance, date &amp; access factors
+        {isLongDistance
+          ? "Drive time not included — generate for exact long-distance pricing"
+          : "Estimate only — generate quote for exact pricing with distance factor"}
       </p>
     </div>
   );
