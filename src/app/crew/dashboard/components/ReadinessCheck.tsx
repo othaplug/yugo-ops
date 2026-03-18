@@ -140,7 +140,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
           )}
           {flaggedCount > 0 && (
             <p className="text-[11px] text-[var(--org)]">
-              {flaggedCount} item{flaggedCount > 1 ? "s" : ""} flagged — dispatch will be notified
+              {flaggedCount} item{flaggedCount > 1 ? "s" : ""} flagged, dispatch will be notified
             </p>
           )}
           <button

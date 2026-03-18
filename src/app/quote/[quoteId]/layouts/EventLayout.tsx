@@ -53,7 +53,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
     "Professional moving crew",
     "Inventory and protection",
     "Venue delivery and placement",
-    "Same crew for return — no re-briefing",
+    "Same crew for return, no re-briefing",
     "All equipment and materials",
   ];
 
@@ -172,7 +172,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                     {returnDate && <span className="text-[10px] font-medium" style={{ color: `${FOREST}70` }}>{fmtShort(returnDate)}</span>}
                   </div>
                   <div className="pl-7 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: `${FOREST}60` }}>
-                    <span>Same crew — no re-briefing needed</span>
+                    <span>Same crew, no re-briefing needed</span>
                     {returnHours && <span>~{returnHours}h estimated</span>}
                   </div>
                 </div>
@@ -270,7 +270,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                   <Check className="w-4 h-4" /> Confirmed
                 </span>
               ) : (
-                `Confirm Event Booking — ${fmtPrice(deposit)} Deposit`
+                `Confirm Event Booking ${fmtPrice(deposit)} Deposit`
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>

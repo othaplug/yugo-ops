@@ -156,7 +156,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       </div>
 
       {/* Business Details */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Business Details</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Business Name *">
@@ -210,10 +210,10 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
             ))}
           </ul>
         )}
-        <div className="flex gap-2">
-          <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="e.g. Sectional sofa" className={`${fieldInput} flex-1`} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())} />
-          <input type="number" min={1} value={newItemQty} onChange={(e) => setNewItemQty(Number(e.target.value) || 1)} className={`${fieldInput} w-16`} />
-          <button type="button" onClick={addItem} disabled={!newItemName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+        <div className="flex gap-2 items-center">
+          <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="e.g. Sectional sofa" className="flex-1 min-w-0 text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())} />
+          <input type="number" min={1} value={newItemQty} onChange={(e) => setNewItemQty(Number(e.target.value) || 1)} className="w-12 text-center text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors" />
+          <button type="button" onClick={addItem} disabled={!newItemName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 shrink-0">
             <Plus className="w-[14px] h-[14px]" /> Add
           </button>
         </div>
@@ -225,11 +225,14 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       </section>
 
       {/* Schedule */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Date *">
-            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} />
+            <div className="relative">
+              <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={`${fieldInput} pr-9`} style={{ colorScheme: "dark" }} />
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
           </Field>
           <Field label="Time Window">
             <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)} className={fieldInput}>
@@ -241,13 +244,13 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       </section>
 
       {/* Special Instructions */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Special Instructions</h3>
         <textarea value={specialInstructions} onChange={(e) => setSpecialInstructions(e.target.value)} rows={3} placeholder="Call customer 30 min before arrival. Use service elevator…" className={`${fieldInput} resize-y`} />
       </section>
 
       {/* Assignment & Pricing */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Assignment & Pricing</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {crews.length > 0 && (

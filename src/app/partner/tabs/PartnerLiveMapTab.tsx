@@ -211,7 +211,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                       </div>
                     ) : (
                       <div className="text-[11px] text-[#999] mt-0.5">
-                        Live signal off — details when crew starts
+                        Live signal off, details when crew starts
                       </div>
                     )}
                   </div>

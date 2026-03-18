@@ -557,7 +557,7 @@ export default function PartnersManagement() {
               ) : (
                 <>
                   <p className="text-[12px] text-[var(--tx3)]">
-                    The following {provisionDryRun.to_provision} partner{provisionDryRun.to_provision !== 1 ? "s" : ""} will be provisioned. New auth accounts will be created and welcome emails sent. Existing auth users with the same email will simply be linked — no email sent, no password changed.
+                    The following {provisionDryRun.to_provision} partner{provisionDryRun.to_provision !== 1 ? "s" : ""} will be provisioned. New auth accounts will be created and welcome emails sent. Existing auth users with the same email will simply be linked, no email sent, no password changed.
                   </p>
                   <div className="max-h-[220px] overflow-y-auto space-y-1">
                     {provisionDryRun.partners.map((p) => (
@@ -639,7 +639,7 @@ export default function PartnersManagement() {
       <ModalOverlay
         open={!!addUserOrg}
         onClose={() => { setAddUserOrg(null); setAddEmail(""); setAddName(""); setAddPassword(""); }}
-        title={`Add Portal User — ${addUserOrg?.name || ""}`}
+        title={`Add Portal User ${addUserOrg?.name || ""}`}
         maxWidth="md"
       >
         {addUserOrg && (

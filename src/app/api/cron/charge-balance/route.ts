@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
 
         await sendEmail({
           to: move.client_email,
-          subject: `Payment receipt — ${formatCurrency(ccBalance)} charged for ${move.move_code || "your move"}`,
+          subject: `Payment receipt ${formatCurrency(ccBalance)} charged for ${move.move_code || "your move"}`,
           template: "balance-auto-charge-receipt",
           data: {
             clientName: move.client_name || "",
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
       if (adminEmail) {
         await sendEmail({
           to: adminEmail,
-          subject: `URGENT: Balance charge failed — ${move.move_code || move.id}`,
+          subject: `URGENT: Balance charge failed ${move.move_code || move.id}`,
           template: "balance-charge-failed-admin",
           data: {
             clientName: move.client_name || "",
@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
       if (move.client_email) {
         await sendEmail({
           to: move.client_email,
-          subject: `Payment failed — please call us about ${move.move_code || "your move"}`,
+          subject: `Payment failed please call us about ${move.move_code || "your move"}`,
           template: "balance-charge-failed-client",
           data: {
             clientName: move.client_name || "",
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
       if (move.hubspot_deal_id) {
         await createHubSpotTask(
           move.hubspot_deal_id,
-          `URGENT: Balance payment failed — ${move.move_code}`,
+          `URGENT: Balance payment failed ${move.move_code}`,
           `Auto-charge for $${balanceAmount.toFixed(2)} balance failed. Move is tomorrow. Error: ${errorMsg}. Contact client immediately.`,
         );
       }

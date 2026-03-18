@@ -22,14 +22,14 @@ function adminFooterHtml(): string {
   return `
   <div style="margin-top:28px;padding-top:20px;border-top:1px solid ${BORDER};font-size:11px;color:${TEXT_MUTED};line-height:1.6;">
     <p style="text-align:center;margin:0 0 12px;">
-      <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:underline;">Email us</a>
+      <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:none;">Email us</a>
       <span style="color:#ccc;margin:0 10px">|</span>
-      <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:underline;">Call us</a>
+      <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:none;">Call us</a>
       <span style="color:#ccc;margin:0 10px">|</span>
-      <a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:underline;">Privacy</a>
+      <a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:none;">Privacy</a>
     </p>
-    <p style="margin:0 0 8px;">This is an internal notification from <strong style="color:${WINE};">Yugo</strong>. For support, <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:underline;">email</a> or <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>.</p>
-    <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:underline;">Privacy policy</a></p>
+    <p style="margin:0 0 8px;">This is an internal notification from <strong style="color:${WINE};">Yugo</strong>. For support, <a href="${mailto}" style="color:${FOOTER_LINK};text-decoration:none;">email</a> or <a href="${tel}" style="color:${FOOTER_LINK};text-decoration:none;">call ${contactPhone}</a></p>
+    <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${FOOTER_LINK};text-decoration:none;">Privacy policy</a></p>
     <p style="font-size:10px;color:#888;margin:12px 0 0;">&copy; 2025 <strong>Yugo Inc.</strong> All rights reserved. 507 King Street E, Toronto, ON.</p>
   </div>`;
 }
@@ -92,7 +92,7 @@ export function newClaimAdminEmailHtml(params: {
         <tr><td style="color:${TEXT_MUTED};padding:4px 0;">Valuation</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.valuationTier || "released")}</td></tr>
       </table>
     </div>
-    <a href="${viewUrl}" style="display:inline-block;background:${GOLD};color:#0D0D0D;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;">View claim</a>
+    <a href="${viewUrl}" style="display:inline-block;background:${FOOTER_LINK};color:#fff;padding:12px 24px;border-radius:0;font-size:13px;font-weight:600;text-decoration:none;">View claim</a>
   `;
   return adminNotificationLayout(inner, undefined);
 }
@@ -122,7 +122,7 @@ export function widgetLeadAdminEmailHtml(params: {
         ${params.extras ? `<tr><td style="color:${TEXT_MUTED};padding:4px 0 0;vertical-align:top;">Details</td><td style="color:${TEXT};font-size:12px;padding:4px 0 0;line-height:1.5;">${escapeHtml(params.extras).replace(/\|/g, " · ")}</td></tr>` : ""}
       </table>
     </div>
-    <a href="${viewUrl}" style="display:inline-block;background:${GOLD};color:#0D0D0D;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;">View widget leads</a>
+    <a href="${viewUrl}" style="display:inline-block;background:${FOOTER_LINK};color:#fff;padding:12px 24px;border-radius:0;font-size:13px;font-weight:600;text-decoration:none;">View widget leads</a>
   `;
   return adminNotificationLayout(inner, undefined);
 }
@@ -141,7 +141,7 @@ export function estateBookingAdminEmailHtml(params: {
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.clientName)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">${escapeHtml(params.dateLabel)} · ${escapeHtml(params.totalFormatted)}</p>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 20px;">Assign coordinator and schedule walkthrough.</p>
-    <a href="${viewUrl}" style="display:inline-block;background:${GOLD};color:#0D0D0D;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;">View move</a>
+    <a href="${viewUrl}" style="display:inline-block;background:${FOOTER_LINK};color:#fff;padding:12px 24px;border-radius:0;font-size:13px;font-weight:600;text-decoration:none;">View move</a>
   `;
   return adminNotificationLayout(inner, undefined);
 }
@@ -161,7 +161,7 @@ export function tipReceivedAdminEmailHtml(params: {
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.amount)} from ${escapeHtml(params.clientName)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">For <strong>${escapeHtml(params.crewName)}</strong></p>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 20px;">Move: ${escapeHtml(params.moveCode)} · Net after processing: ${escapeHtml(params.netAmount)}</p>
-    <a href="${viewUrl}" style="display:inline-block;background:${GOLD};color:#0D0D0D;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;">View tips</a>
+    <a href="${viewUrl}" style="display:inline-block;background:${FOOTER_LINK};color:#fff;padding:12px 24px;border-radius:0;font-size:13px;font-weight:600;text-decoration:none;">View tips</a>
   `;
   return adminNotificationLayout(inner, undefined);
 }

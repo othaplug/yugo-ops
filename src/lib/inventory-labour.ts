@@ -113,9 +113,12 @@ export function estimateLabourFromScore(
   if (inventoryScore > 75) truckSize = "26ft";
   if (inventoryScore > 90) truckSize = "26ft + trailer or 2 trucks";
 
-  const rangeLow = Math.max(minHours, totalHours - 0.5);
-  const rangeHigh = totalHours + 1;
-  const hoursRange = `${rangeLow}–${rangeHigh} hours`;
+  // ±7% range rounded to nearest 0.5 h, capped at 1.5 h span
+  const roundHalf = (n: number) => Math.round(n * 2) / 2;
+  let rangeLow = Math.max(minHours, roundHalf(totalHours * 0.93));
+  let rangeHigh = roundHalf(totalHours * 1.07);
+  if (rangeHigh - rangeLow > 1.5) rangeHigh = rangeLow + 1.5;
+  const hoursRange = rangeLow === rangeHigh ? `${rangeLow} hours` : `${rangeLow}–${rangeHigh} hours`;
 
   return {
     crewSize,

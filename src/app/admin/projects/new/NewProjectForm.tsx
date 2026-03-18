@@ -164,7 +164,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
           <div>
             <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
-            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Chen Residence — Full Furnishing" className={fieldInput} />
+            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Chen Residence, Full Furnishing" className={fieldInput} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

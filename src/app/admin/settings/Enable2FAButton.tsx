@@ -49,7 +49,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
         type="button"
         role="switch"
         aria-checked={localEnabled}
-        aria-label={localEnabled ? "2FA is on — click to disable" : "2FA is off — click to enable"}
+        aria-label={localEnabled ? "2FA is on, click to disable" : "2FA is off, click to enable"}
         onClick={handleToggle}
         disabled={loading}
         className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed ${

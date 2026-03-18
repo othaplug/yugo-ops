@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
           ? `${getEmailBaseUrl()}/track/move/${encodeURIComponent((body.moveCode || body.moveId) as string)}?token=${signTrackToken("move", body.moveId)}&from=notify`
           : undefined,
       });
-      subject = `Your Move Was Updated — ${jobIdDisplay}`;
+      subject = `Your Move Was Updated ${jobIdDisplay}`;
       await supabase.from("status_events").insert({
         entity_type: "move",
         entity_id: body.moveId || body.deliveryNumber,
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           ? `${getEmailBaseUrl()}/track/delivery/${body.deliveryId}?token=${signTrackToken("delivery", body.deliveryId)}`
           : undefined,
       });
-      subject = `Project Update: ${body.deliveryNumber} — ${body.customerName}`;
+      subject = `Project Update: ${body.deliveryNumber} ${body.customerName}`;
       await supabase.from("status_events").insert({
         entity_type: "delivery",
         entity_id: body.deliveryNumber,

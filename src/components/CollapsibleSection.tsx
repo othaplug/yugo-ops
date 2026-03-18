@@ -33,7 +33,7 @@ export default function CollapsibleSection({
         )}
         <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">{title}</h3>
         {subtitle && collapsed && (
-          <span className="text-[11px] text-[var(--tx3)] truncate">— {subtitle}</span>
+          <span className="text-[11px] text-[var(--tx3)] truncate">{subtitle}</span>
         )}
       </button>
       {!collapsed && <div className="p-4 border-t border-[var(--brd)]">{children}</div>}

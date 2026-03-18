@@ -20,9 +20,9 @@ const DATE_FORMATS = [
 ];
 
 const FONT_SIZES = [
-  { value: "compact", label: "Compact — smaller text, tighter spacing" },
-  { value: "default", label: "Default — standard sizing" },
-  { value: "comfortable", label: "Comfortable — slightly larger text" },
+  { value: "compact", label: "Compact: smaller text, tighter spacing" },
+  { value: "default", label: "Default: standard sizing" },
+  { value: "comfortable", label: "Comfortable: slightly larger text" },
 ];
 
 function load(key: string, fallback: string) {
@@ -157,7 +157,7 @@ export default function AppearanceSettings() {
           </Row>
           <Row label="Text Density" desc="Controls spacing and text size throughout the app">
             <select value={density} onChange={(e) => setDensity(e.target.value)} className="px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--gold)] outline-none">
-              {FONT_SIZES.map((f) => <option key={f.value} value={f.value}>{f.label.split(" — ")[0]}</option>)}
+              {FONT_SIZES.map((f) => <option key={f.value} value={f.value}>{f.label.split(":")[0]}</option>)}
             </select>
           </Row>
         </div>

@@ -2,6 +2,7 @@ import { Check, ChevronRight, Target, Crown, Gem, type LucideIcon } from "lucide
 import {
   type Quote,
   type TierData,
+  type TierFeature,
   TIER_ORDER,
   TIER_META,
   WINE,
@@ -24,6 +25,13 @@ interface Props {
   recommendedTier?: string;
   /** When true, unselected tier cards collapse to compact view */
   hasSelection?: boolean;
+  /**
+   * Single source of truth for tier features. When provided, tier card bullets
+   * are rendered from this config's `card` field rather than from t.includes[].
+   * Index 0 = truck (dynamic from t.includes[0]); index 1 = crew (dynamic from t.includes[1]).
+   * Remaining items use the config card labels directly.
+   */
+  tierFeaturesConfig?: Record<string, TierFeature[]>;
 }
 
 export default function ResidentialLayout({
@@ -33,6 +41,7 @@ export default function ResidentialLayout({
   onSelectTier,
   recommendedTier = "signature",
   hasSelection = false,
+  tierFeaturesConfig,
 }: Props) {
   const raw = (recommendedTier ?? "signature").toString().toLowerCase().trim();
   const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "signature";
@@ -165,16 +174,28 @@ export default function ResidentialLayout({
                     </p>
                   )}
 
-                  {!isCollapsed && (
-                  <ul className="space-y-2 mb-4 flex-1">
-                    {t.includes.map((inc, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: checkColor }} />
-                        <span className="text-[12px] leading-snug" style={{ color: cardFg ?? FOREST }}>{inc}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  )}
+                  {!isCollapsed && (() => {
+                    // Use tierFeaturesConfig when available: keep dynamic truck+crew from
+                    // t.includes[0..1], then use card labels from config for the rest.
+                    const configFeatures = tierFeaturesConfig?.[tierKey];
+                    const bullets: string[] = configFeatures
+                      ? [
+                          t.includes[0] ?? configFeatures[0]?.card ?? "",
+                          t.includes[1] ?? configFeatures[1]?.card ?? "",
+                          ...configFeatures.slice(2).map((f) => f.card),
+                        ].filter(Boolean)
+                      : t.includes;
+                    return (
+                      <ul className="space-y-2 mb-4 flex-1">
+                        {bullets.map((inc, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: checkColor }} />
+                            <span className="text-[12px] leading-snug" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                   {!isCollapsed && meta.footer && (
                     <p className="text-[10px] mb-4 leading-snug" style={{ color: cardMuted ?? `${FOREST}60` }}>
                       {meta.footer}

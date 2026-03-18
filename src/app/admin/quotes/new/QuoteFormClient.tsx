@@ -229,26 +229,87 @@ const CRATING_SIZE_LABELS: Record<string, string> = {
 };
 const CRATING_SIZE_FALLBACK: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
 
-// Frontend-only quick estimate (optimistic, before API call)
+// Default inventory scores by move size when no items have been entered yet
+const DEFAULT_INVENTORY_SCORE: Record<string, number> = {
+  studio: 8, "1br": 16, "2br": 28, "3br": 45, "4br": 60, "5br_plus": 80, partial: 6,
+};
+
+// Access type time penalty (hours added to estimate)
+const ACCESS_PENALTY: Record<string, number> = {
+  elevator: 0.25,
+  walk_up_2: 0.25,
+  walk_up_2nd: 0.25,
+  walk_up_3: 0.5,
+  walk_up_3rd: 0.5,
+  walk_up_4_plus: 1.0,
+  walk_up_4plus: 1.0,
+  walk_up_4th: 1.0,
+  walk_up_4th_plus: 1.0,
+  long_carry: 0.5,
+  no_parking: 0.25,
+};
+
+/**
+ * Frontend-only quick estimate — recalculates instantly on any pricing-relevant change.
+ * Uses estimateLabourFromScore for inventory/crew/access accuracy.
+ * No distance factor (only available after API call with actual addresses).
+ */
 function quickEstimate(
   config: Record<string, string>,
   serviceType: string,
   moveSize: string,
   addonTotal: number,
-): { curated: number; signature: number; estate: number } | { single: number } | null {
-  const BASE: Record<string, number> = {
-    studio: 549, "1br": 799, "2br": 1199, "3br": 1699, "4br": 2399, "5br_plus": 3199, partial: 499,
-  };
-  const rounding = cfgNum(config, "rounding_nearest", 50);
+  fromAccess?: string,
+  toAccess?: string,
+  inventoryScore?: number,
+  specialtyItems?: { type: string; qty: number }[],
+): { curated: number; signature: number; estate: number } | null {
+  if (serviceType !== "local_move") return null;
 
-  if (serviceType === "local_move") {
-    const base = BASE[moveSize] ?? 1199;
-    const cur = Math.max(roundTo(base, rounding) + addonTotal, 549);
-    const sig = roundTo(base * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.50)), rounding) + addonTotal;
-    const est = roundTo(base * cfgNum(config, "tier_estate_multiplier", 3.15), rounding) + addonTotal;
-    return { curated: cur, signature: sig, estate: est };
-  }
-  return null;
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
+  const minAmt = cfgNum(config, "minimum_job_amount", 549);
+
+  const score = (inventoryScore ?? 0) > 0 ? inventoryScore! : (DEFAULT_INVENTORY_SCORE[moveSize] ?? 28);
+
+  // Crew size from inventory score
+  let crew = 2;
+  if (score >= 30) crew = 3;
+  if (score >= 55) crew = 4;
+  if (score >= 80) crew = 5;
+
+  // Specialty item crew bumps
+  const heavy = ["piano_grand", "pool_table", "safe_over_300", "safe_over_300lbs", "hot_tub"];
+  if (specialtyItems?.some((i) => heavy.includes(i.type) && i.qty > 0)) crew = Math.max(crew, 4);
+  else if (specialtyItems?.some((i) => i.qty > 0)) crew = Math.max(crew, 3);
+
+  // Hard access crew bump
+  const hardAccess = ["walk_up_3", "walk_up_3rd", "walk_up_4_plus", "walk_up_4plus", "walk_up_4th", "walk_up_4th_plus"];
+  if (fromAccess && hardAccess.includes(fromAccess)) crew += 1;
+  if (toAccess && hardAccess.includes(toAccess)) crew += 1;
+  crew = Math.min(6, crew);
+
+  // Hours estimate (no drive time — preview only)
+  const DISASSEMBLY: Record<string, number> = { studio: 0.25, "1br": 0.5, "2br": 0.75, "3br": 1.0, "4br": 1.25, "5br_plus": 1.5, partial: 0.25 };
+  const MIN_HRS: Record<string, number> = { studio: 2.5, "1br": 3.5, "2br": 4.5, "3br": 5.5, "4br": 7.0, "5br_plus": 8.5, partial: 2.0 };
+  const loadHrs = score / 12;
+  const unloadHrs = loadHrs * 0.75;
+  const disassemblyHrs = DISASSEMBLY[moveSize] ?? 0.5;
+  const accessPenalty = (ACCESS_PENALTY[fromAccess ?? ""] ?? 0) + (ACCESS_PENALTY[toAccess ?? ""] ?? 0);
+  let totalHrs = 0.75 + loadHrs + unloadHrs + disassemblyHrs + accessPenalty;
+  totalHrs = Math.round(totalHrs * 2) / 2;
+  totalHrs = Math.max(MIN_HRS[moveSize] ?? 3.0, totalHrs);
+
+  const baseLabour = crew * totalHrs * labourRate;
+  const curBase = Math.max(roundTo(baseLabour, rounding), minAmt);
+  const sig = roundTo(curBase * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.50)), rounding);
+  const est = roundTo(curBase * cfgNum(config, "tier_estate_multiplier", 3.15), rounding);
+
+  return {
+    curated: curBase + addonTotal,
+    signature: sig + addonTotal,
+    estate: est + addonTotal,
+  };
 }
 
 function roundTo(n: number, nearest: number) {
@@ -557,10 +618,20 @@ export default function QuoteFormClient({
     return total;
   }, [selectedAddons, allAddons]);
 
-  // ── Quick optimistic estimate ─────────────
+  // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
-    () => quickEstimate(config, serviceType, moveSize, addonSubtotal),
-    [config, serviceType, moveSize, addonSubtotal],
+    () => quickEstimate(
+      config,
+      serviceType,
+      moveSize,
+      addonSubtotal,
+      fromAccess || undefined,
+      toAccess || undefined,
+      inventoryScoreWithBoxes > 0 ? inventoryScoreWithBoxes : undefined,
+      specialtyItems.length > 0 ? specialtyItems : undefined,
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [config, serviceType, moveSize, addonSubtotal, fromAccess, toAccess, inventoryScoreWithBoxes, specialtyItems],
   );
 
   // ── Toggle add-on ─────────────────────────

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { toTitleCase } from "@/lib/format-text";
 import CreateButton from "../components/CreateButton";
 
@@ -35,36 +36,48 @@ function formatNextDate(dateStr: string | null) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-/* ─── Create Modal ──────────────────────────────── */
-function AdminCreateModal({
+const TIME_LABELS: Record<string, string> = {
+  morning: "Morning (8–12pm)",
+  afternoon: "Afternoon (12–5pm)",
+  evening: "Evening (5–8pm)",
+  flexible: "Flexible",
+};
+
+/* ─── Create / Edit Modal ───────────────────────── */
+function AdminScheduleModal({
+  existing,
   onClose,
   onSaved,
 }: {
+  existing: RecurringSchedule | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const isEdit = !!existing;
+
   const [orgs, setOrgs] = useState<{ id: string; name: string; type: string }[]>([]);
-  const [orgSearch, setOrgSearch] = useState("");
-  const [orgId, setOrgId] = useState("");
+  const [orgSearch, setOrgSearch] = useState(existing?.organizations?.name ?? "");
+  const [orgId, setOrgId] = useState(existing?.organization_id ?? "");
   const [orgDropOpen, setOrgDropOpen] = useState(false);
 
-  const [name, setName] = useState("");
-  const [frequency, setFrequency] = useState("weekly");
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
-  const [bookingType, setBookingType] = useState("day_rate");
-  const [vehicleType, setVehicleType] = useState("sprinter");
-  const [dayType, setDayType] = useState("full_day");
-  const [numStops, setNumStops] = useState("");
-  const [timeWindow, setTimeWindow] = useState("morning");
+  const [name, setName] = useState(existing?.schedule_name ?? "");
+  const [frequency, setFrequency] = useState(existing?.frequency ?? "weekly");
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(existing?.days_of_week ?? []);
+  const [bookingType, setBookingType] = useState(existing?.booking_type ?? "day_rate");
+  const [vehicleType, setVehicleType] = useState(existing?.vehicle_type ?? "sprinter");
+  const [dayType, setDayType] = useState(existing?.day_type ?? "full_day");
+  const [numStops, setNumStops] = useState(String(existing?.default_num_stops ?? ""));
+  const [timeWindow, setTimeWindow] = useState(existing?.time_window ?? "morning");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
   useEffect(() => {
+    if (isEdit) return;
     fetch("/api/admin/organizations/list")
       .then((r) => r.json())
       .then((d) => setOrgs((d.organizations || []).filter((o: { type: string }) => o.type !== "b2c")))
-      .catch((err) => { console.error("Failed to load organizations list:", err); });
-  }, []);
+      .catch((e) => { console.error("Failed to load organizations list:", e); });
+  }, [isEdit]);
 
   const filteredOrgs = orgs.filter((o) => !orgSearch.trim() || o.name.toLowerCase().includes(orgSearch.toLowerCase()));
   const selectedOrg = orgs.find((o) => o.id === orgId);
@@ -73,15 +86,32 @@ function AdminCreateModal({
     setDaysOfWeek((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
 
   const handleSave = async () => {
-    if (!orgId) { setErr("Select a partner"); return; }
+    if (!orgId && !isEdit) { setErr("Select a partner"); return; }
     if (!name.trim()) { setErr("Schedule name required"); return; }
     if (!daysOfWeek.length) { setErr("Select at least one day"); return; }
     setSaving(true); setErr("");
     try {
-      const res = await fetch("/api/admin/recurring-schedules", {
-        method: "POST",
+      const payload: Record<string, unknown> = {
+        schedule_name: name.trim(),
+        frequency,
+        days_of_week: daysOfWeek,
+        booking_type: bookingType,
+        vehicle_type: vehicleType || null,
+        day_type: dayType,
+        default_num_stops: numStops ? parseInt(numStops) : null,
+        time_window: timeWindow,
+      };
+      if (!isEdit) payload.organization_id = orgId;
+
+      const url = isEdit
+        ? `/api/admin/recurring-schedules/${existing.id}`
+        : "/api/admin/recurring-schedules";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organization_id: orgId, schedule_name: name.trim(), frequency, days_of_week: daysOfWeek, booking_type: bookingType, vehicle_type: vehicleType, day_type: dayType, default_num_stops: numStops ? parseInt(numStops) : null, time_window: timeWindow }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
       onSaved(); onClose();
@@ -91,38 +121,48 @@ function AdminCreateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[500px] shadow-2xl border border-[var(--brd)] overflow-y-auto max-h-[90vh]">
-        <div className="px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h2 className="text-[14px] font-bold text-[var(--tx)]">New Recurring Schedule</h2>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[500px] shadow-2xl border border-[var(--brd)] flex flex-col max-h-[90vh]">
+        <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
+          <h2 className="text-[14px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
-        <div className="p-5 space-y-4">
+
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {err && <div className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
 
-          {/* Partner select */}
-          <div className="relative">
-            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
-            <input
-              value={orgSearch || (selectedOrg?.name ?? "")}
-              onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
-              onFocus={() => setOrgDropOpen(true)}
-              placeholder="Search partners…"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
-            />
-            {orgDropOpen && filteredOrgs.length > 0 && (
-              <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl max-h-[180px] overflow-y-auto">
-                {filteredOrgs.slice(0, 20).map((o) => (
-                  <button key={o.id} type="button" onClick={() => { setOrgId(o.id); setOrgSearch(o.name); setOrgDropOpen(false); }}
-                    className="w-full text-left px-3 py-2.5 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0">
-                    <span className="font-semibold">{o.name}</span>
-                    <span className="text-[var(--tx3)] ml-1">· {o.type}</span>
-                  </button>
-                ))}
+          {/* Partner — read-only on edit, searchable on create */}
+          {isEdit ? (
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
+              <div className="w-full text-[13px] bg-[var(--bg)]/50 border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx2)]">
+                {existing.organizations?.name ?? "—"}
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
+              <input
+                value={orgSearch || (selectedOrg?.name ?? "")}
+                onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
+                onFocus={() => setOrgDropOpen(true)}
+                placeholder="Search partners…"
+                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+              />
+              {orgDropOpen && filteredOrgs.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl max-h-[180px] overflow-y-auto">
+                  {filteredOrgs.slice(0, 20).map((o) => (
+                    <button key={o.id} type="button" onClick={() => { setOrgId(o.id); setOrgSearch(o.name); setOrgDropOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0">
+                      <span className="font-semibold">{o.name}</span>
+                      <span className="text-[var(--tx3)] ml-1">· {o.type}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
@@ -177,6 +217,7 @@ function AdminCreateModal({
               </div>
             )}
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Day Type</label>
@@ -192,11 +233,20 @@ function AdminCreateModal({
                 className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
             </div>
           </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Time Window</label>
+            <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}
+              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              {Object.entries(TIME_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="px-5 pb-5 flex gap-2">
+
+        <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-[var(--card)]">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]">Cancel</button>
           <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
-            {saving ? "Creating…" : "Create Schedule"}
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}
           </button>
         </div>
       </div>
@@ -210,6 +260,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<RecurringSchedule | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -349,6 +400,13 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                     <td className="py-3 px-3 pr-4">
                       <div className="flex items-center gap-0.5">
                         <button
+                          title="Edit"
+                          onClick={() => setEditTarget(s)}
+                          className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button
                           title={s.is_paused ? "Resume" : "Pause"}
                           onClick={() => handleTogglePause(s)}
                           disabled={toggling === s.id}
@@ -378,9 +436,14 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
         </div>
       </div>
 
-      {/* Modals */}
-      {createOpen && (
-        <AdminCreateModal onClose={() => setCreateOpen(false)} onSaved={load} />
+      {/* Modals — portalled to body so fixed overlay covers the full viewport */}
+      {(createOpen || editTarget) && typeof document !== "undefined" && createPortal(
+        <AdminScheduleModal
+          existing={editTarget}
+          onClose={() => { setCreateOpen(false); setEditTarget(null); }}
+          onSaved={load}
+        />,
+        document.body,
       )}
     </div>
   );

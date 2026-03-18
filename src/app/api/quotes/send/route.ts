@@ -36,7 +36,7 @@ const SERVICE_SUBJECT: Record<string, string> = {
 function quoteSubject(firstName: string, quoteId: string, serviceType: string): string {
   const namePart = firstName ? `${firstName}, ` : "";
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
-  return `${namePart}${subjectBase} \u2014 ${quoteId}`;
+  return `${namePart}${subjectBase} ${quoteId}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -136,6 +136,8 @@ export async function POST(req: NextRequest) {
         expiresAt: quote.expires_at ?? null,
         fromAddress: quote.from_address,
         toAddress: quote.to_address,
+        fromAccess: quote.from_access ?? null,
+        toAccess: quote.to_access ?? null,
         moveDate: quote.move_date,
         moveSize,
         companyName: (factors.company_name as string) ?? null,

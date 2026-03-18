@@ -183,7 +183,7 @@ export default function CrewDashboardPage() {
               />
             </div>
             {progressPercent === 100 && (
-              <p className="text-[11px] text-[#22C55E] font-semibold mt-2">All jobs complete — great work today!</p>
+              <p className="text-[11px] text-[#22C55E] font-semibold mt-2">All jobs complete, great work today!</p>
             )}
           </div>
         )}
@@ -354,7 +354,7 @@ export default function CrewDashboardPage() {
               className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] transition-all border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--grn)] hover:text-[var(--grn)]"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-              End of day submitted — Update report
+              End of day submitted, Update report
             </Link>
           ) : (
             <Link

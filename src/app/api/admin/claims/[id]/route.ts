@@ -72,7 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       sendEmail({
         to: claim.client_email,
-        subject: `Claim ${claim.claim_number} — Approved`,
+        subject: `Claim ${claim.claim_number} Approved`,
         html: claimApprovalEmailHtml(claim.claim_number, claim.client_name, approvedAmount, updates.resolution_notes || ""),
       }).catch(() => {});
     } else if (action === "deny") {
@@ -102,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       sendEmail({
         to: claim.client_email,
-        subject: `Claim ${claim.claim_number} — Review Complete`,
+        subject: `Claim ${claim.claim_number} Review Complete`,
         html: claimDenialEmailHtml(claim.claim_number, claim.client_name, updates.resolution_notes),
       }).catch(() => {});
     } else {
@@ -122,7 +122,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         sendEmail({
           to: claim.client_email,
-          subject: `Claim ${claim.claim_number} — Status Update`,
+          subject: `Claim ${claim.claim_number} Status Update`,
           html: claimStatusUpdateEmailHtml(claim.claim_number, claim.client_name, fromLabel, toLabel, updates.resolution_notes || null),
         }).catch(() => {});
       }

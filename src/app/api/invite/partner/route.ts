@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       from: emailFrom,
       to: emailTrimmed,
       replyTo: emailFrom,
-      subject: "You're invited to Yugo — Log in to continue setup",
+      subject: "You're invited to Yugo Log in to continue setup",
       html: invitePartnerEmail(inviteParams),
       text: invitePartnerEmailText(inviteParams),
       headers: {

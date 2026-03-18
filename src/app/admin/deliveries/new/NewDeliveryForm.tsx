@@ -351,9 +351,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                     onChange={(e) => { setLinkedProjectId(e.target.value); setLinkedPhaseId(""); }}
                     className={fieldInput}
                   >
-                    <option value="">— None —</option>
+                    <option value="">None</option>
                     {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.project_number} — {p.project_name}</option>
+                      <option key={p.id} value={p.id}>{p.project_number} {p.project_name}</option>
                     ))}
                   </select>
                 </Field>
@@ -364,7 +364,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                       onChange={(e) => setLinkedPhaseId(e.target.value)}
                       className={fieldInput}
                     >
-                      <option value="">— No phase —</option>
+                      <option value="">No phase</option>
                       {phases.map((ph) => (
                         <option key={ph.id} value={ph.id}>{ph.phase_name}</option>
                       ))}

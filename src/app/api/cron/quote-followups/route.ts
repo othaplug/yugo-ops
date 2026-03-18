@@ -101,14 +101,14 @@ function chooseFollowUpVariant(
 
     if (eng.maxSessionSeconds < 30 && eng.pageViews <= 1) {
       return {
-        subject: "Your Yugo quote — quick summary",
+        subject: "Your Yugo quote quick summary",
         template: "quote-followup-2-cold",
         extraData: { includeInlinePrices: true },
       };
     }
 
     return {
-      subject: "Your date is filling up — secure it today",
+      subject: "Your date is filling up secure it today",
       template: "quote-followup-2",
       extraData: {},
     };
@@ -116,7 +116,7 @@ function chooseFollowUpVariant(
 
   if (eng.paymentStarted) {
     return {
-      subject: "We saved your spot — finish booking",
+      subject: "We saved your spot finish booking",
       template: "quote-followup-3-hot",
       extraData: { tier: eng.tierClicked },
     };
@@ -131,7 +131,7 @@ function chooseFollowUpVariant(
   }
 
   return {
-    subject: "Last chance — your quote expires tomorrow",
+    subject: "Last chance your quote expires tomorrow",
     template: "quote-followup-3",
     extraData: {},
   };
@@ -265,7 +265,7 @@ export async function GET(req: NextRequest) {
 
         const res = await sendEmail({
           to: contact.email,
-          subject: `Just checking in — your Yugo quote is ready`,
+          subject: `Just checking in your Yugo quote is ready`,
           template: "quote-followup-1",
           data: {
             clientName: contact.name || "",

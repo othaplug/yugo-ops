@@ -6,6 +6,18 @@ export const CREAM = "#FAF7F2";
 
 /* ─── Types ──────────────────────────────────── */
 
+/** Single feature entry used by both tier card bullets and the 'Your Move Includes' section. */
+export interface TierFeature {
+  /** Short label shown as a bullet point on the tier card. */
+  card: string;
+  /** Title shown in the 'Your Move Includes' expanded section. */
+  title: string;
+  /** Description shown under the title in the expanded section. */
+  desc: string;
+  /** Lucide icon name for the expanded section. Falls back to CheckCircle if unknown. */
+  iconName: string;
+}
+
 export interface TierData {
   price: number;
   deposit: number;

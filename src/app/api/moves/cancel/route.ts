@@ -79,7 +79,7 @@ export async function POST(req: Request) {
           const refundRes = await squareClient.refunds.refundPayment({
             paymentId: move.square_payment_id,
             amountMoney: { amount: BigInt(refundCents), currency: "CAD" },
-            reason: `${REASON_LABELS[reason] || reason}${reasonDetail ? ` — ${reasonDetail}` : ""}`,
+            reason: `${REASON_LABELS[reason] || reason}${reasonDetail ? ` ${reasonDetail}` : ""}`,
             idempotencyKey: `refund-${moveId}-${Date.now()}`,
           });
 
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
 
       sendEmail({
         to: clientEmail,
-        subject: `Cancellation confirmed — ${move.move_code || moveId}`,
+        subject: `Cancellation confirmed ${move.move_code || moveId}`,
         template: "cancellation-confirm",
         data: {
           clientName: move.client_name || "",

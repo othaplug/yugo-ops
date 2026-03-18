@@ -6,7 +6,7 @@ const COMPANY = "Yugo Moving & Delivery Inc.";
 const EMAIL = "legal@yugomoves.com";
 
 export const metadata = {
-  title: "Terms of Use — Yugo",
+  title: "Terms of Use Yugo",
   description: "Terms governing your access to and use of the Yugo platform.",
 };
 
@@ -78,7 +78,7 @@ export default function TermsOfUsePage() {
         </LegalSection>
 
         <LegalSection title="5. Intellectual Property">
-          <p>The Platform and its entire contents, features, and functionality — including but not limited to software, text, graphics, logos, icons, images, and data compilations — are the exclusive property of Yugo and its licensors and are protected by Canadian and international copyright, trademark, and other intellectual property laws.</p>
+          <p>The Platform and its entire contents, features, and functionality, including but not limited to software, text, graphics, logos, icons, images, and data compilations, are the exclusive property of Yugo and its licensors and are protected by Canadian and international copyright, trademark, and other intellectual property laws.</p>
           <p style={{ marginTop: 8 }}>We grant you a limited, non-exclusive, non-transferable, revocable licence to access and use the Platform for its intended purpose. This licence does not include the right to:</p>
           <ul>
             <li>Sublicense or transfer the licence to any third party.</li>

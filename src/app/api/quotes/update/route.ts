@@ -155,7 +155,7 @@ export async function POST(req: Request) {
       const baseUrl = getEmailBaseUrl();
       const quoteUrl = `${baseUrl}/quote/${newQuoteId}`;
 
-      const subject = firstName ? `${firstName}, Your updated quote is ready - ${newQuoteId}` : `Your updated quote is ready - ${newQuoteId}`;
+      const subject = firstName ? `${firstName}, Your updated quote is ready ${newQuoteId}` : `Your updated quote is ready ${newQuoteId}`;
 
       sendEmail({
         to: clientEmail,

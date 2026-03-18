@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, X, Gift, Users, Tag } from "lucide-react";
+import { Plus, X, Gift, Users, Tag, Pencil, Check, Copy, Trash2 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import CreateButton from "../components/CreateButton";
 import { formatCurrency } from "@/lib/format-currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -236,6 +237,236 @@ function CreatePerkModal({
   return createPortal(modal, document.body);
 }
 
+/* ─── Create Promotional Referral Modal ───────────────────────────────────────── */
+function CreatePromoReferralModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    code: "",
+    referrer_credit: "100",
+    referred_discount: "100",
+    label: "Promotional",
+    expires_at: "",
+  });
+
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    const code = form.code.trim().toUpperCase();
+    if (!code) { toast("Code is required", "x"); return; }
+    if (code.length < 4) { toast("Code must be at least 4 characters", "x"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/perks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "create_referral",
+          code,
+          referrer_credit: Number(form.referrer_credit) || 100,
+          referred_discount: Number(form.referred_discount) || 100,
+          label: form.label.trim() || "Promotional",
+          expires_at: form.expires_at || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      toast("Promotional code created", "check");
+      onCreated();
+      onClose();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const modal = (
+    <div className="fixed inset-0 z-[100] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[420px] shadow-2xl shrink-0">
+        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
+          <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Promotional Code</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Code *</label>
+            <input
+              value={form.code}
+              onChange={(e) => set("code", e.target.value.toUpperCase())}
+              placeholder="e.g. YUGOSUMMER50"
+              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none"
+            />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">Unique code customers enter at checkout. Min 4 characters.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Referrer credit ($)</label>
+              <input
+                type="number"
+                value={form.referrer_credit}
+                onChange={(e) => set("referrer_credit", e.target.value)}
+                min={0}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Referred discount ($)</label>
+              <input
+                type="number"
+                value={form.referred_discount}
+                onChange={(e) => set("referred_discount", e.target.value)}
+                min={0}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Label (for display)</label>
+            <input
+              value={form.label}
+              onChange={(e) => set("label", e.target.value)}
+              placeholder="e.g. Summer 2025 Campaign"
+              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Expires (optional)</label>
+            <input
+              type="date"
+              value={form.expires_at}
+              onChange={(e) => set("expires_at", e.target.value)}
+              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+            />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">Leave blank for 1 year from today.</p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+              {saving ? "Creating…" : "Create Code"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
+}
+
+/* ─── Editable Perk Cell ─────────────────────────────────────────────────────── */
+function EditablePerkCell({
+  value,
+  field,
+  perkId,
+  onSaved,
+  type = "text",
+  options,
+  formatDisplay,
+}: {
+  value: string | number | null;
+  field: string;
+  perkId: string;
+  onSaved: (id: string, field: string, value: string | number | null) => void;
+  type?: "text" | "number" | "date";
+  options?: { value: string; label: string }[];
+  formatDisplay?: (v: string | number | null) => string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value ?? ""));
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraft(String(value ?? ""));
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const commit = async () => {
+    let parsed: string | number | null = draft.trim() || null;
+    if (type === "number" && parsed !== null) {
+      const n = parseFloat(parsed as string);
+      parsed = isNaN(n) ? null : n;
+    }
+    if (parsed === value || (value == null && parsed == null)) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/perks/${perkId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: parsed }),
+      });
+      if (res.ok) {
+        onSaved(perkId, field, parsed);
+      }
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  const cancel = () => setEditing(false);
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+        {options ? (
+          <select
+            ref={inputRef as React.RefObject<HTMLSelectElement>}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+            className="min-w-[100px] bg-[var(--bg)] border border-[var(--gold)] rounded px-1.5 py-0.5 text-[11px] text-[var(--tx)] outline-none"
+            disabled={saving}
+          >
+            {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        ) : (
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            type={type === "date" ? "date" : type}
+            value={type === "date" && !draft ? "" : draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+            className="min-w-[80px] max-w-[180px] bg-[var(--bg)] border border-[var(--gold)] rounded px-1.5 py-0.5 text-[11px] text-[var(--tx)] outline-none"
+            disabled={saving}
+          />
+        )}
+        <button type="button" onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-0.5" disabled={saving}>
+          <Check className="w-3 h-3" />
+        </button>
+        <button type="button" onClick={cancel} className="text-[var(--tx3)] hover:text-red-400 p-0.5">
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  const display = formatDisplay
+    ? formatDisplay(value)
+    : options
+      ? (options.find((o) => o.value === value)?.label ?? (value != null && value !== "" ? String(value) : "—"))
+      : (value != null && value !== "" ? String(value) : "—");
+  return (
+    <span className="group/cell inline-flex items-center gap-1 cursor-pointer" title="Click to edit" onClick={startEdit}>
+      <span>{display}</span>
+      <Pencil className="w-2.5 h-2.5 text-[var(--tx3)] opacity-0 group-hover/cell:opacity-60 transition-opacity shrink-0" />
+    </span>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PerksPage() {
@@ -247,6 +478,7 @@ export default function PerksPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreatePromo, setShowCreatePromo] = useState(false);
 
   const loadPartners = useCallback(async () => {
     try {
@@ -305,6 +537,23 @@ export default function PerksPage() {
     }
   };
 
+  const onPerkSaved = useCallback((id: string, field: string, value: string | number | null) => {
+    setPerks((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+    toast("Offer updated", "check");
+  }, [toast]);
+
+  const deleteReferral = async (ref: Referral) => {
+    if (!confirm(`Delete referral code ${ref.referral_code}? This will remove it from the database and clear it from any quotes that used it.`)) return;
+    try {
+      const res = await fetch(`/api/admin/perks/referrals/${ref.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setReferrals((prev) => prev.filter((r) => r.id !== ref.id));
+      toast("Referral deleted", "check");
+    } catch {
+      toast("Failed to delete", "x");
+    }
+  };
+
   const markCredited = async (ref: Referral) => {
     try {
       const res = await fetch(`/api/admin/perks`, {
@@ -343,6 +592,9 @@ export default function PerksPage() {
           <button type="button" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
             <Plus className="w-[13px] h-[13px]" /> Create Perk
           </button>
+        )}
+        {tab === "referrals" && (
+          <CreateButton onClick={() => setShowCreatePromo(true)} title="CREATE PROMO CODE" />
         )}
       </div>
 
@@ -391,18 +643,33 @@ export default function PerksPage() {
                         return (
                           <tr key={perk.id} className="hover:bg-[var(--bg)]/40">
                             <td className="px-4 py-3 text-[var(--tx3)]">{perk.organizations?.name || "Yugo"}</td>
-                            <td className="px-4 py-3 font-semibold text-[var(--tx)]">{perk.title}</td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${OFFER_TYPE_BADGE[perk.offer_type] || ""}`}>
-                                {OFFER_TYPE_LABELS[perk.offer_type] || perk.offer_type}
-                              </span>
+                            <td className="px-4 py-3 font-semibold text-[var(--tx)]">
+                              <EditablePerkCell value={perk.title} field="title" perkId={perk.id} onSaved={onPerkSaved} />
                             </td>
                             <td className="px-4 py-3">
-                              {perk.redemption_code ? <code className="bg-[var(--bg)] px-2 py-0.5 rounded text-[11px]">{perk.redemption_code}</code> : <span className="text-[var(--tx3)]">—</span>}
+                              <EditablePerkCell
+                                value={perk.offer_type}
+                                field="offer_type"
+                                perkId={perk.id}
+                                onSaved={onPerkSaved}
+                                options={Object.entries(OFFER_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+                              />
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">{perk.valid_until ? new Date(perk.valid_until + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No expiry"}</td>
+                            <td className="px-4 py-3">
+                              <EditablePerkCell value={perk.redemption_code} field="redemption_code" perkId={perk.id} onSaved={onPerkSaved} />
+                            </td>
                             <td className="px-4 py-3 text-[var(--tx3)]">
-                              {perk.current_redemptions}{perk.max_redemptions ? ` / ${perk.max_redemptions}` : " / ∞"}
+                              <EditablePerkCell
+                                value={perk.valid_until}
+                                field="valid_until"
+                                perkId={perk.id}
+                                onSaved={onPerkSaved}
+                                type="date"
+                                formatDisplay={(v) => (v && String(v).length >= 10) ? new Date(String(v) + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No expiry"}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-[var(--tx3)]">
+                              {perk.current_redemptions}{perk.max_redemptions != null ? ` / ${perk.max_redemptions}` : " / ∞"}
                             </td>
                             <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-[9px] font-semibold ${statusCls}`}>{status}</span></td>
                             <td className="px-4 py-3">
@@ -426,19 +693,15 @@ export default function PerksPage() {
           {/* ─── Referrals Tab ───────────────────────────────────── */}
           {tab === "referrals" && (
             <div>
-              {/* Stats row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {[
-                  { label: "Active Codes", value: activeRefs },
-                  { label: "Used This Month", value: usedThisMonth },
-                  { label: "Conversion Rate", value: `${convRate}%` },
-                  { label: "Total Referrals", value: referrals.length },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{s.label}</div>
-                    <div className="text-[24px] font-bold font-hero text-[var(--tx)]">{s.value}</div>
-                  </div>
-                ))}
+              {/* Stats row — inline, no cards */}
+              <div className="text-[12px] text-[var(--tx2)] mb-6">
+                <span className="font-semibold text-[var(--tx)]">Active Codes {activeRefs}</span>
+                <span className="mx-2 text-[var(--tx3)]">·</span>
+                <span className="font-semibold text-[var(--tx)]">Used This Month {usedThisMonth}</span>
+                <span className="mx-2 text-[var(--tx3)]">·</span>
+                <span className="font-semibold text-[var(--tx)]">Conversion Rate {convRate}%</span>
+                <span className="mx-2 text-[var(--tx3)]">·</span>
+                <span className="font-semibold text-[var(--tx)]">Total Referrals {referrals.length}</span>
               </div>
 
               {referrals.length === 0 ? (
@@ -458,34 +721,61 @@ export default function PerksPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--brd)]/30">
-                      {referrals.map((ref) => (
-                        <tr key={ref.id} className="hover:bg-[var(--bg)]/40">
-                          <td className="px-4 py-3">
-                            <code className="bg-[var(--gdim)] text-[var(--gold)] px-2 py-0.5 rounded text-[11px] font-mono">{ref.referral_code}</code>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-[var(--tx)]">{ref.referrer_name}</div>
-                            <div className="text-[10px] text-[var(--tx3)]">{ref.referrer_email}</div>
-                          </td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">
-                            {ref.referred_name || <span className="text-[var(--tx3)]/50">—</span>}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold capitalize ${REF_STATUS_BADGE[ref.status] || ""}`}>{ref.status}</span>
-                          </td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">
-                            {ref.status === "credited"
-                              ? <span className="text-blue-600">Credited {ref.credited_at ? new Date(ref.credited_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</span>
-                              : ref.status === "used" ? "Pending" : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">{new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
-                          <td className="px-4 py-3">
-                            {ref.status === "used" && (
-                              <button onClick={() => markCredited(ref)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Mark Credited</button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {referrals.map((ref) => {
+                        const creditStr = `${formatCurrency(ref.referrer_credit ?? 0)} / ${formatCurrency(ref.referred_discount ?? 0)}`;
+                        const referredDisplay = ref.referred_name || ref.referred_email
+                          ? [ref.referred_name, ref.referred_email].filter(Boolean).join(" · ")
+                          : ref.status === "active"
+                            ? "Not used yet"
+                            : "—";
+                        return (
+                          <tr key={ref.id} className="hover:bg-[var(--bg)]/40">
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center gap-1.5">
+                                <code className="bg-[var(--gdim)] text-[var(--gold)] px-2 py-0.5 rounded text-[11px] font-mono">{ref.referral_code}</code>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(ref.referral_code).then(() => toast("Code copied", "check"));
+                                  }}
+                                  className="p-1 rounded hover:bg-[var(--bg)] transition-colors text-[var(--tx3)] hover:text-[var(--gold)]"
+                                  title="Copy code"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-[var(--tx)]">{ref.referrer_name}</div>
+                              <div className="text-[10px] text-[var(--tx3)]">{ref.referrer_email}</div>
+                            </td>
+                            <td className="px-4 py-3 text-[var(--tx3)]">{referredDisplay}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold capitalize ${REF_STATUS_BADGE[ref.status] || ""}`}>{ref.status}</span>
+                            </td>
+                            <td className="px-4 py-3 text-[var(--tx3)]">
+                              {ref.status === "credited"
+                                ? <span className="text-blue-600">Credited {creditStr}{ref.credited_at ? ` · ${new Date(ref.credited_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}</span>
+                                : ref.status === "used"
+                                  ? <span>Pending {creditStr}</span>
+                                  : <span>{creditStr}</span>}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--tx3)]">{new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {ref.status === "used" && (
+                                  <button onClick={() => markCredited(ref)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Mark Credited</button>
+                                )}
+                                <button
+                                  onClick={() => deleteReferral(ref)}
+                                  className="text-[10px] font-semibold text-[var(--red)] hover:underline inline-flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -538,6 +828,12 @@ export default function PerksPage() {
           onClose={() => setShowCreate(false)}
           onCreated={loadData}
           partners={partners}
+        />
+      )}
+      {showCreatePromo && (
+        <CreatePromoReferralModal
+          onClose={() => setShowCreatePromo(false)}
+          onCreated={loadData}
         />
       )}
     </div>

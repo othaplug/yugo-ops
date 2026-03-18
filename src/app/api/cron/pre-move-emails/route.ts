@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       try {
         const result = await sendEmail({
           to: move.client_email,
-          subject: `Your move is in 3 days — ${move.move_code || "Checklist"}`,
+          subject: `Your move is in 3 days ${move.move_code || "Checklist"}`,
           template: "pre-move-72hr",
           data: {
             clientName: move.client_name || "",
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
         try {
           const balResult = await sendEmail({
             to: move.client_email,
-            subject: `Your balance of $${bal.toFixed(2)} is due — ${move.move_code || "Payment"}`,
+            subject: `Your balance of $${bal.toFixed(2)} is due ${move.move_code || "Payment"}`,
             template: "balance-reminder-72hr",
             data: {
               clientName: move.client_name || "",
@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
       try {
         const result = await sendEmail({
           to: move.client_email,
-          subject: `Your balance of $${bal.toFixed(2)} is due — choose how to pay`,
+          subject: `Your balance of $${bal.toFixed(2)} is due choose how to pay`,
           template: "balance-reminder-48hr",
           data: {
             clientName: move.client_name || "",
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
       try {
         const result = await sendEmail({
           to: move.client_email,
-          subject: `Your crew is ready for tomorrow — ${move.move_code || "Details"}`,
+          subject: `Your crew is ready for tomorrow ${move.move_code || "Details"}`,
           template: "pre-move-24hr",
           data: {
             clientName: move.client_name || "",

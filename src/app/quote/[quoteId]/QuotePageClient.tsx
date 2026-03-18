@@ -21,6 +21,13 @@ import {
   Plus,
   X,
   Gift,
+  Package,
+  Home,
+  MapPin,
+  DollarSign,
+  Shirt,
+  ClipboardCheck,
+  CheckCircle,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -28,6 +35,7 @@ import {
   type Addon,
   type AddonSelection,
   type TierData,
+  type TierFeature,
   type ValuationTier,
   type ValuationUpgrade,
   type HighValueDeclaration,
@@ -76,33 +84,78 @@ const TRUCK_LUXURY: Record<string, string> = {
   "26ft": "26ft maximum-capacity moving truck",
 };
 
-interface Inclusion {
-  icon: LucideIcon;
-  label: string;
-  description: string;
+/**
+ * Single source of truth for tier features.
+ * Used by BOTH the tier card bullet list (card field) and the 'Your Move Includes'
+ * expanded section (title + desc + iconName).
+ *
+ * Index 0 is always the truck entry; index 1 is always the crew entry.
+ * Both are dynamically substituted at render time with actual values from the quote.
+ */
+const TIER_FEATURES: Record<string, TierFeature[]> = {
+  curated: [
+    { card: "20ft dedicated moving truck", title: "20ft dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
+    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
+    { card: "Selective furniture wrapping", title: "Selective furniture wrapping", desc: "Key pieces wrapped in quilted blankets", iconName: "Package" },
+    { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
+    { card: "Floor & door frame protection", title: "Floor & doorway protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
+    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools — nothing extra to rent", iconName: "Wrench" },
+    { card: "Standard valuation coverage", title: "Standard valuation coverage", desc: "Basic protection for your belongings", iconName: "Shield" },
+    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
+  ],
+  signature: [
+    { card: "20ft dedicated moving truck", title: "20ft dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
+    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
+    { card: "Full furniture wrapping & moving blankets", title: "Full furniture wrapping", desc: "Every piece individually wrapped and padded", iconName: "Package" },
+    { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
+    { card: "Floor & door frame protection", title: "Floor & doorway protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
+    { card: "Mattress covers & TV screen protection", title: "Mattress & TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
+    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools — nothing extra to rent", iconName: "Wrench" },
+    { card: "Enhanced valuation coverage", title: "Enhanced valuation coverage", desc: "Up to $2,500 per item protection", iconName: "ShieldCheck" },
+    { card: "Room of choice placement", title: "Room of choice placement", desc: "Every piece placed exactly where you want it", iconName: "Home" },
+    { card: "Complimentary wardrobe box", title: "Complimentary wardrobe box", desc: "Hang your clothes directly — no folding needed", iconName: "Shirt" },
+    { card: "Debris & packaging removal", title: "Debris & packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
+    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
+  ],
+  estate: [
+    { card: "20ft dedicated moving truck", title: "20ft dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
+    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
+    { card: "Full furniture wrapping & moving blankets", title: "Full furniture wrapping", desc: "Every piece individually wrapped and padded", iconName: "Package" },
+    { card: "Full disassembly & reassembly", title: "Full disassembly & reassembly", desc: "Complete furniture breakdown and expert reassembly", iconName: "Wrench" },
+    { card: "Floor & door frame protection", title: "Floor & doorway protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
+    { card: "Mattress covers & TV screen protection", title: "Mattress & TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
+    { card: "All packing supplies included", title: "All packing supplies included", desc: "Boxes, wrapping, and all protection materials provided", iconName: "Package" },
+    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools — nothing extra to rent", iconName: "Wrench" },
+    { card: "Full replacement valuation coverage", title: "Full replacement valuation coverage", desc: "Maximum protection for your most valuable items", iconName: "ShieldCheck" },
+    { card: "White glove item handling & precision placement", title: "White glove item handling & precision placement", desc: "Every piece placed exactly where you want it", iconName: "Star" },
+    { card: "Complimentary wardrobe box", title: "Complimentary wardrobe box", desc: "Hang your clothes directly — no folding needed", iconName: "Shirt" },
+    { card: "Debris & packaging removal", title: "Debris & packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
+    { card: "Pre-move inventory walkthrough", title: "Pre-move inventory walkthrough", desc: "Documented inventory before we touch anything", iconName: "ClipboardCheck" },
+    { card: "Premium art & antique handling", title: "Premium art & antique handling", desc: "Art, antiques, and fragile items individually wrapped", iconName: "Star" },
+    { card: "Dedicated move coordinator", title: "Dedicated move coordinator", desc: "One point of contact from quote to completion", iconName: "Users" },
+    { card: "30-day concierge support", title: "30-day concierge support", desc: "Post-move support and questions answered within 30 days", iconName: "Clock" },
+    { card: "Exclusive partner offers & perks", title: "Exclusive partner offers & perks", desc: "Access to partner discounts and member benefits", iconName: "Gift" },
+    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
+  ],
+};
+
+/** Universal features appended to the bottom of every tier's 'Your Move Includes' section.
+ *  These are NOT shown as tier card bullets — they apply to all tiers. */
+const UNIVERSAL_FEATURES: TierFeature[] = [
+  { card: "Guaranteed flat price", title: "Guaranteed flat price", desc: "The price you see is the price you pay", iconName: "DollarSign" },
+  { card: "Zero-damage commitment", title: "Zero-damage commitment", desc: "Your belongings, protected and insured", iconName: "Shield" },
+];
+
+/** Renders a Lucide icon by string name. Falls back to CheckCircle for unknown names. */
+function FeatureIcon({ iconName, className, style }: { iconName: string; className?: string; style?: React.CSSProperties }) {
+  const ICON_MAP: Record<string, LucideIcon> = {
+    Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Trash2,
+    Package, Home, MapPin, DollarSign, Shirt, ClipboardCheck, CheckCircle,
+    Ruler, Radar, Camera, Hand, Lock,
+  };
+  const Icon = ICON_MAP[iconName] ?? CheckCircle;
+  return <Icon className={className} style={style} />;
 }
-
-const INCLUSIONS_ESSENTIALS: Inclusion[] = [
-  { icon: Shield, label: "Premium moving blankets", description: "Quilted blankets for every piece of furniture" },
-  { icon: Ruler, label: "Floor & doorway protection", description: "Runners, booties, and corner guards throughout" },
-  { icon: Wrench, label: "All equipment included", description: "Dollies, straps, tools — nothing extra to rent" },
-  { icon: Radar, label: "Real-time GPS tracking", description: "Follow your move live from any device" },
-  { icon: Lock, label: "Guaranteed flat price", description: "The price you see is the price you pay" },
-  { icon: ShieldCheck, label: "Zero-damage commitment", description: "Your belongings, protected and insured" },
-];
-
-const INCLUSIONS_PREMIER: Inclusion[] = [
-  { icon: Wrench, label: "Basic disassembly & reassembly", description: "We take it apart and put it back together" },
-  { icon: Trash2, label: "Debris & packaging removal", description: "We clear away all packing materials and debris post-move" },
-];
-
-const INCLUSIONS_ESTATE: Inclusion[] = [
-  { icon: Camera, label: "Pre-move inventory walkthrough", description: "Documented inventory before we touch anything" },
-  { icon: Hand, label: "Premium gloves handling", description: "Art, antiques, and fragile items individually wrapped" },
-  { icon: Users, label: "Dedicated move coordinator", description: "One point of contact from quote to completion" },
-  { icon: Clock, label: "30 day concierge support", description: "Post-move support and questions answered within 30 days" },
-  { icon: Gift, label: "Exclusive partner offers & perks", description: "Access to partner discounts and member benefits" },
-];
 
 export default function QuotePageClient({
   quote,
@@ -716,6 +769,7 @@ export default function QuotePageClient({
                 return ["curated", "signature", "estate"].includes(r) ? r : "signature";
               })()}
               hasSelection={false}
+              tierFeaturesConfig={TIER_FEATURES}
             />
             <InclusionsShowcase
               ref={comparisonRef}
@@ -1222,31 +1276,33 @@ const InclusionsShowcase = React.forwardRef<
     crewSize: number | null;
   }
 >(function InclusionsShowcase({ selectedTier, isResidential, truckPrimary, truckSecondary, crewSize }, ref) {
-  const tier = selectedTier ?? "curated";
+  const tier = (isResidential ? (selectedTier ?? "curated") : "curated") as keyof typeof TIER_FEATURES;
 
-  const truckLine = truckPrimary
+  const truckLabel = truckPrimary
     ? truckSecondary
       ? `${TRUCK_LUXURY[truckPrimary] ?? truckPrimary} + support van`
       : TRUCK_LUXURY[truckPrimary] ?? truckPrimary
     : "Your dedicated moving truck";
 
-  const crewLine = crewSize
+  const crewDesc = crewSize
     ? `${crewSize} licensed, insured, background-checked movers`
     : "Licensed, insured, background-checked movers";
 
-  const dynamicItems: Inclusion[] = [
-    { icon: Truck, label: truckLine, description: "Climate-protected, equipped for your move" },
-    { icon: Users, label: `Professional crew${crewSize ? ` of ${crewSize}` : ""}`, description: crewLine },
-  ];
+  const baseFeatures = TIER_FEATURES[tier] ?? TIER_FEATURES.curated;
 
-  const items = [...dynamicItems, ...INCLUSIONS_ESSENTIALS];
+  // Hydrate dynamic truck & crew entries (always index 0 and 1), keep rest as-is
+  const hydratedFeatures = baseFeatures.map((f, i) => {
+    if (i === 0) return { ...f, title: truckLabel };
+    if (i === 1) return {
+      ...f,
+      title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
+      desc: crewDesc,
+    };
+    return f;
+  });
 
-  if (isResidential && (tier === "signature" || tier === "estate")) {
-    items.push(...INCLUSIONS_PREMIER);
-  }
-  if (isResidential && tier === "estate") {
-    items.push(...INCLUSIONS_ESTATE);
-  }
+  // Universal features always appear at the bottom of every tier's expanded section
+  const allItems = [...hydratedFeatures, ...UNIVERSAL_FEATURES];
 
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
@@ -1262,27 +1318,24 @@ const InclusionsShowcase = React.forwardRef<
       <div className="w-10 h-px mx-auto mb-8" style={{ backgroundColor: GOLD }} />
 
       <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
-        {items.map((item, i) => {
-          const Icon = item.icon;
-          return (
-            <div key={i} className="flex items-start gap-3.5 py-3 px-1">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${GOLD}10` }}
-              >
-                <Icon className="w-[18px] h-[18px]" style={{ color: GOLD }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
-                  {item.label}
-                </p>
-                <p className="text-[11px] mt-0.5 leading-snug" style={{ color: `${FOREST}55` }}>
-                  {item.description}
-                </p>
-              </div>
+        {allItems.map((item, i) => (
+          <div key={i} className="flex items-start gap-3.5 py-3 px-1">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${GOLD}10` }}
+            >
+              <FeatureIcon iconName={item.iconName} className="w-[18px] h-[18px]" style={{ color: GOLD }} />
             </div>
-          );
-        })}
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
+                {item.title}
+              </p>
+              <p className="text-[11px] mt-0.5 leading-snug" style={{ color: `${FOREST}55` }}>
+                {item.desc}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
     </section>

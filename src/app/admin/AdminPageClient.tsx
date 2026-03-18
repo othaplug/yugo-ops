@@ -145,7 +145,7 @@ function formatActivityDesc(desc: string): string {
   const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
   if (match) return `${match[1]} · ${getStatusLabel(match[2] || null)}`;
   if (desc.toLowerCase().includes("payment")) {
-    const nameMatch = desc.match(/(.+?)\s*[·—]/);
+    const nameMatch = desc.match(/(.+?)\s*[·]/);
     return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc;
   }
   return desc.length > 60 ? desc.slice(0, 57) + "..." : desc;
@@ -336,7 +336,7 @@ export default function AdminPageClient({
             <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{scheduleLabel}</h2>
             <Link
               href="/admin/calendar"
-              className="inline-flex items-center gap-1 px-3 py-[5px] rounded-full text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 hover:bg-[var(--gold)]/18 transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
             >
               <Icon name="calendar" className="w-3 h-3" />
               Calendar
@@ -467,7 +467,7 @@ export default function AdminPageClient({
               <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Revenue</h2>
               <Link
                 href="/admin/revenue"
-                className="inline-flex items-center gap-1 px-3 py-[5px] rounded-full text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 hover:bg-[var(--gold)]/18 transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
               >
                 <Icon name="barChart" className="w-3 h-3" />
                 Details
@@ -547,7 +547,7 @@ export default function AdminPageClient({
                     {/* Tooltip */}
                     {total > 0 && (
                       <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
-                        <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">{d.m} — ${total.toFixed(1)}K</p>
+                        <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">{d.m} ${total.toFixed(1)}K</p>
                         {d.moves > 0 && <p className="text-[8px] text-[var(--gold)]">Moves ${d.moves.toFixed(1)}K</p>}
                         {d.deliveries > 0 && <p className="text-[8px] text-[#3B82F6]">Deliveries ${d.deliveries.toFixed(1)}K</p>}
                         {d.invoices > 0 && <p className="text-[8px] text-[#22C55E]">Invoices ${d.invoices.toFixed(1)}K</p>}

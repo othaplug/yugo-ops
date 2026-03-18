@@ -123,7 +123,7 @@ export async function POST(req: Request) {
 
       sendEmail({
         to: move.client_email,
-        subject: `Payment receipt — $${ccTotal.toFixed(2)} for ${move.move_code || "your move"}`,
+        subject: `Payment receipt $${ccTotal.toFixed(2)} for ${move.move_code || "your move"}`,
         template: "balance-auto-charge-receipt",
         data: {
           clientName: move.client_name || "",

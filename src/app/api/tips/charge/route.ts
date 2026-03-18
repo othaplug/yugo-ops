@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
       referenceId: `TIP-${resolvedMoveId}`,
-      note: `Tip for crew — Move ${move.move_code || resolvedMoveId}`,
+      note: `Tip for crew Move ${move.move_code || resolvedMoveId}`,
       idempotencyKey: `tip-${resolvedMoveId}-${Date.now()}`,
       locationId,
     });

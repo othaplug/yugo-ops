@@ -22,11 +22,19 @@ function dateDisplay(dateStr: string | null | undefined): string {
   });
 }
 
-function ctaButton(url: string, label: string): string {
+const GOLD_BTN = "#B8962E";
+function ctaButton(url: string, label: string, sub?: string): string {
   return `
-    <a href="${url}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:24px 0 16px">
-      ${label}
-    </a>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
+      <tr>
+        <td align="center">
+          <a href="${url}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
+            ${label}
+          </a>
+        </td>
+      </tr>
+    </table>
+    ${sub ? `<p style="font-size:10px;color:#5E5A56;text-align:center;margin:0 0 16px;letter-spacing:0.3px;">${sub}</p>` : ""}
   `;
 }
 
@@ -68,10 +76,12 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
   const accessNotes: string[] = [];
   const fromAccessLabel = formatAccessForDisplay(d.fromAccess);
   const toAccessLabel = formatAccessForDisplay(d.toAccess);
-  if (fromAccessLabel && fromAccessLabel !== "None")
-    accessNotes.push(`<strong>Pickup access:</strong> ${fromAccessLabel} &mdash; please reserve the elevator/loading dock.`);
-  if (toAccessLabel && toAccessLabel !== "None")
-    accessNotes.push(`<strong>Drop-off access:</strong> ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+  if (fromAccessLabel && toAccessLabel && fromAccessLabel !== "None" && toAccessLabel !== "None")
+    accessNotes.push(`<strong>Access:</strong> Pickup: ${fromAccessLabel}; Drop-off: ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+  else if (fromAccessLabel && fromAccessLabel !== "None")
+    accessNotes.push(`<strong>Access:</strong> ${fromAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+  else if (toAccessLabel && toAccessLabel !== "None")
+    accessNotes.push(`<strong>Access:</strong> ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">3 Days To Go</div>
@@ -148,7 +158,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
         ${d.crewLeadName ? `<tr><td style="color:#666;padding:4px 0">Crew Lead:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.crewLeadName}</td></tr>` : ""}
         ${d.crewSize ? `<tr><td style="color:#666;padding:4px 0">Crew Size:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.crewSize} movers</td></tr>` : ""}
         ${d.truckInfo ? `<tr><td style="color:#666;padding:4px 0">Truck:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.truckInfo}</td></tr>` : ""}
-        <tr><td style="color:#666;padding:4px 0">Arrival:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">${d.arrivalWindow ?? "Morning — we'll confirm exact time"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Arrival:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">${d.arrivalWindow ?? "Morning, we'll confirm exact time"}</td></tr>
       </table>
     </div>
 
@@ -241,7 +251,7 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     <div style="margin-bottom:24px">
       <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">YOUR DOCUMENTS</div>
       <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 14px">
-        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email — everything is available to download from your tracking page (link below).
+        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email, everything is available to download from your tracking page (link below).
       </p>
     </div>
 
@@ -276,21 +286,29 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
       Your review helps other families find a mover they can trust. It only takes 30 seconds.
     </p>
 
-    <a href="${d.googleReviewUrl}" style="display:block;background:#C9A962;color:#0D0D0D;padding:11px 28px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;text-align:center;margin:0 0 24px">
-      Leave a Google Review
-    </a>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+      <tr>
+        <td align="center">
+          <a href="${d.googleReviewUrl}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
+            Leave a Google Review
+          </a>
+        </td>
+      </tr>
+    </table>
 
     ${d.referralUrl ? `
-      <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
-        <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px">Refer a Friend</div>
-        <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#F5F5F3;margin-bottom:6px">Give $50, Get $50</div>
-        <p style="font-size:12px;color:#B8B5B0;margin:0 0 14px">
-          Share your referral link and you both save on your next move.
-        </p>
-        <a href="${d.referralUrl}" style="display:inline-block;background:transparent;color:#C9A962;padding:8px 22px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.4px;text-decoration:none;border:1px solid rgba(201,169,98,0.4)">
-          Share Referral Link
-        </a>
-      </div>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
+        <tr>
+          <td style="background-color:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.25);padding:22px;text-align:center;">
+            <div style="font-size:8px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Refer a Friend</div>
+            <div style="font-family:'Instrument Serif', Georgia, serif;font-size:24px;font-weight:400;color:#F5F5F3;margin-bottom:8px;">Give $50, Get $50</div>
+            <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;line-height:1.6;">Share your referral link and you both save on your next move.</p>
+            <a href="${d.referralUrl}" style="display:inline-block;background-color:transparent;color:#C9A962;padding:9px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;border:1px solid #C9A96280;text-transform:uppercase;">
+              Share Referral Link
+            </a>
+          </td>
+        </tr>
+      </table>
     ` : ""}
 
     <p style="font-size:11px;color:#666;text-align:center">
@@ -318,7 +336,7 @@ export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string =
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is complete, and we hope everything went smoothly.
     </p>
@@ -327,7 +345,7 @@ export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo. — The Yugo Team
+      Thank you for choosing Yugo. The Yugo Team
     </p>
   `);
 }
@@ -338,7 +356,7 @@ export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => r
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is complete, and we hope everything went smoothly.
     </p>
@@ -347,7 +365,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo. — The Yugo Team
+      Thank you for choosing Yugo. The Yugo Team
     </p>
   `);
 }
@@ -355,7 +373,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Did We Do?</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Thank you for choosing Yugo for your move. It was a privilege to take care of your home and belongings.
     </p>
@@ -364,7 +382,7 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo — The Art of Moving
+      With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo, The Art of Moving
     </p>
   `);
 }
@@ -379,7 +397,7 @@ export interface ReviewRequestReminderData {
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quick Reminder</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder — your Yugo review</h1>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder your Yugo review</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
     </p>
@@ -479,7 +497,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     </p>
 
     <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
-      <div style="font-family:'Instrument Serif',serif;font-size:32px;font-weight:700;color:#C9A962;margin-bottom:8px">$50</div>
+      <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:32px;font-weight:700;color:#C9A962;margin-bottom:8px">$50</div>
       <div style="font-size:13px;color:#B8B5B0">for you and your friend</div>
     </div>
 
@@ -623,7 +641,7 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
     ${d.refundAmount && d.refundAmount > 0 ? `
       <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:10px;padding:20px;margin-bottom:20px">
         <div style="font-size:9px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Refund Issued</div>
-        <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
+        <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
         <div style="font-size:12px;color:#B8B5B0">
           Your refund has been submitted and will appear on your statement within 3&ndash;5 business days. Depending on your bank, it may take up to 7 business days.
         </div>
@@ -709,7 +727,7 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
       </div>
 
       <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
-        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Option 2: Credit Card — Charged 24 hours before your move</div>
+        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Option 2: Credit Card, Charged 24 hours before your move</div>
         <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
           We&apos;ll charge your card on file 24 hours before your move.<br/>
           Credit card payments include a <strong style="color:#E8E5E0">3.3% processing fee</strong>.
@@ -747,8 +765,8 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 10px">
         <tr>
           <td style="background:rgba(45,159,90,0.1);border:1px solid rgba(45,159,90,0.3);border-radius:10px;padding:20px;text-align:center">
-            <div style="font-size:11px;color:#2D9F5A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">E-Transfer — $0 fee</div>
-            <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
+            <div style="font-size:11px;color:#2D9F5A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">E-Transfer, $0 fee</div>
+            <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
             <div style="font-size:12px;color:#B8B5B0;line-height:1.6;margin-bottom:14px">
               Send to <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
               Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
@@ -757,9 +775,9 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
         </tr>
         <tr>
           <td style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
-            <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card — Includes processing fee</div>
-            <div style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
-            <a href="${d.paymentPageUrl}" style="display:inline-block;background:#C9A962;color:#0D0D0D;padding:9px 22px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-decoration:none;margin-top:4px">
+            <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card, Includes processing fee</div>
+            <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
+            <a href="${d.paymentPageUrl}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:10px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;margin-top:4px;text-transform:uppercase;">
               Pay by Credit Card
             </a>
           </td>
@@ -943,7 +961,7 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
               </div>
               ${p.description ? `<p style="font-size:12px;color:#888;margin:0 0 8px;line-height:1.5">${p.description}</p>` : ""}
               ${p.redemption_code ? `<span style="font-family:monospace;font-size:11px;font-weight:600;color:#C9A962;background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);padding:4px 10px;border-radius:6px">${p.redemption_code}</span>` : ""}
-              ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:11px;color:#C9A962;text-decoration:underline;margin-left:${p.redemption_code ? "12px" : "0"}">Redeem →</a>` : ""}
+              ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:11px;color:#C9A962;text-decoration:none;margin-left:${p.redemption_code ? "12px" : "0"}">Redeem</a>` : ""}
             </div>
           `;
         }).join("")}

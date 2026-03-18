@@ -12,8 +12,9 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, AlertTriangle, Download,
-  ChevronDown, ArrowUpDown, Search, Plus, Trash2, Check, X,
+  ChevronDown, ArrowUpDown, Search, Plus, Trash2, Check, X, Pencil,
 } from "lucide-react";
+import { useToast } from "@/app/admin/components/Toast";
 import type { CustomOverheadItem } from "@/lib/finance/calculateProfit";
 
 /* ════════════ types ════════════ */
@@ -39,7 +40,10 @@ interface ProfitRow {
   netProfit: number;
   grossMargin: number;
   netMargin: number;
+  hasOverride?: boolean;
 }
+
+type CostField = "labour" | "fuel" | "truck" | "supplies" | "processing";
 
 interface Summary {
   avgGrossMargin: number;
@@ -117,6 +121,93 @@ const TIER_COLORS: Record<string, string> = {
   signature: "#C9A962", premier: "#C9A962",
   estate: "#2D6A4F",
 };
+
+/* ════════════ Inline Cost Cell ════════════ */
+function EditableCostCell({
+  value,
+  field,
+  row,
+  onSaved,
+}: {
+  value: number;
+  field: CostField;
+  row: ProfitRow;
+  onSaved: (rowId: string, field: CostField, newValue: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraft(String(value));
+    setEditing(true);
+    setTimeout(() => { inputRef.current?.select(); }, 0);
+  };
+
+  const commit = async (e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    const num = parseFloat(draft);
+    if (isNaN(num) || num === value) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/profitability/${row.id}/costs`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_type: row.jobKind, [field]: num }),
+      });
+      if (res.ok) {
+        onSaved(row.id, field, num);
+      }
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  const cancel = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit(e);
+            if (e.key === "Escape") cancel(e);
+          }}
+          className="w-16 bg-[var(--bg)] border border-[var(--gold)] rounded px-1 py-0.5 text-[11px] text-[var(--tx)] tabular-nums outline-none"
+          disabled={saving}
+        />
+        <button onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-0.5" disabled={saving}>
+          <Check className="w-3 h-3" />
+        </button>
+        <button onClick={cancel} className="text-[var(--tx3)] hover:text-red-400 p-0.5">
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <span
+      className="group/cell inline-flex items-center gap-1 cursor-pointer"
+      title="Click to edit"
+      onClick={startEdit}
+    >
+      <span className={`tabular-nums ${row.hasOverride ? "underline decoration-dotted decoration-[var(--gold)]" : ""}`}>
+        {formatCurrency(value)}
+      </span>
+      <Pencil className="w-2.5 h-2.5 text-[var(--tx3)] opacity-0 group-hover/cell:opacity-60 transition-opacity shrink-0" />
+    </span>
+  );
+}
 
 function makeBreakdown(source: ProfitRow[]) {
   const m: Record<string, { count: number; totalRev: number; totalCost: number; totalGP: number }> = {};
@@ -440,6 +531,7 @@ function useColResize(count: number, initialWidths: number[]) {
 /* ════════════ main component ════════════ */
 export default function ProfitabilityClient() {
   const router = useRouter();
+  const { toast: showToast } = useToast();
 
   // 14 columns (no Tier col; incl. conditional Supplies): ID,Date,Client,Type,Revenue,Hours,Labour,Fuel,Truck,Supplies,Proc,DirectCost,GrossProfit,Margin
   const COL_INITIAL = [72, 80, 150, 90, 76, 52, 76, 60, 60, 72, 60, 88, 92, 68];
@@ -458,6 +550,27 @@ export default function ProfitabilityClient() {
   const [visibleCount, setVisibleCount] = useState(20);
   const [tableTab, setTableTab] = useState<"all" | "moves" | "deliveries">("all");
   const [breakdownTab, setBreakdownTab] = useState<"moves" | "deliveries">("moves");
+
+  // Optimistic local update when a cost cell is saved
+  const handleCostSaved = useCallback((rowId: string, field: CostField, newValue: number) => {
+    setRows((prev) => prev.map((r) => {
+      if (r.id !== rowId) return r;
+      const updated = { ...r, [field]: newValue, hasOverride: true };
+      const { labour, fuel, truck, supplies, processing, revenue, allocatedOverhead } = updated;
+      const totalDirect = labour + fuel + truck + supplies + processing;
+      const grossProfit = revenue - totalDirect;
+      const netProfit = grossProfit - allocatedOverhead;
+      return {
+        ...updated,
+        totalDirect: Math.round(totalDirect),
+        grossProfit: Math.round(grossProfit),
+        netProfit: Math.round(netProfit),
+        grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
+        netMargin: revenue > 0 ? Math.round(((netProfit / revenue) * 100) * 10) / 10 : 0,
+      };
+    }));
+    showToast("Cost override saved", "success");
+  }, [showToast]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -906,11 +1019,11 @@ export default function ProfitabilityClient() {
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">{typeLabel(r.type)}</td>
                         <td className="py-1.5 px-2 font-medium text-[var(--tx)] overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.revenue)}</td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] tabular-nums overflow-hidden text-ellipsis whitespace-nowrap">{r.actual_hours != null ? `${r.actual_hours}h` : "—"}</td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.labour ?? 0)}</td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.fuel)}</td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.truck)}</td>
-                        {tableTab !== "deliveries" && <td className="py-1.5 px-2 text-red-400/80 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.supplies)}</td>}
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.processing)}</td>
+                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.labour ?? 0} field="labour" row={r} onSaved={handleCostSaved} /></td>
+                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.fuel} field="fuel" row={r} onSaved={handleCostSaved} /></td>
+                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.truck} field="truck" row={r} onSaved={handleCostSaved} /></td>
+                        {tableTab !== "deliveries" && <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.supplies} field="supplies" row={r} onSaved={handleCostSaved} /></td>}
+                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.processing} field="processing" row={r} onSaved={handleCostSaved} /></td>
                         <td className="py-1.5 px-2 font-medium text-red-400 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.totalDirect)}</td>
                         <td className="py-1.5 px-2 font-medium text-emerald-400 overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.grossProfit)}</td>
                         <td className={`py-1.5 px-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap ${marginColor(r.grossMargin, target)}`}>{pct(r.grossMargin)}</td>

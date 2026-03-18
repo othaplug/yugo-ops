@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
       const eventGroupId = (m.event_group_id as string | null) || null;
       // Build display name: event moves prefix with event name + phase
       const moveName = eventName
-        ? `${eventName} — ${eventPhase === "delivery" ? "Delivery" : eventPhase === "return" ? "Return" : eventPhase === "setup" ? "Setup" : "Event"}`
+        ? `${eventName} ${eventPhase === "delivery" ? "Delivery" : eventPhase === "return" ? "Return" : eventPhase === "setup" ? "Setup" : "Event"}`
         : (m.client_name || "Move");
       events.push({
         id: m.id,

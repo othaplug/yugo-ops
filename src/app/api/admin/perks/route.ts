@@ -72,6 +72,41 @@ export async function POST(req: NextRequest) {
   const db = createAdminClient();
   const body = await req.json();
 
+  /* ─── Create promotional referral code ─── */
+  if (body.type === "create_referral") {
+    const code = (body.code ?? "").toString().trim().toUpperCase();
+    const referrerCredit = Number(body.referrer_credit ?? 100);
+    const referredDiscount = Number(body.referred_discount ?? 100);
+    const expiresAt = body.expires_at ? new Date(body.expires_at).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    const label = (body.label ?? "Promotional").toString().trim() || "Promotional";
+
+    if (!code) return NextResponse.json({ error: "Code is required" }, { status: 400 });
+    if (code.length < 4) return NextResponse.json({ error: "Code must be at least 4 characters" }, { status: 400 });
+
+    const { data: existing } = await db.from("client_referrals").select("id").eq("referral_code", code).maybeSingle();
+    if (existing) return NextResponse.json({ error: "Code already exists" }, { status: 400 });
+
+    const promoEmail = "promo@helloyugo.com";
+    const { data: ref, error: refErr } = await db
+      .from("client_referrals")
+      .insert({
+        referrer_move_id: null,
+        referrer_name: label,
+        referrer_email: promoEmail,
+        referral_code: code,
+        referrer_credit: referrerCredit,
+        referred_discount: referredDiscount,
+        status: "active",
+        expires_at: expiresAt,
+      })
+      .select()
+      .single();
+
+    if (refErr) return NextResponse.json({ error: refErr.message }, { status: 500 });
+    return NextResponse.json(ref, { status: 201 });
+  }
+
+  /* ─── Create partner perk ─── */
   const {
     partner_id, title, description, offer_type,
     discount_value, redemption_code, redemption_url,

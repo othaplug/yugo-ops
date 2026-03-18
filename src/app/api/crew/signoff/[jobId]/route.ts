@@ -257,7 +257,7 @@ export async function POST(
       flags.push("Client says all items received, but crew reported missing items");
     }
     if (satisfactionRating && satisfactionRating <= 2 && noIssuesDuringMove && noDamages && crewConductedProfessionally) {
-      flags.push("Low rating but all confirmations positive — possible misclick or duress");
+      flags.push("Low rating but all confirmations positive, possible misclick or duress");
     }
 
     if (flags.length > 0) {

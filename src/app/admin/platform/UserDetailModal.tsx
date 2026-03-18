@@ -70,7 +70,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       <ModalOverlay open={open} onClose={onClose} title="Client (move)" maxWidth="sm">
         <div className="p-5 space-y-4">
           <p className="text-[13px] text-[var(--tx2)]">
-            <strong>{user.name || user.email}</strong> is a move client. They access their move via a magic-link tracking URL sent by email — no account needed.
+            <strong>{user.name || user.email}</strong> is a move client. They access their move via a magic-link tracking URL sent by email, no account needed.
           </p>
           <p className="text-[12px] text-[var(--tx3)]">
             Use &quot;Resend tracking link&quot; on the move to send them the tracking URL again.

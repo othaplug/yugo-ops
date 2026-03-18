@@ -387,7 +387,7 @@ export async function runPostPaymentActions(
         await resend.emails.send({
           from: emailFrom2,
           to: adminEmail,
-          subject: `${subjectPrefix}: ${clientName} — ${tierLabel || serviceLabel} — $${totalWithTax}`,
+          subject: `${subjectPrefix}: ${clientName} ${tierLabel || serviceLabel} $${totalWithTax}`,
           html,
         });
       },
@@ -408,7 +408,7 @@ export async function runPostPaymentActions(
           : "TBD";
 
         await notifyAdmins("quote_accepted", {
-          subject: `Estate booking: ${clientName} — ${dateLabel} — ${formatCurrency(totalWithTax)}`,
+          subject: `Estate booking: ${clientName} ${dateLabel} ${formatCurrency(totalWithTax)}`,
           body: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
           description: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
           moveId: input.moveId,
@@ -527,7 +527,7 @@ export async function runPostPaymentActions(
           await resend.emails.send({
             from: emailFrom,
             to: ref.referrer_email,
-            subject: `Great news — your referral just booked with Yugo!`,
+            subject: `Great news your referral just booked with Yugo!`,
             html: `
               <div style="font-family:sans-serif;background:#0D0D0D;padding:32px;border-radius:12px;max-width:520px;margin:0 auto">
                 <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Referral Booked</div>

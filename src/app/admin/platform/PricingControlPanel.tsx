@@ -176,12 +176,13 @@ function useSection(section: string) {
 
   const undo = () => { setRows(prev); };
 
-  const add = async (row: Row) => {
+  const add = async (row: Row): Promise<Row | null> => {
     try {
       const created = await addRow(section, row);
       setRows((r) => [...r, created]);
       toast("Added", "check");
-    } catch { toast("Failed to add", "x"); }
+      return created;
+    } catch { toast("Failed to add", "x"); return null; }
   };
 
   const remove = async (id: string) => {
@@ -1713,6 +1714,85 @@ function FleetVehiclesSection() {
 
 /* ────────── S12: PACKAGE & TIER FEATURES ────────── */
 
+const ICON_OPTIONS = [
+  { name: "Truck", label: "Truck" },
+  { name: "Users", label: "Users / Crew" },
+  { name: "Shield", label: "Shield" },
+  { name: "ShieldCheck", label: "Shield Check" },
+  { name: "Package", label: "Package / Wrapping" },
+  { name: "Home", label: "Home / Room" },
+  { name: "Wrench", label: "Wrench / Tools" },
+  { name: "MapPin", label: "Map Pin / GPS" },
+  { name: "DollarSign", label: "Dollar Sign" },
+  { name: "Star", label: "Star / Premium" },
+  { name: "Phone", label: "Phone / Coordinator" },
+  { name: "Gift", label: "Gift / Perks" },
+  { name: "ClipboardCheck", label: "Clipboard / Walkthrough" },
+  { name: "Shirt", label: "Shirt / Wardrobe" },
+  { name: "Trash2", label: "Trash / Removal" },
+  { name: "Box", label: "Box / Supplies" },
+  { name: "Thermometer", label: "Thermometer / Climate" },
+  { name: "Eye", label: "Eye / Inspection" },
+  { name: "Calendar", label: "Calendar / Schedule" },
+  { name: "Clock", label: "Clock / Time" },
+  { name: "CheckCircle", label: "Check Circle (default)" },
+];
+
+const ICON_KEYWORDS: Record<string, string[]> = {
+  Truck: ["truck", "moving truck", "vehicle", "dedicated"],
+  Users: ["crew", "movers", "team", "specialist", "coordinator"],
+  Shield: ["protection", "valuation", "coverage", "insurance", "zero-damage", "mattress", "tv"],
+  ShieldCheck: ["enhanced valuation", "full replacement", "full coverage"],
+  Package: ["wrapping", "blankets", "padding", "packing", "crating", "supplies", "boxes", "materials"],
+  Home: ["floor", "door", "wall", "room of choice", "placement", "doorway"],
+  Wrench: ["disassembly", "reassembly", "assembly", "equipment", "tools"],
+  MapPin: ["gps", "tracking", "real-time", "live"],
+  DollarSign: ["flat price", "guaranteed", "price"],
+  Star: ["white glove", "premium", "handling", "antique", "art"],
+  Phone: ["concierge", "support", "contact"],
+  Gift: ["perks", "offers", "partner", "exclusive"],
+  ClipboardCheck: ["walkthrough", "inventory", "plan", "inspection"],
+  Shirt: ["wardrobe", "clothes", "garment"],
+  Trash2: ["debris", "removal", "packaging", "cleanup"],
+  Box: ["box"],
+  Thermometer: ["climate", "temperature", "controlled"],
+  Eye: ["condition", "report"],
+  Calendar: ["day support"],
+  Clock: ["concierge support", "30 day", "post-move"],
+};
+
+function getAutoIcon(text: string): string {
+  const lower = text.toLowerCase();
+  for (const [icon, keywords] of Object.entries(ICON_KEYWORDS)) {
+    if (keywords.some((kw) => lower.includes(kw.toLowerCase()))) return icon;
+  }
+  return "CheckCircle";
+}
+
+/** Mini icon preview rendered inline next to each feature row */
+function IconPreview({ iconName }: { iconName: string }) {
+  const PREVIEW_ICONS: Record<string, string> = {
+    Truck: "M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
+    Users: "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
+    Shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+    CheckCircle: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
+  };
+  const path = PREVIEW_ICONS[iconName];
+  if (path) {
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d={path} />
+      </svg>
+    );
+  }
+  // Generic icon placeholder
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
 const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
   { key: "local_move",    label: "Residential (Local)",  tiers: ["curated", "signature", "estate"] },
   { key: "long_distance", label: "Long Distance",        tiers: ["custom"] },
@@ -1751,6 +1831,46 @@ function TierFeaturesSection() {
   const [dirty, setDirty] = useState(false);
   const { toast } = useToast();
 
+  // Icon map: feature row ID → Lucide icon name, persisted in platform_config
+  const [iconMap, setIconMap] = useState<Record<string, string>>({});
+  const [iconMapRowId, setIconMapRowId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/pricing?section=config")
+      .then((r) => r.json())
+      .then(({ data }) => {
+        const row = (data as Row[])?.find((r) => r.key === "tier_feature_icons");
+        if (row) {
+          setIconMapRowId(String(row.id));
+          try { setIconMap(JSON.parse(row.value as string) as Record<string, string>); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
+
+  const saveIconMap = useCallback(async (map: Record<string, string>) => {
+    const value = JSON.stringify(map);
+    if (iconMapRowId) {
+      await fetch("/api/admin/pricing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "config", rows: [{ id: iconMapRowId, key: "tier_feature_icons", value }] }),
+      });
+    } else {
+      const res = await fetch("/api/admin/pricing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "config", row: { key: "tier_feature_icons", value } }),
+      }).then((r) => r.json());
+      if (res.data?.id) setIconMapRowId(String(res.data.id));
+    }
+  }, [iconMapRowId]);
+
+  const setFeatureIcon = (featureId: string, iconName: string) => {
+    setIconMap((prev) => ({ ...prev, [featureId]: iconName }));
+    setDirty(true);
+  };
+
   const meta = SERVICE_TYPE_META.find((m) => m.key === activeSvc)!;
 
   const featuresFor = (tier: string) =>
@@ -1767,13 +1887,19 @@ function TierFeaturesSection() {
     const feat = (newFeature[tier] ?? "").trim();
     if (!feat) return;
     const existing = featuresFor(tier);
-    await add({
+    const newRow = await add({
       service_type: activeSvc,
       tier,
       feature: feat,
       display_order: existing.length + 1,
       active: true,
     });
+    // Auto-suggest icon based on feature text
+    if (newRow?.id) {
+      const autoIcon = getAutoIcon(feat);
+      setIconMap((prev) => ({ ...prev, [String(newRow.id)]: autoIcon }));
+      setDirty(true);
+    }
     setNewFeature((prev) => ({ ...prev, [tier]: "" }));
   };
 
@@ -1801,6 +1927,7 @@ function TierFeaturesSection() {
 
   const handleSave = async () => {
     await save();
+    await saveIconMap(iconMap);
     setDirty(false);
     await reload();
   };
@@ -1851,13 +1978,16 @@ function TierFeaturesSection() {
                 {features.length === 0 && (
                   <p className="text-[11px] text-[var(--tx3)] px-3 py-3 italic">No features yet</p>
                 )}
-                {features.map((f, idx) => (
-                  <div key={String(f.id)} className="flex items-center gap-2 px-3 py-2 group">
+                {features.map((f, idx) => {
+                  const featureId = String(f.id);
+                  const currentIcon = iconMap[featureId] ?? getAutoIcon(String(f.feature));
+                  return (
+                  <div key={featureId} className="flex items-center gap-2 px-3 py-2 group">
                     {/* Toggle active */}
                     <button
                       type="button"
                       title={f.active ? "Disable" : "Enable"}
-                      onClick={() => handleUpdate(String(f.id), "active", !f.active)}
+                      onClick={() => handleUpdate(featureId, "active", !f.active)}
                       className={`w-3.5 h-3.5 rounded-full shrink-0 border transition-colors ${
                         f.active
                           ? "bg-[var(--grn)] border-[var(--grn)]"
@@ -1865,20 +1995,53 @@ function TierFeaturesSection() {
                       }`}
                     />
 
+                    {/* Icon selector */}
+                    <div className="shrink-0 relative" title="Icon for 'Your Move Includes' section">
+                      <select
+                        value={currentIcon}
+                        onChange={(e) => setFeatureIcon(featureId, e.target.value)}
+                        className="appearance-none w-[28px] h-[20px] opacity-0 absolute inset-0 cursor-pointer z-10"
+                        title="Select icon"
+                      />
+                      <span className="flex items-center justify-center w-[20px] h-[20px] rounded bg-[var(--gold)]/10 text-[var(--gold)] pointer-events-none">
+                        <IconPreview iconName={currentIcon} />
+                      </span>
+                    </div>
+
                     {/* Feature text */}
                     <div className={`flex-1 min-w-0 ${!f.active ? "opacity-40 line-through" : ""}`}>
                       <EditCell
                         value={String(f.feature)}
-                        onChange={(v) => handleUpdate(String(f.id), "feature", v)}
+                        onChange={(v) => {
+                          handleUpdate(featureId, "feature", v);
+                          // Auto-suggest new icon if not manually set
+                          if (!iconMap[featureId]) {
+                            setIconMap((prev) => ({ ...prev, [featureId]: getAutoIcon(v) }));
+                          }
+                        }}
                         className={`text-[12px] w-full ${!f.active ? "text-[var(--tx3)]" : "text-[var(--tx)]"}`}
                       />
+                    </div>
+
+                    {/* Icon dropdown label (visible on hover) */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <select
+                        value={currentIcon}
+                        onChange={(e) => setFeatureIcon(featureId, e.target.value)}
+                        className="text-[9px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1 py-0.5 text-[var(--tx3)] cursor-pointer"
+                        title="Icon for this feature"
+                      >
+                        {ICON_OPTIONS.map((opt) => (
+                          <option key={opt.name} value={opt.name}>{opt.label}</option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Reorder + delete — visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <button
                         type="button"
-                        onClick={() => handleMoveUp(String(f.id), tier)}
+                        onClick={() => handleMoveUp(featureId, tier)}
                         disabled={idx === 0}
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move up"
@@ -1887,7 +2050,7 @@ function TierFeaturesSection() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleMoveDown(String(f.id), tier)}
+                        onClick={() => handleMoveDown(featureId, tier)}
                         disabled={idx === features.length - 1}
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move down"
@@ -1896,7 +2059,7 @@ function TierFeaturesSection() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(String(f.id))}
+                        onClick={() => handleDelete(featureId)}
                         className="p-0.5 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-400 ml-0.5"
                         title="Remove feature"
                       >
@@ -1904,7 +2067,8 @@ function TierFeaturesSection() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Add new feature */}

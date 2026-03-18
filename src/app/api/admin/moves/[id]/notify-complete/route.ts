@@ -50,7 +50,7 @@ export async function POST(
     try {
       await sendEmail({
         to: clientEmail,
-        subject: `Your move is complete — ${formatJobId(move.move_code || moveId, "move")}`,
+        subject: `Your move is complete ${formatJobId(move.move_code || moveId, "move")}`,
         template: "move-complete",
         data: {
           clientName: move.client_name ?? "",

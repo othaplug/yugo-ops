@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
           await resend.emails.send({
             from: emailFrom,
             to: emailTrimmed,
-            subject: `You're invited to Yugo — ${org.name}`,
+            subject: `You're invited to Yugo ${org.name}`,
             html: invitePartnerEmail({ contactName, companyName: org.name, email: emailTrimmed, typeLabel: org.type, tempPassword, loginUrl }),
             text: invitePartnerEmailText({ contactName, companyName: org.name, email: emailTrimmed, typeLabel: org.type, tempPassword, loginUrl }),
             headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

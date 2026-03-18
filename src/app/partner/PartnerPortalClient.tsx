@@ -467,7 +467,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
               {data && data.allDeliveries.some((d) => (d.status || "").toLowerCase() === "delayed") ? " · 1 vendor delay requiring attention" : ""}
             </p>
           ) : (
-            <p className="text-[15px] text-[var(--tx3)] mt-1.5">{dayStr} — here are your deliveries</p>
+            <p className="text-[15px] text-[var(--tx3)] mt-1.5">{dayStr} here are your deliveries</p>
           )}
         </div>
 

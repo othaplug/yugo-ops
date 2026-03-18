@@ -6,7 +6,7 @@ const COMPANY = "Yugo Moving & Delivery Inc.";
 const EMAIL = "legal@yugomoves.com";
 
 export const metadata = {
-  title: "Terms & Conditions — Yugo",
+  title: "Terms & Conditions Yugo",
   description: "The terms and conditions governing moving and delivery services provided by Yugo.",
 };
 
@@ -33,7 +33,7 @@ export default function TermsAndConditionsPage() {
 
         <section style={{ marginBottom: 36 }}>
           <p style={{ fontSize: 15, lineHeight: 1.8, color: "#3A3530" }}>
-            These Terms and Conditions (&quot;Agreement&quot;) govern the moving, delivery, and logistics services provided by {COMPANY} (&quot;Yugo&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) to you (&quot;Client&quot;, &quot;Partner&quot;, or &quot;Customer&quot;). By booking, scheduling, or accepting our services — whether through the Platform, phone, or email — you agree to this Agreement in its entirety.
+            These Terms and Conditions (&quot;Agreement&quot;) govern the moving, delivery, and logistics services provided by {COMPANY} (&quot;Yugo&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) to you (&quot;Client&quot;, &quot;Partner&quot;, or &quot;Customer&quot;). By booking, scheduling, or accepting our services, whether through the Platform, phone, or email, you agree to this Agreement in its entirety.
           </p>
         </section>
 
@@ -108,7 +108,7 @@ export default function TermsAndConditionsPage() {
 
         <LegalSection title="7. Liability and Claims">
           <SubHeading>7.1 Our Liability</SubHeading>
-          <p>Yugo&apos;s liability for loss or damage to items is limited to <strong>$0.60 per pound per article</strong> (Released Value Protection — standard industry rate) unless you purchase additional valuation coverage or declare a higher value in writing before the service commences.</p>
+          <p>Yugo&apos;s liability for loss or damage to items is limited to <strong>$0.60 per pound per article</strong> (Released Value Protection, standard industry rate) unless you purchase additional valuation coverage or declare a higher value in writing before the service commences.</p>
           <SubHeading>7.2 Valuation Coverage</SubHeading>
           <p>Clients may declare a higher value for their items by notifying Yugo in writing at least 24 hours before the job. A surcharge may apply. Yugo is not an insurer and does not offer insurance. We strongly recommend obtaining independent moving insurance for high-value items.</p>
           <SubHeading>7.3 Exclusions</SubHeading>

@@ -385,14 +385,15 @@ export default function TrackDeliveryClient({
             </div>
 
             {/* Progress bar with stage nodes */}
+            {/* Each node is fixed 64 px wide so the absolute track can be anchored at left/right: 32 (= half node width) */}
             <div className="relative" style={{ paddingBottom: 30 }}>
               {/* Track */}
               <div
                 className="absolute rounded-full"
                 style={{
-                  top: 15,
-                  left: 15,
-                  right: 15,
+                  top: 12.5,
+                  left: 32,
+                  right: 32,
                   height: 5,
                   backgroundColor: `${FOREST}10`,
                   zIndex: 0,
@@ -402,10 +403,10 @@ export default function TrackDeliveryClient({
               <div
                 className="absolute rounded-full transition-all duration-700 ease-out"
                 style={{
-                  top: 15,
-                  left: 15,
+                  top: 12.5,
+                  left: 32,
                   height: 5,
-                  width: `calc(${(isCompleted ? 1 : clientMainStepIdx / (CLIENT_MAIN_STEPS.length - 1))} * (100% - 30px))`,
+                  width: `calc(${(isCompleted ? 1 : clientMainStepIdx / (CLIENT_MAIN_STEPS.length - 1))} * (100% - 64px))`,
                   background: `linear-gradient(90deg, ${GOLD}, ${GOLD}CC)`,
                   zIndex: 1,
                 }}
@@ -417,7 +418,7 @@ export default function TrackDeliveryClient({
                   const isCurrent = clientMainStepIdx === i && !isCompleted;
                   const iconPath = CLIENT_MAIN_STEP_ICONS[label];
                   return (
-                    <div key={label} className="flex flex-col items-center">
+                    <div key={label} className="flex flex-col items-center" style={{ width: 64 }}>
                       <div className="relative">
                         {isCurrent && (
                           <span

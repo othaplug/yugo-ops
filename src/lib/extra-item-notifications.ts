@@ -62,7 +62,7 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     await resend.emails.send({
       from: emailFrom,
       to: adminEmail,
-      subject: `Extra Item Request — ${jobLabel}`,
+      subject: `Extra Item Request ${jobLabel}`,
       html: emailLayout(inner),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

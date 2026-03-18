@@ -102,7 +102,7 @@ export async function POST(
 
     const subject =
       tier === "estate"
-        ? `${firstName}, it was our privilege — how did we do?`
+        ? `${firstName}, it was our privilege how did we do?`
         : tier === "signature" || tier === "premier"
           ? `We'd love your feedback, ${firstName}`
           : `How was your Yugo move, ${firstName}?`;
@@ -178,7 +178,7 @@ export async function POST(
   try {
     await sendEmail({
       to: reminderEmail,
-      subject: "Quick reminder — your Yugo review",
+      subject: "Quick reminder your Yugo review",
       template: "review-request-reminder",
       data: {
         clientName: reminderName,

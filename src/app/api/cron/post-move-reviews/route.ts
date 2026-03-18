@@ -88,14 +88,14 @@ export async function GET(req: NextRequest) {
 
           await sendEmail({
             to: adminEmail,
-            subject: `Low satisfaction: ${move.client_name} — ${move.move_code} (${score}/5)`,
+            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${score}/5)`,
             html: alertHtml,
           });
         }
 
         await sendEmail({
           to: move.client_email,
-          subject: `We want to make it right — ${move.move_code}`,
+          subject: `We want to make it right ${move.move_code}`,
           template: "low-satisfaction",
           data: {
             clientName: move.client_name || "",
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 
         await sendEmail({
           to: move.client_email,
-          subject: `How was your move? — ${move.move_code}`,
+          subject: `How was your move? ${move.move_code}`,
           template: "review-request",
           data: {
             clientName: move.client_name || "",
@@ -247,7 +247,7 @@ export async function GET(req: NextRequest) {
 
       await sendEmail({
         to: move.client_email,
-        subject: `Your Yugo perks are waiting — ${move.move_code}`,
+        subject: `Your Yugo perks are waiting ${move.move_code}`,
         html,
       });
 
@@ -299,7 +299,7 @@ export async function GET(req: NextRequest) {
 
       await sendEmail({
         to: move.client_email,
-        subject: `One year since your move — happy move-iversary! 🎉`,
+        subject: `One year since your move happy move-iversary! 🎉`,
         html,
       });
 

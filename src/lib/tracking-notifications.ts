@@ -23,7 +23,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your YUGO+ crew is en route to the pickup location — they're on their way!",
+    clientMessage: "Your YUGO+ crew is en route to the pickup location they're on their way!",
   },
   arrived_at_pickup: {
     notifyClient: true,
@@ -108,14 +108,14 @@ export async function notifyOnCheckpoint(
   const adminMessage = status === "completed"
     ? `${teamName} completed ${jobName}`
     : status === "en_route_to_pickup" || status === "en_route"
-      ? `${teamName} started — en route to pickup for ${jobName}`
+      ? `${teamName} started en route to pickup for ${jobName}`
       : status === "arrived_at_pickup"
-        ? `${teamName} arrived at pickup — ${fromAddress || "—"}`
+        ? `${teamName} arrived at pickup ${fromAddress || "-"}`
         : status === "en_route_to_destination"
-          ? `${teamName} en route to destination — ${toAddress || "—"}`
+          ? `${teamName} en route to destination ${toAddress || "-"}`
           : status === "arrived_at_destination" || status === "arrived"
             ? `${teamName} arrived at ${toAddress || "—"}`
-            : `${teamName} — ${status}`;
+            : `${teamName} ${status}`;
 
   if (cfg.notifyAdmin) {
     try {
@@ -170,8 +170,8 @@ export async function notifyOnCheckpoint(
   }
 
   const subject = status === "completed"
-    ? jobType === "delivery" ? `Your delivery is complete — ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`
-    : `Your crew is on the way — ${formatJobId(moveCode || jobId, jobType)}`;
+    ? jobType === "delivery" ? `Your delivery is complete ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`
+    : `Your crew is on the way ${formatJobId(moveCode || jobId, jobType)}`;
 
   const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "Status update";
   const body = status === "completed"
@@ -194,7 +194,7 @@ export async function notifyOnCheckpoint(
     try {
       await sendEmail({
         to: clientEmail,
-        subject: `Your move is complete — ${formatJobId(moveCode || jobId, jobType)}`,
+        subject: `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`,
         template: "move-complete",
         data: {
           clientName: moveClientName ?? "",

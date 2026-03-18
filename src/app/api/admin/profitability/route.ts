@@ -112,6 +112,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Per-job cost overrides
+  const allJobIds = [...completedMoves.map((m) => m.id), ...completedDeliveries.map((d) => d.id)];
+  const costOverridesMap: Record<string, Record<string, number | null>> = {};
+  if (allJobIds.length > 0) {
+    const { data: overrideRows } = await sb
+      .from("job_cost_overrides")
+      .select("job_id, labour, fuel, truck, supplies, processing")
+      .in("job_id", allJobIds);
+    for (const ov of overrideRows ?? []) {
+      costOverridesMap[ov.job_id] = ov;
+    }
+  }
+
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
@@ -148,7 +161,32 @@ export async function GET(req: NextRequest) {
       deposit_method: m.deposit_method ?? null,
     };
     const revenue = moveCostInput.estimate;
-    const costs = calculateMoveProfitability(moveCostInput, config, monthlyMoveCount);
+    let costs = calculateMoveProfitability(moveCostInput, config, monthlyMoveCount);
+    // Apply per-job overrides (only override fields that were explicitly set)
+    const ov = costOverridesMap[m.id];
+    if (ov) {
+      const labour  = ov.labour   != null ? ov.labour   : costs.labour;
+      const fuel    = ov.fuel     != null ? ov.fuel     : costs.fuel;
+      const truck   = ov.truck    != null ? ov.truck    : costs.truck;
+      const supplies = ov.supplies != null ? ov.supplies : costs.supplies;
+      const processing = ov.processing != null ? ov.processing : costs.processing;
+      const totalDirect = labour + fuel + truck + supplies + processing;
+      const grossProfit = revenue - totalDirect;
+      const netProfit = grossProfit - costs.allocatedOverhead;
+      costs = {
+        ...costs,
+        labour: Math.round(labour),
+        fuel: Math.round(fuel * 100) / 100,
+        truck,
+        supplies,
+        processing: Math.round(processing * 100) / 100,
+        totalDirect: Math.round(totalDirect),
+        grossProfit: Math.round(grossProfit),
+        netProfit: Math.round(netProfit),
+        grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
+        netMargin: revenue > 0 ? Math.round(((netProfit / revenue) * 100) * 10) / 10 : 0,
+      };
+    }
     // Neighbourhood: prefer from_postal, fall back to extracting FSA from from_address
     const neighbourhood =
       (m.from_postal ? String(m.from_postal).substring(0, 3).toUpperCase() : null) ??
@@ -165,6 +203,7 @@ export async function GET(req: NextRequest) {
       neighbourhood,
       actual_hours: trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
+      hasOverride: !!ov,
       ...costs,
     };
   });
@@ -173,7 +212,32 @@ export async function GET(req: NextRequest) {
     const trackedHoursD = sessionHoursMap[d.id] ?? null;
     const revenue = invoiceBilledByDelivery[d.id] ?? Number(d.admin_adjusted_price ?? d.total_price ?? d.quoted_price ?? 0);
     // Inject tracked hours so calculateDeliveryProfitability uses them
-    const costs = calculateDeliveryProfitability({ ...d, actual_hours: trackedHoursD ?? d.actual_hours ?? null }, revenue, config, monthlyMoveCount);
+    let costs = calculateDeliveryProfitability({ ...d, actual_hours: trackedHoursD ?? d.actual_hours ?? null }, revenue, config, monthlyMoveCount);
+    // Apply per-job overrides
+    const ov = costOverridesMap[d.id];
+    if (ov) {
+      const labour  = ov.labour   != null ? ov.labour   : costs.labour;
+      const fuel    = ov.fuel     != null ? ov.fuel     : costs.fuel;
+      const truck   = ov.truck    != null ? ov.truck    : costs.truck;
+      const supplies = ov.supplies != null ? ov.supplies : costs.supplies;
+      const processing = ov.processing != null ? ov.processing : costs.processing;
+      const totalDirect = labour + fuel + truck + supplies + processing;
+      const grossProfit = revenue - totalDirect;
+      const netProfit = grossProfit - costs.allocatedOverhead;
+      costs = {
+        ...costs,
+        labour: Math.round(labour),
+        fuel: Math.round(fuel * 100) / 100,
+        truck,
+        supplies,
+        processing: Math.round(processing * 100) / 100,
+        totalDirect: Math.round(totalDirect),
+        grossProfit: Math.round(grossProfit),
+        netProfit: Math.round(netProfit),
+        grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
+        netMargin: revenue > 0 ? Math.round(((netProfit / revenue) * 100) * 10) / 10 : 0,
+      };
+    }
     // Delivery type label key
     const rawType = d.delivery_type || d.category || (d.booking_type === "day_rate" ? "day_rate" : null) || "delivery";
     // Neighbourhood from pickup address FSA
@@ -189,6 +253,7 @@ export async function GET(req: NextRequest) {
       revenue,
       neighbourhood,
       actual_hours: trackedHoursD ?? d.actual_hours ?? null,
+      hasOverride: !!ov,
       ...costs,
     };
   });

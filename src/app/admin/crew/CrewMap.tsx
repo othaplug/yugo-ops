@@ -85,9 +85,9 @@ const STAGE_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 const STAGE_INSIGHTS: Record<string, string> = {
-  pending: "Project is scheduled — crew preparing",
-  scheduled: "Project is scheduled — crew preparing",
-  confirmed: "Crew confirmed — heading to pickup or on site",
+  pending: "Project is scheduled, crew preparing",
+  scheduled: "Project is scheduled, crew preparing",
+  confirmed: "Crew confirmed, heading to pickup or on site",
   dispatched: "Crew is on the way to delivery site",
   "in-transit": "Crew is on the way to delivery site",
   delivered: "Project completed successfully",
@@ -220,7 +220,7 @@ function CrewListAndModal({
             const currentStageIdx = activeProject ? (STATUS_TO_STAGE[activeProject.status] ?? PROJECT_STAGES.indexOf(activeProject.status as (typeof PROJECT_STAGES)[number])) : -1;
             const stageInsight = activeProject
               ? (STAGE_INSIGHTS[activeProject.status] || "In progress")
-              : (selectedCrew.current_job ? `Standby — ${selectedCrew.current_job}` : "No active project — on standby");
+              : (selectedCrew.current_job ? `Standby ${selectedCrew.current_job}` : "No active project, on standby");
 
             return (
               <div className="p-5 space-y-5">

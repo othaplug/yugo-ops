@@ -345,8 +345,8 @@ function generateReceiptPDF(
   const cardSuffix = cardLast4 ? `Card ending ${cardLast4}` : "Card";
 
   const tableBody: (string | number)[][] = [
-    [formatDate(move.deposit_paid_at), `Deposit — ${tierLabel} move`, cardSuffix, formatCurrency(depositPaid)],
-    [formatDate(move.balance_paid_at || move.completed_at), `Balance — ${tierLabel} move`, cardSuffix, formatCurrency(balancePaid)],
+    [formatDate(move.deposit_paid_at), `Deposit ${tierLabel} move`, cardSuffix, formatCurrency(depositPaid)],
+    [formatDate(move.balance_paid_at || move.completed_at), `Balance ${tierLabel} move`, cardSuffix, formatCurrency(balancePaid)],
     ["", "Total Paid", "", formatCurrency(totalPaid)],
   ];
   const headStyles = getTableHeadStyles(true);

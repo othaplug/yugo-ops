@@ -698,7 +698,7 @@ function FeatureTogglesSection() {
                       </button>
                     </div>
                     <p className="text-[10px] text-[var(--tx3)] mb-2">
-                      Simpler option — embeds the quote form in an iframe. No JavaScript required.
+                      Simpler option: embeds the quote form in an iframe. No JavaScript required.
                     </p>
                     <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
                       {iframeCode}
@@ -1422,7 +1422,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 <div>
                   <div className="text-[13px] font-semibold text-[var(--tx)]">{team.label}</div>
                   <div className="text-[11px] text-[var(--tx3)] mt-0.5">
-                    {team.memberIds.length > 0 ? team.memberIds.join(", ") : "No members — click to add"}
+                    {team.memberIds.length > 0 ? team.memberIds.join(", ") : "No members, click to add"}
                     {(() => {
                       const memberStaff = staffRoster.filter((s) => s.is_active && team.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
                       if (memberStaff.length > 0) {

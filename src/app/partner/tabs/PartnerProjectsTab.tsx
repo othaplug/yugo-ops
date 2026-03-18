@@ -85,7 +85,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                 <div>
                   <h3 className="text-[17px] font-bold text-[#1A1A1A] font-hero">{project.name}</h3>
                   <p className="text-[12px] text-[#888] mt-0.5">
-                    {project.address} — {project.vendorCount} vendor{project.vendorCount !== 1 ? "s" : ""} — {project.installDate}
+                    {project.address} {project.vendorCount} vendor{project.vendorCount !== 1 ? "s" : ""} {project.installDate}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -140,7 +140,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                           <VendorIcon type={iconType} status={statusKey} />
                           <div>
                             <span className="text-[13px] font-semibold text-[#1A1A1A]">{v.vendor}</span>
-                            <span className="text-[12px] text-[#888] ml-1.5">— {v.items}</span>
+                            <span className="text-[12px] text-[#888] ml-1.5">{v.items}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

@@ -37,8 +37,8 @@ function emailLogoRow(): string {
   `;
 }
 
-/** Link color in footer for visibility on dark background (blue, underlined like Amex-style). */
-const EMAIL_FOOTER_LINK = "#8BB4D4";
+/** Link color in footer for visibility on dark background (blue). */
+const EMAIL_FOOTER_LINK = "#2563eb";
 /** Subtle highlight for company name in copyright. */
 const EMAIL_FOOTER_HIGHLIGHT_BG = "rgba(201,169,98,0.2)";
 
@@ -63,16 +63,16 @@ function emailFooterRow(_loginUrl?: string): string {
         <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;margin:0 auto;">
           <tr>
             <td align="center" style="padding-bottom:20px;font-size:12px;color:${EMAIL_TX2};">
-              <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Email us</a>
+              <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Email us</a>
               <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-              <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Call us</a>
+              <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Call us</a>
               <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-              <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy</a>
+              <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy</a>
             </td>
           </tr>
           <tr>
             <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:12px;">
-              This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>. This address is not monitored and we cannot respond to messages sent here.
+              This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">call ${contactPhone}</a> This address is not monitored and we cannot respond to messages sent here.
             </td>
           </tr>
           <tr>
@@ -82,12 +82,12 @@ function emailFooterRow(_loginUrl?: string): string {
           </tr>
           <tr>
             <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:16px;">
-              Learn how we collect, use and safeguard your information at <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${base.replace(/^https?:\/\//, "")}/privacy</a>.
+              Learn how we collect, use and safeguard your information at <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">${base.replace(/^https?:\/\//, "")}/privacy</a>
             </td>
           </tr>
           <tr>
             <td style="font-size:11px;color:${EMAIL_TX3};padding-bottom:32px;">
-              &copy; 2025 <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo Inc.</span> All rights reserved.<br/>
+              &copy; 2026 Yugo Inc. All rights reserved.<br/>
               <span style="font-size:10px;color:${EMAIL_TX3};margin-top:4px;display:inline-block;">507 King Street E, Toronto, ON</span>
             </td>
           </tr>
@@ -130,7 +130,7 @@ export function statusUpdateEmailHtml(params: {
     ? `
     <tr>
       <td align="center" style="padding:8px 0 32px;">
-        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">${ctaLabel}</a>
+        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0A0806;padding:13px 32px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;">${ctaLabel}</a>
       </td>
     </tr>
   `
@@ -142,7 +142,7 @@ export function statusUpdateEmailHtml(params: {
     <td align="center" style="padding:0 24px 16px;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
         <tr>
-          <td style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};padding-bottom:16px;">${headline}</td>
+          <td style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;letter-spacing:-0.3px;color:${EMAIL_TX};padding-bottom:16px;line-height:1.25;">${headline}</td>
         </tr>
         <tr>
           <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;">${body}</td>
@@ -176,14 +176,14 @@ function emailFooter(_loginUrl?: string) {
   return `
     <div style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;margin-top:32px;padding-top:24px;border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
       <p style="text-align:center;margin:0 0 12px;">
-        <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Email us</a>
+        <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Email us</a>
         <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-        <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Call us</a>
+        <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Call us</a>
         <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-        <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy</a>
+        <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy</a>
       </p>
-      <p style="margin:0 0 8px;">This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. This address is not monitored. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">call ${contactPhone}</a>.</p>
-      <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">Privacy policy</a> — how we collect, use and safeguard your information.</p>
+      <p style="margin:0 0 8px;">This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. This address is not monitored. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">call ${contactPhone}</a>.</p>
+      <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy policy</a> — how we collect, use and safeguard your information.</p>
       <p style="font-size:10px;color:${EMAIL_TX3};margin:16px 0 0;">&copy; 2025 <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo Inc.</span> All rights reserved. 507 King Street E, Toronto, ON.</p>
     </div>
   `;

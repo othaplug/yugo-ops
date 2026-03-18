@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     const eventPhase = (m.event_phase as string | null) || null;
     const eventName = (m.event_name as string | null) || null;
     const eventJobTypeLabel = eventName
-      ? `${eventName} — ${eventPhase === "delivery" ? "Delivery & Setup" : eventPhase === "return" ? "Teardown & Return" : eventPhase === "setup" ? "Setup" : "Event"}`
+      ? `${eventName} ${eventPhase === "delivery" ? "Delivery & Setup" : eventPhase === "return" ? "Teardown & Return" : eventPhase === "setup" ? "Setup" : "Event"}`
       : null;
     jobs.push({
       id: m.id,

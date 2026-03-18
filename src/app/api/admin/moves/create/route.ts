@@ -359,7 +359,7 @@ export async function POST(req: NextRequest) {
         const sendResult = await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: `Your move has been created — track your move`,
+          subject: `Your move has been created track your move`,
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });
