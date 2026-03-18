@@ -524,12 +524,14 @@ export default function DataTable<T>({
       {/* ── Table header ── */}
       <div className={`overflow-x-auto ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}>
         <table
-          className="border-collapse min-w-[600px] text-[12px]"
-          style={{ tableLayout: "fixed", width: selectable ? 40 + colWidths.reduce((a, b) => a + b, 0) : colWidths.reduce((a, b) => a + b, 0) }}
+          className="border-collapse w-full min-w-[600px] text-[12px]"
+          style={{ tableLayout: "fixed" }}
         >
           <colgroup>
             {selectable && <col style={{ width: 40 }} />}
             {colWidths.map((w, i) => <col key={visibleCols[i]?.id ?? i} style={{ width: w }} />)}
+            {/* Spacer col absorbs remaining width so table fills container */}
+            <col style={{ width: "auto" }} />
           </colgroup>
           <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)]" : ""}>
             <tr className="border-b border-[var(--brd)]/50">
@@ -585,13 +587,15 @@ export default function DataTable<T>({
                   </th>
                 );
               })}
+              {/* Spacer fills remaining width */}
+              <th className="w-auto" />
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
               <tr>
                 <td
-                  colSpan={visibleCols.length + (selectable ? 1 : 0)}
+                  colSpan={visibleCols.length + (selectable ? 1 : 0) + 1}
                   className="py-16 text-center"
                 >
                   {emptyIcon && <div className="flex justify-center mb-2">{emptyIcon}</div>}
@@ -656,6 +660,8 @@ export default function DataTable<T>({
                         : <span className="capitalize">{String(col.accessor(row) ?? "—")}</span>}
                     </td>
                   ))}
+                  {/* Spacer cell fills remaining width */}
+                  <td />
                 </tr>
                 );
               })

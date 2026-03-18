@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import CreateButton from "../components/CreateButton";
 import { useRouter } from "next/navigation";
@@ -155,6 +155,16 @@ export default function AllDeliveriesView({
 }) {
   const router = useRouter();
   const [activeView, setActiveView] = useState<"deliveries" | "projects" | "recurring">(initialView || "deliveries");
+  const [createDropOpen, setCreateDropOpen] = useState(false);
+  const createDropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (createDropRef.current && !createDropRef.current.contains(e.target as Node)) setCreateDropOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const [partnerType, setPartnerType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
@@ -233,7 +243,28 @@ export default function AllDeliveriesView({
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Deliveries</h1>
-        <CreateButton href="/admin/deliveries/new?choice=single" title="New Delivery" />
+        <div className="relative" ref={createDropRef}>
+          <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New Delivery" />
+          {createDropOpen && (
+            <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+              {[
+                { href: "/admin/deliveries/new?choice=single", label: "Single Delivery", sub: "Per-delivery from rate card" },
+                { href: "/admin/deliveries/new?choice=day_rate", label: "Day Rate", sub: "Multi-stop day rate" },
+                { href: "/admin/deliveries/new?choice=b2b_oneoff", label: "B2B One-Off", sub: "Business, no partner account" },
+              ].map((opt) => (
+                <Link
+                  key={opt.href}
+                  href={opt.href}
+                  onClick={() => setCreateDropOpen(false)}
+                  className="flex flex-col px-4 py-2.5 hover:bg-[var(--bg)] transition-colors group"
+                >
+                  <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)]">{opt.label}</span>
+                  <span className="text-[10px] text-[var(--tx3)]">{opt.sub}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
 

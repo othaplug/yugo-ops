@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import { formatMoveDate } from "@/lib/date-format";
@@ -8,6 +8,7 @@ import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import LiveActivityFeed from "./components/LiveActivityFeed";
+import { createButtonBaseClass } from "./components/CreateButton";
 
 /* ── Types ── */
 
@@ -188,6 +189,16 @@ export default function AdminPageClient({
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
   const [tasksOpen, setTasksOpen] = useState(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const quickActionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (quickActionsRef.current && !quickActionsRef.current.contains(e.target as Node)) setQuickActionsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     const load = () => {
@@ -432,33 +443,43 @@ export default function AdminPageClient({
         {/* ── RIGHT: Intelligence Column ── */}
         <div className="min-w-0 space-y-0">
 
-          {/* Quick Actions — prominent, above revenue */}
-          <div className="pb-6 grid grid-cols-2 gap-2">
-            <h2 className="col-span-2 text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Quick Actions</h2>
-            <Link
-                href="/admin/quotes/new"
-                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
+          {/* Quick Actions — 3D + button with hover dropdown */}
+          <div className="pb-6 flex items-center justify-between">
+            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Quick Actions</h2>
+            <div className="relative" ref={quickActionsRef}>
+              <button
+                type="button"
+                title="Quick Actions"
+                aria-label="Quick Actions"
+                onClick={() => setQuickActionsOpen((v) => !v)}
+                className={createButtonBaseClass}
               >
-                New quote
-              </Link>
-              <Link
-                href="/admin/moves/new"
-                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
-              >
-                New move
-              </Link>
-              <Link
-                href="/admin/deliveries"
-                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
-              >
-                Deliveries
-              </Link>
-              <Link
-                href="/admin/reports"
-                className="flex items-center justify-center px-4 py-3.5 rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] text-[13px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] hover:shadow-[0_0_24px_rgba(201,169,98,0.2)] transition-all duration-200"
-              >
-                Reports
-              </Link>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              {quickActionsOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+                  {[
+                    { href: "/admin/quotes/new", label: "New Quote" },
+                    { href: "/admin/moves/new", label: "New Move" },
+                    { href: "/admin/deliveries/new", label: "New Delivery" },
+                    { href: "/admin/deliveries", label: "Deliveries" },
+                    { href: "/admin/reports", label: "Reports" },
+                  ].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setQuickActionsOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Revenue (multi-source) */}
