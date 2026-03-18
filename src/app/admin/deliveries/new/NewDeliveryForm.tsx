@@ -27,6 +27,7 @@ interface Org {
   id: string;
   name: string;
   type: string;
+  vertical?: string | null;
   email?: string;
   contact_name?: string;
   phone?: string;
@@ -245,7 +246,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       crew_id: crewId || null,
       delivery_access: deliveryAccess || null,
       item_weight_category: itemWeightCategory || null,
-      category: projectType || org?.type || "retail",
+      category: projectType || org?.vertical || org?.type || "retail",
       project_id: linkedProjectId || null,
       phase_id: linkedPhaseId || null,
     };

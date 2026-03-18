@@ -1343,6 +1343,75 @@ const InclusionsShowcase = React.forwardRef<
 });
 
 /* ═══════════════════════════════════════════════════
+   Inventory Collapsible (inside Move Details)
+   ═══════════════════════════════════════════════════ */
+
+const INV_TRUNCATE = 4;
+const INV_SERVICE_TYPES = new Set(["local_move", "long_distance", "office_move"]);
+
+function InventoryCollapsible({ quote, selectedTier }: { quote: Quote; selectedTier: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const isEstate = selectedTier === "estate";
+  if (!INV_SERVICE_TYPES.has(quote.service_type) || isEstate) return null;
+
+  const items = (quote.inventory_items ?? []) as { name?: string; slug?: string; quantity?: number }[];
+  const boxCount = quote.client_box_count ?? 0;
+  const itemCount = items.reduce((s, i) => s + (i.quantity ?? 1), 0);
+  if (itemCount === 0 && boxCount === 0) return null;
+
+  const labelParts: string[] = [];
+  if (itemCount > 0) labelParts.push(`${itemCount} item${itemCount === 1 ? "" : "s"}`);
+  if (boxCount > 0) labelParts.push(`${boxCount} box${boxCount === 1 ? "" : "es"}`);
+  const headerLabel = `Your inventory (${labelParts.join(" + ")})`;
+
+  const displayItems = items.map((i) => {
+    const qty = i.quantity ?? 1;
+    const name = (i.name || i.slug || "Item").trim();
+    return qty > 1 ? `${qty}\u202f${name}` : name;
+  });
+  const hasMore = displayItems.length > INV_TRUNCATE;
+  const visibleItems = expanded || !hasMore ? displayItems : displayItems.slice(0, INV_TRUNCATE);
+  const preview = visibleItems.join(", ") + (!expanded && hasMore ? "\u2026" : "");
+
+  return (
+    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-1.5 text-left w-full group"
+      >
+        <ChevronDown
+          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          style={{ color: `${FOREST}60` }}
+        />
+        <span className="text-[12px] font-semibold" style={{ color: `${FOREST}80` }}>
+          {headerLabel}
+        </span>
+      </button>
+      <div className="mt-1.5 pl-5">
+        <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}70` }}>
+          {preview}
+        </p>
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-1 text-[11px] font-semibold underline underline-offset-2"
+            style={{ color: GOLD }}
+          >
+            {expanded ? "Show less" : `View all ${displayItems.length} items`}
+          </button>
+        )}
+        <p className="text-[10px] mt-1.5" style={{ color: `${FOREST}50` }}>
+          Not right? Contact your coordinator to update.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    Confirm Details Section (Step 4)
    ═══════════════════════════════════════════════════ */
 
@@ -1415,6 +1484,7 @@ function ConfirmDetailsSection({
             <p><strong>From:</strong> {quote.from_address}</p>
             <p><strong>To:</strong> {quote.to_address}</p>
           </div>
+          <InventoryCollapsible quote={quote} selectedTier={selectedTier} />
         </div>
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>

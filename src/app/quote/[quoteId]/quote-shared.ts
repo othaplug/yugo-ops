@@ -80,6 +80,8 @@ export interface Quote {
   valuation_upgrade_cost: number | null;
   declaration_total: number | null;
   recommended_tier: string | null;
+  inventory_items?: { slug?: string; name?: string; quantity?: number }[] | null;
+  client_box_count?: number | null;
 }
 
 export interface ValuationTier {
@@ -124,7 +126,7 @@ export const TIER_META: Record<
   { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
 > = {
   curated: {
-    label: "Essential",
+    label: "Curated",
     tagline: "Precision and care for a seamless move.",
     accent: FOREST,
     bg: "#FFFFFF",

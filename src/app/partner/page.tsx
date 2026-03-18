@@ -56,7 +56,7 @@ export default async function PartnerDashboardPage() {
     <PartnerPortalClient
       orgId={org?.id || primaryOrgId}
       orgName={orgDisplayName}
-      orgType={org?.type || "retail"}
+      orgType={org?.vertical || org?.type || "retail"}
       contactName={firstName}
       userEmail={user.email || ""}
       portalFeatures={org?.portal_features ?? null}

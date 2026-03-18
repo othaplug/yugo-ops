@@ -16,11 +16,25 @@ interface Partner {
 }
 
 const TYPE_LABELS: Record<string, string> = {
+  // Legacy types
   retail: "Retail",
   designer: "Designer",
-  hospitality: "Hospitality",
   gallery: "Art Gallery",
+  // Canonical verticals
+  furniture_retailer: "Furniture Retailer",
+  interior_designer: "Interior Designer",
+  cabinetry: "Cabinetry",
+  flooring: "Flooring",
+  art_gallery: "Art Gallery",
+  antique_dealer: "Antique Dealer",
+  hospitality: "Hospitality",
+  medical_equipment: "Medical Equipment",
+  av_technology: "AV / Technology",
+  appliances: "Appliances",
   realtor: "Realtor",
+  property_manager: "Property Manager",
+  developer: "Developer",
+  b2b: "Partner",
 };
 
 const TYPE_TAB_KEYS = ["all", "retail", "designer", "hospitality", "gallery", "realtor"] as const;

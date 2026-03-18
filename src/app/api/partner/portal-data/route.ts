@@ -16,11 +16,11 @@ export async function GET() {
 
   const { data: org } = await admin
     .from("organizations")
-    .select("type, name")
+    .select("type, vertical, name")
     .eq("id", primaryOrgId!)
     .single();
 
-  const orgType = org?.type || "retail";
+  const orgType = org?.vertical || org?.type || "retail";
 
   // Resolve org names for client_name fallback matching
   const orgNamesRes = await admin
@@ -64,10 +64,10 @@ export async function GET() {
       .select("id, invoice_number, client_name, amount, status, due_date, created_at, delivery_id, square_invoice_url, square_receipt_url")
       .in("organization_id", orgIds)
       .order("created_at", { ascending: false }),
-    orgType === "realtor"
+    (orgType === "realtor" || orgType === "property_manager" || orgType === "developer")
       ? admin.from("referrals").select("*").in("organization_id", orgIds).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as never[], error: null }),
-    (orgType === "designer" || orgType === "gallery")
+    (orgType === "designer" || orgType === "gallery" || orgType === "interior_designer" || orgType === "art_gallery" || orgType === "antique_dealer")
       ? admin.from("gallery_projects").select("*").in("gallery_org_id", orgIds).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as never[], error: null }),
   ]);

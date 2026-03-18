@@ -8,6 +8,7 @@ interface Org {
   id: string;
   name: string;
   type: string;
+  vertical?: string | null;
   contact_name?: string | null;
   default_pickup_address?: string | null;
 }
@@ -84,7 +85,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
       </div>
       <DeliveryDayForm
         orgId={selectedOrg.id}
-        orgType={selectedOrg.type || "retail"}
+        orgType={selectedOrg.vertical || selectedOrg.type || "retail"}
         initialPickupAddress={selectedOrg.default_pickup_address || ""}
         createApiUrl="/api/admin/deliveries/create"
         extraCreatePayload={{ organization_id: selectedOrg.id }}

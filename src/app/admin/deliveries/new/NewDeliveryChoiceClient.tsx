@@ -12,6 +12,7 @@ interface Org {
   id: string;
   name: string;
   type: string;
+  vertical?: string | null;
   email?: string;
   contact_name?: string;
   phone?: string;

@@ -232,11 +232,48 @@ export default function AdminPageClient({
 
       {/* ── Header ── */}
       <div className="mb-8">
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <h1 className="font-heading text-[26px] sm:text-[30px] md:text-[34px] font-bold text-[var(--tx)] tracking-tight leading-tight">
             {greeting}
           </h1>
-          <span className="text-[12px] text-[var(--tx3)] font-medium hidden sm:block">{dateStr}</span>
+          <div className="flex items-center gap-3">
+            {/* Quick Actions + button */}
+            <div className="relative" ref={quickActionsRef}>
+              <button
+                type="button"
+                title="Quick Actions"
+                aria-label="Quick Actions"
+                onClick={() => setQuickActionsOpen((v) => !v)}
+                className={createButtonBaseClass}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              {quickActionsOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+                  {[
+                    { href: "/admin/quotes/new", label: "New Quote" },
+                    { href: "/admin/moves/new", label: "New Move" },
+                    { href: "/admin/deliveries/new", label: "New Delivery" },
+                    { href: "/admin/deliveries", label: "Deliveries" },
+                    { href: "/admin/reports", label: "Reports" },
+                  ].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setQuickActionsOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            <span className="text-[12px] text-[var(--tx3)] font-medium hidden sm:block">{dateStr}</span>
+          </div>
         </div>
         {summaryParts.length > 0 && (
           <p className="text-[13px] text-[var(--tx3)] mt-1.5 font-medium">
@@ -442,45 +479,6 @@ export default function AdminPageClient({
 
         {/* ── RIGHT: Intelligence Column ── */}
         <div className="min-w-0 space-y-0">
-
-          {/* Quick Actions — 3D + button with hover dropdown */}
-          <div className="pb-6 flex items-center justify-between">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Quick Actions</h2>
-            <div className="relative" ref={quickActionsRef}>
-              <button
-                type="button"
-                title="Quick Actions"
-                aria-label="Quick Actions"
-                onClick={() => setQuickActionsOpen((v) => !v)}
-                className={createButtonBaseClass}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </button>
-              {quickActionsOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-                  {[
-                    { href: "/admin/quotes/new", label: "New Quote" },
-                    { href: "/admin/moves/new", label: "New Move" },
-                    { href: "/admin/deliveries/new", label: "New Delivery" },
-                    { href: "/admin/deliveries", label: "Deliveries" },
-                    { href: "/admin/reports", label: "Reports" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setQuickActionsOpen(false)}
-                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Revenue (multi-source) */}
           <div className="pb-6">

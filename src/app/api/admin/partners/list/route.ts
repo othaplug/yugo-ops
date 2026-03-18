@@ -12,7 +12,7 @@ export async function GET() {
     // Use admin client so RLS doesn't hide B2B orgs from staff (session client would return 0 rows)
     const { data: orgs, error: orgsError } = await admin
       .from("organizations")
-      .select("id, name, type, contact_name, email, phone, created_at, user_id")
+      .select("id, name, type, vertical, contact_name, email, phone, created_at, user_id")
       .not("type", "eq", "b2c")
       .order("name");
 
@@ -63,7 +63,7 @@ export async function GET() {
     const partners = orgs.map((org) => ({
       id: org.id,
       name: org.name,
-      type: org.type,
+      type: org.vertical || org.type,
       contact_name: org.contact_name,
       email: org.email,
       phone: org.phone,

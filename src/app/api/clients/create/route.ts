@@ -65,7 +65,9 @@ export async function POST(req: NextRequest) {
 
       const orgFields = {
         name: nameTrimmed,
-        type: typeVal,
+        // Keep type as b2b (safe for all DB constraint variants); vertical stores the partner vertical.
+        type: "b2b",
+        vertical: typeVal,
         contact_name: contactNameTrimmed,
         email: emailTrimmed,
         phone: phoneTrimmed,

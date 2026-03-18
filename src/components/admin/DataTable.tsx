@@ -17,6 +17,9 @@ import {
   Download,
   Columns3,
   ArrowUpDown,
+  Bookmark,
+  BookmarkCheck,
+  RotateCcw,
 } from "lucide-react";
 
 /* ════════════ Types ════════════ */
@@ -71,9 +74,45 @@ interface DataTableProps<T> {
   onSortChange?: (col: string, dir: "asc" | "desc") => void;
 }
 
+/* ════════════ Types ─ View Snapshot ════════════ */
+
+interface ViewSnapshot {
+  sortCol: string | null;
+  sortDir: "asc" | "desc";
+  hiddenCols: string[];
+  perPage: number;
+  v: 1;
+}
+
 /* ════════════ Helpers ════════════ */
 
 const STORAGE_PREFIX = "yugo_dt_";
+
+function loadViewSnapshot(tableId: string): ViewSnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tableId}_view`);
+    if (raw) return JSON.parse(raw) as ViewSnapshot;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveViewSnapshot(tableId: string, snap: ViewSnapshot) {
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${tableId}_view`, JSON.stringify(snap));
+  } catch { /* ignore */ }
+}
+
+function clearViewSnapshot(tableId: string) {
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${tableId}_view`);
+  } catch { /* ignore */ }
+}
+
+function hasViewSnapshot(tableId: string): boolean {
+  if (typeof window === "undefined") return false;
+  return !!localStorage.getItem(`${STORAGE_PREFIX}${tableId}_view`);
+}
 
 function loadHidden(tableId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -158,19 +197,30 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   /* ── State ── */
   const [search, setSearch] = useState("");
-  const [sortColInternal, setSortColInternal] = useState<string | null>(null);
-  const [sortDirInternal, setSortDirInternal] = useState<"asc" | "desc">("asc");
+  const [sortColInternal, setSortColInternal] = useState<string | null>(
+    () => loadViewSnapshot(tableId)?.sortCol ?? null,
+  );
+  const [sortDirInternal, setSortDirInternal] = useState<"asc" | "desc">(
+    () => loadViewSnapshot(tableId)?.sortDir ?? "asc",
+  );
   const sortCol = sortColProp ?? sortColInternal;
   const sortDir = sortDirProp ?? sortDirInternal;
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(() => loadPerPage(tableId, defaultPerPage));
+  const [perPage, setPerPage] = useState<number>(() => {
+    const sv = loadViewSnapshot(tableId);
+    return sv?.perPage ?? loadPerPage(tableId, defaultPerPage);
+  });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
+    const sv = loadViewSnapshot(tableId);
+    if (sv?.hiddenCols) return new Set(sv.hiddenCols);
     const stored = loadHidden(tableId);
     if (stored.size > 0) return stored;
     return new Set(columns.filter((c) => c.defaultHidden).map((c) => c.id));
   });
   const [showColMenu, setShowColMenu] = useState(false);
+  const [savedViewExists, setSavedViewExists] = useState(() => hasViewSnapshot(tableId));
+  const [saveFlash, setSaveFlash] = useState(false);
 
   useEffect(() => { setPage(1); }, [search, data.length]);
 
@@ -373,6 +423,35 @@ export default function DataTable<T>({
     [tableId],
   );
 
+  /* ── Save / Reset View ── */
+  const handleSaveView = useCallback(() => {
+    const snap: ViewSnapshot = {
+      sortCol: sortCol ?? null,
+      sortDir,
+      hiddenCols: [...hiddenCols],
+      perPage,
+      v: 1,
+    };
+    saveViewSnapshot(tableId, snap);
+    setSavedViewExists(true);
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  }, [sortCol, sortDir, hiddenCols, perPage, tableId]);
+
+  const handleResetView = useCallback(() => {
+    clearViewSnapshot(tableId);
+    setSavedViewExists(false);
+    setSortColInternal(null);
+    setSortDirInternal("asc");
+    const defaultHidden = new Set(columns.filter((c) => c.defaultHidden).map((c) => c.id));
+    setHiddenCols(defaultHidden);
+    saveHidden(tableId, defaultHidden);
+    setPerPage(defaultPerPage);
+    savePerPage(tableId, defaultPerPage);
+    setSearch("");
+    setPage(1);
+  }, [tableId, columns, defaultPerPage]);
+
   /* ── CSV export ── */
   const exportToCsv = useCallback(
     (rows: T[], filename: string) => {
@@ -487,6 +566,41 @@ export default function DataTable<T>({
               )}
             </div>
           )}
+
+          {/* Save View */}
+          <div className="flex items-center gap-1">
+            {savedViewExists && !saveFlash && (
+              <button
+                type="button"
+                onClick={handleResetView}
+                title="Reset to default view"
+                className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--red)] transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveView}
+              title={savedViewExists ? "Update saved view" : "Save current view (sort, columns, page size)"}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[10px] font-semibold transition-all duration-200 ${
+                saveFlash
+                  ? "border-[var(--grn)]/40 bg-[var(--grn)]/10 text-[var(--grn)]"
+                  : savedViewExists
+                    ? "border-[var(--gold)]/30 bg-[var(--gold)]/[0.07] text-[var(--gold)]"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40"
+              }`}
+            >
+              {saveFlash ? (
+                <BookmarkCheck className="w-3 h-3" />
+              ) : savedViewExists ? (
+                <BookmarkCheck className="w-3 h-3" />
+              ) : (
+                <Bookmark className="w-3 h-3" />
+              )}
+              {saveFlash ? "Saved!" : "Save View"}
+            </button>
+          </div>
         </div>
       </div>
 
