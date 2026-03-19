@@ -391,7 +391,7 @@ function CrewPopup({
 
   return (
     <div
-      className="absolute top-4 right-4 w-[340px] max-h-[480px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-xl z-20 animate-fade-up"
+      className="fixed sm:absolute bottom-0 sm:top-4 left-0 right-0 sm:left-auto sm:right-4 sm:bottom-auto w-full sm:w-[340px] max-h-[70vh] sm:max-h-[480px] overflow-y-auto bg-[var(--card)] border-t sm:border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl p-5 shadow-xl z-30 animate-fade-up"
       role="dialog"
       aria-label="Crew details"
     >
@@ -711,7 +711,7 @@ export default function UnifiedTrackingView({
         </div>
 
         {/* Top-left: connection status */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)]/95 border border-[var(--brd)] backdrop-blur-sm shadow-sm">
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)]/95 border border-[var(--brd)] backdrop-blur-sm shadow-sm max-w-[calc(100vw-96px)] sm:max-w-none overflow-hidden">
           <span className={`w-2 h-2 rounded-full ${eventSourceConnected ? "bg-[var(--grn)]" : "bg-[var(--red)] animate-pulse"}`} />
           <span className="text-[10px] font-semibold text-[var(--tx2)]">
             {eventSourceConnected ? "Live" : "Reconnecting…"}
@@ -722,8 +722,8 @@ export default function UnifiedTrackingView({
           {loading && <span className="text-[9px] text-[var(--tx3)] animate-pulse">Updating…</span>}
         </div>
 
-        {/* Bottom-left panel: Active Jobs + Teams */}
-        <div className="absolute bottom-3 left-3 z-10 w-[360px] max-h-[55vh] bg-[var(--card)]/95 border border-[var(--brd)] rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col">
+        {/* Bottom panel: Active Jobs + Teams — full-width bottom sheet on mobile, floating card on desktop */}
+        <div className="absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] max-h-[46vh] sm:max-h-[55vh] bg-[var(--card)]/97 border-t sm:border border-[var(--brd)] sm:rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col rounded-t-2xl sm:rounded-xl">
           {/* Panel tabs */}
           <div className="flex border-b border-[var(--brd)]">
             <button

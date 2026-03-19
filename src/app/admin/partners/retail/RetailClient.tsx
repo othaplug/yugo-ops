@@ -82,17 +82,17 @@ export default function RetailClient({
 
   return (
     <div>
-      {/* Action buttons - positioned right above tabs */}
+      {/* Tabs + action */}
       <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex gap-6 border-b border-[var(--brd)]/40 -mb-px">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
+              className={`px-1 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
-                  : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
+                  ? "text-[var(--gold)] border-[var(--gold)]"
+                  : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
               }`}
             >
               {t.label}

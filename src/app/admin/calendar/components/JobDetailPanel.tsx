@@ -169,7 +169,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
               )}
               {event.truckName && (
                 <div className="flex items-center gap-1.5 text-[13px] text-[var(--tx)]">
-                  <Icon name="truck" className="w-3.5 h-3.5 shrink-0 stroke-[1.75] stroke-current text-[var(--tx3)]" />
+                  <Icon name="mapPin" className="w-3.5 h-3.5 shrink-0 stroke-[1.75] stroke-current text-[var(--tx3)]" />
                   {event.truckName}
                 </div>
               )}

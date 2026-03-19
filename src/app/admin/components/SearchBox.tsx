@@ -7,7 +7,7 @@ import { Icon } from "@/components/AppIcons";
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code";
 
 const TYPE_ICONS: Record<string, string> = {
-  Move: "truck",
+  Move: "mapPin",
   Quote: "fileText",
   Delivery: "package",
   Client: "users",

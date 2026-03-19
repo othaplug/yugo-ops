@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const metadata = { title: "Retail Partners" };
+export const metadata = { title: "Retail" };
 
 import BackButton from "../../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
@@ -74,7 +74,7 @@ export default async function RetailPage() {
 
       <div className="mb-8">
         <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Partners</p>
-        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Retail Partners</h1>
+        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Retail</h1>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">

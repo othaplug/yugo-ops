@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ToastProvider } from "./Toast";
 import { NotificationProvider } from "./NotificationContext";
 import { PendingChangeRequestsProvider, usePendingChangeRequests } from "./PendingChangeRequestsContext";
@@ -138,12 +138,78 @@ function SidebarNavItem({
   );
 }
 
+const QUICK_ACTIONS = [
+  {
+    label: "New Move",
+    href: "/admin/moves/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="5" cy="17" r="2" /><circle cx="19" cy="5" r="2" /><path d="M12 17h4.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H12" />
+      </svg>
+    ),
+    color: "var(--gold)",
+  },
+  {
+    label: "New Quote",
+    href: "/admin/quotes/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" />
+      </svg>
+    ),
+    color: "var(--grn)",
+  },
+  {
+    label: "New Contact",
+    href: "/admin/clients/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" />
+      </svg>
+    ),
+    color: "#7C9FD4",
+  },
+  {
+    label: "New Partner",
+    href: "/admin/partners/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    color: "#B07FD4",
+  },
+  {
+    label: "New Delivery",
+    href: "/admin/deliveries/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+      </svg>
+    ),
+    color: "#D4A07F",
+  },
+  {
+    label: "New Invoice",
+    href: "/admin/invoices/new",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+      </svg>
+    ),
+    color: "#7FD4C1",
+  },
+];
+
 export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", twoFactorEnabled = false, children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; twoFactorEnabled?: boolean; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [quoteBadge, setQuoteBadge] = useState(0);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const quickActionsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
@@ -153,6 +219,22 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       .in("status", ["sent", "viewed"])
       .then(({ count }) => { if (typeof count === "number") setQuoteBadge(count); });
   }, [pathname]);
+
+  useEffect(() => {
+    if (!quickActionsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (quickActionsRef.current && !quickActionsRef.current.contains(e.target as Node)) {
+        setQuickActionsOpen(false);
+      }
+    };
+    const escHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setQuickActionsOpen(false); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", escHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", escHandler);
+    };
+  }, [quickActionsOpen]);
 
   const userLevel = ROLE_LEVEL[role] ?? 0;
 
@@ -339,39 +421,127 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             </div>
 
             {/* ── Mobile bottom navigation bar ── */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-              <div className="flex items-stretch h-14">
-                {MOBILE_NAV.map((item) => {
-                  const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
-                  const ItemIcon = item.Icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex-1 flex flex-col items-center justify-center gap-[3px] touch-manipulation transition-colors ${
-                        active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+            <div className="md:hidden" ref={quickActionsRef}>
+              {/* Quick Actions Sheet */}
+              {quickActionsOpen && (
+                <div className="fixed inset-0 z-[70]" aria-hidden="true">
+                  <div
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+                    onClick={() => setQuickActionsOpen(false)}
+                  />
+                  <div
+                    className="absolute bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-0 right-0 mx-3 mb-2 glass-topbar border border-[var(--brd)]/60 rounded-2xl overflow-hidden shadow-2xl"
+                    style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
+                  >
+                    <div className="px-4 pt-4 pb-1">
+                      <p className="text-[10px] font-bold tracking-[1.4px] uppercase text-[var(--tx3)]">Quick Create</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-px p-2">
+                      {QUICK_ACTIONS.map((action) => (
+                        <button
+                          key={action.label}
+                          onClick={() => {
+                            setQuickActionsOpen(false);
+                            router.push(action.href);
+                          }}
+                          className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl hover:bg-[var(--card)] active:scale-95 transition-all touch-manipulation"
+                        >
+                          <span
+                            className="w-10 h-10 rounded-xl flex items-center justify-center"
+                            style={{ background: `${action.color}18`, color: action.color }}
+                          >
+                            {action.icon}
+                          </span>
+                          <span className="text-[10px] font-semibold text-[var(--tx2)] leading-tight text-center">
+                            {action.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-2" />
+                  </div>
+                </div>
+              )}
+
+              <nav
+                className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50"
+                style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+              >
+                <div className="flex items-end h-16">
+                  {/* Left two nav items */}
+                  {MOBILE_NAV.slice(0, 2).map((item) => {
+                    const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
+                    const ItemIcon = item.Icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation transition-colors ${
+                          active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                        }`}
+                      >
+                        <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                          <ItemIcon />
+                        </span>
+                        <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {/* Centre gold + button */}
+                  <div className="flex-1 flex flex-col items-center justify-end pb-1 relative">
+                    <button
+                      onClick={() => setQuickActionsOpen((v) => !v)}
+                      aria-label="Quick create"
+                      aria-expanded={quickActionsOpen}
+                      className={`-mt-5 w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all touch-manipulation ${
+                        quickActionsOpen
+                          ? "bg-[var(--gold2)] rotate-45"
+                          : "bg-[var(--gold)]"
                       }`}
+                      style={{ boxShadow: "0 4px 18px rgba(201,169,98,0.45)" }}
                     >
-                      <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                        <ItemIcon />
-                      </span>
-                      <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
-                    </Link>
-                  );
-                })}
-                {/* More — opens full sidebar drawer */}
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="flex-1 flex flex-col items-center justify-center gap-[3px] touch-manipulation text-[var(--tx3)]"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
-                    <rect width="7" height="7" x="3" y="14" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" />
-                  </svg>
-                  <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
-                </button>
-              </div>
-            </nav>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                    </button>
+                    <span className="mt-1 text-[9px] font-bold tracking-wide uppercase leading-none text-[var(--tx3)]">Create</span>
+                  </div>
+
+                  {/* Right two nav items */}
+                  {MOBILE_NAV.slice(2).map((item) => {
+                    const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
+                    const ItemIcon = item.Icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation transition-colors ${
+                          active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                        }`}
+                      >
+                        <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                          <ItemIcon />
+                        </span>
+                        <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {/* More — opens full sidebar drawer */}
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
+                      <rect width="7" height="7" x="3" y="14" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" />
+                    </svg>
+                    <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
+                  </button>
+                </div>
+              </nav>
+            </div>
 
           </div>
           </ToastProvider>

@@ -539,7 +539,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           {!features.showReferrals && (
             <>
               {features.canCreateDelivery && !hasOverdueInvoices && (
-                <div className="relative ml-6">
+                <div className="relative ml-6 hidden sm:block">
                   <button
                     type="button"
                     onClick={() => setBookServiceModalOpen(!bookServiceModalOpen)}
@@ -583,7 +583,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="text-[13px] font-semibold text-[var(--tx)]">Book Day Rate</div>
-                                <div className="text-[11px] text-[var(--tx3)]">Full day truck &amp; crew</div>
+                                <div className="text-[11px] text-[var(--tx3)]">Full day crew &amp; van</div>
                               </div>
                             </Link>
                           )}
@@ -660,9 +660,9 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           <div className="mb-8"><DeliveryKPIs data={data} /></div>
         )}
 
-        {/* Tabs — fixed min-widths so counts (e.g. Today (0)) don't cause layout shift */}
+        {/* Tabs — horizontally scrollable, no wrapping */}
         <div className="overflow-hidden mb-4">
-          <div className="flex flex-wrap justify-center gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
+          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
             {tabs.map((t) => {
               const hasCount = /\(\d+\)$/.test(t.label);
               return (
@@ -1117,7 +1117,7 @@ function PartnerNotifIcon({ name }: { name: string }) {
   const props = { width: 14, height: 14, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   switch (name) {
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5" /></svg>;
-    case "truck": return <svg {...props}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /></svg>;
+    case "truck": return <svg {...props}><path d="M5 8h14" /><path d="M5 12h14" /><rect width="16" height="16" x="4" y="4" rx="2" /><path d="M9 20v-6h6v6" /></svg>;
     case "x": return <svg {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
     case "dollar": return <svg {...props}><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
     case "clipboard": return <svg {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>;

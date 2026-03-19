@@ -15,7 +15,7 @@ const NAV = [
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
   { label: "B2B Partners", items: [
-    { name: "Jobs", icon: "truck", href: "/admin/deliveries", badge: "pending_deliveries" },
+    { name: "Jobs", icon: "mapPin", href: "/admin/deliveries", badge: "pending_deliveries" },
     { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
     { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
     { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },

@@ -716,59 +716,57 @@ export default function RateTemplatesPanel() {
       <div className="space-y-3">
         {templates.map((t) => (
           <div key={t.id} className="border border-[var(--brd)] rounded-xl p-4 bg-[var(--card)]">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-heading font-bold text-[15px] text-[var(--tx)]">{t.template_name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setEditingNameFor(t)}
-                    className="text-[10px] text-[var(--tx3)] hover:text-[var(--gold)] hover:underline"
-                    title="Edit template name"
-                  >
-                    Edit name
-                  </button>
-                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
-                    {t.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-                {t.description && (
-                  <p className="text-[11px] text-[var(--tx3)] mb-2 line-clamp-2">{t.description}</p>
-                )}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--tx3)]">
-                  <span>{t.verticals_covered?.length || 0} verticals</span>
-                  <span>·</span>
-                  <button onClick={() => handleViewPartners(t.id)} className="text-[var(--gold)] hover:underline font-semibold">
-                    {loadingId === t.id + "_p" ? "Loading…" : `${t.partner_count} partner${t.partner_count !== 1 ? "s" : ""}`}
-                  </button>
-                  <span>·</span>
-                  <span>Updated {new Date(t.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                <button
-                  onClick={() => handleEditRates(t.id)}
-                  disabled={loadingId === t.id}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all"
-                >
-                  {loadingId === t.id ? "Loading…" : "Edit Rates"}
-                </button>
-                <button
-                  onClick={() => handleDuplicate(t)}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-all"
-                >
-                  Duplicate
-                </button>
-                <button
-                  onClick={() => setDeletingTemplate(t)}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--red)] hover:border-[var(--red)] hover:bg-[var(--rdim)] transition-all"
-                >
-                  Delete
-                </button>
-              </div>
+            {/* Top row: name + status badge */}
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="font-heading font-bold text-[15px] text-[var(--tx)]">{t.template_name}</span>
+              <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
+                {t.is_active ? "Active" : "Inactive"}
+              </span>
+            </div>
+            {/* Meta row */}
+            {t.description && (
+              <p className="text-[11px] text-[var(--tx3)] mb-2 line-clamp-2">{t.description}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--tx3)] mb-3">
+              <span>{t.verticals_covered?.length || 0} verticals</span>
+              <span>·</span>
+              <button onClick={() => handleViewPartners(t.id)} className="text-[var(--gold)] hover:underline font-semibold">
+                {loadingId === t.id + "_p" ? "Loading…" : `${t.partner_count} partner${t.partner_count !== 1 ? "s" : ""}`}
+              </button>
+              <span>·</span>
+              <span>Updated {new Date(t.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </div>
+            {/* Action buttons row — full-width on mobile */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleEditRates(t.id)}
+                disabled={loadingId === t.id}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all"
+              >
+                {loadingId === t.id ? "Loading…" : "Edit Rates"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingNameFor(t)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)]/60 hover:text-[var(--tx)] transition-all"
+              >
+                Edit Name
+              </button>
+              <button
+                onClick={() => handleDuplicate(t)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-all"
+              >
+                Duplicate
+              </button>
+              <button
+                onClick={() => setDeletingTemplate(t)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--red)] hover:border-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+              >
+                Delete
+              </button>
             </div>
             {t.verticals_covered && t.verticals_covered.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-[var(--brd)]/30">
+              <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-[var(--brd)]/30 overflow-hidden">
                 {t.verticals_covered.map((v) => (
                   <span key={v} className="px-2 py-0.5 rounded bg-[var(--bgsub)] text-[9px] text-[var(--tx3)] font-medium capitalize">
                     {v.replace(/_/g, " ")}

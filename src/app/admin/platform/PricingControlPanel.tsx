@@ -232,7 +232,7 @@ function AnalyticsDashboard() {
     { label: "Quotes (30d)", value: data.quotesSent || 0 },
     { label: "Conversion", value: `${data.conversionRate || 0}%` },
     { label: "Avg Quote", value: currency(Number(data.avgQuoteAmount) || 0) },
-    { label: "Top Tier", value: data.mostQuotedTier || "—" },
+    { label: "Top Tier", value: TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "—") },
     { label: "Best Hood", value: data.highestConvertingHood || "—" },
     { label: "Lost Reason", value: data.topLostReason || "—" },
   ];

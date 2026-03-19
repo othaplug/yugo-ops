@@ -87,7 +87,7 @@ const columns: ColumnDef<Partner>[] = [
       const active = (p.status || "active") === "active";
       return (
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${active ? "bg-[var(--grn)]/10 text-[var(--grn)]" : "bg-[var(--tx3)]/10 text-[var(--tx3)]"}`}>
-          {active ? "Active" : p.status}
+          {active ? "Active" : ({ inactive: "Inactive", suspended: "Suspended", pending_approval: "Pending", pending: "Pending" }[p.status || ""] ?? (p.status ? p.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Inactive"))}
         </span>
       );
     },

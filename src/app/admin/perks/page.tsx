@@ -593,9 +593,7 @@ export default function PerksPage() {
           <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Perks & Referrals</h1>
         </div>
         {tab === "perks" && (
-          <button type="button" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors mt-1">
-            <Plus className="w-[13px] h-[13px]" /> Create Perk
-          </button>
+          <CreateButton onClick={() => setShowCreate(true)} title="Create Perk" />
         )}
         {tab === "referrals" && (
           <CreateButton onClick={() => setShowCreatePromo(true)} title="CREATE PROMO CODE" />

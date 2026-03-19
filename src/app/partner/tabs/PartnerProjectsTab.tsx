@@ -46,8 +46,8 @@ const VENDOR_STATUS_COLOR: Record<string, string> = {
 const VENDOR_STATUS_ICON: Record<string, string> = {
   done: "check",
   received: "check",
-  transit: "truck",
-  in_transit: "truck",
+  transit: "mapPin",
+  in_transit: "mapPin",
   wait: "clock",
   pending: "clock",
   late: "alert",
@@ -181,10 +181,10 @@ function VendorIcon({ type, status }: { type: string; status: string }) {
       </div>
     );
   }
-  if (type === "truck") {
+  if (type === "mapPin") {
     return (
       <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </div>
     );
   }

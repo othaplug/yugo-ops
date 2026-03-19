@@ -3,8 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
-import { formatCurrency } from "@/lib/format-currency";
-import BackButton from "../../components/BackButton";
 import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -30,11 +28,6 @@ export default function DesignerDashboard({
   projects: any[];
 }) {
   const allProjects = projects;
-  const activeProjects = allProjects.filter((p) => ACTIVE_STATUSES.includes(p.status || ""));
-  const completedProjects = allProjects.filter((p) => ["completed", "invoiced"].includes(p.status || ""));
-  const totalDeliveryRevenue = useMemo(() =>
-    deliveries.reduce((sum: number, d: any) => sum + (Number(d.total_price) || Number(d.quoted_price) || 0), 0),
-  [deliveries]);
 
   const [activeTab, setActiveTab] = useState<"deliveries" | "projects" | "partners">("deliveries");
   const [selectedPartner, setSelectedPartner] = useState("all");
@@ -67,55 +60,18 @@ export default function DesignerDashboard({
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
-
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Designer Partners</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{orgs.length} active partner{orgs.length !== 1 ? "s" : ""} · {deliveries.length} deliveries</p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Projects</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{allProjects.length}</span>
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{activeProjects.length}</span>
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{completedProjects.length}</span>
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Delivery Revenue</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCurrency(totalDeliveryRevenue)}</span>
-          </div>
-        </div>
-      </div>
-
+    <div>
       {/* Tabs + Actions */}
       <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex gap-6 border-b border-[var(--brd)]/40 -mb-px">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
+              className={`px-1 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
-                  : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
+                  ? "text-[var(--gold)] border-[var(--gold)]"
+                  : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
               }`}
             >
               {t.label}
@@ -146,7 +102,7 @@ export default function DesignerDashboard({
                 {orgs.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="divide-y divide-[var(--brd)]/30">
+            <div className="divide-y divide-[var(--brd)]/50">
               {filteredDeliveries.length === 0 ? (
                 <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">
                   {search || selectedPartner !== "all" ? "No deliveries match your filter." : "No deliveries yet."}
@@ -155,24 +111,26 @@ export default function DesignerDashboard({
                 const statusLabel = toTitleCase(d.status || "");
                 const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
                 return (
-                  <Link key={d.id} href={getDeliveryDetailPath(d)} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
-                        <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                  <div key={d.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
+                    <Link href={getDeliveryDetailPath(d)} className="flex items-center justify-between min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                          <span className="text-[10px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
+                        </div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
+                          {d.client_name && <span className="font-medium">{d.client_name}</span>}
+                          {d.delivery_address && <span> · {d.delivery_address}</span>}
+                          {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                        {d.client_name && <span className="font-medium">{d.client_name}</span>}
-                        {d.delivery_address && <span> · {d.delivery_address}</span>}
-                        {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                      <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                        <span className="text-[10px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-[10px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 );
               })}
             </div>
@@ -195,26 +153,28 @@ export default function DesignerDashboard({
                 const org = Array.isArray(project.organizations) ? project.organizations[0] : project.organizations;
                 const partnerName = org?.name || "—";
                 const isActive = ACTIVE_STATUSES.includes(project.status || "");
-                const statusLabel = (project.status || "").replace("_", " ");
+                const statusLabel = (project.status || "").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
                 return (
-                  <Link key={project.id} href={`/admin/projects/${project.id}?from=designers`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.project_name}</span>
-                        {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
-                        <span className="text-[10px] text-[var(--tx3)] font-mono">{project.project_number}</span>
+                  <div key={project.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
+                    <Link href={`/admin/projects/${project.id}?from=designers`} className="flex items-center justify-between min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.project_name}</span>
+                          {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
+                          <span className="text-[10px] text-[var(--tx3)] font-mono">{project.project_number}</span>
+                        </div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
+                          {partnerName}
+                          {project.site_address && ` · ${project.site_address}`}
+                          {project.target_end_date && ` · ${new Date(project.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
-                        {partnerName}
-                        {project.site_address && ` · ${project.site_address}`}
-                        {project.target_end_date && ` · ${new Date(project.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                      <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded capitalize ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded capitalize ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 );
               })}
             </div>

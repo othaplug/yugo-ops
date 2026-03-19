@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 const FALLBACK_ITEMS = [
-  { label: "Truck in good condition", status: "ok" as const, note: null as string | null },
+  { label: "Vehicle in good condition", status: "ok" as const, note: null as string | null },
   { label: "Equipment & supplies ready", status: "ok" as const, note: null as string | null },
   { label: "Dolly, straps, blankets", status: "ok" as const, note: null as string | null },
   { label: "First aid kit accessible", status: "ok" as const, note: null as string | null },

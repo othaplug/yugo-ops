@@ -151,13 +151,21 @@ function formatRelative(iso: string): string {
 }
 
 const TAG_COLORS: Record<string, string> = {
+  retail: "text-[var(--gold)]/80",
   Retail: "text-[var(--gold)]/80",
+  move: "text-[#3B82F6]/80",
   Move: "text-[#3B82F6]/80",
+  delivery: "text-[var(--org)]/80",
   Delivery: "text-[var(--org)]/80",
+  office: "text-[var(--pur)]/80",
   Office: "text-[var(--pur)]/80",
+  single_item: "text-[var(--grn)]/80",
   "Single Item": "text-[var(--grn)]/80",
+  gallery: "text-[#3B82F6]/80",
   Gallery: "text-[#3B82F6]/80",
+  hospitality: "text-[var(--org)]/80",
   Hospitality: "text-[var(--org)]/80",
+  designer: "text-[var(--pur)]/80",
   Designer: "text-[var(--pur)]/80",
 };
 
@@ -521,7 +529,9 @@ export default function AdminPageClient({
                 <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">All &rarr;</Link>
               </div>
               <div className="divide-y divide-[var(--brd)]/30">
-                {upcomingJobs.slice(0, 5).map((job) => (
+                {upcomingJobs.slice(0, 5).map((job) => {
+                  const upTagColor = TAG_COLORS[job.tag] || TAG_COLORS[job.tag?.toLowerCase()] || "text-[var(--tx3)]";
+                  return (
                   <Link
                     key={`up-${job.type}-${job.id}`}
                     href={getJobHref(job)}
@@ -530,9 +540,10 @@ export default function AdminPageClient({
                     <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
                     <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
-                    <span className="text-[9px] font-semibold uppercase text-[var(--tx3)]">{job.tag}</span>
+                    <span className={`text-[9px] font-semibold uppercase ${upTagColor}`}>{job.tag}</span>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

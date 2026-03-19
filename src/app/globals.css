@@ -573,9 +573,9 @@ input[type="time"] {
   padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
-/* Bottom padding for mobile nav bar (56px bar + device safe area) */
+/* Bottom padding for mobile nav bar (64px bar + device safe area) */
 .pb-mobile-nav {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Slide-up animation for bottom sheets */

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Badge from "../../components/Badge";
+import { useRouter } from "next/navigation";
 import FilterBar, { SortableHeader } from "../../components/FilterBar";
+import { useToast } from "../../components/Toast";
 import { AddReferralButton, AddRealtorButton } from "./RealtorsClient";
 import AgentDetailModal from "./AgentDetailModal";
 import { formatCurrency } from "@/lib/format-currency";
@@ -25,12 +26,15 @@ type Realtor = { id: string; agent_name: string; email?: string | null; brokerag
 
 const STATUS_OPTIONS = [
   { value: "", label: "All status" },
+  { value: "new", label: "New" },
   { value: "lead", label: "Lead" },
   { value: "quoted", label: "Quoted" },
   { value: "booked", label: "Booked" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
 ];
+
+const STATUS_STAGE_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "");
 
 const TIER_OPTIONS = [
   { value: "", label: "All tiers" },
@@ -50,7 +54,10 @@ export default function RealtorsTable({
   clientNameToMoveId?: Record<string, string>;
   realtors?: Realtor[];
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [selectedAgent, setSelectedAgent] = useState<{ name: string; brokerage: string | null } | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [agentFilter, setAgentFilter] = useState("");
   const [tierFilter, setTierFilter] = useState("");
@@ -178,8 +185,43 @@ export default function RealtorsTable({
                 <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.client_name}</td>
                 <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.property}</td>
                 <td className="px-4 py-2.5 text-[10px] border-b border-[var(--brd)]">{r.tier}</td>
-                <td className="px-4 py-2.5 border-b border-[var(--brd)]">
-                  <Badge status={r.status} />
+                <td className="px-4 py-2.5 border-b border-[var(--brd)]" onClick={(e) => e.stopPropagation()}>
+                  <select
+                    value={(r.status || "").toLowerCase()}
+                    onChange={async (e) => {
+                      const status = e.target.value;
+                      if (!status) return;
+                      setUpdatingId(r.id);
+                      try {
+                        const res = await fetch(`/api/admin/referrals/${r.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ status }),
+                        });
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({}));
+                          throw new Error(err.error || "Failed to update");
+                        }
+                        toast("Status updated", "check");
+                        router.refresh();
+                      } catch (err) {
+                        toast(err instanceof Error ? err.message : "Failed to update status", "x");
+                      } finally {
+                        setUpdatingId(null);
+                      }
+                    }}
+                    disabled={updatingId === r.id}
+                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] focus:border-[var(--gold)] outline-none cursor-pointer disabled:opacity-50 min-w-[100px]"
+                  >
+                    {[
+                      ...STATUS_STAGE_OPTIONS,
+                      ...(STATUS_STAGE_OPTIONS.some((o) => o.value === (r.status || "").toLowerCase())
+                        ? []
+                        : [{ value: (r.status || "").toLowerCase(), label: (r.status || "Unknown").replace(/\b\w/g, (c) => c.toUpperCase()) }]),
+                    ].map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="px-4 py-2.5 text-[10px] font-semibold border-b border-[var(--brd)]">
                   {Number(r.commission) > 0 ? formatCurrency(r.commission) : "—"}
