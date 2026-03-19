@@ -329,7 +329,7 @@ export default function CrewDashboardPage() {
                               Return to Job
                             </>
                           ) : (
-                            "Start Job"
+                            "Start job"
                           )}
                         </Link>
                       ) : (

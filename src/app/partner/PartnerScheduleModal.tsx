@@ -6,7 +6,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { Plus, Trash2, Truck, Send, Calendar } from "lucide-react";
+import { Plus, Trash2, Send, Calendar } from "lucide-react";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 
@@ -372,7 +372,6 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       onClick={() => setVehicleType(v.value as VehicleType)}
                       className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${vehicleType === v.value ? "border-[#C9A962] bg-[#C9A962]/5" : "border-[var(--brd)] hover:border-[#C9A962]/50"}`}
                     >
-                      <Truck className={`w-4 h-4 mb-1 ${vehicleType === v.value ? "text-[#C9A962]" : "text-[var(--tx3)]"}`} />
                       <div className="text-[13px] font-semibold text-[var(--tx)]">{v.label}</div>
                       <div className="text-[10px] text-[var(--tx3)]">{v.capacity}</div>
                       <div className="text-[10px] text-[var(--tx3)]">Max payload: {v.payload}</div>
@@ -695,7 +694,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
                 disabled={submitting}
                 className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
               >
-                {submitting ? "Submitting…" : "Submit Delivery Request"}
+                {submitting ? "Submitting…" : "Submit delivery request"}
               </button>
             ) : (
               <button

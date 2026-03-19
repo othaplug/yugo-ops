@@ -293,7 +293,7 @@ export default function ChangeRequestsClient({
           pagination
           exportable
           columnToggle
-          emptyMessage="No change requests yet."
+          emptyMessage="No change requests yet"
           emptySubtext="Clients submit requests from their move portal."
         />
       </div>

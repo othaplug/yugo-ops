@@ -369,7 +369,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 disabled={profileLoading}
                 className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
               >
-                {profileLoading ? "Saving…" : profileSaved ? "Saved!" : "Save Changes"}
+                {profileLoading ? "Saving…" : profileSaved ? "Saved!" : "Save changes"}
               </button>
             </div>
           )}
@@ -403,7 +403,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 onClick={saveNotifPrefs}
                 className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
               >
-                {prefsSaved ? "Saved!" : "Save Preferences"}
+                {prefsSaved ? "Saved!" : "Save preferences"}
               </button>
 
               {notifPrefs.email_daily_summary && (
@@ -435,7 +435,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                         : "bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20"
                     }`}
                   >
-                    {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent" : summaryTestResult === "error" ? "Failed" : "Send Test"}
+                    {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent" : summaryTestResult === "error" ? "Failed" : "Send test"}
                   </button>
                 </div>
               )}
@@ -515,7 +515,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 onClick={saveDeliveryPrefs}
                 className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
               >
-                {prefsSaved ? "Saved!" : "Save Preferences"}
+                {prefsSaved ? "Saved!" : "Save preferences"}
               </button>
             </div>
           )}

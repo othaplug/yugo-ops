@@ -171,7 +171,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
                 Cancel
               </button>
               <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl text-[13px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50">
-                {saving ? "Saving…" : "Save Changes"}
+                {saving ? "Saving…" : "Save changes"}
               </button>
             </div>
           </form>

@@ -239,10 +239,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   const userLevel = ROLE_LEVEL[role] ?? 0;
 
   const MOBILE_NAV = [
-    { href: "/admin",          label: "Home",     Icon: Icons.home,      exact: true  as const },
-    { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.dispatch,  minRole: "dispatcher" },
-    { href: "/admin/moves",    label: "Moves",    Icon: Icons.truck },
-    { href: "/admin/clients",  label: "Contacts", Icon: Icons.userCheck, minRole: "admin" },
+    { href: "/admin", label: "Home", Icon: Icons.home, exact: true as const },
   ].filter((item) => {
     const needed = ROLE_LEVEL[(item as { minRole?: string }).minRole ?? "viewer"] ?? 0;
     return userLevel >= needed || isSuperAdmin;

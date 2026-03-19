@@ -212,7 +212,6 @@ export default function DataTable<T>({
   exportFilename = "export",
   columnToggle = true,
   onRowClick,
-  emptyIcon,
   emptyMessage = "No results",
   emptySubtext,
   rowClassName,
@@ -704,7 +703,7 @@ export default function DataTable<T>({
               ) : (
                 <Bookmark className="w-3 h-3" />
               )}
-              {saveFlash ? "Saved!" : "Save View"}
+              {saveFlash ? "Saved!" : "Save view"}
             </button>
           </div>
         </div>
@@ -829,7 +828,6 @@ export default function DataTable<T>({
                   colSpan={visibleCols.length + (selectable ? 1 : 0) + 1}
                 >
                   <div className="dt-empty">
-                    {emptyIcon && <div className="flex justify-center mb-3">{emptyIcon}</div>}
                     <p className="dt-empty-title">{emptyMessage}</p>
                     {emptySubtext && (
                       <p className="dt-empty-sub">{emptySubtext}</p>
@@ -906,7 +904,6 @@ export default function DataTable<T>({
       <div className="md:hidden">
         {paged.length === 0 ? (
           <div className="py-14 px-6 text-center">
-            {emptyIcon && <div className="mb-3 flex justify-center opacity-40">{emptyIcon}</div>}
             <p className="text-[14px] font-semibold text-[var(--tx3)]">{emptyMessage}</p>
             {emptySubtext && <p className="text-[12px] text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>}
           </div>

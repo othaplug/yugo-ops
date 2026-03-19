@@ -191,7 +191,7 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
         className="w-full py-3 rounded-full font-semibold text-[14px] text-white disabled:opacity-40 transition-all hover:opacity-90"
         style={{ backgroundColor: FOREST }}
       >
-        {submitting ? "Submitting…" : "Submit Feedback"}
+        {submitting ? "Submitting…" : "Submit feedback"}
       </button>
     </div>
   );

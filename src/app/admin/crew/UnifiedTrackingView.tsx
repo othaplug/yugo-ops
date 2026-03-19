@@ -913,7 +913,6 @@ export default function UnifiedTrackingView({
 
                 {activeSessions.length === 0 && todayMoves.length === 0 && todayDeliveries.length === 0 && (
                   <div className="px-4 py-10 text-center">
-                    <div className="text-[var(--tx3)]/30 mb-2 flex justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg></div>
                     <div className="text-[12px] font-medium text-[var(--tx3)]">No jobs today</div>
                     <div className="text-[10px] text-[var(--tx3)]/60 mt-1">Active jobs and crew tracking will appear here</div>
                   </div>
@@ -924,7 +923,6 @@ export default function UnifiedTrackingView({
             {activePanel === "teams" && (
               crews.length === 0 ? (
                 <div className="px-4 py-10 text-center">
-                  <div className="text-[var(--tx3)]/30 mb-2 flex justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg></div>
                   <div className="text-[12px] font-medium text-[var(--tx3)]">No teams configured</div>
                   <div className="text-[10px] text-[var(--tx3)]/60 mt-1">
                     <Link href="/admin/platform?tab=teams" className="text-[var(--gold)] hover:underline">Add teams in settings</Link>

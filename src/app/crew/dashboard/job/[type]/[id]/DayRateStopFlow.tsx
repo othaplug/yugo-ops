@@ -221,7 +221,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           className="px-4 py-2 rounded-xl text-[11px] font-semibold text-white disabled:opacity-50"
                           style={{ background: "linear-gradient(135deg,#22C55E,#16A34A)" }}
                         >
-                          {advancing === stop.id ? "…" : "Complete Stop →"}
+                          {advancing === stop.id ? "…" : "Complete stop →"}
                         </button>
                       )}
                     </div>

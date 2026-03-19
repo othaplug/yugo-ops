@@ -45,7 +45,7 @@ export default function PartnerRealtorTab({
     return (
       <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
         <p className="text-[14px] text-[#888]">
-          {mode === "active" ? "No active referrals." : "No completed referrals yet."}
+          {mode === "active" ? "No active referrals" : "No completed referrals yet"}
         </p>
       </div>
     );

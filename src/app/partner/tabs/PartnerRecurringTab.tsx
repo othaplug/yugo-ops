@@ -292,7 +292,7 @@ function ScheduleModal({
             disabled={saving}
             className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
           >
-            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}
+            {saving ? "Saving…" : isEdit ? "Save changes" : "Create schedule"}
           </button>
         </div>
       </div>
@@ -375,7 +375,6 @@ export default function PartnerRecurringTab({ orgId }: Props) {
         </div>
       ) : schedules.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-[var(--brd)] rounded-xl">
-          <div className="text-[var(--tx3)]/30 mb-3 flex justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></div>
           <h3 className="text-[14px] font-bold text-[var(--tx)] mb-1">No recurring schedules</h3>
           <p className="text-[12px] text-[var(--tx3)] mb-4 max-w-[280px] mx-auto">Set up a recurring schedule and we'll auto-create draft deliveries before each run.</p>
           <button

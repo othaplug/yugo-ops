@@ -124,7 +124,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                 disabled={sending}
                 className="w-full px-4 py-2.5 rounded-lg text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50"
               >
-                {sending ? "Sending..." : "Send Tracking Link"}
+                {sending ? "Sending..." : "Send tracking link"}
               </button>
             </>
           )}

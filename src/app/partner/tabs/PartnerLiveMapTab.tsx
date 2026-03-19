@@ -140,9 +140,8 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888] dark:text-[var(--tx3)]">Loading map...</div>
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#D4D0CB] dark:text-[var(--tx3)]">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 0 0-16 0c0 3 2.7 7 8 11.7Z"/></svg>
-            <p className="text-[14px] text-[#888] dark:text-[var(--tx3)] mt-3">No confirmed deliveries scheduled for today.</p>
-            <p className="text-[12px] text-[#aaa] dark:text-[var(--tx3)]/80 mt-1">Confirmed or dispatched deliveries will appear on the map here.</p>
+            <p className="text-[14px] text-[#888] dark:text-[var(--tx3)]">No Confirmed Deliveries Scheduled For Today.</p>
+            <p className="text-[12px] text-[#aaa] dark:text-[var(--tx3)]/80 mt-1">Confirmed Or Dispatched Deliveries Will Appear On The Map Here.</p>
           </div>
         ) : (
           <>

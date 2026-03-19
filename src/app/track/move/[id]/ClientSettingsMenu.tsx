@@ -484,7 +484,7 @@ export default function ClientSettingsMenu({
                         <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeOpacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
                         Submitting…
                       </>
-                    ) : "Submit Claim"}
+                    ) : "Submit claim"}
                   </button>
                 </div>
 

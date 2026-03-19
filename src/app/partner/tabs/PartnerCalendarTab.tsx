@@ -365,7 +365,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             style={{ backgroundColor: "#2C3E2D" }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Schedule Delivery
+            Schedule a delivery
           </button>
         </div>
       </div>
@@ -559,14 +559,13 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[var(--tx3)]/30 mb-3 flex justify-center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></div>
             <div className="text-[14px] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"
               style={{ backgroundColor: "#2C3E2D" }}
             >
-              Schedule a Delivery
+              Schedule a delivery
             </button>
           </div>
         ) : (
@@ -634,7 +633,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                       <div className="text-[11px] text-[#666] mt-0.5 truncate">→ {d.delivery_address}</div>
                     )}
                     <div className="flex items-center gap-2 mt-auto text-[10px] text-[#888]">
-                      {d.vehicle_type && <span className="inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h2" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /></svg> {d.vehicle_type}</span>}
+                      {d.vehicle_type && <span className="inline-flex items-center gap-0.5">{d.vehicle_type}</span>}
                       {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> {d.estimated_duration_hours}h</span>}
                       <span className="font-semibold" style={{ color: style.text }}>
                         {fmtDeliveryStatus(d.status || "pending")}

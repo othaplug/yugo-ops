@@ -147,11 +147,6 @@ export default function PartnerDeliveriesTab({
 
       {deliveries.length === 0 ? (
         <div className="empty-state border-t border-[var(--brd)]/30">
-          <div className="empty-state-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-4"/><path d="M8 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-            </svg>
-          </div>
           <p className="empty-state-title">
             {label === "today" ? "No deliveries today" : label === "upcoming" ? "No upcoming deliveries" : label === "history" ? "No completed deliveries" : "No deliveries"}
           </p>
@@ -172,11 +167,6 @@ export default function PartnerDeliveriesTab({
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state border-t border-[var(--brd)]/30">
-          <div className="empty-state-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-          </div>
           <p className="empty-state-title">No results</p>
           <p className="empty-state-sub">No deliveries match your current search or filter.</p>
         </div>

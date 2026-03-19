@@ -209,7 +209,6 @@ export default function AdminNotificationsPage() {
           <div className="p-8 text-center text-[12px] text-[var(--tx3)]">Loading...</div>
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center">
-            <Icon name="bell" className="w-8 h-8 mx-auto mb-3 text-[var(--tx3)]/30 stroke-current stroke-[1.5]" />
             <div className="text-[13px] text-[var(--tx3)]">No notifications found</div>
             {(search || sourceFilter || dateFrom || dateTo) && (
               <button

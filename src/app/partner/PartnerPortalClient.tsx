@@ -422,7 +422,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                     onClick={() => setWelcomeStep(welcomeStep + 1)}
                     className="flex-1 py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
                   >
-                    {welcomeStep === 0 ? "Get Started" : "Next"}
+                    {welcomeStep === 0 ? "Get started" : "Next"}
                   </button>
                 </div>
               ) : (
@@ -570,7 +570,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--bg)] transition-colors text-left"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="text-[13px] font-semibold text-[var(--tx)]">Schedule Delivery</div>
+                              <div className="text-[13px] font-semibold text-[var(--tx)]">Schedule delivery</div>
                               <div className="text-[11px] text-[var(--tx3)]">Single or multi-stop delivery</div>
                             </div>
                           </button>
@@ -660,9 +660,12 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           <div className="mb-8"><DeliveryKPIs data={data} /></div>
         )}
 
-        {/* Tabs — horizontally scrollable, no wrapping */}
+        {/* Tabs — horizontally scrollable, no wrapping, no vertical movement */}
         <div className="overflow-hidden mb-4">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4">
+          <div
+            className="flex items-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4"
+            style={{ touchAction: "pan-x", overscrollBehaviorX: "contain", overscrollBehaviorY: "none" }}
+          >
             {tabs.map((t) => {
               const hasCount = /\(\d+\)$/.test(t.label);
               return (
@@ -1027,7 +1030,7 @@ function ReferralForm() {
         </select>
       </div>
       <button type="submit" disabled={submitting} className="w-full mt-3 px-4 py-2.5 rounded-lg text-[12px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50">
-        {submitting ? "Submitting..." : success ? "Referral Submitted!" : "Submit Referral"}
+        {submitting ? "Submitting..." : success ? "Referral submitted!" : "Submit referral"}
       </button>
     </form>
   );
@@ -1117,7 +1120,6 @@ function PartnerNotifIcon({ name }: { name: string }) {
   const props = { width: 14, height: 14, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   switch (name) {
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5" /></svg>;
-    case "truck": return <svg {...props}><path d="M5 8h14" /><path d="M5 12h14" /><rect width="16" height="16" x="4" y="4" rx="2" /><path d="M9 20v-6h6v6" /></svg>;
     case "x": return <svg {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
     case "dollar": return <svg {...props}><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
     case "clipboard": return <svg {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>;

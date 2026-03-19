@@ -230,7 +230,7 @@ export default function CrewExpenseClient() {
           disabled={submitting}
           className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50"
         >
-          {submitting ? "Submitting…" : "Submit Expense"}
+          {submitting ? "Submitting…" : "Submit expense"}
         </button>
         </div>
       </form>

@@ -1006,7 +1006,7 @@ export default function PartnerB2BProjectsTab({
     <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
-          {scheduleMode === "pickup" ? "Ready for Pickup!" : "Schedule Delivery?"}
+          {scheduleMode === "pickup" ? "Ready for pickup!" : "Schedule delivery?"}
         </h3>
         <p className="text-[13px] text-[#666] mb-5">
           {scheduleMode === "pickup" ? (
@@ -1212,14 +1212,14 @@ export default function PartnerB2BProjectsTab({
             {st === "ready_for_pickup" && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("pickup"); }}
                 className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
-                Schedule Pickup
+                Schedule pickup
               </button>
             )}
 
             {WAREHOUSE_STATUSES.includes(st) && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("delivery"); }}
                 className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
-                Schedule Delivery
+                Schedule delivery
               </button>
             )}
 
@@ -1228,7 +1228,7 @@ export default function PartnerB2BProjectsTab({
               onClick={() => { setNoteItemId(isAddingNote ? null : item.id); setNoteItemText(""); }}
               className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] transition-colors"
             >
-              <MessageSquare className="inline w-3 h-3 mr-1 -mt-0.5" />Add Note
+              <MessageSquare className="inline w-3 h-3 mr-1 -mt-0.5" />Add note
             </button>
 
             {hasPhotos && (
