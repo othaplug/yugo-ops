@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
@@ -105,6 +106,14 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const isInProgress = ["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase().replace(/-/g, "_"));
   const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
   const isLocked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  }, [onClose]);
+  useEffect(() => {
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleEscape]);
 
   useEffect(() => {
     if (!isInProgress && !isCompleted) return;
@@ -226,9 +235,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
     ...(isDelivered ? [{ key: "pod" as const, label: "PoD" }] : []),
   ];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col sheet-card sm:modal-card" onClick={(e) => e.stopPropagation()}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card" style={{ maxHeight: "min(92dvh, 92vh)" }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between shrink-0">
           <div className="min-w-0">
@@ -547,4 +556,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }

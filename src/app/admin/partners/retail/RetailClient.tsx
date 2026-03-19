@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import { getDeliveryDetailPath } from "@/lib/move-code";
@@ -51,8 +51,6 @@ export default function RetailClient({
   const [activeTab, setActiveTab] = useState<"deliveries" | "partners">("deliveries");
   const [selectedPartner, setSelectedPartner] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [selectedDeliveries, setSelectedDeliveries] = useState<Set<string>>(new Set());
-  const [selectedPartners, setSelectedPartners] = useState<Set<string>>(new Set());
 
   const filteredDeliveries = useMemo(() => {
     let result = deliveries;
@@ -76,49 +74,6 @@ export default function RetailClient({
   }, [deliveries, selectedPartner, search, clients]);
 
   const visibleDeliveries = filteredDeliveries.slice(0, 25);
-  const allDeliveriesSelected = visibleDeliveries.length > 0 && visibleDeliveries.every((d) => selectedDeliveries.has(d.id));
-  const someDeliveriesSelected = visibleDeliveries.some((d) => selectedDeliveries.has(d.id));
-  const toggleAllDeliveries = useCallback(() => {
-    setSelectedDeliveries((prev) => {
-      const next = new Set(prev);
-      if (allDeliveriesSelected) {
-        visibleDeliveries.forEach((d) => next.delete(d.id));
-      } else {
-        visibleDeliveries.forEach((d) => next.add(d.id));
-      }
-      return next;
-    });
-  }, [allDeliveriesSelected, visibleDeliveries]);
-  const toggleDelivery = useCallback((id: string) => {
-    setSelectedDeliveries((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const allPartnersSelected = clients.length > 0 && clients.every((c) => selectedPartners.has(c.id));
-  const somePartnersSelected = clients.some((c) => selectedPartners.has(c.id));
-  const toggleAllPartners = useCallback(() => {
-    setSelectedPartners((prev) => {
-      const next = new Set(prev);
-      if (allPartnersSelected) {
-        clients.forEach((c) => next.delete(c.id));
-      } else {
-        clients.forEach((c) => next.add(c.id));
-      }
-      return next;
-    });
-  }, [allPartnersSelected, clients]);
-  const togglePartner = useCallback((id: string) => {
-    setSelectedPartners((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const tabs = [
     { key: "deliveries" as const, label: `Deliveries (${deliveries.length})` },
@@ -180,20 +135,6 @@ export default function RetailClient({
               </select>
             </div>
 
-            {/* Bulk action bar */}
-            {selectedDeliveries.size > 0 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
-                <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedDeliveries.size} selected</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDeliveries(new Set())}
-                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors ml-auto"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-
             {/* Deliveries list */}
             <div className="divide-y divide-[var(--brd)]/50">
               {filteredDeliveries.length === 0 ? (
@@ -202,37 +143,14 @@ export default function RetailClient({
                 </div>
               ) : (
                 <>
-                  <div
-                    className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={allDeliveriesSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = someDeliveriesSelected && !allDeliveriesSelected;
-                      }}
-                      onChange={toggleAllDeliveries}
-                      className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
-                    />
-                    <span className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Select all</span>
-                  </div>
                   {visibleDeliveries.map((d) => {
                     const statusLabel = toTitleCase(d.status || "");
                     const badgeClass = STATUS_BADGE[(d.status || "").toLowerCase()] || "text-[var(--tx3)] bg-[var(--bg)]";
                     return (
                       <div
                         key={d.id}
-                        className={`flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors ${selectedDeliveries.has(d.id) ? "bg-[var(--gold)]/[0.04]" : ""}`}
+                        className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
                       >
-                        <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={selectedDeliveries.has(d.id)}
-                            onChange={() => toggleDelivery(d.id)}
-                            className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
-                          />
-                        </div>
                         <Link
                           href={getDeliveryDetailPath(d)}
                           className="flex items-center justify-between min-w-0 flex-1"
@@ -278,20 +196,6 @@ export default function RetailClient({
           <div>
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
 
-            {/* Bulk action bar */}
-            {selectedPartners.size > 0 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
-                <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedPartners.size} selected</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPartners(new Set())}
-                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors ml-auto"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-
             <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
@@ -302,36 +206,13 @@ export default function RetailClient({
               </div>
             ) : (
               <>
-                <div
-                  className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    type="checkbox"
-                    checked={allPartnersSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = somePartnersSelected && !allPartnersSelected;
-                    }}
-                    onChange={toggleAllPartners}
-                    className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
-                  />
-                  <span className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider">Select all</span>
-                </div>
                 {clients.map((c) => {
                   const stats = byPartner[c.name || ""] || { revenue: 0, owing: 0, deliveryCount: 0 };
                   return (
                     <div
                       key={c.id}
-                      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors ${selectedPartners.has(c.id) ? "bg-[var(--gold)]/[0.04]" : ""}`}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
                     >
-                      <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-                        <input
-                          type="checkbox"
-                          checked={selectedPartners.has(c.id)}
-                          onChange={() => togglePartner(c.id)}
-                          className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
-                        />
-                      </div>
                       <Link
                         href={`/admin/clients/${c.id}?from=retail`}
                         className="flex items-center justify-between min-w-0 flex-1"

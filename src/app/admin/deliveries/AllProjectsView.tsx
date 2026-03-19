@@ -12,6 +12,8 @@ import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
 import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -241,8 +243,11 @@ export default function AllDeliveriesView({
 
       {activeView === "deliveries" && (<>
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Deliveries</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Deliveries</h1>
+        </div>
         <div className="relative" ref={createDropRef}>
           <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New Delivery" />
           {createDropOpen && (
@@ -266,7 +271,12 @@ export default function AllDeliveriesView({
           )}
         </div>
       </div>
-      <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">{summaryParts.join(" \u00b7 ")}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
+        <KpiCard label="Total" value={String(deliveries.length)} sub={todayCount > 0 ? `${todayCount} today` : "all deliveries"} />
+        <KpiCard label="Pending Approval" value={String(pendingApproval.length)} sub="partner requests" warn={pendingApproval.length > 0} />
+        <KpiCard label="Completed" value={String(deliveries.filter((d) => d.status === "completed" || d.status === "delivered").length)} sub="fulfilled" accent />
+        <KpiCard label="In Progress" value={String(deliveries.filter((d) => ["scheduled","confirmed","in_transit","dispatched"].includes(d.status)).length)} sub="active now" />
+      </div>
 
       {/* Pending approval banner */}
       {pendingApproval.length > 0 && (

@@ -24,7 +24,10 @@ export default function CalendarHeader({
     <div className="px-6 pt-5 pb-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">{headerLabel}</h1>
+          <div>
+            <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 leading-none mb-0.5">Schedule</p>
+            <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-none">{headerLabel}</h1>
+          </div>
           <div className="flex items-center gap-1">
             <button onClick={() => onNavigate(-1)} className="p-1.5 rounded-lg hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>

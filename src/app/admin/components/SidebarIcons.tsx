@@ -8,12 +8,43 @@ export const Icons = {
       <circle cx="12" cy="12" r="2" />
     </svg>
   ),
+  // Route / A→B for B2B deliveries (Jobs)
   package: () => (
     <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="5" cy="6" r="3" />
-      <circle cx="19" cy="18" r="3" />
-      <path d="M8 6h8a4 4 0 0 1 0 8H8" />
-      <path d="m12 10-3 3 3 3" />
+      <circle cx="6" cy="19" r="2" />
+      <circle cx="18" cy="5" r="2" />
+      <path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H12" />
+    </svg>
+  ),
+  // Dispatch board / schedule grid
+  dispatch: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="7" height="7" x="3" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="14" rx="1" />
+      <path d="M3 17h4a2 2 0 0 1 2 2v2H3v-4z" />
+    </svg>
+  ),
+  // User with checkmark for CRM Contacts (distinct from Partners "users")
+  userCheck: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <polyline points="16 11 18 13 22 9" />
+    </svg>
+  ),
+  // Tag for Rate Templates (distinct from dollarSign Revenue)
+  tag: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+      <circle cx="7.5" cy="7.5" r="1.5" />
+    </svg>
+  ),
+  // Forecast / trend chart  
+  forecast: () => (
+    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <path d="m19 9-5 5-4-4-3 3" />
     </svg>
   ),
   projects: () => (

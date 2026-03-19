@@ -73,8 +73,8 @@ export default function AdminLoginPage() {
           background-size: 48px 48px;
         }
         .adm-card {
-          background: #111113; border: 1px solid #1E1E22; border-radius: 16px;
-          padding: 40px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+          background: #111113; border: 1px solid #1E1E22; border-radius: 20px;
+          padding: 40px; box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
           position: relative; overflow: hidden;
         }
         .adm-card::before {
@@ -82,23 +82,23 @@ export default function AdminLoginPage() {
           background: linear-gradient(90deg, transparent, rgba(201,169,98,0.3), transparent);
         }
         .adm-input {
-          width: 100%; padding: 11px 14px; background: #08080A; border: 1px solid #1E1E22;
-          border-radius: 8px; color: #E8E5E0; font-size: 13px; font-family: 'DM Sans', sans-serif;
-          outline: none; transition: border-color 0.2s;
+          width: 100%; padding: 12px 14px; background: #08080A; border: 1px solid #1E1E22;
+          border-radius: 10px; color: #E8E5E0; font-size: 14px; font-family: 'DM Sans', sans-serif;
+          outline: none; transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .adm-input:focus { border-color: #C9A962; }
+        .adm-input:focus { border-color: rgba(201,169,98,0.55); box-shadow: 0 0 0 3px rgba(201,169,98,0.1); }
         .adm-input::placeholder { color: #3A3A3E; }
         .adm-btn {
-          width: 100%; padding: 12px; background: linear-gradient(135deg, #C9A962 0%, #B89A52 100%);
-          color: #08080A; border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+          width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A962 0%, #B89A52 100%);
+          color: #08080A; border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
           font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
-          text-transform: uppercase; letter-spacing: 1px;
+          text-transform: uppercase; letter-spacing: 1px; min-height: 48px;
         }
-        .adm-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,169,98,0.3); }
+        .adm-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,98,0.35); }
         .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .adm-link { background: none; border: none; color: #C9A962; font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
+        .adm-link { background: none; border: none; color: #C9A962; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
         .adm-link:hover { color: #D4B56C; text-decoration: underline; }
-        .adm-back { background: none; border: none; color: #4A4A4E; font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; width: 100%; text-align: center; }
+        .adm-back { background: none; border: none; color: #4A4A4E; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; width: 100%; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
         .adm-back:hover { color: #E8E5E0; }
         @keyframes admFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
@@ -109,18 +109,18 @@ export default function AdminLoginPage() {
         <div className="adm-card">
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <YugoLogo size={20} variant="gold" />
+            <YugoLogo size={22} variant="gold" />
             <div style={{ height: 16, width: 1, background: "#1E1E22" }} />
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#4A4A4E" }}>Admin Console</span>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#4A4A4E" }}>Admin Console</span>
           </div>
 
           {mode === "login" && (
             <>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 20, fontWeight: 600, color: "#E8E5E0", marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>
+                <div style={{ fontSize: 22, fontWeight: 600, color: "#E8E5E0", marginBottom: 4, fontFamily: "'Instrument Sans', 'DM Sans', sans-serif" }}>
                   {isFirstTime ? "Welcome to YUGO" : "Welcome back"}
                 </div>
-                <div style={{ fontSize: 12, color: "#4A4A4E" }}>
+                <div style={{ fontSize: 13, color: "#4A4A4E" }}>
                   {isFirstTime ? "Sign in with your credentials" : "Sign in to your operations dashboard"}
                 </div>
               </div>
@@ -131,11 +131,11 @@ export default function AdminLoginPage() {
               )}
               <form onSubmit={handleLogin}>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 6 }}>Email</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
                   <input className="adm-input" type="email" placeholder="admin@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 6 }}>Password</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Password</label>
                   <div style={{ position: "relative" }}>
                     <input className="adm-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required
                       style={{ paddingRight: 36 }} />
@@ -181,8 +181,8 @@ export default function AdminLoginPage() {
           {mode === "forgot" && (
             <>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 20, fontWeight: 600, color: "#E8E5E0", marginBottom: 4 }}>Reset password</div>
-                <div style={{ fontSize: 12, color: "#4A4A4E" }}>We&apos;ll send a secure reset link to your email</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: "#E8E5E0", marginBottom: 4 }}>Reset password</div>
+                <div style={{ fontSize: 13, color: "#4A4A4E" }}>We&apos;ll send a secure reset link to your email</div>
               </div>
               {error && (
                 <div style={{ background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.15)", color: "#F87171", fontSize: 11, padding: "8px 12px", borderRadius: 6, marginBottom: 16 }}>
@@ -191,7 +191,7 @@ export default function AdminLoginPage() {
               )}
               <form onSubmit={handleForgotPassword}>
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 6 }}>Email</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
                   <input className="adm-input" type="email" placeholder="admin@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
                 </div>
                 <button type="submit" className="adm-btn" disabled={resetLoading}>
@@ -229,7 +229,7 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <span style={{ fontSize: 10, color: "#2A2A2E", letterSpacing: 1 }}>YUGO OPERATIONS PLATFORM</span>
+          <span style={{ fontSize: 11, color: "#2A2A2E", letterSpacing: 1.5 }}>YUGO OPERATIONS PLATFORM</span>
         </div>
       </div>
     </main>

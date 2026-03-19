@@ -374,6 +374,10 @@ export default function DeliveryDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
       <BackButton label="Back" />
 
+      <div className="pt-4">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">B2B Operations · Delivery</p>
+      </div>
+
       {/* ─── PROJECT CONTEXT BANNER ─── */}
       {linkedProject && (
         <a

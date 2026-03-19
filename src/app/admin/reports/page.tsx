@@ -5,6 +5,7 @@ export const revalidate = 0;
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString } from "@/lib/business-timezone";
 import BackButton from "../components/BackButton";
+import KpiCard from "@/components/ui/KpiCard";
 import ReportsClient from "./ReportsClient";
 import { formatJobId } from "@/lib/move-code";
 
@@ -91,9 +92,26 @@ export default async function ReportsPage({
     return { ...r, jobs };
   });
 
+  const totalJobs = reportsEnriched.reduce((s, r) => s + ((r.jobs as unknown[]) || []).length, 0);
+  const teamCount = new Set(reportsEnriched.map((r) => r.team_id)).size;
+
   return (
     <div className="max-w-[1000px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="Back" /></div>
+      <div className="mb-6"><BackButton label="Back" /></div>
+
+      <div className="flex items-start justify-between mb-8 gap-4">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">End-of-Day Reports</h1>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
+        <KpiCard label="Reports" value={String(reportsEnriched.length)} sub="for selected period" />
+        <KpiCard label="Jobs Covered" value={String(totalJobs)} sub="across all reports" />
+        <KpiCard label="Active Teams" value={String(teamCount)} sub="in period" accent={teamCount > 0} />
+      </div>
+
       <ReportsClient initialReports={reportsEnriched} initialDate={date} initialFrom={from} initialTo={to} />
     </div>
   );

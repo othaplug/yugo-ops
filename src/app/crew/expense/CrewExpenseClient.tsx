@@ -138,7 +138,10 @@ export default function CrewExpenseClient() {
       <button type="button" onClick={() => router.back()} className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
         ← Back
       </button>
-      <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] mt-2">Log Expense</h1>
+      <div className="mt-2">
+        <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
+        <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">Log Expense</h1>
+      </div>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6">

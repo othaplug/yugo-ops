@@ -284,13 +284,12 @@ export default function ClientSettingsMenu({
       {/* ── Claim Submission Modal ── */}
       {claimOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-y-auto"
-          style={{ minHeight: "100dvh" }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
           onClick={(e) => { if (e.target === e.currentTarget) { setClaimOpen(false); resetClaimForm(); } }}
         >
           <div
-            className="rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden my-auto"
-            style={{ backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF" }}
+            className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[460px] shadow-2xl overflow-hidden"
+            style={{ maxHeight: "min(92dvh, 92vh)", overflowY: "auto", backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           >
             {/* Header */}
             <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#E7E5E4" }}>
@@ -502,13 +501,12 @@ export default function ClientSettingsMenu({
       {/* ── Claim Status Modal ── */}
       {claimStatusOpen && existingClaim && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
-          style={{ minHeight: "100dvh" }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
           onClick={(e) => { if (e.target === e.currentTarget) setClaimStatusOpen(false); }}
         >
           <div
-            className="rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden"
-            style={{ backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF" }}
+            className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[400px] shadow-2xl overflow-hidden"
+            style={{ backgroundColor: theme === "dark" ? "#1A1A1A" : "#FFFFFF", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           >
             <div
               className="px-6 pt-6 pb-4 border-b flex items-center justify-between"

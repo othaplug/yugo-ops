@@ -1533,7 +1533,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
       )}
 
       {addModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-md shadow-xl">
             <h3 className="text-[13px] font-bold text-[var(--tx)] mb-3">Add to Master List</h3>
             <div className="space-y-3">

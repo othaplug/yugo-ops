@@ -12,6 +12,8 @@ import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 /* ── Types ── */
 
@@ -194,10 +196,6 @@ function quoteAmount(q: Quote): string {
   return raw != null ? formatCurrency(raw) : "—";
 }
 
-function hstAmount(n: number): string {
-  return formatCurrency(Math.round(n * 0.13));
-}
-
 function truncAddr(from?: string, to?: string, max = 50): string {
   const f = (from || "").trim();
   const t = (to || "").trim();
@@ -238,12 +236,21 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       id: "client",
       label: "Client",
       accessor: (m) => m.client_name || "",
-      render: (m) => (
-        <div className="min-w-0">
-          <span className="text-[12px] font-bold text-[var(--tx)] truncate block">{m.client_name || "—"}</span>
-          <span className="text-[10px] text-[var(--tx3)] truncate block mt-0.5">{truncAddr(m.from_address, m.to_address, 40)}</span>
-        </div>
-      ),
+      render: (m) => {
+        const isComplete = ["completed", "delivered"].includes((m.status || "").toLowerCase());
+        return (
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[12px] font-bold text-[var(--tx)] truncate" title={m.client_name || "—"}>
+              {m.client_name || "—"}
+            </span>
+            {!isComplete && (
+              <span onClick={(e) => e.stopPropagation()}>
+                <MoveNotifyButton move={m} />
+              </span>
+            )}
+          </div>
+        );
+      },
       minWidth: "180px",
     },
     {
@@ -286,30 +293,13 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       id: "estimate",
       label: "Estimate",
       accessor: (m) => m.estimate ?? 0,
-      render: (m) => {
-        const est = Number(m.estimate ?? 0);
-        return (
-          <span className="inline-flex items-baseline gap-1">
-            <span className="text-[12px] font-bold text-[var(--gold)] font-heading">{formatCurrency(est)}</span>
-            {est > 0 && <span className="text-[8px] text-[var(--tx3)]">+{hstAmount(est)} HST</span>}
-          </span>
-        );
-      },
-      align: "right",
-      exportAccessor: (m) => m.estimate ?? 0,
-    },
-    {
-      id: "actions",
-      label: "",
-      accessor: () => "",
-      sortable: false,
-      searchable: false,
       render: (m) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-          <MoveNotifyButton move={m} />
-        </div>
+        <span className="block text-right text-[12px] font-bold text-[var(--gold)] font-heading">
+          {formatCurrency(Number(m.estimate ?? 0))}
+        </span>
       ),
       align: "right",
+      exportAccessor: (m) => m.estimate ?? 0,
     },
   ];
 }
@@ -425,69 +415,29 @@ export default function AllMovesClient({
       : 0;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">All Moves</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">
-            Manage all service types in one view
-          </p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Moves</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <CreateMovesDropdown />
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
-            Total Moves
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--tx)]">{totalMoves}</span>
-            <StatPctChange current={totalMovesThisMonth} previous={totalMovesPrev} />
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
-            Upcoming
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--grn)]">
-              {upcomingMoves}
-            </span>
-            <StatPctChange current={upcomingMoves} previous={upcomingPrev} />
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
-            Total Revenue
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--gold)]">
-              {formatCompactCurrency(totalRevenue)}
-            </span>
-            <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
-            Avg $/Move
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--tx)]">
-              {formatCompactCurrency(avgPerMove)}
-            </span>
-            <StatPctChange current={avgPerMove} previous={avgPrev} />
-          </div>
-        </div>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Total Moves" value={String(totalMoves)} sub={`${totalMovesThisMonth} this month`} />
+        <KpiCard label="Upcoming" value={String(upcomingMoves)} sub="scheduled ahead" accent={upcomingMoves > 0} />
+        <KpiCard label="Total Revenue" value={formatCompactCurrency(totalRevenue)} sub="estimated" />
+        <KpiCard label="Avg / Move" value={formatCompactCurrency(avgPerMove)} sub="average estimate" />
       </div>
 
-      <div className="border-t border-[var(--brd)]/30 pt-5 mb-5">
-        {/* Type filter pills */}
-        <div className="flex flex-wrap gap-1.5 mb-2">
+      <div className="pt-6 mb-5">
+        {/* Type filter pills — horizontal scroll on mobile */}
+        <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {TYPE_FILTERS.map((f) => {
             const isActive = activeType === f.value;
             const count = f.value ? typeCounts[f.value] || 0 : moves.length;
@@ -496,7 +446,7 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("type", f.value)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-150 ${
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-semibold border transition-all duration-150 touch-manipulation ${
                   isActive
                     ? "border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,0.25)]"
                     : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] hover:bg-[var(--gdim)]"
@@ -511,8 +461,8 @@ export default function AllMovesClient({
           })}
         </div>
 
-        {/* Status filter pills */}
-        <div className="flex flex-wrap gap-1.5 mb-0">
+        {/* Status filter pills — horizontal scroll on mobile */}
+        <div className="flex gap-1.5 mb-0 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => {
             const isActive = activeStatus === f.value;
             const count = f.value ? statusCounts[f.value] || 0 : afterTypeFilter.length;
@@ -521,7 +471,7 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("status", f.value)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all duration-150 ${
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
                   isActive
                     ? "border-[var(--tx3)]/60 bg-[var(--bg2)] text-[var(--tx)] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
                     : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
@@ -537,8 +487,9 @@ export default function AllMovesClient({
         </div>
       </div>
 
+      <SectionDivider label="Moves" />
       {/* Moves table */}
-      <div className="border-t border-[var(--brd)]/30 pt-5 mb-8">
+      <div className="mb-8">
         <DataTable
           data={filtered}
           keyField="id"
@@ -586,13 +537,8 @@ export default function AllMovesClient({
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                     {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
                   </div>
-                  <div className="mt-1.5">
-                    <span className="text-[14px] font-bold text-[var(--gold)] font-heading">
-                      {quoteAmount(q)}
-                    </span>
-                    {quoteAmountRaw(q) != null && (
-                      <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{hstAmount(quoteAmountRaw(q)!)} HST</span>
-                    )}
+                  <div className="mt-1.5 text-[14px] font-bold text-[var(--gold)] font-heading">
+                    {quoteAmount(q)}
                   </div>
                 </Link>
               );
@@ -609,6 +555,19 @@ export default function AllMovesClient({
           </div>
         </div>
       )}
+
+      {/* Mobile FAB — Create Move */}
+      <div className="sm:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
+        <Link
+          href="/admin/moves/new"
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-lg shadow-[var(--gold)]/25 active:scale-95 transition-transform touch-manipulation"
+          aria-label="Create new move"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </Link>
+      </div>
     </div>
   );
 }

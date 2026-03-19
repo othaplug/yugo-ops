@@ -490,7 +490,7 @@ export default function CrewJobPage({
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`relative px-5 py-3 text-[12px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap ${
+            className={`relative flex-1 px-3 py-3.5 text-[11px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation ${
               activeTab === t.id
                 ? "text-[var(--gold)]"
                 : "text-[var(--tx3)]/45 hover:text-[var(--tx3)]"
@@ -794,8 +794,8 @@ export default function CrewJobPage({
 
       {/* Pickup Verification Modal */}
       {pickupModalOpen && job && (
-        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 animate-fade-in">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-[99990] animate-fade-in">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
               <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">
                 Pickup Verification
@@ -882,7 +882,7 @@ export default function CrewJobPage({
 
       {/* Report Modal */}
       {reportModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl">
             <h3 className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2">Report Issue</h3>
             {reportSubmitted ? (

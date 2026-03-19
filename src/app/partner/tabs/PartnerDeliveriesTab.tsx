@@ -146,23 +146,39 @@ export default function PartnerDeliveriesTab({
       )}
 
       {deliveries.length === 0 ? (
-        <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-          <p className="text-[14px] text-[#888]">
-            {label === "today" ? "No deliveries scheduled for today." : label === "upcoming" ? "No upcoming deliveries." : label === "history" ? "No completed deliveries yet." : "No deliveries found."}
+        <div className="empty-state border-t border-[var(--brd)]/30">
+          <div className="empty-state-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-4"/><path d="M8 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+            </svg>
+          </div>
+          <p className="empty-state-title">
+            {label === "today" ? "No deliveries today" : label === "upcoming" ? "No upcoming deliveries" : label === "history" ? "No completed deliveries" : "No deliveries"}
+          </p>
+          <p className="empty-state-sub">
+            {label === "today" ? "Nothing scheduled for today. Check back soon or schedule a new delivery." : label === "upcoming" ? "No deliveries scheduled yet." : label === "history" ? "Completed deliveries will appear here." : "No deliveries found."}
           </p>
           {label === "today" && onScheduleDelivery && (
-            <button
-              type="button"
-              onClick={onScheduleDelivery}
-              className="mt-4 px-4 py-2 rounded-lg text-[13px] font-medium border border-[#C9A962]/50 text-[#B8962E] hover:bg-[#C9A962]/8 transition-colors"
-            >
-              Schedule delivery
-            </button>
+            <div className="empty-state-action">
+              <button
+                type="button"
+                onClick={onScheduleDelivery}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-[#C9A962]/40 text-[#B8962E] hover:bg-[#C9A962]/10 transition-colors"
+              >
+                Schedule delivery
+              </button>
+            </div>
           )}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-          <p className="text-[14px] text-[#888]">No deliveries match your search.</p>
+        <div className="empty-state border-t border-[var(--brd)]/30">
+          <div className="empty-state-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </div>
+          <p className="empty-state-title">No results</p>
+          <p className="empty-state-sub">No deliveries match your current search or filter.</p>
         </div>
       ) : (
         <div className="space-y-0">
@@ -247,15 +263,15 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="flex items-start justify-between mb-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[15px] font-bold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</h3>
-            <span className="text-[10px] text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
+            <h3 className="text-[16px] font-bold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</h3>
+            <span className="text-[11px] text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
             {d.booking_type === "day_rate" ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
             )}
           </div>
-          <p className="text-[12px] text-[#888] mt-0.5 truncate">
+          <p className="text-[13px] text-[#888] mt-0.5 truncate">
             {d.booking_type === "day_rate"
               ? [d.vehicle_type ? `${d.vehicle_type}` : null, d.num_stops != null ? `${d.num_stops} stops` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"
               : [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : null, d.zone != null ? `Z${d.zone}` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"}
@@ -264,34 +280,36 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${badgeClass}`}>
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${badgeClass}`}>
             {statusLabel}
           </span>
           {/* Copy tracking link */}
           <button
             onClick={(e) => { e.stopPropagation(); copyTrackingLink(); }}
-            className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors relative"
+            className="icon-btn"
             title="Copy tracking link"
+            data-no-min-height
           >
             {copied ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2D9F5A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             )}
           </button>
           {/* Edit */}
           {!isLocked && onEditClick && (
             <button
               onClick={(e) => { e.stopPropagation(); onEditClick(); }}
-              className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors"
+              className="icon-btn"
               title="Edit delivery"
+              data-no-min-height
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           )}
           {/* Share */}
-          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] transition-colors" title="Share tracking link">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="icon-btn" title="Share tracking link" data-no-min-height>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
         </div>
       </div>
@@ -320,34 +338,34 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {!showProgressBar && <DeliveryTimeline currentIndex={timelineIdx} />}
 
       {/* Details */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[12px]">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[13px]">
         {d.time_slot && (
           <div>
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Time</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Time</div>
             <div className="text-[#1A1A1A] font-medium mt-0.5">{d.time_slot}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.num_stops != null && d.num_stops > 0 && (
           <div>
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Stops</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Stops</div>
             <div className="text-[#1A1A1A] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.vehicle_type && (
           <div>
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Vehicle</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Vehicle</div>
             <div className="text-[#1A1A1A] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
           </div>
         )}
         {d.total_price != null && d.total_price > 0 && (
           <div>
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Price</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Price</div>
             <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888]">Items</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Items</div>
             <div className="text-[#1A1A1A] font-medium mt-0.5 truncate">{itemsDisplay}</div>
           </div>
         )}

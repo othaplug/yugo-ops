@@ -6,6 +6,8 @@ import Link from "next/link";
 import CreateButton from "../components/CreateButton";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Project {
   id: string;
@@ -131,16 +133,25 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
     });
   }, [projects, statusFilter, partnerFilter]);
 
+  const activeProjects = projects.filter((p) => p.status === "active").length;
+  const totalBudget = projects.reduce((s, p) => s + (p.estimated_budget ?? 0), 0);
+
   return (
     <div className="px-4 sm:px-6 py-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">All Projects</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5 mb-5 font-medium">{projects.length} project{projects.length !== 1 ? "s" : ""} across all partners</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Projects</h1>
         </div>
         <CreateButton href="/admin/projects/new" title="New Project" />
       </div>
+
+      <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
+        <KpiCard label="Total Projects" value={String(projects.length)} sub={`${activeProjects} active`} />
+        <KpiCard label="Active" value={String(activeProjects)} sub="in progress" accent={activeProjects > 0} />
+        <KpiCard label="Total Budget" value={totalBudget > 0 ? `$${(totalBudget / 1000).toFixed(0)}K` : "—"} sub="estimated" />
+      </div>
+
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">

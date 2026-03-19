@@ -114,6 +114,10 @@ export default function ClientDetailClient({
         ← Back
       </button>
 
+      <div className="mb-4">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">CRM · Client Profile</p>
+      </div>
+
       {/* Hero + actions */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

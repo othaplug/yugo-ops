@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import { useConfirm } from "@/hooks/useConfirm";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -123,8 +124,8 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
@@ -301,6 +302,7 @@ function ScheduleModal({
 
 /* ─── Main Tab ──────────────────────────────────── */
 export default function PartnerRecurringTab({ orgId }: Props) {
+  const { confirm, confirmEl } = useConfirm();
   const [schedules, setSchedules] = useState<RecurringSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -336,7 +338,8 @@ export default function PartnerRecurringTab({ orgId }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this recurring schedule?")) return;
+    const ok = await confirm({ title: "Delete schedule?", message: "This recurring schedule will be removed. Existing deliveries are not affected.", confirmLabel: "Delete", variant: "danger" });
+    if (!ok) return;
     setDeleting(id);
     try {
       await fetch(`/api/partner/recurring-schedules/${id}`, { method: "DELETE" });
@@ -347,6 +350,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
 
   return (
     <div className="space-y-5">
+      {confirmEl}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>

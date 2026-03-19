@@ -123,22 +123,25 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
   const crewName = crews.find((c) => c.id === crewId)?.name || "team";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto border border-[var(--brd)]" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-3 border-b border-[var(--brd)]">
-          <h2 className="text-[18px] font-bold text-[var(--tx)]">Schedule Job</h2>
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[480px] overflow-y-auto border border-[var(--brd)] animate-slide-up sm:animate-none" style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
+          <h2 className="text-[20px] font-bold text-[var(--tx)]">Schedule Job</h2>
+          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
 
         <div className="px-6 py-4 space-y-4">
           {/* Job type */}
           <div>
-            <label className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1.5 block">Job Type</label>
+            <label className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-1.5 block">Job Type</label>
             <div className="flex gap-1 bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-0.5">
               {(["move", "delivery", "blocked"] as JobType[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setJobType(t)}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-[11px] font-semibold capitalize transition-colors ${
+                  className={`flex-1 px-3 py-2.5 sm:py-1.5 rounded-md text-[11px] font-semibold capitalize transition-colors touch-manipulation ${
                     jobType === t ? "bg-[var(--card)] text-[var(--gold)] shadow-sm" : "text-[var(--tx3)]"
                   }`}
                 >

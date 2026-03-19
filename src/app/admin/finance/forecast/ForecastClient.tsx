@@ -147,10 +147,11 @@ export default function ForecastClient() {
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Profitability" href="/admin/finance/profitability" /></div>
       {/* ──── HEADER ──── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-lg font-heading font-bold text-[var(--tx)]">Revenue Forecast</h1>
-          <p className="text-[11px] text-[var(--tx3)]">Pipeline, capacity &amp; revenue projections</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Revenue Forecast</h1>
+          <p className="text-[11px] text-[var(--tx3)] mt-2">Pipeline, capacity &amp; revenue projections</p>
         </div>
         <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2 py-1.5">
           {RANGES.map((r) => (

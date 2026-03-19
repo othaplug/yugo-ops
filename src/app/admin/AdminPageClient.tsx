@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import Link from "next/link";
-import { Icon } from "@/components/AppIcons";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
@@ -132,16 +133,6 @@ function getActivityHref(e: ActivityEvent): string {
   return "/admin";
 }
 
-function getActivityIcon(eventType: string, description: string | null): string {
-  const et = (eventType || "").toLowerCase();
-  const desc = (description || "").toLowerCase();
-  if (et === "payment" || desc.includes("payment") || desc.includes("paid")) return "dollar";
-  if (et === "client_message" || desc.includes("message")) return "messageSquare";
-  if (et === "created" || desc.includes("new booking") || desc.includes("new referral")) return "calendar";
-  if (et === "status_change" || et === "notification") return "target";
-  return "bell";
-}
-
 function formatActivityDesc(desc: string): string {
   const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
   if (match) return `${match[1]} · ${getStatusLabel(match[2] || null)}`;
@@ -186,11 +177,15 @@ export default function AdminPageClient({
   activeQuotesCount,
   actionTasks,
 }: Props) {
+  const router = useRouter();
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
   const [tasksOpen, setTasksOpen] = useState(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
+
+  const refresh = useCallback(async () => { router.refresh(); }, [router]);
+  const { containerRef: pullRef, pullDistance, refreshing } = usePullToRefresh({ onRefresh: refresh });
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -228,37 +223,92 @@ export default function AdminPageClient({
   const scheduleLabel = todayJobs.length > 0 ? "Today\u2019s Schedule" : "Upcoming";
 
   return (
-    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up min-w-0">
+    <div
+      ref={pullRef as React.RefObject<HTMLDivElement>}
+      className="h-screen overflow-y-auto overscroll-contain"
+    >
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="fixed left-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-full shadow-lg"
+          style={{
+            top: 56,
+            transform: `translate(-50%, ${pullDistance}px)`,
+            backgroundColor: "var(--card)",
+            border: "1px solid var(--brd)",
+          }}
+          aria-live="polite"
+        >
+          {refreshing ? (
+            <span className="spinner w-4 h-4" />
+          ) : (
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--gold)"
+              strokeWidth="2.5"
+              style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
+            >
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+          )}
+        </div>
+      )}
+
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up min-w-0">
 
       {/* ── Header ── */}
       <div className="mb-8">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="font-heading text-[26px] sm:text-[30px] md:text-[34px] font-bold text-[var(--tx)] tracking-tight leading-tight">
-            {greeting}
-          </h1>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+              {greeting}
+            </h1>
+            <p className="text-[12px] text-[var(--tx3)] font-medium mt-1">{dateStr}</p>
+          </div>
           <div className="flex items-center gap-3">
-            {/* Quick Actions + button */}
+            {/* Quick Actions button */}
             <div className="relative" ref={quickActionsRef}>
               <button
                 type="button"
                 title="Quick Actions"
                 aria-label="Quick Actions"
                 onClick={() => setQuickActionsOpen((v) => !v)}
-                className={createButtonBaseClass}
+                className={`${createButtonBaseClass} gap-1.5`}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
               {quickActionsOpen && (
                 <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
                   {[
                     { href: "/admin/quotes/new", label: "New Quote" },
                     { href: "/admin/moves/new", label: "New Move" },
                     { href: "/admin/deliveries/new", label: "New Delivery" },
+                  ].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setQuickActionsOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div className="border-t border-[var(--brd)]/50 my-1" />
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
+                  {[
                     { href: "/admin/deliveries", label: "Deliveries" },
                     { href: "/admin/reports", label: "Reports" },
+                    { href: "/admin/calendar", label: "Calendar" },
                   ].map((item) => (
                     <Link
                       key={item.href}
@@ -272,13 +322,20 @@ export default function AdminPageClient({
                 </div>
               )}
             </div>
-            <span className="text-[12px] text-[var(--tx3)] font-medium hidden sm:block">{dateStr}</span>
           </div>
         </div>
+        {/* Summary pills */}
         {summaryParts.length > 0 && (
-          <p className="text-[13px] text-[var(--tx3)] mt-1.5 font-medium">
-            {summaryParts.join(" \u00b7 ")}
-          </p>
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {summaryParts.map((part) => (
+              <span
+                key={part}
+                className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)]/60 text-[var(--tx3)]"
+              >
+                {part}
+              </span>
+            ))}
+          </div>
         )}
       </div>
 
@@ -333,29 +390,21 @@ export default function AdminPageClient({
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                   ><path d="M9 18l6-6-6-6"/></svg>
                   <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 group-hover:text-[var(--tx2)] transition-colors">Tasks</h2>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#6B8CFF]/15 text-[#6B8CFF]">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">
                     {actionTasks.length}
                   </span>
                 </div>
               </button>
               {tasksOpen && (
-                <div className="rounded-xl border border-[#6B8CFF]/20 bg-[#6B8CFF]/[0.03] divide-y divide-[var(--brd)]/30 overflow-hidden">
-                  {actionTasks.slice(0, showAllTasks ? undefined : 5).map((task) => {
-                    const isDelivery = task.taskType === "delivery_request";
-                    return (
+                <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/[0.03] divide-y divide-[var(--brd)]/30 overflow-hidden">
+                  {actionTasks.slice(0, showAllTasks ? undefined : 5).map((task) => (
                       <Link
                         key={`task-${task.id}`}
                         href={task.href}
-                        className="group flex items-start gap-3 px-4 py-3 hover:bg-[#6B8CFF]/[0.05] transition-colors"
+                        className="group flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--gold)]/[0.05] active:bg-[var(--gold)]/10 transition-colors touch-manipulation"
                       >
-                        <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${isDelivery ? "bg-[#6B8CFF]/15" : "bg-[var(--gold)]/15"}`}>
-                          <Icon
-                            name={isDelivery ? "truck" : "clipboard"}
-                            className={`w-3 h-3 ${isDelivery ? "text-[#6B8CFF]" : "text-[var(--gold)]"}`}
-                          />
-                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12px] font-semibold text-[var(--tx)] leading-snug group-hover:text-[#6B8CFF] transition-colors">
+                          <div className="text-[12px] font-semibold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
                             {task.title}
                           </div>
                           {task.subtitle && (
@@ -364,13 +413,12 @@ export default function AdminPageClient({
                         </div>
                         <span className="text-[9px] text-[var(--tx3)] shrink-0 mt-1">{formatActivityTime(task.createdAt)}</span>
                       </Link>
-                    );
-                  })}
+                  ))}
                   {actionTasks.length > 5 && (
                     <button
                       type="button"
                       onClick={() => setShowAllTasks((v) => !v)}
-                      className="w-full py-2.5 text-center text-[10px] font-semibold text-[#6B8CFF] hover:bg-[#6B8CFF]/[0.05] transition-colors"
+                      className="w-full py-2.5 text-center text-[10px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/[0.05] transition-colors"
                     >
                       {showAllTasks ? "Show less" : `View all ${actionTasks.length} tasks`}
                     </button>
@@ -386,7 +434,6 @@ export default function AdminPageClient({
               href="/admin/calendar"
               className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
             >
-              <Icon name="calendar" className="w-3 h-3" />
               Calendar
               <svg className="w-3 h-3 -mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </Link>
@@ -402,10 +449,10 @@ export default function AdminPageClient({
                 const showDate = todayJobs.length === 0;
 
                 return (
-                  <Link
+                    <Link
                     key={`${job.type}-${job.id}`}
                     href={getJobHref(job)}
-                    className="group flex items-start gap-3 py-3.5 px-1 hover:bg-[var(--card)]/40 transition-colors"
+                    className="group flex items-start gap-3 py-4 px-1 hover:bg-[var(--card)]/40 active:bg-[var(--card)]/60 transition-colors touch-manipulation"
                   >
                     {/* Time / Date column */}
                     <div className="shrink-0 w-[52px] pt-0.5 text-right">
@@ -437,18 +484,32 @@ export default function AdminPageClient({
                       )}
                     </div>
 
-                    {/* Arrow */}
-                    <svg className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                    {/* Arrow — always visible on mobile, hover-only on desktop */}
+                    <svg className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
                   </Link>
                 );
               })}
             </div>
           ) : (
             <div className="py-12 text-center">
-              <div className="text-[13px] text-[var(--tx3)] mb-3">No jobs scheduled</div>
-              <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
-                Create a quote
-              </Link>
+              <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="text-[14px] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
+              <p className="text-[12px] text-[var(--tx3)] mb-4">Get started by creating a quote or checking the calendar.</p>
+              <div className="flex items-center justify-center gap-2">
+                <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+                  Create a quote
+                </Link>
+                <Link href="/admin/calendar" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--gold)]/40 transition-colors">
+                  View calendar
+                </Link>
+              </div>
             </div>
           )}
 
@@ -488,7 +549,6 @@ export default function AdminPageClient({
                 href="/admin/revenue"
                 className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
               >
-                <Icon name="barChart" className="w-3 h-3" />
                 Details
                 <svg className="w-3 h-3 -mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
               </Link>
@@ -581,12 +641,15 @@ export default function AdminPageClient({
           {/* Overdue (conditional) — keep as alert banner */}
           {overdueAmount > 0 && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <Link href="/admin/invoices" className="flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/8 transition-colors">
+              <Link href="/admin/invoices" className="group flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer">
                 <div>
                   <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--red)]/80">Overdue</div>
-                  <div className="text-[18px] font-bold text-[var(--red)] tabular-nums">{formatCompactCurrency(overdueAmount)}</div>
+                  <div className="text-[18px] font-bold text-[var(--red)] tabular-nums group-hover:opacity-80 transition-opacity">{formatCompactCurrency(overdueAmount)}</div>
                 </div>
-                <div className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</span>
+                  <svg className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+                </div>
               </Link>
             </div>
           )}
@@ -595,6 +658,7 @@ export default function AdminPageClient({
           <LiveActivityFeed initialEvents={activityEvents} />
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 interface Delivery {
   id: string;
@@ -43,6 +44,14 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  }, [onClose]);
+  useEffect(() => {
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleEscape]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -89,10 +98,11 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
 
   const locked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
       <div
-        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[540px] max-h-[90vh] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
+        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
+        style={{ maxHeight: "min(90dvh, 90vh)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
@@ -169,4 +179,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }

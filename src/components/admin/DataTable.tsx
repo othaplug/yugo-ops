@@ -65,6 +65,8 @@ interface DataTableProps<T> {
   rowClassName?: (row: T) => string;
   renderRow?: (row: T, columns: ColumnDef<T>[]) => ReactNode;
   stickyHeader?: boolean;
+  /** Alternating row backgrounds for easier horizontal scanning */
+  striped?: boolean;
   tableId?: string;
   selectable?: boolean;
   bulkActions?: BulkAction[];
@@ -81,6 +83,7 @@ interface ViewSnapshot {
   sortDir: "asc" | "desc";
   hiddenCols: string[];
   perPage: number;
+  colOrder?: string[];
   v: 1;
 }
 
@@ -167,6 +170,33 @@ function saveColWidths(tableId: string, colIds: string[], widths: number[]) {
   } catch { /* ignore */ }
 }
 
+function clearColWidths(tableId: string) {
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${tableId}_widths`);
+  } catch { /* ignore */ }
+}
+
+function loadColOrder(tableId: string): string[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tableId}_order`);
+    if (raw) return JSON.parse(raw) as string[];
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveColOrder(tableId: string, order: string[]) {
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${tableId}_order`, JSON.stringify(order));
+  } catch { /* ignore */ }
+}
+
+function clearColOrder(tableId: string) {
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${tableId}_order`);
+  } catch { /* ignore */ }
+}
+
 /* ════════════ Component ════════════ */
 
 export default function DataTable<T>({
@@ -187,7 +217,8 @@ export default function DataTable<T>({
   emptySubtext,
   rowClassName,
   renderRow,
-  stickyHeader = false,
+  stickyHeader = true,
+  striped = true,
   tableId = "default",
   selectable = false,
   bulkActions = [],
@@ -222,6 +253,66 @@ export default function DataTable<T>({
   const [savedViewExists, setSavedViewExists] = useState(() => hasViewSnapshot(tableId));
   const [saveFlash, setSaveFlash] = useState(false);
 
+  /* ── Column order ── */
+  const [colOrder, setColOrder] = useState<string[]>(() => {
+    const sv = loadViewSnapshot(tableId);
+    if (sv?.colOrder) return sv.colOrder;
+    const stored = loadColOrder(tableId);
+    if (stored) return stored;
+    return columns.map((c) => c.id);
+  });
+
+  /* Keep colOrder in sync if columns prop changes (new columns added) */
+  useEffect(() => {
+    const allIds = columns.map((c) => c.id);
+    setColOrder((prev) => {
+      const pruned = prev.filter((id) => allIds.includes(id));
+      const added = allIds.filter((id) => !pruned.includes(id));
+      return added.length > 0 ? [...pruned, ...added] : pruned.length === prev.length ? prev : pruned;
+    });
+  }, [columns]);
+
+  /* ── Drag-to-reorder state ── */
+  const dragColIdRef = useRef<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+
+  const handleDragStart = useCallback((colId: string) => (e: React.DragEvent) => {
+    dragColIdRef.current = colId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", colId);
+  }, []);
+
+  const handleDragOver = useCallback((colId: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragColIdRef.current && dragColIdRef.current !== colId) {
+      setDragOverColId(colId);
+    }
+  }, []);
+
+  const handleDrop = useCallback((targetColId: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const fromId = dragColIdRef.current;
+    if (!fromId || fromId === targetColId) return;
+    setColOrder((prev) => {
+      const next = [...prev];
+      const fromIdx = next.indexOf(fromId);
+      const toIdx = next.indexOf(targetColId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, fromId);
+      saveColOrder(tableId, next);
+      return next;
+    });
+    dragColIdRef.current = null;
+    setDragOverColId(null);
+  }, [tableId]);
+
+  const handleDragEnd = useCallback(() => {
+    dragColIdRef.current = null;
+    setDragOverColId(null);
+  }, []);
+
   useEffect(() => { setPage(1); }, [search, data.length]);
 
   const getKey = useCallback(
@@ -232,11 +323,16 @@ export default function DataTable<T>({
     [keyField],
   );
 
-  /* ── Visible columns ── */
-  const visibleCols = useMemo(
-    () => columns.filter((c) => !hiddenCols.has(c.id)),
-    [columns, hiddenCols],
-  );
+  /* ── Visible columns (respecting order + hidden) ── */
+  const visibleCols = useMemo(() => {
+    const colMap = new Map(columns.map((c) => [c.id, c]));
+    const ordered = colOrder
+      .map((id) => colMap.get(id))
+      .filter((c): c is typeof columns[number] => !!c && !hiddenCols.has(c.id));
+    // Append any columns not yet in colOrder (safety net)
+    const extra = columns.filter((c) => !colOrder.includes(c.id) && !hiddenCols.has(c.id));
+    return [...ordered, ...extra];
+  }, [columns, hiddenCols, colOrder]);
 
   /* ── Column resize ── */
   const colIds = useMemo(() => visibleCols.map((c) => c.id), [visibleCols]);
@@ -290,10 +386,11 @@ export default function DataTable<T>({
   const ResizeHandle = useCallback(({ col }: { col: number }) => (
     <span
       onMouseDown={onResizeStart(col)}
-      className="absolute right-0 top-0 h-full w-[5px] cursor-col-resize select-none flex items-center justify-center group z-10"
+      className="absolute right-0 top-0 h-full w-2 -mr-1 cursor-col-resize select-none flex items-center justify-center group z-10 hover:bg-[var(--gold)]/5 transition-colors rounded"
       onClick={(e) => e.stopPropagation()}
+      title="Drag to resize"
     >
-      <span className="w-px h-3/4 bg-[var(--brd)] group-hover:bg-[var(--gold)]/60 transition-colors rounded-full" />
+      <span className="w-0.5 h-4 bg-[var(--brd)] group-hover:bg-[var(--gold)]/70 transition-colors rounded-full" />
     </span>
   ), [onResizeStart]);
 
@@ -404,13 +501,19 @@ export default function DataTable<T>({
     (colId: string) => {
       setHiddenCols((prev) => {
         const next = new Set(prev);
-        if (next.has(colId)) next.delete(colId);
-        else next.add(colId);
+        if (next.has(colId)) {
+          next.delete(colId);
+        } else {
+          // Never hide if it would leave fewer than 2 visible columns
+          const wouldBeVisible = columns.filter((c) => !next.has(c.id) && c.id !== colId).length;
+          if (wouldBeVisible < 2) return prev;
+          next.add(colId);
+        }
         saveHidden(tableId, next);
         return next;
       });
     },
-    [tableId],
+    [tableId, columns],
   );
 
   /* ── Per page ── */
@@ -430,16 +533,19 @@ export default function DataTable<T>({
       sortDir,
       hiddenCols: [...hiddenCols],
       perPage,
+      colOrder,
       v: 1,
     };
     saveViewSnapshot(tableId, snap);
     setSavedViewExists(true);
     setSaveFlash(true);
     setTimeout(() => setSaveFlash(false), 2000);
-  }, [sortCol, sortDir, hiddenCols, perPage, tableId]);
+  }, [sortCol, sortDir, hiddenCols, perPage, colOrder, tableId]);
 
   const handleResetView = useCallback(() => {
     clearViewSnapshot(tableId);
+    clearColWidths(tableId);
+    clearColOrder(tableId);
     setSavedViewExists(false);
     setSortColInternal(null);
     setSortDirInternal("asc");
@@ -450,7 +556,9 @@ export default function DataTable<T>({
     savePerPage(tableId, defaultPerPage);
     setSearch("");
     setPage(1);
-  }, [tableId, columns, defaultPerPage]);
+    setColWidths(defaultWidths);
+    setColOrder(columns.map((c) => c.id));
+  }, [tableId, columns, defaultPerPage, defaultWidths]);
 
   /* ── CSV export ── */
   const exportToCsv = useCallback(
@@ -519,7 +627,7 @@ export default function DataTable<T>({
             />
           </div>
         )}
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="hidden md:flex items-center gap-1.5 ml-auto">
           {/* Export */}
           {exportable && (
             <button
@@ -567,18 +675,16 @@ export default function DataTable<T>({
             </div>
           )}
 
-          {/* Save View */}
+          {/* Save View / Reset */}
           <div className="flex items-center gap-1">
-            {savedViewExists && !saveFlash && (
-              <button
-                type="button"
-                onClick={handleResetView}
-                title="Reset to default view"
-                className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--red)] transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleResetView}
+              title="Reset to default view (columns, sort, page size)"
+              className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
             <button
               type="button"
               onClick={handleSaveView}
@@ -635,10 +741,10 @@ export default function DataTable<T>({
         </div>
       )}
 
-      {/* ── Table header ── */}
-      <div className={`overflow-x-auto ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}>
+      {/* ── Table header (desktop only) ── */}
+      <div className={`hidden md:block overflow-x-auto ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}>
         <table
-          className="border-collapse w-full min-w-[600px] text-[12px]"
+          className={`border-collapse w-full min-w-[600px] text-[12px] ${striped ? "dt-striped" : ""}`}
           style={{ tableLayout: "fixed" }}
         >
           <colgroup>
@@ -647,7 +753,7 @@ export default function DataTable<T>({
             {/* Spacer col absorbs remaining width so table fills container */}
             <col style={{ width: "auto" }} />
           </colgroup>
-          <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)]" : ""}>
+          <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)] shadow-[0_1px_0_0_var(--brd)]" : ""}>
             <tr className="border-b border-[var(--brd)]/50">
               {selectable && (
                 <th className="w-10 px-3 py-2.5">
@@ -663,11 +769,17 @@ export default function DataTable<T>({
               {visibleCols.map((col, idx) => {
                 const isActive = sortCol === col.id;
                 const isSortable = col.sortable !== false;
+                const isDragOver = dragOverColId === col.id;
                 return (
                   <th
                     key={col.id}
+                    draggable
+                    onDragStart={handleDragStart(col.id)}
+                    onDragOver={handleDragOver(col.id)}
+                    onDrop={handleDrop(col.id)}
+                    onDragEnd={handleDragEnd}
                     onClick={isSortable ? () => handleSort(col.id) : undefined}
-                    className={`relative text-[9px] font-bold tracking-[0.12em] uppercase py-2.5 px-3 whitespace-nowrap select-none transition-colors ${
+                    className={`dt-th relative select-none transition-colors ${
                       col.align === "right"
                         ? "text-right"
                         : col.align === "center"
@@ -676,12 +788,17 @@ export default function DataTable<T>({
                     } ${
                       isSortable
                         ? "cursor-pointer hover:text-[var(--gold)]"
-                        : ""
+                        : "cursor-grab"
                     } ${
                       isActive
                         ? "text-[var(--gold)]"
-                        : "text-[var(--tx3)]/60"
+                        : ""
+                    } ${
+                      isDragOver
+                        ? "bg-[var(--gold)]/10 border-l-2 border-l-[var(--gold)]"
+                        : ""
                     }`}
+                    title="Drag to reorder"
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.label}
@@ -710,18 +827,19 @@ export default function DataTable<T>({
               <tr>
                 <td
                   colSpan={visibleCols.length + (selectable ? 1 : 0) + 1}
-                  className="py-16 text-center"
                 >
-                  {emptyIcon && <div className="flex justify-center mb-2">{emptyIcon}</div>}
-                  <p className="text-[13px] text-[var(--tx3)]">{emptyMessage}</p>
-                  {emptySubtext && (
-                    <p className="text-[11px] text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>
-                  )}
+                  <div className="dt-empty">
+                    {emptyIcon && <div className="flex justify-center mb-3">{emptyIcon}</div>}
+                    <p className="dt-empty-title">{emptyMessage}</p>
+                    {emptySubtext && (
+                      <p className="dt-empty-sub">{emptySubtext}</p>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : renderRow ? (
               paged.map((row) => (
-                <tr key={getKey(row)}>
+                <tr key={getKey(row)} className="border-b border-[var(--brd)]/20">
                   {selectable && (
                     <td className="w-10 px-3 py-3">
                       <input
@@ -729,7 +847,7 @@ export default function DataTable<T>({
                         checked={selectedKeys.has(getKey(row))}
                         onChange={() => toggleRow(getKey(row))}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                        className="w-4 h-4 rounded border-[var(--brd)] accent-[var(--gold)] cursor-pointer"
                       />
                     </td>
                   )}
@@ -743,8 +861,8 @@ export default function DataTable<T>({
                 <tr
                   key={rowKey}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`border-b border-[var(--brd)]/20 ${
-                    onRowClick ? "cursor-pointer admin-row-hover" : ""
+                  className={`dt-row-divider ${
+                    onRowClick ? "dt-row-clickable" : ""
                   } ${selectable && selectedKeys.has(rowKey) ? "bg-[var(--gold)]/[0.04]" : ""} ${rowClassName ? rowClassName(row) : ""}`}
                 >
                   {selectable && (
@@ -754,14 +872,14 @@ export default function DataTable<T>({
                         checked={selectedKeys.has(rowKey)}
                         onChange={() => toggleRow(rowKey)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-3.5 h-3.5 rounded border-[var(--brd)] accent-[var(--gold)]"
+                        className="w-4 h-4 rounded border-[var(--brd)] accent-[var(--gold)] cursor-pointer"
                       />
                     </td>
                   )}
                   {visibleCols.map((col) => (
                     <td
                       key={col.id}
-                      className={`py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap ${
+                      className={`dt-td overflow-hidden text-ellipsis whitespace-nowrap ${
                         col.align === "right"
                           ? "text-right"
                           : col.align === "center"
@@ -771,7 +889,7 @@ export default function DataTable<T>({
                     >
                       {col.render
                         ? col.render(row)
-                        : <span className="capitalize">{String(col.accessor(row) ?? "—")}</span>}
+                        : <span className="capitalize text-[var(--tx)]">{String(col.accessor(row) ?? "—")}</span>}
                     </td>
                   ))}
                   {/* Spacer cell fills remaining width */}
@@ -782,6 +900,90 @@ export default function DataTable<T>({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Mobile card view (< md screens) ── */}
+      <div className="md:hidden">
+        {paged.length === 0 ? (
+          <div className="py-14 px-6 text-center">
+            {emptyIcon && <div className="mb-3 flex justify-center opacity-40">{emptyIcon}</div>}
+            <p className="text-[14px] font-semibold text-[var(--tx3)]">{emptyMessage}</p>
+            {emptySubtext && <p className="text-[12px] text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>}
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--brd)]/30">
+            {paged.map((row) => {
+              const rowKey = getKey(row);
+              const primaryCol   = visibleCols[0];
+              const statusCol    = visibleCols[1];
+              const valueCol     = visibleCols[2];
+              const metaCols     = visibleCols.slice(3, 7);
+              return (
+                <div
+                  key={rowKey}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={`flex items-center gap-3 px-4 py-3.5 touch-card-press ${
+                    onRowClick ? "cursor-pointer active:bg-[var(--gdim)]" : ""
+                  } ${rowClassName ? rowClassName(row) : ""} ${
+                    selectable && selectedKeys.has(rowKey) ? "bg-[var(--gold)]/[0.04]" : ""
+                  }`}
+                >
+                  {selectable && (
+                    <input
+                      type="checkbox"
+                      checked={selectedKeys.has(rowKey)}
+                      onChange={() => toggleRow(rowKey)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-[var(--brd)] accent-[var(--gold)] cursor-pointer shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {/* Primary identifier */}
+                    <div className="text-[14px] font-semibold text-[var(--tx)] truncate leading-snug">
+                      {primaryCol?.render
+                        ? primaryCol.render(row)
+                        : <span>{String(primaryCol?.accessor(row) ?? "—")}</span>}
+                    </div>
+                    {/* Status + value row */}
+                    {(statusCol || valueCol) && (
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-1">
+                        {statusCol && (
+                          <div className="text-[12px] text-[var(--tx2)] leading-none">
+                            {statusCol.render ? statusCol.render(row) : String(statusCol.accessor(row) ?? "")}
+                          </div>
+                        )}
+                        {valueCol && (
+                          <div className="text-[12px] text-[var(--tx3)] leading-none">
+                            {valueCol.render ? valueCol.render(row) : String(valueCol.accessor(row) ?? "")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Meta chips */}
+                    {metaCols.length > 0 && (
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                        {metaCols.map((col) => {
+                          const val = col.accessor(row);
+                          if (val === null || val === undefined || val === "") return null;
+                          return (
+                            <span key={col.id} className="text-[11px] text-[var(--tx3)]/70 leading-none">
+                              {col.render ? col.render(row) : String(val)}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {onRowClick && (
+                    <svg className="w-4 h-4 text-[var(--tx3)]/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Pagination ── */}
@@ -796,9 +998,9 @@ export default function DataTable<T>({
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="p-1.5 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-2 md:p-1.5 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors touch-manipulation"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4 md:w-3.5 md:h-3.5" />
             </button>
             {pageNumbers.map((pn, i) =>
               pn === "…" ? (
@@ -810,7 +1012,7 @@ export default function DataTable<T>({
                   key={pn}
                   type="button"
                   onClick={() => setPage(pn as number)}
-                  className={`min-w-[28px] h-[28px] rounded-md text-[10px] font-semibold transition-colors ${
+                  className={`min-w-[36px] md:min-w-[28px] h-[36px] md:h-[28px] rounded-md text-[10px] font-semibold transition-colors touch-manipulation ${
                     safePage === pn
                       ? "bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30"
                       : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50"
@@ -824,12 +1026,12 @@ export default function DataTable<T>({
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="p-1.5 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-2 md:p-1.5 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors touch-manipulation"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4 md:w-3.5 md:h-3.5" />
             </button>
-            {/* Per page */}
-            <div className="ml-2 flex items-center gap-1">
+            {/* Per page — desktop only */}
+            <div className="hidden md:flex ml-2 items-center gap-1">
               <select
                 value={perPage}
                 onChange={(e) => changePerPage(Number(e.target.value))}

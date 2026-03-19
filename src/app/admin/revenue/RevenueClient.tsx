@@ -30,19 +30,38 @@ const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+interface Invoice {
+  id: string;
+  client_name: string | null;
+  organization_id: string | null;
+  amount: number | null;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  invoice_number: string | null;
+}
+
+interface PaidMove {
+  id: string;
+  move_code: string | null;
+  client_name: string | null;
+  estimate: number | null;
+  payment_marked_paid_at: string | null;
+}
+
 interface RevenueClientProps {
-  invoices: any[];
-  paidMoves?: any[];
+  invoices: Invoice[];
+  paidMoves?: PaidMove[];
   clientTypeMap?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
 }
 
-function getInvoiceRevenueDate(inv: any): Date {
+function getInvoiceRevenueDate(inv: Invoice): Date {
   const ts = inv.updated_at || inv.created_at;
   return ts ? new Date(ts) : new Date(0);
 }
 
-function getMoveRevenueDate(m: any): Date {
+function getMoveRevenueDate(m: PaidMove): Date {
   const ts = m.payment_marked_paid_at;
   return ts ? new Date(ts) : new Date(0);
 }
@@ -126,7 +145,7 @@ function KpiCard({
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function CustomTooltip({ active, payload, label: _label }: any) {
+function CustomTooltip({ active, payload, label: _label }: { active?: boolean; payload?: { value: number; payload?: { fullLabel?: string } }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   const p = payload[0];
   const fullLabel = p?.payload?.fullLabel ?? _label;
@@ -209,7 +228,8 @@ export default function RevenueClient({
 
   const byClient: Record<string, number> = {};
   paid.forEach((i) => {
-    byClient[i.client_name] = (byClient[i.client_name] || 0) + Number(i.amount);
+    const name = i.client_name ?? "—";
+    byClient[name] = (byClient[name] || 0) + Number(i.amount);
   });
   paidMovesList.forEach((m) => {
     const name = m.client_name || "—";
@@ -313,7 +333,7 @@ export default function RevenueClient({
 
   const byTypeRaw: Record<string, number> = {};
   paid.forEach((i) => {
-    const t = clientTypeMap[i.client_name] || "retail";
+    const t = (i.client_name ? clientTypeMap[i.client_name] : undefined) || "retail";
     byTypeRaw[t] = (byTypeRaw[t] || 0) + Number(i.amount);
   });
   const byType = [
@@ -329,7 +349,7 @@ export default function RevenueClient({
 
   const invoicesByType = useMemo(() => {
     if (!selectedType) return [];
-    return all.filter((i) => (clientTypeMap[i.client_name] || "retail") === selectedType);
+    return all.filter((i) => ((i.client_name ? clientTypeMap[i.client_name] : undefined) || "retail") === selectedType);
   }, [all, selectedType, clientTypeMap]);
 
   const now = new Date();
@@ -366,7 +386,7 @@ export default function RevenueClient({
   const chartMax = Math.max(1, ...chartData.map((d) => d.value));
 
   return (
-    <div className="max-w-[1100px] mx-auto px-5 md:px-8 py-6 md:py-8 animate-fade-up">
+    <div className="max-w-[1100px] mx-auto px-4 sm:px-5 md:px-8 py-6 md:py-8 animate-fade-up">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="mb-6">
@@ -473,13 +493,13 @@ export default function RevenueClient({
               : "12-Month View"}
           </h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1">
+          <div className="flex shrink-0 gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
                 onClick={() => handlePeriodChange(opt.key)}
-                className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                className={`px-3.5 py-2 md:py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 touch-manipulation ${
                   period === opt.key && selectedYear === null
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                     : "text-[var(--tx3)] hover:text-[var(--tx)]"
@@ -489,12 +509,12 @@ export default function RevenueClient({
               </button>
             ))}
           </div>
-          <div className="flex gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
+          <div className="flex shrink-0 gap-0.5 p-0.5 bg-[var(--card)] border border-[var(--brd)] rounded-full">
             {YEAR_OPTIONS.map((y) => (
               <button
                 key={y}
                 onClick={() => handleYearSelect(y)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${
+                className={`px-3 py-2 md:py-1.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 touch-manipulation ${
                   selectedYear === y
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                     : "text-[var(--tx3)] hover:text-[var(--tx)]"
@@ -581,7 +601,7 @@ export default function RevenueClient({
                   key={t.key}
                   type="button"
                   onClick={() => setSelectedType(t.key)}
-                  className="block w-full text-left group py-3"
+                  className="block w-full text-left group py-3 px-2 -mx-2 rounded-lg hover:bg-[var(--gdim)] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
@@ -593,13 +613,14 @@ export default function RevenueClient({
                         {t.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {t.amount > 0 && (
                         <span className="text-[9px] text-[var(--tx3)]">{pct}%</span>
                       )}
-                      <span className="text-[11px] font-bold text-[var(--tx)]">
+                      <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
                         {formatCurrency(t.amount)}
                       </span>
+                      <svg className="w-3 h-3 text-[var(--tx3)]/30 group-hover:text-[var(--gold)]/60 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
                     </div>
                   </div>
                   <div className="h-[3px] bg-[var(--brd)] rounded-full overflow-hidden">
@@ -651,7 +672,7 @@ export default function RevenueClient({
                         <span className="text-[11px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate pr-3">
                           {name}
                         </span>
-                        <span className="text-[11px] font-bold text-[var(--tx)] shrink-0">
+                        <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors shrink-0">
                           {formatCurrency(amount)}
                         </span>
                       </div>
@@ -677,7 +698,7 @@ export default function RevenueClient({
 
       {/* ── Modal: Invoices by Type ────────────────────────────────────────── */}
       {selectedType != null && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4" aria-modal="true">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setSelectedType(null)}

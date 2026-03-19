@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Plus, X, Gift, Users, Tag, Pencil, Check, Copy, Trash2 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import CreateButton from "../components/CreateButton";
+import YugoLogo from "@/components/YugoLogo";
 import { formatCurrency } from "@/lib/format-currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ function CreatePerkModal({
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[100] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+    <div className="fixed inset-0 z-[99999] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
       <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl shrink-0">
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
           <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Perk</h3>
@@ -288,7 +289,7 @@ function CreatePromoReferralModal({
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[100] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+    <div className="fixed inset-0 z-[99999] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
       <div className="bg-[var(--card)] rounded-2xl w-full max-w-[420px] shadow-2xl shrink-0">
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
           <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Promotional Code</h3>
@@ -581,15 +582,18 @@ export default function PerksPage() {
     { key: "vip" as const, label: "VIP Clients", Icon: Users },
   ];
 
+  const activePerks = perks.filter((p) => p.is_active).length;
+  const activeReferrals = referrals.filter((r) => r.status === "active").length;
+
   return (
     <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 animate-fade-up">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Perks &amp; Referrals</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">Manage offers, client referral codes, and VIP clients</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Growth</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Perks & Referrals</h1>
         </div>
         {tab === "perks" && (
-          <button type="button" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          <button type="button" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors mt-1">
             <Plus className="w-[13px] h-[13px]" /> Create Perk
           </button>
         )}
@@ -597,6 +601,30 @@ export default function PerksPage() {
           <CreateButton onClick={() => setShowCreatePromo(true)} title="CREATE PROMO CODE" />
         )}
       </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Active Perks</p>
+          <p className="text-[28px] font-bold font-heading leading-none text-[var(--grn)]">{activePerks}</p>
+          <p className="text-[9px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Referrals</p>
+          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{referrals.length}</p>
+          <p className="text-[9px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Used (30d)</p>
+          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{usedThisMonth}</p>
+          <p className="text-[9px] text-[var(--tx3)] mt-1.5">redemptions</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Conversion</p>
+          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{convRate}%</p>
+          <p className="text-[9px] text-[var(--tx3)] mt-1.5">referral rate</p>
+        </div>
+      </div>
+
 
       {/* Tab bar */}
       <div className="flex gap-0 border-b border-[var(--brd)] mb-6">
@@ -615,6 +643,75 @@ export default function PerksPage() {
           {/* ─── Partner Perks Tab ───────────────────────────────── */}
           {tab === "perks" && (
             <div>
+              {/* ── Live Preview carousel ── */}
+              {perks.some((p) => p.is_active) && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Live Preview</h2>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                    </span>
+                    <span className="text-[9px] text-[var(--tx3)]">Client-facing view of active offers</span>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-3 -mx-1 px-1 scroll-smooth snap-x snap-mandatory">
+                    {perks.filter((p) => p.is_active).map((perk, idx) => {
+                      const themes = [
+                        { bg: "linear-gradient(135deg, #2B1855 0%, #4C2D8F 100%)", stamp: "#4C2D8F" },
+                        { bg: "linear-gradient(135deg, #7A0E1A 0%, #B01A26 100%)", stamp: "#B01A26" },
+                        { bg: "linear-gradient(135deg, #7A3300 0%, #C05A10 100%)", stamp: "#C05A10" },
+                        { bg: "linear-gradient(135deg, #0A2E1A 0%, #1A5C34 100%)", stamp: "#1A5C34" },
+                        { bg: "linear-gradient(135deg, #0F2340 0%, #1A3D70 100%)", stamp: "#1A3D70" },
+                      ];
+                      const theme = themes[idx % themes.length];
+                      const expiry = perk.valid_until
+                        ? new Date(perk.valid_until).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                        : null;
+                      return (
+                        <div
+                          key={perk.id}
+                          className="rounded-2xl overflow-hidden shrink-0 w-[310px] snap-start flex flex-col relative"
+                          style={{ background: theme.bg, minHeight: "140px" }}
+                        >
+                          {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                          <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
+                            <YugoLogo size={10} variant="black" onLightBackground hidePlus />
+                            <span className="text-[9px] font-bold text-black">Exclusive</span>
+                          </div>
+                          {/* Content */}
+                          <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
+                            <div>
+                              {perk.organizations?.name && (
+                                <div className="text-[9px] font-semibold text-white/60 mb-1">From {perk.organizations.name}</div>
+                              )}
+                              <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">{perk.title}</div>
+                              <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
+                                {perk.description || "Exclusive offer for Yugo movers. Terms apply."}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                              {perk.redemption_code && (
+                                <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                  Code: {perk.redemption_code}
+                                </span>
+                              )}
+                              {expiry && (
+                                <span className="text-[8px] text-white/45">Ends {expiry}</span>
+                              )}
+                              <span
+                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full opacity-90 cursor-default"
+                                style={{ color: theme.stamp }}
+                              >
+                                {perk.redemption_code ? "Order now" : "Redeem"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {perks.length === 0 ? (
                 <div className="text-center py-16">
                   <Tag className="w-10 h-10 text-[var(--tx3)] mx-auto mb-3" />

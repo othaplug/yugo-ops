@@ -1,12 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import Link from "next/link";
 
 export const metadata = { title: "Retail Partners" };
 
 import BackButton from "../../components/BackButton";
-import { StatPctChange } from "../../components/StatPctChange";
-import { getDeliveryDetailPath } from "@/lib/move-code";
-import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { formatCompactCurrency } from "@/lib/format-currency";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 import RetailClient from "./RetailClient";
 
 export default async function RetailPage() {
@@ -71,45 +70,21 @@ export default async function RetailPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
+      <div className="mb-6"><BackButton label="B2B Partners" href="/admin/platform?tab=partners" /></div>
 
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Retail Partners</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{clients.length} active partner{clients.length !== 1 ? "s" : ""} · {dels.length} total deliveries</p>
-        </div>
+      <div className="mb-8">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Partners</p>
+        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Retail Partners</h1>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Partners</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{clients.length}</span>
-            <StatPctChange current={clients.length} previous={partnersPrev} />
-          </div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Deliveries</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--tx)]">{dels.length}</span>
-            <StatPctChange current={deliveriesThisMonth} previous={deliveriesLastMonth} />
-          </div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Revenue ({monthLabel})</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(revenueThisMonth)}</span>
-            <StatPctChange current={revenueThisMonth} previous={revenueLastMonth} />
-          </div>
-        </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-          <div className={`text-[24px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>{formatCompactCurrency(outstandingTotal)}</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Partners" value={String(clients.length)} sub="active accounts" />
+        <KpiCard label="Deliveries" value={String(dels.length)} sub={`${deliveriesThisMonth} this month`} />
+        <KpiCard label={`Revenue (${monthLabel})`} value={formatCompactCurrency(revenueThisMonth)} sub="paid invoices" accent />
+        <KpiCard label="Outstanding" value={formatCompactCurrency(outstandingTotal)} sub="awaiting payment" warn={outstandingTotal > 0} />
       </div>
 
-      {/* Actions + Tabs - This is the key section */}
+      <SectionDivider label="Activity" />
       <RetailClient
         clients={JSON.parse(JSON.stringify(clients))}
         deliveries={JSON.parse(JSON.stringify(dels))}

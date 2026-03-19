@@ -34,12 +34,11 @@ export default function TrackingAgreementModal() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]"
-      style={{ minHeight: "100dvh" }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
     >
       <div
-        className="rounded-2xl w-full max-w-[480px] shadow-2xl overflow-hidden"
-        style={{ backgroundColor: CREAM }}
+        className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] shadow-2xl overflow-hidden"
+        style={{ backgroundColor: CREAM, maxHeight: "min(92dvh, 92vh)", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         {/* Header */}
         <div className="px-6 pt-8 pb-5 text-center" style={{ backgroundColor: WINE }}>

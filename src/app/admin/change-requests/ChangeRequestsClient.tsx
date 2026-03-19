@@ -263,13 +263,13 @@ export default function ChangeRequestsClient({
       {/* Filter bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
               type="button"
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all touch-manipulation ${
                 statusFilter === f.value
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                   : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
@@ -299,7 +299,7 @@ export default function ChangeRequestsClient({
       </div>
 
       {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
             <h2 id="approve-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve change request</h2>
             <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate, formatDateTime } from "@/lib/client-timezone";
 import PartnerDeliveriesTab from "./tabs/PartnerDeliveriesTab";
@@ -22,6 +23,7 @@ import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
+import { ToastProvider, useToast } from "@/app/admin/components/Toast";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
 
@@ -151,7 +153,8 @@ const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-export default function PartnerPortalClient({ orgId, orgName, orgType, contactName, userEmail, portalFeatures, initialProjectId }: Props) {
+function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, portalFeatures, initialProjectId }: Props) {
+  const { toast } = useToast();
   const headerOrgName = usePartnerOrgDisplayName();
   const features = getPartnerFeatures(orgType);
   // portal_features from DB override legacy type-based feature detection
@@ -236,6 +239,11 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
     }
   }, []);
 
+  const { containerRef: pullRef, pullDistance, refreshing } = usePullToRefresh({
+    onRefresh: loadData,
+    disabled: loading,
+  });
+
   useEffect(() => { loadData(); }, [loadData]);
 
   const today = new Date();
@@ -288,7 +296,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
       <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-1.5">
           <YugoLogo size={19} variant="gold" />
-          <span className="text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50">BETA</span>
+          <span className="text-[9px] font-bold tracking-[1.5px] uppercase text-[var(--gold)] opacity-60 ml-0.5">BETA</span>
           <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">{headerOrgName}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -305,7 +313,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
 
       {/* First-time Welcome Overlay */}
       {showWelcome && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
           <div className="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden" style={{ animation: "fadeSlideUp 0.4s ease" }}>
             <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
 
@@ -430,7 +438,29 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         </div>
       )}
 
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <main
+        ref={(el) => { pullRef.current = el; }}
+        className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-6"
+      >
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 0 || refreshing) && (
+          <div
+            className="fixed top-[52px] left-1/2 -translate-x-1/2 z-[--z-toast] flex items-center justify-center w-9 h-9 rounded-full bg-[var(--card)] border border-[var(--brd)] shadow-lg transition-transform"
+            style={{ transform: `translate(-50%, ${pullDistance}px)` }}
+            aria-live="polite"
+          >
+            {refreshing ? (
+              <span className="spinner w-4 h-4" />
+            ) : (
+              <svg
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2.5"
+                style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
+              >
+                <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>
+            )}
+          </div>
+        )}
         {/* Returning user welcome-back banner */}
         {isReturning && loginInfo?.lastLoginAt && (
           <div className="mb-5 flex items-center gap-3 px-4 py-3 border-t border-[var(--brd)]/30 pt-5" style={{ animation: "fadeSlideUp 0.4s ease" }}>
@@ -789,6 +819,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <PartnerShareModal
           delivery={shareTarget}
           onClose={() => setShareTarget(null)}
+          onSent={() => toast("Tracking link sent", "check")}
         />
       )}
       {detailTarget && (
@@ -809,7 +840,7 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         <PartnerEditDeliveryModal
           delivery={editTarget}
           onClose={() => setEditTarget(null)}
-          onSaved={() => { setEditTarget(null); loadData(); }}
+          onSaved={() => { setEditTarget(null); loadData(); toast("Delivery updated", "check"); }}
         />
       )}
       <PartnerSettingsPanel
@@ -820,9 +851,89 @@ export default function PartnerPortalClient({ orgId, orgName, orgType, contactNa
         userEmail={userEmail}
         orgType={orgType}
       />
+
+      {/* Mobile bottom navigation — hidden on sm+ */}
+      {!features.showReferrals && (
+        <nav
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[var(--brd)] flex items-stretch bg-[var(--card)]/95 backdrop-blur-md safe-area-bottom"
+          aria-label="Main navigation"
+        >
+          {[
+            {
+              key: "today", label: "Today",
+              icon: (active: boolean) => (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              ),
+            },
+            {
+              key: "calendar", label: "Schedule",
+              icon: (active: boolean) => (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
+                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                </svg>
+              ),
+            },
+            ...(features.canCreateDelivery && !hasOverdueInvoices ? [{
+              key: "__schedule__", label: "Book",
+              icon: (_active: boolean) => (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white -mt-4 shadow-lg"
+                  style={{ background: "linear-gradient(145deg, #D4AF37, #C9A962)", boxShadow: "0 4px 12px rgba(201,169,98,0.45)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
+              ),
+            }] : []),
+            {
+              key: "tracking", label: "Map",
+              icon: (active: boolean) => (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                </svg>
+              ),
+            },
+            {
+              key: "__settings__", label: "Account",
+              icon: (active: boolean) => (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              ),
+            },
+          ].map(({ key, label, icon }) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (key === "__schedule__") { setScheduleModalKey((k) => k + 1); setScheduleOpen(true); }
+                  else if (key === "__settings__") { setSettingsOpen(true); }
+                  else setActiveTab(key);
+                }}
+                className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[10px] font-semibold transition-colors touch-manipulation ${
+                  isActive ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                }`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {icon(isActive)}
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </div>
     </PartnerChangePasswordGate>
     </PartnerNotificationProvider>
+  );
+}
+
+export default function PartnerPortalClient(props: Props) {
+  return (
+    <ToastProvider>
+      <PartnerPortalInner {...props} />
+    </ToastProvider>
   );
 }
 

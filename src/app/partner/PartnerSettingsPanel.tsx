@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { VERTICAL_LABELS } from "@/lib/partner-type";
 
@@ -168,14 +169,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
   if (!open) return null;
 
-  return (
+  const panelContent = (
     <>
-      <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="fixed inset-0 z-[99998] bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="fixed top-0 right-0 z-50 h-full w-full max-w-[400px] bg-[var(--card,#fff)] border-l border-[var(--brd,#E8E4DF)] shadow-2xl flex flex-col"
-        style={{ animation: "slideInRight 0.25s ease" }}
+        className="fixed top-0 right-0 z-[99999] h-full w-full max-w-[400px] bg-[var(--card,#fff)] border-l border-[var(--brd,#E8E4DF)] shadow-2xl flex flex-col drawer-card"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd,#E8E4DF)]">
@@ -523,4 +523,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
       </div>
     </>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(panelContent, document.body);
 }

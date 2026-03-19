@@ -98,25 +98,30 @@ interface JobCardProps {
   compact?: boolean;
 }
 
-export default function JobCard({ job, onReassign, onContact, onAddNote, compact = false }: JobCardProps) {
+export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddNote, compact = false }: JobCardProps) {
   const statusInfo = getStatusInfo(job.status);
   const StatusIcon = statusInfo.icon;
   const canReassign = !isJobInProgress(job.status, job.stage);
+  const isUnassigned = !job.crewId;
 
   const routeText =
     job.fromAddress && job.toAddress
-      ? `${truncate(job.fromAddress, 20)} → ${truncate(job.toAddress, 20)}`
+      ? `${truncate(job.fromAddress, 22)} → ${truncate(job.toAddress, 22)}`
       : job.toAddress
-        ? truncate(job.toAddress, 45)
+        ? truncate(job.toAddress, 48)
         : "—";
 
   return (
     <div
-      className={`rounded-xl border border-[var(--brd)] bg-[var(--card)] ${compact ? "p-3" : "p-4"} space-y-2.5`}
+      className={`rounded-xl border transition-colors ${
+        isUnassigned && !compact
+          ? "border-amber-500/35 bg-amber-500/[0.03]"
+          : "border-[var(--brd)] bg-[var(--card)]"
+      } ${compact ? "p-3" : "p-4"} space-y-2.5`}
     >
-      {/* Header: status + label + time */}
+      {/* Header: status + label + time + type badge */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon className={`w-4 h-4 shrink-0 ${statusInfo.color}`} />
           <span className={`text-[9px] font-bold tracking-wider uppercase ${statusInfo.color}`}>
             {statusInfo.label}
@@ -126,6 +131,15 @@ export default function JobCard({ job, onReassign, onContact, onAddNote, compact
             <span className="text-[10px] text-[var(--tx3)]">{job.scheduledTime}</span>
           )}
         </div>
+        <span
+          className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+            job.type === "move"
+              ? "bg-[#3B82F6]/15 text-[#3B82F6]"
+              : "bg-[#A855F7]/15 text-[#A855F7]"
+          }`}
+        >
+          {job.type}
+        </span>
       </div>
 
       {/* Client + tier/partner */}
@@ -157,7 +171,10 @@ export default function JobCard({ job, onReassign, onContact, onAddNote, compact
             <span className="text-[var(--tx3)]">· {job.crewSize} movers</span>
           </>
         ) : (
-          <span className="font-semibold text-[var(--red)]">UNASSIGNED</span>
+          <span className="font-bold text-amber-500 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Needs assignment
+          </span>
         )}
         {job.truckSize && (
           <>
@@ -166,14 +183,16 @@ export default function JobCard({ job, onReassign, onContact, onAddNote, compact
           </>
         )}
         {job.etaMinutes != null && job.etaMinutes > 0 && (
-          <span className="text-[var(--grn)]">ETA: {job.etaMinutes} min to destination</span>
+          <span className="text-[var(--grn)] font-semibold">ETA {job.etaMinutes}m</span>
         )}
       </div>
 
       {/* Stage + progress */}
       {!compact && (
         <>
-          <div className="text-[10px] text-[var(--tx3)]">{job.currentStageLabel}</div>
+          {job.currentStageLabel && (
+            <div className="text-[10px] text-[var(--tx3)]">{job.currentStageLabel}</div>
+          )}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full bg-[var(--gdim)] overflow-hidden">
               <div
@@ -181,38 +200,42 @@ export default function JobCard({ job, onReassign, onContact, onAddNote, compact
                 style={{ width: `${Math.min(100, Math.max(0, job.progress))}%` }}
               />
             </div>
-            <span className="text-[9px] text-[var(--tx3)] w-8">{job.progress}%</span>
+            <span className="text-[9px] text-[var(--tx3)] w-7 text-right">{job.progress}%</span>
           </div>
         </>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-0.5 flex-wrap">
         <Link
           href={job.href}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
         >
-          <ExternalLink className="w-3 h-3" />
+          <ExternalLink className="w-3.5 h-3.5" />
           View
         </Link>
         {onReassign && canReassign && (
           <button
             type="button"
             onClick={() => onReassign(job)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[11px] font-semibold transition-colors touch-manipulation ${
+              isUnassigned
+                ? "border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+            }`}
           >
-            <Users className="w-3 h-3" />
-            Reassign
+            <Users className="w-3.5 h-3.5" />
+            {isUnassigned ? "Assign Crew" : "Reassign"}
           </button>
         )}
         {onContact && (
           <button
             type="button"
             onClick={() => onContact(job)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
           >
-            <Phone className="w-3 h-3" />
-            Contact Client
+            <Phone className="w-3.5 h-3.5" />
+            Contact
           </button>
         )}
       </div>

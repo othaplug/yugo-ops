@@ -34,6 +34,14 @@ export default async function CrewPage() {
 
   return (
     <div className="relative w-full h-full min-h-[500px]" style={{ height: "calc(100dvh - 3.5rem)" }}>
+      {/* Floating header overlay */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--brd)] shadow-sm">
+          <span className="text-[8px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations</span>
+          <span className="w-px h-3 bg-[var(--brd)]" />
+          <span className="text-[11px] font-bold text-[var(--tx)]">Live Crew Map</span>
+        </div>
+      </div>
       <UnifiedTrackingView
         initialCrews={crewsForMap}
         initialDeliveries={deliveries || []}

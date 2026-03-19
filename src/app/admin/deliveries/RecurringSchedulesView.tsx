@@ -120,7 +120,7 @@ function AdminScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
       <div className="bg-[var(--card)] rounded-2xl w-full max-w-[500px] shadow-2xl border border-[var(--brd)] flex flex-col max-h-[90vh]">
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[14px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
@@ -311,8 +311,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-1">
         <div>
-          <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">Recurring Schedules</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Recurring Schedules</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
         <CreateButton onClick={() => setCreateOpen(true)} title="New Schedule" />
       </div>

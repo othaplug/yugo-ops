@@ -271,18 +271,21 @@ export default function CrewAnalyticsClient({
   return (
     <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">
-          Crew Performance
-        </h1>
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+            Crew Performance
+          </h1>
+        </div>
         <Link
           href="/admin/reports"
-          className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+          className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors mt-1"
         >
           End of Day Reports
         </Link>
       </div>
-      <p className="text-[12px] text-[var(--tx3)] mb-5 font-medium">
+      <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">
         {totalJobs} jobs · {sorted.length} crew{sorted.length !== 1 ? "s" : ""}
         {avgSatAll !== "—" ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
         {" · "}{avgSignOff}% sign-off rate
@@ -452,7 +455,7 @@ export default function CrewAnalyticsClient({
                   key={a.id}
                   type="button"
                   onClick={() => openCrewDetail(a.id)}
-                  className={`group w-full text-left flex items-center gap-3 py-3.5 px-4 -mx-1 transition-all hover:bg-[var(--brd)]/5 rounded-xl ${rank > 0 ? "border-t border-[var(--brd)]/20" : ""}`}
+                  className={`group w-full text-left flex items-center gap-3 py-3.5 px-4 -mx-1 transition-all hover:bg-[var(--gdim)] cursor-pointer rounded-xl ${rank > 0 ? "border-t border-[var(--brd)]/20" : ""}`}
                 >
                   {/* Rank badge */}
                   <div

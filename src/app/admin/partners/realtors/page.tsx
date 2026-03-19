@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
+import KpiCard from "@/components/ui/KpiCard";
+import { formatCurrency } from "@/lib/format-currency";
 
 export const metadata = { title: "Realtors" };
 
@@ -70,9 +72,22 @@ export default async function RealtorsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-4">
+      <div className="mb-6">
         <BackButton label="B2B Partners" href="/admin/platform?tab=partners" />
       </div>
+
+      <div className="mb-8">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Partners</p>
+        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Realtors & Referrals</h1>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-8">
+        <KpiCard label="Total Referrals" value={String(all.length)} sub={`${referralsThisMonth} this month`} />
+        <KpiCard label="Booked" value={String(booked)} sub={`${bookedThisMonth} this month`} accent={booked > 0} />
+        <KpiCard label="Commission" value={formatCurrency(totalCommission)} sub="all time" />
+        <KpiCard label="Realtors" value={String(realtors.length)} sub="partner agents" />
+      </div>
+
       <RealtorsMetrics
         referralsCount={all.length}
         booked={booked}

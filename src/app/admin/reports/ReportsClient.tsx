@@ -259,7 +259,6 @@ export default function ReportsClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">End-of-Day Reports</h1>
         <div className="flex items-center gap-2" ref={filterRef}>
           <div className="flex items-center gap-1.5">
             {(["day", "week", "month", "year"] as const).map((p) => (
@@ -444,7 +443,7 @@ export default function ReportsClient({
                           key={`${j.jobId}-${i}`}
                           type="button"
                           onClick={() => openDetail(r, j)}
-                          className="text-left px-4 py-3 rounded-lg hover:bg-[var(--gold)]/5 transition-colors group"
+                          className="text-left px-4 py-3.5 rounded-lg hover:bg-[var(--gold)]/5 active:bg-[var(--gold)]/10 transition-colors group touch-manipulation"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="min-w-0">
@@ -483,8 +482,8 @@ export default function ReportsClient({
       )}
 
       {detailModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setDetailModal(null)}>
-          <div className="bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]" onClick={() => setDetailModal(null)}>
+          <div className="bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full overflow-y-auto" style={{ maxHeight: "min(90dvh, 90vh)" }} onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
               <h3 className="font-heading text-[18px] font-bold text-[var(--tx)]">Job details</h3>
               <button type="button" onClick={() => setDetailModal(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] font-semibold text-[16px] leading-none" aria-label="Close">×</button>

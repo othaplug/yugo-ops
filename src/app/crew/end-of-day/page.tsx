@@ -52,7 +52,10 @@ export default function CrewEndOfDayPage() {
       <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]">
         ← Back to Dashboard
       </Link>
-      <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] mt-2">End of Day Report</h1>
+      <div className="mt-2">
+        <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
+        <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">End of Day Report</h1>
+      </div>
       {preview?.alreadySubmitted ? (
         <div className="mt-3 flex items-center gap-2 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
           <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--grn)] text-white text-[14px]">✓</span>

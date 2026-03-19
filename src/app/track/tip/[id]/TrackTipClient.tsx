@@ -190,7 +190,7 @@ export default function TrackTipClient({
   if (success) {
     if (asModal) {
       return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="rounded-2xl bg-white shadow-2xl border p-6 max-w-sm w-full" style={{ borderColor: `${FOREST}15` }}>
             {successContent}
           </div>
@@ -219,7 +219,7 @@ export default function TrackTipClient({
                     key={amt}
                     type="button"
                     onClick={() => { setAmount(amt); setCustomAmount(""); setShowCustom(false); }}
-                    className="px-4 py-2 rounded-xl text-[13px] font-semibold border transition-colors"
+                    className="px-4 py-3 rounded-xl text-[13px] font-semibold border transition-colors touch-manipulation"
                     style={{
                       borderColor: amount === amt ? GOLD : `${FOREST}25`,
                       color: GOLD,
@@ -310,12 +310,12 @@ export default function TrackTipClient({
           onError={() => setError("Failed to load payment SDK. Please refresh.")}
         />
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/25 backdrop-blur-md"
+          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-md"
           onClick={(e) => e.target === e.currentTarget && onClose?.()}
         >
           <div
-            className="rounded-2xl bg-white shadow-2xl border p-6 pt-10 max-w-sm w-full relative"
-            style={{ borderColor: `${FOREST}15` }}
+            className="rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl border p-6 pt-10 w-full sm:max-w-sm relative"
+            style={{ borderColor: `${FOREST}15`, paddingBottom: `calc(1.5rem + env(safe-area-inset-bottom, 0px))` }}
             onClick={(e) => e.stopPropagation()}
           >
             <button

@@ -8,6 +8,8 @@ import FilterBar from "../components/FilterBar";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatMoveDate } from "@/lib/date-format";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 type Client = {
   id: string;
@@ -133,11 +135,19 @@ export default function ClientsPageClient({
     setBalanceFilter("");
   };
 
+  const activeClients = filteredClients.filter((c) => ["confirmed","scheduled","in_progress"].includes(c.move_status)).length;
+  const withBalance = filteredClients.filter((c) => (c.outstanding_balance ?? 0) > 0).length;
+
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <div className="flex items-center justify-between gap-2 mb-4 min-w-0">
-        <BackButton label="Back" />
-        <div className="flex gap-1.5 shrink-0">
+      <div className="mb-6"><BackButton label="Back" /></div>
+
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Contacts</h1>
+        </div>
+        <div className="flex gap-1.5 shrink-0 mt-1">
           <Link
             href="/admin/clients/new"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
@@ -145,32 +155,22 @@ export default function ClientsPageClient({
             + Add Client
           </Link>
           <Link
-            href="/admin/revenue"
+            href="/admin/partners"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
           >
-            Export
+            B2B Partners
           </Link>
         </div>
       </div>
 
-      {/* Section context banner */}
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div className="flex items-center gap-3">
-          <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-            B2C Move Clients
-          </div>
-          <p className="text-[11px] text-[var(--tx3)] hidden sm:block">
-            Residential &amp; commercial move clients
-          </p>
-        </div>
-        <Link
-          href="/admin/partners"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all whitespace-nowrap"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          B2B Partners
-        </Link>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Total Clients" value={String(initialClients.length)} sub="all time" />
+        <KpiCard label="Active" value={String(activeClients)} sub="move in progress" accent={activeClients > 0} />
+        <KpiCard label="Filtered" value={String(filteredClients.length)} sub="current view" />
+        <KpiCard label="With Balance" value={String(withBalance)} sub="outstanding" warn={withBalance > 0} />
       </div>
+
+      <SectionDivider label="Client List" />
 
       <div className="mb-4">
         <FilterBar

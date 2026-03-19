@@ -238,6 +238,10 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <BackButton label="Back" />
 
+      <div className="pt-4">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">Operations · {isOffice ? "Office Move" : "Residential Move"}</p>
+      </div>
+
       {isCompleted && (
         <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
           This move is complete. Some fields are locked for transparency.

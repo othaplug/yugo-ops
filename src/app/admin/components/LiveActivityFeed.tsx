@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Icon } from "@/components/AppIcons";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusLabel } from "@/lib/move-status";
 
@@ -34,16 +33,6 @@ function getHref(e: ActivityEvent): string {
   if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
   return "/admin";
-}
-
-function getIcon(eventType: string, description: string | null): string {
-  const et = (eventType || "").toLowerCase();
-  const desc = (description || "").toLowerCase();
-  if (et === "payment" || desc.includes("payment") || desc.includes("paid")) return "dollar";
-  if (et === "client_message" || desc.includes("message")) return "messageSquare";
-  if (et === "created" || desc.includes("new booking") || desc.includes("new referral")) return "calendar";
-  if (et === "status_change" || et === "notification") return "target";
-  return "bell";
 }
 
 function formatDesc(desc: string): string {
@@ -132,13 +121,21 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         <div className="flex items-center gap-2">
           <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Activity</h2>
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--gold)]" />
           </span>
         </div>
+        {events.length > 8 && (
+          <Link
+            href="/admin/reports"
+            className="text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
+          >
+            View all →
+          </Link>
+        )}
       </div>
       {visible.length > 0 ? (
-        <div className="divide-y divide-[var(--brd)]/30">
+        <div className="divide-y divide-[var(--brd)]/20">
           {visible.map((e, idx) => {
             const isUnread = unreadIds.has(e.id);
             return (
@@ -146,13 +143,13 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
                 key={`${e.id}-${idx}`}
                 href={getHref(e)}
                 onClick={() => setUnreadIds((prev) => { const n = new Set(prev); n.delete(e.id); return n; })}
-                className="flex items-start gap-2.5 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
+                className="group flex items-start gap-2.5 py-3 px-1 hover:bg-[var(--card)]/30 transition-colors rounded-lg"
               >
-                <div className="w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 bg-[var(--tx3)]/10">
-                  <Icon name={getIcon(e.event_type, e.description)} className="w-3 h-3 text-[var(--tx3)]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[11px] leading-snug truncate ${isUnread ? "font-semibold text-[var(--tx)]" : "text-[var(--tx)]"}`}>
+                {isUnread && (
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--gold)] shrink-0" />
+                )}
+                <div className={`flex-1 min-w-0 ${isUnread ? "" : "pl-4"}`}>
+                  <div className={`text-[11px] leading-snug truncate ${isUnread ? "font-semibold text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
                     {formatDesc(e.description || e.event_type)}
                   </div>
                   <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.created_at)}</div>

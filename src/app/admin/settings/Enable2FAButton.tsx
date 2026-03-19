@@ -64,9 +64,9 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
       </button>
 
       {showWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowWarning(false)} />
-          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-sm w-full shadow-xl">
+          <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl p-5 sm:max-w-sm w-full shadow-xl animate-slide-up sm:animate-none" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="flex items-start gap-3 mb-4">
               <div className="w-9 h-9 rounded-lg bg-[var(--red)]/10 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-[var(--red)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

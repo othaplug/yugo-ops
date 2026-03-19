@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -297,10 +298,11 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
       <div
-        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[640px] max-h-[92vh] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
+        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[640px] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card animate-slide-up sm:animate-none"
+        style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -714,6 +716,9 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
     </div>
   );
 
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
+
   /* ─── Shared UI sections ─── */
 
   function renderSurcharges() {
@@ -825,7 +830,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
 function FormField({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <label className="block text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)] mb-1.5">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       {children}
     </div>
   );

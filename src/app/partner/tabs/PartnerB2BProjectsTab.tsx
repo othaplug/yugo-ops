@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useConfirm } from "@/hooks/useConfirm";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
@@ -225,6 +226,7 @@ export default function PartnerB2BProjectsTab({
   initialProjectId,
   onScheduleDelivery,
 }: PartnerB2BProjectsTabProps = {}) {
+  const { confirm, confirmEl } = useConfirm();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
@@ -559,7 +561,8 @@ export default function PartnerB2BProjectsTab({
 
   const deleteItem = async (itemId: string) => {
     if (!selectedProject || deletingItemId) return;
-    if (!confirm("Remove this item from the project?")) return;
+    const ok = await confirm({ title: "Remove item?", message: "This item will be removed from the project.", confirmLabel: "Remove", variant: "danger" });
+    if (!ok) return;
     setDeletingItemId(itemId);
     try {
       const res = await fetch(`/api/partner/projects/${selectedProject.id}/inventory/${itemId}`, { method: "DELETE" });
@@ -625,7 +628,7 @@ export default function PartnerB2BProjectsTab({
   // ── Modals ────────────────────────────────────────────────────────────────
 
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowNewProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowNewProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -691,7 +694,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowEditProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowEditProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -762,7 +765,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
+    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
           <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
@@ -949,7 +952,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={() => setStatusItem(null)}>
+    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setStatusItem(null)}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>
@@ -1000,7 +1003,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
+    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for Pickup!" : "Schedule Delivery?"}
@@ -1040,7 +1043,7 @@ export default function PartnerB2BProjectsTab({
 
   // Photo lightbox
   const PhotoLightbox = viewPhotos && viewPhotos.length > 0 ? (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25" onClick={() => setViewPhotos(null)}>
+    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setViewPhotos(null)}>
       <button
         type="button"
         className="absolute top-4 right-4 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
@@ -1686,6 +1689,7 @@ export default function PartnerB2BProjectsTab({
 
   return (
     <>
+      {confirmEl}
       {NewProjectModal}
       {loadingDetail && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-[var(--bg)]/70">

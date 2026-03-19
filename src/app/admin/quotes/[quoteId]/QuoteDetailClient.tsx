@@ -197,9 +197,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         </div>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-0.5">
-              Quote
-            </p>
+            <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales · Quote</p>
             <h1 className="text-[22px] md:text-[24px] font-bold text-[var(--tx)] tracking-tight">
               {quote.quote_id}
             </h1>

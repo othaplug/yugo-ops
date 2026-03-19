@@ -994,9 +994,10 @@ export default function QuoteFormClient({
         {/* ═══ LEFT PANEL — Form ═══ */}
         <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-[var(--brd)]">
-              <h1 className="font-heading text-[18px] font-bold text-[var(--tx)]">Generate Quote</h1>
-              <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+            <div className="px-5 py-4 border-b border-[var(--brd)]">
+              <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+              <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Generate Quote</h1>
+              <p className="text-[11px] text-[var(--tx3)] mt-1.5">
                 Fill in the details and generate a quote. The live preview updates as you type.
               </p>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   MapPin,
   Package,
@@ -9,6 +10,7 @@ import {
   Star,
   AlertTriangle,
   CheckCircle2,
+  Radio,
 } from "lucide-react";
 
 export interface DispatchEvent {
@@ -23,18 +25,17 @@ export interface DispatchEvent {
   crewId?: string | null;
 }
 
-/* Same palette as map tracking — each team gets a consistent color by hashing crew ID */
 const TEAM_PALETTE = [
-  "#22C55E", // green
-  "#3B82F6", // blue
-  "#A855F7", // purple
-  "#F97316", // orange
-  "#EC4899", // pink
-  "#06B6D4", // cyan
-  "#EAB308", // yellow
-  "#14B8A6", // teal
-  "#F43F5E", // rose
-  "#8B5CF6", // violet
+  "#22C55E",
+  "#3B82F6",
+  "#A855F7",
+  "#F97316",
+  "#EC4899",
+  "#06B6D4",
+  "#EAB308",
+  "#14B8A6",
+  "#F43F5E",
+  "#8B5CF6",
 ];
 
 function teamColor(crewId: string | null | undefined): string | null {
@@ -91,26 +92,37 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
 
   return (
     <div ref={containerRef} className="flex flex-col h-full min-h-0 -mx-1">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-1 pr-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0.5 px-1 pr-2">
         {events.length === 0 ? (
-          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">
-            No activity yet today
+          <div className="py-12 flex flex-col items-center gap-3 text-center">
+            <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center">
+              <Radio className="w-5 h-5 text-[var(--tx3)]" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-[var(--tx2)]">No activity yet</p>
+              <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                Events appear here as jobs progress
+              </p>
+            </div>
           </div>
         ) : (
           events.map((e) => {
             const Icon = ICON_MAP[e.icon] || MessageSquare;
             const color = teamColor(e.crewId);
             const isUnseen = unseenIds?.has(e.id);
-            const content = (
+
+            const inner = (
               <div
-                className="flex items-start gap-2 py-2 px-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
-                style={color ? { borderLeft: `3px solid ${color}` } : undefined}
+                className="flex items-start gap-2.5 py-2.5 px-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
+                style={
+                  color
+                    ? { borderLeft: `3px solid ${color}`, paddingLeft: "calc(0.5rem - 3px)" }
+                    : undefined
+                }
               >
                 <div
-                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{
-                    backgroundColor: color ? `${color}20` : "var(--gdim)",
-                  }}
+                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                  style={{ backgroundColor: color ? `${color}20` : "var(--gdim)" }}
                 >
                   <Icon
                     className="w-3.5 h-3.5"
@@ -119,16 +131,31 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
                 </div>
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`text-[11px] leading-snug ${isUnseen ? "font-bold text-[var(--tx)]" : "text-[var(--tx2)]"}`}
+                    className={`text-[11px] leading-snug ${
+                      isUnseen ? "font-bold text-[var(--tx)]" : "text-[var(--tx2)]"
+                    }`}
                   >
                     {e.description}
                   </p>
                   <p className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.timestamp)}</p>
                 </div>
+                {isUnseen && (
+                  <div className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--gold)] mt-2" />
+                )}
               </div>
             );
 
-            return <div key={e.id}>{content}</div>;
+            return (
+              <div key={e.id}>
+                {e.href ? (
+                  <Link href={e.href} className="block">
+                    {inner}
+                  </Link>
+                ) : (
+                  inner
+                )}
+              </div>
+            );
           })
         )}
       </div>

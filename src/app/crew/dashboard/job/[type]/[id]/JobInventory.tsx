@@ -353,7 +353,7 @@ export default function JobInventory({
         </>
       )}
       {addExtraOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
             <h3 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
             <p className="text-[11px] text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>

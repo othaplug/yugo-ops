@@ -640,7 +640,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
       )}
 
       {approveExtraModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="approve-extra-modal-title">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="approve-extra-modal-title">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
             <h2 id="approve-extra-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve extra item</h2>
             <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>

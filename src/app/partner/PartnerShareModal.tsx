@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 interface Props {
@@ -12,15 +13,25 @@ interface Props {
     delivery_address: string | null;
   };
   onClose: () => void;
+  onSent?: () => void;
 }
 
-export default function PartnerShareModal({ delivery, onClose }: Props) {
+export default function PartnerShareModal({ delivery, onClose, onSent }: Props) {
   const [method, setMethod] = useState<"email" | "sms">("email");
   const [recipient, setRecipient] = useState("");
   const phoneInput = usePhoneInput(recipient, setRecipient);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleEscape]);
 
   const handleSend = async () => {
     if (!recipient.trim()) { setError("Enter a recipient"); return; }
@@ -40,6 +51,7 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
       setSent(true);
+      onSent?.();
       setTimeout(() => onClose(), 2000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -48,9 +60,9 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm modal-overlay" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-[420px] mx-4 modal-card" onClick={(e) => e.stopPropagation()}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[420px] modal-card animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[18px] font-bold text-[var(--tx)] font-hero">Share Tracking Link</h2>
@@ -120,4 +132,7 @@ export default function PartnerShareModal({ delivery, onClose }: Props) {
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }

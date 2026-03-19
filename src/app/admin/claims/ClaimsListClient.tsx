@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Claim {
   id: string;
@@ -172,33 +174,39 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
 
   return (
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[var(--tx)]">Claims</h1>
-          <p className="text-[13px] text-[var(--tx3)]">Damage claims and valuation protection payouts</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Claims</h1>
         </div>
         <CreateButton href="/admin/claims/new" title="New Claim" />
       </div>
 
-      {/* Stats row — bare */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 mb-8 pt-6 border-t border-[var(--brd)]/30">
-        <StatCard label="Open Claims" value={stats.openCount} color="var(--gold)" />
-        <StatCard label="Under Review" value={stats.reviewCount} color="#3B82F6" />
-        <StatCard label="Resolved (30d)" value={stats.resolvedCount} color="var(--grn)" />
-        <StatCard label="Paid Out (30d)" value={formatCurrency(stats.totalPaidOut)} color="var(--tx)" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Open Claims" value={String(stats.openCount)} sub="awaiting action" warn={stats.openCount > 0} />
+        <KpiCard label="Under Review" value={String(stats.reviewCount)} sub="being assessed" />
+        <KpiCard label="Resolved (30d)" value={String(stats.resolvedCount)} sub="last 30 days" accent={stats.resolvedCount > 0} />
+        <KpiCard label="Paid Out (30d)" value={formatCurrency(stats.totalPaidOut)} sub="approved payouts" />
       </div>
 
+      <SectionDivider label="All Claims" />
+
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] outline-none"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+      <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        {STATUS_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => setStatusFilter(o.value)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all touch-manipulation ${
+              statusFilter === o.value
+                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                : "bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:bg-[var(--bg2)]"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
 
       {/* Table */}
@@ -217,15 +225,6 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
         emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}
       />
-    </div>
-  );
-}
-
-function StatCard({ label, value, color }: { label: string; value: string | number; color: string }) {
-  return (
-    <div>
-      <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</p>
-      <p className="text-[24px] font-bold font-heading" style={{ color }}>{value}</p>
     </div>
   );
 }

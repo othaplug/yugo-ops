@@ -205,6 +205,10 @@ export default function ClaimDetailClient({
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
+      <div className="mb-3">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · Claim</p>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">

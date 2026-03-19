@@ -125,11 +125,12 @@ export default function AdminNotificationsPage() {
   return (
     <div className="p-4 sm:p-6 pt-[72px] max-w-[960px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)]">Notifications</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">
-            {total} total{unreadOnPage > 0 ? ` \u00b7 ${unreadOnPage} unread on this page` : ""}
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
+          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Notifications</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-2">
+            {total} total{unreadOnPage > 0 ? ` · ${unreadOnPage} unread on this page` : ""}
           </p>
         </div>
         {unreadOnPage > 0 && (

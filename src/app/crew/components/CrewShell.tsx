@@ -8,6 +8,7 @@ import { ToastProvider } from "@/app/admin/components/Toast";
 import { Icons } from "@/app/admin/components/SidebarIcons";
 import YugoLogo from "@/components/YugoLogo";
 import CrewSettingsDropdown from "./CrewSettingsDropdown";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 const NAV_ITEMS = [
   { href: "/crew/dashboard", label: "Dashboard", icon: "target" as const },
@@ -181,11 +182,40 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 admin-main-offset tab-content">
+            <main id="crew-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 admin-main-offset tab-content pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0">
               {children}
             </main>
           </div>
+
+          {/* Mobile bottom navigation */}
+          <nav
+            className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[var(--brd)]/60 flex items-stretch bg-[var(--card)]/95 backdrop-blur-md safe-area-bottom"
+            aria-label="Main navigation"
+          >
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(item.href);
+              const IconComp = Icons[item.icon];
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  // @ts-expect-error -- viewTransition is experimental
+                  viewTransition
+                  className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[10px] font-semibold transition-colors touch-manipulation ${
+                    active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                  }`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                    <IconComp />
+                  </span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
+        <OfflineBanner />
       </ToastProvider>
     </ThemeProvider>
   );

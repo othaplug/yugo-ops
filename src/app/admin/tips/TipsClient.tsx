@@ -2,6 +2,8 @@
 
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Tip {
   id: string;
@@ -88,43 +90,29 @@ export default function TipsClient({
 
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <h1 className="font-heading text-[20px] font-bold text-[var(--tx)] mb-1">Tips</h1>
-      <p className="text-[12px] text-[var(--tx3)] mb-5">Crew gratuities from completed moves</p>
+      <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+      <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Tips</h1>
 
-      <div className="mb-8">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Summary</div>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="py-3">
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Tips</div>
-            <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCurrency(totalTips)}</span>
-          </div>
-          <div className="py-3">
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Average</div>
-            <span className="text-xl font-bold font-heading text-[var(--tx)]">{formatCurrency(avgTip)}</span>
-          </div>
-          <div className="py-3">
-            <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Count</div>
-            <span className="text-xl font-bold font-heading text-[var(--tx)]">{tipCount}</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Total Collected" value={formatCurrency(totalTips)} sub={`${tipCount} gratuities`} accent />
+        <KpiCard label="Average Tip" value={formatCurrency(avgTip)} sub="per completed move" />
+        <KpiCard label="Total Count" value={String(tipCount)} sub="all time" />
       </div>
 
-      <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Recent tips</div>
-        <DataTable<Tip>
-          data={tips}
-          columns={columns}
-          keyField="id"
-          tableId="tips"
-          searchable
-          searchPlaceholder="Search by client or crew…"
-          pagination
-          exportable
-          exportFilename="yugo-tips"
-          columnToggle
-          emptyMessage="No tips yet, tips appear here after clients leave gratuities on completed moves."
-        />
-      </div>
+      <SectionDivider label="Recent Tips" />
+      <DataTable<Tip>
+        data={tips}
+        columns={columns}
+        keyField="id"
+        tableId="tips"
+        searchable
+        searchPlaceholder="Search by client or crew…"
+        pagination
+        exportable
+        exportFilename="yugo-tips"
+        columnToggle
+        emptyMessage="No tips yet, tips appear here after clients leave gratuities on completed moves."
+      />
     </div>
   );
 }

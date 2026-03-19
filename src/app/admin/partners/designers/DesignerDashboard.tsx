@@ -235,9 +235,6 @@ export default function DesignerDashboard({
               return (
                 <Link key={c.id} href={`/admin/clients/${c.id}?from=designers`} className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#B8860B]/10 flex items-center justify-center text-[12px] font-bold text-[#B8860B]">
-                      {(c.name || "?").charAt(0).toUpperCase()}
-                    </div>
                     <div>
                       <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
                       <div className="text-[11px] text-[var(--tx3)]">{[c.contact_name, c.email].filter(Boolean).join(" · ") || "—"}</div>

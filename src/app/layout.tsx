@@ -1,9 +1,16 @@
 import "./globals.css";
 import { ToastProvider } from "@/app/admin/components/Toast";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 export const metadata = {
   title: { default: "Yugo+", template: "%s | Yugo+" },
   description: "Premium logistics operations platform",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Yugo+",
+  },
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
@@ -31,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
+        <OfflineBanner />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

@@ -8,6 +8,8 @@ import { toTitleCase } from "@/lib/format-text";
 import { Trash2 } from "lucide-react";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Quote {
   id: string;
@@ -74,10 +76,6 @@ function quoteAmountRaw(q: Quote): number | null {
 function quoteAmount(q: Quote): string {
   const raw = quoteAmountRaw(q);
   return raw != null ? formatCurrency(raw) : "—";
-}
-
-function hstLabel(amount: number): string {
-  return `+${formatCurrency(Math.round(amount * 0.13))} HST`;
 }
 
 function relTime(iso: string | null): string {
@@ -190,22 +188,14 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
       },
       {
         id: "amount",
-        label: "Amount (+HST)",
+        label: "Amount",
         accessor: (q) => quoteAmount(q),
         align: "right",
-        render: (q) => {
-          const raw = quoteAmountRaw(q);
-          return (
-            <span>
-              <span className="font-bold text-[var(--gold)] font-heading">
-                {quoteAmount(q)}
-              </span>
-              {raw != null && (
-                <span className="text-[8px] text-[var(--tx3)] ml-0.5">{hstLabel(raw)}</span>
-              )}
-            </span>
-          );
-        },
+        render: (q) => (
+          <span className="block text-right font-bold text-[var(--gold)] font-heading">
+            {quoteAmount(q)}
+          </span>
+        ),
         exportAccessor: (q) => quoteAmount(q),
       },
       {
@@ -260,23 +250,37 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
     [confirmId, deleting, handleDelete],
   );
 
+  const sentCount = quotes.filter((q) => q.status === "sent").length;
+  const acceptedCount = quotes.filter((q) => q.status === "accepted").length;
+  const viewedCount = quotes.filter((q) => q.status === "viewed").length;
+  const totalValue = quotes.reduce((s, q) => s + (quoteAmountRaw(q) ?? 0), 0);
+
   return (
-    <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <div className="flex items-center justify-between gap-3 mb-5">
+    <div className="max-w-[1000px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">Quotes</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-0.5">All proposals & pricing</p>
+          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
         </div>
         <CreateButton href="/admin/quotes/new" title="New Quote" />
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+        <KpiCard label="Total" value={String(quotes.length)} sub={`${sentCount} sent · ${viewedCount} viewed`} />
+        <KpiCard label="Accepted" value={String(acceptedCount)} sub="confirmed bookings" accent={acceptedCount > 0} />
+        <KpiCard label="Open Value" value={`$${(totalValue / 1000).toFixed(1)}K`} sub="total pipeline" />
+        <KpiCard label="Sent" value={String(sentCount)} sub="awaiting response" />
+      </div>
+
+      <SectionDivider label="All Quotes" />
+
+      <div className="flex gap-1.5 mb-6 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
         {STATUS_OPTIONS.map((o) => (
           <button
             key={o.value}
             type="button"
             onClick={() => setFilter(o.value)}
-            className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold border transition-colors touch-manipulation ${
               filter === o.value
                 ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
                 : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx2)]"
@@ -302,6 +306,19 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           onRowClick={(q) => router.push(`/admin/quotes/${q.quote_id || q.id}`)}
           emptyMessage="No quotes yet"
         />
+      </div>
+
+      {/* Mobile FAB */}
+      <div className="sm:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
+        <Link
+          href="/admin/quotes/new"
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-lg shadow-[var(--gold)]/25 active:scale-95 transition-transform touch-manipulation"
+          aria-label="New quote"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </Link>
       </div>
     </div>
   );

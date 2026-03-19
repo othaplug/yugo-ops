@@ -91,7 +91,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               key={t.key}
               type="button"
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${
+              className={`px-4 py-2.5 rounded-lg text-[12px] font-semibold transition-colors touch-manipulation ${
                 activeTab === t.key
                   ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                   : "bg-[var(--card)] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)]"
@@ -285,7 +285,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
 
       {/* Project detail modal */}
       {projectDetail && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" aria-modal="true">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProjectDetail(null)} aria-hidden="true" />
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-4">

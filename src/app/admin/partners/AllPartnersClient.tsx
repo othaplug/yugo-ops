@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import KpiCard from "@/components/ui/KpiCard";
+import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Partner {
   id: string;
@@ -164,14 +166,26 @@ export default function AllPartnersClient() {
     );
   }
 
+  const activeCount = partners.filter((p) => (p.status || "active") === "active").length;
+  const recentCount = partners.filter((p) => {
+    const d = new Date(p.created_at);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    return d > cutoff;
+  }).length;
+
   return (
     <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-hero text-[28px] font-bold text-[var(--tx)]">B2B Partners</h1>
-          <p className="text-[13px] text-[var(--tx3)]">{partners.length} partner organizations</p>
-        </div>
+      <div className="mb-8">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
+        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">B2B Partners</h1>
       </div>
+
+      <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-8">
+        <KpiCard label="Total Partners" value={String(partners.length)} sub="organizations" />
+        <KpiCard label="Active" value={String(activeCount)} sub="enabled accounts" accent={activeCount > 0} />
+        <KpiCard label="New (90d)" value={String(recentCount)} sub="recently joined" />
+      </div>
+
 
       {fetchError && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">

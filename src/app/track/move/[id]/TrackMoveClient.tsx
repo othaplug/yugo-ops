@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
@@ -26,6 +26,7 @@ import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
 import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
 
 function formatPerkOffer(offerType: string, discountValue: number | null): string {
@@ -36,6 +37,18 @@ function formatPerkOffer(offerType: string, discountValue: number | null): strin
   if (offerType === "priority_access") return "Priority booking";
   return "Special offer";
 }
+
+function formatPerkExpiry(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+const PERK_CARD_THEMES = [
+  { bg: "linear-gradient(135deg, #2B1855 0%, #4C2D8F 100%)", stamp: "#4C2D8F" },
+  { bg: "linear-gradient(135deg, #7A0E1A 0%, #B01A26 100%)", stamp: "#B01A26" },
+  { bg: "linear-gradient(135deg, #7A3300 0%, #C05A10 100%)", stamp: "#C05A10" },
+  { bg: "linear-gradient(135deg, #0A2E1A 0%, #1A5C34 100%)", stamp: "#1A5C34" },
+  { bg: "linear-gradient(135deg, #0F2340 0%, #1A3D70 100%)", stamp: "#1A3D70" },
+];
 
 function shortAddress(addr: string | null | undefined): string {
   if (!addr) return "—";
@@ -166,6 +179,13 @@ export default function TrackMoveClient({
   const [referralCopied, setReferralCopied] = useState(false);
   const [showMoveDetails, setShowMoveDetails] = useState(true);
   const [detailsSubTab, setDetailsSubTab] = useState<"details" | "photos_docs" | "inv">("details");
+
+  const refreshMoveData = useCallback(async () => {
+    await router.refresh();
+  }, [router]);
+  const { containerRef: pullRef, pullDistance, refreshing } = usePullToRefresh({
+    onRefresh: refreshMoveData,
+  });
 
   useEffect(() => {
     setLiveStage(move.stage || null);
@@ -480,21 +500,48 @@ export default function TrackMoveClient({
   }
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
+    <div className="h-screen flex flex-col overflow-hidden font-sans" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
       <TrackingAgreementModal />
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3">
-          <div className="flex items-center gap-2">
-            <YugoLogo size={20} variant="gold" />
-            <span
-              className="text-[7px] font-medium px-1 py-[1px] rounded tracking-[1px] uppercase leading-none opacity-50"
-              style={{ color: GOLD, letterSpacing: "1px" }}
-            >
-              BETA
-            </span>
+      <div ref={pullRef as React.RefObject<HTMLDivElement>} className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 0 || refreshing) && (
+          <div
+            className="fixed left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-full shadow-lg transition-transform"
+            style={{
+              top: 52,
+              transform: `translate(-50%, ${pullDistance}px)`,
+              backgroundColor: "#FFFDF8",
+              border: `1px solid ${GOLD}40`,
+            }}
+            aria-live="polite"
+          >
+            {refreshing ? (
+              <span className="spinner w-4 h-4" style={{ borderColor: `${GOLD}40`, borderTopColor: GOLD }} />
+            ) : (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={GOLD}
+                strokeWidth="2.5"
+                style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
+              >
+                <polyline points="17 1 21 5 17 9" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                <polyline points="7 23 3 19 7 15" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>
+            )}
           </div>
-          <ClientSettingsMenu
+        )}
+        {/* Header */}
+        <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3">
+            <div className="flex items-center gap-2">
+              <YugoLogo size={20} variant="gold" />
+            </div>
+            <ClientSettingsMenu
             moveId={move.id}
             clientName={move.client_name || ""}
             clientEmail={move.client_email || ""}
@@ -812,64 +859,71 @@ export default function TrackMoveClient({
               </h2>
               {perks.length > 0 && serviceType !== "office_move" ? (
                 <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scroll-smooth snap-x snap-mandatory">
-                  {perks.map((perk) => (
-                    <div
-                      key={perk.id}
-                      className="rounded-2xl border p-4 flex flex-col gap-1.5 shrink-0 w-[280px] max-w-[85vw] snap-start"
-                      style={{ borderColor: WINE, backgroundColor: WINE }}
-                    >
-                      {perk.organizations?.name && (
-                        <div className="text-[10px] font-medium uppercase tracking-wider opacity-80" style={{ color: "#FAF7F2" }}>
-                          From {perk.organizations.name}
+                  {perks.map((perk, idx) => {
+                    const theme = PERK_CARD_THEMES[idx % PERK_CARD_THEMES.length];
+                    return (
+                      <div
+                        key={perk.id}
+                        className="rounded-2xl overflow-hidden shrink-0 w-[310px] max-w-[88vw] snap-start flex flex-col relative"
+                        style={{ background: theme.bg, minHeight: "140px" }}
+                      >
+                        {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                        <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
+                          <YugoLogo size={10} variant="black" onLightBackground hidePlus />
+                          <span className="text-[9px] font-bold text-black">Exclusive</span>
                         </div>
-                      )}
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-[12px] font-semibold leading-snug" style={{ color: "#FAF7F2" }}>{perk.title}</span>
-                        <span
-                          className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: "rgba(250,247,242,0.2)", color: "#FAF7F2" }}
-                        >
-                          {formatPerkOffer(perk.offer_type, perk.discount_value)}
-                        </span>
+                        {/* Content */}
+                        <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
+                          <div>
+                            {perk.organizations?.name && (
+                              <div className="text-[9px] font-semibold text-white/60 mb-1">From {perk.organizations.name}</div>
+                            )}
+                            <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">{perk.title}</div>
+                            <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
+                              {perk.description || "Exclusive offer for Yugo movers. Terms apply."}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                            {perk.redemption_code && (
+                              <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                Code: {perk.redemption_code}
+                              </span>
+                            )}
+                            {perk.valid_until && (
+                              <span className="text-[8px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
+                            )}
+                            {perk.redemption_url ? (
+                              <a
+                                href={perk.redemption_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => {
+                                  fetch("/api/perks/redeem", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ perk_id: perk.id, client_email: move.client_email, move_id: move.id }),
+                                  }).catch(() => {});
+                                }}
+                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                style={{ color: theme.stamp }}
+                              >
+                                {perk.redemption_code ? "Order now" : "Redeem"}
+                              </a>
+                            ) : perk.redemption_code ? (
+                              <button
+                                type="button"
+                                onClick={() => navigator.clipboard.writeText(perk.redemption_code!).catch(() => {})}
+                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                style={{ color: theme.stamp }}
+                              >
+                                Copy code
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-                      {perk.description && (
-                        <p className="text-[11px] opacity-80 leading-snug" style={{ color: "#FAF7F2" }}>{perk.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {perk.redemption_code && (
-                          <span
-                            className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border"
-                            style={{ borderColor: "rgba(250,247,242,0.4)", color: "#FAF7F2", backgroundColor: "rgba(250,247,242,0.1)" }}
-                          >
-                            {perk.redemption_code}
-                          </span>
-                        )}
-                        {perk.redemption_url && (
-                          <a
-                            href={perk.redemption_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-70"
-                            style={{ color: GOLD }}
-                            onClick={() => {
-                              fetch("/api/perks/redeem", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ perk_id: perk.id, client_email: move.client_email, move_id: move.id }),
-                              }).catch(() => {});
-                            }}
-                          >
-                            Redeem
-                          </a>
-                        )}
-                        {perk.valid_until && (
-                          <span className="text-[9px] opacity-60 ml-auto" style={{ color: "#FAF7F2" }}>
-                            Expires {new Date(perk.valid_until).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : serviceType !== "office_move" ? (
                 <p className="text-[11px] opacity-70 rounded-2xl border p-4" style={{ color: FOREST, borderColor: `${FOREST}15`, backgroundColor: `${FOREST}04` }}>
@@ -1459,61 +1513,71 @@ export default function TrackMoveClient({
                   </h2>
                   {perks.length > 0 ? (
                     <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scroll-smooth snap-x snap-mandatory">
-                      {perks.map((perk) => (
-                        <div
-                          key={perk.id}
-                          className="rounded-2xl border p-4 flex flex-col gap-1.5 shrink-0 w-[280px] max-w-[85vw] snap-start"
-                          style={{ borderColor: WINE, backgroundColor: WINE }}
-                        >
-                          {perk.organizations?.name && (
-                            <div className="text-[10px] font-medium uppercase tracking-wider opacity-80" style={{ color: "#FAF7F2" }}>
-                              From {perk.organizations.name}
+                      {perks.map((perk, idx) => {
+                        const theme = PERK_CARD_THEMES[idx % PERK_CARD_THEMES.length];
+                        return (
+                          <div
+                            key={perk.id}
+                            className="rounded-2xl overflow-hidden shrink-0 w-[310px] max-w-[88vw] snap-start flex flex-col relative"
+                            style={{ background: theme.bg, minHeight: "140px" }}
+                          >
+                            {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                            <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
+                              <YugoLogo size={10} variant="black" onLightBackground hidePlus />
+                              <span className="text-[9px] font-bold text-black">Exclusive</span>
                             </div>
-                          )}
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-[12px] font-semibold leading-snug" style={{ color: "#FAF7F2" }}>
-                              {perk.title}
-                            </span>
-                            <span
-                              className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                              style={{ backgroundColor: "rgba(250,247,242,0.2)", color: "#FAF7F2" }}
-                            >
-                              {formatPerkOffer(perk.offer_type, perk.discount_value)}
-                            </span>
+                            {/* Content */}
+                            <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
+                              <div>
+                                {perk.organizations?.name && (
+                                  <div className="text-[9px] font-semibold text-white/60 mb-1">From {perk.organizations.name}</div>
+                                )}
+                                <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">{perk.title}</div>
+                                <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
+                                  {perk.description || "Exclusive offer for Yugo movers. Terms apply."}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                {perk.redemption_code && (
+                                  <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                    Code: {perk.redemption_code}
+                                  </span>
+                                )}
+                                {perk.valid_until && (
+                                  <span className="text-[8px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
+                                )}
+                                {perk.redemption_url ? (
+                                  <a
+                                    href={perk.redemption_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                      fetch("/api/perks/redeem", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ perk_id: perk.id, client_email: move.client_email, move_id: move.id }),
+                                      }).catch(() => {});
+                                    }}
+                                    className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                    style={{ color: theme.stamp }}
+                                  >
+                                    {perk.redemption_code ? "Order now" : "Redeem"}
+                                  </a>
+                                ) : perk.redemption_code ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigator.clipboard.writeText(perk.redemption_code!).catch(() => {})}
+                                    className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                    style={{ color: theme.stamp }}
+                                  >
+                                    Copy code
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
-                          {perk.description && (
-                            <p className="text-[11px] opacity-80 leading-snug" style={{ color: "#FAF7F2" }}>
-                              {perk.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {perk.redemption_code && (
-                              <span
-                                className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border"
-                                style={{ borderColor: "rgba(250,247,242,0.4)", color: "#FAF7F2", backgroundColor: "rgba(250,247,242,0.1)" }}
-                              >
-                                {perk.redemption_code}
-                              </span>
-                            )}
-                            {perk.redemption_url && (
-                              <a
-                                href={perk.redemption_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-70"
-                                style={{ color: GOLD }}
-                              >
-                                Redeem
-                              </a>
-                            )}
-                            {perk.valid_until && (
-                              <span className="text-[9px] opacity-60 ml-auto" style={{ color: "#FAF7F2" }}>
-                                Expires {new Date(perk.valid_until).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-[11px] opacity-70 rounded-2xl border p-4" style={{ color: FOREST, borderColor: `${FOREST}15`, backgroundColor: `${FOREST}04` }}>
@@ -1676,8 +1740,8 @@ export default function TrackMoveClient({
 
       {/* Change Request Modal */}
       {changeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
-          <div className="w-full max-w-md rounded-xl border bg-white p-5" style={{ borderColor: `${FOREST}20` }}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center backdrop-blur-md bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl border bg-white p-5" style={{ borderColor: `${FOREST}20`, maxHeight: "min(90dvh, 90vh)", overflowY: "auto" }}>
             <h3 className="mb-3 text-[16px] font-bold font-heading" style={{ color: WINE }}>Request a Change</h3>
             <p className="mb-4 text-[12px] leading-relaxed opacity-80" style={{ color: FOREST }}>
               Submit a change request. Your coordinator will review and confirm.
@@ -1765,8 +1829,8 @@ export default function TrackMoveClient({
         <>
           <Script src={squareScriptUrl} strategy="afterInteractive" onLoad={() => setSqSdkReady(true)} onError={() => setSqError("Payment script failed to load.")} />
           <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPaymentModalOpen(false)} />
-            <div className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto safe-area-bottom">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPaymentModalOpen(false)} />
+            <div className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden overflow-y-auto" style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[16px] font-bold" style={{ color: FOREST }}>Pay Balance</h2>
@@ -1835,6 +1899,7 @@ export default function TrackMoveClient({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

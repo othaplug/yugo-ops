@@ -16,6 +16,7 @@ import { Icons } from "./SidebarIcons";
 import YugoLogo, { BetaBadge } from "@/components/YugoLogo";
 import { createClient } from "@/lib/supabase/client";
 import { Shield } from "lucide-react";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 const ROLE_LEVEL: Record<string, number> = {
   owner: 100, admin: 80, manager: 60, dispatcher: 50, coordinator: 40, viewer: 30, sales: 25, crew: 20, partner: 10,
@@ -34,9 +35,9 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Dashboard",
     items: [
       { href: "/admin", label: "Command Center", Icon: Icons.home, minRole: "coordinator" },
-      { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.truck, minRole: "dispatcher" },
+      { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.dispatch, minRole: "dispatcher" },
       { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, minRole: "sales" },
-      { href: "/admin/crew", label: "Tracking", Icon: Icons.mapPin },
+      { href: "/admin/crew", label: "Live Tracking", Icon: Icons.mapPin },
       { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
     ],
   },
@@ -44,7 +45,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "B2B Partners",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.users, minRole: "coordinator" },
-      { href: "/admin/deliveries", label: "Jobs", Icon: Icons.truck, minRole: "coordinator" },
+      { href: "/admin/deliveries", label: "Jobs", Icon: Icons.package, minRole: "coordinator" },
       { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },
       { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, minRole: "admin" },
       { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, minRole: "admin" },
@@ -68,12 +69,13 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/tips", label: "Tips", Icon: Icons.creditCard, minRole: "admin" },
       { href: "/admin/claims", label: "Claims", Icon: Icons.shield, minRole: "admin" },
       { href: "/admin/finance/profitability", label: "Profitability", Icon: Icons.trendingUp, minRole: "owner" },
+      { href: "/admin/finance/forecast", label: "Forecast", Icon: Icons.forecast, minRole: "owner" },
     ],
   },
   {
     label: "CRM",
     items: [
-      { href: "/admin/clients", label: "Contacts", Icon: Icons.users, minRole: "admin" },
+      { href: "/admin/clients", label: "Contacts", Icon: Icons.userCheck, minRole: "admin" },
       { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, minRole: "admin" },
       { href: "/admin/perks", label: "Perks & Referrals", Icon: Icons.gift, minRole: "admin" },
     ],
@@ -82,7 +84,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Settings",
     items: [
       { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "owner" },
-      { href: "/admin/platform?tab=rate-templates", label: "Rate Templates", Icon: Icons.dollarSign, minRole: "owner" },
+      { href: "/admin/platform?tab=rate-templates", label: "Rate Templates", Icon: Icons.tag, minRole: "owner" },
     ],
   },
 ];
@@ -154,6 +156,16 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
 
   const userLevel = ROLE_LEVEL[role] ?? 0;
 
+  const MOBILE_NAV = [
+    { href: "/admin",          label: "Home",     Icon: Icons.home,      exact: true  as const },
+    { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.dispatch,  minRole: "dispatcher" },
+    { href: "/admin/moves",    label: "Moves",    Icon: Icons.truck },
+    { href: "/admin/clients",  label: "Contacts", Icon: Icons.userCheck, minRole: "admin" },
+  ].filter((item) => {
+    const needed = ROLE_LEVEL[(item as { minRole?: string }).minRole ?? "viewer"] ?? 0;
+    return userLevel >= needed || isSuperAdmin;
+  });
+
   const sidebarSections = SIDEBAR_SECTIONS_FULL.map((section) => ({
     ...section,
     items: section.items.filter((item) => {
@@ -176,6 +188,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
           <ToastProvider>
             <RealtimeListener />
             <SessionTimeout />
+            <OfflineBanner />
           <div className="flex min-h-screen bg-[var(--bg)]">
             {/* Skip to main content for keyboard users */}
             <a
@@ -291,7 +304,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               >
                 <button
                   onClick={() => (sidebarCollapsed ? setSidebarCollapsed(false) : setSidebarOpen(true))}
-                  className={`size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "md:flex" : "md:hidden"}`}
+                  className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "hidden md:flex" : "hidden"}`}
                   aria-label={sidebarCollapsed ? "Open sidebar" : "Open menu"}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -320,10 +333,46 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               )}
 
               {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
-              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto tab-content min-h-0">
+              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto tab-content min-h-0 pb-mobile-nav md:pb-0">
                 {children}
               </main>
             </div>
+
+            {/* ── Mobile bottom navigation bar ── */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+              <div className="flex items-stretch h-14">
+                {MOBILE_NAV.map((item) => {
+                  const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
+                  const ItemIcon = item.Icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex-1 flex flex-col items-center justify-center gap-[3px] touch-manipulation transition-colors ${
+                        active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                      }`}
+                    >
+                      <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                        <ItemIcon />
+                      </span>
+                      <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
+                    </Link>
+                  );
+                })}
+                {/* More — opens full sidebar drawer */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex-1 flex flex-col items-center justify-center gap-[3px] touch-manipulation text-[var(--tx3)]"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
+                    <rect width="7" height="7" x="3" y="14" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" />
+                  </svg>
+                  <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
+                </button>
+              </div>
+            </nav>
+
           </div>
           </ToastProvider>
         </PendingChangeRequestsProvider>

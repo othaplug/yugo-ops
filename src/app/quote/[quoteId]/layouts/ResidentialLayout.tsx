@@ -112,7 +112,7 @@ export default function ResidentialLayout({
                 }}
               >
               <div
-                className={`p-5 md:p-6 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-4" : ""}`}
+                className={`p-6 md:p-8 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
                 style={
                   isEstate
                     ? {
