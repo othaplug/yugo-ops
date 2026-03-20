@@ -48,6 +48,10 @@ interface EventLegForm {
   move_date: string;
   event_return_date: string;
   event_same_day: boolean;
+  event_same_location_onsite: boolean;
+  event_leg_truck_type: string;
+  event_return_rate_preset: "auto" | "65" | "85" | "100" | "custom";
+  event_return_rate_custom: string;
 }
 
 interface TierResult {
@@ -139,6 +143,43 @@ const ACCESS_OPTIONS = [
   { value: "narrow_stairs", label: "Narrow stairs" },
   { value: "no_parking_nearby", label: "No parking nearby" },
 ];
+
+const PARKING_OPTIONS = [
+  { value: "dedicated", label: "Dedicated / loading dock" },
+  { value: "street", label: "Street parking" },
+  { value: "no_dedicated", label: "No dedicated parking (+$75)" },
+] as const;
+
+const EVENT_TRUCK_OPTIONS = [
+  { value: "sprinter", label: "Sprinter (base)" },
+  { value: "16ft", label: "16ft (+$75)" },
+  { value: "20ft", label: "20ft (+$150)" },
+  { value: "26ft", label: "26ft (+$250)" },
+  { value: "none", label: "No truck (on-site)" },
+] as const;
+
+const EVENT_LEG_RETURN_RATE_OPTIONS = [
+  { value: "auto", label: "Auto (65% road · 85% on-site)" },
+  { value: "65", label: "65% (standard delivery–return)" },
+  { value: "85", label: "85% (on-site style)" },
+  { value: "100", label: "100% (same effort both days)" },
+  { value: "custom", label: "Custom %" },
+] as const;
+
+const SPECIALTY_BUILDING_REQUIREMENTS = [
+  { value: "elevator_booking", label: "Elevator booking required" },
+  { value: "insurance_certificate", label: "Insurance certificate required" },
+  { value: "restricted_hours", label: "Restricted move hours" },
+  { value: "loading_dock_booking", label: "Loading dock booking required" },
+] as const;
+
+const SPECIALTY_ACCESS_DIFFICULTY = [
+  { value: "straight_path", label: "Straight path" },
+  { value: "one_turn", label: "One turn" },
+  { value: "multiple_turns", label: "Multiple turns" },
+  { value: "tight_staircase", label: "Tight staircase" },
+  { value: "requires_rigging_or_crane", label: "Requires rigging or crane" },
+] as const;
 
 const SPECIALTY_ITEM_TYPES = [
   "piano_upright", "piano_grand", "pool_table", "safe_under_300lbs", "safe_over_300lbs",
@@ -415,6 +456,10 @@ export default function QuoteFormClient({
   const [toAddress, setToAddress] = useState("");
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
+  const [fromParking, setFromParking] = useState<"dedicated" | "street" | "no_dedicated">("dedicated");
+  const [toParking, setToParking] = useState<"dedicated" | "street" | "no_dedicated">("dedicated");
+  const [fromLongCarry, setFromLongCarry] = useState(false);
+  const [toLongCarry, setToLongCarry] = useState(false);
   const [moveDate, setMoveDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [arrivalWindow, setArrivalWindow] = useState("morning");
@@ -442,6 +487,7 @@ export default function QuoteFormClient({
   const [stairCarry, setStairCarry] = useState(false);
   const [stairFlights, setStairFlights] = useState(1);
   const [numItems, setNumItems] = useState(1);
+  const [singleItemSpecialHandling, setSingleItemSpecialHandling] = useState("");
 
   // White glove
   const [declaredValue, setDeclaredValue] = useState("");
@@ -455,6 +501,8 @@ export default function QuoteFormClient({
   const [specialtyWeightClass, setSpecialtyWeightClass] = useState("");
   const [specialtyRequirements, setSpecialtyRequirements] = useState<string[]>([]);
   const [specialtyNotes, setSpecialtyNotes] = useState("");
+  const [specialtyBuildingReqs, setSpecialtyBuildingReqs] = useState<string[]>([]);
+  const [specialtyAccessDifficulty, setSpecialtyAccessDifficulty] = useState("");
 
   // Event fields
   const [eventName, setEventName] = useState("");
@@ -468,9 +516,41 @@ export default function QuoteFormClient({
   const [eventItems, setEventItems] = useState<{ name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[]>([]);
   const [eventAdditionalServices, setEventAdditionalServices] = useState<string[]>([]);
   const [eventMulti, setEventMulti] = useState(false);
+  const [eventLuxury, setEventLuxury] = useState(false);
+  const [eventComplexSetup, setEventComplexSetup] = useState(false);
+  const [eventTruckType, setEventTruckType] = useState("sprinter");
+  const [eventSameLocationSingle, setEventSameLocationSingle] = useState(false);
+  const [eventReturnRateSingle, setEventReturnRateSingle] = useState<"auto" | "65" | "85" | "100" | "custom">("auto");
+  const [eventReturnRateCustomSingle, setEventReturnRateCustomSingle] = useState("");
   const [eventLegs, setEventLegs] = useState<EventLegForm[]>(() => [
-    { label: "Event 1", from_address: "", to_address: "", from_access: "", to_access: "", move_date: "", event_return_date: "", event_same_day: false },
-    { label: "Event 2", from_address: "", to_address: "", from_access: "", to_access: "", move_date: "", event_return_date: "", event_same_day: false },
+    {
+      label: "Event 1",
+      from_address: "",
+      to_address: "",
+      from_access: "",
+      to_access: "",
+      move_date: "",
+      event_return_date: "",
+      event_same_day: false,
+      event_same_location_onsite: false,
+      event_leg_truck_type: "sprinter",
+      event_return_rate_preset: "auto",
+      event_return_rate_custom: "",
+    },
+    {
+      label: "Event 2",
+      from_address: "",
+      to_address: "",
+      from_access: "",
+      to_access: "",
+      move_date: "",
+      event_return_date: "",
+      event_same_day: false,
+      event_same_location_onsite: false,
+      event_leg_truck_type: "sprinter",
+      event_return_rate_preset: "auto",
+      event_return_rate_custom: "",
+    },
   ]);
 
   const addEventLeg = useCallback(() => {
@@ -485,6 +565,10 @@ export default function QuoteFormClient({
         move_date: "",
         event_return_date: "",
         event_same_day: false,
+        event_same_location_onsite: false,
+        event_leg_truck_type: "sprinter",
+        event_return_rate_preset: "auto",
+        event_return_rate_custom: "",
       },
     ]);
   }, [fromAccess, toAccess]);
@@ -513,6 +597,8 @@ export default function QuoteFormClient({
   const [b2bNewItemQty, setB2bNewItemQty] = useState(1);
   const [b2bWeightCategory, setB2bWeightCategory] = useState("standard");
   const [b2bSpecialInstructions, setB2bSpecialInstructions] = useState("");
+  const [b2bPaymentMethod, setB2bPaymentMethod] = useState<"card" | "invoice">("card");
+  const [b2bRetailerSource, setB2bRetailerSource] = useState("");
 
   // Labour Only fields
   const [workAddress, setWorkAddress] = useState("");
@@ -523,6 +609,8 @@ export default function QuoteFormClient({
   const [labourTruckRequired, setLabourTruckRequired] = useState(false);
   const [labourVisits, setLabourVisits] = useState(1);
   const [labourSecondVisitDate, setLabourSecondVisitDate] = useState("");
+  const [labourStorageNeeded, setLabourStorageNeeded] = useState(false);
+  const [labourStorageWeeks, setLabourStorageWeeks] = useState(1);
   const [labourContext, setLabourContext] = useState("");
 
   // Custom crating (all service types — coordinator decides per quote)
@@ -888,6 +976,10 @@ export default function QuoteFormClient({
       client_email: email || undefined,
       client_phone: phone ? normalizePhone(phone) : undefined,
       referral_id: referralId || undefined,
+      from_parking: fromParking,
+      to_parking: toParking,
+      from_long_carry: fromLongCarry,
+      to_long_carry: toLongCarry,
     };
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
@@ -932,6 +1024,7 @@ export default function QuoteFormClient({
       base.stair_carry = stairCarry;
       base.stair_flights = stairFlights;
       base.number_of_items = numItems;
+      base.single_item_special_handling = singleItemSpecialHandling.trim() || undefined;
     }
     if (serviceType === "white_glove") {
       base.item_description = itemDescription.trim() || undefined;
@@ -950,13 +1043,19 @@ export default function QuoteFormClient({
       base.specialty_item_description = specialtyItemDescription.trim() || undefined;
       base.specialty_requirements = specialtyRequirements.length > 0 ? specialtyRequirements : undefined;
       base.specialty_notes = specialtyNotes.trim() || undefined;
+      base.specialty_building_requirements = specialtyBuildingReqs.length > 0 ? specialtyBuildingReqs : undefined;
+      base.specialty_access_difficulty = specialtyAccessDifficulty || undefined;
       const dims = [specialtyDimL, specialtyDimW, specialtyDimH].filter(Boolean);
       base.specialty_dimensions = dims.length === 3 ? `${specialtyDimL}×${specialtyDimW}×${specialtyDimH} in` : undefined;
     }
     if (serviceType === "event") {
+      base.event_is_luxury = eventLuxury;
+      base.event_truck_type = eventSameLocationSingle && !eventMulti ? "none" : eventTruckType;
       base.event_name = eventName.trim() || undefined;
-      base.event_setup_required = eventSetupRequired;
-      base.event_setup_hours = eventSetupRequired ? eventSetupHours : undefined;
+      base.event_complex_setup_required = eventLuxury ? eventComplexSetup : undefined;
+      base.event_setup_required = eventLuxury ? eventComplexSetup : eventSetupRequired;
+      base.event_setup_hours =
+        (eventLuxury ? eventComplexSetup : eventSetupRequired) ? eventSetupHours : undefined;
       base.event_setup_instructions = eventSetupInstructions.trim() || undefined;
       base.event_items = eventItems.length > 0 ? eventItems : undefined;
       base.event_additional_services = eventAdditionalServices.length > 0 ? eventAdditionalServices : undefined;
@@ -965,12 +1064,19 @@ export default function QuoteFormClient({
         base.event_legs = eventLegs.map((leg) => ({
           label: leg.label.trim() || undefined,
           from_address: leg.from_address.trim(),
-          to_address: leg.to_address.trim(),
+          to_address: leg.event_same_location_onsite ? leg.from_address.trim() : leg.to_address.trim(),
           from_access: leg.from_access || undefined,
           to_access: leg.to_access || undefined,
           move_date: leg.move_date,
           event_return_date: leg.event_same_day ? leg.move_date : leg.event_return_date,
           event_same_day: leg.event_same_day,
+          event_same_location_onsite: leg.event_same_location_onsite,
+          event_leg_truck_type: leg.event_same_location_onsite ? "none" : leg.event_leg_truck_type,
+          event_return_rate_preset: leg.event_return_rate_preset,
+          event_return_rate_custom:
+            leg.event_return_rate_preset === "custom" && leg.event_return_rate_custom.trim()
+              ? Number(leg.event_return_rate_custom)
+              : undefined,
         }));
         const first = eventLegs[0];
         base.from_address = first.from_address.trim();
@@ -983,10 +1089,16 @@ export default function QuoteFormClient({
         base.event_pickup_time_after = first.event_same_day ? eventPickupTimeAfter : undefined;
       } else {
         base.from_address = fromAddress;
-        base.to_address = venueAddress || toAddress;
+        base.to_address = eventSameLocationSingle ? fromAddress : (venueAddress || toAddress);
         base.event_return_date = eventSameDay ? moveDate : (eventReturnDate || undefined);
         base.event_same_day = eventSameDay;
         base.event_pickup_time_after = eventSameDay ? eventPickupTimeAfter : undefined;
+        base.event_same_location_onsite = eventSameLocationSingle;
+        base.event_return_rate_preset = eventReturnRateSingle;
+        base.event_return_rate_custom =
+          eventReturnRateSingle === "custom" && eventReturnRateCustomSingle.trim()
+            ? Number(eventReturnRateCustomSingle)
+            : undefined;
       }
     }
     if (serviceType === "labour_only") {
@@ -1000,12 +1112,16 @@ export default function QuoteFormClient({
       base.labour_visits = labourVisits;
       base.labour_second_visit_date = labourVisits >= 2 ? labourSecondVisitDate : undefined;
       base.labour_description = labourDescription.trim() || undefined;
+      base.labour_storage_needed = labourStorageNeeded;
+      base.labour_storage_weeks = labourStorageNeeded ? labourStorageWeeks : undefined;
     }
     if (serviceType === "b2b_delivery") {
       base.b2b_business_name = b2bBusinessName.trim() || undefined;
       base.b2b_items = b2bItems.length > 0 ? b2bItems.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`) : undefined;
       base.b2b_weight_category = b2bWeightCategory || undefined;
       base.b2b_special_instructions = b2bSpecialInstructions.trim() || undefined;
+      base.b2b_payment_method = b2bPaymentMethod;
+      base.b2b_retailer_source = b2bRetailerSource.trim() || undefined;
     }
     return base;
   }, [
@@ -1015,11 +1131,15 @@ export default function QuoteFormClient({
     numItems, declaredValue, specialtyType, specialtyItemDescription, specialtyWeightClass, specialtyRequirements,
     specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
     firstName, lastName, email, phone, cratingRequired, cratingItems,
+    fromParking, toParking, fromLongCarry, toLongCarry,
     eventName, venueAddress, eventReturnDate, eventSetupRequired, eventSetupHours, eventSetupInstructions,
+    eventLuxury, eventComplexSetup, eventTruckType,
     eventSameDay, eventPickupTimeAfter, eventItems, eventAdditionalServices, eventMulti, eventLegs,
+    eventSameLocationSingle, eventReturnRateSingle, eventReturnRateCustomSingle,
     workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
-    labourVisits, labourSecondVisitDate, labourContext,
-    b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions,
+    labourVisits, labourSecondVisitDate, labourStorageNeeded, labourStorageWeeks, labourContext,
+    b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions, b2bPaymentMethod, b2bRetailerSource,
+    singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
@@ -1032,7 +1152,8 @@ export default function QuoteFormClient({
         }
         for (let i = 0; i < eventLegs.length; i++) {
           const leg = eventLegs[i];
-          if (!leg.from_address?.trim() || !leg.to_address?.trim() || !leg.move_date) {
+          const toOk = leg.event_same_location_onsite ? leg.from_address?.trim() : leg.to_address?.trim();
+          if (!leg.from_address?.trim() || !toOk || !leg.move_date) {
             toast(`Event ${i + 1}: fill origin, venue, and delivery date`, "alertTriangle");
             return;
           }
@@ -1042,7 +1163,7 @@ export default function QuoteFormClient({
           }
         }
       } else {
-        if (!fromAddress || !venueAddress || !moveDate) {
+        if (!fromAddress || (!eventSameLocationSingle && !venueAddress) || !moveDate) {
           toast("Please fill Origin, Venue address and Delivery date", "alertTriangle");
           return;
         }
@@ -1390,6 +1511,50 @@ export default function QuoteFormClient({
                   </div>
                 </div>
                 )}
+                {serviceType !== "labour_only" && (
+                  <div className="grid grid-cols-1 min-[500px]:grid-cols-2 gap-3 pt-2">
+                    <Field label="From address parking">
+                      <select
+                        value={fromParking}
+                        onChange={(e) => setFromParking(e.target.value as "dedicated" | "street" | "no_dedicated")}
+                        className={fieldInput}
+                      >
+                        {PARKING_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="To address parking">
+                      <select
+                        value={toParking}
+                        onChange={(e) => setToParking(e.target.value as "dedicated" | "street" | "no_dedicated")}
+                        className={fieldInput}
+                      >
+                        {PARKING_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] col-span-full cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={fromLongCarry}
+                        onChange={(e) => setFromLongCarry(e.target.checked)}
+                        className="accent-[var(--gold)]"
+                      />
+                      From address: Long carry (50m+ from truck to entrance) (+$75)
+                    </label>
+                    <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] col-span-full cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={toLongCarry}
+                        onChange={(e) => setToLongCarry(e.target.checked)}
+                        className="accent-[var(--gold)]"
+                      />
+                      To address: Long carry (50m+ from truck to entrance) (+$75)
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
@@ -1726,6 +1891,15 @@ export default function QuoteFormClient({
                       )}
                     </div>
                   </div>
+                  <Field label="Special handling instructions">
+                    <textarea
+                      value={singleItemSpecialHandling}
+                      onChange={(e) => setSingleItemSpecialHandling(e.target.value)}
+                      rows={3}
+                      placeholder="Fragile glass top, use extra padding; do not lay flat; narrow staircase…"
+                      className={`${fieldInput} resize-none border-2 border-[var(--gold)]/25`}
+                    />
+                  </Field>
                 </div>
               )}
 
@@ -1836,6 +2010,45 @@ export default function QuoteFormClient({
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Building requirements</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {SPECIALTY_BUILDING_REQUIREMENTS.map((req) => (
+                        <label key={req.value} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={specialtyBuildingReqs.includes(req.value)}
+                            onChange={(e) =>
+                              setSpecialtyBuildingReqs((prev) =>
+                                e.target.checked ? [...prev, req.value] : prev.filter((r) => r !== req.value),
+                              )
+                            }
+                            className="accent-[var(--gold)] w-3.5 h-3.5 shrink-0"
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">{req.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Field label="Access difficulty">
+                    <select
+                      value={specialtyAccessDifficulty}
+                      onChange={(e) => setSpecialtyAccessDifficulty(e.target.value)}
+                      className={fieldInput}
+                    >
+                      <option value="">Select…</option>
+                      {SPECIALTY_ACCESS_DIFFICULTY.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    {specialtyAccessDifficulty === "requires_rigging_or_crane" ? (
+                      <p className="text-[10px] text-amber-700 mt-1.5">
+                        Crane/rigging typically adds $1,500–3,000. Coordinator will confirm exact cost.
+                      </p>
+                    ) : null}
+                  </Field>
+
                   <Field label="Additional Notes">
                     <textarea
                       value={specialtyNotes}
@@ -1859,6 +2072,75 @@ export default function QuoteFormClient({
                     <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
                       <input
                         type="checkbox"
+                        checked={eventLuxury}
+                        onChange={(e) => setEventLuxury(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                      />
+                      <div>
+                        <span className="text-[11px] font-semibold text-[var(--tx)]">Luxury / White glove event</span>
+                        <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
+                          High-value furniture, art, or premium brand events — uses white glove crew rate.
+                        </p>
+                      </div>
+                    </label>
+                    {!eventMulti && (
+                      <>
+                        <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                          <input
+                            type="checkbox"
+                            checked={eventSameLocationSingle}
+                            onChange={(e) => {
+                              const on = e.target.checked;
+                              setEventSameLocationSingle(on);
+                              if (on) setEventReturnRateSingle("85");
+                              else if (eventReturnRateSingle === "85") setEventReturnRateSingle("auto");
+                            }}
+                            className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                          />
+                          <div>
+                            <span className="text-[11px] font-semibold text-[var(--tx)]">Same location — items moved within venue</span>
+                            <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
+                              On-site event: no road transit, no truck surcharge, return day priced at a reduced rate (default 85%).
+                            </p>
+                          </div>
+                        </label>
+                        <Field label="Return rate (return day vs delivery day)">
+                          <select
+                            value={eventReturnRateSingle}
+                            onChange={(e) => setEventReturnRateSingle(e.target.value as typeof eventReturnRateSingle)}
+                            className={fieldInput}
+                          >
+                            {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                          {eventReturnRateSingle === "custom" ? (
+                            <input
+                              type="number"
+                              min={25}
+                              max={100}
+                              value={eventReturnRateCustomSingle}
+                              onChange={(e) => setEventReturnRateCustomSingle(e.target.value)}
+                              placeholder="% of delivery day"
+                              className={`${fieldInput} mt-1 max-w-[200px]`}
+                            />
+                          ) : null}
+                        </Field>
+                      </>
+                    )}
+                    {!eventMulti && !eventSameLocationSingle && (
+                      <Field label="Truck type">
+                        <select value={eventTruckType} onChange={(e) => setEventTruckType(e.target.value)} className={fieldInput}>
+                          {EVENT_TRUCK_OPTIONS.filter((o) => o.value !== "none").map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-[9px] text-[var(--tx3)] mt-1">Select 20ft+ for large events with significant inventory.</p>
+                      </Field>
+                    )}
+                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                      <input
+                        type="checkbox"
                         checked={eventMulti}
                         onChange={(e) => {
                           const on = e.target.checked;
@@ -1873,6 +2155,10 @@ export default function QuoteFormClient({
                                 move_date: moveDate,
                                 event_return_date: eventSameDay ? moveDate : eventReturnDate,
                                 event_same_day: eventSameDay,
+                                event_same_location_onsite: false,
+                                event_leg_truck_type: eventTruckType,
+                                event_return_rate_preset: "auto",
+                                event_return_rate_custom: "",
                               },
                               {
                                 label: "Event 2",
@@ -1883,6 +2169,10 @@ export default function QuoteFormClient({
                                 move_date: "",
                                 event_return_date: "",
                                 event_same_day: false,
+                                event_same_location_onsite: false,
+                                event_leg_truck_type: "sprinter",
+                                event_return_rate_preset: "auto",
+                                event_return_rate_custom: "",
                               },
                             ]);
                           } else if (eventLegs[0]) {
@@ -1912,15 +2202,21 @@ export default function QuoteFormClient({
                     <>
                       <div className="space-y-2">
                         <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
-                        <AddressAutocomplete
-                          value={venueAddress}
-                          onRawChange={setVenueAddress}
-                          onChange={(r) => setVenueAddress(r.fullAddress)}
-                          placeholder="Restaurant XYZ, 100 King St W"
-                          label="Venue / Event Address *"
-                          required
-                          className={fieldInput}
-                        />
+                        {eventSameLocationSingle ? (
+                          <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                            Venue matches origin — on-site event (no separate venue address).
+                          </p>
+                        ) : (
+                          <AddressAutocomplete
+                            value={venueAddress}
+                            onRawChange={setVenueAddress}
+                            onChange={(r) => setVenueAddress(r.fullAddress)}
+                            placeholder="Restaurant XYZ, 100 King St W"
+                            label="Venue / Event Address *"
+                            required
+                            className={fieldInput}
+                          />
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1937,26 +2233,61 @@ export default function QuoteFormClient({
                             </select>
                           </Field>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
-                          <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
-                          </button>
-                        </div>
-                        {eventSetupRequired && (
-                          <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                            <Field label="Setup Duration">
-                              <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                <option value={1}>1 hour — $150</option>
-                                <option value={2}>2 hours — $275</option>
-                                <option value={3}>3 hours — $400</option>
-                                <option value={99}>Half day — $600</option>
-                              </select>
-                            </Field>
-                            <Field label="Setup Instructions">
-                              <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
-                            </Field>
+                        {eventLuxury ? (
+                          <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
+                            <p className="text-[11px] text-[var(--tx)] font-medium">Basic setup and placement: Included with luxury rate.</p>
+                            <p className="text-[10px] text-[var(--tx2)]">
+                              Add complex setup (staging, signage, assembly) for an additional fee:
+                            </p>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={eventComplexSetup}
+                                onChange={(e) => setEventComplexSetup(e.target.checked)}
+                                className="accent-[var(--gold)] w-3.5 h-3.5"
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">Complex setup (paid add-on)</span>
+                            </label>
+                            {eventComplexSetup && (
+                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                                <Field label="Complex setup duration">
+                                  <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                    <option value={1}>1 hour — $150</option>
+                                    <option value={2}>2 hours — $275</option>
+                                    <option value={3}>3 hours — $400</option>
+                                    <option value={99}>Half day — $600</option>
+                                  </select>
+                                </Field>
+                                <Field label="Setup Instructions">
+                                  <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Staging, signage, assembly details…" className={`${fieldInput} resize-none`} />
+                                </Field>
+                              </div>
+                            )}
                           </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-medium text-[var(--tx)]">Setup required (paid)</span>
+                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
+                              </button>
+                            </div>
+                            {eventSetupRequired && (
+                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                                <Field label="Setup Duration">
+                                  <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                    <option value={1}>1 hour — $150</option>
+                                    <option value={2}>2 hours — $275</option>
+                                    <option value={3}>3 hours — $400</option>
+                                    <option value={99}>Half day — $600</option>
+                                  </select>
+                                </Field>
+                                <Field label="Setup Instructions">
+                                  <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
+                                </Field>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -2073,15 +2404,93 @@ export default function QuoteFormClient({
                               </select>
                             </Field>
                           </div>
-                          <AddressAutocomplete
-                            value={leg.to_address}
-                            onRawChange={(v) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: v } : L)))}
-                            onChange={(r) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: r.fullAddress } : L)))}
-                            placeholder="Venue address"
-                            label="Venue *"
-                            required
-                            className={fieldInput}
-                          />
+                          <label className="flex items-start gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leg.event_same_location_onsite}
+                              onChange={(e) => {
+                                const on = e.target.checked;
+                                setEventLegs((prev) =>
+                                  prev.map((L, i) =>
+                                    i === idx
+                                      ? {
+                                          ...L,
+                                          event_same_location_onsite: on,
+                                          to_address: on ? L.from_address : L.to_address,
+                                          event_return_rate_preset: on ? "85" : L.event_return_rate_preset === "85" ? "auto" : L.event_return_rate_preset,
+                                        }
+                                      : L,
+                                  ),
+                                );
+                              }}
+                              className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                            />
+                            <span className="text-[11px] text-[var(--tx2)] leading-snug">
+                              Same location — items moved within venue (on-site event)
+                            </span>
+                          </label>
+                          {!leg.event_same_location_onsite ? (
+                            <AddressAutocomplete
+                              value={leg.to_address}
+                              onRawChange={(v) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: v } : L)))}
+                              onChange={(r) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: r.fullAddress } : L)))}
+                              placeholder="Venue address"
+                              label="Venue *"
+                              required
+                              className={fieldInput}
+                            />
+                          ) : (
+                            <p className="text-[10px] text-[var(--tx3)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
+                              Venue same as origin — no road transit for this leg.
+                            </p>
+                          )}
+                          {!leg.event_same_location_onsite && (
+                            <Field label="Truck (this leg)">
+                              <select
+                                value={leg.event_leg_truck_type}
+                                onChange={(e) =>
+                                  setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, event_leg_truck_type: e.target.value } : L)))
+                                }
+                                className={fieldInput}
+                              >
+                                {EVENT_TRUCK_OPTIONS.filter((o) => o.value !== "none").map((o) => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          <Field label="Return rate">
+                            <select
+                              value={leg.event_return_rate_preset}
+                              onChange={(e) =>
+                                setEventLegs((prev) =>
+                                  prev.map((L, i) =>
+                                    i === idx
+                                      ? { ...L, event_return_rate_preset: e.target.value as EventLegForm["event_return_rate_preset"] }
+                                      : L,
+                                  ),
+                                )
+                              }
+                              className={fieldInput}
+                            >
+                              {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                              ))}
+                            </select>
+                            {leg.event_return_rate_preset === "custom" ? (
+                              <input
+                                type="number"
+                                min={25}
+                                max={100}
+                                value={leg.event_return_rate_custom}
+                                onChange={(e) =>
+                                  setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, event_return_rate_custom: e.target.value } : L)))
+                                }
+                                placeholder="% of delivery day"
+                                className={`${fieldInput} mt-1 max-w-[200px]`}
+                              />
+                            ) : null}
+                          </Field>
                           <div className="grid grid-cols-2 gap-2">
                             <Field label="Delivery date *">
                               <input
@@ -2129,26 +2538,61 @@ export default function QuoteFormClient({
                       <div className="space-y-2">
                         <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
                         <p className="text-[10px] text-[var(--tx3)]">One setup fee for the bundled program (not per venue).</p>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
-                          <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
-                          </button>
-                        </div>
-                        {eventSetupRequired && (
-                          <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                            <Field label="Setup Duration">
-                              <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                <option value={1}>1 hour — $150</option>
-                                <option value={2}>2 hours — $275</option>
-                                <option value={3}>3 hours — $400</option>
-                                <option value={99}>Half day — $600</option>
-                              </select>
-                            </Field>
-                            <Field label="Setup Instructions">
-                              <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
-                            </Field>
+                        {eventLuxury ? (
+                          <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
+                            <p className="text-[11px] text-[var(--tx)] font-medium">Basic setup and placement: Included with luxury rate.</p>
+                            <p className="text-[10px] text-[var(--tx2)]">
+                              Add complex setup (staging, signage, assembly) for an additional fee:
+                            </p>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={eventComplexSetup}
+                                onChange={(e) => setEventComplexSetup(e.target.checked)}
+                                className="accent-[var(--gold)] w-3.5 h-3.5"
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">Complex setup</span>
+                            </label>
+                            {eventComplexSetup && (
+                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                                <Field label="Complex setup duration">
+                                  <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                    <option value={1}>1 hour — $150</option>
+                                    <option value={2}>2 hours — $275</option>
+                                    <option value={3}>3 hours — $400</option>
+                                    <option value={99}>Half day — $600</option>
+                                  </select>
+                                </Field>
+                                <Field label="Instructions">
+                                  <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} className={`${fieldInput} resize-none`} />
+                                </Field>
+                              </div>
+                            )}
                           </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-medium text-[var(--tx)]">Setup required (paid)</span>
+                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
+                              </button>
+                            </div>
+                            {eventSetupRequired && (
+                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                                <Field label="Setup Duration">
+                                  <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                    <option value={1}>1 hour — $150</option>
+                                    <option value={2}>2 hours — $275</option>
+                                    <option value={3}>3 hours — $400</option>
+                                    <option value={99}>Half day — $600</option>
+                                  </select>
+                                </Field>
+                                <Field label="Setup Instructions">
+                                  <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
+                                </Field>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -2297,6 +2741,34 @@ export default function QuoteFormClient({
                       <input type="date" value={labourSecondVisitDate} onChange={(e) => setLabourSecondVisitDate(e.target.value)} className={`${fieldInput} w-40`} />
                     </Field>
                   )}
+                  <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={labourStorageNeeded}
+                        onChange={(e) => setLabourStorageNeeded(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] text-[var(--tx2)]">Storage needed between visits?</span>
+                    </label>
+                    {labourStorageNeeded && (
+                      <div className="pl-5 space-y-1">
+                        <Field label="Estimated storage duration (weeks)">
+                          <input
+                            type="number"
+                            min={1}
+                            max={52}
+                            value={labourStorageWeeks}
+                            onChange={(e) => setLabourStorageWeeks(Math.max(1, Number(e.target.value) || 1))}
+                            className={`${fieldInput} w-28`}
+                          />
+                        </Field>
+                        <p className="text-[10px] text-[var(--tx3)]">
+                          Storage fee on quote uses platform <code className="text-[9px]">storage_weekly_rate</code> (default $75/wk) × weeks — coordinator refines volume if needed.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   <Field label="Additional Context (for coordinator)">
                     <textarea
                       value={labourContext}
@@ -2321,6 +2793,27 @@ export default function QuoteFormClient({
                       placeholder="Acme Corp"
                       className={fieldInput}
                     />
+                  </Field>
+                  <Field label="Retailer / Purchase Source">
+                    <input
+                      value={b2bRetailerSource}
+                      onChange={(e) => setB2bRetailerSource(e.target.value)}
+                      placeholder="Where the client purchased (store, brand, PO reference)"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field label="Payment method">
+                    <select
+                      value={b2bPaymentMethod}
+                      onChange={(e) => setB2bPaymentMethod(e.target.value as "card" | "invoice")}
+                      className={fieldInput}
+                    >
+                      <option value="card">Card at booking (default)</option>
+                      <option value="invoice">Invoice (Net 30)</option>
+                    </select>
+                    <p className="text-[9px] text-[var(--tx3)] mt-1">
+                      Invoice: client confirms on the quote page without card; booking is flagged for accounts receivable.
+                    </p>
                   </Field>
                   <Field label="Items">
                     <div className="space-y-2">
@@ -2727,7 +3220,15 @@ export default function QuoteFormClient({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Distance</span>
-                  <span className="text-[var(--tx)]">{quoteResult.distance_km ? `${quoteResult.distance_km} km` : "—"}</span>
+                  <span className="text-[var(--tx)]">
+                    {quoteResult.service_type === "event" &&
+                    typeof quoteResult.factors?.event_distance_summary === "string" &&
+                    quoteResult.factors.event_distance_summary.trim()
+                      ? String(quoteResult.factors.event_distance_summary)
+                      : quoteResult.distance_km
+                        ? `${quoteResult.distance_km} km`
+                        : "—"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Drive Time</span>
@@ -2737,6 +3238,14 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx3)]">Move Date</span>
                   <span className="text-[var(--tx)]">{quoteResult.move_date || "—"}</span>
                 </div>
+                {quoteResult.service_type === "event" &&
+                  (quoteResult.factors?.event_same_location_onsite === true ||
+                    quoteResult.factors?.event_has_on_site_leg === true) && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)]">Event type</span>
+                    <span className="text-[var(--tx)] font-medium">On-site Event</span>
+                  </div>
+                )}
                 {hubspotDealId && (
                   <div className="flex justify-between">
                     <span className="text-[var(--tx3)]">HubSpot Deal</span>
@@ -2948,6 +3457,8 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
 
 type AdminEventLegFactor = {
   label?: string;
+  from_address?: string;
+  to_address?: string;
   delivery_date?: string;
   return_date?: string;
   delivery_charge?: number;
@@ -2990,11 +3501,29 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
       </div>
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit to book (25%)</span>
+        <span className="text-[var(--tx3)]">Deposit (25% pre-tax)</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
     </>
   );
+
+  const includesBlock =
+    t.includes.length > 0 ? (
+      <details className="group pt-1">
+        <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+          <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
+          What&apos;s included ▾
+        </summary>
+        <ul className="mt-1.5 space-y-0.5 pl-5">
+          {t.includes.map((inc, i) => (
+            <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+              <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
+              {inc}
+            </li>
+          ))}
+        </ul>
+      </details>
+    ) : null;
 
   if (isMulti && eventLegs.length > 0) {
     return (
@@ -3018,6 +3547,15 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
             >
               <p className="text-[9px] font-bold tracking-wider uppercase text-[#B8962E]">
                 {leg.label?.trim() || `Event ${idx + 1}`}
+              </p>
+              {(leg.from_address || leg.to_address) && (
+                <p className="text-[9px] text-[var(--tx3)]/85 leading-snug">
+                  {leg.from_address || "Origin"} → {leg.to_address || "Venue"}
+                </p>
+              )}
+              <p className="text-[9px] text-[var(--tx3)]/70">
+                Deliver {fmtShortEventAdmin(leg.delivery_date)} → Return {fmtShortEventAdmin(leg.return_date)}
+                {leg.same_day ? " (same day)" : ""}
               </p>
               <div className="flex justify-between gap-2">
                 <span className="text-[var(--tx3)]">
@@ -3055,6 +3593,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
           )}
         </div>
         {totalsFooter}
+        {includesBlock}
       </div>
     );
   }
@@ -3091,8 +3630,9 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
             <span className="font-medium text-[var(--tx)]">{fmtPrice(returnCharge)}</span>
           </div>
         )}
-        {totalsFooter}
       </div>
+      {totalsFooter}
+      {includesBlock}
     </div>
   );
 }
@@ -3474,6 +4014,9 @@ function LegacyFactorsDisplay({
     "labour_baseline_crew", "labour_baseline_hours", "labour_rate", "labour_rate_per_mover_hour", "labour_extra_man_hours",
     "packing_supplies_included", "distance_modifier", "inventory_modifier", "deadhead_km", "return_km",
     "subtotal_before_labour",
+    "event_legs", "event_leg_distances", "includes",
+    "event_distance_summary",
+    "truck_breakdown_line", "truck_surcharge", "truck_recommended", "truck_type_selected",
   ]);
   const entries = Object.entries(factors).filter(
     ([key, v]) => !HIDDEN_KEYS.has(key) && v !== null && v !== undefined && v !== 0 && v !== 1
@@ -3483,14 +4026,32 @@ function LegacyFactorsDisplay({
   const labourExtraManHours = typeof factors.labour_extra_man_hours === "number" ? factors.labour_extra_man_hours : null;
   const labourRate = typeof factors.labour_rate_per_mover_hour === "number" ? factors.labour_rate_per_mover_hour : null;
 
+  const eventDist =
+    typeof factors.event_distance_summary === "string" && (factors.event_distance_summary as string).trim().length > 0
+      ? (factors.event_distance_summary as string)
+      : null;
+
+  const truckBreakdownLine =
+    typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0
+      ? factors.truck_breakdown_line.trim()
+      : null;
+
   return (
     <div className="space-y-1.5">
-      {distance != null && (
+      {truckBreakdownLine ? (
+        <div className="text-[10px] text-[var(--tx)] font-medium">{truckBreakdownLine}</div>
+      ) : null}
+      {eventDist ? (
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="text-[var(--tx3)]">Distance</span>
+          <span className="text-[var(--tx)] font-medium">{eventDist}</span>
+        </div>
+      ) : distance != null ? (
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">Distance</span>
           <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
         </div>
-      )}
+      ) : null}
       {labourDelta !== null && (
         <div className="flex flex-col gap-0.5 text-[10px]">
           <div className="flex items-center justify-between">

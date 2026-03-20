@@ -1,6 +1,8 @@
-import { getCompanyDisplayName, getConfig } from "@/lib/config";
+import { getConfig } from "@/lib/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSMS } from "@/lib/sms/sendSMS";
+import { getPublicQuoteUrl } from "@/lib/quote-public-url";
+import { buildQuoteSmsBody, buildQuoteFollowupSmsBody } from "@/lib/quote-sms-templates";
 
 function toE164NorthAmerica(digitsRaw: string): string | null {
   const digits = digitsRaw.replace(/\D/g, "");
@@ -40,10 +42,11 @@ async function logSms(params: {
  */
 export async function sendQuoteLinkSms(params: {
   phone: string | null | undefined;
-  quoteUrl: string;
+  quoteUrl?: string;
   quoteId: string;
   firstName?: string;
   serviceType?: string;
+  eventName?: string | null;
 }): Promise<{ ok: boolean; skipped?: string }> {
   const enabled = (await getConfig("quote_sms_enabled", "true")).toLowerCase() === "true";
   if (!enabled) return { ok: true, skipped: "quote_sms_disabled" };
@@ -55,13 +58,13 @@ export async function sendQuoteLinkSms(params: {
   const to = toE164NorthAmerica(params.phone);
   if (!to) return { ok: true, skipped: "invalid_phone" };
 
-  const brand = (await getCompanyDisplayName()).trim() || "HELLOYUGO+";
-  const greeting = params.firstName ? `Hi ${params.firstName}, ` : "";
-  const serviceLabel = params.serviceType ? getServiceLabel(params.serviceType) : "";
-  const body = `${greeting}your Yugo${serviceLabel ? " " + serviceLabel : ""} quote is ready. Please check your email or view it here: ${params.quoteUrl}. If you have any questions, please contact us at (647) 370-4525`;
-
-  // suppress unused var — brand is available for future customisation
-  void brand;
+  const quoteUrl = params.quoteUrl ?? (await getPublicQuoteUrl(params.quoteId));
+  const body = buildQuoteSmsBody({
+    firstName: params.firstName,
+    serviceType: params.serviceType ?? "local_move",
+    quoteUrl,
+    eventName: params.eventName,
+  });
 
   const result = await sendSMS(to, body);
   if (result.success) {
@@ -76,12 +79,13 @@ export async function sendQuoteLinkSms(params: {
 
 export async function sendQuoteFollowupSms(params: {
   phone: string | null | undefined;
-  quoteUrl: string;
+  quoteUrl?: string;
   quoteId: string;
   firstName?: string;
   serviceType?: string;
   followupNumber: 1 | 2 | 3;
   expiresAt?: string | null;
+  eventName?: string | null;
 }): Promise<{ ok: boolean; skipped?: string }> {
   const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
   const followupEnabled = (await getConfig("sms_followup_enabled", "true")).toLowerCase() === "true";
@@ -94,20 +98,15 @@ export async function sendQuoteFollowupSms(params: {
   const to = toE164NorthAmerica(params.phone);
   if (!to) return { ok: true, skipped: "invalid_phone" };
 
-  const greeting = params.firstName ? `Hi ${params.firstName}, ` : "";
-  const serviceLabel = params.serviceType ? getServiceLabel(params.serviceType) : "";
-
-  let body: string;
-  if (params.followupNumber === 1) {
-    body = `${greeting}just following up on your Yugo${serviceLabel ? " " + serviceLabel : ""} quote. Any questions? ${params.quoteUrl}`;
-  } else if (params.followupNumber === 2) {
-    const daysLeft = params.expiresAt
-      ? Math.max(0, Math.ceil((new Date(params.expiresAt).getTime() - Date.now()) / 86_400_000))
-      : null;
-    body = `Your Yugo quote${daysLeft !== null ? ` expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}` : " expires soon"}. Book now to lock in your date: ${params.quoteUrl}`;
-  } else {
-    body = `Your Yugo quote expires tomorrow. Don't lose your date: ${params.quoteUrl}`;
-  }
+  const quoteUrl = params.quoteUrl ?? (await getPublicQuoteUrl(params.quoteId));
+  const body = buildQuoteFollowupSmsBody({
+    firstName: params.firstName,
+    serviceType: params.serviceType ?? "local_move",
+    quoteUrl,
+    followupNumber: params.followupNumber,
+    expiresAt: params.expiresAt,
+    eventName: params.eventName,
+  });
 
   const result = await sendSMS(to, body);
   if (result.success) {
@@ -174,20 +173,4 @@ function formatMoveDate(dateStr: string): string {
   } catch {
     return dateStr;
   }
-}
-
-function getServiceLabel(serviceType: string): string {
-  const labels: Record<string, string> = {
-    local_move: "Residential Move",
-    long_distance: "Long Distance Move",
-    office_move: "Office Relocation",
-    single_item: "Single Item Delivery",
-    white_glove: "White Glove Service",
-    specialty: "Specialty Service",
-    b2b_delivery: "Delivery",
-    b2b_oneoff: "Delivery",
-    event: "Event Logistics",
-    labour_only: "Labour Service",
-  };
-  return labels[serviceType] || "";
 }

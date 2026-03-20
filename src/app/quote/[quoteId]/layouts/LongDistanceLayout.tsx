@@ -30,6 +30,11 @@ interface Props {
 export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Props) {
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const includes = (factors?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
+  const ldTruckSur = typeof factors?.truck_surcharge === "number" && factors.truck_surcharge > 0 ? factors.truck_surcharge : 0;
+  const ldTruckLine =
+    typeof factors?.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0
+      ? factors.truck_breakdown_line.trim()
+      : null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("long_distance", price);
@@ -129,6 +134,20 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         <h2 className="font-hero text-[26px] mb-1" style={{ color: WINE }}>
           All-Inclusive Flat Rate
         </h2>
+        {(ldTruckLine || ldTruckSur > 0) && (
+          <p className="text-[11px] mb-3 max-w-md mx-auto leading-relaxed" style={{ color: `${FOREST}75` }}>
+            {ldTruckLine ? (
+              <span className="font-semibold" style={{ color: FOREST }}>
+                {ldTruckLine}
+              </span>
+            ) : (
+              <>
+                <span className="font-semibold" style={{ color: FOREST }}>Truck sizing: </span>
+                +{fmtPrice(ldTruckSur)}
+              </>
+            )}
+          </p>
+        )}
         <p className="font-hero text-[40px] md:text-[48px] my-3" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>

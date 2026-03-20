@@ -256,6 +256,10 @@ export async function createMoveFromQuote(
 
     from_access: quote.from_access,
     to_access: quote.to_access,
+    from_parking: (quote as { from_parking?: string }).from_parking ?? "dedicated",
+    to_parking: (quote as { to_parking?: string }).to_parking ?? "dedicated",
+    from_long_carry: (quote as { from_long_carry?: boolean }).from_long_carry ?? false,
+    to_long_carry: (quote as { to_long_carry?: boolean }).to_long_carry ?? false,
     access_notes: accessNotes,
 
     quote_id: quote.id,

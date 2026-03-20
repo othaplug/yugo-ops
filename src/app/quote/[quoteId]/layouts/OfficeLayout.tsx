@@ -50,6 +50,12 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       { phase: "Setup & Handoff", description: "Unpacking, workstation setup, final walkthrough" },
     ];
 
+  const officeTruckSur = typeof f?.truck_surcharge === "number" && f.truck_surcharge > 0 ? f.truck_surcharge : 0;
+  const officeTruckLine =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : "Truck sizing";
+
   const breakdown = ([
     f?.base_rate && { label: "Base Rate", amount: f.base_rate as number },
     f?.distance_surcharge && { label: "Distance Surcharge", amount: f.distance_surcharge as number },
@@ -57,6 +63,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
     f?.it_equipment_surcharge && { label: "IT Equipment Handling", amount: f.it_equipment_surcharge as number },
     f?.conference_room_surcharge && { label: "Conference Room", amount: f.conference_room_surcharge as number },
     f?.timing_surcharge && { label: "Timing Adjustment", amount: f.timing_surcharge as number },
+    officeTruckSur > 0 && { label: officeTruckLine, amount: officeTruckSur },
   ] as (false | null | undefined | { label: string; amount: number })[]).filter(
     (x): x is { label: string; amount: number } => !!x,
   );

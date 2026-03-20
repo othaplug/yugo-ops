@@ -35,10 +35,28 @@ const SERVICE_SUBJECT: Record<string, string> = {
   labour_only: "Your Service Quote",
 };
 
-function quoteSubject(firstName: string, quoteId: string, serviceType: string): string {
+function quoteSubject(
+  firstName: string,
+  quoteId: string,
+  serviceType: string,
+  eventName?: string | null,
+): string {
   const namePart = firstName ? `${firstName}, ` : "";
+  if (serviceType === "event" && eventName?.trim()) {
+    return `${namePart}Your Yugo Event Quote — ${eventName.trim()} (${quoteId})`;
+  }
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
   return `${namePart}${subjectBase} ${quoteId}`;
+}
+
+function fmtEmailDay(dateStr: string | null | undefined): string {
+  if (!dateStr) return "To be confirmed";
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -112,7 +130,8 @@ export async function POST(req: NextRequest) {
     const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
-    const subject = quoteSubject(firstName, quoteId, serviceType);
+    const eventNameForSubject = (factors.event_name as string) ?? null;
+    const subject = quoteSubject(firstName, quoteId, serviceType, eventNameForSubject);
     const platformCompanyName = await getCompanyDisplayName();
 
     const storedMoveSize = (quote.move_size as string | null) ?? null;
@@ -125,6 +144,57 @@ export async function POST(req: NextRequest) {
 
     if (storedMoveSize === "1br" && suggests2br) {
       await supabase.from("quotes").update({ move_size: "2br" }).eq("quote_id", quoteId);
+    }
+
+    type EventLegEmailRow = {
+      label: string;
+      deliveryDay: string;
+      returnDay: string;
+      origin: string;
+      venue: string;
+      crewLine: string;
+      delivery: number;
+      ret: number;
+      legSubtotal: number;
+    };
+    let eventLegBlocks: EventLegEmailRow[] | undefined;
+    if (serviceType === "event") {
+      const isEvMulti = factors.event_mode === "multi" && Array.isArray(factors.event_legs);
+      const truckLbl = quote.truck_primary ? String(quote.truck_primary) : "Sprinter";
+      if (isEvMulti) {
+        const legs = factors.event_legs as Array<Record<string, unknown>>;
+        eventLegBlocks = legs.map((leg) => {
+          const del = Number(leg.delivery_charge ?? 0);
+          const ret = Number(leg.return_charge ?? 0);
+          return {
+            label: String(leg.label ?? "Event"),
+            deliveryDay: fmtEmailDay(leg.delivery_date as string),
+            returnDay: fmtEmailDay(leg.return_date as string),
+            origin: String(leg.from_address ?? quote.from_address ?? ""),
+            venue: String(leg.to_address ?? ""),
+            crewLine: `${leg.event_crew ?? quote.est_crew_size ?? 2} movers · ${truckLbl}`,
+            delivery: del,
+            ret,
+            legSubtotal: del + ret,
+          };
+        });
+      } else {
+        const del = Number(factors.delivery_charge ?? 0);
+        const ret = Number(factors.return_charge ?? 0);
+        eventLegBlocks = [
+          {
+            label: ((factors.event_name as string) || "Event").trim(),
+            deliveryDay: fmtEmailDay(quote.move_date),
+            returnDay: fmtEmailDay((factors.return_date as string) ?? quote.move_date),
+            origin: String(quote.from_address ?? ""),
+            venue: String(quote.to_address ?? ""),
+            crewLine: `${quote.est_crew_size ?? factors.event_crew ?? 2} movers · ${truckLbl}`,
+            delivery: del,
+            ret,
+            legSubtotal: del + ret,
+          },
+        ];
+      }
     }
 
     const result = await sendEmail({
@@ -162,6 +232,8 @@ export async function POST(req: NextRequest) {
         eventDeliveryCharge: (factors.delivery_charge as number) ?? null,
         eventSetupFee: (factors.setup_fee as number) ?? null,
         eventReturnCharge: (factors.return_charge as number) ?? null,
+        eventLegBlocks,
+        eventDeposit: quote.deposit_amount != null ? Number(quote.deposit_amount) : null,
         // Labour Only
         labourCrewSize: (factors.crew_size as number) ?? null,
         labourHours: (factors.hours as number) ?? null,
@@ -185,8 +257,10 @@ export async function POST(req: NextRequest) {
 
     const smsResult = await sendQuoteLinkSms({
       phone: contact?.phone,
-      quoteUrl,
       quoteId,
+      firstName,
+      serviceType,
+      eventName: (factors.event_name as string) ?? null,
     });
     if (!smsResult.ok) {
       console.warn("[quotes/send] quote SMS failed:", smsResult.skipped);

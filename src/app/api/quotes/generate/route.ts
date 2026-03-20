@@ -44,6 +44,8 @@ interface QuoteInput {
   item_description?: string;
   item_category?: string;
   item_weight_class?: string;
+  /** Free-text instructions shown on quote */
+  single_item_special_handling?: string;
   assembly_needed?: string;
   stair_carry?: boolean;
   stair_flights?: number;
@@ -60,25 +62,38 @@ interface QuoteInput {
   specialty_dimensions?: string;
   specialty_requirements?: string[];
   specialty_notes?: string;
+  specialty_building_requirements?: string[];
+  specialty_access_difficulty?: string;
   // B2B One-Off
   delivery_type?: string;
   b2b_business_name?: string;
   b2b_items?: string[];
   b2b_weight_category?: string;
   b2b_special_instructions?: string;
+  b2b_payment_method?: "card" | "invoice";
+  b2b_retailer_source?: string;
   // Event (round-trip venue delivery)
   event_name?: string;
   event_return_date?: string;
   event_setup_required?: boolean;
   event_setup_hours?: number; // 1, 2, 3, or 99 = half-day
   event_setup_instructions?: string;
+  /** When luxury: paid setup applies only to complex/staging (see event_complex_setup_required) */
+  event_complex_setup_required?: boolean;
+  /** Single-event: moves entirely within one address (no road transit) */
+  event_same_location_onsite?: boolean;
   event_same_day?: boolean;
   event_pickup_time_after?: string;
+  event_return_rate_preset?: "auto" | "65" | "85" | "100" | "custom";
+  event_return_rate_custom?: number;
   event_additional_services?: string[];
   event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
   /** When "multi", use event_legs (≥2) for bundled round-trips; single-leg fields mirror first leg for DB compatibility */
   event_mode?: "single" | "multi";
   event_legs?: EventLegInput[];
+  event_is_luxury?: boolean;
+  /** Event default sprinter; other types use coordinator override */
+  event_truck_type?: string;
   // Labour Only
   labour_crew_size?: number;
   labour_hours?: number;
@@ -86,10 +101,18 @@ interface QuoteInput {
   labour_visits?: number;
   labour_second_visit_date?: string;
   labour_description?: string;
+  labour_storage_needed?: boolean;
+  labour_storage_weeks?: number;
   // Recommended tier (coordinator's manual selection)
   recommended_tier?: "curated" | "signature" | "estate";
   // Custom crating (all service types)
   crating_pieces?: { description?: string; size: "small" | "medium" | "large" | "oversized" }[];
+  // Parking / long carry (all service types); optional truck when not inventory-recommended
+  from_parking?: "dedicated" | "street" | "no_dedicated";
+  to_parking?: "dedicated" | "street" | "no_dedicated";
+  from_long_carry?: boolean;
+  to_long_carry?: boolean;
+  truck_type?: string;
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -106,7 +129,16 @@ export interface EventLegInput {
   move_date: string;
   event_return_date?: string;
   event_same_day?: boolean;
+  /** Items repositioned within venue — no transit, no truck surcharge, return rate typically 85% */
+  event_same_location_onsite?: boolean;
+  event_leg_truck_type?: string;
+  event_return_rate_preset?: "auto" | "65" | "85" | "100" | "custom";
+  event_return_rate_custom?: number;
   event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
+  from_parking?: "dedicated" | "street" | "no_dedicated";
+  to_parking?: "dedicated" | "street" | "no_dedicated";
+  from_long_carry?: boolean;
+  to_long_carry?: boolean;
 }
 
 interface AddonSelection {
@@ -163,6 +195,118 @@ function parseJsonConfig<T>(config: Map<string, string>, key: string, fallback: 
   } catch {
     return fallback;
   }
+}
+
+type TruckKey = "sprinter" | "16ft" | "20ft" | "26ft" | "none";
+
+function normalizeTruckType(raw: string | undefined | null): TruckKey {
+  const k = (raw || "sprinter").toLowerCase().replace(/\s+/g, "");
+  if (k === "none" || k === "notruck" || k === "no_truck") return "none";
+  if (k === "sprinter" || k === "16ft" || k === "20ft" || k === "26ft") return k;
+  if (k.includes("16")) return "16ft";
+  if (k.includes("20")) return "20ft";
+  if (k.includes("26")) return "26ft";
+  return "sprinter";
+}
+
+function recommendedTruckFromInventoryScore(score: number): TruckKey {
+  if (score <= 15) return "sprinter";
+  if (score <= 30) return "16ft";
+  if (score <= 60) return "20ft";
+  return "26ft";
+}
+
+function truckSurchargeAmount(config: Map<string, string>, truck: TruckKey): number {
+  if (truck === "none") return 0;
+  const m = parseJsonConfig<Record<string, number>>(config, "truck_surcharges", {
+    sprinter: 0,
+    "16ft": 75,
+    "20ft": 150,
+    "26ft": 250,
+  });
+  return m[truck] ?? 0;
+}
+
+function truckBreakdownLabel(truck: TruckKey, surcharge: number): string {
+  if (truck === "none") return "No truck (on-site)";
+  const labels: Record<TruckKey, string> = {
+    sprinter: "Sprinter",
+    "16ft": "16ft",
+    "20ft": "20ft",
+    "26ft": "26ft",
+    none: "No truck",
+  };
+  const name = labels[truck] ?? truck;
+  return surcharge > 0 ? `Truck: ${name} (+$${surcharge})` : `Truck: ${name} (base)`;
+}
+
+/** Defaults when platform_config `b2b_weight_surcharges` is missing or partial */
+const B2B_WEIGHT_SURCHARGES_FALLBACK: Record<string, number> = {
+  standard: 0,
+  heavy: 50,
+  very_heavy: 100,
+  oversized: 175,
+  /** B2B form option — same tier as single-item oversized */
+  oversized_fragile: 175,
+};
+
+/** Map single-item / white-glove weight UI strings to b2b_weight_surcharges keys */
+function singleItemWeightCategory(weightClass: string | undefined | null): string {
+  const w = (weightClass || "").toLowerCase();
+  if (w.includes("over 500")) return "oversized";
+  if (w.includes("300-500") || w.includes("300–500")) return "very_heavy";
+  if (w.includes("150-300") || w.includes("150–300")) return "heavy";
+  return "standard";
+}
+
+function resolveEventLegReturnDiscount(
+  leg: Pick<
+    EventLegInput,
+    "event_return_rate_preset" | "event_return_rate_custom" | "event_same_location_onsite"
+  >,
+  config: Map<string, string>,
+): number {
+  const preset = leg.event_return_rate_preset ?? "auto";
+  if (preset === "custom" && leg.event_return_rate_custom != null) {
+    const p = Number(leg.event_return_rate_custom);
+    if (Number.isFinite(p) && p >= 0 && p <= 100) return p / 100;
+  }
+  if (preset === "100") return 1;
+  if (preset === "85") return 0.85;
+  if (preset === "65") return cfgNum(config, "event_return_discount", 0.65);
+  // auto
+  if (leg.event_same_location_onsite) return 0.85;
+  return cfgNum(config, "event_return_discount", 0.65);
+}
+
+function parkingLongCarryLineTotal(
+  config: Map<string, string>,
+  input: Pick<QuoteInput, "from_parking" | "to_parking" | "from_long_carry" | "to_long_carry">,
+  ends: "both" | "origin_only",
+): {
+  total: number;
+  from_parking_fee: number;
+  to_parking_fee: number;
+  from_long_carry_fee: number;
+  to_long_carry_fee: number;
+} {
+  const parkingRates = parseJsonConfig<Record<string, number>>(config, "parking_surcharges", {
+    dedicated: 0,
+    street: 0,
+    no_dedicated: 75,
+  });
+  const lc = cfgNum(config, "long_carry_surcharge", 75);
+  const fp = parkingRates[input.from_parking ?? "dedicated"] ?? 0;
+  const tp = ends === "both" ? (parkingRates[input.to_parking ?? "dedicated"] ?? 0) : 0;
+  const flc = input.from_long_carry ? lc : 0;
+  const tlc = ends === "both" && input.to_long_carry ? lc : 0;
+  return {
+    total: fp + tp + flc + tlc,
+    from_parking_fee: fp,
+    to_parking_fee: tp,
+    from_long_carry_fee: flc,
+    to_long_carry_fee: tlc,
+  };
 }
 
 const getDistance = getDrivingDistance;
@@ -848,8 +992,13 @@ async function calcResidential(
   subtotal = Math.round(subtotal * distanceModifier);
   subtotal = Math.round(subtotal * dateMult.multiplier);
   subtotal = Math.round(subtotal * neighbourhood.multiplier);
+  const plc = parkingLongCarryLineTotal(config, input, "both");
+  const recTruck = input.truck_type
+    ? normalizeTruckType(input.truck_type)
+    : recommendedTruckFromInventoryScore(invResult.inventoryScore);
+  const truckSur = truckSurchargeAmount(config, recTruck);
   // Add flat surcharges AFTER multiplicative chain
-  subtotal += accessSurcharge + specialtySurcharge;
+  subtotal += accessSurcharge + specialtySurcharge + plc.total + truckSur;
 
   // ── Labour delta (Section 3): extra man-hours above baseline, floored at 0 ─
   const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
@@ -1001,7 +1150,10 @@ async function calcResidential(
           ? Math.max(0, labour.crewSize * labour.estimatedHours - benchmark.baseline_crew * benchmark.baseline_hours)
           : null,
       inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
-      subtotal_before_labour: subtotal - accessSurcharge - specialtySurcharge,
+      subtotal_before_labour: subtotal - accessSurcharge - specialtySurcharge - plc.total - truckSur,
+      parking_long_carry_total: plc.total,
+      truck_recommended: recTruck,
+      truck_surcharge: truckSur,
       packing_supplies_included: estateSuppliesAllowance,
       crating_total: cratingTotal,
       crating_pieces_count: input.crating_pieces?.length ?? 0,
@@ -1062,6 +1214,10 @@ async function calcOffice(
   let price = roundTo(base, rounding);
   if (price < minOffice) price = minOffice;
 
+  const plcOffice = parkingLongCarryLineTotal(config, input, "both");
+  const truckOffice = normalizeTruckType(input.truck_type ?? "20ft");
+  price += plcOffice.total + truckSurchargeAmount(config, truckOffice);
+
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
@@ -1088,6 +1244,9 @@ async function calcOffice(
       date_multiplier: dateMult.multiplier,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
+      parking_long_carry_total: plcOffice.total,
+      truck_recommended: truckOffice,
+      truck_surcharge: truckSurchargeAmount(config, truckOffice),
     },
   };
 }
@@ -1123,6 +1282,10 @@ async function calcLongDistance(
   price = roundTo(price, rounding);
   if (price < 2500) price = 2500;
 
+  const plcLd = parkingLongCarryLineTotal(config, input, "both");
+  const truckLd = normalizeTruckType(input.truck_type ?? "20ft");
+  price += plcLd.total + truckSurchargeAmount(config, truckLd);
+
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
@@ -1152,6 +1315,9 @@ async function calcLongDistance(
       date_multiplier: dateMult.multiplier,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
+      parking_long_carry_total: plcLd.total,
+      truck_recommended: truckLd,
+      truck_surcharge: truckSurchargeAmount(config, truckLd),
     },
   };
 }
@@ -1177,9 +1343,13 @@ async function calcSingleItem(
   const max = rate?.base_price_max ?? 349;
   let price = Math.round((min + max) / 2);
 
-  const weight = (input.item_weight_class ?? "").toLowerCase();
-  if (weight.includes("300") || weight === "over_300lbs" || weight === "300-500 lbs") price += 100;
-  if (weight.includes("500") || weight === "over_500lbs" || weight === "Over 500 lbs") price += 200;
+  const weightMapSi = {
+    ...B2B_WEIGHT_SURCHARGES_FALLBACK,
+    ...parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {}),
+  };
+  const wCat = singleItemWeightCategory(input.item_weight_class);
+  const weightSurchargeSi = weightMapSi[wCat] ?? weightMapSi.standard ?? 0;
+  price += weightSurchargeSi;
 
   const assemblyDis = cfgNum(config, "assembly_disassembly", 75);
   const assemblyAs = cfgNum(config, "assembly_assembly", 80);
@@ -1198,6 +1368,10 @@ async function calcSingleItem(
   const distKm = distInfo?.distance_km ?? 0;
   const distanceSurcharge = distKm > siDistBase ? Math.round((distKm - siDistBase) * siDistRate) : 0;
   price += distanceSurcharge;
+
+  const plcSi = parkingLongCarryLineTotal(config, input, "both");
+  const truckSi = normalizeTruckType(input.truck_type ?? "20ft");
+  price += plcSi.total + truckSurchargeAmount(config, truckSi);
 
   if (price < 150) price = 150;
 
@@ -1228,7 +1402,13 @@ async function calcSingleItem(
       item_description: input.item_description || null,
       item_category: input.item_category || null,
       weight_class: input.item_weight_class || null,
+      weight_category_pricing: wCat,
+      weight_surcharge: weightSurchargeSi,
+      single_item_special_handling: input.single_item_special_handling?.trim() || null,
       assembly_surcharge: asm ? (asm.includes("both") || asm === "Both" ? assemblyBoth : asm.includes("disassembly") || asm.includes("dis") ? assemblyDis : assemblyAs) : null,
+      parking_long_carry_total: plcSi.total,
+      truck_recommended: truckSi,
+      truck_surcharge: truckSurchargeAmount(config, truckSi),
     },
   };
 }
@@ -1365,6 +1545,10 @@ async function calcSpecialty(
     price += equipSurcharges[eq] ?? 100;
   }
 
+  const plcSp = parkingLongCarryLineTotal(config, input, "both");
+  const truckSp = normalizeTruckType(input.truck_type ?? "20ft");
+  price += plcSp.total + truckSurchargeAmount(config, truckSp);
+
   if (price < 500) price = 500;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
@@ -1382,6 +1566,11 @@ async function calcSpecialty(
     "Site assessment",
     "Insurance coverage",
   ];
+  if (input.specialty_access_difficulty === "requires_rigging_or_crane") {
+    specialtyIncludes.push(
+      "Note: Crane/rigging typically adds $1,500–3,000 — your coordinator will confirm exact cost.",
+    );
+  }
 
   return {
     custom_price: {
@@ -1397,6 +1586,11 @@ async function calcSpecialty(
       distance_surcharge: distanceSurcharge,
       crating_surcharge: (input.custom_crating_pieces ?? 0) * 300,
       climate_surcharge: input.climate_control ? 150 : 0,
+      parking_long_carry_total: plcSp.total,
+      truck_recommended: truckSp,
+      truck_surcharge: truckSurchargeAmount(config, truckSp),
+      specialty_building_requirements: input.specialty_building_requirements ?? [],
+      specialty_access_difficulty: input.specialty_access_difficulty || null,
     },
   };
 }
@@ -1439,7 +1633,10 @@ async function calcB2bOneoff(
   const distanceModifier = getDistanceModifier(config, distKm);
 
   const accessMap = parseJsonConfig<Record<string, number>>(config, "b2b_access_surcharges", {});
-  const weightMap = parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {});
+  const weightMap = {
+    ...B2B_WEIGHT_SURCHARGES_FALLBACK,
+    ...parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {}),
+  };
   const accessKey = (k: string | undefined): string => (k === "no_parking_nearby" ? "no_parking" : (k ?? ""));
   const fromAccess = input.from_access ? (accessMap[accessKey(input.from_access)] ?? 0) : 0;
   const toAccess = input.to_access ? (accessMap[accessKey(input.to_access)] ?? 0) : 0;
@@ -1452,6 +1649,10 @@ async function calcB2bOneoff(
   const rounding = cfgNum(config, "rounding_nearest", 50);
   price = roundTo(price, rounding);
   if (price < 200) price = 200;
+
+  const plcB2b = parkingLongCarryLineTotal(config, input, "both");
+  const truckB2b = normalizeTruckType(input.truck_type ?? "20ft");
+  price += plcB2b.total + truckSurchargeAmount(config, truckB2b);
 
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -1488,6 +1689,11 @@ async function calcB2bOneoff(
       weight_category: weightCategory,
       b2b_business_name: input.b2b_business_name || null,
       b2b_items: input.b2b_items || null,
+      parking_long_carry_total: plcB2b.total,
+      truck_recommended: truckB2b,
+      truck_surcharge: truckSurchargeAmount(config, truckB2b),
+      b2b_payment_method: input.b2b_payment_method ?? "card",
+      b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
     },
   };
 }
@@ -1498,66 +1704,123 @@ async function calcB2bOneoff(
 
 const EVENT_WEIGHT_MAP: Record<string, number> = { light: 0.5, medium: 2.0, heavy: 5.0 };
 
+function buildEventIncludesList(input: QuoteInput): string[] {
+  const lines: string[] = [
+    "Dedicated event crew (same team all days)",
+    "All items inventoried and protected",
+    "Floor and venue protection",
+  ];
+  if (input.event_is_luxury) {
+    lines.push("Basic setup and placement (included with luxury rate)");
+    if (input.event_complex_setup_required) {
+      lines.push("Complex on-site setup (staging, signage, assembly) — as quoted");
+    }
+  } else if (input.event_setup_required) {
+    lines.push("On-site setup and arrangement");
+  }
+  lines.push("Post-event teardown and return", "Real-time coordination");
+  return lines;
+}
+
 function eventSetupFeeAndLabel(input: QuoteInput, config: Map<string, string>): { setupFee: number; setupLabel: string } {
   let setupFee = 0;
   let setupLabel = "";
-  if (input.event_setup_required) {
-    const sh = input.event_setup_hours ?? 2;
-    const setupPrices: Record<number, number> = {
-      1:  cfgNum(config, "event_setup_fee_1hr",     150),
-      2:  cfgNum(config, "event_setup_fee_2hr",     275),
-      3:  cfgNum(config, "event_setup_fee_3hr",     400),
-      99: cfgNum(config, "event_setup_fee_halfday", 600),
-    };
-    setupFee = setupPrices[sh] ?? setupPrices[2];
-    setupLabel = sh === 99 ? "Half-day setup" : `${sh}hr setup`;
+  const luxury = !!input.event_is_luxury;
+  const needsPaidSetup = luxury ? !!input.event_complex_setup_required : !!input.event_setup_required;
+  if (!needsPaidSetup) {
+    return { setupFee, setupLabel };
   }
+  const sh = input.event_setup_hours ?? 2;
+  const setupPrices: Record<number, number> = {
+    1:   cfgNum(config, "event_setup_fee_1hr",     150),
+    2:   cfgNum(config, "event_setup_fee_2hr",     275),
+    3:   cfgNum(config, "event_setup_fee_3hr",     400),
+    99:  cfgNum(config, "event_setup_fee_halfday", 600),
+    100: cfgNum(config, "event_setup_fee_fullday", 1000),
+  };
+  setupFee = setupPrices[sh] ?? setupPrices[2];
+  setupLabel = luxury
+    ? (sh === 99 ? "Half-day complex setup" : sh === 100 ? "Full-day complex setup" : `${sh}hr complex setup`)
+    : (sh === 99 ? "Half-day setup" : sh === 100 ? "Full-day setup" : `${sh}hr setup`);
   return { setupFee, setupLabel };
 }
 
-/** Per-leg delivery + return pricing (no setup, no addons) */
-function computeEventLegCore(
-  eventItems: QuoteInput["event_items"],
-  fromAccess: string | undefined,
-  toAccess: string | undefined,
-  distInfo: { distance_km: number; drive_time_min: number } | null,
-  config: Map<string, string>,
+/** Per event leg: crew-hour pricing (not per-mover), truck + parking + access + long carry */
+async function computeEventLegPrice(
+  sb: SupabaseAdmin,
+  input: {
+    eventItems: QuoteInput["event_items"];
+    fromAccess?: string;
+    toAccess?: string;
+    distInfo: { distance_km: number; drive_time_min: number } | null;
+    config: Map<string, string>;
+    isLuxury: boolean;
+    truckType: TruckKey;
+    fromParking: string;
+    toParking: string;
+    fromLongCarry: boolean;
+    toLongCarry: boolean;
+    returnDiscount: number;
+    skipTruckSurcharge?: boolean;
+  },
 ) {
   let eventScore = 0;
-  for (const item of eventItems ?? []) {
+  for (const item of input.eventItems ?? []) {
     const w = EVENT_WEIGHT_MAP[item.weight_category] ?? 2.0;
     eventScore += w * (item.quantity || 1);
   }
 
-  const distBaseKm = cfgNum(config, "dist_baseline_km", cfgNum(config, "distance_base_km", 30));
-  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
-  const distKm = distInfo?.distance_km ?? 0;
-  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
-
+  const distKm = input.distInfo?.distance_km ?? 0;
   const labour = eventScore > 0
-    ? estimateLabourFromScore(eventScore, distKm, fromAccess, toAccess, "2br", {
-        driveTimeMinutes: distInfo?.drive_time_min,
+    ? estimateLabourFromScore(eventScore, distKm, input.fromAccess, input.toAccess, "2br", {
+        driveTimeMinutes: input.distInfo?.drive_time_min,
       })
-    : { crewSize: 2, estimatedHours: 3, hoursRange: "2.5–4 hours", truckSize: "20ft" };
+    : { crewSize: 2, estimatedHours: 3, hoursRange: "2.5–4 hours", truckSize: "sprinter" };
 
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
-  const rounding = cfgNum(config, "rounding_nearest", 50);
-  let deliveryCharge = Math.round(labour.crewSize * labour.estimatedHours * labourRate * 1.4);
-  deliveryCharge += distanceSurcharge;
+  const baseHourly = input.isLuxury
+    ? cfgNum(input.config, "event_luxury_hourly_rate", 175)
+    : cfgNum(input.config, "event_base_hourly_rate", 150);
+  const minHours = input.isLuxury
+    ? cfgNum(input.config, "event_min_hours_luxury", 4)
+    : cfgNum(input.config, "event_min_hours_standard", 3);
+  const hours = Math.max(labour.estimatedHours || minHours, minHours);
+
+  const parkingRates = parseJsonConfig<Record<string, number>>(input.config, "parking_surcharges", {
+    dedicated: 0,
+    street: 0,
+    no_dedicated: 75,
+  });
+  const parkingSur =
+    (parkingRates[input.fromParking] ?? 0) + (parkingRates[input.toParking] ?? 0);
+  const lcFee = cfgNum(input.config, "long_carry_surcharge", 75);
+  const longSur = (input.fromLongCarry ? lcFee : 0) + (input.toLongCarry ? lcFee : 0);
+
+  const truckSur = input.skipTruckSurcharge ? 0 : truckSurchargeAmount(input.config, input.truckType);
+  const [oa, va] = await Promise.all([
+    getAccessSurcharge(sb, input.fromAccess),
+    getAccessSurcharge(sb, input.toAccess),
+  ]);
+
+  const rounding = cfgNum(input.config, "rounding_nearest", 50);
+  let deliveryCharge = Math.round(baseHourly * hours) + truckSur + parkingSur + oa + va + longSur;
   deliveryCharge = roundTo(deliveryCharge, rounding);
   if (deliveryCharge < 350) deliveryCharge = 350;
 
-  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
+  const returnDiscount = Math.min(1, Math.max(0.25, input.returnDiscount));
   const returnCharge = roundTo(Math.round(deliveryCharge * returnDiscount), rounding);
-  const returnHours = Math.ceil(labour.estimatedHours * returnDiscount);
+  const returnHours = Math.ceil(hours * returnDiscount);
 
   return {
     deliveryCharge,
     returnCharge,
     returnHours,
-    distanceSurcharge,
     returnDiscount,
     labour,
+    truckSurcharge: truckSur,
+    parkingSurcharge: parkingSur,
+    longCarrySurcharge: longSur,
+    billableHours: hours,
+    crewHourlyRate: baseHourly,
   };
 }
 
@@ -1568,30 +1831,50 @@ async function calcEvent(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const core = computeEventLegCore(
-    input.event_items,
-    input.from_access,
-    input.to_access,
-    distInfo,
+  const isLuxury = !!input.event_is_luxury;
+  const onSite = !!input.event_same_location_onsite;
+  const distEff = onSite ? { distance_km: 0, drive_time_min: 0 } : distInfo;
+  const truckType = onSite
+    ? ("none" as TruckKey)
+    : normalizeTruckType(input.event_truck_type ?? input.truck_type ?? "sprinter");
+  const fromParking = input.from_parking ?? "dedicated";
+  const toParking = input.to_parking ?? "dedicated";
+
+  const rd = resolveEventLegReturnDiscount(
+    {
+      event_return_rate_preset: input.event_return_rate_preset,
+      event_return_rate_custom: input.event_return_rate_custom,
+      event_same_location_onsite: onSite,
+    },
     config,
   );
-  const { labour, deliveryCharge, returnCharge, returnHours, distanceSurcharge, returnDiscount } = core;
+
+  const core = await computeEventLegPrice(sb, {
+    eventItems: input.event_items,
+    fromAccess: input.from_access,
+    toAccess: input.to_access,
+    distInfo: distEff,
+    config,
+    isLuxury,
+    truckType,
+    fromParking,
+    toParking,
+    fromLongCarry: !!input.from_long_carry,
+    toLongCarry: !!input.to_long_carry,
+    returnDiscount: rd,
+    skipTruckSurcharge: onSite,
+  });
 
   const { setupFee, setupLabel } = eventSetupFeeAndLabel(input, config);
 
-  let price = deliveryCharge + returnCharge + setupFee + addonResult.total;
+  let price = core.deliveryCharge + core.returnCharge + setupFee + addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const deposit = Math.max(150, Math.round(total * 0.25));
+  const minDeposit = cfgNum(config, "event_min_deposit", 300);
+  const deposit = Math.max(minDeposit, Math.ceil(price * 0.25));
 
-  const eventIncludes = [
-    `Delivery (${input.move_date ?? "TBD"}): ${labour.crewSize} movers, ${labour.estimatedHours}hr`,
-    ...(input.event_setup_required ? [`Setup service: ${setupLabel}`] : []),
-    `Return (${input.event_return_date ?? "TBD"}): same crew, ~${returnHours}hr`,
-    "Round-trip — same crew knows the layout",
-    "All items inventoried and protected",
-  ];
+  const eventIncludes = buildEventIncludesList(input);
 
   return {
     custom_price: {
@@ -1606,22 +1889,38 @@ async function calcEvent(
       event_name: input.event_name || null,
       delivery_date: input.move_date || null,
       return_date: input.event_return_date || null,
-      delivery_charge: deliveryCharge,
-      return_charge: returnCharge,
-      return_discount: returnDiscount,
+      delivery_charge: core.deliveryCharge,
+      return_charge: core.returnCharge,
+      return_discount: core.returnDiscount,
       setup_fee: setupFee,
       setup_label: setupLabel || null,
-      distance_surcharge: distanceSurcharge,
-      event_crew: labour.crewSize,
-      event_hours: labour.estimatedHours,
+      event_crew: core.labour.crewSize,
+      event_hours: core.billableHours,
       same_day: input.event_same_day ?? false,
+      event_is_luxury: isLuxury,
+      event_truck_type: truckType,
+      event_same_location_onsite: onSite,
+      event_type_label: onSite ? "On-site Event" : "Venue delivery",
+      truck_surcharge: core.truckSurcharge,
+      truck_breakdown_line: truckBreakdownLabel(truckType, core.truckSurcharge),
+      event_parking_surcharge: core.parkingSurcharge,
+      event_long_carry_surcharge: core.longCarrySurcharge,
+      distance_km: distEff?.distance_km ?? 0,
+      event_distance_summary:
+        onSite ? "On-site (no transit)" : distEff?.distance_km != null ? `${Math.round(distEff.distance_km)} km` : null,
+      crew_hourly_rate: core.crewHourlyRate,
     },
-    labour,
+    labour: {
+      ...core.labour,
+      estimatedHours: core.billableHours,
+      truckSize: truckType,
+    },
   };
 }
 
 /** Sum multiple event legs into one quote; setup + addons applied once */
-function calcMultiEvent(
+async function calcMultiEvent(
+  sb: SupabaseAdmin,
   input: QuoteInput,
   config: Map<string, string>,
   legDistances: ({ distance_km: number; drive_time_min: number } | null)[],
@@ -1632,47 +1931,73 @@ function calcMultiEvent(
   let totalReturn = 0;
   let maxCrew = 2;
   let maxHours = 3;
-  let maxTruck = "20ft";
   const legBreakdown: Record<string, unknown>[] = [];
-  const includeLines: string[] = [];
+  const distLabels: { label: string; km: number }[] = [];
 
   const sharedItems = input.event_items;
+  const isLuxury = !!input.event_is_luxury;
+  const defaultTruck = normalizeTruckType(input.event_truck_type ?? input.truck_type ?? "sprinter");
+  let hasOnSiteLeg = false;
 
   for (let i = 0; i < legs.length; i++) {
     const leg = legs[i];
-    const dist = legDistances[i] ?? null;
+    const onSite = !!leg.event_same_location_onsite;
+    if (onSite) hasOnSiteLeg = true;
+    const dist = onSite ? { distance_km: 0, drive_time_min: 0 } : (legDistances[i] ?? null);
     const itemsForLeg = leg.event_items && leg.event_items.length > 0 ? leg.event_items : sharedItems;
-    const core = computeEventLegCore(
-      itemsForLeg,
-      leg.from_access ?? input.from_access,
-      leg.to_access ?? input.to_access,
-      dist,
+    const fromParking = leg.from_parking ?? input.from_parking ?? "dedicated";
+    const toParking = leg.to_parking ?? input.to_parking ?? "dedicated";
+    const fromLc = leg.from_long_carry ?? input.from_long_carry ?? false;
+    const toLc = leg.to_long_carry ?? input.to_long_carry ?? false;
+    const rd = resolveEventLegReturnDiscount(leg, config);
+    const truckLeg = onSite ? ("none" as TruckKey) : normalizeTruckType(leg.event_leg_truck_type ?? input.event_truck_type ?? input.truck_type ?? "sprinter");
+
+    const core = await computeEventLegPrice(sb, {
+      eventItems: itemsForLeg,
+      fromAccess: leg.from_access ?? input.from_access,
+      toAccess: leg.to_access ?? input.to_access,
+      distInfo: dist,
       config,
-    );
+      isLuxury,
+      truckType: truckLeg,
+      fromParking,
+      toParking,
+      fromLongCarry: !!fromLc,
+      toLongCarry: !!toLc,
+      returnDiscount: rd,
+      skipTruckSurcharge: onSite,
+    });
+
     totalDelivery += core.deliveryCharge;
     totalReturn += core.returnCharge;
     if (core.labour.crewSize > maxCrew) maxCrew = core.labour.crewSize;
-    if (core.labour.estimatedHours > maxHours) maxHours = core.labour.estimatedHours;
-    maxTruck = core.labour.truckSize || maxTruck;
+    if (core.billableHours > maxHours) maxHours = core.billableHours;
+
     const retDate = leg.event_same_day ? leg.move_date : (leg.event_return_date || leg.move_date);
     const legLabel = leg.label?.trim() || `Event ${i + 1}`;
+    const km = dist?.distance_km ?? 0;
+    distLabels.push({ label: legLabel, km });
+
     legBreakdown.push({
       label: legLabel,
       from_address: leg.from_address,
-      to_address: leg.to_address,
+      to_address: onSite ? leg.from_address : leg.to_address,
       delivery_date: leg.move_date,
       return_date: retDate,
       delivery_charge: core.deliveryCharge,
       return_charge: core.returnCharge,
+      return_discount: core.returnDiscount,
       event_crew: core.labour.crewSize,
-      event_hours: core.labour.estimatedHours,
+      event_hours: core.billableHours,
       return_hours: core.returnHours,
       same_day: !!leg.event_same_day,
-      distance_km: dist?.distance_km ?? 0,
+      distance_km: km,
+      from_parking: fromParking,
+      to_parking: toParking,
+      is_on_site: onSite,
+      event_type_label: onSite ? "On-site Event" : "Venue delivery",
+      truck_type: truckLeg,
     });
-    includeLines.push(
-      `${legLabel}: Delivery ${leg.move_date} (${core.labour.crewSize} movers, ${core.labour.estimatedHours}hr) — Return ${retDate}`,
-    );
   }
 
   const { setupFee, setupLabel } = eventSetupFeeAndLabel(input, config);
@@ -1680,18 +2005,19 @@ function calcMultiEvent(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const deposit = Math.max(150, Math.round(total * 0.25));
+  const minDeposit = cfgNum(config, "event_min_deposit", 300);
+  const deposit = Math.max(minDeposit, Math.ceil(price * 0.25));
 
-  const eventIncludes = [
-    ...includeLines,
-    ...(input.event_setup_required ? [`Setup service (program): ${setupLabel}`] : []),
-    "Multi-event bundle — one coordinated quote",
-    "All items inventoried and protected",
-  ];
+  const eventDistanceSummary = distLabels
+    .map((d, idx) =>
+      legs[idx]?.event_same_location_onsite ? `${d.label}: On-site` : `${d.label}: ${Math.round(d.km)} km`,
+    )
+    .join(" · ");
+
+  const eventIncludes = buildEventIncludesList(input);
 
   const first = legs[0];
   const firstReturn = first.event_same_day ? first.move_date : (first.event_return_date || first.move_date);
-  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
 
   return {
     custom_price: {
@@ -1705,23 +2031,27 @@ function calcMultiEvent(
       event_mode: "multi",
       event_name: input.event_name || null,
       event_legs: legBreakdown,
+      event_leg_distances: distLabels,
+      event_distance_summary: eventDistanceSummary,
+      event_has_on_site_leg: hasOnSiteLeg,
       delivery_date: first.move_date,
       return_date: firstReturn,
       delivery_charge: totalDelivery,
       return_charge: totalReturn,
-      return_discount: returnDiscount,
       setup_fee: setupFee,
       setup_label: setupLabel || null,
       event_crew: maxCrew,
       event_hours: maxHours,
       same_day: false,
-      includes: eventIncludes,
+      event_is_luxury: isLuxury,
+      event_truck_type: defaultTruck,
+      truck_breakdown_line: truckBreakdownLabel(defaultTruck, truckSurchargeAmount(config, defaultTruck)),
     },
     labour: {
       crewSize: maxCrew,
       estimatedHours: maxHours,
       hoursRange: `${maxHours}hr`,
-      truckSize: maxTruck,
+      truckSize: defaultTruck,
     },
   };
 }
@@ -1742,17 +2072,23 @@ async function calcLabourOnly(
   const truckFee = input.labour_truck_required ? cfgNum(config, "labour_only_truck_fee", 150) : 0;
   const accessSurcharge = await getAccessSurcharge(sb, input.from_access);
   const rounding = cfgNum(config, "rounding_nearest", 50);
+  const plcLab = parkingLongCarryLineTotal(config, input, "origin_only");
 
   const basePrice = crewSize * hours * labourRate;
-  let visit1Price = roundTo(basePrice + truckFee + accessSurcharge, rounding);
+  let visit1Price = roundTo(basePrice + truckFee + accessSurcharge + plcLab.total, rounding);
 
   const visit2Discount = cfgNum(config, "labour_only_visit2_discount", 0.85);
   let visit2Price = 0;
   if ((input.labour_visits ?? 1) >= 2) {
-    visit2Price = roundTo(Math.round(basePrice * visit2Discount) + truckFee + accessSurcharge, rounding);
+    visit2Price = roundTo(Math.round(basePrice * visit2Discount) + truckFee + accessSurcharge + plcLab.total, rounding);
   }
 
-  let price = visit1Price + visit2Price + addonResult.total;
+  const storageWeekly = cfgNum(config, "storage_weekly_rate", 75);
+  const storageWeeks = Math.max(1, Math.round(input.labour_storage_weeks ?? 1));
+  const labourStorageFee =
+    input.labour_storage_needed ? storageWeeks * storageWeekly : 0;
+
+  let price = visit1Price + visit2Price + labourStorageFee + addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
@@ -1763,6 +2099,11 @@ async function calcLabourOnly(
     `Labour rate: $${labourRate}/mover/hr`,
     input.labour_truck_required ? `Truck included (+$${truckFee})` : "No truck required (crew arrives in van)",
     ...(accessSurcharge > 0 ? [`Access surcharge: $${accessSurcharge}`] : []),
+    ...(input.labour_storage_needed
+      ? [
+          `Storage between visits: ~${storageWeeks} week${storageWeeks !== 1 ? "s" : ""} @ $${storageWeekly}/wk (estimate)`,
+        ]
+      : []),
     ...((input.labour_visits ?? 1) >= 2
       ? [`Visit 1 (${input.move_date ?? "TBD"}): $${visit1Price}`, `Visit 2 (${input.labour_second_visit_date ?? "TBD"}): $${visit2Price} (return visit discount)`]
       : []),
@@ -1788,6 +2129,11 @@ async function calcLabourOnly(
       visit2_price: visit2Price,
       visit2_date: input.labour_second_visit_date || null,
       labour_description: input.labour_description || null,
+      parking_long_carry_total: plcLab.total,
+      labour_storage_needed: !!input.labour_storage_needed,
+      labour_storage_weeks: input.labour_storage_needed ? storageWeeks : null,
+      storage_weekly_rate: storageWeekly,
+      labour_storage_fee: labourStorageFee,
     },
     labour: {
       crewSize,
@@ -1841,10 +2187,20 @@ export async function POST(req: NextRequest) {
     Array.isArray(input.event_legs) &&
     input.event_legs.length >= 2;
 
+  if (isEventMulti && input.event_legs) {
+    input = {
+      ...input,
+      event_legs: input.event_legs.map((l) =>
+        l.event_same_location_onsite ? { ...l, to_address: l.from_address } : l,
+      ),
+    };
+  }
+
   if (isEventMulti) {
     for (let i = 0; i < input.event_legs!.length; i++) {
       const leg = input.event_legs![i];
-      if (!leg.from_address?.trim() || !leg.to_address?.trim() || !leg.move_date) {
+      const toReq = leg.event_same_location_onsite ? leg.from_address?.trim() : leg.to_address?.trim();
+      if (!leg.from_address?.trim() || !toReq || !leg.move_date) {
         return NextResponse.json(
           { error: `Event ${i + 1}: origin, venue, and delivery date are required` },
           { status: 400 },
@@ -1870,6 +2226,10 @@ export async function POST(req: NextRequest) {
     };
   }
 
+  if (input.service_type === "event" && !isEventMulti && input.event_same_location_onsite) {
+    input = { ...input, to_address: input.from_address };
+  }
+
   const sb = createAdminClient();
   const config = await loadConfig(sb);
 
@@ -1877,7 +2237,11 @@ export async function POST(req: NextRequest) {
   let legDistances: ({ distance_km: number; drive_time_min: number } | null)[] | null = null;
   if (isEventMulti) {
     legDistances = await Promise.all(
-      input.event_legs!.map((leg) => getDistance(leg.from_address, leg.to_address)),
+      input.event_legs!.map((leg) =>
+        leg.event_same_location_onsite
+          ? Promise.resolve({ distance_km: 0, drive_time_min: 0 })
+          : getDistance(leg.from_address, leg.to_address?.trim() || leg.from_address),
+      ),
     );
   }
 
@@ -1964,6 +2328,7 @@ export async function POST(req: NextRequest) {
         specialtyItems: input.specialty_items,
         dropoffToBaseKm: returnInfo?.distance_km,
         returnDriveMinutes: returnInfo?.drive_time_min,
+        whiteGloveHoursMultiplier: input.service_type === "white_glove",
       },
     );
   } else if (isResidential) {
@@ -2064,7 +2429,7 @@ export async function POST(req: NextRequest) {
     }
     case "event": {
       if (isEventMulti && legDistances && legDistances.length >= 2) {
-        const res = calcMultiEvent(input, config, legDistances, addonResult);
+        const res = await calcMultiEvent(sb, input, config, legDistances, addonResult);
         custom_price = res.custom_price;
         factors = res.factors;
         labour = res.labour;
@@ -2087,13 +2452,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
   }
 
+  if (
+    factors &&
+    typeof factors.truck_surcharge === "number" &&
+    factors.truck_recommended != null &&
+    factors.truck_breakdown_line == null
+  ) {
+    const tk = normalizeTruckType(String(factors.truck_recommended));
+    factors = { ...factors, truck_breakdown_line: truckBreakdownLabel(tk, factors.truck_surcharge) };
+  }
+
   // For non-residential services, apply crating cost to custom_price
   if (custom_price && globalCratingTotal > 0) {
+    const taxR = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+    const newPrice = custom_price.price + globalCratingTotal;
+    const newTax = Math.round(newPrice * taxR);
+    const minEvDep = cfgNum(config, "event_min_deposit", 300);
+    const newDeposit =
+      svcType === "event"
+        ? Math.max(minEvDep, Math.ceil(newPrice * 0.25))
+        : custom_price.deposit;
     custom_price = {
       ...custom_price,
-      price: custom_price.price + globalCratingTotal,
-      total: custom_price.total + globalCratingTotal + Math.round(globalCratingTotal * cfgNum(config, "tax_rate", TAX_RATE_FALLBACK)),
-      tax: custom_price.tax + Math.round(globalCratingTotal * cfgNum(config, "tax_rate", TAX_RATE_FALLBACK)),
+      price: newPrice,
+      tax: newTax,
+      total: newPrice + newTax,
+      deposit: newDeposit,
     };
     factors = { ...factors, crating_total: globalCratingTotal, crating_pieces_count: input.crating_pieces?.length ?? 0 };
   }
@@ -2258,6 +2642,10 @@ export async function POST(req: NextRequest) {
       from_address: input.from_address,
       from_access: input.from_access || null,
       from_postal: neighbourhood.postalPrefix || null,
+      from_parking: input.from_parking ?? "dedicated",
+      to_parking: input.to_parking ?? "dedicated",
+      from_long_carry: input.from_long_carry ?? false,
+      to_long_carry: input.to_long_carry ?? false,
       to_address: input.to_address,
       to_access: input.to_access || null,
       move_date: input.move_date,

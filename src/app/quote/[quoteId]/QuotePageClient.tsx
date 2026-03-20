@@ -33,6 +33,7 @@ import {
   CurrencyDollar as DollarSign,
   TShirt as Shirt,
   ClipboardText as ClipboardCheck,
+  Package,
   CheckCircle,
   type Icon as LucideIcon,
 } from "@phosphor-icons/react";
@@ -158,11 +159,11 @@ function FeatureIcon({ iconName, className, style }: { iconName: string; classNa
   const ICON_MAP: Record<string, LucideIcon> = {
     Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Toolbox,
     Armchair, Suitcase, UserCircle, FrameCorners, Compass,
-    Home, MapPin, DollarSign, Shirt, ClipboardCheck, CheckCircle, Trash2,
+    Home, MapPin, DollarSign, Shirt, ClipboardCheck, Package, CheckCircle, Trash2,
     Ruler, Radar, Camera, Hand, Lock,
   };
   const Icon = ICON_MAP[iconName] ?? CheckCircle;
-  return <Icon className={className} style={style} />;
+  return <Icon className={className} style={style} weight="duotone" />;
 }
 
 export default function QuotePageClient({
@@ -173,6 +174,7 @@ export default function QuotePageClient({
   valuationTiers = [],
   valuationUpgrades = [],
   branding,
+  eventFeatures = null,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -181,6 +183,7 @@ export default function QuotePageClient({
   valuationTiers?: ValuationTier[];
   valuationUpgrades?: ValuationUpgrade[];
   branding: { companyLegal: string; brand: string };
+  eventFeatures?: TierFeature[] | null;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
@@ -203,6 +206,8 @@ export default function QuotePageClient({
   const [contractSigned, setContractSigned] = useState(false);
   const [booked, setBooked] = useState(quote.status === "accepted");
   const [paymentMoveId, setPaymentMoveId] = useState<string | null>(null);
+  const [invoiceConfirmLoading, setInvoiceConfirmLoading] = useState(false);
+  const [invoiceConfirmError, setInvoiceConfirmError] = useState<string | null>(null);
   const [valuationUpgradeSelected, setValuationUpgradeSelected] = useState(!!quote.valuation_upgraded);
   const [declarations, setDeclarations] = useState<HighValueDeclaration[]>([]);
 
@@ -468,8 +473,12 @@ export default function QuotePageClient({
     if (isResidential && selectedTier) {
       return calculateTieredDeposit(selectedTier, totalBeforeTax);
     }
+    const stored = quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
+    if (stored != null && stored > 0) {
+      return stored;
+    }
     return calculateDeposit(quote.service_type, totalBeforeTax);
-  }, [isResidential, selectedTier, quote.service_type, totalBeforeTax]);
+  }, [isResidential, selectedTier, quote.service_type, quote.deposit_amount, totalBeforeTax]);
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -497,8 +506,26 @@ export default function QuotePageClient({
     return list;
   }, [selectedAddons, allAddons, basePrice]);
 
-  const contractData = useMemo(
-    (): ContractQuoteData => ({
+  const contractData = useMemo((): ContractQuoteData => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    const isEvMulti =
+      quote.service_type === "event" && fa?.event_mode === "multi" && Array.isArray(fa.event_legs);
+    const fmtLeg = (d: string | null | undefined) =>
+      !d
+        ? "—"
+        : new Date(d + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+    const eventLegs =
+      isEvMulti && fa
+        ? (fa.event_legs as Array<Record<string, unknown>>).map((leg, idx) => ({
+            label: String(leg.label ?? `Event ${idx + 1}`),
+            fromAddress: abbreviateAddressRegions(String(leg.from_address ?? quote.from_address ?? "")),
+            toAddress: abbreviateAddressRegions(String(leg.to_address ?? "")),
+            deliveryDate: fmtLeg(leg.delivery_date as string),
+            returnDate: fmtLeg(leg.return_date as string),
+          }))
+        : undefined;
+
+    return {
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
       packageLabel,
@@ -518,29 +545,31 @@ export default function QuotePageClient({
       tax,
       grandTotal,
       deposit,
-    }),
-    [
-      quote.quote_id,
-      quote.service_type,
-      quoteForDisplay.from_address,
-      quoteForDisplay.to_address,
-      quote.from_access,
-      quote.to_access,
-      quote.move_date,
-      quote.preferred_time,
-      quote.move_size,
-      quote.distance_km,
-      quote.drive_time_min,
-      packageLabel,
-      basePrice,
-      contractAddonsList,
-      addonTotal,
-      totalBeforeTax,
-      tax,
-      grandTotal,
-      deposit,
-    ],
-  );
+      eventLegs,
+    };
+  }, [
+    quote.quote_id,
+    quote.service_type,
+    quote.factors_applied,
+    quote.from_address,
+    quoteForDisplay.from_address,
+    quoteForDisplay.to_address,
+    quote.from_access,
+    quote.to_access,
+    quote.move_date,
+    quote.preferred_time,
+    quote.move_size,
+    quote.distance_km,
+    quote.drive_time_min,
+    packageLabel,
+    basePrice,
+    contractAddonsList,
+    addonTotal,
+    totalBeforeTax,
+    tax,
+    grandTotal,
+    deposit,
+  ]);
 
   /* ── Handlers ── */
   const scrollToSection = useCallback((ref: React.RefObject<HTMLElement | null>) => {
@@ -641,6 +670,46 @@ export default function QuotePageClient({
   }, [scrollToContract]);
 
   const isConfirmed = confirmed && selectedTier != null;
+
+  const factorsApplied = useMemo(
+    () => (quote.factors_applied ?? null) as Record<string, unknown> | null,
+    [quote.factors_applied],
+  );
+
+  const b2bInvoiceBooking = useMemo(() => {
+    const st = quote.service_type;
+    if (st !== "b2b_oneoff" && st !== "b2b_delivery") return false;
+    return factorsApplied?.b2b_payment_method === "invoice";
+  }, [quote.service_type, factorsApplied]);
+
+  const handleB2bInvoiceConfirm = useCallback(async () => {
+    setInvoiceConfirmError(null);
+    setInvoiceConfirmLoading(true);
+    try {
+      const res = await fetch("/api/quotes/accept-b2b-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quoteId: quote.quote_id,
+          clientName: signedName,
+          clientEmail: contactEmail ?? "",
+          selectedTier: selectedTier ?? "custom",
+          selectedAddons: Array.from(selectedAddons.values()),
+        }),
+      });
+      const data = (await res.json()) as { error?: string; move_id?: string };
+      if (!res.ok) {
+        setInvoiceConfirmError(data.error ?? "Could not confirm booking");
+        return;
+      }
+      if (data.move_id) setPaymentMoveId(data.move_id);
+      setBooked(true);
+    } catch {
+      setInvoiceConfirmError("Something went wrong. Please try again.");
+    } finally {
+      setInvoiceConfirmLoading(false);
+    }
+  }, [quote.quote_id, signedName, contactEmail, selectedTier, selectedAddons]);
 
   /* ── Hero config ── */
   const hero = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
@@ -882,6 +951,11 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              variant="event"
+              eventFeatures={eventFeatures}
+              showEventSetupFeature={
+                Number((quote.factors_applied as Record<string, unknown> | null)?.setup_fee) > 0
+              }
             />
             <EventLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -1182,30 +1256,64 @@ export default function QuotePageClient({
                   className="font-heading text-[14px] font-bold tracking-wider uppercase"
                   style={{ color: FOREST }}
                 >
-                  Payment
+                  {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
                 </h2>
                 <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
-                  Complete your booking with a secure deposit payment
+                  {b2bInvoiceBooking
+                    ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
+                    : "Complete your booking with a secure deposit payment"}
                 </p>
               </div>
               <div className="p-5 md:p-6">
-                <SquarePaymentForm
-                  amount={deposit}
-                  quoteId={quote.quote_id}
-                  clientName={signedName}
-                  clientEmail={contactEmail ?? ""}
-                  selectedTier={selectedTier}
-                  selectedAddons={Array.from(selectedAddons.values())}
-                  disabled={false}
-                  submitLabel={`Pay ${fmtPrice(deposit)} & Book My Move`}
-                  onSuccess={(result) => {
-                    setPaymentMoveId(result.move_id);
-                    setBooked(true);
-                  }}
-                  onError={(err) => {
-                    console.error("Payment error:", err);
-                  }}
-                />
+                {b2bInvoiceBooking ? (
+                  <div className="space-y-4">
+                    <div
+                      className="rounded-xl border p-4 text-[12px] leading-relaxed"
+                      style={{ borderColor: `${FOREST}25`, backgroundColor: `${FOREST}06`, color: `${FOREST}90` }}
+                    >
+                      <p className="font-semibold mb-2" style={{ color: FOREST }}>
+                        Payment terms
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>Net 30 — balance due within 30 days of invoice date.</li>
+                        <li>Your delivery is confirmed; our coordinator may reach out with invoice details.</li>
+                        <li>Taxes and quoted add-ons are included in your quote total unless noted otherwise.</li>
+                      </ul>
+                    </div>
+                    {invoiceConfirmError ? (
+                      <p className="text-[12px] font-medium" style={{ color: WINE }}>
+                        {invoiceConfirmError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={invoiceConfirmLoading || !signedName.trim() || !(contactEmail ?? "").trim()}
+                      onClick={() => void handleB2bInvoiceConfirm()}
+                      className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-opacity disabled:opacity-50"
+                      style={{ backgroundColor: FOREST }}
+                    >
+                      {invoiceConfirmLoading ? "Confirming…" : "Confirm booking (invoice)"}
+                    </button>
+                  </div>
+                ) : (
+                  <SquarePaymentForm
+                    amount={deposit}
+                    quoteId={quote.quote_id}
+                    clientName={signedName}
+                    clientEmail={contactEmail ?? ""}
+                    selectedTier={selectedTier}
+                    selectedAddons={Array.from(selectedAddons.values())}
+                    disabled={false}
+                    submitLabel={`Pay ${fmtPrice(deposit)} & Book My Move`}
+                    onSuccess={(result) => {
+                      setPaymentMoveId(result.move_id);
+                      setBooked(true);
+                    }}
+                    onError={(err) => {
+                      console.error("Payment error:", err);
+                    }}
+                  />
+                )}
               </div>
             </div>
           </section>
@@ -1231,17 +1339,26 @@ export default function QuotePageClient({
                 className="text-[14px] max-w-sm mx-auto leading-relaxed"
                 style={{ color: `${FOREST}80` }}
               >
-                Your{" "}
-                {quote.service_type === "office_move"
-                  ? "relocation"
-                  : quote.service_type === "b2b_oneoff" ||
-                      quote.service_type === "single_item" ||
-                      quote.service_type === "white_glove"
-                    ? "delivery"
-                    : "move"}{" "}
-                is booked. We&apos;ll send a confirmation email with all the details. Our team will
-                reach out closer to your{" "}
-                {quote.service_type === "office_move" ? "relocation" : "move"} date.
+                {b2bInvoiceBooking ? (
+                  <>
+                    Your B2B delivery is confirmed on invoice terms (Net 30). We&apos;ll follow up with
+                    invoice and scheduling details by email.
+                  </>
+                ) : (
+                  <>
+                    Your{" "}
+                    {quote.service_type === "office_move"
+                      ? "relocation"
+                      : quote.service_type === "b2b_oneoff" ||
+                          quote.service_type === "single_item" ||
+                          quote.service_type === "white_glove"
+                        ? "delivery"
+                        : "move"}{" "}
+                    is booked. We&apos;ll send a confirmation email with all the details. Our team will
+                    reach out closer to your{" "}
+                    {quote.service_type === "office_move" ? "relocation" : "move"} date.
+                  </>
+                )}
               </p>
               <div
                 className="mt-6 inline-flex items-center gap-3 px-5 py-2.5 rounded-full"
@@ -1257,10 +1374,12 @@ export default function QuotePageClient({
                   {fmtDate(quote.move_date)}
                 </span>
               </div>
-              {paymentMoveId && (
+              {(paymentMoveId || b2bInvoiceBooking) && (
                 <p className="text-[12px] mt-4" style={{ color: `${FOREST}60` }}>
-                  A confirmation email is on its way. You can track your{" "}
-                  {quote.service_type === "office_move" ? "relocation" : "move"} status anytime.
+                  A confirmation email is on its way.
+                  {paymentMoveId
+                    ? ` You can track your ${quote.service_type === "office_move" ? "relocation" : "move"} status anytime.`
+                    : null}
                 </p>
               )}
             </div>
@@ -1297,8 +1416,23 @@ const InclusionsShowcase = React.forwardRef<
     truckPrimary: string | null;
     truckSecondary: string | null;
     crewSize: number | null;
+    variant?: "residential" | "event";
+    eventFeatures?: TierFeature[] | null;
+    showEventSetupFeature?: boolean;
   }
->(function InclusionsShowcase({ selectedTier, isResidential, truckPrimary, truckSecondary, crewSize }, ref) {
+>(function InclusionsShowcase(
+  {
+    selectedTier,
+    isResidential,
+    truckPrimary,
+    truckSecondary,
+    crewSize,
+    variant = "residential",
+    eventFeatures = null,
+    showEventSetupFeature = false,
+  },
+  ref,
+) {
   const INITIAL_VISIBLE = 6;
   const [expanded, setExpanded] = React.useState(false);
 
@@ -1314,21 +1448,31 @@ const InclusionsShowcase = React.forwardRef<
     ? `${crewSize} licensed, insured, background-checked movers`
     : "Licensed, insured, background-checked movers";
 
-  const baseFeatures = TIER_FEATURES[tier] ?? TIER_FEATURES.curated;
+  const baseFeatures =
+    variant === "event" && eventFeatures && eventFeatures.length > 0
+      ? eventFeatures.filter(
+          (feat) => feat.title !== "On-site setup and arrangement" || showEventSetupFeature,
+        )
+      : (TIER_FEATURES[tier] ?? TIER_FEATURES.curated);
 
-  // Hydrate dynamic truck & crew entries (always index 0 and 1), keep rest as-is
-  const hydratedFeatures = baseFeatures.map((f, i) => {
-    if (i === 0) return { ...f, title: truckLabel };
-    if (i === 1) return {
-      ...f,
-      title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
-      desc: crewDesc,
-    };
-    return f;
-  });
+  // Hydrate dynamic truck & crew entries (residential / generic only)
+  const hydratedFeatures =
+    variant === "event"
+      ? baseFeatures.map((f) => ({ ...f }))
+      : baseFeatures.map((f, i) => {
+          if (i === 0) return { ...f, title: truckLabel };
+          if (i === 1) {
+            return {
+              ...f,
+              title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
+              desc: crewDesc,
+            };
+          }
+          return f;
+        });
 
-  // Universal features always appear at the bottom of every tier's expanded section
-  const allItems = [...hydratedFeatures, ...UNIVERSAL_FEATURES];
+  const universalTail = variant === "event" ? [] : UNIVERSAL_FEATURES;
+  const allItems = [...hydratedFeatures, ...universalTail];
   const hasMore = allItems.length > INITIAL_VISIBLE;
   const visibleItems = expanded || !hasMore ? allItems : allItems.slice(0, INITIAL_VISIBLE);
 
@@ -1336,10 +1480,10 @@ const InclusionsShowcase = React.forwardRef<
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
         <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
-          Your Move Includes
+          {variant === "event" ? "What's Included" : "Your Move Includes"}
         </h2>
         <p className="font-hero text-[15px] italic" style={{ color: `${FOREST}60` }}>
-          Every detail, handled.
+          {variant === "event" ? "Event logistics, fully covered." : "Every detail, handled."}
         </p>
       </div>
 
@@ -1679,6 +1823,11 @@ function ConfirmDetailsSection({
   const truckLine = quote.truck_primary
     ? (TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary)
     : "Moving truck";
+  const faConfirm = quote.factors_applied as Record<string, unknown> | null;
+  const truckPricingLine =
+    typeof faConfirm?.truck_breakdown_line === "string" && faConfirm.truck_breakdown_line.trim().length > 0
+      ? faConfirm.truck_breakdown_line.trim()
+      : null;
   const balanceDue = grandTotal - deposit;
 
   return (
@@ -1726,6 +1875,11 @@ function ConfirmDetailsSection({
             </p>
             <p><strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers</p>
             <p><strong>Truck:</strong> {truckLine}</p>
+            {truckPricingLine ? (
+              <p className="text-[12px]" style={{ color: `${FOREST}70` }}>
+                <strong>Pricing:</strong> {truckPricingLine}
+              </p>
+            ) : null}
             <p><strong>Protection:</strong> {protectionLabel}</p>
           </div>
         </div>

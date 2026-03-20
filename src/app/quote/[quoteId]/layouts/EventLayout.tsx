@@ -45,13 +45,17 @@ type EventLegFactor = {
   event_hours?: number;
   return_hours?: number;
   same_day?: boolean;
+  is_on_site?: boolean;
+  event_type_label?: string;
 };
 
 export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const deposit = calculateDeposit("event", price + tax);
+  const serverDeposit = quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
+  const deposit =
+    serverDeposit != null && serverDeposit > 0 ? serverDeposit : calculateDeposit("event", price);
 
   const eventName = (f.event_name as string) ?? null;
   const deliveryDate = (f.delivery_date as string) ?? quote.move_date ?? null;
@@ -64,18 +68,14 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
   const returnHours = (f.return_hours as number) ?? null;
   const truckSize = quote.truck_primary ?? null;
 
-  const includes = (f.includes as string[]) ?? [
-    "Professional moving crew",
-    "Inventory and protection",
-    "Venue delivery and placement",
-    "Same crew for return, no re-briefing",
-    "All equipment and materials",
-  ];
-
   const hasSetup = setupFee > 0;
   const hasReturn = returnCharge > 0;
   const isMulti = f.event_mode === "multi" && Array.isArray(f.event_legs);
   const eventLegs: EventLegFactor[] = isMulti ? ((f.event_legs as EventLegFactor[]) || []) : [];
+  const showOnSiteBadge =
+    !!f.event_same_location_onsite ||
+    !!f.event_has_on_site_leg ||
+    (isMulti && eventLegs.some((l) => l.is_on_site));
 
   return (
     <section className="mb-10 space-y-8">
@@ -89,14 +89,24 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
             <Star className="w-6 h-6" style={{ color: WINE }} />
           </div>
           <div>
-            {eventName && (
-              <span
-                className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
-              >
-                {eventName}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {eventName && (
+                <span
+                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                >
+                  {eventName}
+                </span>
+              )}
+              {showOnSiteBadge && (
+                <span
+                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full border"
+                  style={{ borderColor: `${FOREST}40`, color: FOREST }}
+                >
+                  On-site Event
+                </span>
+              )}
+            </div>
             <h2 className="font-hero text-[26px] mt-2" style={{ color: WINE }}>
               Event Logistics
             </h2>
@@ -113,8 +123,13 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
           {isMulti ? (
             eventLegs.map((leg, idx) => (
               <div key={idx} className="rounded-xl border p-3" style={{ borderColor: `${GOLD}30` }}>
-                <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2" style={{ color: WINE }}>
-                  {leg.label || `Event ${idx + 1}`}
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 flex flex-wrap items-center gap-2" style={{ color: WINE }}>
+                  <span>{leg.label || `Event ${idx + 1}`}</span>
+                  {leg.is_on_site ? (
+                    <span className="normal-case font-semibold text-[8px] px-2 py-0.5 rounded-full border" style={{ borderColor: `${FOREST}35`, color: FOREST }}>
+                      On-site Event
+                    </span>
+                  ) : null}
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -305,21 +320,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Includes */}
-      <div className="pt-5 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
-          Service Includes
-        </h2>
-        <div className="grid sm:grid-cols-2 gap-2">
-          {includes.map((item, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Investment summary */}

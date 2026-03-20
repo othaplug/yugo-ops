@@ -167,6 +167,19 @@ export interface QuoteTemplateData {
   eventDeliveryCharge?: number | null;
   eventSetupFee?: number | null;
   eventReturnCharge?: number | null;
+  /** Per-leg rows for multi-event emails */
+  eventLegBlocks?: {
+    label: string;
+    deliveryDay: string;
+    returnDay: string;
+    origin: string;
+    venue: string;
+    crewLine: string;
+    delivery: number;
+    ret: number;
+    legSubtotal: number;
+  }[];
+  eventDeposit?: number | null;
   // Labour Only
   labourCrewSize?: number | null;
   labourHours?: number | null;
@@ -603,40 +616,62 @@ function specialtyTemplate(d: QuoteTemplateData): string {
 
 /* Event */
 function eventTemplate(d: QuoteTemplateData): string {
-  const rows: [string, string][] = [];
-  if (d.eventName) rows.push(["Event", d.eventName]);
-  if (d.toAddress) rows.push(["Venue", d.toAddress]);
-  if (d.fromAddress) rows.push(["Origin", d.fromAddress]);
-  rows.push(["Delivery", dateDisplay(d.moveDate)]);
-  if (d.eventReturnDate) rows.push(["Return", dateDisplay(d.eventReturnDate)]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} movers`]);
-  if (d.truckSize) rows.push(["Truck", d.truckSize]);
+  const intro = d.eventName
+    ? `Here's your event logistics quote for <strong style="color:${TX}">${d.eventName}</strong>. We handle delivery, setup, and return &mdash; same crew every day so they know the layout.`
+    : "Here's your event logistics quote. We handle delivery, setup, and return &mdash; same crew every day so they know the layout.";
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
-  const deposit = Math.max(300, Math.round((total + tax) * 0.25));
+  const grand = total + tax;
+  const deposit =
+    d.eventDeposit != null && d.eventDeposit > 0
+      ? d.eventDeposit
+      : Math.max(300, Math.ceil(total * 0.25));
 
-  const breakdown: string[] = [];
-  if (d.eventDeliveryCharge) breakdown.push(`Delivery: ${formatCurrency(d.eventDeliveryCharge)}`);
-  if (d.eventSetupFee) breakdown.push(`Setup at venue: ${formatCurrency(d.eventSetupFee)}`);
-  if (d.eventReturnCharge) breakdown.push(`Return: ${formatCurrency(d.eventReturnCharge)}`);
-  const breakdownHtml = breakdown.length > 0
-    ? `<div style="font-size:11px;color:${TX2};line-height:1.9;margin-bottom:8px">${breakdown.join(`<br/>`)}</div>`
-    : "";
+  const legs = d.eventLegBlocks;
+  const legsHtml =
+    legs && legs.length > 0
+      ? legs
+          .map(
+            (leg) => `
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid ${CARD_BORDER};text-align:left">
+      <div style="font-size:10px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px">${leg.label}</div>
+      <div style="font-size:11px;color:${TX2};line-height:1.7;margin-bottom:6px">
+        <strong style="color:${TX}">Delivery:</strong> ${leg.deliveryDay}<br/>
+        <strong style="color:${TX}">Return:</strong> ${leg.returnDay}<br/>
+        <strong style="color:${TX}">Origin:</strong> ${leg.origin}<br/>
+        <strong style="color:${TX}">Venue:</strong> ${leg.venue}<br/>
+        <strong style="color:${TX}">Crew:</strong> ${leg.crewLine}
+      </div>
+      <div style="font-size:11px;color:${TX2};line-height:1.8">
+        Delivery: ${formatCurrency(leg.delivery)}<br/>
+        Return: ${formatCurrency(leg.ret)}<br/>
+        <strong style="color:${TX}">Subtotal:</strong> ${formatCurrency(leg.legSubtotal)}
+      </div>
+    </div>`,
+          )
+          .join("")
+      : "";
+
+  const setupLine =
+    d.eventSetupFee && d.eventSetupFee > 0
+      ? `<div style="font-size:12px;color:${TX2};margin:12px 0;text-align:left"><strong style="color:${TX}">SETUP:</strong> ${formatCurrency(d.eventSetupFee)}</div>`
+      : "";
 
   return quoteEmailLayout(`
     ${subHeading("Event Logistics Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your event logistics quote is ready. We handle delivery to venue, on-site setup, and return teardown \u2014 same crew both days so they know the layout.")}
+    ${bodyText(intro)}
     ${expiryNote(d.expiresAt)}
-    ${detailsPlain(rows)}
-    <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-      <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Event Quote</div>
-      ${breakdownHtml}
-      <div style="border-top:1px solid ${CARD_BORDER};margin:10px 0 12px"></div>
-      <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(total)}</div>
-      <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
-      <div style="font-size:11px;color:${TX3};margin-top:4px">Deposit to confirm both dates: <strong style="color:${TX}">${formatCurrency(deposit)}</strong></div>
+    <div style="text-align:left;margin-bottom:20px">
+      ${legsHtml}
+      ${setupLine}
+      <div style="border-top:1px solid ${CARD_BORDER};padding-top:14px;margin-top:8px;font-size:12px;color:${TX2};line-height:1.9">
+        <div><strong style="color:${TX}">Total:</strong> ${formatCurrency(total)}</div>
+        <div>HST (13%): ${formatCurrency(tax)}</div>
+        <div><strong style="color:${TX}">Grand Total:</strong> ${formatCurrency(grand)}</div>
+        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${GOLD_LIGHT}">${formatCurrency(deposit)}</strong></div>
+      </div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Confirm Event")}

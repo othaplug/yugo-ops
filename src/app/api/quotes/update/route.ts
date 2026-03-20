@@ -176,10 +176,13 @@ export async function POST(req: Request) {
       if (!mailResult.success) {
         console.error("[quotes/update] email failed:", mailResult.error);
       } else {
+        const nfactors = (newQuote.factors_applied ?? {}) as Record<string, unknown>;
         const smsResult = await sendQuoteLinkSms({
           phone: clientPhone,
-          quoteUrl,
           quoteId: newQuoteId,
+          firstName,
+          serviceType: newQuote.service_type,
+          eventName: (nfactors.event_name as string) ?? null,
         });
         if (!smsResult.ok) {
           console.warn("[quotes/update] quote SMS failed:", smsResult.skipped);

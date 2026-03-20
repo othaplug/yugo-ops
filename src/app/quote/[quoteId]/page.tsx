@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getLegalBranding } from "@/lib/legal-branding";
+import type { TierFeature } from "./quote-shared";
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
 
@@ -49,7 +50,8 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   }
 
   // Fetch contact, add-ons, crew count, move count, and valuation data in parallel
-  const [contactResult, addonsResult, crewCountResult, moveDateCountResult, valTiersResult, valUpgradesResult] = await Promise.all([
+  const [contactResult, addonsResult, crewCountResult, moveDateCountResult, valTiersResult, valUpgradesResult, eventFeatResult] =
+    await Promise.all([
     quote.contact_id
       ? admin.from("contacts").select("email").eq("id", quote.contact_id).single()
       : Promise.resolve({ data: null }),
@@ -68,6 +70,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       : Promise.resolve({ count: 0 }),
     admin.from("valuation_tiers").select("*").eq("active", true).order("tier_slug"),
     admin.from("valuation_upgrades").select("*").eq("active", true).eq("move_size", quote.move_size ?? "2br"),
+    admin.from("platform_config").select("value").eq("key", "event_features").maybeSingle(),
   ]);
 
   const contactEmail = contactResult?.data?.email ?? null;
@@ -82,6 +85,17 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   const valuationEnabled = await isFeatureEnabled("valuation_upgrades");
   const branding = await getLegalBranding();
 
+  let eventFeatures: TierFeature[] | null = null;
+  const rawEv = eventFeatResult?.data?.value;
+  if (typeof rawEv === "string" && rawEv.trim()) {
+    try {
+      const parsed = JSON.parse(rawEv) as unknown;
+      if (Array.isArray(parsed)) eventFeatures = parsed as TierFeature[];
+    } catch {
+      eventFeatures = null;
+    }
+  }
+
   return (
     <QuotePageClient
       quote={quote}
@@ -91,6 +105,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       valuationTiers={valuationEnabled ? (valTiersResult?.data ?? []) : []}
       valuationUpgrades={valuationEnabled ? (valUpgradesResult?.data ?? []) : []}
       branding={{ companyLegal: branding.companyLegal, brand: branding.brand }}
+      eventFeatures={eventFeatures}
     />
   );
 }

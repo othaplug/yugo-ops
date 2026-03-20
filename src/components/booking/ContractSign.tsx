@@ -47,6 +47,14 @@ export interface ContractQuoteData {
   tax: number;
   grandTotal: number;
   deposit: number;
+  /** Multi-event: show each leg instead of a single From/To pair */
+  eventLegs?: {
+    label: string;
+    fromAddress: string;
+    toAddress: string;
+    deliveryDate: string;
+    returnDate: string;
+  }[];
 }
 
 interface Props {
@@ -74,6 +82,10 @@ const CANCELLATION_POLICY: Record<string, string> = {
     "Full refund if cancelled 72 or more hours before your scheduled date. Custom crating materials, if already ordered, are non-refundable regardless of cancellation timing.",
   b2b_oneoff:
     "Full refund if cancelled 24 or more hours before your scheduled delivery. Cancellations within 24 hours: deposit is non-refundable.",
+  event:
+    "Full refund if cancelled 72 or more hours before your first scheduled delivery date. Cancellations within 72 hours: deposit is non-refundable.",
+  labour_only:
+    "Full refund if cancelled 48 or more hours before your scheduled service. Cancellations within 48 hours: deposit is non-refundable.",
 };
 
 const BALANCE_DUE: Record<string, string> = {
@@ -84,6 +96,8 @@ const BALANCE_DUE: Record<string, string> = {
   white_glove: "upon delivery",
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
+  event: "before final return date per quote",
+  labour_only: "before service date",
 };
 
 const SERVICE_DESCRIPTION: Record<string, string> = {
@@ -101,6 +115,10 @@ const SERVICE_DESCRIPTION: Record<string, string> = {
     "Custom specialty service tailored to your specific project requirements and timeline.",
   b2b_oneoff:
     "Professional delivery service with careful handling and timely fulfillment.",
+  event:
+    "Event logistics including round-trip delivery between origin and venue, optional on-site setup, and coordinated return with the same crew.",
+  labour_only:
+    "On-site labour service at the address specified, including tools and professional crew as quoted.",
 };
 
 function fmtPrice(n: number) {
@@ -331,77 +349,99 @@ export default function ContractSign({
                 className="text-[9px] font-bold tracking-[0.16em] uppercase mb-5"
                 style={{ color: `${FOREST}50` }}
               >
-                Your Move
+                {q.eventLegs && q.eventLegs.length > 0 ? "Event logistics" : "Your Move"}
               </p>
 
-              <div className="flex gap-4">
-                {/* Static route line */}
-                <div className="relative shrink-0 w-[3px] rounded-full" style={{ minHeight: "7rem" }}>
-                  <div
-                    className="absolute inset-0 rounded-full"
-                    style={{ background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`, opacity: 0.2 }}
-                  />
-                  <span
-                    className="absolute left-1/2 -translate-x-1/2 top-0 w-[11px] h-[11px] rounded-full z-10"
-                    style={{
-                      backgroundColor: WINE,
-                      boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${WINE}25`,
-                    }}
-                  />
-                  <span
-                    className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[11px] h-[11px] rounded-full z-10"
-                    style={{
-                      backgroundColor: GOLD,
-                      boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${GOLD}25`,
-                    }}
-                  />
-                </div>
-
-                {/* Address cards */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
-                  <div
-                    className="rounded-xl px-4 py-3"
-                    style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}10` }}
-                  >
-                    <span
-                      className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
-                      style={{ color: WINE }}
+              {q.eventLegs && q.eventLegs.length > 0 ? (
+                <div className="space-y-3">
+                  {q.eventLegs.map((leg, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl px-4 py-3 text-left"
+                      style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}15` }}
                     >
-                      <MapPin className="w-3 h-3" />
-                      From
-                    </span>
-                    <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
-                      {q.fromAddress}
-                    </p>
-                    {formatAccessForDisplay(q.fromAccess) && (
-                      <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
-                        {formatAccessForDisplay(q.fromAccess)}
+                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: WINE }}>
+                        {leg.label}
                       </p>
-                    )}
+                      <p className="text-[12px] font-semibold leading-snug" style={{ color: FOREST }}>
+                        {leg.fromAddress} → {leg.toAddress}
+                      </p>
+                      <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                        {leg.deliveryDate} – {leg.returnDate}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  {/* Static route line */}
+                  <div className="relative shrink-0 w-[3px] rounded-full" style={{ minHeight: "7rem" }}>
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: `linear-gradient(to bottom, ${WINE}, ${GOLD})`, opacity: 0.2 }}
+                    />
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 top-0 w-[11px] h-[11px] rounded-full z-10"
+                      style={{
+                        backgroundColor: WINE,
+                        boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${WINE}25`,
+                      }}
+                    />
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[11px] h-[11px] rounded-full z-10"
+                      style={{
+                        backgroundColor: GOLD,
+                        boxShadow: `0 0 0 3px #fff, 0 0 0 4px ${GOLD}25`,
+                      }}
+                    />
                   </div>
 
-                  <div
-                    className="rounded-xl px-4 py-3"
-                    style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}12` }}
-                  >
-                    <span
-                      className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
-                      style={{ color: GOLD }}
+                  {/* Address cards */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
+                    <div
+                      className="rounded-xl px-4 py-3"
+                      style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}10` }}
                     >
-                      <MapPin className="w-3 h-3" />
-                      To
-                    </span>
-                    <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
-                      {q.toAddress}
-                    </p>
-                    {formatAccessForDisplay(q.toAccess) && (
-                      <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
-                        {formatAccessForDisplay(q.toAccess)}
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                        style={{ color: WINE }}
+                      >
+                        <MapPin className="w-3 h-3" />
+                        From
+                      </span>
+                      <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                        {q.fromAddress}
                       </p>
-                    )}
+                      {formatAccessForDisplay(q.fromAccess) && (
+                        <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                          {formatAccessForDisplay(q.fromAccess)}
+                        </p>
+                      )}
+                    </div>
+
+                    <div
+                      className="rounded-xl px-4 py-3"
+                      style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}12` }}
+                    >
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                        style={{ color: GOLD }}
+                      >
+                        <MapPin className="w-3 h-3" />
+                        To
+                      </span>
+                      <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                        {q.toAddress}
+                      </p>
+                      {formatAccessForDisplay(q.toAccess) && (
+                        <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                          {formatAccessForDisplay(q.toAccess)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Bottom detail bar */}
               <div

@@ -55,6 +55,11 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("white_glove", price);
   const declaredValue = f?.declared_value as number | undefined;
+  const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
+  const truckBreakdown =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : null;
 
   return (
     <section className="mb-10 space-y-8">
@@ -161,6 +166,22 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
           White Glove Service
         </p>
+        {(weightSurcharge > 0 || truckBreakdown) && (
+          <div className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b max-w-md mx-auto" style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}>
+            {weightSurcharge > 0 ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Weight handling: </span>
+                +{fmtPrice(weightSurcharge)}
+              </p>
+            ) : null}
+            {truckBreakdown ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Vehicle: </span>
+                {truckBreakdown}
+              </p>
+            ) : null}
+          </div>
+        )}
         <p className="font-hero text-[40px] md:text-[48px]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>

@@ -38,6 +38,8 @@ export interface LabourOptions {
   dropoffToBaseKm?: number;
   /** Return drive time in minutes (drop-off → Yugo base). Used for return-trip factor. */
   returnDriveMinutes?: number;
+  /** White glove wrapping / handling takes ~35% longer than standard blanket prep */
+  whiteGloveHoursMultiplier?: boolean;
 }
 
 export function estimateLabourFromScore(
@@ -103,6 +105,10 @@ export function estimateLabourFromScore(
   }
 
   totalHours = Math.round(totalHours * 2) / 2;
+
+  if (options?.whiteGloveHoursMultiplier) {
+    totalHours = Math.round(totalHours * 1.35 * 2) / 2;
+  }
 
   const minHours = MIN_HOURS_BY_SIZE[sizeKey] ?? 3.0;
   totalHours = Math.max(minHours, totalHours);

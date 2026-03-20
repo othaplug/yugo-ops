@@ -111,10 +111,36 @@ export async function POST(
 
   if (jobType === "move") {
     const { data: move } = isUuid
-      ? await admin.from("moves").select("id, crew_id").eq("id", jobId).single()
-      : await admin.from("moves").select("id, crew_id").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).single();
+      ? await admin.from("moves").select("id, crew_id, move_type, service_type").eq("id", jobId).single()
+      : await admin
+          .from("moves")
+          .select("id, crew_id, move_type, service_type")
+          .ilike("move_code", jobId.replace(/^#/, "").toUpperCase())
+          .single();
     if (!move || move.crew_id !== payload.teamId) return NextResponse.json({ error: "Job not found" }, { status: 404 });
     entityId = move.id;
+
+    const isLabourOnly =
+      move.move_type === "labour_only" || move.service_type === "labour_only";
+    if (isLabourOnly) {
+      const { count, error: photoErr } = await admin
+        .from("job_photos")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", entityId)
+        .eq("job_type", "move");
+      if (photoErr) {
+        return NextResponse.json({ error: "Could not verify completion photos" }, { status: 500 });
+      }
+      if (!count || count < 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Labour-only jobs require at least one job photo (finished work) before client sign-off. Upload a photo in the Photos tab first.",
+          },
+          { status: 400 },
+        );
+      }
+    }
   } else {
     const { data: delivery } = isUuid
       ? await admin.from("deliveries").select("id, crew_id").eq("id", jobId).single()

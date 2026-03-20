@@ -22,6 +22,13 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("b2b_oneoff", price);
   const isFullPayment = price < 300;
+  const payInvoice = f?.b2b_payment_method === "invoice";
+  const retailer = typeof f?.b2b_retailer_source === "string" ? f.b2b_retailer_source.trim() : "";
+  const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
+  const truckBreakdown =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : null;
 
   return (
     <section className="mb-10 space-y-6">
@@ -45,6 +52,11 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
               >
                 {toTitleCase(String(f.item_category))}
               </span>
+            ) : null}
+            {retailer ? (
+              <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
+                <span className="font-semibold" style={{ color: FOREST }}>Retailer / source:</span> {retailer}
+              </p>
             ) : null}
           </div>
         </div>
@@ -99,6 +111,22 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
 
       {/* Price + CTA */}
       <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
+        {(weightSurcharge > 0 || truckBreakdown) && (
+          <div className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b" style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}>
+            {weightSurcharge > 0 ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Weight category: </span>
+                +{fmtPrice(weightSurcharge)}
+              </p>
+            ) : null}
+            {truckBreakdown ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Vehicle: </span>
+                {truckBreakdown}
+              </p>
+            ) : null}
+          </div>
+        )}
         <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
@@ -124,9 +152,11 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-          {isFullPayment
-            ? "Full payment at confirmation"
-            : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}
+          {payInvoice
+            ? "Net 30 invoice — no card required. Confirm below after you sign the agreement."
+            : isFullPayment
+              ? "Full payment at confirmation"
+              : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}
         </p>
       </div>
     </section>

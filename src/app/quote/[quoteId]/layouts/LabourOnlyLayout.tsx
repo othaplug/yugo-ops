@@ -49,6 +49,10 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
   const visit2Price = (f.visit2_price as number) ?? 0;
   const visit2Date = (f.visit2_date as string) ?? null;
   const description = (f.labour_description as string) ?? null;
+  const storageNeeded = f.labour_storage_needed === true;
+  const storageWeeks = typeof f.labour_storage_weeks === "number" ? f.labour_storage_weeks : null;
+  const storageWeeklyRate = typeof f.storage_weekly_rate === "number" ? f.storage_weekly_rate : 75;
+  const labourStorageFee = typeof f.labour_storage_fee === "number" ? f.labour_storage_fee : 0;
 
   const includes = [
     `${crewSize} professional movers`,
@@ -108,6 +112,18 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             {description}
           </div>
         )}
+        {storageNeeded && storageWeeks != null && labourStorageFee > 0 ? (
+          <div
+            className="mt-4 p-3 rounded-xl text-[11px] leading-relaxed border"
+            style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}35`, color: FOREST }}
+          >
+            <p className="font-semibold mb-1" style={{ color: WINE }}>Storage between visits</p>
+            <p>
+              Estimated {storageWeeks} week{storageWeeks !== 1 ? "s" : ""} at {fmtPrice(storageWeeklyRate)}/week —{" "}
+              <span className="font-semibold">{fmtPrice(labourStorageFee)}</span> storage estimate (based on volume; coordinator may adjust).
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* Crew + time */}
@@ -202,6 +218,14 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
                   <td className="py-2" style={{ color: `${FOREST}80` }}>Return visit ({fmtShort(visit2Date)})</td>
                   <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(visit2Price)}</td>
+                </tr>
+              )}
+              {storageNeeded && labourStorageFee > 0 && (
+                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    Storage estimate ({storageWeeks ?? "—"} wk × {fmtPrice(storageWeeklyRate)})
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(labourStorageFee)}</td>
                 </tr>
               )}
             </tbody>

@@ -10,6 +10,21 @@ import {
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 
+const SPECIALTY_BUILDING_LABELS: Record<string, string> = {
+  elevator_booking: "Elevator booking required",
+  insurance_certificate: "Insurance certificate required",
+  restricted_hours: "Restricted move hours",
+  loading_dock_booking: "Loading dock booking required",
+};
+
+const SPECIALTY_ACCESS_LABELS: Record<string, string> = {
+  straight_path: "Straight path",
+  one_turn: "One turn",
+  multiple_turns: "Multiple turns",
+  tight_staircase: "Tight staircase",
+  requires_rigging_or_crane: "Requires rigging or crane",
+};
+
 const PROJECT_TYPE_LABELS: Record<string, string> = {
   art_installation: "Art Installation",
   trade_show: "Trade Show Setup",
@@ -31,6 +46,14 @@ interface Props {
 export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
+  const buildingReqs = Array.isArray(f?.specialty_building_requirements)
+    ? (f.specialty_building_requirements as string[])
+    : [];
+  const accessKey =
+    typeof f?.specialty_access_difficulty === "string" && f.specialty_access_difficulty.trim().length > 0
+      ? f.specialty_access_difficulty.trim()
+      : "";
+  const accessLabel = accessKey ? (SPECIALTY_ACCESS_LABELS[accessKey] ?? toTitleCase(accessKey.replace(/_/g, " "))) : "";
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("specialty", price);
   const projectType = (f?.project_type as string) ?? "custom";
@@ -70,6 +93,12 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     });
   }
 
+  const truckSurchargeAmt = typeof f?.truck_surcharge === "number" && f.truck_surcharge > 0 ? f.truck_surcharge : 0;
+  const truckBd =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : "Truck sizing";
+
   const breakdown = ([
     f?.base_estimate && { label: "Base Estimate", amount: f.base_estimate as number },
     f?.timeline_surcharge && { label: "Timeline Factor", amount: f.timeline_surcharge as number },
@@ -83,6 +112,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     },
     f?.equipment_surcharge && { label: "Special Equipment", amount: f.equipment_surcharge as number },
     f?.distance_surcharge && { label: "Distance", amount: f.distance_surcharge as number },
+    truckSurchargeAmt > 0 && { label: truckBd, amount: truckSurchargeAmt },
   ] as (false | null | undefined | { label: string; amount: number })[]).filter(
     (x): x is { label: string; amount: number } => !!x,
   );
@@ -145,6 +175,35 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           )}
         </div>
       </div>
+
+      {(buildingReqs.length > 0 || accessLabel) && (
+        <div className="pt-6 border-t border-[var(--brd)]/30">
+          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+            Site &amp; building
+          </h2>
+          {buildingReqs.length > 0 ? (
+            <ul className="space-y-1.5 mb-3">
+              {buildingReqs.map((key) => (
+                <li key={key} className="flex items-start gap-2 text-[12px]" style={{ color: FOREST }}>
+                  <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+                  <span>{SPECIALTY_BUILDING_LABELS[key] ?? toTitleCase(key.replace(/_/g, " "))}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {accessLabel ? (
+            <p className="text-[12px]" style={{ color: FOREST }}>
+              <span className="font-semibold">Access: </span>
+              {accessLabel}
+            </p>
+          ) : null}
+          {accessKey === "requires_rigging_or_crane" ? (
+            <p className="text-[10px] mt-2 leading-snug rounded-lg px-3 py-2" style={{ backgroundColor: "#FFF8E7", color: "#7A5C12" }}>
+              Crane or rigging typically adds $1,500–3,000. Your coordinator will confirm the exact cost before move day.
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {/* Special Requirements */}
       {requirements.length > 0 && (

@@ -2,7 +2,7 @@
  * Phosphor icon utilities for Yugo.
  *
  * All icons are sourced from @phosphor-icons/react.
- * Default weight is "duotone" for a premium two-tone look.
+ * Default weight is "regular"; use duotone only for feature cards and hero accents.
  */
 import {
   Truck, Users, Shield, ShieldCheck, Package, House, Wrench, MapPin,
@@ -26,8 +26,8 @@ import {
 
 export type { Icon }
 
-/** Default weight for the app — duotone for a premium look */
-export const ICON_WEIGHT = 'duotone' as const
+/** Default weight for the app */
+export const ICON_WEIGHT = 'regular' as const
 
 /** Standardised icon sizes */
 export const ICON_SIZES = {

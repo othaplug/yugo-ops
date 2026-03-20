@@ -25,6 +25,15 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
   const category = toTitleCase((f?.item_category as string) ?? "item");
   const weight = f?.weight_class as string | undefined;
+  const specialHandling =
+    typeof f?.single_item_special_handling === "string" && f.single_item_special_handling.trim().length > 0
+      ? f.single_item_special_handling.trim()
+      : null;
+  const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
+  const truckBreakdown =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : null;
   const includes = (f?.includes as string[] | undefined) ?? [
     "Professional handling & transport",
     "Protective blanket wrapping",
@@ -96,6 +105,20 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         </div>
       </div>
 
+      {specialHandling ? (
+        <div
+          className="rounded-xl border-2 p-4 mt-4"
+          style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
+        >
+          <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: WINE }}>
+            Special handling instructions
+          </p>
+          <p className="text-[13px] leading-relaxed font-medium" style={{ color: FOREST }}>
+            {specialHandling}
+          </p>
+        </div>
+      ) : null}
+
       {/* Service includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
         <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
@@ -113,6 +136,22 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Price + CTA */}
       <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
+        {(weightSurcharge > 0 || truckBreakdown) && (
+          <div className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b" style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}>
+            {weightSurcharge > 0 ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Weight handling: </span>
+                +{fmtPrice(weightSurcharge)} (from size / weight class)
+              </p>
+            ) : null}
+            {truckBreakdown ? (
+              <p>
+                <span className="font-semibold" style={{ color: FOREST }}>Vehicle: </span>
+                {truckBreakdown}
+              </p>
+            ) : null}
+          </div>
+        )}
         <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>

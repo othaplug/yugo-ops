@@ -238,7 +238,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rule1Quotes } = await supabase
     .from("quotes")
-    .select("quote_id, service_type, contact_id, contacts:contact_id(name, email, phone)")
+    .select("quote_id, service_type, factors_applied, contact_id, contacts:contact_id(name, email, phone)")
     .eq("status", "sent")
     .lt("sent_at", cutoff24h)
     .is("viewed_at", null)
@@ -284,6 +284,9 @@ export async function GET(req: NextRequest) {
 
         // Also send SMS follow-up
         if (contact.phone) {
+          const f1 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
+          const eventName =
+            q.service_type === "event" && typeof f1?.event_name === "string" ? f1.event_name : null;
           sendQuoteFollowupSms({
             phone: contact.phone,
             quoteUrl,
@@ -291,6 +294,7 @@ export async function GET(req: NextRequest) {
             firstName,
             serviceType: q.service_type,
             followupNumber: 1,
+            eventName,
           }).catch(() => {});
         }
       } catch (err) {
@@ -307,7 +311,7 @@ export async function GET(req: NextRequest) {
   const { data: rule2Quotes } = maxAttempts >= 2
     ? await supabase
         .from("quotes")
-        .select("id, quote_id, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, contact_id, contacts:contact_id(name, email, phone)")
+        .select("id, quote_id, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)")
         .eq("status", "viewed")
         .lt("viewed_at", cutoff48h)
         .is("accepted_at", null)
@@ -363,6 +367,9 @@ export async function GET(req: NextRequest) {
 
         // SMS follow-up alongside email
         if (contact.phone) {
+          const f2 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
+          const eventName =
+            q.service_type === "event" && typeof f2?.event_name === "string" ? f2.event_name : null;
           sendQuoteFollowupSms({
             phone: contact.phone,
             quoteUrl,
@@ -371,6 +378,7 @@ export async function GET(req: NextRequest) {
             serviceType: q.service_type,
             followupNumber: 2,
             expiresAt: q.expires_at,
+            eventName,
           }).catch(() => {});
         }
 
@@ -395,7 +403,7 @@ export async function GET(req: NextRequest) {
   const { data: rule3Quotes } = maxAttempts >= 3
     ? await supabase
         .from("quotes")
-        .select("id, quote_id, service_type, expires_at, hubspot_deal_id, contact_id, contacts:contact_id(name, email, phone)")
+        .select("id, quote_id, service_type, expires_at, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)")
         .in("status", ["viewed", "sent"])
         .lt("viewed_at", cutoff5d)
         .is("accepted_at", null)
@@ -450,6 +458,9 @@ export async function GET(req: NextRequest) {
 
         // SMS final follow-up
         if (contact.phone) {
+          const f3 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
+          const eventName =
+            q.service_type === "event" && typeof f3?.event_name === "string" ? f3.event_name : null;
           sendQuoteFollowupSms({
             phone: contact.phone,
             quoteUrl,
@@ -458,6 +469,7 @@ export async function GET(req: NextRequest) {
             serviceType: q.service_type,
             followupNumber: 3,
             expiresAt: q.expires_at,
+            eventName,
           }).catch(() => {});
         }
 
