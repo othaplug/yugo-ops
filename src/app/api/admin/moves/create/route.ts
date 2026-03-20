@@ -11,6 +11,18 @@ import { getDistance } from "@/lib/maps/distance";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 
+/** DB `service_type` CHECK — align with `move_type` from Create Move. */
+const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
+  residential: "local_move",
+  office: "office_move",
+  single_item: "single_item",
+  white_glove: "white_glove",
+  specialty: "specialty",
+  b2b_oneoff: "b2b_oneoff",
+  event: "event",
+  labour_only: "labour_only",
+};
+
 /** Map inventory_score to truck_allocation_rules inventory_range. */
 function inventoryRangeFromScore(score: number | null | undefined): string {
   if (score == null || score <= 0) return "no_inventory";
@@ -105,8 +117,19 @@ export async function POST(req: NextRequest) {
     }
 
     const rawMoveType = (body.move_type as string)?.trim()?.toLowerCase();
-    const allowedTypes = ["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const;
-    const moveType = allowedTypes.includes(rawMoveType as (typeof allowedTypes)[number]) ? rawMoveType : "residential";
+    const allowedTypes = [
+      "residential",
+      "office",
+      "single_item",
+      "white_glove",
+      "specialty",
+      "b2b_oneoff",
+      "event",
+      "labour_only",
+    ] as const;
+    const moveType = allowedTypes.includes(rawMoveType as (typeof allowedTypes)[number])
+      ? rawMoveType
+      : "residential";
     const clientName = (body.client_name as string)?.trim() || "";
     const clientEmail = (body.client_email as string)?.trim() || null;
     const clientPhone = (body.client_phone as string)?.trim() || null;
@@ -123,6 +146,13 @@ export async function POST(req: NextRequest) {
     const accessNotesRaw = (body.access_notes as string)?.trim() || null;
     const accessNotesWithAccess =
       [fromAccess && `From: ${fromAccess}`, toAccess && `To: ${toAccess}`, accessNotesRaw].filter(Boolean).join("\n") || null;
+
+    const labourDescription = (body.labour_description as string)?.trim() || "";
+    const internalNotesBase = (body.internal_notes as string)?.trim() || null;
+    const internalNotesMerged =
+      moveType === "labour_only" && labourDescription
+        ? [internalNotesBase, `Labour scope: ${labourDescription}`].filter(Boolean).join("\n\n") || null
+        : internalNotesBase;
 
     if (!clientName) return NextResponse.json({ error: "Client name is required" }, { status: 400 });
     if (!fromAddress) return NextResponse.json({ error: "From address is required" }, { status: 400 });
@@ -178,10 +208,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const serviceType =
+      MOVE_TYPE_TO_SERVICE_TYPE[moveType] ?? "local_move";
+
+    const setupReqRaw = body.setup_required;
+    const setupRequired =
+      setupReqRaw === true ||
+      setupReqRaw === "true" ||
+      setupReqRaw === "1" ||
+      setupReqRaw === "on";
+
     const { data: move, error: insertError } = await db
       .from("moves")
       .insert({
         move_type: moveType,
+        service_type: serviceType,
         organization_id: organizationId,
         client_name: clientName,
         client_email: clientEmail,
@@ -201,7 +242,7 @@ export async function POST(req: NextRequest) {
         scheduled_time: (body.scheduled_time as string)?.trim() || null,
         arrival_window: (body.arrival_window as string)?.trim() || null,
         access_notes: accessNotesWithAccess,
-        internal_notes: (body.internal_notes as string)?.trim() || null,
+        internal_notes: internalNotesMerged,
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
         crew_id: (body.crew_id as string)?.trim() || null,
         coordinator_name: (body.coordinator_name as string)?.trim() || null,
@@ -216,6 +257,14 @@ export async function POST(req: NextRequest) {
         drive_time_min: driveTimeMin,
         est_crew_size: body.est_crew_size ? Number(body.est_crew_size) : null,
         est_hours: body.est_hours ? Number(body.est_hours) : null,
+        ...(moveType === "event"
+          ? {
+              event_name: (body.event_name as string)?.trim() || null,
+              venue_address: (body.venue_address as string)?.trim() || toAddress || null,
+              setup_required: setupRequired,
+              setup_instructions: (body.setup_instructions as string)?.trim() || null,
+            }
+          : {}),
         ...(typeof body.inventory_score === "number" && body.inventory_score > 0
           ? (() => {
               const labour = estimateLabourFromScore(

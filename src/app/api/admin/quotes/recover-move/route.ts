@@ -37,13 +37,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Check if a move already exists for this quote
-  const { data: existing } = await db
+  // Any move linked to this quote (event bundles create multiple rows)
+  const { data: existingList } = await db
     .from("moves")
-    .select("id, move_code")
+    .select("id, move_code, created_at")
     .eq("quote_id", quote.id)
-    .maybeSingle();
+    .order("created_at", { ascending: true })
+    .limit(1);
 
+  const existing = existingList?.[0];
   if (existing) {
     return NextResponse.json({
       success: true,
@@ -75,6 +77,12 @@ export async function POST(req: Request) {
       move_id: result.moveId,
       move_code: result.moveCode,
       tracking_url: result.trackingUrl,
+      ...(result.eventGroupId
+        ? {
+            event_group_id: result.eventGroupId,
+            related_move_count: result.relatedMoveCount,
+          }
+        : {}),
     });
   } catch (err) {
     console.error("[recover-move] createMoveFromQuote failed:", err);

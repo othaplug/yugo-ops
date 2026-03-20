@@ -60,6 +60,9 @@ const SERVICE_LABELS: Record<string, string> = {
   white_glove: "White Glove Service",
   specialty: "Specialty Service",
   b2b_oneoff: "Delivery",
+  b2b_delivery: "B2B Delivery",
+  event: "Event Logistics",
+  labour_only: "Labour Only",
 };
 
 function getSeason(dateStr: string | null): string | null {

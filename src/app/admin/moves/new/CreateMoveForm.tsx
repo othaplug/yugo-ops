@@ -118,7 +118,16 @@ export default function CreateMoveForm({
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [moveType, setMoveType] = useState<"residential" | "office" | "single_item" | "white_glove" | "specialty" | "b2b_oneoff">("residential");
+  const [moveType, setMoveType] = useState<
+    | "residential"
+    | "office"
+    | "single_item"
+    | "white_glove"
+    | "specialty"
+    | "b2b_oneoff"
+    | "event"
+    | "labour_only"
+  >("residential");
   const [organizationId, setOrganizationId] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [showContactDropdown, setShowContactDropdown] = useState(false);
@@ -223,6 +232,15 @@ export default function CreateMoveForm({
   const [b2bDeliveryType, setB2bDeliveryType] = useState("");
   const [b2bItemDetails, setB2bItemDetails] = useState("");
   const [b2bNumberOfItems, setB2bNumberOfItems] = useState("1");
+
+  // Event logistics (manual create move)
+  const [eventName, setEventName] = useState("");
+  const [venueAddress, setVenueAddress] = useState("");
+  const [eventSetupRequired, setEventSetupRequired] = useState(false);
+  const [eventSetupInstructions, setEventSetupInstructions] = useState("");
+
+  // Labour only
+  const [labourDescription, setLabourDescription] = useState("");
 
   const filteredOrgs = organizations.filter((o) => {
     const term = contactSearch.toLowerCase();
@@ -470,6 +488,18 @@ export default function CreateMoveForm({
         formData.append("item_description", b2bItemDetails);
         formData.append("number_of_items", b2bNumberOfItems);
       }
+      if (moveType === "event") {
+        formData.append("event_name", eventName.trim());
+        formData.append(
+          "venue_address",
+          (venueAddress.trim() || toAddress.trim()),
+        );
+        formData.append("setup_required", String(eventSetupRequired));
+        formData.append("setup_instructions", eventSetupInstructions.trim());
+      }
+      if (moveType === "labour_only") {
+        formData.append("labour_description", labourDescription.trim());
+      }
       docFiles.forEach((f) => formData.append("documents", f));
 
       const res = await fetch("/api/admin/moves/create", { method: "POST", body: formData });
@@ -511,15 +541,28 @@ export default function CreateMoveForm({
           {/* Move type selector */}
           <div>
             <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-              {(["residential", "office", "single_item", "white_glove", "specialty", "b2b_oneoff"] as const).map((val) => {
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {(
+                [
+                  "residential",
+                  "office",
+                  "single_item",
+                  "white_glove",
+                  "specialty",
+                  "b2b_oneoff",
+                  "event",
+                  "labour_only",
+                ] as const
+              ).map((val) => {
                 const META: Record<string, { label: string; desc: string }> = {
-                  residential: { label: "Residential",        desc: "Local or long distance home move" },
-                  office:      { label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-                  single_item: { label: "Single Item",        desc: "One item or small batch delivery" },
-                  white_glove: { label: "White Glove",        desc: "Premium handling, assembly, placement" },
-                  specialty:   { label: "Specialty",          desc: "Piano, art, antiques, estate contents, trade show" },
-                  b2b_oneoff:  { label: "B2B One-Off",        desc: "One-off delivery from a business source" },
+                  residential: { label: "Residential", desc: "Local or long distance home move" },
+                  office: { label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
+                  single_item: { label: "Single Item", desc: "One item or small batch delivery" },
+                  white_glove: { label: "White Glove", desc: "Premium handling, assembly, placement" },
+                  specialty: { label: "Specialty", desc: "Piano, art, antiques, estate, trade show" },
+                  b2b_oneoff: { label: "B2B One-Off", desc: "One-off delivery from a business source" },
+                  event: { label: "Event logistics", desc: "Venue delivery, setup, return — matches Event quotes" },
+                  labour_only: { label: "Labour only", desc: "Crew hours on-site; use same address if one location" },
                 };
                 const { label, desc } = META[val];
                 const sel = moveType === val;
@@ -705,7 +748,7 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty") && (
+          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "event" || moveType === "labour_only") && (
             <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
 
@@ -836,7 +879,70 @@ export default function CreateMoveForm({
             </div>
           </AnimatedSection>
 
-          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "b2b_oneoff") && (
+          <AnimatedSection show={moveType === "event"}>
+            <div className="space-y-2">
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event details</h3>
+              <p className="text-[10px] text-[var(--tx3)]">
+                Multi-leg event bookings from quotes become several linked moves. For a manual event, use From → staging / warehouse and To → venue if applicable.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <Field label="Event name">
+                  <input
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder="e.g. Spring gala 2026"
+                    className={fieldInput}
+                  />
+                </Field>
+                <Field label="Venue address (optional)">
+                  <input
+                    value={venueAddress}
+                    onChange={(e) => setVenueAddress(e.target.value)}
+                    placeholder="Defaults to “To” address if empty"
+                    className={fieldInput}
+                  />
+                </Field>
+              </div>
+              <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={eventSetupRequired}
+                  onChange={(e) => setEventSetupRequired(e.target.checked)}
+                  className="accent-[var(--gold)]"
+                />
+                Setup / teardown assistance required
+              </label>
+              <Field label="Setup instructions">
+                <textarea
+                  value={eventSetupInstructions}
+                  onChange={(e) => setEventSetupInstructions(e.target.value)}
+                  rows={2}
+                  placeholder="Program, timing, dock, contact on-site…"
+                  className={`${fieldInput} resize-none`}
+                />
+              </Field>
+            </div>
+          </AnimatedSection>
+
+          <AnimatedSection show={moveType === "labour_only"}>
+            <div className="space-y-2">
+              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour scope</h3>
+              <p className="text-[10px] text-[var(--tx3)]">
+                Use the same address for From and To if all work is at one site.
+              </p>
+              <Field label="What will the crew do?">
+                <textarea
+                  value={labourDescription}
+                  onChange={(e) => setLabourDescription(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Load dock unload only, rearrange floor plan, debris removal…"
+                  className={`${fieldInput} resize-none`}
+                />
+              </Field>
+            </div>
+          </AnimatedSection>
+
+          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "b2b_oneoff" || moveType === "event" || moveType === "labour_only") && (
             <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
 
@@ -882,6 +988,9 @@ export default function CreateMoveForm({
           {/* Addresses */}
           <div className="space-y-2">
             <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+            {moveType === "labour_only" && (
+              <p className="text-[10px] text-[var(--tx3)]">Work site or primary location — you can use the same address twice.</p>
+            )}
             <div className="space-y-1.5">
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 items-end">
                 <div className="flex-1 min-w-0 w-full">
@@ -1449,7 +1558,10 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          {moveType !== "specialty" && moveType !== "b2b_oneoff" && (
+          {moveType !== "specialty" &&
+            moveType !== "b2b_oneoff" &&
+            moveType !== "event" &&
+            moveType !== "labour_only" && (
             <>
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
               {/* Inventory */}

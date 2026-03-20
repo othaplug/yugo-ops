@@ -473,6 +473,35 @@ export default function QuoteFormClient({
     { label: "Event 2", from_address: "", to_address: "", from_access: "", to_access: "", move_date: "", event_return_date: "", event_same_day: false },
   ]);
 
+  const addEventLeg = useCallback(() => {
+    setEventLegs((prev) => [
+      ...prev,
+      {
+        label: `Event ${prev.length + 1}`,
+        from_address: "",
+        to_address: "",
+        from_access: fromAccess,
+        to_access: toAccess,
+        move_date: "",
+        event_return_date: "",
+        event_same_day: false,
+      },
+    ]);
+  }, [fromAccess, toAccess]);
+
+  const removeEventLeg = useCallback(
+    (idx: number) => {
+      setEventLegs((prev) => {
+        if (prev.length <= 1) {
+          toast("Keep at least one event in the list.", "alertTriangle");
+          return prev;
+        }
+        return prev.filter((_, i) => i !== idx);
+      });
+    },
+    [toast],
+  );
+
   /** Mapbox driving distance for specialty suggested range (km) */
   const [specialtyRouteKm, setSpecialtyRouteKm] = useState<number | null>(null);
   const [specialtyRouteLoading, setSpecialtyRouteLoading] = useState(false);
@@ -1972,50 +2001,41 @@ export default function QuoteFormClient({
                         </p>
                         <button
                           type="button"
-                          onClick={() =>
-                            setEventLegs((prev) => [
-                              ...prev,
-                              {
-                                label: `Event ${prev.length + 1}`,
-                                from_address: "",
-                                to_address: "",
-                                from_access: fromAccess,
-                                to_access: toAccess,
-                                move_date: "",
-                                event_return_date: "",
-                                event_same_day: false,
-                              },
-                            ])
-                          }
+                          onClick={addEventLeg}
                           className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 shrink-0"
                         >
-                          <Plus className="w-3 h-3" /> Add event
+                          <Plus className="w-3 h-3" aria-hidden /> Add event
                         </button>
                       </div>
                       {eventLegs.map((leg, idx) => (
                         <div key={idx} className="rounded-xl border border-[var(--brd)] p-3 space-y-3 bg-[var(--card)]/30">
-                          <div className="flex items-start justify-between gap-2">
-                            <Field label="Label">
-                              <input
-                                value={leg.label}
-                                onChange={(e) =>
-                                  setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, label: e.target.value } : L)))
-                                }
-                                placeholder={`Event ${idx + 1}`}
-                                className={fieldInput}
-                              />
-                            </Field>
-                            {eventLegs.length > 2 && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--brd)]/50">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">
+                              Round trip {idx + 1}
+                              {leg.label?.trim() ? <span className="text-[var(--tx2)] font-semibold normal-case"> — {leg.label.trim()}</span> : null}
+                            </span>
+                            {eventLegs.length > 1 ? (
                               <button
                                 type="button"
-                                onClick={() => setEventLegs((prev) => prev.filter((_, i) => i !== idx))}
-                                className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-red-500 hover:bg-red-500/10 shrink-0"
-                                aria-label={`Remove event ${idx + 1}`}
+                                onClick={() => removeEventLeg(idx)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/35 hover:bg-red-500/10"
+                                aria-label={`Delete ${leg.label?.trim() || `event ${idx + 1}`}`}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                Delete
                               </button>
-                            )}
+                            ) : null}
                           </div>
+                          <Field label="Label">
+                            <input
+                              value={leg.label}
+                              onChange={(e) =>
+                                setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, label: e.target.value } : L)))
+                              }
+                              placeholder={`Event ${idx + 1}`}
+                              className={fieldInput}
+                            />
+                          </Field>
                           <AddressAutocomplete
                             value={leg.from_address}
                             onRawChange={(v) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, from_address: v } : L)))}
@@ -2097,6 +2117,14 @@ export default function QuoteFormClient({
                           ) : null}
                         </div>
                       ))}
+
+                      <button
+                        type="button"
+                        onClick={addEventLeg}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[11px] font-semibold border border-dashed border-[var(--gold)]/60 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                      >
+                        <Plus className="w-4 h-4" aria-hidden /> Add event
+                      </button>
 
                       <div className="space-y-2">
                         <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
@@ -2918,6 +2946,25 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   );
 }
 
+type AdminEventLegFactor = {
+  label?: string;
+  delivery_date?: string;
+  return_date?: string;
+  delivery_charge?: number;
+  return_charge?: number;
+  event_crew?: number;
+  event_hours?: number;
+  same_day?: boolean;
+};
+
+function fmtShortEventAdmin(d: string | null | undefined): string {
+  if (!d) return "TBD";
+  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: Record<string, unknown> }) {
   const deliveryCharge = factors.delivery_charge as number | undefined;
   const returnCharge = factors.return_charge as number | undefined;
@@ -2928,13 +2975,97 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
   const returnDate = factors.return_date as string | undefined;
   const deliveryDate = factors.delivery_date as string | undefined;
 
+  const isMulti =
+    factors.event_mode === "multi" && Array.isArray(factors.event_legs);
+  const eventLegs = isMulti ? (factors.event_legs as AdminEventLegFactor[]) : [];
+
+  const totalsFooter = (
+    <>
+      <div className="pt-1.5 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
+        <span className="text-[var(--tx3)]">Subtotal</span>
+        <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
+        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--tx3)]">Deposit to book (25%)</span>
+        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+    </>
+  );
+
+  if (isMulti && eventLegs.length > 0) {
+    return (
+      <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <span className="text-[13px] font-bold text-[#B8962E]">Event quote</span>
+            <p className="text-[9px] text-[var(--tx3)] mt-0.5 font-medium uppercase tracking-wide">
+              Multi-event bundle — {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <span className="text-2xl sm:text-3xl font-black tabular-nums text-[#B8962E] shrink-0">
+            {fmtPrice(t.price)}
+          </span>
+        </div>
+        <div className="space-y-3 text-[11px]">
+          {eventLegs.map((leg, idx) => (
+            <div
+              key={idx}
+              className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40 p-3 space-y-2"
+            >
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[#B8962E]">
+                {leg.label?.trim() || `Event ${idx + 1}`}
+              </p>
+              <div className="flex justify-between gap-2">
+                <span className="text-[var(--tx3)]">
+                  Delivery ({fmtShortEventAdmin(leg.delivery_date)})
+                  {leg.event_crew && leg.event_hours ? (
+                    <span className="ml-1 text-[var(--tx3)]/70">
+                      {leg.event_crew} movers, {leg.event_hours}hr
+                    </span>
+                  ) : null}
+                </span>
+                <span className="font-medium text-[var(--tx)] tabular-nums shrink-0">
+                  {fmtPrice(leg.delivery_charge ?? 0)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-[var(--tx3)]">
+                  Return ({fmtShortEventAdmin(leg.return_date)})
+                  {returnDiscount !== undefined ? (
+                    <span className="ml-1 text-[var(--tx3)]/70">
+                      {Math.round(returnDiscount * 100)}% of leg delivery
+                    </span>
+                  ) : null}
+                </span>
+                <span className="font-medium text-[var(--tx)] tabular-nums shrink-0">
+                  {fmtPrice(leg.return_charge ?? 0)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {(setupFee ?? 0) > 0 && (
+            <div className="flex justify-between">
+              <span className="text-[var(--tx3)]">Setup service (program)</span>
+              <span className="font-medium text-[var(--tx)]">{fmtPrice(setupFee!)}</span>
+            </div>
+          )}
+        </div>
+        {totalsFooter}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-bold text-[#B8962E]">Event Quote</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
-      {/* Breakdown */}
+      {/* Breakdown — single round trip */}
       <div className="space-y-1.5 text-[11px]">
         {deliveryCharge !== undefined && (
           <div className="flex justify-between">
@@ -2960,18 +3091,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
             <span className="font-medium text-[var(--tx)]">{fmtPrice(returnCharge)}</span>
           </div>
         )}
-        <div className="pt-1.5 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
-          <span className="text-[var(--tx3)]">Subtotal</span>
-          <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
-        <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
-      </div>
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit to book (25%)</span>
-        <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+        {totalsFooter}
       </div>
     </div>
   );
