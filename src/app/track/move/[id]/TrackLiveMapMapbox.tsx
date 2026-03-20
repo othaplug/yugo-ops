@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Map from "react-map-gl/mapbox";
 import { Marker, Source, Layer, useMap } from "react-map-gl/mapbox";
+import { Car, Clock, House, Sun } from "@phosphor-icons/react";
 
 type Center = { latitude: number; longitude: number };
 type CenterLatLng = { lat: number; lng: number };
@@ -63,6 +64,23 @@ const PICKUP_STAGES = [
   "arrived_on_site",
 ];
 
+function MapResizeOnSignal({ signal }: { signal: number }) {
+  const { current: mapRef } = useMap();
+  useEffect(() => {
+    const map = mapRef?.getMap?.();
+    if (!map) return;
+    const id = requestAnimationFrame(() => {
+      try {
+        map.resize();
+      } catch {
+        /* map may be destroying */
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [signal, mapRef]);
+  return null;
+}
+
 function FitBoundsController({
   crew,
   pickup,
@@ -115,6 +133,7 @@ export function TrackLiveMapMapbox({
   clientLng,
   speed,
   lastLocationAt,
+  resizeSignal = 0,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -127,6 +146,7 @@ export function TrackLiveMapMapbox({
   clientLng?: number | null;
   speed?: number | null;
   lastLocationAt?: string | null;
+  resizeSignal?: number;
 }) {
   const hasPosition = crew != null;
   const animatedCrew = useAnimatedPosition(
@@ -240,11 +260,13 @@ export function TrackLiveMapMapbox({
   return (
     <Map
       mapboxAccessToken={mapboxAccessToken}
+      reuseMaps
       initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/light-v11"
     >
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
+      <MapResizeOnSignal signal={resizeSignal} />
 
       {/* Completed route: solid purple */}
       {completedGeoJson && (
@@ -302,10 +324,7 @@ export function TrackLiveMapMapbox({
             <div className="flex flex-col items-center">
               <div className="w-9 h-9 rounded-full bg-[#C9A962] border-2 border-white shadow-lg flex items-center justify-center relative">
                 <div className="absolute -inset-1.5 rounded-full bg-[#C9A962] opacity-25 animate-ping" style={{ animationDuration: "2s" }} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2">
-                  <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-                  <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-                </svg>
+                <Sun size={16} color="#FFFFFF" aria-hidden />
               </div>
               <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#C9A962] -mt-0.5" />
             </div>
@@ -320,10 +339,7 @@ export function TrackLiveMapMapbox({
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
           <div className="flex flex-col items-center" style={{ opacity: isPickupPhase ? 0.45 : 1 }}>
             <div className="w-9 h-9 rounded-full bg-[#1A1A1A] border-2 border-white shadow-lg flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
+              <House size={16} color="#FFFFFF" aria-hidden />
             </div>
             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#1A1A1A] -mt-0.5" />
           </div>
@@ -351,12 +367,7 @@ export function TrackLiveMapMapbox({
               className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
               style={{ backgroundColor: isLocationStale ? YUGO_GOLD : "#DC2626" }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 17h2m10 0h2M3 9l2-5h14l2 5"/>
-                <path d="M3 9v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/>
-                <circle cx="7" cy="17" r="1.5" fill="#FFFFFF" stroke="none"/>
-                <circle cx="17" cy="17" r="1.5" fill="#FFFFFF" stroke="none"/>
-              </svg>
+              <Car size={18} color="#FFFFFF" aria-hidden />
             </div>
             {speed != null && speed > 0 && !isLocationStale && (
               <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
@@ -393,9 +404,7 @@ export function TrackLiveMapMapbox({
               border: `1px solid ${YUGO_GOLD}40`,
             }}
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={YUGO_GOLD} strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
+            <Clock size={10} color={YUGO_GOLD} aria-hidden />
             Last known location · {lastSeenLabel}
           </div>
         </div>

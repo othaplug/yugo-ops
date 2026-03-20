@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TIME_SLOTS_15MIN, formatTime12 } from "@/lib/calendar/types";
+import { X } from "@phosphor-icons/react";
 
 interface Props {
   open: boolean;
@@ -128,7 +129,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         <div className="px-6 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[20px] font-bold text-[var(--tx)]">Schedule Job</h2>
           <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <X size={18} className="text-current" aria-hidden />
           </button>
         </div>
 

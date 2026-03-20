@@ -7,6 +7,7 @@ import Badge from "../../components/Badge";
 import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
 import CreateGalleryProjectModal from "./CreateGalleryProjectModal";
 import { toTitleCase } from "@/lib/format-text";
+import { MagnifyingGlass, CaretDown, CaretRight } from "@phosphor-icons/react";
 
 interface GalleryPartner {
   id: string;
@@ -121,9 +122,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             {/* Search + filter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+                <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -192,12 +191,10 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <Badge status={p.status} />
-                        <svg
-                          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"
-                          className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                        >
-                          <path d="M6 9l6 6 6-6"/>
-                        </svg>
+                        <CaretDown
+                          size={14}
+                          className={`text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
                       </div>
                     </button>
 
@@ -273,9 +270,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                     <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
                     <div className="text-[11px] text-[var(--tx3)]">{[p.contact_name, p.email].filter(Boolean).join(" · ") || "—"}</div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
+                  <CaretRight size={14} className="text-[var(--tx3)]" />
                 </Link>
               ))}
             </div>

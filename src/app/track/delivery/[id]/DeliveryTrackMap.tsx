@@ -22,7 +22,7 @@ function lastKnownIcon() {
       <span style="position:absolute;inset:0;border-radius:50%;background:#22C55E;opacity:0.18;animation:crew-ring 2.4s ease-out infinite"></span>
       <span style="position:absolute;inset:4px;border-radius:50%;background:#22C55E;opacity:0.3"></span>
       <span style="position:relative;width:16px;height:16px;border-radius:50%;background:#22C55E;border:3px solid #fff;box-shadow:0 2px 10px rgba(34,197,94,.5);display:flex;align-items:center;justify-content:center">
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style="color:#fff;font-size:7px;font-weight:800;line-height:8px;display:flex;align-items:center;justify-content:center;width:8px;height:8px" aria-hidden="true">✓</span>
       </span>
     </div>`,
     iconSize: [36, 36],

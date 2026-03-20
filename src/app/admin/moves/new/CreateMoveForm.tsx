@@ -9,7 +9,7 @@ import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Info, Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 interface Org {
@@ -551,9 +551,7 @@ export default function CreateMoveForm({
             {/* B2B recurring warning — fades in when b2b_oneoff is selected */}
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${moveType === "b2b_oneoff" ? "max-h-12 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20 text-[10px] text-[var(--tx3)]">
-                <svg className="w-3 h-3 shrink-0 text-[var(--gold)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
+                <Info className="w-3 h-3 shrink-0 text-[var(--gold)]" aria-hidden />
                 For recurring partner deliveries, use <span className="font-semibold text-[var(--tx2)] mx-0.5">B2B Partners → Create Project</span> instead.
               </div>
             </div>

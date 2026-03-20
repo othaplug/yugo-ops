@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Check, Wrench, Clock, Shield, Sparkles, type LucideIcon } from "lucide-react";
+import { MapPin, Calendar, Check, Wrench, Clock, Shield, Sparkle as Sparkles, type Icon as LucideIcon } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,

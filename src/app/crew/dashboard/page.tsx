@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Clock, Calendar, Check, Lock } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
@@ -94,7 +95,7 @@ export default function CrewDashboardPage() {
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <div className="w-12 h-12 rounded-2xl bg-[var(--red)]/10 flex items-center justify-center mb-4">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <X size={20} color="var(--red)" />
           </div>
           <p className="text-[14px] text-[var(--red)] mb-4">{error || "Unable to load"}</p>
           <Link href="/crew/login" className="text-[13px] text-[var(--gold)] hover:underline">
@@ -119,7 +120,7 @@ export default function CrewDashboardPage() {
       <PageContent>
         <div className="max-w-[420px] mx-auto pt-8 text-center">
           <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+            <Clock size={20} color="var(--gold)" />
           </div>
           <h2 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
           <p className="text-[13px] text-[var(--tx3)]">The crew lead must complete the pre-trip readiness check before jobs are available.</p>
@@ -197,7 +198,7 @@ export default function CrewDashboardPage() {
           {jobs.length === 0 ? (
             <div className="pt-8 pb-8 text-center">
               <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <Calendar size={20} color="var(--gold)" />
               </div>
               <p className="text-[14px] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
               <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off — check back tomorrow.</p>
@@ -234,7 +235,7 @@ export default function CrewDashboardPage() {
                           }}
                         >
                           {completed ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            <Check size={14} weight="bold" />
                           ) : (
                             index + 1
                           )}
@@ -334,7 +335,7 @@ export default function CrewDashboardPage() {
                         </Link>
                       ) : (
                         <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--tx3)]">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          <Lock size={12} />
                           Complete previous job first
                         </div>
                       )}
@@ -353,7 +354,7 @@ export default function CrewDashboardPage() {
               href="/crew/end-of-day"
               className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] transition-all border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--grn)] hover:text-[var(--grn)]"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <Check size={14} weight="bold" />
               End of day submitted, Update report
             </Link>
           ) : (
@@ -362,7 +363,7 @@ export default function CrewDashboardPage() {
               className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] text-white transition-all"
               style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <Check size={14} weight="bold" />
               Complete Your Day
             </Link>
           )

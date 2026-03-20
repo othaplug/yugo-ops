@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Star } from "@phosphor-icons/react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 interface Props {
@@ -203,9 +204,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
                     <span className="text-[12px] font-semibold text-[var(--tx)]">{c.name}</span>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <svg key={n} width="10" height="10" viewBox="0 0 24 24" fill={n <= c.rating ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
+                        <Star key={n} size={10} color={GOLD} weight={n <= c.rating ? "fill" : "regular"} />
                       ))}
                     </div>
                   </div>

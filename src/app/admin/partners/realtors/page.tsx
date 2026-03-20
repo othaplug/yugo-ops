@@ -3,7 +3,7 @@ import BackButton from "../../components/BackButton";
 import KpiCard from "@/components/ui/KpiCard";
 import { formatCurrency } from "@/lib/format-currency";
 
-export const metadata = { title: "Realtors" };
+export const metadata = { title: "Realtors & referrals" };
 
 import RealtorsTable from "./RealtorsTable";
 import RealtorsMetrics from "./RealtorsMetrics";
@@ -78,7 +78,10 @@ export default async function RealtorsPage() {
 
       <div className="mb-8">
         <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Partners</p>
-        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Realtors & Referrals</h1>
+        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Realtors & referrals</h1>
+        <p className="mt-2 text-[13px] text-[var(--tx3)] max-w-2xl leading-relaxed">
+          Referrals from referral partners — led by <span className="text-[var(--tx2)] font-medium">realtors</span> (property managers &amp; developers share the same pipeline).
+        </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-8">

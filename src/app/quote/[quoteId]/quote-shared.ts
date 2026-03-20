@@ -80,8 +80,12 @@ export interface Quote {
   valuation_upgrade_cost: number | null;
   declaration_total: number | null;
   recommended_tier: string | null;
-  inventory_items?: { slug?: string; name?: string; quantity?: number }[] | null;
+  inventory_items?: { slug?: string; name?: string; quantity?: number; room?: string; weight_score?: number }[] | null;
   client_box_count?: number | null;
+  walkthrough_based?: boolean | null;
+  walkthrough_date?: string | null;
+  walkthrough_notes?: string | null;
+  walkthrough_special_items?: string | null;
 }
 
 export interface ValuationTier {

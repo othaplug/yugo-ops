@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, CalendarX } from "lucide-react";
+import { CaretDown as ChevronDown, CaretRight as ChevronRight, CalendarX } from "@phosphor-icons/react";
 import JobCard, { type DispatchJob } from "./JobCard";
 
 const ACTIVE_STATUSES = [

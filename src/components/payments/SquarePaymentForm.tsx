@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
+import { Lock } from "@phosphor-icons/react";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -285,10 +286,7 @@ export default function SquarePaymentForm({
 
       {/* Security badge */}
       <div className="flex items-center justify-center gap-2">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}50`} strokeWidth="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
+        <Lock size={14} color={`${FOREST}50`} aria-hidden />
         <span className="text-[10px]" style={{ color: `${FOREST}50` }}>
           Secured by Square &middot; 256-bit encryption
         </span>

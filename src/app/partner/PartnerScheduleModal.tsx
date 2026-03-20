@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { X } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { Plus, Trash2, Send, Calendar } from "lucide-react";
+import { Plus, Trash as Trash2, PaperPlaneTilt as Send, Calendar } from "@phosphor-icons/react";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 
@@ -337,7 +338,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             )}
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)] shrink-0" aria-label="Close">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <X size={18} />
           </button>
         </div>
 

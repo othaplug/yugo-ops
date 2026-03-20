@@ -1,22 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { useConfirm } from "@/hooks/useConfirm";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
-  Boxes,
+  Cube as Boxes,
   Plus,
   X,
-  ChevronDown,
-  ChevronRight,
-  MessageSquare,
+  CaretDown as ChevronDown,
+  CaretRight as ChevronRight,
+  ChatText as MessageSquare,
   Camera,
-  AlertTriangle,
-  Trash2,
-  Pencil,
-} from "lucide-react";
+  Warning as AlertTriangle,
+  Trash as Trash2,
+  PencilSimple as Pencil,
+} from "@phosphor-icons/react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1058,14 +1059,14 @@ export default function PartnerB2BProjectsTab({
             className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.max(0, i - 1)); }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
+            <CaretLeft size={20} />
           </button>
           <button
             type="button"
             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.min(viewPhotos.length - 1, i + 1)); }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+            <CaretRight size={20} />
           </button>
         </>
       )}
@@ -1462,7 +1463,7 @@ export default function PartnerB2BProjectsTab({
           {/* Back */}
           <button onClick={() => setSelectedProject(null)}
             className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] mb-4 transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
+            <CaretLeft size={14} />
             Back to Projects
           </button>
 
@@ -1726,9 +1727,7 @@ export default function PartnerB2BProjectsTab({
                   {p.end_client_name && <p className="text-[12px] text-[var(--tx3)] mt-0.5">{p.end_client_name}</p>}
                   {p.site_address && <p className="text-[11px] text-[var(--tx3)]">{p.site_address}</p>}
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="shrink-0 mt-1">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
+                <CaretRight size={16} color="var(--tx3)" className="shrink-0 mt-1" />
               </div>
 
               <div className="relative h-2 bg-[var(--bg)] rounded-full overflow-hidden mb-2">

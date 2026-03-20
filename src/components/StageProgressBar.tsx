@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "@phosphor-icons/react";
 
 export default function StageProgressBar({
   stages,
@@ -94,18 +95,12 @@ export default function StageProgressBar({
                     }}
                   >
                     {isDone ? (
-                      <svg
-                        width={isLast && isComplete ? 12 : 9}
-                        height={isLast && isComplete ? 12 : 9}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={isLast && isComplete ? "#fff" : "#22C55E"}
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <Check
+                        weight="bold"
+                        size={isLast && isComplete ? 12 : 9}
+                        color={isLast && isComplete ? "#fff" : "#22C55E"}
+                        aria-hidden
+                      />
                     ) : isCurrent ? (
                       <span
                         className="rounded-full"

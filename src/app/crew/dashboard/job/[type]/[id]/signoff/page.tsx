@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Star as PhStar, CaretLeft as PhCaretLeft, PencilSimple, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use } from "react";
@@ -188,35 +189,19 @@ const CONDITION_OPTIONS = [
 ];
 
 function StarIcon({ filled, size = 28 }: { filled: boolean; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
+  return <PhStar size={size} color={GOLD} weight={filled ? "fill" : "regular"} />;
 }
 
 function ChevronLeft({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
+  return <PhCaretLeft size={size} />;
 }
 
 function PenLine({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
+  return <PencilSimple size={size} />;
 }
 
 function CheckMark({ size = 10 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
+  return <Check size={size} weight="bold" />;
 }
 
 function YugoWordmark() {
@@ -552,9 +537,7 @@ export default function ClientSignOffPage({
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
             style={{ backgroundColor: `${GOLD}15` }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check size={24} color={GOLD} weight="bold" />
           </div>
           <h1 className="font-hero text-[26px] font-semibold mb-2" style={{ color: INK }}>Already Signed</h1>
           <p className="text-[14px] mb-6" style={{ color: MUTED }}>This job has already been signed off.</p>
@@ -1162,9 +1145,7 @@ export default function ClientSignOffPage({
                 className="w-16 h-16 rounded-full flex items-center justify-center pop-in text-[#1A1A1A]"
                 style={{ backgroundColor: GOLD }}
               >
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <Check size={26} color="#1A1A1A" weight="bold" />
               </div>
             </div>
 

@@ -168,7 +168,7 @@ export default async function SettingsTabPage({
       { key: "square", label: "Square", desc: "Invoicing & payment processing", icon: "creditCard" as const, connected: !!process.env.SQUARE_ACCESS_TOKEN, details: process.env.SQUARE_ENVIRONMENT === "production" ? "Mode: Production" : "Mode: Sandbox", category: "Payments" },
       // Communications
       { key: "resend", label: "Resend", desc: "Transactional email — quotes, invoices, confirmations", icon: "mail" as const, connected: !!process.env.RESEND_API_KEY, category: "Communications" },
-      { key: "twilio", label: "Twilio", desc: "SMS notifications, dispatch alerts & 2FA codes", icon: "phone" as const, connected: !!process.env.TWILIO_ACCOUNT_SID, category: "Communications" },
+      { key: "openphone", label: "OpenPhone", desc: "SMS notifications, dispatch alerts & client messaging", icon: "phone" as const, connected: !!process.env.OPENPHONE_API_KEY, category: "Communications" },
       // Mapping
       { key: "mapbox", label: "Mapbox", desc: "Maps, geocoding, live crew tracking & routing", icon: "mapPin" as const, connected: !!process.env.MAPBOX_TOKEN || !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN, category: "Mapping" },
       // CRM

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { X, Plus, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -129,7 +130,7 @@ function ScheduleModal({
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <X size={18} />
           </button>
         </div>
 
@@ -361,7 +362,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
           onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <Plus size={13} />
           Create Schedule
         </button>
       </div>
@@ -429,7 +430,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                     onClick={() => setEditTarget(s)}
                     className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <PencilSimple size={14} />
                   </button>
                   <button
                     title={s.is_paused ? "Resume" : "Pause"}
@@ -438,9 +439,9 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                     className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
                   >
                     {s.is_paused ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      <Play size={14} />
                     ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                      <Pause size={14} />
                     )}
                   </button>
                   <button
@@ -449,7 +450,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                     disabled={deleting === s.id}
                     className="p-2 rounded-lg text-[var(--tx3)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    <Trash size={14} />
                   </button>
                 </div>
               </div>

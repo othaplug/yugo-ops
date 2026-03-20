@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, MapPin } from "@phosphor-icons/react";
+
 /** Progress bar with start pin and destination. Progress starts when team is en route to pickup. No car icon. */
 export default function DeliveryProgressBar({
   percent,
@@ -40,9 +42,7 @@ export default function DeliveryProgressBar({
             boxShadow: "0 0 0 2px rgba(139,92,246,0.4)",
           }}
         >
-          <svg width="10" height="12" viewBox="0 0 24 24" fill="none" className="text-white drop-shadow-sm">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" fill="currentColor" />
-          </svg>
+          <MapPin size={12} className="text-white drop-shadow-sm" aria-hidden />
         </div>
 
         {/* Track */}
@@ -71,9 +71,7 @@ export default function DeliveryProgressBar({
           }}
         >
           {isComplete ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check weight="bold" size={12} color="#fff" className="drop-shadow-sm" aria-hidden />
           ) : (
             <div
               className="rounded-full"

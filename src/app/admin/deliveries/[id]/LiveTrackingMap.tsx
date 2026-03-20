@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { useTheme } from "@/app/admin/components/ThemeContext";
 import { toTitleCase } from "@/lib/format-text";
+import { Clock, CornersIn, CornersOut } from "@phosphor-icons/react";
 
 const LiveTrackingMapLeaflet = dynamic(
   () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
@@ -371,7 +372,7 @@ export default function LiveTrackingMap({
     return (
       <div className="px-6 py-8 text-center">
         <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center mx-auto mb-3">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[var(--tx3)]"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <Clock size={20} className="text-[var(--tx3)]" aria-hidden />
         </div>
         <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned — waiting to start</p>
         <p className="text-[10px] text-[var(--tx3)] mt-1">
@@ -397,9 +398,9 @@ export default function LiveTrackingMap({
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <CornersIn size={16} className="text-current" aria-hidden />
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <CornersOut size={16} className="text-current" aria-hidden />
             )}
           </button>
           {liveStage && (
@@ -462,9 +463,9 @@ export default function LiveTrackingMap({
           title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <CornersIn size={16} className="text-current" aria-hidden />
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <CornersOut size={16} className="text-current" aria-hidden />
           )}
         </button>
         {liveStage && (

@@ -1,17 +1,22 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import YugoLogo from "@/components/YugoLogo";
+import { getCompanyDisplayName } from "@/lib/config";
+import { getLegalBranding } from "@/lib/legal-branding";
 
 const EFFECTIVE = "March 15, 2026";
-const COMPANY = "Yugo Moving & Delivery Inc.";
-const EMAIL = "legal@yugomoves.com";
-const ADDRESS = "Toronto, Ontario, Canada";
 
-export const metadata = {
-  title: "Privacy Policy — Yugo",
-  description: "How Yugo collects, uses, and protects your personal information.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getCompanyDisplayName();
+  return {
+    title: `Privacy Policy — ${brand}`,
+    description: `How ${brand} collects, uses, and protects your personal information.`,
+  };
+}
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  const { companyLegal, brand, email, address } = await getLegalBranding();
+
   return (
     <main style={{ minHeight: "100vh", background: "#FDFCFA", fontFamily: "'DM Sans', sans-serif", color: "#1A1714" }}>
       {/* Header */}
@@ -30,12 +35,12 @@ export default function PrivacyPolicyPage() {
         <div style={{ marginBottom: 40 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#C9A962", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Privacy Policy</h1>
-          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {COMPANY}</p>
+          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {companyLegal}</p>
         </div>
 
         <section style={{ marginBottom: 36 }}>
           <p style={{ fontSize: 15, lineHeight: 1.8, color: "#3A3530" }}>
-            {COMPANY} (&quot;Yugo,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our moving and delivery platform, including our website, mobile applications, crew portal, partner portal, and all related services (collectively, the &quot;Platform&quot;).
+            {companyLegal} (&quot;{brand},&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our moving and delivery platform, including our website, mobile applications, crew portal, partner portal, and all related services (collectively, the &quot;Platform&quot;).
           </p>
           <p style={{ fontSize: 15, lineHeight: 1.8, color: "#3A3530", marginTop: 12 }}>
             By accessing or using the Platform, you acknowledge that you have read and understood this Privacy Policy. If you do not agree with its terms, please do not access the Platform.
@@ -90,12 +95,12 @@ export default function PrivacyPolicyPage() {
             <li><strong>Clients and partners:</strong> Limited information (crew name, team name, real-time location) shared with the party who booked the service to facilitate tracking.</li>
             <li><strong>Business transfers:</strong> In connection with a merger, acquisition, or sale of assets, subject to standard confidentiality obligations.</li>
             <li><strong>Legal compliance:</strong> When required by applicable law, court order, or government request.</li>
-            <li><strong>Safety:</strong> To protect the rights, property, or safety of Yugo, our users, or others.</li>
+            <li><strong>Safety:</strong> To protect the rights, property, or safety of {brand}, our users, or others.</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="4. Location Data">
-          <p>Yugo collects precise GPS location data from crew members&apos; devices during active job sessions. This data is used to:</p>
+          <p>{brand} collects precise GPS location data from crew members&apos; devices during active job sessions. This data is used to:</p>
           <ul>
             <li>Provide clients and partners with live tracking of their move or delivery.</li>
             <li>Calculate ETAs and notify clients when crews are en route or have arrived.</li>
@@ -126,7 +131,7 @@ export default function PrivacyPolicyPage() {
             <li><strong>Opt-out:</strong> Unsubscribe from marketing communications at any time.</li>
             <li><strong>Withdraw consent:</strong> Where we rely on consent, you may withdraw it at any time.</li>
           </ul>
-          <p>To exercise any of these rights, contact us at <strong>{EMAIL}</strong>. We will respond within 30 days.</p>
+          <p>To exercise any of these rights, contact us at <strong>{email}</strong>. We will respond within 30 days.</p>
         </LegalSection>
 
         <LegalSection title="7. Security">
@@ -156,7 +161,7 @@ export default function PrivacyPolicyPage() {
         </LegalSection>
 
         <LegalSection title="10. International Transfers">
-          <p>Yugo is based in {ADDRESS}. Your information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place in accordance with applicable data protection laws.</p>
+          <p>Yugo is based in {address}. Your information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place in accordance with applicable data protection laws.</p>
         </LegalSection>
 
         <LegalSection title="11. Changes to This Policy">
@@ -166,9 +171,9 @@ export default function PrivacyPolicyPage() {
         <LegalSection title="12. Contact Us">
           <p>For questions or concerns about this Privacy Policy or to exercise your rights, contact us at:</p>
           <address style={{ fontStyle: "normal", marginTop: 8, lineHeight: 1.8 }}>
-            <strong>{COMPANY}</strong><br />
-            {ADDRESS}<br />
-            <a href={`mailto:${EMAIL}`} style={{ color: "#C9A962" }}>{EMAIL}</a>
+            <strong>{companyLegal}</strong><br />
+            {address}<br />
+            <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a>
           </address>
         </LegalSection>
 

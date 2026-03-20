@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Info, ShareNetwork, CaretDown, Check, MapPin, Clock, Warning } from "@phosphor-icons/react";
 
 interface Vendor {
   vendor: string;
@@ -91,7 +92,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                 <div className="flex items-center gap-2">
                   {hasDelay && (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      <Info size={10} className="inline mr-1" />
                       Delay
                     </span>
                   )}
@@ -100,16 +101,15 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                       onClick={(e) => { e.stopPropagation(); onShareProject(project.id); }}
                       className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      <ShareNetwork size={12} className="inline mr-1" />
                       Share
                     </button>
                   )}
-                  <svg
-                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"
+                  <CaretDown
+                    size={16}
+                    color="#888"
                     className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                  />
                 </div>
               </div>
 
@@ -177,27 +177,27 @@ function VendorIcon({ type, status }: { type: string; status: string }) {
   if (type === "check") {
     return (
       <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <Check size={12} color={color} weight="bold" />
       </div>
     );
   }
   if (type === "mapPin") {
     return (
       <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <MapPin size={12} color={color} />
       </div>
     );
   }
   if (type === "alert") {
     return (
       <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <Warning size={12} color={color} />
       </div>
     );
   }
   return (
     <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <Clock size={12} color={color} />
     </div>
   );
 }

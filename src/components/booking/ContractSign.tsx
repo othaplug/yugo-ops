@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Check, ChevronDown, ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "lucide-react";
+import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
 import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
@@ -50,6 +50,8 @@ export interface ContractQuoteData {
 
 interface Props {
   quoteData: ContractQuoteData;
+  companyLegalName: string;
+  companyDisplayName: string;
   onSigned: (data: { typed_name: string; signed_at: string; pdf_url?: string }) => void;
   onContractStarted?: () => void;
 }
@@ -119,7 +121,13 @@ function fmtDate(d: string | null) {
   });
 }
 
-export default function ContractSign({ quoteData, onSigned, onContractStarted }: Props) {
+export default function ContractSign({
+  quoteData,
+  companyLegalName,
+  companyDisplayName,
+  onSigned,
+  onContractStarted,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
   const [typedName, setTypedName] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -592,7 +600,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 4. Card-on-File Authorization
               </h3>
               <p>
-                I authorize YUGO Moving Inc. to securely store my payment card on file using
+                I authorize {companyLegalName} to securely store my payment card on file using
                 Square&apos;s PCI-compliant vault and to charge the balance amount per the payment
                 terms above. No additional charges will be made without prior authorization.
               </p>
@@ -611,8 +619,8 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               </h3>
               <p>
                 Standard cargo liability coverage is included at $0.60 per pound per article.
-                Enhanced full-value protection is available as an optional add-on. YUGO carries
-                $2,000,000 in commercial liability insurance.
+                Enhanced full-value protection is available as an optional add-on. {companyDisplayName}{" "}
+                carries $2,000,000 in commercial liability insurance.
               </p>
             </div>
 
@@ -622,7 +630,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               </h3>
               <p>
                 If the actual scope differs from the quote (e.g., additional items, access issues
-                not disclosed, or conditions beyond our control), YUGO will communicate the impact
+                not disclosed, or conditions beyond our control), {companyDisplayName} will communicate the impact
                 and obtain your written approval before proceeding with any additional charges.
               </p>
             </div>
@@ -634,7 +642,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
               <p>
                 Any claims for loss or damage must be reported in writing within 48 hours of
                 delivery completion. Claims submitted after this window may not be eligible for
-                compensation. YUGO will investigate all claims promptly and resolve them in
+                compensation. {companyDisplayName} will investigate all claims promptly and resolve them in
                 accordance with the applicable liability coverage.
               </p>
             </div>
@@ -649,7 +657,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 valued above $500 individually; (c) ensuring building elevator bookings, parking
                 permits, and clear access at both locations; (d) removing or identifying hazardous
                 materials, perishables, and prohibited items (firearms, chemicals, flammables) which
-                YUGO cannot transport. Failure to disclose access restrictions or item details may
+                {companyDisplayName} cannot transport. Failure to disclose access restrictions or item details may
                 result in scope adjustments per Section 7.
               </p>
             </div>
@@ -659,10 +667,10 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
                 10. Delays &amp; Force Majeure
               </h3>
               <p>
-                YUGO shall not be liable for delays caused by circumstances beyond its reasonable
+                {companyDisplayName} shall not be liable for delays caused by circumstances beyond its reasonable
                 control, including but not limited to severe weather, road closures, traffic
                 conditions, building elevator breakdowns, labour disruptions, or government-imposed
-                restrictions. In the event of a delay, YUGO will notify the client promptly and
+                restrictions. In the event of a delay, {companyDisplayName} will notify the client promptly and
                 reschedule at the earliest available date at no additional cost.
               </p>
             </div>
@@ -701,7 +709,7 @@ export default function ContractSign({ quoteData, onSigned, onContractStarted }:
 
           <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
             By signing below, I confirm that I have read the service agreement, understand the
-            terms, and authorize YUGO to proceed with the service as described.
+            terms, and authorize {companyDisplayName} to proceed with the service as described.
           </p>
 
           {/* Typed name input */}

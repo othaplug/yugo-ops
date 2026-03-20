@@ -16,6 +16,7 @@ import {
   setBodyText,
   setHeroTitle,
 } from "@/lib/pdf-brand";
+import { getCompanyDisplayName, getCompanyLegalName } from "@/lib/config";
 
 interface ContractAddonData {
   name: string;
@@ -89,6 +90,8 @@ function generateContractPdf(
   payload: ContractSignPayload,
   ipAddress: string,
   signedAt: string,
+  companyLegalName: string,
+  companyDisplayName: string,
 ): Buffer {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const cd = payload.contract_data;
@@ -208,7 +211,7 @@ function generateContractPdf(
     },
     {
       title: "3. Card-on-File Authorization",
-      body: "I authorize YUGO Moving Inc. to securely store my payment card using Square's PCI-compliant vault and charge the balance per payment terms.",
+      body: `I authorize ${companyLegalName} to securely store my payment card using Square's PCI-compliant vault and charge the balance per payment terms.`,
     },
     {
       title: "4. Cancellation Policy",
@@ -326,10 +329,16 @@ export async function POST(req: Request) {
     /* 3. Generate contract PDF */
     let pdfUrl: string | null = null;
     try {
+      const [companyLegalName, companyDisplayName] = await Promise.all([
+        getCompanyLegalName(),
+        getCompanyDisplayName(),
+      ]);
       const pdfBuffer = generateContractPdf(
         { quote_id, typed_name, agreement_version, user_agent: user_agent ?? "", contract_data },
         ipAddress,
         signedAt,
+        companyLegalName,
+        companyDisplayName,
       );
 
       const filePath = `contracts/${quote_id}/agreement-${Date.now()}.pdf`;

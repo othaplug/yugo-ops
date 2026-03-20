@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, type TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getFeatureConfig } from "@/lib/platform-settings";
+import { sendQuoteFollowupSms } from "@/lib/quote-sms";
 
 const HS_TASKS = "https://api.hubapi.com/crm/v3/objects/tasks";
 const HS_ASSOC = "https://api.hubapi.com/crm/v4/objects/tasks";
@@ -237,7 +238,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rule1Quotes } = await supabase
     .from("quotes")
-    .select("quote_id, service_type, contact_id, contacts:contact_id(name, email)")
+    .select("quote_id, service_type, contact_id, contacts:contact_id(name, email, phone)")
     .eq("status", "sent")
     .lt("sent_at", cutoff24h)
     .is("viewed_at", null)
@@ -246,7 +247,7 @@ export async function GET(req: NextRequest) {
 
   if (rule1Quotes) {
     for (const q of rule1Quotes) {
-      const contactRaw = q.contacts as { name: string; email: string | null } | { name: string; email: string | null }[] | null;
+      const contactRaw = q.contacts as { name: string; email: string | null; phone?: string | null } | { name: string; email: string | null; phone?: string | null }[] | null;
       const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw;
       if (!contact?.email) continue;
 
@@ -262,6 +263,7 @@ export async function GET(req: NextRequest) {
 
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
+        const firstName = contact.name ? contact.name.split(" ")[0] : "";
 
         const res = await sendEmail({
           to: contact.email,
@@ -279,6 +281,18 @@ export async function GET(req: NextRequest) {
         } else {
           results.errors.push(`f1:${q.quote_id}:${res.error}`);
         }
+
+        // Also send SMS follow-up
+        if (contact.phone) {
+          sendQuoteFollowupSms({
+            phone: contact.phone,
+            quoteUrl,
+            quoteId: q.quote_id,
+            firstName,
+            serviceType: q.service_type,
+            followupNumber: 1,
+          }).catch(() => {});
+        }
       } catch (err) {
         results.errors.push(`f1:${q.quote_id}:${err instanceof Error ? err.message : String(err)}`);
       }
@@ -293,7 +307,7 @@ export async function GET(req: NextRequest) {
   const { data: rule2Quotes } = maxAttempts >= 2
     ? await supabase
         .from("quotes")
-        .select("id, quote_id, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, contact_id, contacts:contact_id(name, email)")
+        .select("id, quote_id, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, contact_id, contacts:contact_id(name, email, phone)")
         .eq("status", "viewed")
         .lt("viewed_at", cutoff48h)
         .is("accepted_at", null)
@@ -303,7 +317,7 @@ export async function GET(req: NextRequest) {
 
   if (rule2Quotes) {
     for (const q of rule2Quotes) {
-      const contactRaw = q.contacts as { name: string; email: string | null } | { name: string; email: string | null }[] | null;
+      const contactRaw = q.contacts as { name: string; email: string | null; phone?: string | null } | { name: string; email: string | null; phone?: string | null }[] | null;
       const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw;
       if (!contact?.email) continue;
 
@@ -325,6 +339,7 @@ export async function GET(req: NextRequest) {
 
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
+        const firstName = contact.name ? contact.name.split(" ")[0] : "";
 
         const res = await sendEmail({
           to: contact.email,
@@ -344,6 +359,19 @@ export async function GET(req: NextRequest) {
           results.followup2++;
         } else {
           results.errors.push(`f2:${q.quote_id}:${res.error}`);
+        }
+
+        // SMS follow-up alongside email
+        if (contact.phone) {
+          sendQuoteFollowupSms({
+            phone: contact.phone,
+            quoteUrl,
+            quoteId: q.quote_id,
+            firstName,
+            serviceType: q.service_type,
+            followupNumber: 2,
+            expiresAt: q.expires_at,
+          }).catch(() => {});
         }
 
         if (q.hubspot_deal_id) {
@@ -367,7 +395,7 @@ export async function GET(req: NextRequest) {
   const { data: rule3Quotes } = maxAttempts >= 3
     ? await supabase
         .from("quotes")
-        .select("id, quote_id, service_type, expires_at, hubspot_deal_id, contact_id, contacts:contact_id(name, email)")
+        .select("id, quote_id, service_type, expires_at, hubspot_deal_id, contact_id, contacts:contact_id(name, email, phone)")
         .in("status", ["viewed", "sent"])
         .lt("viewed_at", cutoff5d)
         .is("accepted_at", null)
@@ -377,7 +405,7 @@ export async function GET(req: NextRequest) {
 
   if (rule3Quotes) {
     for (const q of rule3Quotes) {
-      const contactRaw = q.contacts as { name: string; email: string | null } | { name: string; email: string | null }[] | null;
+      const contactRaw = q.contacts as { name: string; email: string | null; phone?: string | null } | { name: string; email: string | null; phone?: string | null }[] | null;
       const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw;
       if (!contact?.email) continue;
 
@@ -399,6 +427,7 @@ export async function GET(req: NextRequest) {
 
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
+        const firstName = contact.name ? contact.name.split(" ")[0] : "";
 
         const res = await sendEmail({
           to: contact.email,
@@ -417,6 +446,19 @@ export async function GET(req: NextRequest) {
           results.followup3++;
         } else {
           results.errors.push(`f3:${q.quote_id}:${res.error}`);
+        }
+
+        // SMS final follow-up
+        if (contact.phone) {
+          sendQuoteFollowupSms({
+            phone: contact.phone,
+            quoteUrl,
+            quoteId: q.quote_id,
+            firstName,
+            serviceType: q.service_type,
+            followupNumber: 3,
+            expiresAt: q.expires_at,
+          }).catch(() => {});
         }
 
         if (q.hubspot_deal_id) {

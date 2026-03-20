@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Check, MapPin, Clock, SkipForward } from "@phosphor-icons/react";
 
 interface Stop {
   id: string;
@@ -128,12 +129,12 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
               >
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: cfg.bg }}>
-                    {cfg.icon === "check"      && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-                    {cfg.icon === "map-pin"    && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>}
-                    {cfg.icon === "clock"      && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+                    {cfg.icon === "check"      && <Check size={12} color={cfg.color} weight="bold" />}
+                    {cfg.icon === "map-pin"    && <MapPin size={12} color={cfg.color} />}
+                    {cfg.icon === "clock"      && <Clock size={12} color={cfg.color} />}
                     {cfg.icon === "dot-active" && <span className="w-3 h-3 rounded-full" style={{ background: cfg.color }} />}
                     {cfg.icon === "circle"     && <span className="w-3 h-3 rounded-full border-2" style={{ borderColor: cfg.color }} />}
-                    {cfg.icon === "skip"       && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="2"><polyline points="5 4 15 12 5 20"/><line x1="19" y1="5" x2="19" y2="19"/></svg>}
+                    {cfg.icon === "skip"       && <SkipForward size={12} color={cfg.color} />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -241,7 +242,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
 
                   {isDone && (
                     <div className="flex items-center gap-2 text-[10px] text-[#22C55E]">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      <Check size={14} weight="bold" />
                       Completed {stop.completed_at ? `at ${new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}` : ""}
                     </div>
                   )}

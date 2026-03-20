@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { CaretLeft, X, CaretRight, Lock, NavigationArrow, ArrowSquareOut, SignOut, Sun, Moon, Desktop, UserCircle, Bell, Sliders } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
@@ -182,7 +183,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           <div className="flex items-center gap-2">
             {section !== "main" && (
               <button onClick={() => setSection("main")} className="p-1.5 rounded-lg hover:bg-[var(--hover,#F5F3F0)] transition-colors mr-1">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                <CaretLeft size={16} />
               </button>
             )}
             <h2 className="text-[24px] font-medium font-hero text-[var(--tx,#1A1A1A)]">
@@ -190,7 +191,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             </h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--hover,#F5F3F0)] transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <X size={18} />
           </button>
         </div>
 
@@ -224,9 +225,9 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Theme</div>
                 <div className="flex gap-2">
                   {([
-                    { key: "light" as Theme, label: "Light", icon: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" },
-                    { key: "dark" as Theme, label: "Dark", icon: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" },
-                    { key: "system" as Theme, label: "Auto", icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
+                    { key: "light" as Theme, label: "Light", PhIcon: Sun },
+                    { key: "dark" as Theme, label: "Dark", PhIcon: Moon },
+                    { key: "system" as Theme, label: "Auto", PhIcon: Desktop },
                   ]).map((t) => (
                     <button
                       key={t.key}
@@ -237,9 +238,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                           : "border-[var(--brd,#E8E4DF)] bg-[var(--card,#fff)] hover:border-[var(--tx3,#888)]/30"
                       }`}
                     >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme === t.key ? "#C9A962" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--tx3,#888)]">
-                        <path d={t.icon} />
-                      </svg>
+                      <t.PhIcon size={20} color={theme === t.key ? "#C9A962" : "currentColor"} />
                       <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#888)]"}`}>{t.label}</span>
                     </button>
                   ))}
@@ -251,9 +250,9 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#888)] mb-3">Manage</div>
                 <div className="space-y-1">
                   {[
-                    { key: "profile" as const, icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2", circle: true, label: "Edit Profile", desc: "Name, email, phone" },
-                    { key: "notifications" as const, icon: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9", bell: true, label: "Notifications", desc: "Email and delivery alerts" },
-                    { key: "preferences" as const, icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4", label: "Delivery Preferences", desc: "Defaults for new deliveries" },
+                    { key: "profile" as const, PhIcon: UserCircle, label: "Edit Profile", desc: "Name, email, phone" },
+                    { key: "notifications" as const, PhIcon: Bell, label: "Notifications", desc: "Email and delivery alerts" },
+                    { key: "preferences" as const, PhIcon: Sliders, label: "Delivery Preferences", desc: "Defaults for new deliveries" },
                   ].map((item) => (
                     <button
                       key={item.key}
@@ -261,17 +260,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors text-left"
                     >
                       <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d={item.icon} />
-                          {item.circle && <circle cx="12" cy="7" r="4" />}
-                          {item.bell && <path d="M13.73 21a2 2 0 01-3.46 0" />}
-                        </svg>
+                        <item.PhIcon size={16} color="var(--tx3,#888)" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{item.label}</div>
                         <div className="text-[11px] text-[var(--tx3,#888)]">{item.desc}</div>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                      <CaretRight size={14} color="var(--tx3,#888)" />
                     </button>
                   ))}
                 </div>
@@ -286,13 +281,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors"
                   >
                     <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+                      <Lock size={16} color="var(--tx3,#888)" />
                     </div>
                     <div className="flex-1">
                       <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Change Password</div>
                       <div className="text-[11px] text-[var(--tx3,#888)]">Update your login credentials</div>
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                    <CaretRight size={14} color="var(--tx3,#888)" />
                   </a>
                   <a
                     href="/tracking"
@@ -300,13 +295,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors"
                   >
                     <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
+                      <NavigationArrow size={16} color="var(--tx3,#888)" />
                     </div>
                     <div className="flex-1">
                       <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Public Tracking Page</div>
                       <div className="text-[11px] text-[var(--tx3,#888)]">Share with your customers</div>
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3,#888)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                    <ArrowSquareOut size={14} color="var(--tx3,#888)" />
                   </a>
                 </div>
               </div>
@@ -318,7 +313,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                    <SignOut size={16} color="#EF4444" />
                   </div>
                   <span className="text-[13px] font-semibold text-red-500">Sign Out</span>
                 </button>

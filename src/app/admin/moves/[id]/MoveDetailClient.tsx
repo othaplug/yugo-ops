@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
-import { Pencil, ChevronDown, Lock } from "lucide-react";
+import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock, Check, Warning } from "@phosphor-icons/react";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
@@ -1007,7 +1007,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   <div className="mb-2">
                     {fullyPaid ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
-                        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check size={7} className="text-current" weight="bold" />
                         Paid
                       </span>
                     ) : balanceUnpaid ? (
@@ -1317,7 +1317,7 @@ function MoveProfitCard({ move }: { move: any }) {
       </div>
       {costs.grossMargin < target && (
         <div className="mt-3 flex items-center gap-1.5 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
-          <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <Warning className="w-3 h-3 shrink-0 text-current" />
           Below Target Margin ({target}%)
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { X, Check, Envelope, Chat } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
@@ -67,7 +68,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[18px] font-bold text-[var(--tx)] font-hero">Share Tracking Link</h2>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <X size={18} />
             </button>
           </div>
 
@@ -83,7 +84,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
           {sent ? (
             <div className="text-center py-6">
               <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D9F5A" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <Check size={24} color="#2D9F5A" weight="bold" />
               </div>
               <p className="text-[14px] font-semibold text-[var(--tx)]">Tracking link sent!</p>
             </div>
@@ -96,7 +97,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                     method === "email" ? "border-[#C9A962] bg-[#C9A962]/5 text-[#C9A962]" : "border-[var(--brd)] text-[var(--tx3)]"
                   }`}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <Envelope size={14} className="inline mr-1.5" />
                   Email
                 </button>
                 <button
@@ -105,7 +106,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                     method === "sms" ? "border-[#C9A962] bg-[#C9A962]/5 text-[#C9A962]" : "border-[var(--brd)] text-[var(--tx3)]"
                   }`}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <Chat size={14} className="inline mr-1.5" />
                   SMS
                 </button>
               </div>

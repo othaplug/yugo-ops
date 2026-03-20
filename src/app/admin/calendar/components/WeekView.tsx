@@ -72,117 +72,168 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
     return result;
   }, [weekDays, eventsByDate]);
 
+  const hasUnscheduled = weekDays.some(({ key }) =>
+    (eventsByDate[key] || []).some((ev) => !ev.start)
+  );
+
   return (
-    <div className="px-6 pb-6">
-      {/* Day headers */}
-      <div className="flex border-b border-[var(--brd)]">
-        <div className="w-14 shrink-0" />
-        {weekDays.map(({ date, key }, i) => {
-          const isToday = key === todayKey;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onDayClick(key)}
-              className={`flex-1 min-w-0 py-2 text-center border-l border-[var(--brd)] hover:bg-[var(--bg)]/50 transition-colors ${
-                isToday ? "bg-[var(--gold)]/5" : ""
-              }`}
-            >
-              <div className={`text-[9px] font-bold tracking-wider uppercase ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
-                {DAY_NAMES[i]} {date.getDate()}
-              </div>
-              {isToday && <span className="text-[7px] bg-[var(--gold)]/20 text-[var(--gold)] px-1 py-px rounded font-bold">Today</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Timeline */}
-      <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
-        <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
-          {/* Time labels */}
-          <div className="w-14 shrink-0 relative">
-            {HOURS.map((h) => (
-              <div
-                key={h}
-                className="absolute w-full text-right pr-1.5 text-[9px] text-[var(--tx3)] font-medium"
-                style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 5 }}
-              >
-                {h <= 12 ? `${h}AM` : `${h - 12}PM`}
-              </div>
-            ))}
-          </div>
-
-          {/* Day columns */}
-          {weekDays.map(({ key }) => {
-            const dayEvents = eventsByDate[key] || [];
+    <div className="px-2 sm:px-6 pb-6">
+      {/* Horizontal scroll wrapper — all rows scroll together on mobile */}
+      <div className="overflow-x-auto">
+        {/* Day headers */}
+        <div className="flex border-b border-[var(--brd)]">
+          <div className="w-10 sm:w-14 shrink-0" />
+          {weekDays.map(({ date, key }, i) => {
             const isToday = key === todayKey;
-
             return (
-              <div
+              <button
                 key={key}
-                className={`flex-1 min-w-0 relative border-l border-[var(--brd)] ${isToday ? "bg-[var(--gold)]/3" : ""}`}
+                type="button"
                 onClick={() => onDayClick(key)}
+                className={`flex-1 min-w-[44px] py-2 text-center border-l border-[var(--brd)] hover:bg-[var(--bg)]/50 transition-colors ${
+                  isToday ? "bg-[var(--gold)]/5" : ""
+                }`}
               >
-                {HOURS.map((h) => (
-                  <div key={h} className="absolute w-full border-t border-[var(--brd)]/20" style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }} />
-                ))}
+                <div className={`text-[9px] font-bold tracking-wider uppercase mb-0.5 ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
+                  {DAY_NAMES[i]}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span
+                    className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
+                      isToday
+                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                        : "text-[var(--tx2)] hover:text-[var(--gold)]"
+                    }`}
+                  >
+                    {date.getDate()}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
-                {dayEvents.map((ev) => {
-                  const top = getTopOffset(ev.start);
-                  const height = getHeight(ev.start, ev.end, ev.durationHours);
-                  const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
-
-                  return (
+        {/* All-day / Unscheduled strip */}
+        {hasUnscheduled && (
+          <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
+            <div className="w-10 sm:w-14 shrink-0 py-1 flex items-center justify-end pr-1">
+              <span className="text-[7px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide hidden sm:block">All-day</span>
+            </div>
+            {weekDays.map(({ key }) => {
+              const untimedEvents = (eventsByDate[key] || []).filter((ev) => !ev.start);
+              return (
+                <div
+                  key={key}
+                  className="flex-1 min-w-[44px] border-l border-[var(--brd)] py-1 px-0.5 flex flex-col gap-0.5 min-h-[28px]"
+                >
+                  {untimedEvents.map((ev) => (
                     <button
                       key={ev.id}
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="absolute left-0.5 right-0.5 rounded overflow-hidden text-left hover:brightness-110 cursor-pointer transition-all"
+                      className="w-full text-left rounded px-1 py-0.5 text-[8px] font-bold truncate"
                       style={{
-                        top,
-                        height: Math.max(height, 20),
-                        borderLeft: `3px solid ${ev.color}`,
-                        background: `${ev.color}25`,
+                        backgroundColor: `${ev.color}28`,
+                        color: ev.color,
+                        borderLeft: `2px solid ${ev.color}`,
                       }}
                     >
-                      <div className="p-0.5 flex items-center gap-0.5">
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`} style={{ backgroundColor: dotColor }} />
-                        <span className="text-[8px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
-                      </div>
-                      {height > 25 && (
-                        <div className="flex items-center gap-0.5 text-[7px] text-[var(--tx3)] truncate px-0.5">
-                          <Icon name={TYPE_ICON_MAP[ev.type] || "calendar"} className="w-2.5 h-2.5 shrink-0 stroke-[1.75] stroke-current" />
-                          <span className="truncate">{ev.description}</span>
-                        </div>
-                      )}
+                      {ev.name}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Timeline */}
+        <div className="overflow-y-auto max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)]">
+          <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
+            {/* Time labels */}
+            <div className="w-10 sm:w-14 shrink-0 relative">
+              {HOURS.map((h) => (
+                <div
+                  key={h}
+                  className="absolute w-full text-right pr-1 sm:pr-1.5 text-[8px] sm:text-[9px] text-[var(--tx3)] font-medium"
+                  style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 5 }}
+                >
+                  {h <= 12 ? `${h}AM` : `${h - 12}PM`}
+                </div>
+              ))}
+            </div>
+
+            {/* Day columns */}
+            {weekDays.map(({ key }) => {
+              const dayEvents = (eventsByDate[key] || []).filter((ev) => ev.start);
+              const isToday = key === todayKey;
+
+              return (
+                <div
+                  key={key}
+                  className={`flex-1 min-w-[44px] relative border-l border-[var(--brd)] ${isToday ? "bg-[var(--gold)]/3" : ""}`}
+                  onClick={() => onDayClick(key)}
+                >
+                  {HOURS.map((h) => (
+                    <div key={h} className="absolute w-full border-t border-[var(--brd)]/20" style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }} />
+                  ))}
+
+                  {dayEvents.map((ev) => {
+                    const top = getTopOffset(ev.start);
+                    const height = getHeight(ev.start, ev.end, ev.durationHours);
+                    const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
+
+                    return (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                        className="absolute left-0.5 right-0.5 rounded overflow-hidden text-left hover:brightness-110 cursor-pointer transition-all"
+                        style={{
+                          top,
+                          height: Math.max(height, 20),
+                          borderLeft: `3px solid ${ev.color}`,
+                          background: `${ev.color}25`,
+                        }}
+                      >
+                        <div className="p-0.5 flex items-center gap-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`} style={{ backgroundColor: dotColor }} />
+                          <span className="text-[8px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
+                        </div>
+                        {height > 25 && (
+                          <div className="flex items-center gap-0.5 text-[7px] text-[var(--tx3)] truncate px-0.5">
+                            <Icon name={TYPE_ICON_MAP[ev.type] || "calendar"} className="w-2.5 h-2.5 shrink-0 stroke-[1.75] stroke-current" />
+                            <span className="truncate">{ev.description}</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Utilization bars */}
+        <div className="flex border-t border-[var(--brd)] mt-0">
+          <div className="w-10 sm:w-14 shrink-0 py-2 text-right pr-1 sm:pr-1.5 text-[8px] text-[var(--tx3)] font-semibold">Util.</div>
+          {weekDays.map(({ key }) => {
+            const u = utilization[key] || { booked: 0, total: 840 };
+            const pct = Math.min(Math.round((u.booked / u.total) * 100), 100);
+            const barColor = pct < 70 ? "#22C55E" : pct < 90 ? "#F59E0B" : "#EF4444";
+            const hrs = Math.round((u.booked / 60) * 10) / 10;
+
+            return (
+              <div key={key} className="flex-1 min-w-[44px] border-l border-[var(--brd)] px-0.5 sm:px-1 py-1.5">
+                <div className="h-1.5 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-0.5">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                </div>
+                <div className="text-[7px] text-[var(--tx3)] text-center hidden sm:block">{hrs}h ({pct}%)</div>
               </div>
             );
           })}
         </div>
-      </div>
-
-      {/* Utilization bars */}
-      <div className="flex border-t border-[var(--brd)] mt-0">
-        <div className="w-14 shrink-0 py-2 text-right pr-1.5 text-[8px] text-[var(--tx3)] font-semibold">Util.</div>
-        {weekDays.map(({ key }) => {
-          const u = utilization[key] || { booked: 0, total: 840 };
-          const pct = Math.min(Math.round((u.booked / u.total) * 100), 100);
-          const barColor = pct < 70 ? "#22C55E" : pct < 90 ? "#F59E0B" : "#EF4444";
-          const hrs = Math.round((u.booked / 60) * 10) / 10;
-
-          return (
-            <div key={key} className="flex-1 min-w-0 border-l border-[var(--brd)] px-1 py-1.5">
-              <div className="h-1.5 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-0.5">
-                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-              </div>
-              <div className="text-[7px] text-[var(--tx3)] text-center">{hrs}h ({pct}%)</div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

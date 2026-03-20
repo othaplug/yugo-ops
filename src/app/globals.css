@@ -588,6 +588,10 @@ input[type="time"] {
 .animate-slide-up {
   animation: slideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
+@keyframes cmdPaletteIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
 
 /* Mobile touch helpers */
 .touch-card-press {

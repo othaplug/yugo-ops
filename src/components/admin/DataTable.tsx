@@ -6,21 +6,22 @@ import {
   useCallback,
   useEffect,
   useRef,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import {
-  Search,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
+  MagnifyingGlass as Search,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
   Download,
-  Columns3,
-  ArrowUpDown,
+  Columns as Columns3,
+  ArrowsDownUp as ArrowUpDown,
   Bookmark,
-  BookmarkCheck,
-  RotateCcw,
-} from "lucide-react";
+  BookmarkSimple as BookmarkCheck,
+  ArrowCounterClockwise as RotateCcw,
+} from "@phosphor-icons/react";
 
 /* ════════════ Types ════════════ */
 
@@ -32,6 +33,8 @@ export interface ColumnDef<T> {
   sortable?: boolean;
   searchable?: boolean;
   defaultHidden?: boolean;
+  /** Permanently invisible — used only for search indexing, never rendered or shown in column picker */
+  alwaysHidden?: boolean;
   align?: "left" | "right" | "center";
   minWidth?: string;
   /** Default width in px for resizable columns */
@@ -327,9 +330,9 @@ export default function DataTable<T>({
     const colMap = new Map(columns.map((c) => [c.id, c]));
     const ordered = colOrder
       .map((id) => colMap.get(id))
-      .filter((c): c is typeof columns[number] => !!c && !hiddenCols.has(c.id));
+      .filter((c): c is typeof columns[number] => !!c && !c.alwaysHidden && !hiddenCols.has(c.id));
     // Append any columns not yet in colOrder (safety net)
-    const extra = columns.filter((c) => !colOrder.includes(c.id) && !hiddenCols.has(c.id));
+    const extra = columns.filter((c) => !c.alwaysHidden && !colOrder.includes(c.id) && !hiddenCols.has(c.id));
     return [...ordered, ...extra];
   }, [columns, hiddenCols, colOrder]);
 
@@ -654,7 +657,7 @@ export default function DataTable<T>({
                     onClick={() => setShowColMenu(false)}
                   />
                   <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl py-1.5">
-                    {columns.map((col) => (
+                    {columns.filter((col) => !col.alwaysHidden).map((col) => (
                       <label
                         key={col.id}
                         className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--bg)]/50 cursor-pointer transition-colors"
@@ -748,7 +751,12 @@ export default function DataTable<T>({
         >
           <colgroup>
             {selectable && <col style={{ width: 40 }} />}
-            {colWidths.map((w, i) => <col key={visibleCols[i]?.id ?? i} style={{ width: w }} />)}
+            {colWidths.map((w, i) => {
+              const col = visibleCols[i];
+              const style: CSSProperties = { width: w };
+              if (col?.minWidth) style.minWidth = col.minWidth;
+              return <col key={col?.id ?? i} style={style} />;
+            })}
             {/* Spacer col absorbs remaining width so table fills container */}
             <col style={{ width: "auto" }} />
           </colgroup>
@@ -972,9 +980,7 @@ export default function DataTable<T>({
                     )}
                   </div>
                   {onRowClick && (
-                    <svg className="w-4 h-4 text-[var(--tx3)]/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 text-[var(--tx3)]/30 shrink-0" aria-hidden />
                   )}
                 </div>
               );

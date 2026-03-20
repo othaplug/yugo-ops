@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Search, Plus, Minus, ChevronDown, StickyNote } from "lucide-react";
+import { MagnifyingGlass as Search, Plus, Minus, CaretDown as ChevronDown, Note as StickyNote } from "@phosphor-icons/react";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { validateInventoryQuantity } from "@/lib/inventory-quantity-validation";
 

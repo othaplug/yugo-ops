@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Target, Crown, Gem, type LucideIcon } from "lucide-react";
+import { Check, CaretRight as ChevronRight, Target, Crown, Diamond as Gem, type Icon as LucideIcon } from "@phosphor-icons/react";
 import {
   type Quote,
   type TierData,
@@ -88,7 +88,6 @@ export default function ResidentialLayout({
           const isRecommended = tierKey === recTier;
 
           const isEstate = tierKey === "estate";
-          const cardBg = isEstate ? "rgba(45, 12, 26, 1)" : meta.bg;
 
           const isCollapsed = hasSelection && !isSelected;
 
@@ -107,22 +106,20 @@ export default function ResidentialLayout({
               {/* Card body — no badge strip */}
               <div
                 className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl"
-                style={{
-                  backgroundColor: cardBg,
-                }}
-              >
-              <div
-                className={`p-6 md:p-8 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
                 style={
                   isEstate
                     ? {
-                        backgroundColor: "rgba(45, 12, 26, 1)",
-                        borderWidth: "1px",
+                        background: "linear-gradient(135deg, #2B0E18 0%, #5C1A33 38%, #722F45 70%, #3D1522 100%)",
+                        borderWidth: 1,
                         borderStyle: "solid",
-                        borderColor: "rgba(0, 0, 0, 1)",
+                        borderColor: "rgba(201, 168, 76, 0.4)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
                       }
-                    : undefined
+                    : { backgroundColor: meta.bg }
                 }
+              >
+              <div
+                className={`p-6 md:p-8 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
               >
                 <div className="flex items-start justify-between gap-4 flex-shrink-0">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">

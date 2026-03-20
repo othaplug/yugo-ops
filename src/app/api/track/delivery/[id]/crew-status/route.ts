@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
 import { getDispatchPhone } from "@/lib/config";
+import { buildClientMainStepCompletedAt } from "@/lib/delivery-track-stage-times";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -53,8 +54,20 @@ export async function GET(
     const admin = createAdminClient();
     const byUuid = isUuid(slug);
     const { data: delivery } = byUuid
-      ? await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes").eq("id", slug).single()
-      : await admin.from("deliveries").select("id, crew_id, stage, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes").ilike("delivery_number", slug).single();
+      ? await admin
+          .from("deliveries")
+          .select(
+            "id, crew_id, stage, completed_at, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+          )
+          .eq("id", slug)
+          .single()
+      : await admin
+          .from("deliveries")
+          .select(
+            "id, crew_id, stage, completed_at, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+          )
+          .ilike("delivery_number", slug)
+          .single();
 
     if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
     if (!verifyTrackToken("delivery", delivery.id, token)) {
@@ -74,6 +87,17 @@ export async function GET(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    const { data: timelineSession } = await admin
+      .from("tracking_sessions")
+      .select("checkpoints")
+      .eq("job_id", delivery.id)
+      .eq("job_type", "delivery")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const stepCompletedAt = buildClientMainStepCompletedAt(timelineSession?.checkpoints, delivery.completed_at);
 
     if (delivery.crew_id) {
       const { data: c } = await admin
@@ -158,6 +182,7 @@ export async function GET(
         scheduledDate: delivery.scheduled_date || null,
         timeWindow: delivery.delivery_window || delivery.time_slot || null,
         eta_current_minutes: etaMinutes,
+        stepCompletedAt,
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );

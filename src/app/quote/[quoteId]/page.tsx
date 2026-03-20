@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isFeatureEnabled } from "@/lib/platform-settings";
+import { getLegalBranding } from "@/lib/legal-branding";
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
 
@@ -79,6 +80,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   const slotsRemaining = Math.max(0, totalCrews - movesOnDate);
 
   const valuationEnabled = await isFeatureEnabled("valuation_upgrades");
+  const branding = await getLegalBranding();
 
   return (
     <QuotePageClient
@@ -88,6 +90,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       slotsRemaining={slotsRemaining}
       valuationTiers={valuationEnabled ? (valTiersResult?.data ?? []) : []}
       valuationUpgrades={valuationEnabled ? (valUpgradesResult?.data ?? []) : []}
+      branding={{ companyLegal: branding.companyLegal, brand: branding.brand }}
     />
   );
 }

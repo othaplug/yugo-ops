@@ -4,6 +4,19 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import YugoLogo from "@/components/YugoLogo";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import {
+  CaretLeft,
+  CaretDown,
+  CaretRight,
+  X,
+  Plus,
+  WarningCircle,
+  CalendarBlank,
+  House,
+  Buildings,
+  Lock,
+  Check,
+} from "@phosphor-icons/react";
 
 /* ── Palette ── */
 const WINE = "#5C1A33";
@@ -13,8 +26,8 @@ const CREAM = "#FAF7F2";
 
 /* ── Move types ── */
 const MOVE_TYPES = [
-  { key: "residential", label: "Residential", desc: "Home or apartment", icon: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
-  { key: "office", label: "Office / Commercial", desc: "Business relocation", icon: "M4 21V3a1 1 0 011-1h14a1 1 0 011 1v18M3 21h18M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1" },
+  { key: "residential", label: "Residential", desc: "Home or apartment", icon: "house" as const },
+  { key: "office", label: "Office / Commercial", desc: "Business relocation", icon: "buildings" as const },
 ] as const;
 
 /* ── Residential sizes ── */
@@ -442,7 +455,7 @@ export default function QuoteWidgetClient() {
               className="flex items-center gap-1 text-[12px] font-semibold tracking-wide uppercase transition-opacity hover:opacity-70"
               style={{ color: FOREST, opacity: 0.5 }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+              <CaretLeft size={14} className="text-current" />
               Back
             </button>
           )}
@@ -488,9 +501,11 @@ export default function QuoteWidgetClient() {
                           boxShadow: active ? `0 0 0 1px ${GOLD}` : "none",
                         }}
                       >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? GOLD : `${FOREST}40`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2">
-                          <path d={t.icon} />
-                        </svg>
+                        {t.icon === "house" ? (
+                          <House size={22} color={active ? GOLD : `${FOREST}40`} className="mb-2" />
+                        ) : (
+                          <Buildings size={22} color={active ? GOLD : `${FOREST}40`} className="mb-2" />
+                        )}
                         <div className="text-[14px] font-semibold" style={{ color: active ? FOREST : `${FOREST}90` }}>{t.label}</div>
                         <div className="text-[11px] mt-0.5" style={{ color: `${FOREST}50` }}>{t.desc}</div>
                       </button>
@@ -692,9 +707,12 @@ export default function QuoteWidgetClient() {
                                 {roomCount}
                               </span>
                             )}
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <CaretDown
+                              size={14}
+                              color={`${FOREST}40`}
+                              className="transition-transform duration-200"
+                              style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                            />
                           </span>
                         </button>
                         {isExpanded && (
@@ -754,9 +772,12 @@ export default function QuoteWidgetClient() {
                           {otherItems.length}
                         </span>
                       )}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedRooms["Other items"] ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      <CaretDown
+                        size={14}
+                        color={`${FOREST}40`}
+                        className="transition-transform duration-200"
+                        style={{ transform: expandedRooms["Other items"] ? "rotate(180deg)" : "rotate(0deg)" }}
+                      />
                     </span>
                   </button>
                   {expandedRooms["Other items"] && (
@@ -787,7 +808,7 @@ export default function QuoteWidgetClient() {
                             style={{ borderColor: `${FOREST}15` }}
                             aria-label="Remove"
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            <X size={14} className="text-current" />
                           </button>
                         </div>
                       ))}
@@ -797,7 +818,7 @@ export default function QuoteWidgetClient() {
                         className="text-[12px] font-semibold flex items-center gap-1"
                         style={{ color: FOREST }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <Plus size={14} className="text-current" />
                         Add item
                       </button>
                     </div>
@@ -815,9 +836,12 @@ export default function QuoteWidgetClient() {
                       {specialHandling.trim() && (
                         <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>Filled</span>
                       )}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${FOREST}40`} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedRooms["Special handling"] ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      <CaretDown
+                        size={14}
+                        color={`${FOREST}40`}
+                        className="transition-transform duration-200"
+                        style={{ transform: expandedRooms["Special handling"] ? "rotate(180deg)" : "rotate(0deg)" }}
+                      />
                     </span>
                   </button>
                   {expandedRooms["Special handling"] && (
@@ -867,7 +891,7 @@ export default function QuoteWidgetClient() {
                 ) : estimateError ? (
                   <div className="text-center py-16">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${WINE}08` }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                      <WarningCircle size={24} color={WINE} />
                     </div>
                     <p className="text-[15px] font-semibold mb-2" style={{ color: FOREST }}>Unable to calculate estimate</p>
                     {estimateErrorMessage && (
@@ -910,12 +934,7 @@ export default function QuoteWidgetClient() {
                           onClick={() => setCalendarOpen(!calendarOpen)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors hover:bg-gray-100"
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="18" height="18" x="3" y="4" rx="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
+                          <CalendarBlank size={18} color={GOLD} />
                         </button>
                       </div>
                     </div>
@@ -931,14 +950,14 @@ export default function QuoteWidgetClient() {
                             className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-20"
                             style={{ borderColor: `${FOREST}12` }}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                            <CaretLeft size={14} color={FOREST} />
                           </button>
                           <button
                             onClick={() => handleCalendarNav(1)}
                             className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors"
                             style={{ borderColor: `${FOREST}12` }}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2" strokeLinecap="round"><polyline points="9 6 15 12 9 18" /></svg>
+                            <CaretRight size={14} color={FOREST} />
                           </button>
                         </div>
                       </div>
@@ -1087,7 +1106,7 @@ export default function QuoteWidgetClient() {
                     </button>
 
                     <p className="text-center text-[10px] mt-3 flex items-center justify-center gap-1.5" style={{ color: `${FOREST}40` }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      <Lock size={11} className="text-current" />
                       No spam. Your exact guaranteed quote within 2 hours.
                     </p>
                     <p className="text-center text-[9px] mt-2" style={{ color: `${FOREST}25` }}>
@@ -1104,9 +1123,7 @@ export default function QuoteWidgetClient() {
             <StepContainer direction="left">
               <div className="px-6 sm:px-8 pb-8 text-center">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#E8F5E9" }}>
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <Check size={30} color="#2E7D32" weight="bold" />
                 </div>
                 <h2 className="text-[24px] font-bold mb-2" style={{ color: FOREST }}>You&rsquo;re all set!</h2>
                 <p className="text-[14px] leading-relaxed mb-4" style={{ color: `${FOREST}80` }}>
@@ -1188,13 +1205,12 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
       {children}
-      <svg
-        width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="#2C3E2D80" strokeWidth="2" strokeLinecap="round"
+      <CaretDown
+        size={14}
+        color="#2C3E2D80"
         className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+        aria-hidden
+      />
     </div>
   );
 }

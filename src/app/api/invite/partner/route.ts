@@ -21,12 +21,23 @@ export async function POST(req: NextRequest) {
   const { error: authError } = await requireAdmin();
   if (authError) return authError;
   try {
-    const { type, name, contact_name, email, phone, password, template_slug } = await req.json();
+    const body = await req.json();
+    const {
+      type, name, contact_name, email, phone, password, template_slug,
+      // Extended onboarding fields
+      legal_name, contact_title, address, website,
+      how_found, referral_source, hubspot_deal_id,
+      delivery_types, delivery_frequency, typical_items,
+      special_requirements, preferred_windows, pickup_locations,
+      billing_method, payment_terms, tax_id, insurance_cert_required,
+      create_portal_login, activation_mode, send_setup_sms,
+    } = body;
 
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
       return NextResponse.json({ error: "Company name and email are required" }, { status: 400 });
     }
-    if (!password || typeof password !== "string" || password.length < 8) {
+    const wantsPortalLogin = create_portal_login !== false;
+    if (wantsPortalLogin && (!password || typeof password !== "string" || password.length < 8)) {
       return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
     }
 
@@ -59,14 +70,57 @@ export async function POST(req: NextRequest) {
     let orgId: string;
     let userId: string;
 
-    const orgFields = {
+    const isActivating = activation_mode === "activate" || activation_mode === "activate_welcome";
+    const orgFields: Record<string, unknown> = {
       name: nameTrimmed,
       type: typeVal,
       contact_name: contactNameTrimmed,
       email: emailTrimmed,
       phone: phoneTrimmed,
       ...(templateId ? { template_id: templateId } : {}),
+      // Extended onboarding fields
+      ...(legal_name ? { legal_name: String(legal_name).trim() } : {}),
+      ...(contact_title ? { contact_title: String(contact_title).trim() } : {}),
+      ...(address ? { address: String(address).trim() } : {}),
+      ...(website ? { website: String(website).trim() } : {}),
+      ...(how_found ? { how_found: String(how_found) } : {}),
+      ...(referral_source ? { referral_source: String(referral_source).trim() } : {}),
+      ...(hubspot_deal_id ? { hubspot_deal_id: String(hubspot_deal_id).trim() } : {}),
+      ...(Array.isArray(delivery_types) && delivery_types.length ? { delivery_types } : {}),
+      ...(delivery_frequency ? { delivery_frequency: String(delivery_frequency) } : {}),
+      ...(typical_items ? { typical_items: String(typical_items).trim() } : {}),
+      ...(special_requirements ? { special_requirements: String(special_requirements).trim() } : {}),
+      ...(preferred_windows ? { preferred_windows: String(preferred_windows) } : {}),
+      ...(Array.isArray(pickup_locations) && pickup_locations.length ? { pickup_locations } : {}),
+      billing_method: billing_method || "per_delivery",
+      payment_terms: payment_terms || "net_30",
+      ...(tax_id ? { tax_id: String(tax_id).trim() } : {}),
+      ...(insurance_cert_required ? { insurance_cert_required: true } : {}),
+      onboarding_status: isActivating ? "active" : "draft",
+      ...(isActivating ? { activated_at: new Date().toISOString() } : {}),
     };
+
+    if (!wantsPortalLogin) {
+      // Create org without a portal user
+      if (existingOrg) {
+        orgId = existingOrg.id;
+        await admin.from("organizations").update(orgFields).eq("id", orgId);
+      } else {
+        const { data: newOrg, error: orgError } = await admin
+          .from("organizations")
+          .insert({ ...orgFields, health: "good" })
+          .select("id")
+          .single();
+        if (orgError) return NextResponse.json({ error: orgError.message }, { status: 400 });
+        orgId = newOrg!.id;
+      }
+      // Update HubSpot deal if provided
+      if (hubspot_deal_id) {
+        const { syncDealStage } = await import("@/lib/hubspot/sync-deal-stage");
+        syncDealStage(String(hubspot_deal_id), "partner_signed").catch(() => {});
+      }
+      return NextResponse.json({ ok: true, message: "Partner saved as draft" });
+    }
 
     if (existingOrg?.user_id) {
       return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
@@ -142,6 +196,25 @@ export async function POST(req: NextRequest) {
 
     if (sendError) {
       return NextResponse.json({ error: sendError.message || "Failed to send invitation email" }, { status: 500 });
+    }
+
+    // Update HubSpot deal stage if provided
+    if (hubspot_deal_id) {
+      const { syncDealStage } = await import("@/lib/hubspot/sync-deal-stage");
+      syncDealStage(String(hubspot_deal_id), "partner_signed").catch(() => {});
+    }
+
+    // Send SMS setup link if requested
+    if (send_setup_sms && phoneTrimmed) {
+      try {
+        const { sendSMS } = await import("@/lib/sms/sendSMS");
+        await sendSMS(
+          phoneTrimmed,
+          `Welcome to Yugo! Access your partner portal here: ${loginUrl}\nLogin: ${emailTrimmed}`
+        );
+      } catch {
+        // Non-critical — don't fail the request
+      }
     }
 
     return NextResponse.json({ ok: true, message: "Partner added and invitation sent" });

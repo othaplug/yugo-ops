@@ -6,6 +6,7 @@ import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InvitePartnerModal from "./InvitePartnerModal";
 import ModalOverlay from "../components/ModalOverlay";
+import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 
 interface PortalUser {
   user_id: string;
@@ -38,17 +39,39 @@ interface PartnerData {
 const TYPE_LABELS: Record<string, string> = {
   retail: "Retail",
   designer: "Designer",
-  hospitality: "Hospitality",
   gallery: "Gallery",
+  furniture_retailer: "Furniture Retailer",
+  interior_designer: "Interior Designer",
+  cabinetry: "Cabinetry",
+  flooring: "Flooring",
+  art_gallery: "Art Gallery",
+  antique_dealer: "Antique Dealer",
+  hospitality: "Hospitality",
+  medical_equipment: "Medical Equipment",
+  av_technology: "AV / Technology",
+  appliances: "Appliances",
   realtor: "Realtor",
+  property_manager: "Property Manager",
+  developer: "Developer",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  retail: "bg-[rgba(74,124,229,0.12)] text-[#4A7CE5]",
-  designer: "bg-[rgba(139,92,246,0.12)] text-[#8B5CF6]",
-  hospitality: "bg-[rgba(212,138,41,0.12)] text-[var(--org)]",
-  gallery: "bg-[rgba(201,169,98,0.12)] text-[var(--gold)]",
-  realtor: "bg-[rgba(45,159,90,0.12)] text-[var(--grn)]",
+  retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
+  designer: "bg-[rgba(139,92,246,0.14)] text-[#8B5CF6]",
+  gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
+  furniture_retailer: "bg-[rgba(59,130,246,0.14)] text-[#3B82F6]",
+  interior_designer: "bg-[rgba(167,139,250,0.16)] text-[#A78BFA]",
+  cabinetry: "bg-[rgba(180,83,9,0.14)] text-[#B45309]",
+  flooring: "bg-[rgba(13,148,136,0.14)] text-[#0D9488]",
+  art_gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
+  antique_dealer: "bg-[rgba(190,18,60,0.12)] text-[#BE123C]",
+  hospitality: "bg-[rgba(212,138,41,0.14)] text-[var(--org)]",
+  medical_equipment: "bg-[rgba(14,165,233,0.14)] text-[#0EA5E9]",
+  av_technology: "bg-[rgba(99,102,241,0.14)] text-[#6366F1]",
+  appliances: "bg-[rgba(71,85,105,0.16)] text-[#64748B]",
+  realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
+  property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
+  developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
 };
 
 export default function PartnersManagement() {
@@ -283,7 +306,7 @@ export default function PartnersManagement() {
         {/* Filters */}
         <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-wrap gap-2 items-center">
           <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] pointer-events-none" aria-hidden />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -359,18 +382,21 @@ export default function PartnersManagement() {
                     className="px-5 py-3.5 flex items-center gap-3 cursor-pointer hover:bg-[var(--bg)]/30 transition-colors"
                     onClick={() => setExpandedOrg(isExpanded ? null : partner.id)}
                   >
-                    <svg
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    <CaretRight
+                      size={14}
                       className={`text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}
-                    >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                      aria-hidden
+                    />
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-bold text-[var(--tx)] truncate">{partner.name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${typeColor}`}>
-                          {TYPE_LABELS[partner.type] || partner.type}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--tx)]">
+                          {partner.name}
+                        </span>
+                        <span
+                          className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider !whitespace-nowrap ${typeColor}`}
+                        >
+                          {TYPE_LABELS[partner.type] || (partner.type === "b2b" ? "Other partner" : partner.type.replace(/_/g, " "))}
                         </span>
                       </div>
                       <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">

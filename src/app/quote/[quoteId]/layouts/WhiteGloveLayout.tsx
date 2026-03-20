@@ -1,4 +1,4 @@
-import { Shield, Camera, Check, Diamond, Truck, Eye } from "lucide-react";
+import { Shield, Camera, Check, Diamond, Truck, Eye } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,

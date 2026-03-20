@@ -21,6 +21,7 @@ const BUSINESS_KEYS = [
   "auto_followup_enabled", "followup_max_attempts",
   // Feature toggles
   "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades", "sms_eta_enabled",
+  "quote_sms_enabled",
   // Review requests
   "auto_review_requests", "google_review_url",
 ];

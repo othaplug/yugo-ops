@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toTitleCase } from "@/lib/format-text";
 import CreateButton from "../components/CreateButton";
+import { X, MagnifyingGlass, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -125,7 +126,7 @@ function AdminScheduleModal({
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[14px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <X size={16} className="text-current" />
           </button>
         </div>
 
@@ -320,7 +321,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
 
       {/* Search */}
       <div className="relative max-w-[360px]">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -405,7 +406,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           onClick={() => setEditTarget(s)}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          <PencilSimple size={13} className="text-current" />
                         </button>
                         <button
                           title={s.is_paused ? "Resume" : "Pause"}
@@ -414,9 +415,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors disabled:opacity-40"
                         >
                           {s.is_paused ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <Play size={13} className="text-current" />
                           ) : (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                            <Pause size={13} className="text-current" />
                           )}
                         </button>
                         <button
@@ -425,7 +426,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           disabled={deleting === s.id}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                          <Trash size={13} className="text-current" />
                         </button>
                       </div>
                     </td>

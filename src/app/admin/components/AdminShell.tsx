@@ -14,8 +14,24 @@ import RealtimeListener from "./RealtimeListener";
 import SessionTimeout from "./SessionTimeout";
 import { Icons } from "./SidebarIcons";
 import YugoLogo, { BetaBadge } from "@/components/YugoLogo";
+import CommandPalette from "./CommandPalette";
 import { createClient } from "@/lib/supabase/client";
-import { Shield } from "lucide-react";
+import {
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  FilePlus,
+  List,
+  MapPin,
+  Plus,
+  Receipt,
+  Shield,
+  SquaresFour,
+  Truck,
+  UserPlus,
+  UsersThree,
+  X,
+} from "@phosphor-icons/react";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 
 const ROLE_LEVEL: Record<string, number> = {
@@ -45,12 +61,9 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "B2B Partners",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.users, minRole: "coordinator" },
+      { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
+      { href: "/admin/partners/realtors", label: "Realtors & referrals", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "Jobs", Icon: Icons.package, minRole: "coordinator" },
-      { href: "/admin/partners/retail", label: "Retail", Icon: Icons.sofa, minRole: "admin" },
-      { href: "/admin/partners/designers", label: "Designers", Icon: Icons.palette, minRole: "admin" },
-      { href: "/admin/partners/hospitality", label: "Hospitality", Icon: Icons.hotel, minRole: "admin" },
-      { href: "/admin/partners/gallery", label: "Art Gallery", Icon: Icons.image, minRole: "admin" },
-      { href: "/admin/partners/realtors", label: "Realtors", Icon: Icons.handshake, minRole: "admin" },
     ],
   },
   {
@@ -84,7 +97,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Settings",
     items: [
       { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "owner" },
-      { href: "/admin/platform?tab=rate-templates", label: "Rate Templates", Icon: Icons.tag, minRole: "owner" },
     ],
   },
 ];
@@ -97,6 +109,7 @@ function SidebarNavItem({
   showChangeRequestDot,
   badgeCount,
   onNavigate,
+  rail = false,
 }: {
   href: string;
   active: boolean;
@@ -105,11 +118,33 @@ function SidebarNavItem({
   showChangeRequestDot: boolean;
   badgeCount?: number;
   onNavigate: () => void;
+  rail?: boolean;
 }) {
   const { pendingCount } = usePendingChangeRequests();
   const crBadge = showChangeRequestDot && pendingCount > 0;
   const count = crBadge ? pendingCount : badgeCount && badgeCount > 0 ? badgeCount : 0;
   const showBadge = count > 0;
+
+  if (rail) {
+    return (
+      <Link
+        href={href}
+        onClick={onNavigate}
+        title={label}
+        className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors mx-auto ${
+          active
+            ? "bg-[var(--gdim)] text-[var(--gold)]"
+            : "text-[var(--tx3)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx2)]"
+        }`}
+      >
+        <ItemIcon />
+        {showBadge && (
+          <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]" aria-hidden />
+        )}
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={href}
@@ -142,69 +177,55 @@ const QUICK_ACTIONS = [
   {
     label: "New Move",
     href: "/admin/moves/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="5" cy="17" r="2" /><circle cx="19" cy="5" r="2" /><path d="M12 17h4.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H12" />
-      </svg>
-    ),
+    icon: <Truck size={18} className="text-current" aria-hidden />,
     color: "var(--gold)",
   },
   {
     label: "New Quote",
     href: "/admin/quotes/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" />
-      </svg>
-    ),
+    icon: <FilePlus size={18} className="text-current" aria-hidden />,
     color: "var(--grn)",
   },
   {
     label: "New Contact",
     href: "/admin/clients/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" />
-      </svg>
-    ),
+    icon: <UserPlus size={18} className="text-current" aria-hidden />,
     color: "#7C9FD4",
   },
   {
     label: "New Partner",
     href: "/admin/partners/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+    icon: <UsersThree size={18} className="text-current" aria-hidden />,
     color: "#B07FD4",
   },
   {
     label: "New Delivery",
     href: "/admin/deliveries/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-      </svg>
-    ),
+    icon: <MapPin size={18} className="text-current" aria-hidden />,
     color: "#D4A07F",
   },
   {
     label: "New Invoice",
     href: "/admin/invoices/new",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
-      </svg>
-    ),
+    icon: <Receipt size={18} className="text-current" aria-hidden />,
     color: "#7FD4C1",
   },
 ];
 
 export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true, role = "dispatcher", twoFactorEnabled = false, children }: { user: any; isSuperAdmin?: boolean; isAdmin?: boolean; role?: string; twoFactorEnabled?: boolean; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("yugo_sidebar_collapsed") === "1"; } catch { return false; }
+  });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = localStorage.getItem("yugo_sidebar_sections");
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quoteBadge, setQuoteBadge] = useState(0);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
@@ -235,6 +256,28 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       document.removeEventListener("keydown", escHandler);
     };
   }, [quickActionsOpen]);
+
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    try { localStorage.setItem("yugo_sidebar_collapsed", sidebarCollapsed ? "1" : "0"); } catch {}
+  }, [sidebarCollapsed]);
+
+  // Persist collapsed sections
+  useEffect(() => {
+    try { localStorage.setItem("yugo_sidebar_sections", JSON.stringify(collapsedSections)); } catch {}
+  }, [collapsedSections]);
+
+  // ⌘K / Ctrl+K opens command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const userLevel = ROLE_LEVEL[role] ?? 0;
 
@@ -293,45 +336,51 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 glass-sidebar border-r border-[var(--brd)]/50
                 transition-all duration-300 ease-out
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-                ${sidebarCollapsed ? "md:w-0 md:overflow-hidden md:border-0" : "w-[220px]"}
+                ${sidebarCollapsed ? "md:w-14 w-[220px]" : "w-[220px]"}
               `}
-              style={sidebarCollapsed ? { minWidth: 0 } : undefined}
             >
-              {/* Logo bar - completely transparent, floating text only */}
-              <div className="h-14 px-4 flex items-center shrink-0 bg-transparent">
-                <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${sidebarCollapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : ""}`}>
+              {/* Logo bar */}
+              <div className="h-14 flex items-center shrink-0 bg-transparent border-b border-[var(--brd)]/20">
+                {/* Rail mode: show only expand button */}
+                <div className={`hidden md:flex w-full items-center justify-center transition-all duration-200 ${sidebarCollapsed ? "" : "opacity-0 pointer-events-none absolute"}`}>
+                  <button
+                    onClick={() => setSidebarCollapsed(false)}
+                    className="p-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                    title="Expand sidebar"
+                    aria-label="Expand sidebar"
+                  >
+                    <CaretRight size={15} className="text-current" aria-hidden />
+                  </button>
+                </div>
+                {/* Full mode: logo + collapse button */}
+                <div className={`flex items-center justify-between w-full px-4 transition-all duration-200 ${sidebarCollapsed ? "md:opacity-0 md:pointer-events-none" : ""}`}>
                   <div className="flex items-center gap-2">
                     <YugoLogo size={18} />
                     <BetaBadge />
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                      className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
-                      aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                      onClick={() => setSidebarCollapsed(true)}
+                      className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                      aria-label="Collapse sidebar"
+                      title="Collapse sidebar"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={sidebarCollapsed ? "rotate-180" : ""}>
-                        <path d="M15 18l-6-6 6-6" />
-                      </svg>
+                      <CaretLeft size={15} className="text-current" aria-hidden />
                     </button>
                     <button
                       onClick={() => setSidebarOpen(false)}
                       className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <X size={15} className="text-current" aria-hidden />
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Nav sections - scrollable inside sidebar, no overflow past viewport */}
-              <nav className={`icon-glow flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
+              {/* Full nav — visible in expanded mode (and always on mobile) */}
+              <nav className={`icon-glow flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(4rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
                 {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
-                  const hasActive = section.items.some((item) => isActive(item.href));
                   return (
                     <div key={section.label} className="mb-4 last:mb-0">
                       <button
@@ -340,9 +389,11 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                         className="sidebar-nav-lift w-full flex items-center justify-between text-[9px] font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
                       >
                         {section.label}
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
+                        <CaretDown
+                          size={10}
+                          className={`text-current transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                          aria-hidden
+                        />
                       </button>
                       {!isCollapsed && (
                         <div className="space-y-0.5">
@@ -370,27 +421,50 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                   );
                 })}
               </nav>
+
+              {/* Rail nav — icon-only, desktop collapsed mode */}
+              <nav className={`hidden ${sidebarCollapsed ? "md:flex" : ""} flex-col flex-1 min-h-0 overflow-y-auto py-3 pb-4 gap-0.5 items-center overscroll-contain scrollbar-hide`}>
+                {sidebarSections.map((section, si) => (
+                  <div key={section.label} className={`w-full flex flex-col items-center gap-0.5 ${si > 0 ? "mt-2 pt-2 border-t border-[var(--brd)]/30" : ""}`}>
+                    {section.items.map((item) => {
+                      const active = isActive(item.href);
+                      const ItemIcon = item.Icon;
+                      const showChangeRequestDot = item.href === "/admin/change-requests";
+                      const itemBadge = "badgeKey" in item && (item as { badgeKey?: string }).badgeKey === "quotes" ? quoteBadge : undefined;
+                      return (
+                        <SidebarNavItem
+                          key={item.href}
+                          href={item.href}
+                          active={active}
+                          ItemIcon={ItemIcon}
+                          label={item.label}
+                          showChangeRequestDot={showChangeRequestDot}
+                          badgeCount={itemBadge}
+                          onNavigate={() => setSidebarOpen(false)}
+                          rail
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </nav>
             </aside>
 
             {/* Spacer for fixed sidebar on desktop */}
-            <div className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-0" : "w-[220px]"}`} />
+            <div className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-14" : "w-[220px]"}`} />
 
             {/* Main - .main */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0 admin-main-offset">
               {/* Topbar - floating, static; safe area on notched devices */}
               <div
-                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-2 pr-3 sm:pl-3 sm:pr-4 md:pl-3 md:pr-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
+                className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top ${sidebarCollapsed ? "left-0 pl-3 pr-3 sm:px-4 md:left-14 md:px-6" : "left-0 pl-3 pr-3 sm:px-4 md:left-[220px] md:px-6"}`}
               >
                 <button
-                  onClick={() => (sidebarCollapsed ? setSidebarCollapsed(false) : setSidebarOpen(true))}
-                  className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "hidden md:flex" : "hidden"}`}
-                  aria-label={sidebarCollapsed ? "Open sidebar" : "Open menu"}
+                  onClick={() => setSidebarOpen(true)}
+                  className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "flex md:hidden" : "hidden"}`}
+                  aria-label="Open menu"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                  </svg>
+                  <List size={20} className="text-current" aria-hidden />
                 </button>
 
                 <SearchBox />
@@ -498,9 +572,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       }`}
                       style={{ boxShadow: "0 4px 18px rgba(201,169,98,0.45)" }}
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
+                      <Plus size={22} color="#fff" aria-hidden />
                     </button>
                     <span className="mt-1 text-[9px] font-bold tracking-wide uppercase leading-none text-[var(--tx3)]">Create</span>
                   </div>
@@ -530,10 +602,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     onClick={() => setSidebarOpen(true)}
                     className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
-                      <rect width="7" height="7" x="3" y="14" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" />
-                    </svg>
+                    <SquaresFour size={16} className="text-current" aria-hidden />
                     <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
                   </button>
                 </div>
@@ -541,6 +610,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             </div>
 
           </div>
+          <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
           </ToastProvider>
         </PendingChangeRequestsProvider>
       </NotificationProvider>

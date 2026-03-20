@@ -1,16 +1,22 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import YugoLogo from "@/components/YugoLogo";
+import { getCompanyDisplayName } from "@/lib/config";
+import { getLegalBranding } from "@/lib/legal-branding";
 
 const EFFECTIVE = "March 15, 2026";
-const COMPANY = "Yugo Moving & Delivery Inc.";
-const EMAIL = "legal@yugomoves.com";
 
-export const metadata = {
-  title: "Terms of Use Yugo",
-  description: "Terms governing your access to and use of the Yugo platform.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getCompanyDisplayName();
+  return {
+    title: `Terms of Use — ${brand}`,
+    description: `Terms governing your access to and use of the ${brand} platform.`,
+  };
+}
 
-export default function TermsOfUsePage() {
+export default async function TermsOfUsePage() {
+  const { companyLegal, brand, email } = await getLegalBranding();
+
   return (
     <main style={{ minHeight: "100vh", background: "#FDFCFA", fontFamily: "'DM Sans', sans-serif", color: "#1A1714" }}>
       <header style={{ borderBottom: "1px solid #E8E4DC", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#FDFCFA", zIndex: 10 }}>
@@ -28,12 +34,12 @@ export default function TermsOfUsePage() {
         <div style={{ marginBottom: 40 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#C9A962", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Terms of Use</h1>
-          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {COMPANY}</p>
+          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {companyLegal}</p>
         </div>
 
         <section style={{ marginBottom: 36 }}>
           <p style={{ fontSize: 15, lineHeight: 1.8, color: "#3A3530" }}>
-            These Terms of Use (&quot;Terms&quot;) govern your access to and use of the Yugo platform, including all websites, portals, mobile applications, and related services (collectively, the &quot;Platform&quot;) operated by {COMPANY} (&quot;Yugo&quot;). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, do not access or use the Platform.
+            These Terms of Use (&quot;Terms&quot;) govern your access to and use of the {brand} platform, including all websites, portals, mobile applications, and related services (collectively, the &quot;Platform&quot;) operated by {companyLegal} (&quot;{brand}&quot;). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, do not access or use the Platform.
           </p>
         </section>
 
@@ -50,7 +56,7 @@ export default function TermsOfUsePage() {
             <li>Notify us immediately of any unauthorised access to your account.</li>
             <li>Accept responsibility for all activity that occurs under your account.</li>
           </ul>
-          <p>Yugo reserves the right to terminate or suspend accounts for violation of these Terms.</p>
+          <p>{brand} reserves the right to terminate or suspend accounts for violation of these Terms.</p>
         </LegalSection>
 
         <LegalSection title="3. Permitted Use">
@@ -63,12 +69,12 @@ export default function TermsOfUsePage() {
             <li>Use automated means (bots, scrapers, crawlers) to access or interact with the Platform without our express written consent.</li>
             <li>Introduce any viruses, malware, or other harmful code.</li>
             <li>Use the Platform to harass, abuse, threaten, or intimidate any person.</li>
-            <li>Resell or sublicense access to the Platform without Yugo&apos;s written consent.</li>
+            <li>Resell or sublicense access to the Platform without {brand}&apos;s written consent.</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="4. Platform Services">
-          <p>Yugo provides a technology platform that facilitates moving and delivery coordination. Depending on your role:</p>
+          <p>{brand} provides a technology platform that facilitates moving and delivery coordination. Depending on your role:</p>
           <ul>
             <li><strong>Clients:</strong> You may book moves, track crew progress, receive notifications, review deliveries, and make payments through the Platform.</li>
             <li><strong>Partners:</strong> You may schedule and manage deliveries, access live tracking for your shipments, view proof-of-delivery records, and access your partner portal.</li>
@@ -78,18 +84,18 @@ export default function TermsOfUsePage() {
         </LegalSection>
 
         <LegalSection title="5. Intellectual Property">
-          <p>The Platform and its entire contents, features, and functionality, including but not limited to software, text, graphics, logos, icons, images, and data compilations, are the exclusive property of Yugo and its licensors and are protected by Canadian and international copyright, trademark, and other intellectual property laws.</p>
+          <p>The Platform and its entire contents, features, and functionality, including but not limited to software, text, graphics, logos, icons, images, and data compilations, are the exclusive property of {brand} and its licensors and are protected by Canadian and international copyright, trademark, and other intellectual property laws.</p>
           <p style={{ marginTop: 8 }}>We grant you a limited, non-exclusive, non-transferable, revocable licence to access and use the Platform for its intended purpose. This licence does not include the right to:</p>
           <ul>
             <li>Sublicense or transfer the licence to any third party.</li>
             <li>Make derivative works based on Platform content.</li>
             <li>Download Platform software (except for caching by browsers as permitted).</li>
-            <li>Use Yugo&apos;s trademarks or branding without written permission.</li>
+            <li>Use {brand}&apos;s trademarks or branding without written permission.</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="6. User Content">
-          <p>You may submit content through the Platform, including photos, notes, reviews, and feedback (&quot;User Content&quot;). By submitting User Content, you grant Yugo a non-exclusive, royalty-free, worldwide licence to use, reproduce, and display that content solely in connection with operating and improving the Platform.</p>
+          <p>You may submit content through the Platform, including photos, notes, reviews, and feedback (&quot;User Content&quot;). By submitting User Content, you grant {brand} a non-exclusive, royalty-free, worldwide licence to use, reproduce, and display that content solely in connection with operating and improving the Platform.</p>
           <p style={{ marginTop: 8 }}>You represent and warrant that:</p>
           <ul>
             <li>You own or have the necessary rights to submit the User Content.</li>
@@ -99,21 +105,21 @@ export default function TermsOfUsePage() {
         </LegalSection>
 
         <LegalSection title="7. Third-Party Services">
-          <p>The Platform may integrate with or link to third-party services (Mapbox, Stripe, email providers). These integrations are governed by the third parties&apos; own terms and privacy policies. Yugo is not responsible for the content, practices, or availability of third-party services.</p>
+          <p>The Platform may integrate with or link to third-party services (Mapbox, Stripe, email providers). These integrations are governed by the third parties&apos; own terms and privacy policies. {brand} is not responsible for the content, practices, or availability of third-party services.</p>
         </LegalSection>
 
         <LegalSection title="8. Disclaimers">
           <p>THE PLATFORM IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.</p>
-          <p style={{ marginTop: 8 }}>Yugo does not warrant that the Platform will be uninterrupted, error-free, or free of viruses or other harmful components. We do not warrant the accuracy or completeness of any content on the Platform.</p>
+          <p style={{ marginTop: 8 }}>{brand} does not warrant that the Platform will be uninterrupted, error-free, or free of viruses or other harmful components. We do not warrant the accuracy or completeness of any content on the Platform.</p>
         </LegalSection>
 
         <LegalSection title="9. Limitation of Liability">
-          <p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, YUGO AND ITS DIRECTORS, OFFICERS, EMPLOYEES, AFFILIATES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE PLATFORM.</p>
-          <p style={{ marginTop: 8 }}>In no event shall Yugo&apos;s aggregate liability for any claims arising from your use of the Platform exceed the greater of (a) the amounts paid by you to Yugo in the 12 months preceding the claim, or (b) $100 CAD.</p>
+          <p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, {brand.toUpperCase()} AND ITS DIRECTORS, OFFICERS, EMPLOYEES, AFFILIATES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE PLATFORM.</p>
+          <p style={{ marginTop: 8 }}>In no event shall {brand}&apos;s aggregate liability for any claims arising from your use of the Platform exceed the greater of (a) the amounts paid by you to {brand} in the 12 months preceding the claim, or (b) $100 CAD.</p>
         </LegalSection>
 
         <LegalSection title="10. Indemnification">
-          <p>You agree to indemnify, defend, and hold harmless Yugo and its affiliates, officers, directors, employees, and agents from and against any claims, liabilities, damages, judgments, awards, losses, costs, and expenses (including reasonable legal fees) arising out of or relating to your violation of these Terms or your use of the Platform.</p>
+          <p>You agree to indemnify, defend, and hold harmless {brand} and its affiliates, officers, directors, employees, and agents from and against any claims, liabilities, damages, judgments, awards, losses, costs, and expenses (including reasonable legal fees) arising out of or relating to your violation of these Terms or your use of the Platform.</p>
         </LegalSection>
 
         <LegalSection title="11. Termination">
@@ -129,7 +135,7 @@ export default function TermsOfUsePage() {
         </LegalSection>
 
         <LegalSection title="14. Contact">
-          <p>For questions about these Terms, contact us at <a href={`mailto:${EMAIL}`} style={{ color: "#C9A962" }}>{EMAIL}</a>.</p>
+          <p>For questions about these Terms, contact us at <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a>.</p>
         </LegalSection>
 
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E8E4DC", display: "flex", gap: 20, flexWrap: "wrap" }}>

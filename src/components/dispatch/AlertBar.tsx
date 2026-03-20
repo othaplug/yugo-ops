@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, WifiOff, Clock, X } from "lucide-react";
+import { Warning as AlertTriangle, WifiSlash as WifiOff, Clock, X } from "@phosphor-icons/react";
 
 export interface DispatchAlert {
   id: string;

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { requireStaff } from "@/lib/api-auth";
+import { sendQuoteLinkSms } from "@/lib/quote-sms";
 
 /**
  * POST /api/quotes/update
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
     /* ── Fetch original quote ── */
     const { data: original, error: origErr } = await supabase
       .from("quotes")
-      .select("*, contacts:contact_id(name, email)")
+      .select("*, contacts:contact_id(name, email, phone)")
       .eq("quote_id", originalQuoteId)
       .single();
 
@@ -136,9 +137,13 @@ export async function POST(req: Request) {
     }
 
     /* ── Send updated quote email ── */
-    const contact = original.contacts as { name: string; email: string | null } | { name: string; email: string | null }[] | null;
+    const contact = original.contacts as
+      | { name: string; email: string | null; phone?: string | null }
+      | { name: string; email: string | null; phone?: string | null }[]
+      | null;
     const contactObj = Array.isArray(contact) ? contact[0] ?? null : contact;
     const clientEmail = contactObj?.email;
+    const clientPhone = contactObj?.phone ?? null;
     const fullName = (contactObj?.name || "").trim();
     const firstName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
 
@@ -157,7 +162,7 @@ export async function POST(req: Request) {
 
       const subject = firstName ? `${firstName}, Your updated quote is ready ${newQuoteId}` : `Your updated quote is ready ${newQuoteId}`;
 
-      sendEmail({
+      const mailResult = await sendEmail({
         to: clientEmail,
         subject,
         template: "quote-updated",
@@ -167,7 +172,19 @@ export async function POST(req: Request) {
           serviceLabel: SERVICE_LABELS[newQuote.service_type] ?? newQuote.service_type,
           changesSummary,
         },
-      }).catch((err) => console.error("[quotes/update] email failed:", err));
+      });
+      if (!mailResult.success) {
+        console.error("[quotes/update] email failed:", mailResult.error);
+      } else {
+        const smsResult = await sendQuoteLinkSms({
+          phone: clientPhone,
+          quoteUrl,
+          quoteId: newQuoteId,
+        });
+        if (!smsResult.ok) {
+          console.warn("[quotes/update] quote SMS failed:", smsResult.skipped);
+        }
+      }
 
       await supabase
         .from("quotes")

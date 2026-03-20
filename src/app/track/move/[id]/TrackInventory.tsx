@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
+import { CaretDown, X, Package, Plus, DownloadSimple } from "@phosphor-icons/react";
 
 const GOLD = "#C9A962";
 const FOREST = "#2C3B2D";
@@ -199,7 +200,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               onClick={() => setAddExtraOpen(false)}
               className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#666] hover:bg-[#EEECEA] transition-colors"
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <X size={10} className="text-current" />
             </button>
           </div>
         </div>
@@ -286,11 +287,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <div className="px-5 py-10 text-center">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${GOLD}14` }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-              <path d="m3.3 7 8.7 5 8.7-5"/>
-              <line x1="12" y1="22" x2="12" y2="12"/>
-            </svg>
+            <Package size={20} color={GOLD} />
           </div>
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
           <p className="text-[11px] text-[#888] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
@@ -300,7 +297,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               onClick={() => setAddExtraOpen(true)}
               className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <Plus size={11} className="text-current" />
               Request extra item
             </button>
           )}
@@ -325,11 +322,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           onClick={handleExport}
           className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#555] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
+          <DownloadSimple size={11} className="text-current" />
           Export
         </button>
       </div>
@@ -359,7 +352,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                 <div className="flex items-center gap-2.5 min-w-0">
                   {isOnSite && (
                     <span className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: `${GOLD}20` }}>
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <Plus size={8} color={GOLD} />
                     </span>
                   )}
                   <h4 className="text-[12px] font-bold truncate" style={{ color: isOnSite ? GOLD : "#C9A962" }}>{room}</h4>
@@ -368,13 +361,13 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${GOLD}14`, color: GOLD }}>
                     {count}
                   </span>
-                  <svg
-                    width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round"
+                  <CaretDown
+                    size={9}
+                    color="#999"
                     className="transition-transform duration-200"
                     style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
-                  >
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
+                    aria-hidden
+                  />
                 </div>
               </button>
 
@@ -442,10 +435,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
+            <Plus size={11} className="text-current" />
             Request extra item
           </button>
         </div>

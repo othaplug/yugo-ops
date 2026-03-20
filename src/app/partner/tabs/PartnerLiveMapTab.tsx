@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { CornersIn, CornersOut, X } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
@@ -95,9 +96,9 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <CornersIn size={16} />
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <CornersOut size={16} />
             )}
           </button>
         </div>
@@ -109,7 +110,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             onClick={() => setIsFullscreen(false)}
             className="absolute top-4 right-4 z-20 p-2 bg-white dark:bg-[var(--card)] rounded-lg shadow-md border border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#F5F3F0] dark:hover:bg-[var(--bg)] transition-colors text-[#888] dark:text-[var(--tx3)]"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <X size={16} />
           </button>
         )}
 

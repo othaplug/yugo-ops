@@ -4,24 +4,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { WINE, GOLD, CREAM, FOREST } from "@/lib/client-theme";
+import { Star } from "@phosphor-icons/react";
 
 const STAR_SIZE = 36;
 
 function StarIcon({ filled, size = 24 }: { filled: boolean; size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth={filled ? 0 : 1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="transition-colors"
-    >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
+    <Star
+      size={size}
+      weight={filled ? "fill" : "regular"}
+      className="text-current transition-colors"
+      aria-hidden
+    />
   );
 }
 

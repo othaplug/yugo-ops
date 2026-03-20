@@ -5,6 +5,14 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
+import {
+  ChatCircle,
+  Clock,
+  CornersIn,
+  CornersOut,
+  NavigationArrow,
+  Phone,
+} from "@phosphor-icons/react";
 
 type Center = { lat: number; lng: number };
 type Crew = { current_lat: number; current_lng: number; name?: string } | null;
@@ -58,31 +66,6 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(sec / 3600)} hours ago`;
 }
 
-/* Status progression stages */
-const PROGRESSION = [
-  { key: "confirmed", label: "Confirmed" },
-  { key: "dispatched", label: "Dispatched" },
-  { key: "en_route", label: "En Route" },
-  { key: "loading", label: "Loading" },
-  { key: "in_transit", label: "In Transit" },
-  { key: "arriving", label: "Arriving" },
-  { key: "completed", label: "Complete" },
-];
-
-function getProgressionIndex(stage: string | null): number {
-  if (!stage) return 0;
-  const map: Record<string, number> = {
-    en_route_to_pickup: 2,
-    arrived_at_pickup: 2,
-    loading: 3,
-    en_route_to_destination: 4,
-    arrived_at_destination: 5,
-    unloading: 5,
-    completed: 6,
-  };
-  return map[stage] ?? 0;
-}
-
 export default function TrackLiveMap({
   moveId,
   token,
@@ -108,7 +91,8 @@ export default function TrackLiveMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [crewSpeed, setCrewSpeed] = useState<number | null>(null);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
-  const [mapResizeKey, setMapResizeKey] = useState(0);
+  /** Bumps when container size changes (e.g. fullscreen) so Mapbox/Leaflet can call resize — do not use as React `key` (remount breaks Mapbox DOM cleanup). */
+  const [mapResizeSignal, setMapResizeSignal] = useState(0);
 
   // Crew phone (for direct call)
   const [crewPhone, setCrewPhone] = useState<string | null>(null);
@@ -258,6 +242,19 @@ export default function TrackLiveMap({
     };
   }, [moveId, token, loadInitial, onLiveStageChange]);
 
+  useEffect(() => {
+    if (!hasActiveTracking) return;
+    const t = setTimeout(() => setMapResizeSignal((s) => s + 1), 200);
+    return () => clearTimeout(t);
+  }, [hasActiveTracking]);
+
+  useEffect(() => {
+    if (loading || hasActiveTracking) return;
+    if (!pickup && !dropoff) return;
+    const t = setTimeout(() => setMapResizeSignal((s) => s + 1), 80);
+    return () => clearTimeout(t);
+  }, [loading, hasActiveTracking, pickup, dropoff]);
+
   const mapCenter = { latitude: center.lat, longitude: center.lng };
   const scheduledStr = move?.scheduled_date
     ? new Date(move.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
@@ -283,7 +280,7 @@ export default function TrackLiveMap({
 
   const crewMembers = crew?.members?.length ? crew.members.join(", ") : crew?.name || "";
   const showPlaceholder = !loading && !hasActiveTracking;
-  const progressionIdx = getProgressionIndex(liveStage);
+  const canShowMap = !loading && (hasActiveTracking || !!pickup || !!dropoff);
 
   return (
     <div className="space-y-4">
@@ -297,100 +294,111 @@ export default function TrackLiveMap({
         </div>
       )}
 
-      {showPlaceholder ? (
+      {showPlaceholder && (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
           <p className="text-[14px] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
           <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
           {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
           {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          {/* Don't show crew name or addresses until crew has started — live signal off */}
           <p className="text-[11px] text-[#999] font-medium uppercase tracking-wider">Live signal off</p>
-          {/* Static map with pickup/delivery preview — blurred until crew starts */}
-          {(pickup || dropoff) && (
-            <div className="mt-4 rounded-xl overflow-hidden h-[200px] border border-[#E7E5E4] relative">
+        </div>
+      )}
+
+      {canShowMap && (
+        <>
+          <div
+            className={`track-live-map-container relative overflow-hidden transition-all duration-300 ease-out ${
+              hasActiveTracking
+                ? isFullscreen
+                  ? "map-fullscreen"
+                  : "rounded-xl h-[50vh] min-h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]"
+                : "mt-4 rounded-xl h-[200px] bg-[#FAFAF8] border border-[#E7E5E4]"
+            }`}
+          >
+            <div className="track-live-map-fill absolute inset-0 w-full h-full min-h-0">
               {HAS_MAPBOX && MAPBOX_TOKEN ? (
                 <MapboxMap
                   mapboxAccessToken={MAPBOX_TOKEN}
                   center={mapCenter}
-                  crew={null}
+                  crew={hasActiveTracking ? crewLoc : null}
+                  crewName={hasActiveTracking ? crewLoc?.name || crew?.name : undefined}
                   pickup={pickup}
                   dropoff={dropoff}
-                  liveStage={null}
+                  liveStage={hasActiveTracking ? liveStage : null}
+                  clientLat={hasActiveTracking ? clientLat : null}
+                  clientLng={hasActiveTracking ? clientLng : null}
+                  speed={hasActiveTracking ? crewSpeed : null}
+                  lastLocationAt={hasActiveTracking ? lastLocationAt : null}
+                  resizeSignal={mapResizeSignal}
                 />
               ) : (
-                <LeafletMap center={center} crew={null} pickup={pickup} dropoff={dropoff} liveStage={null} />
+                <LeafletMap
+                  center={center}
+                  crew={hasActiveTracking ? crewLoc : null}
+                  pickup={pickup}
+                  dropoff={dropoff}
+                  liveStage={hasActiveTracking ? liveStage : null}
+                  resizeSignal={mapResizeSignal}
+                />
               )}
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10 rounded-b-xl" aria-hidden="true">
+            </div>
+
+            {!hasActiveTracking && (
+              <div
+                className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none rounded-xl"
+                aria-hidden="true"
+              >
                 <span className="text-[12px] font-semibold text-[#666]">Live signal off</span>
                 <span className="text-[11px] text-[#888] mt-1">Tracking begins when your crew starts the job</span>
               </div>
-            </div>
-          )}
-        </div>
-      ) : !loading && hasActiveTracking ? (
-        <>
-          <div className={`track-live-map-container relative overflow-hidden transition-all duration-300 ease-out ${isFullscreen ? "map-fullscreen" : "rounded-xl h-[50vh] min-h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]"}`}>
-            <div key={mapResizeKey} className="track-live-map-fill absolute inset-0 w-full h-full min-h-0">
-            {HAS_MAPBOX && MAPBOX_TOKEN ? (
-              <MapboxMap
-                mapboxAccessToken={MAPBOX_TOKEN}
-                center={mapCenter}
-                crew={crewLoc}
-                crewName={crewLoc?.name || crew?.name}
-                pickup={pickup}
-                dropoff={dropoff}
-                liveStage={liveStage}
-                clientLat={clientLat}
-                clientLng={clientLng}
-                speed={crewSpeed}
-                lastLocationAt={lastLocationAt}
-              />
-            ) : (
-              <LeafletMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
             )}
-            </div>
 
-            {/* Fullscreen toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsFullscreen((f) => !f);
-                setDrawerExpanded(false);
-                setTimeout(() => setMapResizeKey((k) => k + 1), 350);
-              }}
-              className="map-fullscreen-btn top-3 right-3 z-20"
-              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-              aria-label={isFullscreen ? "Exit fullscreen" : "Expand map"}
-            >
-              {isFullscreen ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-              )}
-            </button>
+            {hasActiveTracking && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFullscreen((f) => !f);
+                    setDrawerExpanded(false);
+                    setTimeout(() => setMapResizeSignal((k) => k + 1), 350);
+                  }}
+                  className="map-fullscreen-btn top-3 right-3 z-20"
+                  title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Expand map"}
+                >
+                  {isFullscreen ? (
+                    <CornersIn size={16} className="text-current" aria-hidden />
+                  ) : (
+                    <CornersOut size={16} className="text-current" aria-hidden />
+                  )}
+                </button>
 
-            {/* Recenter on client */}
-            <button
-              type="button"
-              onClick={() => {
-                if (clientLat && clientLng) setCenter({ lat: clientLat, lng: clientLng });
-                else if ("geolocation" in navigator) {
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                    () => {}
-                  );
-                }
-              }}
-              className="map-fullscreen-btn bottom-3 left-3 z-20"
-              style={{ bottom: crewLoc ? (drawerExpanded ? "260px" : "72px") : "12px", transition: "bottom 0.3s ease" }}
-              title="My location"
-              aria-label="My location"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (clientLat && clientLng) setCenter({ lat: clientLat, lng: clientLng });
+                    else if ("geolocation" in navigator) {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                        () => {}
+                      );
+                    }
+                  }}
+                  className="map-fullscreen-btn bottom-3 left-3 z-20"
+                  style={{
+                    bottom: crewLoc ? (drawerExpanded ? "260px" : "72px") : "12px",
+                    transition: "bottom 0.3s ease",
+                  }}
+                  title="My location"
+                  aria-label="My location"
+                >
+                  <NavigationArrow size={16} className="text-current" aria-hidden />
+                </button>
+              </>
+            )}
 
             {/* Bottom crew drawer */}
-            {crewLoc && (
+            {hasActiveTracking && crewLoc && (
               <div
                 className="absolute bottom-0 left-0 right-0 z-10 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-bottom"
                 style={{
@@ -436,7 +444,7 @@ export default function TrackLiveMap({
                     href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
                     className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[11px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <Phone size={13} className="text-current shrink-0" aria-hidden />
                     {crewPhone ? "Call crew" : "Call dispatch"}
                   </a>
                 </div>
@@ -448,7 +456,7 @@ export default function TrackLiveMap({
                     <div className="flex items-center gap-4 pt-3 text-[11px] text-[#666]">
                       {displayEta != null && (
                         <div className="flex items-center gap-1.5">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <Clock size={12} color="#C9A962" aria-hidden />
                           <span className="font-semibold text-[#C9A962]">~{displayEta} min ETA</span>
                         </div>
                       )}
@@ -480,14 +488,14 @@ export default function TrackLiveMap({
                       href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                      <Phone size={14} className="text-current shrink-0" />
                       {crewPhone ? "Call crew" : "Call dispatch"}
                     </a>
                     <a
                       href={`sms:${(dispatchPhone || crewPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <ChatCircle size={14} className="text-current shrink-0" aria-hidden />
                       Text
                     </a>
                   </div>
@@ -496,11 +504,13 @@ export default function TrackLiveMap({
             )}
           </div>
         </>
-      ) : loading ? (
+      )}
+
+      {loading && (
         <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-[12px]">
           Loading...
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

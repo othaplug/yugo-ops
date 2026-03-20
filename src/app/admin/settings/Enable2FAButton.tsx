@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
+import { Warning } from "@phosphor-icons/react";
 
 export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
   const { toast } = useToast();
@@ -69,11 +70,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl p-5 sm:max-w-sm w-full shadow-xl animate-slide-up sm:animate-none" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="flex items-start gap-3 mb-4">
               <div className="w-9 h-9 rounded-lg bg-[var(--red)]/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-[var(--red)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
+                <Warning size={20} color="var(--red)" aria-hidden />
               </div>
               <div>
                 <div className="font-semibold text-[13px] text-[var(--tx)] mb-1">Disable two-factor authentication?</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { MagnifyingGlass, Check, Link, PencilSimple, ShareNetwork, Info } from "@phosphor-icons/react";
 import { getDeliveryTimelineIndex, DELIVERY_TIMELINE_STEPS } from "@/lib/partner-type";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { toTitleCase } from "@/lib/format-text";
@@ -50,18 +51,18 @@ interface Delivery {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending_approval: "bg-amber-50 text-amber-700 border border-amber-200",
-  scheduled: "bg-blue-50 text-blue-600",
-  confirmed: "bg-green-50 text-green-600",
-  approved: "bg-green-50 text-green-600",
-  dispatched: "bg-amber-50 text-amber-600",
-  "in-transit": "bg-amber-50 text-amber-700",
-  in_transit: "bg-amber-50 text-amber-700",
-  in_progress: "bg-amber-50 text-amber-700",
-  delivered: "bg-green-50 text-green-700",
-  completed: "bg-green-50 text-green-700",
-  pending: "bg-orange-50 text-orange-600",
-  cancelled: "bg-red-50 text-red-600",
+  pending_approval: "bg-amber-500/10 text-amber-600 border border-amber-500/20",
+  scheduled: "bg-blue-500/10 text-blue-500",
+  confirmed: "bg-green-500/10 text-green-600",
+  approved: "bg-green-500/10 text-green-600",
+  dispatched: "bg-amber-500/10 text-amber-500",
+  "in-transit": "bg-amber-500/10 text-amber-600",
+  in_transit: "bg-amber-500/10 text-amber-600",
+  in_progress: "bg-amber-500/10 text-amber-600",
+  delivered: "bg-green-500/10 text-green-600",
+  completed: "bg-green-500/10 text-green-600",
+  pending: "bg-orange-500/10 text-orange-500",
+  cancelled: "bg-red-500/10 text-red-500",
 };
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
@@ -121,18 +122,18 @@ export default function PartnerDeliveriesTab({
       {deliveries.length > 0 && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
           <div className="relative flex-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <MagnifyingGlass size={16} color="#999" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, address, or delivery #..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors bg-[var(--bg)]"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] font-semibold text-[#1A1A1A] bg-white focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
+            className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--bg)] focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -253,15 +254,15 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="flex items-start justify-between mb-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[16px] font-bold text-[#1A1A1A] truncate">{d.customer_name || d.delivery_number}</h3>
-            <span className="text-[11px] text-[#999] font-mono flex-shrink-0">{d.delivery_number}</span>
+            <h3 className="text-[16px] font-bold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</h3>
+            <span className="text-[11px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
             {d.booking_type === "day_rate" ? (
               <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
             ) : (
               <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
             )}
           </div>
-          <p className="text-[13px] text-[#888] mt-0.5 truncate">
+          <p className="text-[13px] text-[var(--tx3)] mt-0.5 truncate">
             {d.booking_type === "day_rate"
               ? [d.vehicle_type ? `${d.vehicle_type}` : null, d.num_stops != null ? `${d.num_stops} stops` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"
               : [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : null, d.zone != null ? `Z${d.zone}` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"}
@@ -281,9 +282,9 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
             data-no-min-height
           >
             {copied ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2D9F5A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <Check size={15} color="#2D9F5A" weight="bold" />
             ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <Link size={15} />
             )}
           </button>
           {/* Edit */}
@@ -294,21 +295,21 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
               title="Edit delivery"
               data-no-min-height
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <PencilSimple size={15} />
             </button>
           )}
           {/* Share */}
           <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="icon-btn" title="Share tracking link" data-no-min-height>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <ShareNetwork size={15} />
           </button>
         </div>
       </div>
 
       {/* Pending acceptance notice */}
       {statusKey === "pending_approval" && (
-        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span className="text-[11px] text-amber-700 font-medium">Awaiting confirmation from Yugo — we&apos;ll update you shortly.</span>
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <Info size={13} color="#D97706" />
+          <span className="text-[11px] text-amber-600 font-medium">Awaiting confirmation from Yugo — we&apos;ll update you shortly.</span>
         </div>
       )}
 
@@ -331,32 +332,32 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[13px]">
         {d.time_slot && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Time</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5">{d.time_slot}</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Time</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5">{d.time_slot}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.num_stops != null && d.num_stops > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Stops</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Stops</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.vehicle_type && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Vehicle</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Vehicle</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
           </div>
         )}
         {d.total_price != null && d.total_price > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Price</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Price</div>
             <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[#888]">Items</div>
-            <div className="text-[#1A1A1A] font-medium mt-0.5 truncate">{itemsDisplay}</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Items</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5 truncate">{itemsDisplay}</div>
           </div>
         )}
       </div>
@@ -381,15 +382,15 @@ function DeliveryTimeline({ currentIndex }: { currentIndex: number }) {
                     ? "bg-[#2D9F5A] border-[#2D9F5A]"
                     : isCurrent
                       ? "bg-[#C9A962] border-[#C9A962]"
-                      : "bg-white border-[#D4D0CB]"
+                      : "bg-[var(--bg)] border-[var(--brd)]"
                 }`}
               />
-              <span className={`text-[9px] mt-1.5 whitespace-nowrap ${isDone || isCurrent ? "text-[#1A1A1A] font-semibold" : "text-[#aaa]"}`}>
+              <span className={`text-[9px] mt-1.5 whitespace-nowrap ${isDone || isCurrent ? "text-[var(--tx)] font-semibold" : "text-[var(--tx3)]"}`}>
                 {step.label}
               </span>
             </div>
             {!isLast && (
-              <div className={`flex-1 h-0.5 mx-1 mt-[-14px] ${i < currentIndex ? "bg-[#2D9F5A]" : "bg-[#E8E4DF]"}`} />
+              <div className={`flex-1 h-0.5 mx-1 mt-[-14px] ${i < currentIndex ? "bg-[#2D9F5A]" : "bg-[var(--brd)]"}`} />
             )}
           </div>
         );

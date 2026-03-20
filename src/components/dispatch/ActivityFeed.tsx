@@ -5,13 +5,13 @@ import Link from "next/link";
 import {
   MapPin,
   Package,
-  MessageSquare,
-  DollarSign,
+  ChatText as MessageSquare,
+  CurrencyDollar as DollarSign,
   Star,
-  AlertTriangle,
-  CheckCircle2,
+  Warning as AlertTriangle,
+  CheckCircle as CheckCircle2,
   Radio,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 
 export interface DispatchEvent {
   id: string;

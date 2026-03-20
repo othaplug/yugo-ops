@@ -14,10 +14,11 @@ import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { Bell, Funnel } from "@phosphor-icons/react";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
-  { key: "furniture_design", label: "Furniture & Design", categories: ["retail", "designer", "furniture_retailer", "interior_designer", "cabinetry", "flooring", "b2b"] },
+  { key: "furniture_design", label: "Furniture & Design", categories: ["retail", "designer", "furniture_retailer", "interior_designer", "cabinetry", "flooring"] },
   { key: "art_specialty", label: "Art & Specialty", categories: ["gallery", "art_gallery", "antique_dealer"] },
   { key: "hospitality", label: "Hospitality", categories: ["hospitality"] },
   { key: "medical_technical", label: "Medical & Technical", categories: ["medical_equipment", "av_technology", "appliances"] },
@@ -287,9 +288,7 @@ export default function AllDeliveriesView({
                 <span className="absolute inset-0 rounded-full bg-[#6B8CFF]/30 animate-ping" />
                 <span className="relative w-2 h-2 rounded-full bg-[#6B8CFF] block" />
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B8CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-80">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
+              <Bell size={14} color="#6B8CFF" className="shrink-0 opacity-80" />
               <span className="text-[12px] font-semibold" style={{ color: "#A8BFFF" }}>
                 <span className="font-bold" style={{ color: "#FFFFFF" }}>{pendingApproval.length}</span>
                 {" "}partner request{pendingApproval.length > 1 ? "s" : ""}
@@ -337,7 +336,7 @@ export default function AllDeliveriesView({
             onClick={() => setFilterOpen(!filterOpen)}
             className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <Funnel size={14} className="text-current" />
             Filters
             {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
           </button>

@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import {
-  CheckCircle2,
+  CheckCircle as CheckCircle2,
   Circle,
-  AlertCircle,
+  WarningCircle as AlertCircle,
   Truck,
   MapPin,
   User,
   Phone,
-  ExternalLink,
+  ArrowSquareOut as ExternalLink,
   Users,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 
 export interface DispatchJob {
   id: string;

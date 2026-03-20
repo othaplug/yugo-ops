@@ -243,186 +243,227 @@ export default function DayView({
   ];
 
   return (
-    <div className={`px-6 pb-6 ${draggingEvent ? "select-none" : ""}`}>
-      {/* Column headers */}
-      <div className="flex border-b border-[var(--brd)]">
-        <div className="w-16 shrink-0" />
-        {columns.map((col) => (
-          <div
-            key={col.id}
-            className="flex-1 min-w-[160px] px-2 py-2 text-center border-l border-[var(--brd)]"
-          >
-            <div className="text-[11px] font-bold text-[var(--tx)]">{col.label}</div>
-            {col.sub && <div className="text-[9px] text-[var(--tx3)]">{col.sub}</div>}
-          </div>
-        ))}
-      </div>
-
-      {/* Timeline grid */}
-      <div
-        ref={containerRef}
-        className="overflow-y-auto max-h-[calc(100vh-240px)] relative"
-      >
-        <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
-          {/* Time labels */}
-          <div className="w-16 shrink-0 relative">
-            {HOURS.map((h) => (
-              <div
-                key={h}
-                className="absolute w-full text-right pr-2 text-[10px] text-[var(--tx3)] font-medium"
-                style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 6 }}
-              >
-                {formatTime12(`${String(h).padStart(2, "0")}:00`)}
-              </div>
-            ))}
-          </div>
-
-          {/* Crew columns */}
-          {columns.map((col) => {
-            const colEvents =
-              col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];
-            const isActiveDropTarget =
-              col.id !== "__unassigned" &&
-              draggingEvent !== null &&
-              dropCrewId === col.id;
-            const isValidDrop =
-              col.id !== "__unassigned" && draggingEvent !== null && dropCrewId === null;
-
-            return (
-              <div
-                key={col.id}
-                data-crew-col={col.id}
-                className={`flex-1 min-w-[160px] relative border-l border-[var(--brd)] transition-colors duration-100 ${
-                  isActiveDropTarget
-                    ? "bg-[var(--gold)]/10 ring-1 ring-inset ring-[var(--gold)]/40"
-                    : ""
-                }`}
-                onClick={(e) => {
-                  // Only trigger for clicks directly on empty space, not bubbling from event cards
-                  if ((e.target as HTMLElement).closest("[data-event-card]")) return;
-                  if (col.id === "__unassigned") return;
-                  if (draggingEvent) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const y = e.clientY - rect.top + (containerRef.current?.scrollTop || 0);
-                  const rawMins = DAY_START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
-                  const snapped = Math.round(rawMins / 15) * 15;
-                  const h = Math.floor(snapped / 60);
-                  const m = snapped % 60;
-                  onEmptyClick(
-                    col.id,
-                    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-                  );
-                }}
-              >
-                {/* Hour grid lines */}
-                {HOURS.map((h) => (
-                  <div
-                    key={h}
-                    className="absolute w-full border-t border-[var(--brd)]/30 pointer-events-none"
-                    style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}
-                  />
-                ))}
-                {/* 30-min lines */}
-                {HOURS.slice(0, -1).map((h) => (
-                  <div
-                    key={`half-${h}`}
-                    className="absolute w-full border-t border-[var(--brd)]/10 pointer-events-none"
-                    style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }}
-                  />
-                ))}
-
-                {/* Event blocks */}
-                {colEvents.map((ev) => {
-                  const top = getTopOffset(ev.start);
-                  const height = getHeight(ev.start, ev.end, ev.durationHours);
-                  const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
-                  const isComplete = ev.calendarStatus === "completed";
-                  const isProgress = ev.calendarStatus === "in_progress";
-                  const canDrag =
-                    !rescheduling &&
-                    DRAGGABLE_TYPES.includes(ev.type as (typeof DRAGGABLE_TYPES)[number]) &&
-                    canEditEvent(ev);
-                  const isBeingDragged = draggingEvent?.id === ev.id;
-
-                  return (
-                    <div
-                      key={ev.id}
-                      data-event-card="1"
-                      onPointerDown={(e) => {
-                        if (!canDrag) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        dragRef.current = {
-                          event: ev,
-                          startX: e.clientX,
-                          startY: e.clientY,
-                          isDragging: false,
-                        };
-                      }}
-                      className={`absolute left-1 right-1 rounded-md overflow-hidden text-left transition-opacity ${
-                        canDrag ? "cursor-grab" : "cursor-pointer"
-                      } ${isComplete ? "opacity-50" : ""} ${
-                        isBeingDragged ? "opacity-30 pointer-events-none" : ""
-                      }`}
-                      style={{
-                        top,
-                        height: Math.max(height, 30),
-                        borderLeft: `4px solid ${ev.color}`,
-                        background: `linear-gradient(135deg, ${ev.color}25, ${ev.color}10)`,
-                        zIndex: isBeingDragged ? 0 : 1,
-                      }}
-                    >
-                      <div className="p-1.5 h-full flex flex-col pointer-events-none">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`}
-                            style={{ backgroundColor: dotColor }}
-                          />
-                          <span className="text-[11px] font-bold text-[var(--tx)] truncate">
-                            {ev.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-[9px] text-[var(--tx3)] truncate">
-                          <Icon
-                            name={TYPE_ICON_MAP[ev.type] || "calendar"}
-                            className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current"
-                          />
-                          <span className="truncate">{ev.description}</span>
-                        </div>
-                        {height > 60 && ev.truckName && (
-                          <div className="text-[8px] text-[var(--tx3)]/60 mt-0.5 truncate">
-                            {ev.truckName}
-                            {ev.crewName ? ` · ${ev.crewName}` : ""}
-                          </div>
-                        )}
-                        {height > 80 && ev.start && ev.end && (
-                          <div className="text-[8px] text-[var(--tx3)]/50 mt-auto">
-                            {formatTime12(ev.start)} – {formatTime12(ev.end)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+    <div className={`px-2 sm:px-6 pb-6 ${draggingEvent ? "select-none" : ""}`}>
+      {/* Horizontal scroll wrapper — headers + unscheduled strip + timeline all scroll together */}
+      <div className="overflow-x-auto">
+        {/* Column headers */}
+        <div className="flex border-b border-[var(--brd)]">
+          <div className="w-12 sm:w-16 shrink-0" />
+          {columns.map((col) => (
+            <div
+              key={col.id}
+              className="w-[120px] sm:flex-1 sm:min-w-[140px] shrink-0 px-2 py-2 text-center border-l border-[var(--brd)]"
+            >
+              <div className="text-[11px] font-bold text-[var(--tx)] truncate">{col.label}</div>
+              {col.sub && <div className="text-[9px] text-[var(--tx3)]">{col.sub}</div>}
+            </div>
+          ))}
         </div>
 
-        {/* NOW indicator */}
-        {showNow && (
-          <div
-            className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-            style={{ top: nowTop }}
-          >
-            <div className="w-16 text-right pr-1">
-              <span className="text-[8px] font-bold text-red-500 bg-red-500/10 px-1 py-0.5 rounded">
-                NOW
-              </span>
+        {/* All-day / Unscheduled strip */}
+        {columns.some((col) => {
+          const evs = col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];
+          return evs.some((ev) => !ev.start);
+        }) && (
+          <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
+            <div className="w-12 sm:w-16 shrink-0 py-1.5 flex items-center justify-end pr-1.5">
+              <span className="text-[7px] sm:text-[8px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide">Unsched.</span>
             </div>
-            <div className="flex-1 h-[2px] bg-red-500/70" />
+            {columns.map((col) => {
+              const allColEvs = col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];
+              const untimed = allColEvs.filter((ev) => !ev.start);
+              return (
+                <div
+                  key={col.id}
+                  className="w-[120px] sm:flex-1 sm:min-w-[140px] shrink-0 border-l border-[var(--brd)] py-1 px-1 flex flex-col gap-0.5 min-h-[34px]"
+                >
+                  {untimed.map((ev) => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => onEventClick(ev)}
+                      className="w-full text-left rounded px-1.5 py-0.5 text-[9px] font-bold truncate"
+                      style={{
+                        backgroundColor: `${ev.color}25`,
+                        color: ev.color,
+                        borderLeft: `3px solid ${ev.color}`,
+                      }}
+                    >
+                      {ev.name}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
+
+        {/* Timeline grid — vertical scroll only; horizontal handled by parent */}
+        <div
+          ref={containerRef}
+          className="overflow-y-auto max-h-[calc(100vh-200px)] sm:max-h-[calc(100vh-240px)] relative"
+        >
+          <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
+            {/* Time labels */}
+            <div className="w-12 sm:w-16 shrink-0 relative">
+              {HOURS.map((h) => (
+                <div
+                  key={h}
+                  className="absolute w-full text-right pr-1 sm:pr-2 text-[9px] sm:text-[10px] text-[var(--tx3)] font-medium"
+                  style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 6 }}
+                >
+                  {formatTime12(`${String(h).padStart(2, "0")}:00`)}
+                </div>
+              ))}
+            </div>
+
+            {/* Crew columns */}
+            {columns.map((col) => {
+              const allColEvents = col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];
+              const colEvents = allColEvents.filter((ev) => ev.start);
+              const isActiveDropTarget =
+                col.id !== "__unassigned" &&
+                draggingEvent !== null &&
+                dropCrewId === col.id;
+              const isValidDrop =
+                col.id !== "__unassigned" && draggingEvent !== null && dropCrewId === null;
+
+              return (
+                <div
+                  key={col.id}
+                  data-crew-col={col.id}
+                  className={`w-[120px] sm:flex-1 sm:min-w-[140px] shrink-0 relative border-l border-[var(--brd)] transition-colors duration-100 ${
+                    isActiveDropTarget
+                      ? "bg-[var(--gold)]/10 ring-1 ring-inset ring-[var(--gold)]/40"
+                      : ""
+                  }`}
+                  onClick={(e) => {
+                    // Only trigger for clicks directly on empty space, not bubbling from event cards
+                    if ((e.target as HTMLElement).closest("[data-event-card]")) return;
+                    if (col.id === "__unassigned") return;
+                    if (draggingEvent) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = e.clientY - rect.top + (containerRef.current?.scrollTop || 0);
+                    const rawMins = DAY_START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
+                    const snapped = Math.round(rawMins / 15) * 15;
+                    const h = Math.floor(snapped / 60);
+                    const m = snapped % 60;
+                    onEmptyClick(
+                      col.id,
+                      `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+                    );
+                  }}
+                >
+                  {/* Hour grid lines */}
+                  {HOURS.map((h) => (
+                    <div
+                      key={h}
+                      className="absolute w-full border-t border-[var(--brd)]/30 pointer-events-none"
+                      style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}
+                    />
+                  ))}
+                  {/* 30-min lines */}
+                  {HOURS.slice(0, -1).map((h) => (
+                    <div
+                      key={`half-${h}`}
+                      className="absolute w-full border-t border-[var(--brd)]/10 pointer-events-none"
+                      style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }}
+                    />
+                  ))}
+
+                  {/* Event blocks */}
+                  {colEvents.map((ev) => {
+                    const top = getTopOffset(ev.start);
+                    const height = getHeight(ev.start, ev.end, ev.durationHours);
+                    const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
+                    const isComplete = ev.calendarStatus === "completed";
+                    const isProgress = ev.calendarStatus === "in_progress";
+                    const canDrag =
+                      !rescheduling &&
+                      DRAGGABLE_TYPES.includes(ev.type as (typeof DRAGGABLE_TYPES)[number]) &&
+                      canEditEvent(ev);
+                    const isBeingDragged = draggingEvent?.id === ev.id;
+
+                    return (
+                      <div
+                        key={ev.id}
+                        data-event-card="1"
+                        onPointerDown={(e) => {
+                          if (!canDrag) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          dragRef.current = {
+                            event: ev,
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            isDragging: false,
+                          };
+                        }}
+                        className={`absolute left-1 right-1 rounded-md overflow-hidden text-left transition-opacity ${
+                          canDrag ? "cursor-grab" : "cursor-pointer"
+                        } ${isComplete ? "opacity-50" : ""} ${
+                          isBeingDragged ? "opacity-30 pointer-events-none" : ""
+                        }`}
+                        style={{
+                          top,
+                          height: Math.max(height, 30),
+                          borderLeft: `4px solid ${ev.color}`,
+                          background: `linear-gradient(135deg, ${ev.color}25, ${ev.color}10)`,
+                          zIndex: isBeingDragged ? 0 : 1,
+                        }}
+                      >
+                        <div className="p-1.5 h-full flex flex-col pointer-events-none">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`}
+                              style={{ backgroundColor: dotColor }}
+                            />
+                            <span className="text-[11px] font-bold text-[var(--tx)] truncate">
+                              {ev.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px] text-[var(--tx3)] truncate">
+                            <Icon
+                              name={TYPE_ICON_MAP[ev.type] || "calendar"}
+                              className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current"
+                            />
+                            <span className="truncate">{ev.description}</span>
+                          </div>
+                          {height > 60 && ev.truckName && (
+                            <div className="text-[8px] text-[var(--tx3)]/60 mt-0.5 truncate">
+                              {ev.truckName}
+                              {ev.crewName ? ` · ${ev.crewName}` : ""}
+                            </div>
+                          )}
+                          {height > 80 && ev.start && ev.end && (
+                            <div className="text-[8px] text-[var(--tx3)]/50 mt-auto">
+                              {formatTime12(ev.start)} – {formatTime12(ev.end)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* NOW indicator */}
+          {showNow && (
+            <div
+              className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+              style={{ top: nowTop }}
+            >
+              <div className="w-12 sm:w-16 text-right pr-1">
+                <span className="text-[8px] font-bold text-red-500 bg-red-500/10 px-1 py-0.5 rounded">
+                  NOW
+                </span>
+              </div>
+              <div className="flex-1 h-[2px] bg-red-500/70" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Floating drag preview */}

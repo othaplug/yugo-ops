@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Plus, Image } from "@phosphor-icons/react";
 
 const CHECKPOINT_TO_CATEGORY: Record<string, string> = {
   arrived_at_pickup: "pre_move_condition",
@@ -170,7 +171,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               htmlFor="job-photos-file-input"
               className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <Plus size={16} color="var(--tx3)" />
             </label>
           )}
         </div>
@@ -188,11 +189,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/30 hover:text-[var(--tx2)]"
           }`}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
+          <Image size={18} />
           <span className="text-[12px] font-semibold">{uploading ? "Uploading…" : "Tap to take photo"}</span>
         </button>
       )}

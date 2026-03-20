@@ -64,6 +64,9 @@ export const CREW_STATUS_TO_LABEL: Record<string, string> = {
 /** Status index for progress calculation (0-5) */
 export const MOVE_STATUS_INDEX: Record<string, number> = {
   confirmed: 0,
+  /** Pre-booking / CRM pipeline — same step as confirmed in admin UX */
+  quoted: 0,
+  quote: 0,
   scheduled: 1,
   paid: 2,
   final_payment_received: 2, // legacy, map to same as paid
@@ -75,6 +78,8 @@ export const MOVE_STATUS_INDEX: Record<string, number> = {
 /** Color classes for status badges (client light theme) */
 export const MOVE_STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
+  quoted: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
+  quote: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   scheduled: "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
   paid: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   final_payment_received: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30", // legacy
@@ -89,6 +94,8 @@ export const MOVE_STATUS_COLORS: Record<string, string> = {
 /** Admin dark theme status colors */
 export const MOVE_STATUS_COLORS_ADMIN: Record<string, string> = {
   confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
+  quoted: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
+  quote: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
   scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.12)]",
   paid: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
   final_payment_received: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]", // legacy
@@ -103,6 +110,8 @@ export const MOVE_STATUS_COLORS_ADMIN: Record<string, string> = {
 /** Timeline/line color by move status (CSS var or hex for the vertical line next to time) */
 export const MOVE_STATUS_LINE_COLOR: Record<string, string> = {
   confirmed: "var(--grn)",
+  quoted: "var(--grn)",
+  quote: "var(--grn)",
   scheduled: "#3B82F6",
   paid: "var(--grn)",
   final_payment_received: "var(--grn)",
@@ -137,6 +146,8 @@ export function getStatusLabel(status: string | null): string {
     "in-transit": "In Progress",
     dispatched: "In Progress",
     quote: "Confirmed",
+    /** DB/CRM value — not a selectable admin status; same bucket as confirmed */
+    quoted: "Confirmed",
   };
   if (legacy[status]) return legacy[status];
   return status.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -152,6 +163,7 @@ export function normalizeStatus(status: string | null): string | null {
     "in-transit": "in_progress",
     dispatched: "in_progress",
     quote: "confirmed",
+    quoted: "confirmed",
   };
   return legacy[status] || status;
 }

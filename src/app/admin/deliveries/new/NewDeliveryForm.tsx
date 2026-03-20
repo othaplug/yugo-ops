@@ -7,7 +7,7 @@ import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { Plus, Trash2, Layers } from "lucide-react";
+import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
 
 interface ProjectOption {
   id: string;

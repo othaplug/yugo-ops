@@ -6,6 +6,7 @@ import Badge from "../components/Badge";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { useToast } from "../components/Toast";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 
 export default function InvoicesTable({
   invoices,
@@ -132,7 +133,7 @@ export default function InvoicesTable({
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <ArrowSquareOut size={10} className="text-current shrink-0" aria-hidden />
             View
           </a>
         ) : null,

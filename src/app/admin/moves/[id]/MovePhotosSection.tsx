@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash as Trash2, Plus } from "@phosphor-icons/react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 

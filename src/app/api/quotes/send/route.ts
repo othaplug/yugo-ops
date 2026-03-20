@@ -6,6 +6,8 @@ import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { getCompanyDisplayName } from "@/lib/config";
+import { sendQuoteLinkSms } from "@/lib/quote-sms";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -27,8 +29,8 @@ const SERVICE_SUBJECT: Record<string, string> = {
   single_item: "Your Delivery Quote",
   white_glove: "Your White Glove Service Quote",
   specialty: "Your Specialty Move Quote",
-  b2b_oneoff: "Your Delivery Quote from Yugo",
-  b2b_delivery: "Your Delivery Quote from Yugo",
+  b2b_oneoff: "Your Delivery Quote",
+  b2b_delivery: "Your Delivery Quote",
   event: "Your Event Logistics Quote",
   labour_only: "Your Service Quote",
 };
@@ -111,6 +113,7 @@ export async function POST(req: NextRequest) {
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
     const subject = quoteSubject(firstName, quoteId, serviceType);
+    const platformCompanyName = await getCompanyDisplayName();
 
     const storedMoveSize = (quote.move_size as string | null) ?? null;
     const inventoryScore = (quote.inventory_score as number | null) ?? (factors.inventory_score as number | null) ?? null;
@@ -140,7 +143,7 @@ export async function POST(req: NextRequest) {
         toAccess: quote.to_access ?? null,
         moveDate: quote.move_date,
         moveSize,
-        companyName: (factors.company_name as string) ?? null,
+        companyName: (factors.company_name as string) ?? platformCompanyName,
         itemDescription: (factors.item_description as string) ?? null,
         itemCategory: (factors.item_category as string) ?? null,
         projectType: (factors.project_type as string) ?? null,
@@ -178,6 +181,15 @@ export async function POST(req: NextRequest) {
         { error: "Failed to send email", detail: result.error },
         { status: 500 },
       );
+    }
+
+    const smsResult = await sendQuoteLinkSms({
+      phone: contact?.phone,
+      quoteUrl,
+      quoteId,
+    });
+    if (!smsResult.ok) {
+      console.warn("[quotes/send] quote SMS failed:", smsResult.skipped);
     }
 
     const now = new Date();

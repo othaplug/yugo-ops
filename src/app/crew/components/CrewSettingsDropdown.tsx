@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Gear, SignOut } from "@phosphor-icons/react";
 import { useTheme } from "@/app/admin/components/ThemeContext";
 
 const CREW_SETTINGS_KEY = "yugo-crew-settings";
@@ -63,10 +64,7 @@ export default function CrewSettingsDropdown() {
         className="size-9 flex items-center justify-center rounded-lg text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)] transition-colors"
         aria-label="Settings"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
+        <Gear size={20} />
       </button>
 
       {open && (
@@ -108,9 +106,9 @@ export default function CrewSettingsDropdown() {
                   role="switch"
                   aria-checked={settings.reduceMotion}
                   onClick={() => updateSetting("reduceMotion", !settings.reduceMotion)}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${settings.reduceMotion ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.reduceMotion ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${settings.reduceMotion ? "translate-x-4" : "translate-x-0"}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.reduceMotion ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </label>
               <label className="flex items-center justify-between gap-3 cursor-pointer py-1">
@@ -120,9 +118,9 @@ export default function CrewSettingsDropdown() {
                   role="switch"
                   aria-checked={settings.lowDataMode}
                   onClick={() => updateSetting("lowDataMode", !settings.lowDataMode)}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${settings.lowDataMode ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.lowDataMode ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${settings.lowDataMode ? "translate-x-4" : "translate-x-0"}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.lowDataMode ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </label>
             </div>
@@ -134,11 +132,7 @@ export default function CrewSettingsDropdown() {
                 type="submit"
                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-medium text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <SignOut size={14} />
                 Sign out
               </button>
             </form>

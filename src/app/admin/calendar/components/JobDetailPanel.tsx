@@ -6,6 +6,7 @@ import { formatTime12, TIME_SLOTS_15MIN, STATUS_DOT_COLORS } from "@/lib/calenda
 import { toTitleCase, formatAddressForDisplay } from "@/lib/format-text";
 import { Icon } from "@/components/AppIcons";
 import Link from "next/link";
+import { CaretDown, X } from "@phosphor-icons/react";
 
 interface Props {
   event: CalendarEvent | null;
@@ -65,6 +66,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
   const canReassign = REASSIGNABLE.includes(event.type) && canEditEvent(event);
 
   const handleSaveReassign = async () => {
+
     if (!reassignCrewId || !reassignDate || !reassignStart || !reassignEnd) return;
     setSaving(true);
     setSaveError(null);
@@ -96,14 +98,9 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-      <div
-        className="relative w-full max-w-[440px] bg-[var(--card)] border-l border-[var(--brd)] h-full overflow-y-auto shadow-2xl animate-slide-in-right"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="w-full bg-[var(--card)] animate-slide-in-right flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-start justify-between z-10">
+        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-start justify-between z-10 shrink-0">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: event.color }} />
@@ -129,9 +126,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] transition-colors"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <X size={18} className="text-current" aria-hidden />
           </button>
         </div>
 
@@ -238,17 +233,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   <Icon name="calendar" className="w-3.5 h-3.5 stroke-[1.75] stroke-current text-[var(--gold)]" />
                   Reassign / Reschedule
                 </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                <CaretDown
+                  size={14}
                   className={`text-[var(--tx3)] transition-transform ${showReassign ? "rotate-180" : ""}`}
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                  aria-hidden
+                />
               </button>
 
               {showReassign && (
@@ -362,7 +351,6 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             </Link>
           )}
         </div>
-      </div>
     </div>
   );
 }

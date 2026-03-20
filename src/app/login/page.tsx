@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
+import { Eye, EyeSlash, EnvelopeSimple as Envelope } from "@phosphor-icons/react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -72,15 +73,6 @@ export default function AdminLoginPage() {
                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
           background-size: 48px 48px;
         }
-        .adm-card {
-          background: #111113; border: 1px solid #1E1E22; border-radius: 20px;
-          padding: 40px; box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
-          position: relative; overflow: hidden;
-        }
-        .adm-card::before {
-          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(201,169,98,0.3), transparent);
-        }
         .adm-input {
           width: 100%; padding: 12px 14px; background: #08080A; border: 1px solid #1E1E22;
           border-radius: 10px; color: #E8E5E0; font-size: 14px; font-family: 'DM Sans', sans-serif;
@@ -106,7 +98,6 @@ export default function AdminLoginPage() {
       <div className="adm-grid" />
 
       <div style={{ width: "100%", maxWidth: 420, padding: "0 24px", position: "relative", zIndex: 1, animation: "admFade 0.5s ease" }}>
-        <div className="adm-card">
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
             <YugoLogo size={22} variant="gold" />
@@ -142,9 +133,9 @@ export default function AdminLoginPage() {
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
                       style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#4A4A4E" }}>
                       {showPassword ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <Eye size={14} className="text-[#4A4A4E]" />
                       ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <EyeSlash size={14} className="text-[#4A4A4E]" />
                       )}
                     </button>
                   </div>
@@ -212,7 +203,7 @@ export default function AdminLoginPage() {
                   background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+                  <Envelope size={24} color="#4ADE80" />
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: "#E8E5E0", marginBottom: 4 }}>Check your inbox</div>
                 <div style={{ fontSize: 12, color: "#4A4A4E" }}>Reset link sent to <strong style={{ color: "#E8E5E0" }}>{email}</strong></div>
@@ -225,12 +216,7 @@ export default function AdminLoginPage() {
               </button>
             </>
           )}
-        </div>
 
-        {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          <span style={{ fontSize: 11, color: "#2A2A2E", letterSpacing: 1.5 }}>YUGO OPERATIONS PLATFORM</span>
-        </div>
       </div>
     </main>
   );

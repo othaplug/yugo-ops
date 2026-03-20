@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../../components/Toast";
+import { CaretRight, Check, Plus, WarningCircle } from "@phosphor-icons/react";
 
 export type ConditionRating = "excellent" | "good" | "fair" | "poor" | "damaged";
 
@@ -183,9 +184,7 @@ function AddItemForm({
               onClick={() => set(!val)}
             >
               {val && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <Check size={10} color="white" weight="bold" />
               )}
             </div>
             <span className="text-[11px] font-medium text-[var(--tx2)]">{label}</span>
@@ -358,9 +357,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] text-[11px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={12} className="text-current" />
           Add Item
         </button>
       </div>
@@ -434,15 +431,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     </div>
                   </div>
 
-                  <svg
-                    className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
+                  <CaretRight className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
                 </button>
 
                 {/* Expanded detail */}
@@ -537,9 +526,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
 
                     {hasDiscrepancy && (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
+                        <WarningCircle size={14} color="#EF4444" />
                         <span className="text-[11px] font-semibold text-[#EF4444]">
                           Condition discrepancy: {item.pre_condition} → {item.post_condition}
                         </span>

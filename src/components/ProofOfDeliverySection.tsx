@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Download, Star, MapPin, CheckCircle2, AlertTriangle } from "lucide-react";
+import { FileText, Download, Star, MapPin, CheckCircle as CheckCircle2, Warning as AlertTriangle } from "@phosphor-icons/react";
 
 interface ItemCondition {
   item_name: string;

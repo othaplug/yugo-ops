@@ -6,6 +6,24 @@ import dynamic from "next/dynamic";
 import YugoLogo from "@/components/YugoLogo";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 import { toTitleCase } from "@/lib/format-text";
+import {
+  CalendarBlank,
+  CaretDown,
+  Check,
+  Clock,
+  CornersIn,
+  CornersOut,
+  GoogleLogo,
+  Lightning,
+  MagnifyingGlass,
+  MapPin,
+  Package,
+  Phone,
+  Star,
+  Sun,
+  Truck,
+  User,
+} from "@phosphor-icons/react";
 
 const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
   ssr: false,
@@ -44,12 +62,17 @@ const CLIENT_STAGE_LABELS: Record<string, string> = {
 
 /** 4 separate client steps: pick up → on the way to you → delivering → complete */
 const CLIENT_MAIN_STEPS = ["En route to pick up", "On the way to you", "Delivering", "Complete"] as const;
-const CLIENT_MAIN_STEP_ICONS: Record<string, string> = {
-  "En route to pick up": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z",
-  "On the way to you": "M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l5 4H1",
-  "Delivering": "M20 7H4a2 2 0 00-2 2v10h20V9a2 2 0 00-2-2zM12 3v4",
-  "Complete": "M20 6L9 17l-5-5",
-};
+
+function DeliveryProgressStepIcon({ label, isCurrent }: { label: string; isCurrent: boolean }) {
+  const dim = `${FOREST}59`;
+  const c = isCurrent ? CREAM : dim;
+  const size = 12;
+  if (label === "En route to pick up") return <MapPin size={size} color={c} aria-hidden />;
+  if (label === "On the way to you") return <Truck size={size} color={c} aria-hidden />;
+  if (label === "Delivering") return <Package size={size} color={c} aria-hidden />;
+  if (label === "Complete") return <Check size={size} color={c} aria-hidden />;
+  return null;
+}
 
 /** Map normalized stage to main step index (0–3) for 4-step progress */
 function getClientMainStepIndex(normalized: string | null): number {
@@ -63,6 +86,15 @@ function getClientMainStepIndex(normalized: string | null): number {
 
 type Coord = { lat: number; lng: number };
 type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
+type StepCompletedAtTuple = [string | null, string | null, string | null, string | null];
+
+const TRACK_TZ = "America/Toronto";
+
+function formatStepCompletedTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", { timeZone: TRACK_TZ, hour: "numeric", minute: "2-digit" });
+}
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -138,9 +170,7 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
       <div className="text-center py-4">
         <div className="flex justify-center gap-1 mb-2">
           {[1, 2, 3, 4, 5].map((n) => (
-            <svg key={n} width="22" height="22" viewBox="0 0 24 24" fill={n <= finalRating ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
+            <Star key={n} size={22} color={GOLD} weight={n <= finalRating ? "fill" : "regular"} aria-hidden />
           ))}
         </div>
         <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Thank you for your feedback!</p>
@@ -152,12 +182,7 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
             className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full text-[12px] font-semibold border transition-all hover:opacity-80"
             style={{ borderColor: `${GOLD}40`, color: GOLD, backgroundColor: `${GOLD}08` }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
+            <GoogleLogo size={14} className="shrink-0" aria-hidden />
             Leave a Google Review
           </a>
         )}
@@ -171,9 +196,12 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
       <div className="flex justify-center gap-2">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" onClick={() => setRating(n)} className="transition-transform hover:scale-110">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill={rating != null && n <= rating ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
+            <Star
+              size={32}
+              color={GOLD}
+              weight={rating != null && n <= rating ? "fill" : "regular"}
+              aria-hidden
+            />
           </button>
         ))}
       </div>
@@ -221,6 +249,7 @@ export default function TrackDeliveryClient({
   const [dropoff, setDropoff] = useState<Coord | null>(initialDropoff || null);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
   const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(delivery.eta_current_minutes ?? null);
+  const [stepCompletedAt, setStepCompletedAt] = useState<StepCompletedAtTuple | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const prevTrackingRef = useRef(false);
@@ -256,6 +285,9 @@ export default function TrackDeliveryClient({
         setHasActiveTracking(!!data.hasActiveTracking);
         if (data.eta_current_minutes != null) setLiveEtaMinutes(data.eta_current_minutes);
         else setLiveEtaMinutes(null);
+        if (Array.isArray(data.stepCompletedAt) && data.stepCompletedAt.length === 4) {
+          setStepCompletedAt(data.stepCompletedAt as StepCompletedAtTuple);
+        }
       } catch (err) { console.error("Failed to poll delivery crew status:", err); }
     };
     poll();
@@ -270,7 +302,6 @@ export default function TrackDeliveryClient({
   const isCompleted = statusVal === "delivered" || statusVal === "completed" || normalizedStage === "completed";
 
   const clientMainStepIdx = getClientMainStepIndex(normalizedStage);
-  const progressPercent = isCompleted ? 100 : ((clientMainStepIdx + 1) / CLIENT_MAIN_STEPS.length) * 100;
 
   const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
   const isPrePickup = PICKUP_STAGES.includes(normalizedStage || "") || PICKUP_STAGES.includes(liveStage || "") || !(normalizedStage ?? "").trim();
@@ -318,7 +349,7 @@ export default function TrackDeliveryClient({
           className="absolute top-4 right-4 z-20 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-sm border shadow-2xl transition-all active:scale-95 hover:bg-white"
           style={{ borderColor: `${FOREST}15`, color: FOREST }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <CornersIn size={16} className="text-current shrink-0" aria-hidden />
           <span className="text-[12px] font-bold">Minimize</span>
         </button>
 
@@ -364,7 +395,7 @@ export default function TrackDeliveryClient({
             )}
             {isCompleted && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <Check weight="bold" size={10} className="text-current shrink-0" aria-hidden />
                 Complete
               </span>
             )}
@@ -374,17 +405,7 @@ export default function TrackDeliveryClient({
         {/* ── Gold progress bar with stage icons ── */}
         {(isInProgress || isCompleted) && (
           <div className="mb-7 anim-slide-up anim-delay-2">
-            {/* Header: current stage + percent */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[13px] font-bold" style={{ color: FOREST }}>
-                {isCompleted ? "Complete" : CLIENT_MAIN_STEPS[clientMainStepIdx]}
-              </span>
-              <span className="text-[13px] font-semibold opacity-60" style={{ color: FOREST }}>
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-
-            {/* Progress bar with stage nodes */}
+            {/* Progress bar with stage nodes (no title row — stage labels are under each node; "Complete" badge is in header) */}
             {/* Each node is fixed 64 px wide so the absolute track can be anchored at left/right: 32 (= half node width) */}
             <div className="relative" style={{ paddingBottom: 30 }}>
               {/* Track */}
@@ -399,7 +420,6 @@ export default function TrackDeliveryClient({
                   zIndex: 0,
                 }}
               />
-              {/* Gold fill */}
               <div
                 className="absolute rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -416,7 +436,8 @@ export default function TrackDeliveryClient({
                 {CLIENT_MAIN_STEPS.map((label, i) => {
                   const isPast = clientMainStepIdx > i || isCompleted;
                   const isCurrent = clientMainStepIdx === i && !isCompleted;
-                  const iconPath = CLIENT_MAIN_STEP_ICONS[label];
+                  const doneAt = stepCompletedAt?.[i];
+                  const doneTimeLabel = doneAt ? formatStepCompletedTime(doneAt) : "";
                   return (
                     <div key={label} className="flex flex-col items-center" style={{ width: 64 }}>
                       <div className="relative">
@@ -431,31 +452,35 @@ export default function TrackDeliveryClient({
                           style={{
                             width: 30,
                             height: 30,
-                            backgroundColor: isPast ? "#22C55E" : isCurrent ? GOLD : CREAM,
+                            backgroundColor: isPast || isCurrent ? GOLD : CREAM,
                             border: !isPast && !isCurrent ? `1.5px solid ${FOREST}18` : "none",
                             boxShadow: isCurrent ? `0 0 0 4px ${GOLD}25` : undefined,
                           }}
                         >
                           {isPast ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"/>
-                            </svg>
-                          ) : iconPath ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isCurrent ? CREAM : `${FOREST}35`} strokeWidth="2" strokeLinecap="round">
-                              <path d={iconPath}/>
-                            </svg>
-                          ) : null}
+                            <Check weight="bold" size={12} color="#fff" aria-hidden />
+                          ) : (
+                            <DeliveryProgressStepIcon label={label} isCurrent={isCurrent} />
+                          )}
                         </div>
                       </div>
                       <div
                         className="mt-2 text-center leading-tight font-semibold"
                         style={{
                           fontSize: 9.5,
-                          maxWidth: 68,
+                          maxWidth: 76,
                           color: isCurrent ? GOLD : isPast ? FOREST : `${FOREST}35`,
                         }}
                       >
                         {label}
+                        {isPast && doneTimeLabel ? (
+                          <div
+                            className="font-normal tabular-nums mt-0.5"
+                            style={{ fontSize: 8.5, color: `${FOREST}52`, letterSpacing: "0.02em" }}
+                          >
+                            {doneTimeLabel}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -471,9 +496,7 @@ export default function TrackDeliveryClient({
             <div className="flex items-start gap-3.5 px-5 py-4">
               <div className="shrink-0 mt-0.5">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${GOLD}12` }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/>
-                  </svg>
+                  <Sun size={14} color={GOLD} aria-hidden />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -498,9 +521,7 @@ export default function TrackDeliveryClient({
             <div className="flex items-start gap-3.5 px-5 py-4">
               <div className="shrink-0 mt-0.5">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#22C55E12" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                  </svg>
+                  <MapPin size={14} color="#22C55E" aria-hidden />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -515,9 +536,7 @@ export default function TrackDeliveryClient({
         <div className="grid grid-cols-2 gap-3 mb-5 anim-slide-up anim-delay-3">
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
+              <CalendarBlank size={13} color={GOLD} aria-hidden />
               <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Date</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -526,9 +545,7 @@ export default function TrackDeliveryClient({
           </div>
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
+              <Clock size={13} color={GOLD} aria-hidden />
               <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Window</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -537,9 +554,7 @@ export default function TrackDeliveryClient({
           </div>
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
-                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-              </svg>
+              <Package size={13} color={GOLD} aria-hidden />
               <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Items</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -548,9 +563,7 @@ export default function TrackDeliveryClient({
           </div>
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
+              <Lightning size={13} color={GOLD} aria-hidden />
               <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>
                 {displayEta != null ? "ETA" : "Status"}
               </span>
@@ -566,9 +579,7 @@ export default function TrackDeliveryClient({
           <div className="mb-5 anim-slide-up anim-delay-4">
             <div className="flex items-center gap-3.5 px-0 py-2">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}12` }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
+                <User size={18} color={GOLD} aria-hidden />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{crewName}</div>
@@ -581,7 +592,7 @@ export default function TrackDeliveryClient({
                     className="shrink-0 flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-[10px] font-semibold transition-colors"
                     style={{ borderColor: `${GOLD}40`, color: FOREST }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <Phone size={12} className="text-current shrink-0" aria-hidden />
                     {crewPhone ? "Call" : "Dispatch"}
                   </a>
                 )}
@@ -681,7 +692,7 @@ export default function TrackDeliveryClient({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-white/90 backdrop-blur-sm shadow-lg" style={{ color: `${FOREST}90` }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <MapPin size={12} color={GOLD} aria-hidden />
                         Tap to preview route
                       </span>
                     )}
@@ -696,13 +707,9 @@ export default function TrackDeliveryClient({
                     style={{ backgroundColor: crewHasStarted ? "#22C55E12" : `${GOLD}12` }}
                   >
                     {crewHasStarted ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                      </svg>
+                      <MapPin size={18} color="#22C55E" aria-hidden />
                     ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                      </svg>
+                      <Clock size={18} color={GOLD} aria-hidden />
                     )}
                   </div>
                   <div>
@@ -738,19 +745,13 @@ export default function TrackDeliveryClient({
                     className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300"
                     style={{ backgroundColor: mapExpanded ? `${FOREST}08` : `${GOLD}12` }}
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={mapExpanded ? FOREST : GOLD}
-                      strokeWidth="2"
-                      strokeLinecap="round"
+                    <CaretDown
+                      size={14}
+                      color={mapExpanded ? FOREST : GOLD}
                       className="transition-transform duration-300"
                       style={{ transform: mapExpanded ? "rotate(180deg)" : "rotate(0deg)", opacity: mapExpanded ? 0.5 : 0.8 }}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                      aria-hidden
+                    />
                   </div>
                 </div>
               </div>
@@ -772,7 +773,7 @@ export default function TrackDeliveryClient({
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ background: `${GOLD}25` }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <MapPin size={20} color={GOLD} aria-hidden />
                       </div>
                       <span className="text-[13px] font-semibold text-white/60">Map loading…</span>
                     </div>
@@ -783,9 +784,7 @@ export default function TrackDeliveryClient({
                 {!crewHasStarted && (
                   <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 border border-white/10" style={{ backgroundColor: `${GOLD}18` }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                      </svg>
+                      <Clock size={22} color={GOLD} aria-hidden />
                     </div>
                     <span className="text-[13px] font-semibold text-white/90 tracking-tight">Waiting for crew</span>
                     <span className="text-[11px] text-white/50 mt-0.5">
@@ -814,7 +813,7 @@ export default function TrackDeliveryClient({
                   className="absolute bottom-3 right-3 z-[1000] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-sm border shadow-lg transition-all hover:scale-105 active:scale-95"
                   style={{ borderColor: `${FOREST}15`, color: FOREST }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  <CornersOut size={13} className="text-current shrink-0" aria-hidden />
                   <span className="text-[11px] font-bold">Expand</span>
                 </button>
               </div>
@@ -836,7 +835,7 @@ export default function TrackDeliveryClient({
             className="inline-flex items-center gap-1.5 text-[11px] font-semibold hover:opacity-80 transition-opacity"
             style={{ color: GOLD }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <MagnifyingGlass size={12} className="text-current shrink-0" aria-hidden />
             Track another delivery
           </Link>
         </div>

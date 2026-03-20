@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { ImageSquare } from "@phosphor-icons/react";
 
 const GOLD = "#C9A962";
 const MAX_PHOTOS = 10;
@@ -151,11 +152,7 @@ export default function TrackPhotos({
               </span>
             ) : (
               <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
+                <ImageSquare size={18} color={GOLD} />
                 <div className="text-left">
                   <span className="text-[12px] font-semibold text-[#1A1A1A] block">
                     Upload Photos
@@ -176,11 +173,7 @@ export default function TrackPhotos({
             className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
             style={{ backgroundColor: `${GOLD}14` }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
+            <ImageSquare size={20} color={GOLD} />
           </div>
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No photos yet</p>
           <p className="text-[11px] text-[#888] max-w-[240px] mx-auto leading-relaxed">

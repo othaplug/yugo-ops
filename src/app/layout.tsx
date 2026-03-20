@@ -1,6 +1,7 @@
 import "./globals.css";
 import { ToastProvider } from "@/app/admin/components/Toast";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import PhosphorProvider from "@/components/ui/PhosphorProvider";
 
 export const metadata = {
   title: { default: "Yugo+", template: "%s | Yugo+" },
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <OfflineBanner />
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <PhosphorProvider>{children}</PhosphorProvider>
+        </ToastProvider>
       </body>
     </html>
   );

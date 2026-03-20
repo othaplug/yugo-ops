@@ -3,18 +3,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
+  ArrowsClockwise as RefreshCw,
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
   Phone,
-  Mail,
-  MessageSquare,
+  Envelope as Mail,
+  ChatText as MessageSquare,
   Users,
   X,
-  CalendarDays,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+  Calendar as CalendarDays,
+  Warning as AlertTriangle,
+  CheckCircle as CheckCircle2,
+  Crosshair,
+} from "@phosphor-icons/react";
 import { getLocalDateString } from "@/lib/business-timezone";
 import DispatchSchedule from "@/components/dispatch/DispatchSchedule";
 import ActivityFeed from "@/components/dispatch/ActivityFeed";
@@ -269,10 +270,10 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setDate(prevDate)}
-                className="p-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+                className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
                 aria-label="Previous day"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
 
               {/* Date display / picker */}
@@ -280,7 +281,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 <button
                   type="button"
                   onClick={() => dateInputRef.current?.showPicker?.()}
-                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation text-[11px] font-semibold whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation text-[11px] font-semibold whitespace-nowrap"
                 >
                   <CalendarDays className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden sm:inline">{shortDate}</span>
@@ -301,7 +302,7 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setDate(today)}
-                className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-colors touch-manipulation ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors touch-manipulation ${
                   isToday
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                     : "border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
@@ -312,10 +313,10 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setDate(nextDate)}
-                className="p-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+                className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
                 aria-label="Next day"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -333,18 +334,18 @@ export default function DispatchBoardClient({ today }: Props) {
             <button
               onClick={() => load()}
               disabled={loading}
-              className={`p-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:text-[var(--gold)] transition-all touch-manipulation ${loading ? "opacity-60" : ""}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:text-[var(--gold)] hover:border-[var(--gold)]/50 transition-all touch-manipulation text-[11px] font-semibold ${loading ? "opacity-60" : ""}`}
               aria-label="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+              {lastFetch > 0 && <span className="hidden sm:inline text-[9px] text-[var(--tx3)] font-normal">{formatLastUpdated(Date.now() - lastFetch)}</span>}
             </button>
-            <span className="text-[9px] text-[var(--tx3)] hidden sm:block tabular-nums min-w-[40px]">
-              {lastFetch > 0 ? formatLastUpdated(Date.now() - lastFetch) : ""}
-            </span>
             <Link
               href="/admin/crew"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--gold2)] transition-all touch-manipulation"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--gold2)] transition-all touch-manipulation"
             >
+              <Crosshair size={13} className="text-current shrink-0" aria-hidden />
               Live Map
             </Link>
           </div>
@@ -359,14 +360,14 @@ export default function DispatchBoardClient({ today }: Props) {
                   key={stat.key}
                   type="button"
                   onClick={() => setFilterStatus(filterStatus === stat.key ? "all" : stat.key!)}
-                  className={`shrink-0 px-4 py-3 rounded-2xl border text-left transition-all touch-manipulation min-w-[90px] ${
+                  className={`shrink-0 px-3.5 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-w-[80px] ${
                     filterStatus === stat.key
-                      ? "border-[var(--gold)] bg-[var(--gold)] shadow-lg shadow-[var(--gold)]/20"
+                      ? "border-[var(--gold)] bg-[var(--gold)] shadow-md shadow-[var(--gold)]/20"
                       : "border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/60"
                   }`}
                 >
                   <p
-                    className={`text-[9px] font-bold tracking-[0.14em] uppercase mb-1.5 whitespace-nowrap leading-none ${
+                    className={`text-[8px] font-bold tracking-[0.12em] uppercase mb-1 whitespace-nowrap leading-none ${
                       filterStatus === stat.key
                         ? "text-[var(--btn-text-on-accent)]/70"
                         : "text-[var(--tx3)]/60"
@@ -375,7 +376,7 @@ export default function DispatchBoardClient({ today }: Props) {
                     {stat.label}
                   </p>
                   <p
-                    className={`text-[24px] font-bold font-heading leading-none ${
+                    className={`text-[20px] font-bold font-heading leading-none ${
                       filterStatus === stat.key ? "text-[var(--btn-text-on-accent)]" : stat.color
                     }`}
                   >
@@ -383,11 +384,11 @@ export default function DispatchBoardClient({ today }: Props) {
                   </p>
                 </button>
               ) : (
-                <div key="assigned-stat" className="shrink-0 px-4 py-3 rounded-2xl border border-[var(--brd)] bg-[var(--card)] min-w-[90px]">
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1.5 whitespace-nowrap leading-none">
+                <div key="assigned-stat" className="shrink-0 px-3.5 py-2.5 rounded-xl border border-[var(--brd)] bg-[var(--card)] min-w-[80px]">
+                  <p className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-1 whitespace-nowrap leading-none">
                     {stat.label}
                   </p>
-                  <p className={`text-[24px] font-bold font-heading leading-none ${stat.color}`}>
+                  <p className={`text-[20px] font-bold font-heading leading-none ${stat.color}`}>
                     {stat.value}
                   </p>
                 </div>

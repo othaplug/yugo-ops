@@ -8,7 +8,7 @@ import { Icon } from "@/components/AppIcons";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
 
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
 const IN_PROGRESS_STATUSES = [

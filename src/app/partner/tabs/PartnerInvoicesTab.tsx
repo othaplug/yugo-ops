@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MagnifyingGlass, DownloadSimple, ArrowSquareOut } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -99,7 +100,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
       {/* Search + Filter + Download */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <MagnifyingGlass size={15} color="#999" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -122,7 +123,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
           onClick={downloadCSV}
           className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-white border border-[#E8E4DF] text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <DownloadSimple size={14} />
           Download CSV
         </button>
       </div>
@@ -179,7 +180,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            <ArrowSquareOut size={10} />
                             View
                           </a>
                         )}

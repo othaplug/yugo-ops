@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Lock, Check, Warning, ShareNetwork, Calendar, ChartBar,
+  Bell, FileText, DownloadSimple, Plus, NavigationArrow, UserCircle,
+  ListBullets, X, CurrencyDollar, ClipboardText, MapPin, ArrowsClockwise,
+} from "@phosphor-icons/react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { formatCurrency } from "@/lib/format-currency";
@@ -345,17 +350,14 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                   <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
-                      { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", circle: "cx='12' cy='10' r='3'", color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
-                      { icon: "M3 4h18v18H3z rx='2'", lines: true, color: "#8B5CF6", bg: "#F5F3FF", title: "Schedule & Calendar", desc: "View upcoming deliveries in calendar view, schedule new ones" },
-                      { icon: "M18 5 6 12 18 19", share: true, color: "#C9A962", bg: "#FFFBF0", title: "Share Tracking Links", desc: "Send live tracking links to your end clients via email" },
-                      { icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", color: "#059669", bg: "#ECFDF5", title: "Invoices & Monthly Report", desc: "View invoices, monthly performance, and SLA report" },
+                      { PhIcon: MapPin, color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
+                      { PhIcon: Calendar, color: "#8B5CF6", bg: "#F5F3FF", title: "Schedule & Calendar", desc: "View upcoming deliveries in calendar view, schedule new ones" },
+                      { PhIcon: ShareNetwork, color: "#C9A962", bg: "#FFFBF0", title: "Share Tracking Links", desc: "Send live tracking links to your end clients via email" },
+                      { PhIcon: FileText, color: "#059669", bg: "#ECFDF5", title: "Invoices & Monthly Report", desc: "View invoices, monthly performance, and SLA report" },
                     ].map((item) => (
                       <div key={item.title} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: item.bg }}>
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.color}15` }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d={item.icon} />
-                            {item.circle && <circle cx={12} cy={10} r={3} />}
-                          </svg>
+                          <item.PhIcon size={18} color={item.color} />
                         </div>
                         <div>
                           <div className="text-[13px] font-semibold text-[var(--tx)]">{item.title}</div>
@@ -370,7 +372,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
               {welcomeStep === 2 && (
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <Lock size={28} color="#E53E3E" />
                   </div>
                   <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">Secure your account</h3>
                   <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto mb-4">
@@ -380,7 +382,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                     href="/update-password"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[#E53E3E] text-white hover:bg-[#C53030] transition-colors"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <Lock size={14} />
                     Change Password Now
                   </a>
                   <button
@@ -396,7 +398,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
               {welcomeStep === 3 && (
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    <Check size={28} color="#2D6A4F" weight="bold" />
                   </div>
                   <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">You&apos;re all set!</h3>
                   <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto">
@@ -452,12 +454,12 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             {refreshing ? (
               <span className="spinner w-4 h-4" />
             ) : (
-              <svg
-                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2.5"
+              <ArrowsClockwise
+                size={16}
+                color="var(--gold)"
                 style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
-              >
-                <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
-              </svg>
+                aria-hidden
+              />
             )}
           </div>
         )}
@@ -466,7 +468,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           <div className="mb-5 flex items-center gap-3 px-4 py-3 border-t border-[var(--brd)]/30 pt-5" style={{ animation: "fadeSlideUp 0.4s ease" }}>
             <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
             <div className="w-9 h-9 rounded-xl bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+              <Check size={18} color="#2D6A4F" weight="bold" />
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-[14px] font-semibold text-[var(--tx)]">Welcome back, {contactName}</span>
@@ -514,7 +516,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           return (
             <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/8 border border-red-500/20 flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <Warning size={16} color="#EF4444" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold text-red-600 dark:text-red-400">
@@ -611,7 +613,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                   onClick={() => setShareTarget(data.allDeliveries[0])}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  <ShareNetwork size={14} />
                   Share with Client
                 </button>
               )}
@@ -619,14 +621,14 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                 onClick={() => setActiveTab("calendar")}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <Calendar size={14} />
                 Calendar
               </button>
               <button
                 onClick={() => setActiveTab("billing")}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <ChartBar size={14} />
                 Monthly Report
               </button>
             </>
@@ -865,17 +867,13 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             {
               key: "today", label: "Today",
               icon: (active: boolean) => (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
+                <Calendar size={22} color={active ? "var(--gold)" : "var(--tx3)"} weight={active ? "duotone" : "regular"} />
               ),
             },
             {
               key: "calendar", label: "Schedule",
               icon: (active: boolean) => (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
-                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-                </svg>
+                <ListBullets size={22} color={active ? "var(--gold)" : "var(--tx3)"} weight={active ? "duotone" : "regular"} />
               ),
             },
             ...(features.canCreateDelivery && !hasOverdueInvoices ? [{
@@ -883,24 +881,20 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
               icon: (_active: boolean) => (
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-white -mt-4 shadow-lg"
                   style={{ background: "linear-gradient(145deg, #D4AF37, #C9A962)", boxShadow: "0 4px 12px rgba(201,169,98,0.45)" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <Plus size={20} color="white" weight="bold" />
                 </div>
               ),
             }] : []),
             {
               key: "tracking", label: "Map",
               icon: (active: boolean) => (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
-                  <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-                </svg>
+                <NavigationArrow size={22} color={active ? "var(--gold)" : "var(--tx3)"} weight={active ? "duotone" : "regular"} />
               ),
             },
             {
               key: "__settings__", label: "Account",
               icon: (active: boolean) => (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--gold)" : "var(--tx3)"} strokeWidth={active ? 2.2 : 1.8}>
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
+                <UserCircle size={22} color={active ? "var(--gold)" : "var(--tx3)"} weight={active ? "duotone" : "regular"} />
               ),
             },
           ].map(({ key, label, icon }) => {
@@ -1046,7 +1040,7 @@ function PartnerNotificationBell({ open, onToggle, onClose }: { open: boolean; o
         onClick={onToggle}
         className="relative p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <Bell size={18} color="var(--tx3)" />
         {unreadCount > 0 && (
           <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full bg-[#C9A962] text-white text-[8px] font-bold flex items-center justify-center px-1">
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -1117,16 +1111,15 @@ function PartnerNotificationBell({ open, onToggle, onClose }: { open: boolean; o
 }
 
 function PartnerNotifIcon({ name }: { name: string }) {
-  const props = { width: 14, height: 14, viewBox: "0 0 24 24" as const, fill: "none" as const, stroke: "currentColor" as const, strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  switch (name) {
-    case "check": return <svg {...props}><path d="M20 6 9 17l-5-5" /></svg>;
-    case "x": return <svg {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
-    case "dollar": return <svg {...props}><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
-    case "clipboard": return <svg {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>;
-    case "calendar": return <svg {...props}><rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
-    case "alertTriangle": return <svg {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
-    default: return <svg {...props}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>;
-  }
+  const map: Record<string, React.ReactNode> = {
+    check:         <Check size={14} />,
+    x:             <X size={14} />,
+    dollar:        <CurrencyDollar size={14} />,
+    clipboard:     <ClipboardText size={14} />,
+    calendar:      <Calendar size={14} />,
+    alertTriangle: <Warning size={14} />,
+  };
+  return <>{map[name] ?? <Bell size={14} />}</>;
 }
 
 function MaterialsTab() {
@@ -1144,7 +1137,7 @@ function MaterialsTab() {
           <div key={m.name} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[var(--bg)] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <FileText size={20} color="var(--gold)" />
               </div>
               <div>
                 <div className="text-[14px] font-semibold text-[var(--tx)]">{m.name}</div>
@@ -1152,7 +1145,7 @@ function MaterialsTab() {
               </div>
             </div>
             <button className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <DownloadSimple size={18} color="var(--gold)" />
             </button>
           </div>
         ))}

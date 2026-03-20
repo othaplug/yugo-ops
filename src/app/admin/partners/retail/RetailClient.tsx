@@ -6,6 +6,7 @@ import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
+import { MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
 
 interface Client {
   id: string;
@@ -115,7 +116,7 @@ export default function RetailClient({
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -173,7 +174,7 @@ export default function RetailClient({
                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
                               {statusLabel}
                             </span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                            <CaretRight size={14} className="flex-shrink-0 text-[var(--tx3)]" />
                           </div>
                         </Link>
                       </div>

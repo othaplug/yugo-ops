@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Icon } from "@/components/AppIcons";
 import YugoLogo from "@/components/YugoLogo";
 import { createClient } from "@/lib/supabase/client";
+import { User } from "@phosphor-icons/react";
 
 const NAV = [
   { label: "Dashboard", items: [
@@ -132,7 +133,7 @@ export default function Sidebar() {
         {/* @ts-expect-error -- viewTransition is experimental and not yet typed */}
         <Link href="/admin/settings" viewTransition className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-lg hover:bg-[var(--gdim)]">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-[9px] font-bold text-white">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <User size={14} className="text-white" aria-hidden />
           </div>
           <div>
             <div className="text-[10px] font-semibold text-[var(--tx)]">Settings</div>

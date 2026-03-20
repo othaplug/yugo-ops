@@ -18,6 +18,7 @@ import PricingControlPanel from "./PricingControlPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
+import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X } from "@phosphor-icons/react";
 
 const TABS = [
   { id: "pricing", label: "Pricing" },
@@ -424,13 +425,13 @@ function BusinessInfoSection() {
         {/* Core company details */}
         <div>
           <div className={subheadCls}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <House size={12} className="shrink-0 text-current" />
             Company Details
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("company_name", "Company Name", "YUGO+")}
-            {inp("company_legal_name", "Legal Name", "OHELLO Inc.")}
-            {inp("company_address", "Address", "50 Carroll St, Toronto")}
+            {inp("company_name", "Company Name", "HELLOYUGO+")}
+            {inp("company_legal_name", "Legal Name", "HELLOYUGO INC")}
+            {inp("company_address", "Address", "50 Carroll St, Toronto, ON")}
             {inp("company_hst_number", "HST / Tax Number", "123456789RT0001")}
             {inp("company_website", "Website", "https://helloyugo.com", "url")}
           </div>
@@ -439,7 +440,7 @@ function BusinessInfoSection() {
         {/* Contact info */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
           <div className={subheadCls}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <Phone size={12} className="shrink-0 text-current" />
             Contact &amp; Hours
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -454,7 +455,7 @@ function BusinessInfoSection() {
         {/* Notification emails */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
           <div className={subheadCls}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <Envelope size={12} className="shrink-0 text-current" />
             Email Configuration
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -467,7 +468,7 @@ function BusinessInfoSection() {
         {/* Social media & reviews */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
           <div className={subheadCls}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <ShareNetwork size={12} className="shrink-0 text-current" />
             Social &amp; Reviews
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -608,6 +609,7 @@ function FeatureTogglesSection() {
     { key: "instant_quote_widget", label: "Instant Quote Widget", desc: "Enable public quote calculator on website" },
     { key: "valuation_upgrades", label: "Valuation Upgrades", desc: "Show protection upgrade options on client quotes" },
     { key: "sms_eta_enabled", label: "SMS ETA Updates", desc: "Send SMS updates with crew ETA on move/delivery day (departure, 15-min, arrived, completed)" },
+    { key: "quote_sms_enabled", label: "Quote link SMS", desc: "Text clients the quote link when a quote is sent or re-sent (requires Twilio)" },
   ];
 
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -784,12 +786,12 @@ function EmailTemplatesSection() {
         {templates.length === 0 ? (
           <p className="text-[12px] text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
         ) : templates.map((tpl) => (
-          <div key={tpl.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/30 transition-colors">
-            <div>
-              <div className="text-[13px] font-medium text-[var(--tx)]">{SLUG_LABELS[tpl.template_slug] || tpl.template_slug}</div>
-              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate max-w-[300px]">{tpl.subject}</div>
+          <div key={tpl.id} className="flex items-center gap-3 justify-between py-2.5 px-3 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/30 transition-colors">
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium text-[var(--tx)] truncate">{SLUG_LABELS[tpl.template_slug] || tpl.template_slug}</div>
+              <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{tpl.subject}</div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]">Preview</button>
               <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10">Edit</button>
             </div>
@@ -1357,7 +1359,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   onClick={() => setShowInactiveStaff(!showInactiveStaff)}
                   className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
                 >
-                  <svg className={`w-3 h-3 transition-transform ${showInactiveStaff ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+                  <CaretDown size={12} className={`shrink-0 transition-transform text-current ${showInactiveStaff ? "rotate-180" : ""}`} />
                   Former / Inactive ({inactiveStaff.length})
                 </button>
                 {showInactiveStaff && (
@@ -1494,7 +1496,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                               className="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-red-500/20 text-[var(--tx3)] hover:text-red-400 transition-colors"
                               title={`Remove ${member} from team`}
                             >
-                              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M18 6 6 18M6 6l12 12" /></svg>
+                              <X size={10} className="text-current" />
                             </button>
                           </span>
                         ))}
@@ -1573,7 +1575,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     </p>
                     {team.phone ? (
                       <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <Phone size={14} className="shrink-0 text-[var(--gold)]" />
                         <span className="text-[13px] font-medium text-[var(--tx)]">{team.phone}</span>
                         <span className="text-[9px] text-[var(--tx3)] ml-auto">from tablet</span>
                       </div>

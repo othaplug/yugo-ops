@@ -1,16 +1,22 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import YugoLogo from "@/components/YugoLogo";
+import { getCompanyDisplayName } from "@/lib/config";
+import { getLegalBranding } from "@/lib/legal-branding";
 
 const EFFECTIVE = "March 15, 2026";
-const COMPANY = "Yugo Moving & Delivery Inc.";
-const EMAIL = "legal@yugomoves.com";
 
-export const metadata = {
-  title: "Terms & Conditions Yugo",
-  description: "The terms and conditions governing moving and delivery services provided by Yugo.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getCompanyDisplayName();
+  return {
+    title: `Terms & Conditions — ${brand}`,
+    description: `The terms and conditions governing moving and delivery services provided by ${brand}.`,
+  };
+}
 
-export default function TermsAndConditionsPage() {
+export default async function TermsAndConditionsPage() {
+  const { companyLegal, brand, email } = await getLegalBranding();
+
   return (
     <main style={{ minHeight: "100vh", background: "#FDFCFA", fontFamily: "'DM Sans', sans-serif", color: "#1A1714" }}>
       <header style={{ borderBottom: "1px solid #E8E4DC", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#FDFCFA", zIndex: 10 }}>
@@ -28,17 +34,17 @@ export default function TermsAndConditionsPage() {
         <div style={{ marginBottom: 40 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#C9A962", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Terms & Conditions</h1>
-          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {COMPANY}</p>
+          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {brand}</p>
         </div>
 
         <section style={{ marginBottom: 36 }}>
           <p style={{ fontSize: 15, lineHeight: 1.8, color: "#3A3530" }}>
-            These Terms and Conditions (&quot;Agreement&quot;) govern the moving, delivery, and logistics services provided by {COMPANY} (&quot;Yugo&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) to you (&quot;Client&quot;, &quot;Partner&quot;, or &quot;Customer&quot;). By booking, scheduling, or accepting our services, whether through the Platform, phone, or email, you agree to this Agreement in its entirety.
+            These Terms and Conditions (&quot;Agreement&quot;) govern the moving, delivery, and logistics services provided by {companyLegal} (&quot;{brand}&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) to you (&quot;Client&quot;, &quot;Partner&quot;, or &quot;Customer&quot;). By booking, scheduling, or accepting our services, whether through the Platform, phone, or email, you agree to this Agreement in its entirety.
           </p>
         </section>
 
         <LegalSection title="1. Services">
-          <p>Yugo provides professional moving and delivery services including, but not limited to:</p>
+          <p>{brand} provides professional moving and delivery services including, but not limited to:</p>
           <ul>
             <li>Residential and commercial moving services.</li>
             <li>Furniture and item delivery on behalf of retail, design, and commercial partners.</li>
@@ -46,11 +52,11 @@ export default function TermsAndConditionsPage() {
             <li>Labour-only services for loading, unloading, and rearranging.</li>
             <li>Packaging and packing supplies.</li>
           </ul>
-          <p>Services are subject to availability, crew capacity, and applicable regulations. Yugo reserves the right to decline any booking at its sole discretion.</p>
+          <p>Services are subject to availability, crew capacity, and applicable regulations. {brand} reserves the right to decline any booking at its sole discretion.</p>
         </LegalSection>
 
         <LegalSection title="2. Booking and Confirmation">
-          <p>A booking is not confirmed until you receive a written confirmation from Yugo via email or through the Platform. Verbal agreements do not constitute a binding commitment. Yugo reserves the right to adjust pricing or service scope before a booking is confirmed if material information was omitted or was inaccurate at the time of inquiry.</p>
+          <p>A booking is not confirmed until you receive a written confirmation from {brand} via email or through the Platform. Verbal agreements do not constitute a binding commitment. {brand} reserves the right to adjust pricing or service scope before a booking is confirmed if material information was omitted or was inaccurate at the time of inquiry.</p>
         </LegalSection>
 
         <LegalSection title="3. Pricing and Payment">
@@ -78,7 +84,7 @@ export default function TermsAndConditionsPage() {
             <li><strong>Less than 24 hours before scheduled service:</strong> 50% cancellation fee of the quoted price.</li>
             <li><strong>Day-of cancellation or no-show:</strong> 100% of the minimum quoted fee.</li>
           </ul>
-          <p>Yugo may cancel or reschedule at any time due to crew unavailability, weather, safety concerns, or other circumstances beyond our control. In such cases, you will receive a full refund or priority rescheduling.</p>
+          <p>{brand} may cancel or reschedule at any time due to crew unavailability, weather, safety concerns, or other circumstances beyond our control. In such cases, you will receive a full refund or priority rescheduling.</p>
         </LegalSection>
 
         <LegalSection title="5. Client Responsibilities">
@@ -87,15 +93,15 @@ export default function TermsAndConditionsPage() {
             <li>Ensuring all items to be moved are disclosed accurately and completely at booking.</li>
             <li>Securing or removing all items of extreme value (cash, jewellery, irreplaceable documents) prior to the move.</li>
             <li>Ensuring clear, safe access to all pickup and delivery locations, including parking, elevator booking, and building access.</li>
-            <li>Notifying Yugo of any access restrictions, stairs, long carries, or special conditions before booking.</li>
+            <li>Notifying {brand} of any access restrictions, stairs, long carries, or special conditions before booking.</li>
             <li>Being present or having an authorised representative present at both pickup and delivery to confirm items and sign off on completion.</li>
-            <li>Ensuring items are in a packable, moveable condition. Yugo is not responsible for items that were not adequately prepared.</li>
+            <li>Ensuring items are in a packable, moveable condition. {brand} is not responsible for items that were not adequately prepared.</li>
             <li>Draining appliances (washing machines, refrigerators) prior to the move.</li>
           </ul>
         </LegalSection>
 
         <LegalSection title="6. Prohibited Items">
-          <p>Yugo will not transport the following items:</p>
+          <p>{brand} will not transport the following items:</p>
           <ul>
             <li>Hazardous materials, flammable liquids, explosives, or toxic substances.</li>
             <li>Illegal items or controlled substances.</li>
@@ -108,11 +114,11 @@ export default function TermsAndConditionsPage() {
 
         <LegalSection title="7. Liability and Claims">
           <SubHeading>7.1 Our Liability</SubHeading>
-          <p>Yugo&apos;s liability for loss or damage to items is limited to <strong>$0.60 per pound per article</strong> (Released Value Protection, standard industry rate) unless you purchase additional valuation coverage or declare a higher value in writing before the service commences.</p>
+          <p>{brand}&apos;s liability for loss or damage to items is limited to <strong>$0.60 per pound per article</strong> (Released Value Protection, standard industry rate) unless you purchase additional valuation coverage or declare a higher value in writing before the service commences.</p>
           <SubHeading>7.2 Valuation Coverage</SubHeading>
-          <p>Clients may declare a higher value for their items by notifying Yugo in writing at least 24 hours before the job. A surcharge may apply. Yugo is not an insurer and does not offer insurance. We strongly recommend obtaining independent moving insurance for high-value items.</p>
+          <p>Clients may declare a higher value for their items by notifying {brand} in writing at least 24 hours before the job. A surcharge may apply. {brand} is not an insurer and does not offer insurance. We strongly recommend obtaining independent moving insurance for high-value items.</p>
           <SubHeading>7.3 Exclusions</SubHeading>
-          <p>Yugo is not liable for:</p>
+          <p>{brand} is not liable for:</p>
           <ul>
             <li>Items of inherent vice (pre-existing defects, mechanical failure, fragile items in original manufacturer packaging).</li>
             <li>Damage caused by incomplete or improper packing done by the Client.</li>
@@ -125,13 +131,13 @@ export default function TermsAndConditionsPage() {
           <p>All damage or loss claims must be:</p>
           <ul>
             <li>Noted on the Client Sign-Off form at the time of delivery, or</li>
-            <li>Submitted in writing to <a href={`mailto:${EMAIL}`} style={{ color: "#C9A962" }}>{EMAIL}</a> within <strong>24 hours</strong> of delivery completion.</li>
+            <li>Submitted in writing to <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a> within <strong>24 hours</strong> of delivery completion.</li>
           </ul>
           <p>Claims submitted after 24 hours will not be accepted. Providing false or exaggerated claims constitutes fraud.</p>
         </LegalSection>
 
         <LegalSection title="8. High-Value and Special Items">
-          <p>Items with a replacement value exceeding $1,000 per article (including art, antiques, electronics, jewellery, pianos, safes) must be declared in writing at the time of booking. Special handling rates may apply. Yugo reserves the right to decline transport of any item it deems excessively fragile or risky without appropriate valuation coverage.</p>
+          <p>Items with a replacement value exceeding $1,000 per article (including art, antiques, electronics, jewellery, pianos, safes) must be declared in writing at the time of booking. Special handling rates may apply. {brand} reserves the right to decline transport of any item it deems excessively fragile or risky without appropriate valuation coverage.</p>
         </LegalSection>
 
         <LegalSection title="9. Partner-Specific Terms">
@@ -148,21 +154,21 @@ export default function TermsAndConditionsPage() {
         </LegalSection>
 
         <LegalSection title="10. Crew Conduct">
-          <p>Yugo crews are trained professionals. We will not tolerate:</p>
+          <p>{brand} crews are trained professionals. We will not tolerate:</p>
           <ul>
             <li>Harassment, abuse, or threats directed at crew members.</li>
             <li>Requests to transport prohibited items.</li>
             <li>Unsafe conditions at pickup or delivery locations.</li>
           </ul>
-          <p>Yugo reserves the right to withdraw crew from any location where safety is compromised, with no refund obligation for any portion of the job not completed due to Client-caused safety issues.</p>
+          <p>{brand} reserves the right to withdraw crew from any location where safety is compromised, with no refund obligation for any portion of the job not completed due to Client-caused safety issues.</p>
         </LegalSection>
 
         <LegalSection title="11. Force Majeure">
-          <p>Yugo shall not be liable for any delay or failure to perform resulting from causes outside our reasonable control, including but not limited to: acts of God, natural disasters, pandemic, war, government action, strikes, labour disputes, power outages, extreme weather, or road closures. In such circumstances, we will make reasonable efforts to reschedule and will communicate promptly.</p>
+          <p>{brand} shall not be liable for any delay or failure to perform resulting from causes outside our reasonable control, including but not limited to: acts of God, natural disasters, pandemic, war, government action, strikes, labour disputes, power outages, extreme weather, or road closures. In such circumstances, we will make reasonable efforts to reschedule and will communicate promptly.</p>
         </LegalSection>
 
         <LegalSection title="12. Dispute Resolution">
-          <p>In the event of a dispute, we request that you first contact our customer service team at <a href={`mailto:${EMAIL}`} style={{ color: "#C9A962" }}>{EMAIL}</a> to attempt informal resolution. If a dispute is not resolved within 30 days, either party may pursue formal resolution. Any unresolved disputes shall be subject to binding arbitration in Toronto, Ontario under the Arbitration Act (Ontario), except that either party may seek injunctive relief in a court of competent jurisdiction.</p>
+          <p>In the event of a dispute, we request that you first contact our customer service team at <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a> to attempt informal resolution. If a dispute is not resolved within 30 days, either party may pursue formal resolution. Any unresolved disputes shall be subject to binding arbitration in Toronto, Ontario under the Arbitration Act (Ontario), except that either party may seek injunctive relief in a court of competent jurisdiction.</p>
         </LegalSection>
 
         <LegalSection title="13. Governing Law">
@@ -170,7 +176,7 @@ export default function TermsAndConditionsPage() {
         </LegalSection>
 
         <LegalSection title="14. Entire Agreement">
-          <p>This Agreement, together with any booking confirmation, Partner Agreement, and our Privacy Policy and Terms of Use, constitutes the entire agreement between you and Yugo with respect to the subject matter herein and supersedes all prior agreements, representations, and warranties.</p>
+          <p>This Agreement, together with any booking confirmation, Partner Agreement, and our Privacy Policy and Terms of Use, constitutes the entire agreement between you and {brand} with respect to the subject matter herein and supersedes all prior agreements, representations, and warranties.</p>
         </LegalSection>
 
         <LegalSection title="15. Severability">
@@ -178,7 +184,7 @@ export default function TermsAndConditionsPage() {
         </LegalSection>
 
         <LegalSection title="16. Contact">
-          <p>For any questions regarding these Terms and Conditions, contact us at <a href={`mailto:${EMAIL}`} style={{ color: "#C9A962" }}>{EMAIL}</a>.</p>
+          <p>For any questions regarding these Terms and Conditions, contact us at <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a>.</p>
         </LegalSection>
 
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E8E4DC", display: "flex", gap: 20, flexWrap: "wrap" }}>

@@ -12,13 +12,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  TrendingUp,
-  AlertTriangle,
+  TrendUp as TrendingUp,
+  Warning as AlertTriangle,
   Calendar,
   Users,
   Sun,
-  BarChart3,
-} from "lucide-react";
+  ChartBar as BarChart3,
+} from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
 
 /* ════════════ Types ════════════ */

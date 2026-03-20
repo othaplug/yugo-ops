@@ -1,4 +1,4 @@
-import { Building2, MapPin, Calendar, Check, Users, Clock } from "lucide-react";
+import { Buildings as Building2, MapPin, Calendar, Check, Users, Clock } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,

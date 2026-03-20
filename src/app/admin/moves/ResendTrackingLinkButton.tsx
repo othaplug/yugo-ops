@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "../components/Toast";
-import { Mail } from "lucide-react";
+import { Envelope as Mail } from "@phosphor-icons/react";
 
 export default function ResendTrackingLinkButton({ move }: { move: any }) {
   const [loading, setLoading] = useState(false);

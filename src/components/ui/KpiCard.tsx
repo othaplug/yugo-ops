@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, TrendingDown, Minus, ArrowUpRight } from "lucide-react";
+import { TrendUp as TrendingUp, TrendDown as TrendingDown, Minus, ArrowUpRight } from "@phosphor-icons/react";
 
 export default function KpiCard({
   label,

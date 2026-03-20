@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../components/ThemeContext";
 import { useToast } from "../components/Toast";
+import { Check } from "@phosphor-icons/react";
 
 const DEFAULT_PAGES = [
   { value: "/admin", label: "Command Center (Dashboard)" },
@@ -79,9 +80,9 @@ export default function AppearanceSettings() {
       role="switch"
       aria-checked={checked}
       onClick={onChange}
-      className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`} />
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`} />
     </button>
   );
 
@@ -119,9 +120,7 @@ export default function AppearanceSettings() {
               </span>
               {theme === t && (
                 <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-[var(--gold)] flex items-center justify-center">
-                  <svg className="w-2 h-2 text-white" viewBox="0 0 8 8" fill="currentColor">
-                    <path d="M1.5 4l1.8 1.8L6.5 2" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-                  </svg>
+                  <Check weight="bold" size={8} color="#fff" aria-hidden />
                 </span>
               )}
             </button>

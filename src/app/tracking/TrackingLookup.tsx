@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { CircleNotch, WarningCircle, MapPin, CalendarBlank, ClipboardText } from "@phosphor-icons/react";
 
 export default function TrackingLookup() {
   const [code, setCode] = useState("");
@@ -100,19 +101,14 @@ export default function TrackingLookup() {
               style={{ backgroundColor: WINE, color: "#FAF8F4" }}
             >
               {loading ? (
-                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                  <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
-                </svg>
+                <CircleNotch size={14} className="animate-spin text-[#FAF8F4]" />
               ) : "Track"}
             </button>
           </div>
 
           {error && (
             <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/8 border border-red-400/20">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <WarningCircle size={13} color="#EF4444" />
               <p className="text-[12px] text-red-600">{error}</p>
             </div>
           )}
@@ -122,22 +118,20 @@ export default function TrackingLookup() {
         <div className="flex flex-col items-center gap-8 mt-14 w-full max-w-lg">
           <div className="flex flex-row items-center justify-center gap-10 sm:gap-14 w-full">
             {[
-              { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z", title: "Live GPS", desc: "Real-time crew location" },
-              { icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", title: "ETA & Schedule", desc: "Date, time window" },
-            ].map((c) => (
+              { Icon: MapPin, title: "Live GPS", desc: "Real-time crew location" },
+              { Icon: CalendarBlank, title: "ETA & Schedule", desc: "Date, time window" },
+            ].map((c) => {
+              const HintIcon = c.Icon;
+              return (
               <div key={c.title} className="flex flex-col items-center gap-2 text-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
-                  <path d={c.icon} />
-                </svg>
+                <HintIcon size={18} color={WINE} className="opacity-[0.55]" />
                 <div className="text-[11px] font-semibold" style={{ color: FOREST }}>{c.title}</div>
                 <div className="text-[10px] opacity-50" style={{ color: FOREST }}>{c.desc}</div>
               </div>
-            ))}
+            );})}
           </div>
           <div className="flex flex-col items-center gap-2 text-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={WINE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <ClipboardText size={18} color={WINE} className="opacity-[0.55]" />
             <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Status Updates</div>
             <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Step-by-step progress</div>
           </div>

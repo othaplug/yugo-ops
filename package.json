@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@hubspot/api-client": "^13.4.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.564.0",
     "mapbox-gl": "^3.18.1",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -29,7 +29,6 @@
     "recharts": "^3.7.0",
     "resend": "^6.9.2",
     "square": "^44.0.0",
-    "twilio": "^5.12.1",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },

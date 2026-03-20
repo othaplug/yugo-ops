@@ -76,6 +76,10 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   auto_followup_enabled: "true",
   followup_max_attempts: "3",
   sms_eta_enabled: "false",
+  quote_sms_enabled: "true",
+  sms_enabled: "true",
+  sms_followup_enabled: "true",
+  sms_premove_enabled: "true",
 };
 
 /**

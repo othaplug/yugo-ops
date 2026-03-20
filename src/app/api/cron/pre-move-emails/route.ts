@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { sendMoveReminderSms } from "@/lib/quote-sms";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   /* ── T-72 Hour Emails ── */
   const { data: moves72 } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, client_email, scheduled_date, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at")
+    .select("id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at")
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
     .is("pre_move_72hr_sent", null);
@@ -69,6 +70,19 @@ export async function GET(req: NextRequest) {
             .update({ pre_move_72hr_sent: new Date().toISOString() })
             .eq("id", move.id);
           results.sent72hr++;
+
+          // SMS 72hr reminder
+          if (move.client_phone) {
+            sendMoveReminderSms({
+              phone: move.client_phone,
+              moveCode: move.move_code || move.id,
+              clientName: move.client_name || undefined,
+              moveDate: move.scheduled_date,
+              scheduledTime: move.scheduled_time ?? null,
+              trackingUrl,
+              reminderType: "72hr",
+            }).catch(() => {});
+          }
         } else {
           results.errors.push(`72hr:${move.move_code}:${result.error}`);
         }
@@ -166,7 +180,7 @@ export async function GET(req: NextRequest) {
   const { data: moves24 } = await supabase
     .from("moves")
     .select(`
-      id, move_code, client_name, client_email,
+      id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
       crew_id, crew_size, truck_info, arrival_window,
       crews:crew_id(name, members)
@@ -222,6 +236,20 @@ export async function GET(req: NextRequest) {
             .update({ pre_move_24hr_sent: new Date().toISOString() })
             .eq("id", move.id);
           results.sent24hr++;
+
+          // SMS day-before reminder
+          if (move.client_phone) {
+            sendMoveReminderSms({
+              phone: move.client_phone,
+              moveCode: move.move_code || move.id,
+              clientName: move.client_name || undefined,
+              moveDate: move.scheduled_date,
+              scheduledTime: move.arrival_window || move.scheduled_time || null,
+              crewSize: crewSize ?? null,
+              trackingUrl,
+              reminderType: "24hr",
+            }).catch(() => {});
+          }
         } else {
           results.errors.push(`24hr:${move.move_code}:${result.error}`);
         }

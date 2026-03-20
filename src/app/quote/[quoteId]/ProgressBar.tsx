@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import { GOLD, FOREST } from "./quote-shared";
 
 const STEPS = [

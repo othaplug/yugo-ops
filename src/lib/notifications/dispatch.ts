@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
-import { twilioClient } from "@/lib/twilio";
+import { sendSMS } from "@/lib/sms/sendSMS";
 import { adminNotificationLayout } from "@/lib/email/admin-templates";
 
 interface NotificationData {
@@ -107,34 +107,20 @@ export async function sendNotification(
     const phoneRaw =
       platformUser?.phone ??
       (await supabase.auth.admin.getUserById(recipientUserId).then((r) => r.data?.user?.phone ?? null));
-    const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
-    const hasTwilio =
-      process.env.TWILIO_ACCOUNT_SID &&
-      process.env.TWILIO_AUTH_TOKEN &&
-      twilioFrom;
+    const hasOpenPhone = process.env.OPENPHONE_API_KEY && process.env.OPENPHONE_PHONE_NUMBER_ID;
 
-    if (phoneRaw && hasTwilio) {
+    if (phoneRaw && hasOpenPhone) {
       const digits = (phoneRaw as string).replace(/\D/g, "");
       if (digits.length >= 10) {
         const toE164 = digits.startsWith("1") && digits.length === 11 ? `+${digits}` : `+1${digits.slice(-10)}`;
-        const fromDigits = (twilioFrom as string).replace(/\D/g, "");
-        const fromE164 = fromDigits.startsWith("1")
-          ? `+${fromDigits}`
-          : `+1${fromDigits}`;
         const title = buildNotificationTitle(eventSlug, data);
         const body = buildNotificationBody(eventSlug, data);
         const smsBody = [title, body].filter(Boolean).join(": ").slice(0, 1600);
 
-        try {
-          await twilioClient.messages.create({
-            to: toE164,
-            from: fromE164,
-            body: smsBody,
-          });
-          results.sms = true;
-        } catch (err) {
-          console.error("[dispatch] SMS send failed:", err);
-          results.sms = false;
+        const smsResult = await sendSMS(toE164, smsBody);
+        results.sms = smsResult.success;
+        if (!smsResult.success) {
+          console.error("[dispatch] SMS send failed:", smsResult.error);
         }
       } else {
         results.sms = false;

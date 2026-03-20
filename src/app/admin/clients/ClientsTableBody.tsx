@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
+import { DotsThreeVertical } from "@phosphor-icons/react";
 
 type Client = {
   id: string;
@@ -101,9 +102,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-[var(--card)] transition-all"
                 aria-label="Actions"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-[var(--tx3)]">
-                  <circle cx="12" cy="6" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="18" r="1.5" />
-                </svg>
+                <DotsThreeVertical size={14} className="text-[var(--tx3)]" aria-hidden />
               </button>
               {menuOpenId === c.id && (
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">

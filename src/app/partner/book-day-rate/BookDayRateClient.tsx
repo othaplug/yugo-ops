@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "@phosphor-icons/react";
 import Link from "next/link";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
 
@@ -21,7 +22,7 @@ export default function BookDayRateClient({ orgId, orgType, defaultPickupAddress
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <ArrowLeft size={16} />
           Back
         </button>
       </div>

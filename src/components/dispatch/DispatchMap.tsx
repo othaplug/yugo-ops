@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||

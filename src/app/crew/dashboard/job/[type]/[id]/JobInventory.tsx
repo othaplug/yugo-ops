@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 
 interface InventoryRoom {

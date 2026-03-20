@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { WarningCircle } from "@phosphor-icons/react";
 
 interface SectionErrorProps {
   error: Error & { digest?: string };
@@ -18,20 +19,7 @@ export default function SectionError({ error, reset, section }: SectionErrorProp
     <div className="min-h-[50vh] flex flex-col items-center justify-center px-4 py-12">
       <div className="max-w-sm w-full text-center space-y-5">
         <div className="w-12 h-12 mx-auto rounded-xl bg-[var(--rdim)] flex items-center justify-center">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--red)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
+          <WarningCircle size={24} color="var(--red)" aria-hidden />
         </div>
         <div>
           <h2 className="text-[16px] font-bold text-[var(--tx)]">

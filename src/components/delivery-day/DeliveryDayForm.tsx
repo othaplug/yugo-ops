@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
 import {
-  Clock, Sun, Sunset, MapPin, Plus, Trash2,
-  AlertTriangle, ChevronRight, X, ArrowLeft, Sparkles,
-} from "lucide-react";
+  CalendarBlank,
+  Clock, Sun, SunHorizon as Sunset, MapPin, Plus, Trash as Trash2,
+  Warning as AlertTriangle, CaretRight as ChevronRight, X, ArrowLeft, Sparkle as Sparkles,
+} from "@phosphor-icons/react";
 import {
   ITEM_CATALOG, SIZE_LABELS, VEHICLE_OPTIONS, TIME_WINDOW_CHOICES,
   type StopDetail, type ItemSize, type VehicleType, type DayType, type TimeWindow,
@@ -349,7 +350,11 @@ export default function DeliveryDayForm({
             <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Date</label>
             <div className="relative">
               <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={`${fieldInput} pr-10`} style={{ colorScheme: "dark" }} />
-              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <CalendarBlank
+                size={15}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
+                aria-hidden
+              />
             </div>
           </section>
           <section className="space-y-3">

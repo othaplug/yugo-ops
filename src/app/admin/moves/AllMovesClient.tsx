@@ -14,6 +14,7 @@ import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { Plus } from "@phosphor-icons/react";
 
 /* ── Types ── */
 
@@ -563,9 +564,7 @@ export default function AllMovesClient({
           className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-lg shadow-[var(--gold)]/25 active:scale-95 transition-transform touch-manipulation"
           aria-label="Create new move"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={22} className="text-current" aria-hidden />
         </Link>
       </div>
     </div>

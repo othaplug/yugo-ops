@@ -7,6 +7,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
+import { House, X, Warning } from "@phosphor-icons/react";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -191,6 +192,7 @@ const GodEyeMap = dynamic(
         onCrewClick,
         routeLines,
         office,
+        activeSessions,
       }: {
         crews: Crew[];
         crewLocations: Map<string, CrewLocation>;
@@ -200,6 +202,7 @@ const GodEyeMap = dynamic(
         onCrewClick: (id: string) => void;
         routeLines: Map<string, [number, number][]>;
         office: OfficeConfig;
+        activeSessions: Session[];
       }) {
         return (
           <M
@@ -269,7 +272,8 @@ const GodEyeMap = dynamic(
               .filter((c) => c.current_lat != null && c.current_lng != null)
               .map((c) => {
                 const loc = crewLocations.get(c.id);
-                const status = loc?.status || (c.status === "en-route" ? "en_route_pickup" : "idle");
+                const hasJobSession = activeSessions.some((s) => s.teamId === c.id);
+                const status = loc?.status || (hasJobSession && c.status === "en-route" ? "en_route_pickup" : "idle");
                 const ringColor = teamColor(c.id);
                 const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
                 const isNearOffice = haversineM(c.current_lat!, c.current_lng!, office.lat, office.lng) < office.radiusM;
@@ -305,7 +309,7 @@ const GodEyeMap = dynamic(
                         {/* Inner gold circle with initials */}
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9A962] to-[#8B7332] flex items-center justify-center text-[11px] font-bold text-white shadow-inner">
                           {isNearOffice && !isOnJob(status) ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+                            <House size={12} color="white" />
                           ) : (
                             initials
                           )}
@@ -409,7 +413,7 @@ function CrewPopup({
           </div>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 1l14 14M15 1L1 15" /></svg>
+          <X size={16} className="text-current" />
         </button>
       </div>
 
@@ -606,7 +610,7 @@ export default function UnifiedTrackingView({
                 ...c,
                 current_lat: hasLoc ? s.lastLocation!.lat : fallbackLat,
                 current_lng: hasLoc ? s.lastLocation!.lng : fallbackLng,
-                status: s.status && !["completed", "not_started"].includes(s.status) ? "en-route" : c.status,
+                status: s.status && !["completed", "not_started"].includes(s.status) ? "en-route" : "standby",
                 updated_at: s.updatedAt || c.updated_at,
               };
             });
@@ -702,6 +706,7 @@ export default function UnifiedTrackingView({
               onCrewClick={(id) => setSelectedCrew(selectedCrew === id ? null : id)}
               routeLines={routeLines}
               office={office}
+              activeSessions={activeSessions}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-[var(--bg2)] text-[var(--tx3)] text-[12px]">
@@ -933,9 +938,9 @@ export default function UnifiedTrackingView({
                   const loc = crewLocations.get(c.id);
                   const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
                   const isNearOffice = c.current_lat != null && c.current_lng != null && haversineM(c.current_lat, c.current_lng, office.lat, office.lng) < office.radiusM;
-                  const status = loc?.status || (c.status === "en-route" ? "en_route_pickup" : "idle");
-                  const isOff = offMin >= 30;
                   const hasActiveSession = activeSessions.some((s) => s.teamId === c.id);
+                  const status = loc?.status || (hasActiveSession && c.status === "en-route" ? "en_route_pickup" : "idle");
+                  const isOff = offMin >= 30;
 
                   let locationLabel = "No GPS";
                   if (isNearOffice) locationLabel = "At office";
@@ -973,7 +978,7 @@ export default function UnifiedTrackingView({
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isOff && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                          <Warning size={10} color="#EF4444" />
                         )}
                         <div
                           className={`w-2.5 h-2.5 rounded-full ${isOff ? "" : hasActiveSession ? "animate-pulse" : ""}`}

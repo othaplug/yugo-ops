@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { X, SignOut, List } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider } from "@/app/admin/components/ThemeContext";
@@ -74,7 +75,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               glass-sidebar border-r border-[var(--brd)]
               transition-all duration-300 ease-out
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-              w-[${SIDEBAR_WIDTH}px]
+              w-[220px]
             `}
           >
             {/* Logo area */}
@@ -88,10 +89,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                 aria-label="Close menu"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X size={16} />
               </button>
             </div>
 
@@ -147,7 +145,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--card)] hover:text-[var(--tx)] border border-[var(--brd)] transition-colors"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  <SignOut size={14} />
                   Sign out
                 </button>
               </form>
@@ -167,11 +165,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   className="md:hidden size-10 flex items-center justify-center rounded-xl hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0"
                   aria-label="Open menu"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                  </svg>
+                  <List size={20} />
                 </button>
                 {isJobPage && (
                   <span className="text-[11px] font-semibold text-[var(--gold)] uppercase tracking-[1.5px]">Active Job</span>

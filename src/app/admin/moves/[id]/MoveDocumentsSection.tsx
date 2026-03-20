@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Trash2, Plus, Link as LinkIcon, FileText, Upload } from "lucide-react";
+import { Trash as Trash2, Plus, Link as LinkIcon, FileText, Upload } from "@phosphor-icons/react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";

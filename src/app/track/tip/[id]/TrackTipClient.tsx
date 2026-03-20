@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import YugoLogo from "@/components/YugoLogo";
 import { FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { Check, CreditCard, Lock, X } from "@phosphor-icons/react";
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
@@ -156,9 +157,7 @@ export default function TrackTipClient({
         className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
         style={{ backgroundColor: `${FOREST}20` }}
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <Check size={28} color={FOREST} weight="bold" />
       </div>
       <h1 className="font-heading text-2xl font-bold mb-2" style={{ color: FOREST }}>
         Thank you!
@@ -284,14 +283,8 @@ export default function TrackTipClient({
 
               {/* Square secure payment badge */}
               <div className="flex items-center justify-center gap-2 mt-4">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="24" height="24" rx="5" fill="#006AFF"/>
-                  <text x="5" y="17" fontSize="14" fontWeight="bold" fill="white" fontFamily="system-ui,sans-serif">sq</text>
-                </svg>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                <CreditCard size={18} color="#006AFF" />
+                <Lock size={14} color={GOLD} />
                 <span className="text-[10px] font-medium" style={{ color: GOLD }}>
                   Secured by Square · 256-bit encryption
                 </span>
@@ -325,7 +318,7 @@ export default function TrackTipClient({
               style={{ color: `${FOREST}60` }}
               aria-label="Close"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <X size={18} className="text-current" />
             </button>
             {formContent}
           </div>

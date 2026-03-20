@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
+import { PencilSimple as Pencil, Trash as Trash2, Plus, CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { expandItemRow as expandItemRowFromName } from "@/lib/inventory-parse";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";

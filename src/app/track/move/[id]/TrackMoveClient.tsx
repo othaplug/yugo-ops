@@ -28,6 +28,18 @@ import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
+import {
+  ArrowsClockwise,
+  CaretDown,
+  Check,
+  Phone,
+  ShareNetwork,
+  ChatCircle,
+  CaretRight,
+  Plus,
+  X,
+  Lock,
+} from "@phosphor-icons/react";
 
 function formatPerkOffer(offerType: string, discountValue: number | null): string {
   if (offerType === "percentage_off" && discountValue) return `${discountValue}% off`;
@@ -518,20 +530,12 @@ export default function TrackMoveClient({
             {refreshing ? (
               <span className="spinner w-4 h-4" style={{ borderColor: `${GOLD}40`, borderTopColor: GOLD }} />
             ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={GOLD}
-                strokeWidth="2.5"
+              <ArrowsClockwise
+                size={16}
+                color={GOLD}
                 style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
-              >
-                <polyline points="17 1 21 5 17 9" />
-                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                <polyline points="7 23 3 19 7 15" />
-                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-              </svg>
+                aria-hidden
+              />
             )}
           </div>
         )}
@@ -555,7 +559,7 @@ export default function TrackMoveClient({
         {showPaymentSuccess && (
           <div className="mb-5 text-center py-6 animate-fade-up">
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-full mb-3" style={{ backgroundColor: `${GOLD}20` }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <Check size={18} color={GOLD} weight="bold" />
             </div>
             <h2 className="text-[13px] font-semibold" style={{ color: WINE }}>Payment received</h2>
             <p className="text-[11px] mt-1 opacity-60" style={{ color: FOREST }}>
@@ -727,13 +731,12 @@ export default function TrackMoveClient({
                     {scheduledDate && <><span>·</span><span>{formatMoveDate(scheduledDate)}</span></>}
                   </div>
                 </div>
-                <svg
-                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round"
+                <CaretDown
+                  size={14}
+                  color={FOREST}
                   style={{ opacity: 0.4, transition: "transform 0.2s", transform: showMoveDetails ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
-                >
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
+                  aria-hidden
+                />
               </button>
 
               {showMoveDetails && (
@@ -823,9 +826,7 @@ export default function TrackMoveClient({
                       )}
                       <div className="pt-1 space-y-2">
                         <p className="text-[11px] flex items-center gap-1.5" style={{ color: FOREST }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                          </svg>
+                          <Phone size={12} className="text-current" aria-hidden />
                           <a
                             href={`tel:${normalizePhone(YUGO_PHONE)}`}
                             className="inline-flex items-center font-semibold text-[11px] transition-opacity hover:opacity-70 focus:outline-none focus:ring-1 focus:ring-offset-1 rounded-md"
@@ -1003,10 +1004,7 @@ export default function TrackMoveClient({
                       className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                       style={{ backgroundColor: WINE, color: "#FAF7F2" }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                      </svg>
+                      <ShareNetwork size={11} className="text-current" />
                       Share with a friend
                     </button>
                     <a
@@ -1014,9 +1012,7 @@ export default function TrackMoveClient({
                       className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                       style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      </svg>
+                      <ChatCircle size={11} className="text-current" />
                       Send via SMS
                     </a>
                   </div>
@@ -1298,7 +1294,7 @@ export default function TrackMoveClient({
                       }}
                     >
                       {move.event_phase === "delivery" && move.status === "completed" ? (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check size={10} color="#22C55E" weight="bold" />
                       ) : (
                         <div className="w-2 h-2 rounded-full" style={{ background: move.event_phase === "delivery" ? "#7C3AED" : "#9CA3AF" }} />
                       )}
@@ -1327,7 +1323,7 @@ export default function TrackMoveClient({
                       }}
                     >
                       {move.event_phase === "return" && move.status === "completed" ? (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check size={10} color="#22C55E" weight="bold" />
                       ) : (
                         <div className="w-2 h-2 rounded-full" style={{ background: move.event_phase === "return" ? "#059669" : "#9CA3AF" }} />
                       )}
@@ -1373,7 +1369,7 @@ export default function TrackMoveClient({
                       style={{ color: GOLD }}
                     >
                       {(dashboardInventory?.items?.length ?? 0) + (dashboardInventory?.extraItems?.length ?? 0)} items
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                      <CaretRight size={10} className="text-current" />
                     </button>
                   )}
                 </div>
@@ -1496,7 +1492,7 @@ export default function TrackMoveClient({
                   className="text-[11px] font-semibold opacity-40 hover:opacity-70 transition-opacity flex items-center gap-1.5"
                   style={{ color: FOREST }}
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <Plus size={10} className="text-current" />
                   Request a Change
                 </button>
               </div>
@@ -1669,10 +1665,7 @@ export default function TrackMoveClient({
                           className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                           style={{ backgroundColor: WINE, color: "#FAF7F2" }}
                         >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                          </svg>
+                          <ShareNetwork size={11} className="text-current" />
                           Share with a friend
                         </button>
                         <a
@@ -1680,9 +1673,7 @@ export default function TrackMoveClient({
                           className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                           style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
                         >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                          </svg>
+                          <ChatCircle size={11} className="text-current" />
                           Send via SMS
                         </a>
                       </div>
@@ -1835,7 +1826,7 @@ export default function TrackMoveClient({
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[16px] font-bold" style={{ color: FOREST }}>Pay Balance</h2>
                   <button type="button" onClick={() => setPaymentModalOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F0F0F0] transition-colors">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={FOREST} strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <X size={16} color={FOREST} />
                   </button>
                 </div>
 
@@ -1891,7 +1882,7 @@ export default function TrackMoveClient({
                 </button>
 
                 <div className="flex items-center justify-center gap-1.5 mt-3">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <Lock size={12} color="#999" />
                   <span className="text-[10px] opacity-50" style={{ color: FOREST }}>Secured by Square · 256-bit encryption</span>
                 </div>
               </div>

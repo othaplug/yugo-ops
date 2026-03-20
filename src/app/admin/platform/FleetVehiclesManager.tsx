@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
+import { CaretDown } from "@phosphor-icons/react";
 
 interface Vehicle {
   id: string;
@@ -268,7 +269,7 @@ export default function FleetVehiclesManager() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-[9px] font-semibold px-2 py-0.5 rounded capitalize ${statusCls}`}>{v.status}</span>
-                    <svg className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+                    <CaretDown className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden />
                   </div>
                 </div>
               </div>

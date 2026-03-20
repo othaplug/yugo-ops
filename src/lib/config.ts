@@ -47,6 +47,17 @@ export async function getConfigs(
   return result;
 }
 
+const DEFAULT_COMPANY_DISPLAY = "HELLOYUGO+";
+const DEFAULT_COMPANY_LEGAL = "HELLOYUGO INC";
+
+export async function getCompanyDisplayName(): Promise<string> {
+  return getConfig("company_name", DEFAULT_COMPANY_DISPLAY);
+}
+
+export async function getCompanyLegalName(): Promise<string> {
+  return getConfig("company_legal_name", DEFAULT_COMPANY_LEGAL);
+}
+
 export async function getCompanyPhone(): Promise<string> {
   return getConfig(
     "company_phone",
@@ -69,7 +80,7 @@ export async function getDispatchPhone(): Promise<string> {
 }
 
 export async function getNotificationsFromEmail(): Promise<string> {
-  const name = await getConfig("company_name", "Yugo+");
+  const name = await getCompanyDisplayName();
   const email = await getConfig(
     "notifications_from_email",
     "notifications@opsplus.co",

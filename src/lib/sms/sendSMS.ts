@@ -1,34 +1,48 @@
-import { twilioClient } from "@/lib/twilio";
-
-const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER || "";
+function toE164NorthAmerica(raw: string): string {
+  let phone = raw.trim();
+  if (!phone.startsWith("+")) {
+    phone = "+1" + phone.replace(/\D/g, "");
+  }
+  return phone;
+}
 
 export async function sendSMS(
   to: string,
   body: string
-): Promise<{ success: boolean; sid?: string; error?: string }> {
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  const apiKey = process.env.OPENPHONE_API_KEY;
+  const phoneNumberId = process.env.OPENPHONE_PHONE_NUMBER_ID;
+
+  if (!apiKey || !phoneNumberId) {
+    return { success: false, error: "OpenPhone not configured" };
+  }
+
   try {
-    if (!fromNumber || !process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-      return { success: false, error: "Twilio not configured" };
-    }
+    const formattedPhone = toE164NorthAmerica(to);
 
-    let formattedPhone = to.trim();
-    if (formattedPhone.startsWith("(") || formattedPhone.match(/^\d/)) {
-      formattedPhone = "+1" + formattedPhone.replace(/\D/g, "");
-    }
-    if (!formattedPhone.startsWith("+")) {
-      formattedPhone = "+" + formattedPhone;
-    }
-
-    const message = await twilioClient.messages.create({
-      body,
-      from: fromNumber,
-      to: formattedPhone,
+    const response = await fetch("https://api.openphone.com/v1/messages", {
+      method: "POST",
+      headers: {
+        Authorization: apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: body,
+        to: [formattedPhone],
+        from: phoneNumberId,
+      }),
     });
 
-    return { success: true, sid: message.sid };
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.message || "OpenPhone API error" };
+    }
+
+    return { success: true, id: data.data?.id };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("Twilio SMS error:", msg);
+    console.error("OpenPhone SMS error:", msg);
     return { success: false, error: msg };
   }
 }

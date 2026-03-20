@@ -2,6 +2,7 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useState, useEffect } from "react";
+import { MapPin } from "@phosphor-icons/react";
 import Map, { Marker, Source, Layer, NavigationControl, useMap } from "react-map-gl/mapbox";
 
 function MyLocationButton() {
@@ -24,10 +25,7 @@ function MyLocationButton() {
       title="My location"
       aria-label="Center on my location"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-        <circle cx="12" cy="10" r="3" />
-      </svg>
+      <MapPin size={16} color="#666" />
     </button>
   );
 }

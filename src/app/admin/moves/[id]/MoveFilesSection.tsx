@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, X, ChevronDown, ChevronRight, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
+import { Upload, FileText, Image, X, CaretDown as ChevronDown, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, ArrowsClockwise as RefreshCw, Trash as Trash2 } from "@phosphor-icons/react";
 import { useToast } from "../../components/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

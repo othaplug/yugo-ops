@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Send, CheckCircle, Loader2, TrendingUp } from "lucide-react";
+import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

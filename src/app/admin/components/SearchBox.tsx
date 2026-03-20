@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
+import { X } from "@phosphor-icons/react";
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code";
 
 const TYPE_ICONS: Record<string, string> = {
@@ -37,7 +38,7 @@ const NAV_SEARCH_ITEMS: { name: string; href: string; keywords: string[] }[] = [
   { name: "Designers", href: "/admin/partners/designers", keywords: ["designers", "partners"] },
   { name: "Hospitality", href: "/admin/partners/hospitality", keywords: ["hospitality", "partners"] },
   { name: "Art Gallery", href: "/admin/partners/gallery", keywords: ["gallery", "art", "partners"] },
-  { name: "Realtors", href: "/admin/partners/realtors", keywords: ["realtors", "partners"] },
+  { name: "Realtors & referrals", href: "/admin/partners/realtors", keywords: ["realtors", "referrals", "referral partners", "property manager", "developer", "commission"] },
   { name: "All Moves", href: "/admin/moves", keywords: ["moves", "all"] },
   { name: "Quotes", href: "/admin/quotes", keywords: ["quotes"] },
   { name: "Invoices", href: "/admin/invoices", keywords: ["invoices", "finance"] },
@@ -185,20 +186,24 @@ export default function SearchBox() {
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search moves, quotes, clients, pages, settings..."
+          placeholder="Search moves, quotes, clients…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
           className="flex-1 min-w-0 bg-transparent border-none text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
         />
-        {query.length > 0 && (
+        {query.length > 0 ? (
           <button
             type="button"
             onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
             className="text-[var(--tx3)] hover:text-[var(--tx)] shrink-0"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <X size={12} className="text-current" aria-hidden />
           </button>
+        ) : (
+          <kbd className="hidden sm:inline-flex items-center gap-px px-1.5 py-0.5 rounded border border-[var(--brd)] bg-transparent text-[9px] font-mono text-[var(--tx3)] shrink-0 leading-none">
+            ⌘K
+          </kbd>
         )}
       </div>
       {open && results.length > 0 && (

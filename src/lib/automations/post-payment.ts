@@ -2,10 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
-import { twilioClient } from "@/lib/twilio";
+import { sendSMS } from "@/lib/sms/sendSMS";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
+import { getCompanyDisplayName } from "@/lib/config";
 import {
   bookingConfirmationEmail,
   internalBookingAlertEmail,
@@ -327,12 +328,10 @@ export async function runPostPaymentActions(
       name: "client_confirmation_sms",
       critical: false,
       fn: async () => {
-        const from = process.env.TWILIO_PHONE_NUMBER;
         if (
           !clientPhone ||
-          !from ||
-          !process.env.TWILIO_ACCOUNT_SID ||
-          !process.env.TWILIO_AUTH_TOKEN
+          !process.env.OPENPHONE_API_KEY ||
+          !process.env.OPENPHONE_PHONE_NUMBER_ID
         )
           return;
 
@@ -340,20 +339,16 @@ export async function runPostPaymentActions(
         if (digits.length < 10) return;
 
         const to = digits.startsWith("1") ? `+${digits}` : `+1${digits}`;
-        const fromDigits = from.replace(/\D/g, "");
-        const fromE164 = fromDigits.startsWith("1")
-          ? `+${fromDigits}`
-          : `+1${fromDigits}`;
 
-        await twilioClient.messages.create({
+        const companyDisplayName = await getCompanyDisplayName();
+        await sendSMS(
           to,
-          from: fromE164,
-          body: [
-            `You're booked with YUGO! Ref: ${input.moveCode}.`,
+          [
+            `You're booked with ${companyDisplayName}! Ref: ${input.moveCode}.`,
             `Your coordinator will reach out within 24hrs.`,
             `Track your move: ${trackingUrl}`,
-          ].join(" "),
-        });
+          ].join(" ")
+        );
       },
     },
 

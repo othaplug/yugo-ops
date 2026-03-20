@@ -9,7 +9,7 @@ import CreateButton from "../../components/CreateButton";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Truck, Clock, CheckCircle2, AlertCircle, Camera, FileText, Send, Activity, Boxes, PackageCheck, Trash2, Lock, MapPin, AlertTriangle, ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { Plus, Truck, Clock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Camera, FileText, PaperPlaneTilt as Send, Pulse as Activity, Cube as Boxes, Package as PackageCheck, Trash as Trash2, Lock, MapPin, Warning as AlertTriangle, CaretDown as ChevronDown, CaretRight as ChevronRight, PencilSimple as Pencil, ArrowSquareOut } from "@phosphor-icons/react";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
@@ -749,7 +749,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                 {phase.description && <p className="text-[12px] text-[var(--tx3)] mt-0.5">{phase.description}</p>}
                 {phase.address && (
                   <p className="text-[11px] text-[var(--tx3)] mt-1 flex items-center gap-1">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <MapPin size={11} className="shrink-0 text-current" />
                     {phase.address}
                   </p>
                 )}
@@ -1639,7 +1639,7 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2 2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <ArrowSquareOut size={14} className="text-current" />
               View Invoice
             </a>
           ) : (
@@ -1656,7 +1656,7 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
             onClick={() => window.print()}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--gold)] transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <Truck size={13} className="text-current" />
             Print / Save PDF
           </button>
         </div>
@@ -2104,8 +2104,8 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
                 >
                   <div className="flex items-center gap-2.5">
                     {isCollapsed
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--tx3)]"><path d="M9 18l6-6-6-6" /></svg>
-                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--tx3)]"><path d="M6 9l6 6 6-6" /></svg>}
+                      ? <ChevronRight size={14} className="text-[var(--tx3)]" />
+                      : <ChevronDown size={14} className="text-[var(--tx3)]" />}
                     <span className={`text-[12px] font-bold uppercase tracking-wide ${group.meta || "text-[var(--tx)]"}`}>{group.name}</span>
                     <span className="text-[11px] text-[var(--tx3)]">({group.items.length})</span>
                   </div>

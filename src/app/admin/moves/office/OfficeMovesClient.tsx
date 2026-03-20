@@ -13,6 +13,7 @@ import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { ScheduleMoveItem } from "../../components/ScheduleItem";
+import { Funnel } from "@phosphor-icons/react";
 
 type Move = {
   id: string;
@@ -167,9 +168,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
               onClick={() => setFilterOpen(!filterOpen)}
               className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] font-semibold text-[var(--tx)] touch-manipulation"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
+              <Funnel size={14} className="text-current" />
               Filter
               {activeFilterCount > 0 && (
                 <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">

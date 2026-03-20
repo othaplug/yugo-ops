@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
+import { CaretLeft, CheckCircle, FileText, Package, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -371,7 +372,7 @@ export default function CrewJobPage({
             href="/crew/dashboard"
             className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+            <CaretLeft size={15} />
             Jobs
           </Link>
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
@@ -398,10 +399,10 @@ export default function CrewJobPage({
 
   const itemsLabel = itemsTotal > 0 ? `Items (${itemsVerified}/${itemsTotal})` : `Items (${totalItems})`;
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "status", label: "Status", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-    { id: "details", label: "Details", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-    { id: "items", label: itemsLabel, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> },
-    { id: "photos", label: "Photos", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> },
+    { id: "status", label: "Status", icon: <CheckCircle size={14} /> },
+    { id: "details", label: "Details", icon: <FileText size={14} /> },
+    { id: "items", label: itemsLabel, icon: <Package size={14} /> },
+    { id: "photos", label: "Photos", icon: <Image size={14} /> },
   ];
 
   const hasInventory = (job.inventory?.length ?? 0) > 0 || (job.extraItems?.length ?? 0) > 0 || (jobType === "move" && job.moveType === "residential" && (job.inventory?.length ?? 0) === 0);
@@ -415,13 +416,13 @@ export default function CrewJobPage({
           href="/crew/dashboard"
           className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+          <CaretLeft size={15} />
           Jobs
         </Link>
         <div className="flex items-center gap-1.5">
           {(session?.isActive || isCompleted) && (
             <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <Clock size={11} color="var(--tx3)" />
               <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
                 {formatElapsed(isCompleted && session?.completedAt && session?.startedAt ? new Date(session.completedAt).getTime() - new Date(session.startedAt).getTime() : elapsedMs)}
               </span>
@@ -462,7 +463,7 @@ export default function CrewJobPage({
               <p className="text-[14px] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
               {job.fromAccess && (
                 <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <Lock size={9} />
                   {job.fromAccess}
                 </p>
               )}
@@ -475,7 +476,7 @@ export default function CrewJobPage({
               <p className="text-[14px] text-[var(--tx)] leading-snug">{job.toAddress}</p>
               {job.toAccess && (
                 <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <Lock size={9} />
                   {job.toAccess}
                 </p>
               )}
@@ -537,7 +538,7 @@ export default function CrewJobPage({
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                <CheckCircle size={14} />
                 Client Sign-Off
               </Link>
             ) : (
@@ -596,7 +597,7 @@ export default function CrewJobPage({
                     <div className="shrink-0 mt-0.5">
                       {state === "done" ? (
                         <div className={`flex items-center justify-center rounded-full ${isLast ? "w-5 h-5 bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.12)]" : "w-4 h-4 bg-[#22C55E]/20 border border-[#22C55E]/50"}`}>
-                          <svg width={isLast ? 10 : 8} height={isLast ? 10 : 8} viewBox="0 0 24 24" fill="none" stroke={isLast ? "#fff" : "#22C55E"} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          <Check size={isLast ? 10 : 8} color={isLast ? "#fff" : "#22C55E"} weight="bold" />
                         </div>
                       ) : state === "act" ? (
                         <div className="w-4 h-4 rounded-full bg-[var(--gold)] shadow-[0_0_0_4px_rgba(201,169,98,0.2)] flex items-center justify-center">
@@ -658,21 +659,21 @@ export default function CrewJobPage({
                 onClick={() => noteInputRef.current?.focus()}
                 className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <PencilSimple size={14} />
                 Note
               </button>
               <button
                 onClick={() => setReportModalOpen(true)}
                 className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <Warning size={14} />
                 Report Issue
               </button>
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
                 className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <Phone size={14} />
                 Dispatch
               </a>
             </div>
@@ -763,7 +764,7 @@ export default function CrewJobPage({
       {activeTab === "items" && !hasInventory && (
         <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
           <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <Package size={18} color="var(--gold)" />
           </div>
           <p className="text-[12px] text-[var(--tx3)]">No inventory for this job</p>
         </div>
@@ -784,7 +785,7 @@ export default function CrewJobPage({
           ) : (
             <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
               <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <Image size={18} color="var(--gold)" />
               </div>
               <p className="text-[12px] text-[var(--tx3)]">Start the job to capture photos</p>
             </div>
@@ -888,7 +889,7 @@ export default function CrewJobPage({
             {reportSubmitted ? (
               <div className="py-4">
                 <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/10 flex items-center justify-center mx-auto mb-3">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <Check size={18} color="#22C55E" weight="bold" />
                 </div>
                 <p className="text-[13px] text-[#22C55E] text-center mb-4">Issue reported. Dispatch notified.</p>
                 <button

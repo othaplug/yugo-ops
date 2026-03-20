@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash as Trash2 } from "@phosphor-icons/react";
 
 interface Partner {
   id: string;
@@ -134,7 +134,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               }`}
             >
               {i < step ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                <Check weight="bold" size={12} className="text-current" aria-hidden />
               ) : (
                 <span>{i + 1}</span>
               )}

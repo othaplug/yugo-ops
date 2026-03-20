@@ -9,28 +9,28 @@ import {
   Star,
   Clock,
   Lock,
-  Zap,
+  Lightning as Zap,
   Truck,
   Users,
   Wrench,
-  Radar,
+  Broadcast as Radar,
   Camera,
   Hand,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
+  Trash as Trash2,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
   Plus,
   X,
   Gift,
   Package,
-  Home,
+  House as Home,
   MapPin,
-  DollarSign,
-  Shirt,
-  ClipboardCheck,
+  CurrencyDollar as DollarSign,
+  TShirt as Shirt,
+  ClipboardText as ClipboardCheck,
   CheckCircle,
-  type LucideIcon,
-} from "lucide-react";
+  type Icon as LucideIcon,
+} from "@phosphor-icons/react";
 import {
   type Quote,
   type Addon,
@@ -72,6 +72,7 @@ import SpecialtyLayout from "./layouts/SpecialtyLayout";
 import B2BOneOffLayout from "./layouts/B2BOneOffLayout";
 import EventLayout from "./layouts/EventLayout";
 import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
+import { abbreviateAddressRegions } from "@/lib/address-abbrev";
 
 /* ═══════════════════════════════════════════════════
    Main Client Component
@@ -165,6 +166,7 @@ export default function QuotePageClient({
   slotsRemaining,
   valuationTiers = [],
   valuationUpgrades = [],
+  branding,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -172,9 +174,19 @@ export default function QuotePageClient({
   slotsRemaining?: number;
   valuationTiers?: ValuationTier[];
   valuationUpgrades?: ValuationUpgrade[];
+  branding: { companyLegal: string; brand: string };
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
+
+  const quoteForDisplay = useMemo(
+    () => ({
+      ...quote,
+      from_address: abbreviateAddressRegions(quote.from_address || ""),
+      to_address: abbreviateAddressRegions(quote.to_address || ""),
+    }),
+    [quote],
+  );
 
   /* ── State ── */
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
@@ -484,8 +496,8 @@ export default function QuotePageClient({
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
       packageLabel,
-      fromAddress: quote.from_address,
-      toAddress: quote.to_address,
+      fromAddress: quoteForDisplay.from_address,
+      toAddress: quoteForDisplay.to_address,
       fromAccess: quote.from_access,
       toAccess: quote.to_access,
       moveDate: quote.move_date,
@@ -503,8 +515,8 @@ export default function QuotePageClient({
     [
       quote.quote_id,
       quote.service_type,
-      quote.from_address,
-      quote.to_address,
+      quoteForDisplay.from_address,
+      quoteForDisplay.to_address,
       quote.from_access,
       quote.to_access,
       quote.move_date,
@@ -761,7 +773,7 @@ export default function QuotePageClient({
         {isResidential && tiers ? (
           <section ref={tiersRef} className="scroll-mt-6">
             <ResidentialLayout
-              quote={quote}
+              quote={quoteForDisplay}
               tiers={tiers}
               selectedTier={selectedTier}
               onSelectTier={handleSelectTier}
@@ -803,7 +815,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <OfficeLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <OfficeLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.service_type === "single_item" ? (
           <>
@@ -815,7 +827,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <SingleItemLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <SingleItemLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.service_type === "white_glove" ? (
           <>
@@ -827,7 +839,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <WhiteGloveLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <WhiteGloveLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.service_type === "specialty" ? (
           <>
@@ -839,7 +851,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <SpecialtyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <SpecialtyLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : (quote.service_type === "b2b_oneoff" || quote.service_type === "b2b_delivery") ? (
           <>
@@ -851,7 +863,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <B2BOneOffLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <B2BOneOffLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.service_type === "event" ? (
           <>
@@ -863,7 +875,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <EventLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <EventLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.service_type === "labour_only" ? (
           <>
@@ -875,7 +887,7 @@ export default function QuotePageClient({
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
             />
-            <LabourOnlyLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
+            <LabourOnlyLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
         ) : quote.custom_price != null ? (
           <>
@@ -992,7 +1004,7 @@ export default function QuotePageClient({
             )}
             {isResidential && selectedTier && tiers?.[selectedTier] && (
               <ConfirmDetailsSection
-                quote={quote}
+                quote={quoteForDisplay}
                 selectedTier={selectedTier}
                 packageLabel={packageLabel}
                 basePrice={basePrice}
@@ -1127,6 +1139,8 @@ export default function QuotePageClient({
             <div ref={contractRef}>
             <ContractSign
               quoteData={contractData}
+              companyLegalName={branding.companyLegal}
+              companyDisplayName={branding.brand}
               onSigned={(data) => {
                 setSignedName(data.typed_name);
                 setContractSigned(true);
@@ -1368,70 +1382,243 @@ const InclusionsShowcase = React.forwardRef<
 });
 
 /* ═══════════════════════════════════════════════════
-   Inventory Collapsible (inside Move Details)
+   Inventory Collapsible — Grouped by Room
    ═══════════════════════════════════════════════════ */
 
-const INV_TRUNCATE = 4;
 const INV_SERVICE_TYPES = new Set(["local_move", "long_distance", "office_move"]);
+const ROOM_TRUNCATE = 5;
+
+const ROOM_ORDER = [
+  "living_room", "primary_bedroom", "bedroom", "bedroom_2", "bedroom_3",
+  "dining_room", "kitchen", "office", "kids", "outdoor", "garage", "specialty", "other",
+];
+
+const ROOM_LABELS: Record<string, string> = {
+  living_room: "Living Room",
+  primary_bedroom: "Primary Bedroom",
+  bedroom: "Bedroom",
+  bedroom_2: "Bedroom 2",
+  bedroom_3: "Bedroom 3",
+  dining_room: "Dining Room",
+  kitchen: "Kitchen",
+  office: "Office",
+  kids: "Kids Room",
+  outdoor: "Outdoor",
+  garage: "Garage",
+  specialty: "Specialty Items",
+  other: "Other",
+};
+
+function getRoomLabel(room: string): string {
+  return ROOM_LABELS[room] || room.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+interface InvItem { name: string; quantity: number; isSpecialty: boolean }
+interface InvRoom { room: string; label: string; items: InvItem[] }
+
+function RoomSection({ room, defaultOpen }: { room: InvRoom; defaultOpen: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [showAll, setShowAll] = useState(false);
+  const visible = open ? (showAll ? room.items : room.items.slice(0, ROOM_TRUNCATE)) : [];
+  const hasMore = room.items.length > ROOM_TRUNCATE;
+
+  return (
+    <div style={{ borderBottom: `1px solid ${FOREST}10` }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between w-full py-2 text-left group"
+      >
+        <span className="text-[12px] font-bold" style={{ color: `${FOREST}90` }}>
+          {room.label}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold" style={{ color: `${FOREST}50` }}>
+            Qty
+          </span>
+          <ChevronDown
+            className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+            style={{ color: `${FOREST}50` }}
+          />
+        </div>
+      </button>
+
+      {open && (
+        <div className="pb-1.5">
+          {visible.map((item, i) => (
+            <div key={i} className="flex items-center justify-between py-0.5 pl-2">
+              <span
+                className="text-[12px] flex-1 leading-snug"
+                style={{ color: item.isSpecialty ? GOLD : `${FOREST}70` }}
+              >
+                {item.name}
+                {item.isSpecialty && (
+                  <span className="ml-1 text-[10px] font-semibold" style={{ color: GOLD }}>
+                    (specialty handling)
+                  </span>
+                )}
+              </span>
+              <span className="text-[12px] font-semibold shrink-0 ml-4" style={{ color: `${FOREST}80` }}>
+                {item.quantity}
+              </span>
+            </div>
+          ))}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-1 pl-2 text-[11px] font-semibold"
+              style={{ color: GOLD }}
+            >
+              {showAll
+                ? "Show less"
+                : `Show ${room.items.length - ROOM_TRUNCATE} more items`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WalkthroughDetails({ quote }: { quote: Quote }) {
+  const fmtDate = quote.walkthrough_date
+    ? new Date(quote.walkthrough_date + "T12:00:00").toLocaleDateString("en-CA", {
+        month: "long", day: "numeric", year: "numeric",
+      })
+    : null;
+
+  return (
+    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
+      <p className="text-[12px] font-bold mb-2" style={{ color: `${FOREST}90` }}>
+        Your Move Details
+      </p>
+      <div className="space-y-1 pl-1">
+        {fmtDate && (
+          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+            A pre-move walkthrough was conducted on{" "}
+            <span className="font-semibold">{fmtDate}</span>.
+            Your quote is based on the walkthrough assessment.
+          </p>
+        )}
+        {quote.move_size && (
+          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+            Move Size:{" "}
+            <span className="font-semibold capitalize">{quote.move_size.replace(/_/g, " ")}</span>
+          </p>
+        )}
+        {quote.walkthrough_special_items && (
+          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+            Special Items Noted:{" "}
+            <span className="font-semibold">{quote.walkthrough_special_items}</span>
+          </p>
+        )}
+        {quote.walkthrough_notes && (
+          <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+            {quote.walkthrough_notes}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function InventoryCollapsible({ quote, selectedTier }: { quote: Quote; selectedTier: string }) {
-  const [expanded, setExpanded] = useState(false);
-
   const isEstate = selectedTier === "estate";
   if (!INV_SERVICE_TYPES.has(quote.service_type) || isEstate) return null;
 
-  const items = (quote.inventory_items ?? []) as { name?: string; slug?: string; quantity?: number }[];
+  // Walkthrough-based quote: show walkthrough details instead
+  if (quote.walkthrough_based) {
+    return <WalkthroughDetails quote={quote} />;
+  }
+
+  const rawItems = (quote.inventory_items ?? []) as {
+    name?: string; slug?: string; quantity?: number; room?: string; weight_score?: number;
+  }[];
   const boxCount = quote.client_box_count ?? 0;
-  const itemCount = items.reduce((s, i) => s + (i.quantity ?? 1), 0);
+  const itemCount = rawItems.reduce((s, i) => s + (i.quantity ?? 1), 0);
   if (itemCount === 0 && boxCount === 0) return null;
+
+  // Group items by room
+  const roomMap: Record<string, InvItem[]> = {};
+  for (const item of rawItems) {
+    const room = item.room || "other";
+    const name = (item.name || item.slug || "Item").trim();
+    const isSpecialty = room === "specialty" || (item.weight_score ?? 0) >= 10;
+    if (!roomMap[room]) roomMap[room] = [];
+    roomMap[room]!.push({ name, quantity: item.quantity ?? 1, isSpecialty });
+  }
+
+  // Sort rooms by ROOM_ORDER
+  const rooms: InvRoom[] = Object.keys(roomMap)
+    .sort((a, b) => {
+      const ai = ROOM_ORDER.indexOf(a);
+      const bi = ROOM_ORDER.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    })
+    .map((room) => ({ room, label: getRoomLabel(room), items: roomMap[room]! }));
+
+  const isLargeMove = itemCount >= 50 || rooms.length >= 5;
 
   const labelParts: string[] = [];
   if (itemCount > 0) labelParts.push(`${itemCount} item${itemCount === 1 ? "" : "s"}`);
   if (boxCount > 0) labelParts.push(`${boxCount} box${boxCount === 1 ? "" : "es"}`);
-  const headerLabel = `Your inventory (${labelParts.join(" + ")})`;
-
-  const displayItems = items.map((i) => {
-    const qty = i.quantity ?? 1;
-    const name = (i.name || i.slug || "Item").trim();
-    return qty > 1 ? `${qty}\u202f${name}` : name;
-  });
-  const hasMore = displayItems.length > INV_TRUNCATE;
-  const visibleItems = expanded || !hasMore ? displayItems : displayItems.slice(0, INV_TRUNCATE);
-  const preview = visibleItems.join(", ") + (!expanded && hasMore ? "\u2026" : "");
 
   return (
     <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1.5 text-left w-full group"
-      >
-        <ChevronDown
-          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-          style={{ color: `${FOREST}60` }}
-        />
-        <span className="text-[12px] font-semibold" style={{ color: `${FOREST}80` }}>
-          {headerLabel}
-        </span>
-      </button>
-      <div className="mt-1.5 pl-5">
-        <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}70` }}>
-          {preview}
+      <p className="text-[12px] font-bold mb-1" style={{ color: `${FOREST}90` }}>
+        Your Inventory
+      </p>
+      {isLargeMove && (
+        <p className="text-[11px] mb-2" style={{ color: `${FOREST}60` }}>
+          {labelParts.join(" + ")}
         </p>
-        {hasMore && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-1 text-[11px] font-semibold underline underline-offset-2"
-            style={{ color: GOLD }}
-          >
-            {expanded ? "Show less" : `View all ${displayItems.length} items`}
-          </button>
-        )}
-        <p className="text-[10px] mt-1.5" style={{ color: `${FOREST}50` }}>
-          Not right? Contact your coordinator to update.
-        </p>
+      )}
+
+      {/* Boxes row */}
+      {boxCount > 0 && (
+        <div className="mb-1" style={{ borderBottom: `1px solid ${FOREST}10` }}>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-[12px] font-bold" style={{ color: `${FOREST}90` }}>
+              Containers / Boxes / Bins
+            </span>
+            <span className="text-[10px] font-semibold" style={{ color: `${FOREST}50` }}>Qty</span>
+          </div>
+          <div className="flex items-center justify-between py-0.5 pl-2 pb-1.5">
+            <span className="text-[12px]" style={{ color: `${FOREST}70` }}>
+              Boxes packed & supplied by owner
+            </span>
+            <span className="text-[12px] font-semibold ml-4" style={{ color: `${FOREST}80` }}>
+              {boxCount}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Room sections */}
+      <div>
+        {rooms.map((room, i) => (
+          <RoomSection
+            key={room.room}
+            room={room}
+            defaultOpen={!isLargeMove || i < 2}
+          />
+        ))}
       </div>
+
+      {/* Total */}
+      <div className="mt-1.5 flex items-center justify-between">
+        <span className="text-[11px] font-semibold" style={{ color: `${FOREST}60` }}>
+          Total: {labelParts.join(" + ")}
+        </span>
+      </div>
+
+      <p className="text-[10px] mt-1.5" style={{ color: `${FOREST}50` }}>
+        Not right? Contact your coordinator to update.
+      </p>
     </div>
   );
 }
@@ -2086,12 +2273,13 @@ function AddOnsSection({
                   role="switch"
                   aria-checked={isOn}
                   onClick={() => toggleAddon(addon)}
-                  className="relative w-10 h-[22px] rounded-full transition-colors shrink-0 mt-0.5"
+                  data-no-min-height
+                  className="relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 flex-shrink-0"
                   style={{ backgroundColor: isOn ? GOLD : "#D5D0C8" }}
                 >
                   <span
-                    className={`absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform ${
-                      isOn ? "translate-x-[18px]" : ""
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      isOn ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -2196,20 +2384,12 @@ function AddOnsSection({
           style={{ color: GOLD }}
         >
           {showAll ? "Show less" : `View all ${addons.length} add-ons`}
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="inline ml-1.5 transition-transform"
+          <ChevronDown
+            size={12}
+            className="inline ml-1.5 transition-transform text-current"
             style={{ transform: showAll ? "rotate(180deg)" : "rotate(0deg)" }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+            aria-hidden
+          />
         </button>
       )}
 

@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, Diamond, Check } from "lucide-react";
+import { MapPin, ArrowRight, Diamond, Check } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,

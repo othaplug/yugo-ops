@@ -5,6 +5,7 @@ import Link from "next/link";
 import Badge from "../../components/Badge";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
+import { CaretDown } from "@phosphor-icons/react";
 
 type Referral = {
   id: string;
@@ -74,17 +75,11 @@ export default function AgentDetailModal({
               className="w-full flex items-center justify-between px-4 py-3 bg-[var(--bg)]/50 text-left hover:bg-[var(--gdim)] transition-colors"
             >
               <span className="text-[11px] font-bold text-[var(--tx)]">Clients referred</span>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={`shrink-0 transition-transform ${clientsExpanded ? "rotate-180" : ""}`}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
+              <CaretDown
+                size={16}
+                className={`shrink-0 text-current transition-transform ${clientsExpanded ? "rotate-180" : ""}`}
+                aria-hidden
+              />
             </button>
             {clientsExpanded && (
               <div className="divide-y divide-[var(--brd)]">

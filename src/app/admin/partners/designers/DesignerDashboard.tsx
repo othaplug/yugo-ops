@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import { toTitleCase } from "@/lib/format-text";
+import { MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
 
 const STATUS_BADGE: Record<string, string> = {
   pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
@@ -94,7 +95,7 @@ export default function DesignerDashboard({
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deliveries…" className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors" />
               </div>
               <select value={selectedPartner} onChange={(e) => setSelectedPartner(e.target.value)} className="px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors min-w-[160px]">
@@ -127,7 +128,7 @@ export default function DesignerDashboard({
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <span className="text-[10px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
                         <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                        <CaretRight size={14} className="flex-shrink-0 text-[var(--tx3)]" />
                       </div>
                     </Link>
                   </div>
@@ -171,7 +172,7 @@ export default function DesignerDashboard({
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded capitalize ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                        <CaretRight size={14} className="text-[var(--tx3)]" />
                       </div>
                     </Link>
                   </div>

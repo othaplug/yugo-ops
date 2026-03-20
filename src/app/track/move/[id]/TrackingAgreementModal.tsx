@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { Shield } from "@phosphor-icons/react";
 
 const COOKIE_NAME = "yugo-tracking-terms-accepted";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year
@@ -46,9 +47,7 @@ export default function TrackingAgreementModal() {
             className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
             style={{ backgroundColor: `${GOLD}25`, border: `1px solid ${GOLD}40` }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+            <Shield size={22} color={GOLD} />
           </div>
           <h2 className="font-hero text-[22px] font-semibold text-white mb-1">
             Welcome to YUGO+ Tracking

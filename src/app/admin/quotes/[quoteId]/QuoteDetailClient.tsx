@@ -4,20 +4,20 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   ArrowLeft,
-  Pencil,
-  ExternalLink,
+  PencilSimple as Pencil,
+  ArrowSquareOut as ExternalLink,
   Eye,
-  MousePointerClick,
+  CursorClick as MousePointerClick,
   ToggleRight,
   FileText,
   CreditCard,
-  LogOut,
-  BarChart3,
+  SignOut as LogOut,
+  ChartBar as BarChart3,
   Monitor,
-  Smartphone,
-  Trash2,
-  ChevronDown,
-} from "lucide-react";
+  DeviceMobile as Smartphone,
+  Trash as Trash2,
+  CaretDown as ChevronDown,
+} from "@phosphor-icons/react";
 import { toTitleCase } from "@/lib/format-text";
 import { formatPhone } from "@/lib/phone";
 

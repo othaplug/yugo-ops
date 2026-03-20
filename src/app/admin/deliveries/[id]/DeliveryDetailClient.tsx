@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Send, MapPin, Truck, Clock, Layers, Users, FileText,
-  DollarSign, AlertTriangle, Pencil, Trash2, ChevronDown, Phone,
-  Mail, Shield, ExternalLink, Hash,
-} from "lucide-react";
+  PaperPlaneTilt as Send, MapPin, Truck, Clock, Stack as Layers, Users, FileText,
+  CurrencyDollar as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
+  Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Hash, Folder, ArrowRight, Check,
+} from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
 import EditDeliveryModal from "./EditDeliveryModal";
 import DownloadPDFButton from "./DownloadPDFButton";
@@ -384,9 +384,7 @@ export default function DeliveryDetailClient({
           href={`/admin/projects/${linkedProject.id}`}
           className="mt-3 mb-1 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition-colors group"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" className="shrink-0">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-          </svg>
+          <Folder size={14} className="shrink-0 text-[var(--gold)]" />
           <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/60">Part of Project</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -396,9 +394,7 @@ export default function DeliveryDetailClient({
               )}
             </div>
           </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="2" className="shrink-0 group-hover:text-[var(--gold)] transition-colors">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
+          <ArrowRight size={12} className="shrink-0 text-[var(--tx3)] transition-colors group-hover:text-[var(--gold)]" />
         </a>
       )}
 
@@ -627,7 +623,7 @@ export default function DeliveryDetailClient({
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
               <div className="px-5 py-5 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
+                  <Check size={16} color="#22C55E" weight="bold" />
                   <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
                     {delivery.status === "cancelled" ? "Cancelled" : "Delivery Complete"}
                   </span>
@@ -726,7 +722,7 @@ export default function DeliveryDetailClient({
                         <div className="flex-1 min-w-0 pb-4">
                           <div className="flex items-center gap-2 mb-0.5">
                             <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 flex items-center gap-1">
-                              {statusIcon === "done" && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                              {statusIcon === "done" && <Check size={9} color="#22C55E" weight="bold" />}
                               {statusIcon === "active" && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
                               {statusIcon === "pending" && <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />}
                               Stop {stop.stop_number}

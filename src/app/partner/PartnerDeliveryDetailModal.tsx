@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Check, Link, PencilSimple, X, NavigationArrow, Clock, Image } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
@@ -249,21 +250,21 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={copyLink} className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors" title="Copy tracking link">
               {copied ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D9F5A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <Check size={16} color="#2D9F5A" weight="bold" />
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <Link size={16} color="#888" />
               )}
             </button>
             {!isLocked && onEdit && (
               <button onClick={onEdit} className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors" title="Edit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <PencilSimple size={16} color="#888" />
               </button>
             )}
             <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors">
               Share
             </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -339,7 +340,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[9px] font-semibold text-[var(--tx3)] flex items-center">
-                                      {statusIcon === "done" && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                      {statusIcon === "done" && <Check size={9} color="#22C55E" weight="bold" />}
                                       {statusIcon === "active" && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
                                       {statusIcon === "pending" && <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />}
                                     </span>
@@ -450,7 +451,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               <>
                   <div className="flex items-center gap-3 pb-4 border-b border-[var(--brd)]/30">
                     <div className="w-10 h-10 rounded-xl bg-[#C9A962]/15 flex items-center justify-center flex-shrink-0">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A962" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                      <NavigationArrow size={20} color="#C9A962" />
                     </div>
                     <div>
                       <div className="text-[13px] font-semibold text-[var(--tx)]">
@@ -462,7 +463,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                     </div>
                     {isCompleted ? (
                       <span className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[#22C55E]/10 text-[#22C55E]">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check size={10} weight="bold" />
                         Complete
                       </span>
                     ) : crewPosition ? (
@@ -498,7 +499,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   ) : (
                     <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
                       <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <Clock size={22} color="#888" />
                       </div>
                       <p className="text-[13px] text-[var(--tx3)]">{isCompleted ? "No location data recorded for this delivery." : "Crew location not yet available."}</p>
                       <p className="text-[11px] text-[#aaa] mt-0.5">{isCompleted ? "" : "Location updates appear here once the crew starts."}</p>
@@ -526,7 +527,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               ) : photos.length === 0 ? (
                 <div className="text-center py-12 border-t border-[var(--brd)]/30 pt-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <Image size={22} color="#888" />
                   </div>
                   <p className="text-[13px] text-[var(--tx3)]">No photos yet.</p>
                   <p className="text-[11px] text-[#aaa] mt-0.5">Crew photos will appear here after delivery.</p>

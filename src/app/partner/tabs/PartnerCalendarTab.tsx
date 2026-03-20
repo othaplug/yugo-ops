@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { CaretLeft, CaretRight, Calendar, Clock } from "@phosphor-icons/react";
 import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
@@ -333,10 +334,10 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero" suppressHydrationWarning>{headerLabel}</h3>
           <div className="flex items-center gap-0.5">
             <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+              <CaretLeft size={14} color="#888" />
             </button>
             <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <CaretRight size={14} color="#888" />
             </button>
             <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#666] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
               Today
@@ -364,7 +365,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-colors hover:opacity-90"
             style={{ backgroundColor: "#2C3E2D" }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <Calendar size={13} />
             Schedule a delivery
           </button>
         </div>
@@ -634,7 +635,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     )}
                     <div className="flex items-center gap-2 mt-auto text-[10px] text-[#888]">
                       {d.vehicle_type && <span className="inline-flex items-center gap-0.5">{d.vehicle_type}</span>}
-                      {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> {d.estimated_duration_hours}h</span>}
+                      {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><Clock size={12} /> {d.estimated_duration_hours}h</span>}
                       <span className="font-semibold" style={{ color: style.text }}>
                         {fmtDeliveryStatus(d.status || "pending")}
                       </span>

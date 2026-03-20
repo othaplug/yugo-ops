@@ -2,6 +2,17 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "../components/Toast";
+import {
+  CaretDown,
+  CaretUp,
+  X,
+  Plus,
+  Truck,
+  Users,
+  Shield,
+  CheckCircle,
+  WarningCircle,
+} from "@phosphor-icons/react";
 
 /* ────────── helpers ────────── */
 type Row = Record<string, unknown>;
@@ -134,7 +145,7 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
             open ? "bg-[var(--gold)]/15 text-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx3)]"
           }`}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
+          <CaretDown size={14} className={`transition-transform duration-200 text-current ${open ? "rotate-180" : ""}`} />
         </div>
       </button>
       {open && (
@@ -1771,26 +1782,15 @@ function getAutoIcon(text: string): string {
 
 /** Mini icon preview rendered inline next to each feature row */
 function IconPreview({ iconName }: { iconName: string }) {
-  const PREVIEW_ICONS: Record<string, string> = {
-    Truck: "M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
-    Users: "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
-    Shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-    CheckCircle: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
-  };
-  const path = PREVIEW_ICONS[iconName];
-  if (path) {
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d={path} />
-      </svg>
-    );
+  const cls = "text-current shrink-0";
+  const s = 12;
+  switch (iconName) {
+    case "Truck": return <Truck size={s} className={cls} />;
+    case "Users": return <Users size={s} className={cls} />;
+    case "Shield": return <Shield size={s} className={cls} />;
+    case "CheckCircle": return <CheckCircle size={s} className={cls} />;
+    default: return <WarningCircle size={s} className={cls} />;
   }
-  // Generic icon placeholder
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
 }
 
 const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
@@ -2046,7 +2046,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move up"
                       >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        <CaretUp size={10} className="text-current" />
                       </button>
                       <button
                         type="button"
@@ -2055,7 +2055,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move down"
                       >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        <CaretDown size={10} className="text-current" />
                       </button>
                       <button
                         type="button"
@@ -2063,7 +2063,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-400 ml-0.5"
                         title="Remove feature"
                       >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        <X size={10} className="text-current" />
                       </button>
                     </div>
                   </div>
@@ -2087,7 +2087,7 @@ function TierFeaturesSection() {
                   className="text-[var(--gold)] hover:text-[var(--gold2)] transition-colors"
                   title="Add"
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  <Plus size={13} className="text-current" />
                 </button>
               </div>
             </div>

@@ -58,7 +58,7 @@ export default function CalendarView() {
   }, [cal]);
 
   return (
-    <div className="min-h-0">
+    <div className="min-h-0 flex flex-col">
       <CalendarHeader
         headerLabel={cal.headerLabel}
         view={cal.view}
@@ -97,51 +97,66 @@ export default function CalendarView() {
       )}
 
       {!cal.loading && (
-        <>
-          {cal.view === "month" && (
-            <MonthView
-              year={cal.monthYear.year}
-              month={cal.monthYear.month}
-              todayKey={cal.todayKey}
-              eventsByDate={cal.eventsByDate}
-              onEventClick={handleEventClick}
-              onDateClick={handleDateClick}
-              onNewClick={handleNewClick}
-            />
-          )}
+        <div className="flex flex-1 min-h-0">
+          {/* Calendar views */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {cal.view === "month" && (
+              <MonthView
+                year={cal.monthYear.year}
+                month={cal.monthYear.month}
+                todayKey={cal.todayKey}
+                eventsByDate={cal.eventsByDate}
+                onEventClick={handleEventClick}
+                onDateClick={handleDateClick}
+                onNewClick={handleNewClick}
+              />
+            )}
 
-          {cal.view === "day" && (
-            <DayView
-              date={cal.selectedDate}
-              todayKey={cal.todayKey}
-              events={cal.eventsByDate[cal.selectedDate] || []}
-              crews={cal.crews}
-              onEventClick={handleEventClick}
-              onEmptyClick={handleEmptyClick}
-              onEventRescheduled={cal.refetch}
-            />
-          )}
+            {cal.view === "day" && (
+              <DayView
+                date={cal.selectedDate}
+                todayKey={cal.todayKey}
+                events={cal.eventsByDate[cal.selectedDate] || []}
+                crews={cal.crews}
+                onEventClick={handleEventClick}
+                onEmptyClick={handleEmptyClick}
+                onEventRescheduled={cal.refetch}
+              />
+            )}
 
-          {cal.view === "week" && (
-            <WeekView
-              anchor={cal.weekAnchor}
-              todayKey={cal.todayKey}
-              eventsByDate={cal.eventsByDate}
-              onEventClick={handleEventClick}
-              onDayClick={handleDayClick}
-            />
-          )}
+            {cal.view === "week" && (
+              <WeekView
+                anchor={cal.weekAnchor}
+                todayKey={cal.todayKey}
+                eventsByDate={cal.eventsByDate}
+                onEventClick={handleEventClick}
+                onDayClick={handleDayClick}
+              />
+            )}
 
-          {cal.view === "year" && (
-            <YearView
-              year={cal.yearView}
-              heatData={cal.heatData}
-              todayKey={cal.todayKey}
-              onDayClick={handleDayClick}
-              onMonthClick={handleMonthClick}
-            />
+            {cal.view === "year" && (
+              <YearView
+                year={cal.yearView}
+                heatData={cal.heatData}
+                todayKey={cal.todayKey}
+                onDayClick={handleDayClick}
+                onMonthClick={handleMonthClick}
+              />
+            )}
+          </div>
+
+          {/* Detail panel — full-screen overlay on mobile, sidebar on sm+ */}
+          {detailEvent && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--card)] sm:static sm:inset-auto sm:z-auto sm:w-[380px] sm:shrink-0 sm:border-l sm:border-[var(--brd)] sm:overflow-y-auto sm:bg-transparent">
+              <JobDetailPanel
+                event={detailEvent}
+                crews={cal.crews}
+                onClose={() => setDetailEvent(null)}
+                onRescheduled={() => { cal.refetch(); setDetailEvent(null); }}
+              />
+            </div>
           )}
-        </>
+        </div>
       )}
 
       <ScheduleJobModal
@@ -152,13 +167,6 @@ export default function CalendarView() {
         prefillCrewId={scheduleModal.crewId}
         prefillStart={scheduleModal.startTime}
         crews={cal.crews}
-      />
-
-      <JobDetailPanel
-        event={detailEvent}
-        crews={cal.crews}
-        onClose={() => setDetailEvent(null)}
-        onRescheduled={() => { cal.refetch(); setDetailEvent(null); }}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { Check } from "@phosphor-icons/react";
 
 const VALUATION_INFO: Record<string, { label: string; desc: string }> = {
   released: {
@@ -175,7 +176,7 @@ export default function ClaimSubmissionClient() {
     return (
       <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#f0fdf4" }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+          <Check weight="bold" size={32} color="#16a34a" aria-hidden />
         </div>
         <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-2">Claim Submitted</h2>
         <p className="text-[14px] text-[#555] leading-relaxed mb-4">

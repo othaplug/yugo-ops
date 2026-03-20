@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import BackButton from "../components/BackButton";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
-import { TrendingUp, TrendingDown, Minus, ArrowUpRight, X } from "lucide-react";
+import { TrendUp as TrendingUp, TrendDown as TrendingDown, Minus, ArrowUpRight, X } from "@phosphor-icons/react";
 
 type Period = "6mo" | "year" | "ytd" | "monthly" | "all";
 
@@ -620,7 +620,7 @@ export default function RevenueClient({
                       <span className="text-[11px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
                         {formatCurrency(t.amount)}
                       </span>
-                      <svg className="w-3 h-3 text-[var(--tx3)]/30 group-hover:text-[var(--gold)]/60 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+                      <ArrowUpRight className="w-3 h-3 text-[var(--tx3)]/30 group-hover:text-[var(--gold)]/60 transition-colors shrink-0" aria-hidden />
                     </div>
                   </div>
                   <div className="h-[3px] bg-[var(--brd)] rounded-full overflow-hidden">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, X, Gift, Users, Tag, Pencil, Check, Copy, Trash2 } from "lucide-react";
+import { Plus, X, Gift, Users, Tag, PencilSimple as Pencil, Check, Copy, Trash as Trash2 } from "@phosphor-icons/react";
 import { useToast } from "../components/Toast";
 import CreateButton from "../components/CreateButton";
 import YugoLogo from "@/components/YugoLogo";

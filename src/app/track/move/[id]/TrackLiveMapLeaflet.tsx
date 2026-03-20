@@ -110,12 +110,28 @@ function MapController({
   return null;
 }
 
+function MapResizeOnSignalLeaflet({ signal }: { signal: number }) {
+  const map = useMap();
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      try {
+        map.invalidateSize();
+      } catch {
+        /* map teardown */
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [signal, map]);
+  return null;
+}
+
 export function TrackLiveMapLeaflet({
   center,
   crew,
   pickup,
   dropoff,
   liveStage,
+  resizeSignal = 0,
 }: {
   center: Center;
   crew: Crew;
@@ -123,6 +139,7 @@ export function TrackLiveMapLeaflet({
   dropoff?: Center | null;
   /** Current stage: tracking line goes from vehicle to the address they're heading to */
   liveStage?: string | null;
+  resizeSignal?: number;
 }) {
   const hasPosition = crew != null;
   const hasRoute = pickup && dropoff;
@@ -199,6 +216,7 @@ export function TrackLiveMapLeaflet({
       className="track-live-map"
     >
       <MapController center={center} pickup={pickup ?? null} dropoff={dropoff ?? null} crew={crew} />
+      <MapResizeOnSignalLeaflet signal={resizeSignal} />
       {USE_MAPBOX ? (
         <TileLayer
           url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}

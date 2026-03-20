@@ -8,8 +8,10 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
-import { ChevronDown, Check, Send, Eye, Loader2, ChevronRight, PanelRightOpen, PanelRightClose, Users, Clock, Truck, Plus, Trash2 } from "lucide-react";
+import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+
+const PanelRightClose = PanelRightOpen;
 
 // ─── Types ──────────────────────────────────────
 
@@ -2207,7 +2209,7 @@ export default function QuoteFormClient({
                     {(quoteResult.inventory_warnings?.length ?? 0) > 0 && (
                       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1.5 text-[11px]">
                         <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          <Warning size={12} className="text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
                           Check inventory quantities
                         </p>
                         <ul className="list-disc list-inside text-[var(--tx2)]">

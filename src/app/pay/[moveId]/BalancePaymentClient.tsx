@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
+import { Check, Lock } from "@phosphor-icons/react";
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
@@ -173,9 +174,7 @@ export default function BalancePaymentClient({
           </div>
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2D9F5A]/20 flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2D9F5A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <Check size={32} color="#2D9F5A" weight="bold" />
             </div>
             <h1 className="text-[22px] font-bold text-[#F5F5F3] mb-2">Payment Received</h1>
             <p className="text-[14px] text-[#B8B5B0] leading-relaxed mb-4">
@@ -309,10 +308,7 @@ export default function BalancePaymentClient({
 
         {/* Security */}
         <div className="flex items-center justify-center gap-2 mt-4 mb-8">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
+          <Lock size={14} color="#666" />
           <span className="text-[10px] text-[#666]">Secured by Square · 256-bit encryption</span>
         </div>
       </div>
