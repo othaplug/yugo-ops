@@ -96,7 +96,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                     className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[14px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none pr-10"
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] p-1" tabIndex={-1}>
-                    {showPw ? <Eye size={16} /> : <EyeSlash size={16} />}
+                    {showPw ? <Eye size={16} weight="regular" /> : <EyeSlash size={16} weight="regular" />}
                   </button>
                 </div>
               </div>

@@ -3,9 +3,7 @@
 import { useMemo } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, STATUS_DOT_COLORS } from "@/lib/calendar/types";
-import { Icon } from "@/components/AppIcons";
-
-const HOUR_HEIGHT = 40;
+const HOUR_HEIGHT = 32;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
 const TOTAL_HOURS = DAY_END_HOUR - DAY_START_HOUR;
@@ -77,7 +75,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
   );
 
   return (
-    <div className="px-2 sm:px-6 pb-6">
+    <div className="px-2 sm:px-4 pb-3">
       {/* Horizontal scroll wrapper — all rows scroll together on mobile */}
       <div className="overflow-x-auto">
         {/* Day headers */}
@@ -148,7 +146,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
         )}
 
         {/* Timeline */}
-        <div className="overflow-y-auto max-h-[calc(100vh-280px)] sm:max-h-[calc(100vh-300px)]">
+        <div className="overflow-y-auto max-h-[calc(100vh-230px)] sm:max-h-[calc(100vh-250px)]">
           <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
             {/* Time labels */}
             <div className="w-10 sm:w-14 shrink-0 relative">
@@ -201,8 +199,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                           <span className="text-[8px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
                         </div>
                         {height > 25 && (
-                          <div className="flex items-center gap-0.5 text-[7px] text-[var(--tx3)] truncate px-0.5">
-                            <Icon name={TYPE_ICON_MAP[ev.type] || "calendar"} className="w-2.5 h-2.5 shrink-0 stroke-[1.75] stroke-current" />
+                          <div className="flex items-center text-[7px] text-[var(--tx3)] truncate px-0.5">
                             <span className="truncate">{ev.description}</span>
                           </div>
                         )}

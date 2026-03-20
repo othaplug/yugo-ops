@@ -282,7 +282,7 @@ export default function AdminPageClient({
                 onClick={() => setQuickActionsOpen((v) => !v)}
                 className={`${createButtonBaseClass} gap-1.5`}
               >
-                <Plus size={15} className="text-current" />
+                <Plus size={15} weight="regular" className="text-current" />
               </button>
               {quickActionsOpen && (
                 <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
@@ -384,6 +384,7 @@ export default function AdminPageClient({
               >
                 <div className="flex items-center gap-2">
                   <CaretRight
+                    weight="regular"
                     className={`w-3 h-3 text-[var(--tx3)] transition-transform duration-200 ${tasksOpen ? "rotate-90" : ""}`}
                   />
                   <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 group-hover:text-[var(--tx2)] transition-colors">Tasks</h2>
@@ -432,7 +433,7 @@ export default function AdminPageClient({
               className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
             >
               Calendar
-              <CaretRight className="w-3 h-3 -mr-0.5 text-current" />
+              <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current" />
             </Link>
           </div>
 
@@ -482,7 +483,7 @@ export default function AdminPageClient({
                     </div>
 
                     {/* Arrow — always visible on mobile, hover-only on desktop */}
-                    <CaretRight className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3" />
+                    <CaretRight weight="regular" className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3" />
                   </Link>
                 );
               })}
@@ -545,7 +546,7 @@ export default function AdminPageClient({
                 className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
               >
                 Details
-                <CaretRight className="w-3 h-3 -mr-0.5 text-current" />
+                <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current" />
               </Link>
             </div>
             <div className="flex items-baseline gap-2 mb-1">
@@ -643,7 +644,7 @@ export default function AdminPageClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" />
+                  <ArrowUpRight weight="regular" className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" />
                 </div>
               </Link>
             </div>

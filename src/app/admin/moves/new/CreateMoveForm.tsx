@@ -1500,7 +1500,7 @@ export default function CreateMoveForm({
                       onClick={() => removeDoc(idx)}
                       className="p-1 rounded text-[var(--tx3)] hover:text-[var(--red)]"
                     >
-                      <Trash2 className="w-[12px] h-[12px]" />
+                      <Trash2 weight="regular" className="w-[12px] h-[12px]" />
                     </button>
                   </li>
                 ))}
@@ -1519,7 +1519,7 @@ export default function CreateMoveForm({
                 htmlFor="move-doc-upload"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] cursor-pointer hover:bg-[var(--gold2)]"
               >
-                <Plus className="w-[12px] h-[12px]" />
+                <Plus weight="regular" className="w-[12px] h-[12px]" />
                 Upload PDF
               </label>
             </div>

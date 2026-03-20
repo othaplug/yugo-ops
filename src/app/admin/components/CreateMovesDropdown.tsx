@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createButtonBaseClass } from "./CreateButton";
 import { FileText, Plus, Truck } from "@phosphor-icons/react";
 
-const PlusIcon = () => <Plus size={16} className="text-current" aria-hidden />;
+const PlusIcon = () => <Plus size={16} weight="regular" className="text-current" aria-hidden />;
 
 export default function CreateMovesDropdown({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function CreateMovesDropdown({ className = "" }: { className?: st
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <Truck size={14} className="text-current" aria-hidden />
+              <Truck size={14} weight="regular" className="text-current" aria-hidden />
             </span>
             New Move
           </Link>
@@ -52,7 +52,7 @@ export default function CreateMovesDropdown({ className = "" }: { className?: st
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <FileText size={14} className="text-current" aria-hidden />
+              <FileText size={14} weight="regular" className="text-current" aria-hidden />
             </span>
             New Quote
           </Link>

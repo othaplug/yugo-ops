@@ -384,7 +384,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                   <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                     {getStatusLabel(move.status)}
                   </span>
-                  <ChevronDown className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
+                    <ChevronDown weight="regular" className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
                 </button>
               )}
             </div>
@@ -853,7 +853,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <div className="group/s relative py-4">
           {!isCompleted ? (
             <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
-              <Pencil className="w-[11px] h-[11px]" />
+              <Pencil weight="regular" className="w-[11px] h-[11px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -874,7 +874,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
             <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("addresses"); setDetailsModalOpen(true); }} aria-label="Edit addresses">
-              <Pencil className="w-[11px] h-[11px]" />
+              <Pencil weight="regular" className="w-[11px] h-[11px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -900,7 +900,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
             <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} aria-label="Edit crew" title={moveInProgress ? "Cannot reassign job in progress" : "Change crew"}>
-              <Pencil className="w-[11px] h-[11px]" />
+              <Pencil weight="regular" className="w-[11px] h-[11px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -923,7 +923,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
             <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
-              <Pencil className="w-[11px] h-[11px]" />
+              <Pencil weight="regular" className="w-[11px] h-[11px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -1160,7 +1160,7 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
         {!isCompleted ? (
           <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
-            <Pencil className="w-[11px] h-[11px]" />
+            <Pencil weight="regular" className="w-[11px] h-[11px]" />
           </button>
         ) : (
           <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">

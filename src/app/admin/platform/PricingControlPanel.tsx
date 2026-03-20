@@ -145,7 +145,7 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
             open ? "bg-[var(--gold)]/15 text-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx3)]"
           }`}
         >
-          <CaretDown size={14} className={`transition-transform duration-200 text-current ${open ? "rotate-180" : ""}`} />
+          <CaretDown size={14} weight="regular" className={`transition-transform duration-200 text-current ${open ? "rotate-180" : ""}`} />
         </div>
       </button>
       {open && (
@@ -2046,7 +2046,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move up"
                       >
-                        <CaretUp size={10} className="text-current" />
+                        <CaretUp size={10} weight="regular" className="text-current" />
                       </button>
                       <button
                         type="button"
@@ -2055,7 +2055,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
                         title="Move down"
                       >
-                        <CaretDown size={10} className="text-current" />
+                        <CaretDown size={10} weight="regular" className="text-current" />
                       </button>
                       <button
                         type="button"
@@ -2063,7 +2063,7 @@ function TierFeaturesSection() {
                         className="p-0.5 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-400 ml-0.5"
                         title="Remove feature"
                       >
-                        <X size={10} className="text-current" />
+                        <X size={10} weight="regular" className="text-current" />
                       </button>
                     </div>
                   </div>
@@ -2087,7 +2087,7 @@ function TierFeaturesSection() {
                   className="text-[var(--gold)] hover:text-[var(--gold2)] transition-colors"
                   title="Add"
                 >
-                  <Plus size={13} className="text-current" />
+                  <Plus size={13} weight="regular" className="text-current" />
                 </button>
               </div>
             </div>

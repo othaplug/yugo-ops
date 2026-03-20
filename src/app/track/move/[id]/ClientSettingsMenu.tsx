@@ -306,7 +306,7 @@ export default function ClientSettingsMenu({
                   className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                   style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
                 >
-                  <X size={12} className="text-current" />
+                  <X size={12} weight="regular" className="text-current" />
                 </button>
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function ClientSettingsMenu({
                       className="text-[10px] font-semibold flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
                       style={{ color: FOREST }}
                     >
-                      <Plus size={10} className="text-current" />
+                      <Plus size={10} weight="regular" className="text-current" />
                       Add item
                     </button>
                   </div>
@@ -430,7 +430,7 @@ export default function ClientSettingsMenu({
                           onClick={() => setClaimPhotos((p) => p.filter((_, j) => j !== i))}
                           className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
                         >
-                          <X size={8} className="text-current" />
+                          <X size={8} weight="regular" className="text-current" />
                         </button>
                       </div>
                     ))}
@@ -440,7 +440,7 @@ export default function ClientSettingsMenu({
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed text-[11px] font-semibold cursor-pointer transition-colors"
                       style={{ borderColor: theme === "dark" ? "#555" : "#D4D0C8", color: theme === "dark" ? "#888" : "#888" }}
                     >
-                      <Plus size={11} className="text-current" />
+                      <Plus size={11} weight="regular" className="text-current" />
                       Add photo
                       <input type="file" accept="image/*" onChange={handleClaimPhotoAdd} className="hidden" />
                     </label>
@@ -515,11 +515,11 @@ export default function ClientSettingsMenu({
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                 style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
               >
-                <X size={12} className="text-current" />
-              </button>
-            </div>
+              <X size={12} weight="regular" className="text-current" />
+            </button>
+          </div>
 
-            <div className="px-6 py-6">
+          <div className="px-6 py-6">
               <div className="flex items-center gap-3 mb-5">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
@@ -528,7 +528,7 @@ export default function ClientSettingsMenu({
                   {existingClaim.status === "resolved" || existingClaim.status === "settled" || existingClaim.status === "approved" ? (
                     <Check size={18} color={claimStatusColor(existingClaim.status).fg} weight="bold" />
                   ) : existingClaim.status === "denied" ? (
-                    <X size={18} color={claimStatusColor(existingClaim.status).fg} />
+                    <X size={18} weight="regular" color={claimStatusColor(existingClaim.status).fg} />
                   ) : (
                     <Clock size={18} color={claimStatusColor(existingClaim.status).fg} />
                   )}

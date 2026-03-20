@@ -54,7 +54,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
-              <User size={14} className="shrink-0 text-current" aria-hidden />
+              <User size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
               Profile Settings
             </Link>
 
@@ -63,7 +63,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
-              <GearSix size={14} className="shrink-0 text-current" aria-hidden />
+              <GearSix size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
               Platform Settings
             </Link>
           </div>
@@ -76,9 +76,9 @@ export default function ProfileDropdown({ user }: { user: any }) {
             >
               <span className="flex items-center gap-2.5">
                 {theme === "dark" ? (
-                  <Sun size={14} className="shrink-0 text-current" aria-hidden />
+                  <Sun size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
                 ) : (
-                  <Moon size={14} className="shrink-0 text-current" aria-hidden />
+                  <Moon size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
                 )}
                 Appearance
               </span>
@@ -91,7 +91,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={handleLogout}
               className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
             >
-              <SignOut size={14} className="shrink-0 text-current" aria-hidden />
+              <SignOut size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
               Logout
             </button>
           </div>

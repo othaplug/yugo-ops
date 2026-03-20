@@ -22,38 +22,92 @@ export default function CalendarHeader({
   filters, onFiltersChange, crews,
 }: Props) {
   return (
-    <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 space-y-3">
-      {/* Row 1: title + all controls in one flex row */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-        {/* Title block */}
-        <div className="shrink-0">
-          <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 leading-none mb-0.5">Schedule</p>
-          <h1 className="font-heading text-[16px] sm:text-[22px] font-bold text-[var(--tx)] leading-none whitespace-nowrap">{headerLabel}</h1>
-        </div>
+    <div className="px-3 sm:px-5 pt-2 pb-2 space-y-1.5 border-b border-[var(--brd)]/50">
+      {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        {/* Title */}
+        <h1 className="font-heading text-[15px] sm:text-[17px] font-bold text-[var(--tx)] leading-none whitespace-nowrap shrink-0">
+          {headerLabel}
+        </h1>
 
         {/* Date navigation */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => onNavigate(-1)} className="p-1.5 rounded-lg hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
-            <CaretLeft size={14} className="text-current" aria-hidden />
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            onClick={() => onNavigate(-1)}
+            className="p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+          >
+            <CaretLeft size={13} weight="regular" className="text-current" aria-hidden />
           </button>
-          <button onClick={() => onNavigate(1)} className="p-1.5 rounded-lg hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
-            <CaretRight size={14} className="text-current" aria-hidden />
+          <button
+            onClick={() => onNavigate(1)}
+            className="p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+          >
+            <CaretRight size={13} weight="regular" className="text-current" aria-hidden />
           </button>
-          <button onClick={onToday} className="ml-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
+          <button
+            onClick={onToday}
+            className="ml-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+          >
             Today
           </button>
         </div>
 
-        {/* Spacer pushes view toggle + schedule button to the right on larger screens */}
         <div className="hidden sm:block flex-1" />
 
+        {/* Filters — inline on sm+ */}
+        <div className="hidden sm:flex items-center gap-1">
+          {[
+            {
+              value: filters.crewId,
+              onChange: (v: string) => onFiltersChange({ ...filters, crewId: v }),
+              options: [
+                { value: "", label: "All Teams" },
+                ...crews.map((c) => ({ value: c.id, label: c.name })),
+              ],
+            },
+            {
+              value: filters.type,
+              onChange: (v: string) => onFiltersChange({ ...filters, type: v }),
+              options: [
+                { value: "", label: "All Types" },
+                { value: "move", label: "Moves" },
+                { value: "delivery", label: "Deliveries" },
+                { value: "project_phase", label: "Projects" },
+                { value: "blocked", label: "Blocked" },
+              ],
+            },
+            {
+              value: filters.status,
+              onChange: (v: string) => onFiltersChange({ ...filters, status: v }),
+              options: [
+                { value: "", label: "All Statuses" },
+                { value: "scheduled", label: "Scheduled" },
+                { value: "in_progress", label: "In Progress" },
+                { value: "completed", label: "Completed" },
+                { value: "cancelled", label: "Cancelled" },
+              ],
+            },
+          ].map((sel, idx) => (
+            <select
+              key={idx}
+              value={sel.value}
+              onChange={(e) => sel.onChange(e.target.value)}
+              className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
+            >
+              {sel.options.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          ))}
+        </div>
+
         {/* View mode segmented control */}
-        <div className="flex bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-0.5 shrink-0">
+        <div className="flex bg-[var(--bg)] border border-[var(--brd)] rounded-md p-0.5 shrink-0">
           {VIEWS.map((mode) => (
             <button
               key={mode}
               onClick={() => onViewChange(mode)}
-              className={`px-2.5 sm:px-3 py-1 rounded-md text-[10px] sm:text-[11px] font-semibold capitalize transition-colors ${
+              className={`px-2 py-0.5 rounded text-[10px] font-semibold capitalize transition-colors ${
                 view === mode
                   ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
                   : "text-[var(--tx3)] hover:text-[var(--tx)]"
@@ -63,20 +117,21 @@ export default function CalendarHeader({
             </button>
           ))}
         </div>
+
         <button
           onClick={onScheduleJob}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors shrink-0"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors shrink-0"
         >
-          + Schedule Job
+          + Schedule
         </button>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Mobile-only filter row */}
+      <div className="flex sm:hidden items-center gap-1 flex-wrap">
         <select
           value={filters.crewId}
           onChange={(e) => onFiltersChange({ ...filters, crewId: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
         >
           <option value="">All Teams</option>
           {crews.map((c) => (
@@ -86,7 +141,7 @@ export default function CalendarHeader({
         <select
           value={filters.type}
           onChange={(e) => onFiltersChange({ ...filters, type: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
         >
           <option value="">All Types</option>
           <option value="move">Moves</option>
@@ -97,7 +152,7 @@ export default function CalendarHeader({
         <select
           value={filters.status}
           onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[var(--tx2)] focus:border-[var(--brd)] outline-none"
+          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>

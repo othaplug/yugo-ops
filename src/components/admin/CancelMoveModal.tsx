@@ -124,7 +124,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
           onClick={onClose}
           className="absolute top-4 right-4 text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
         >
-          <X size={18} />
+          <X size={18} weight="regular" />
         </button>
 
         <div className="p-6">

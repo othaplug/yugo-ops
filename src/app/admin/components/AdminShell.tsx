@@ -177,37 +177,37 @@ const QUICK_ACTIONS = [
   {
     label: "New Move",
     href: "/admin/moves/new",
-    icon: <Truck size={18} className="text-current" aria-hidden />,
+    icon: <Truck size={18} weight="regular" className="text-current" aria-hidden />,
     color: "var(--gold)",
   },
   {
     label: "New Quote",
     href: "/admin/quotes/new",
-    icon: <FilePlus size={18} className="text-current" aria-hidden />,
+    icon: <FilePlus size={18} weight="regular" className="text-current" aria-hidden />,
     color: "var(--grn)",
   },
   {
     label: "New Contact",
     href: "/admin/clients/new",
-    icon: <UserPlus size={18} className="text-current" aria-hidden />,
+    icon: <UserPlus size={18} weight="regular" className="text-current" aria-hidden />,
     color: "#7C9FD4",
   },
   {
     label: "New Partner",
     href: "/admin/partners/new",
-    icon: <UsersThree size={18} className="text-current" aria-hidden />,
+    icon: <UsersThree size={18} weight="regular" className="text-current" aria-hidden />,
     color: "#B07FD4",
   },
   {
     label: "New Delivery",
     href: "/admin/deliveries/new",
-    icon: <MapPin size={18} className="text-current" aria-hidden />,
+    icon: <MapPin size={18} weight="regular" className="text-current" aria-hidden />,
     color: "#D4A07F",
   },
   {
     label: "New Invoice",
     href: "/admin/invoices/new",
-    icon: <Receipt size={18} className="text-current" aria-hidden />,
+    icon: <Receipt size={18} weight="regular" className="text-current" aria-hidden />,
     color: "#7FD4C1",
   },
 ];
@@ -349,7 +349,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     title="Expand sidebar"
                     aria-label="Expand sidebar"
                   >
-                    <CaretRight size={15} className="text-current" aria-hidden />
+                    <CaretRight size={15} weight="regular" className="text-current" aria-hidden />
                   </button>
                 </div>
                 {/* Full mode: logo + collapse button */}
@@ -365,13 +365,13 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       aria-label="Collapse sidebar"
                       title="Collapse sidebar"
                     >
-                      <CaretLeft size={15} className="text-current" aria-hidden />
+                      <CaretLeft size={15} weight="regular" className="text-current" aria-hidden />
                     </button>
                     <button
                       onClick={() => setSidebarOpen(false)}
                       className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                     >
-                      <X size={15} className="text-current" aria-hidden />
+                      <X size={15} weight="regular" className="text-current" aria-hidden />
                     </button>
                   </div>
                 </div>
@@ -391,6 +391,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                         {section.label}
                         <CaretDown
                           size={10}
+                          weight="regular"
                           className={`text-current transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
                           aria-hidden
                         />
@@ -464,7 +465,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                   className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "flex md:hidden" : "hidden"}`}
                   aria-label="Open menu"
                 >
-                  <List size={20} className="text-current" aria-hidden />
+                  <List size={20} weight="regular" className="text-current" aria-hidden />
                 </button>
 
                 <SearchBox />
@@ -477,7 +478,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
 
               {role === "owner" && !twoFactorEnabled && (
                 <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
-                  <Shield className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
+                  <Shield weight="regular" className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
                   Two-factor authentication is required for owner accounts.{" "}
                   <Link href="/admin/settings/security" className="underline font-bold hover:text-amber-300">
                     Enable 2FA
@@ -572,7 +573,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       }`}
                       style={{ boxShadow: "0 4px 18px rgba(201,169,98,0.45)" }}
                     >
-                      <Plus size={22} color="#fff" aria-hidden />
+                      <Plus size={22} weight="regular" color="#fff" aria-hidden />
                     </button>
                     <span className="mt-1 text-[9px] font-bold tracking-wide uppercase leading-none text-[var(--tx3)]">Create</span>
                   </div>
@@ -602,7 +603,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     onClick={() => setSidebarOpen(true)}
                     className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"
                   >
-                    <SquaresFour size={16} className="text-current" aria-hidden />
+                    <SquaresFour size={16} weight="regular" className="text-current" aria-hidden />
                     <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
                   </button>
                 </div>

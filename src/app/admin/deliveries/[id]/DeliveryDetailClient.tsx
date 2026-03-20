@@ -384,7 +384,7 @@ export default function DeliveryDetailClient({
           href={`/admin/projects/${linkedProject.id}`}
           className="mt-3 mb-1 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition-colors group"
         >
-          <Folder size={14} className="shrink-0 text-[var(--gold)]" />
+          <Folder size={14} weight="regular" className="shrink-0 text-[var(--gold)]" />
           <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/60">Part of Project</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -394,7 +394,7 @@ export default function DeliveryDetailClient({
               )}
             </div>
           </div>
-          <ArrowRight size={12} className="shrink-0 text-[var(--tx3)] transition-colors group-hover:text-[var(--gold)]" />
+          <ArrowRight size={12} weight="regular" className="shrink-0 text-[var(--tx3)] transition-colors group-hover:text-[var(--gold)]" />
         </a>
       )}
 
@@ -538,11 +538,11 @@ export default function DeliveryDetailClient({
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
-                <Pencil className="w-3 h-3" /> Edit
+                <Pencil weight="regular" className="w-3 h-3" /> Edit
               </button>
               <DownloadPDFButton delivery={delivery} />
               <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
-                <Trash2 className="w-3 h-3" /> Delete
+                <Trash2 weight="regular" className="w-3 h-3" /> Delete
               </button>
             </div>
           </div>
@@ -568,7 +568,7 @@ export default function DeliveryDetailClient({
                 ) : (
                   <button type="button" onClick={() => setEditingStatus(true)} className="group inline-flex items-center gap-1">
                     <span className={`text-[12px] font-bold ${sc.text}`}>{STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
-                    <ChevronDown className="w-3 h-3 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronDown weight="regular" className="w-3 h-3 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 )}
               </div>
@@ -923,7 +923,7 @@ export default function DeliveryDetailClient({
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[10px] text-[var(--gold)] hover:underline"
                         >
-                          <ExternalLink className="w-3 h-3" /> View in Square
+                          <ExternalLink weight="regular" className="w-3 h-3" /> View in Square
                         </a>
                       )}
                     </div>
@@ -964,7 +964,7 @@ export default function DeliveryDetailClient({
             className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${!delivery.crew_id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"} disabled:opacity-60 disabled:cursor-not-allowed`}
           >
             <div className="w-8 h-8 rounded-lg bg-[var(--bg)] flex items-center justify-center text-[var(--tx3)]">
-              <Users className="w-3.5 h-3.5" />
+              <Users weight="regular" className="w-3.5 h-3.5" />
             </div>
             <div>
               <div className="text-[12px] font-medium text-[var(--tx)]">Unassigned</div>

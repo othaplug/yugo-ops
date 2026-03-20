@@ -183,7 +183,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           <div className="flex items-center gap-2">
             {section !== "main" && (
               <button onClick={() => setSection("main")} className="p-1.5 rounded-lg hover:bg-[var(--hover,#F5F3F0)] transition-colors mr-1">
-                <CaretLeft size={16} />
+                <CaretLeft size={16} weight="regular" />
               </button>
             )}
             <h2 className="text-[24px] font-medium font-hero text-[var(--tx,#1A1A1A)]">
@@ -191,7 +191,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             </h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--hover,#F5F3F0)] transition-colors">
-            <X size={18} />
+            <X size={18} weight="regular" />
           </button>
         </div>
 
@@ -266,7 +266,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                         <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{item.label}</div>
                         <div className="text-[11px] text-[var(--tx3,#888)]">{item.desc}</div>
                       </div>
-                      <CaretRight size={14} color="var(--tx3,#888)" />
+                      <CaretRight size={14} weight="regular" color="var(--tx3,#888)" />
                     </button>
                   ))}
                 </div>
@@ -287,7 +287,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Change Password</div>
                       <div className="text-[11px] text-[var(--tx3,#888)]">Update your login credentials</div>
                     </div>
-                    <CaretRight size={14} color="var(--tx3,#888)" />
+                    <CaretRight size={14} weight="regular" color="var(--tx3,#888)" />
                   </a>
                   <a
                     href="/tracking"

@@ -167,7 +167,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               onClick={() => setFilterOpen(!filterOpen)}
               className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[11px] font-semibold text-[var(--tx)] touch-manipulation"
             >
-              <Funnel size={14} className="text-current" />
+              <Funnel size={14} weight="regular" className="text-current" />
               Filter
               {activeFilterCount > 0 && (
                 <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">

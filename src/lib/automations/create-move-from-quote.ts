@@ -44,7 +44,12 @@ const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
   single_item: "residential",
   white_glove: "residential",
   specialty: "residential",
+  /** Partner / legacy API naming */
   b2b_oneoff: "residential",
+  /** Canonical quote value */
+  b2b_delivery: "residential",
+  event: "residential",
+  labour_only: "residential",
 };
 
 export async function createMoveFromQuote(
@@ -124,7 +129,9 @@ export async function createMoveFromQuote(
       : {};
 
   const singleItemFields =
-    quote.service_type === "single_item" || quote.service_type === "b2b_oneoff"
+    quote.service_type === "single_item" ||
+    quote.service_type === "b2b_oneoff" ||
+    quote.service_type === "b2b_delivery"
       ? {
           item_description: (factors.item_description as string) ?? null,
           item_category: (factors.item_category as string) ?? null,

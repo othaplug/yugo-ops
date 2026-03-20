@@ -318,7 +318,7 @@ export default function CrewAnalyticsClient({
                 : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50"
             }`}
           >
-            <CalendarBlank size={12} className="text-current" />
+            <CalendarBlank size={12} weight="regular" className="text-current" />
             {!currentPreset ? `${fmtLabel(from)} — ${fmtLabel(to)}` : "Custom"}
           </button>
           {loading && (
@@ -336,7 +336,7 @@ export default function CrewAnalyticsClient({
                 onClick={() => setCalMonth(new Date(calYear, calMo - 1, 1))}
                 className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]"
               >
-                <CaretLeft size={16} className="text-current" />
+                <CaretLeft size={16} weight="regular" className="text-current" />
               </button>
               <span className="text-[13px] font-semibold text-[var(--tx)]">{calLabel}</span>
               <button
@@ -344,7 +344,7 @@ export default function CrewAnalyticsClient({
                 onClick={() => setCalMonth(new Date(calYear, calMo + 1, 1))}
                 className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)]"
               >
-                <CaretRight size={16} className="text-current" />
+                <CaretRight size={16} weight="regular" className="text-current" />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-0.5 mb-2">
@@ -507,7 +507,7 @@ export default function CrewAnalyticsClient({
                     <span style={{ color: satColor }}>{a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "—"}</span>
                   </div>
 
-                  <CaretRight className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+                  <CaretRight weight="regular" className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
                 </button>
               );
             })}
@@ -553,7 +553,7 @@ function CrewDetailView({
           onClick={onBack}
           className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
         >
-          <CaretLeft size={14} className="text-current" />
+          <CaretLeft size={14} weight="regular" className="text-current" />
           All Crews
         </button>
         <span className="text-[var(--brd)]">/</span>
@@ -848,7 +848,7 @@ function CrewDetailView({
                             <span className="text-center text-[12px] font-semibold" style={{ color: satColor }}>
                               {job.rating != null ? `${job.rating}/5` : "—"}
                             </span>
-                            <CaretRight className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
+                            <CaretRight weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
                           </div>
                         </button>
 

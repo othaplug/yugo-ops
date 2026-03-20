@@ -110,7 +110,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             onClick={() => setIsFullscreen(false)}
             className="absolute top-4 right-4 z-20 p-2 bg-white dark:bg-[var(--card)] rounded-lg shadow-md border border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#F5F3F0] dark:hover:bg-[var(--bg)] transition-colors text-[#888] dark:text-[var(--tx3)]"
           >
-            <X size={16} />
+            <X size={16} weight="regular" />
           </button>
         )}
 

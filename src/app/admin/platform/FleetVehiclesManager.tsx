@@ -269,7 +269,7 @@ export default function FleetVehiclesManager() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-[9px] font-semibold px-2 py-0.5 rounded capitalize ${statusCls}`}>{v.status}</span>
-                    <CaretDown className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden />
+                    <CaretDown weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden />
                   </div>
                 </div>
               </div>

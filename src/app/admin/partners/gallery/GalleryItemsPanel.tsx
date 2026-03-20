@@ -357,7 +357,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] text-[11px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
         >
-          <Plus size={12} className="text-current" />
+          <Plus size={12} weight="regular" className="text-current" />
           Add Item
         </button>
       </div>
@@ -431,7 +431,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     </div>
                   </div>
 
-                  <CaretRight className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
+                  <CaretRight weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
                 </button>
 
                 {/* Expanded detail */}

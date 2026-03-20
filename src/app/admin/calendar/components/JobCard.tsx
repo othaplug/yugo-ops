@@ -3,7 +3,6 @@
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
 import { toTitleCase } from "@/lib/format-text";
-import { Icon } from "@/components/AppIcons";
 
 interface Props {
   event: CalendarEvent;
@@ -11,14 +10,6 @@ interface Props {
   onClick?: (e: CalendarEvent) => void;
   onDragStart?: (e: CalendarEvent) => void;
 }
-
-const TYPE_ICON_MAP: Record<string, string> = {
-  move: "mapPin",
-  delivery: "package",
-  project_phase: "palette",
-  project: "projects",
-  blocked: "lock",
-};
 
 export default function JobCard({ event, compact, onClick, onDragStart }: Props) {
   const dotColor = STATUS_DOT_COLORS[event.calendarStatus] || STATUS_DOT_COLORS.scheduled;
@@ -39,7 +30,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         onClick={() => onClick?.(event)}
         draggable={!!onDragStart}
         onDragStart={() => onDragStart?.(event)}
-        className={`w-full text-left flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[10px] truncate transition-all cursor-pointer hover:brightness-125 ${
+        className={`w-full text-left flex items-center gap-1 px-1 py-[2px] rounded-[3px] text-[10px] truncate transition-all cursor-pointer hover:brightness-125 ${
           isCompleted ? "opacity-50" : ""
         } ${isCancelled ? "line-through opacity-40" : ""}`}
         style={{ borderLeft: `3px solid ${event.color}`, background: `${event.color}22` }}
@@ -85,8 +76,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)] pl-3.5">
-        <Icon name={TYPE_ICON_MAP[event.type] || "calendar"} className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current" />
+      <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
         <span className="truncate">{toTitleCase(event.description)}</span>
         {event.eventPhase && (
           <span

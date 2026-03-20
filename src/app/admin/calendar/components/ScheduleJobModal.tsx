@@ -129,7 +129,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         <div className="px-6 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[20px] font-bold text-[var(--tx)]">Schedule Job</h2>
           <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
-            <X size={18} className="text-current" aria-hidden />
+            <X size={18} weight="regular" className="text-current" aria-hidden />
           </button>
         </div>
 

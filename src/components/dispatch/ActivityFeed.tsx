@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   MapPin,
-  Package,
+  Truck,
+  ClipboardText,
   ChatText as MessageSquare,
   CurrencyDollar as DollarSign,
   Star,
@@ -49,10 +50,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
   message: MessageSquare,
   eta_sms: MessageSquare,
   tip: DollarSign,
-  pod: Package,
+  pod: ClipboardText,
   review: Star,
   map: MapPin,
-  package: Package,
+  package: Truck,
   dollar: DollarSign,
   star: Star,
   alert: AlertTriangle,

@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
 
 // ═══════════════════════════════════════════════
 // Types
@@ -75,6 +76,9 @@ interface QuoteInput {
   event_pickup_time_after?: string;
   event_additional_services?: string[];
   event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
+  /** When "multi", use event_legs (≥2) for bundled round-trips; single-leg fields mirror first leg for DB compatibility */
+  event_mode?: "single" | "multi";
+  event_legs?: EventLegInput[];
   // Labour Only
   labour_crew_size?: number;
   labour_hours?: number;
@@ -90,6 +94,19 @@ interface QuoteInput {
   client_name?: string;
   client_email?: string;
   client_phone?: string;
+}
+
+/** One delivery/return pair in a multi-event quote */
+export interface EventLegInput {
+  label?: string;
+  from_address: string;
+  to_address: string;
+  from_access?: string;
+  to_access?: string;
+  move_date: string;
+  event_return_date?: string;
+  event_same_day?: boolean;
+  event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
 }
 
 interface AddonSelection {
@@ -118,7 +135,6 @@ interface AddonBreakdownItem {
 type SupabaseAdmin = ReturnType<typeof createAdminClient>;
 
 const TAX_RATE_FALLBACK = 0.13;
-const MAPBOX_BASE = "https://api.mapbox.com";
 
 // ═══════════════════════════════════════════════
 // Config helpers
@@ -149,50 +165,7 @@ function parseJsonConfig<T>(config: Map<string, string>, key: string, fallback: 
   }
 }
 
-// ═══════════════════════════════════════════════
-// Mapbox geocoding + directions
-// ═══════════════════════════════════════════════
-
-function mapboxToken(): string {
-  return (
-    process.env.MAPBOX_TOKEN ||
-    process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
-    process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
-    ""
-  );
-}
-
-async function geocode(address: string): Promise<{ lat: number; lng: number } | null> {
-  const token = mapboxToken();
-  if (!token) return null;
-  const url = `${MAPBOX_BASE}/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1&country=ca`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const json = await res.json();
-  const feat = json.features?.[0];
-  if (!feat) return null;
-  const [lng, lat] = feat.center;
-  return { lat, lng };
-}
-
-async function getDistance(
-  fromAddr: string,
-  toAddr: string,
-): Promise<{ distance_km: number; drive_time_min: number } | null> {
-  const [fromGeo, toGeo] = await Promise.all([geocode(fromAddr), geocode(toAddr)]);
-  if (!fromGeo || !toGeo) return null;
-  const token = mapboxToken();
-  const url = `${MAPBOX_BASE}/directions/v5/mapbox/driving/${fromGeo.lng},${fromGeo.lat};${toGeo.lng},${toGeo.lat}?access_token=${token}&overview=false`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const json = await res.json();
-  const route = json.routes?.[0];
-  if (!route) return null;
-  return {
-    distance_km: Math.round((route.distance / 1000) * 10) / 10,
-    drive_time_min: Math.round(route.duration / 60),
-  };
-}
+const getDistance = getDrivingDistance;
 
 /** Yugo operations base — used for deadhead and return-trip calculations. */
 const YUGO_BASE_ADDRESS = "507 King Street East, Toronto, ON";
@@ -1525,46 +1498,7 @@ async function calcB2bOneoff(
 
 const EVENT_WEIGHT_MAP: Record<string, number> = { light: 0.5, medium: 2.0, heavy: 5.0 };
 
-async function calcEvent(
-  sb: SupabaseAdmin,
-  input: QuoteInput,
-  config: Map<string, string>,
-  distInfo: { distance_km: number; drive_time_min: number } | null,
-  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
-) {
-  // Build inventory-style score from event items
-  let eventScore = 0;
-  for (const item of input.event_items ?? []) {
-    const w = EVENT_WEIGHT_MAP[item.weight_category] ?? 2.0;
-    eventScore += w * (item.quantity || 1);
-  }
-
-  const distBaseKm = cfgNum(config, "dist_baseline_km", cfgNum(config, "distance_base_km", 30));
-  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
-  const distKm = distInfo?.distance_km ?? 0;
-  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
-
-  // Labour estimate from event items
-  const labour = eventScore > 0
-    ? estimateLabourFromScore(eventScore, distKm, input.from_access, input.to_access, "2br", {
-        driveTimeMinutes: distInfo?.drive_time_min,
-      })
-    : { crewSize: 2, estimatedHours: 3, hoursRange: "2.5–4 hours", truckSize: "20ft" };
-
-  // Delivery charge: crew × hours × labour rate + distance surcharge
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
-  const rounding = cfgNum(config, "rounding_nearest", 50);
-  let deliveryCharge = Math.round(labour.crewSize * labour.estimatedHours * labourRate * 1.4); // 1.4 ops overhead factor
-  deliveryCharge += distanceSurcharge;
-  deliveryCharge = roundTo(deliveryCharge, rounding);
-  if (deliveryCharge < 350) deliveryCharge = 350;
-
-  // Return charge (simpler: items already inventoried, no re-wrap)
-  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
-  const returnCharge = roundTo(Math.round(deliveryCharge * returnDiscount), rounding);
-  const returnHours = Math.ceil(labour.estimatedHours * returnDiscount);
-
-  // Setup fee
+function eventSetupFeeAndLabel(input: QuoteInput, config: Map<string, string>): { setupFee: number; setupLabel: string } {
   let setupFee = 0;
   let setupLabel = "";
   if (input.event_setup_required) {
@@ -1578,6 +1512,72 @@ async function calcEvent(
     setupFee = setupPrices[sh] ?? setupPrices[2];
     setupLabel = sh === 99 ? "Half-day setup" : `${sh}hr setup`;
   }
+  return { setupFee, setupLabel };
+}
+
+/** Per-leg delivery + return pricing (no setup, no addons) */
+function computeEventLegCore(
+  eventItems: QuoteInput["event_items"],
+  fromAccess: string | undefined,
+  toAccess: string | undefined,
+  distInfo: { distance_km: number; drive_time_min: number } | null,
+  config: Map<string, string>,
+) {
+  let eventScore = 0;
+  for (const item of eventItems ?? []) {
+    const w = EVENT_WEIGHT_MAP[item.weight_category] ?? 2.0;
+    eventScore += w * (item.quantity || 1);
+  }
+
+  const distBaseKm = cfgNum(config, "dist_baseline_km", cfgNum(config, "distance_base_km", 30));
+  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
+  const distKm = distInfo?.distance_km ?? 0;
+  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
+
+  const labour = eventScore > 0
+    ? estimateLabourFromScore(eventScore, distKm, fromAccess, toAccess, "2br", {
+        driveTimeMinutes: distInfo?.drive_time_min,
+      })
+    : { crewSize: 2, estimatedHours: 3, hoursRange: "2.5–4 hours", truckSize: "20ft" };
+
+  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  let deliveryCharge = Math.round(labour.crewSize * labour.estimatedHours * labourRate * 1.4);
+  deliveryCharge += distanceSurcharge;
+  deliveryCharge = roundTo(deliveryCharge, rounding);
+  if (deliveryCharge < 350) deliveryCharge = 350;
+
+  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
+  const returnCharge = roundTo(Math.round(deliveryCharge * returnDiscount), rounding);
+  const returnHours = Math.ceil(labour.estimatedHours * returnDiscount);
+
+  return {
+    deliveryCharge,
+    returnCharge,
+    returnHours,
+    distanceSurcharge,
+    returnDiscount,
+    labour,
+  };
+}
+
+async function calcEvent(
+  sb: SupabaseAdmin,
+  input: QuoteInput,
+  config: Map<string, string>,
+  distInfo: { distance_km: number; drive_time_min: number } | null,
+  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+) {
+  const core = computeEventLegCore(
+    input.event_items,
+    input.from_access,
+    input.to_access,
+    distInfo,
+    config,
+  );
+  const { labour, deliveryCharge, returnCharge, returnHours, distanceSurcharge, returnDiscount } = core;
+
+  const { setupFee, setupLabel } = eventSetupFeeAndLabel(input, config);
 
   let price = deliveryCharge + returnCharge + setupFee + addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -1602,6 +1602,7 @@ async function calcEvent(
       includes: eventIncludes,
     } as TierResult,
     factors: {
+      event_mode: "single",
       event_name: input.event_name || null,
       delivery_date: input.move_date || null,
       return_date: input.event_return_date || null,
@@ -1616,6 +1617,112 @@ async function calcEvent(
       same_day: input.event_same_day ?? false,
     },
     labour,
+  };
+}
+
+/** Sum multiple event legs into one quote; setup + addons applied once */
+function calcMultiEvent(
+  input: QuoteInput,
+  config: Map<string, string>,
+  legDistances: ({ distance_km: number; drive_time_min: number } | null)[],
+  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+) {
+  const legs = input.event_legs ?? [];
+  let totalDelivery = 0;
+  let totalReturn = 0;
+  let maxCrew = 2;
+  let maxHours = 3;
+  let maxTruck = "20ft";
+  const legBreakdown: Record<string, unknown>[] = [];
+  const includeLines: string[] = [];
+
+  const sharedItems = input.event_items;
+
+  for (let i = 0; i < legs.length; i++) {
+    const leg = legs[i];
+    const dist = legDistances[i] ?? null;
+    const itemsForLeg = leg.event_items && leg.event_items.length > 0 ? leg.event_items : sharedItems;
+    const core = computeEventLegCore(
+      itemsForLeg,
+      leg.from_access ?? input.from_access,
+      leg.to_access ?? input.to_access,
+      dist,
+      config,
+    );
+    totalDelivery += core.deliveryCharge;
+    totalReturn += core.returnCharge;
+    if (core.labour.crewSize > maxCrew) maxCrew = core.labour.crewSize;
+    if (core.labour.estimatedHours > maxHours) maxHours = core.labour.estimatedHours;
+    maxTruck = core.labour.truckSize || maxTruck;
+    const retDate = leg.event_same_day ? leg.move_date : (leg.event_return_date || leg.move_date);
+    const legLabel = leg.label?.trim() || `Event ${i + 1}`;
+    legBreakdown.push({
+      label: legLabel,
+      from_address: leg.from_address,
+      to_address: leg.to_address,
+      delivery_date: leg.move_date,
+      return_date: retDate,
+      delivery_charge: core.deliveryCharge,
+      return_charge: core.returnCharge,
+      event_crew: core.labour.crewSize,
+      event_hours: core.labour.estimatedHours,
+      return_hours: core.returnHours,
+      same_day: !!leg.event_same_day,
+      distance_km: dist?.distance_km ?? 0,
+    });
+    includeLines.push(
+      `${legLabel}: Delivery ${leg.move_date} (${core.labour.crewSize} movers, ${core.labour.estimatedHours}hr) — Return ${retDate}`,
+    );
+  }
+
+  const { setupFee, setupLabel } = eventSetupFeeAndLabel(input, config);
+  let price = totalDelivery + totalReturn + setupFee + addonResult.total;
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const tax = Math.round(price * taxRate);
+  const total = price + tax;
+  const deposit = Math.max(150, Math.round(total * 0.25));
+
+  const eventIncludes = [
+    ...includeLines,
+    ...(input.event_setup_required ? [`Setup service (program): ${setupLabel}`] : []),
+    "Multi-event bundle — one coordinated quote",
+    "All items inventoried and protected",
+  ];
+
+  const first = legs[0];
+  const firstReturn = first.event_same_day ? first.move_date : (first.event_return_date || first.move_date);
+  const returnDiscount = cfgNum(config, "event_return_discount", 0.65);
+
+  return {
+    custom_price: {
+      price,
+      deposit,
+      tax,
+      total,
+      includes: eventIncludes,
+    } as TierResult,
+    factors: {
+      event_mode: "multi",
+      event_name: input.event_name || null,
+      event_legs: legBreakdown,
+      delivery_date: first.move_date,
+      return_date: firstReturn,
+      delivery_charge: totalDelivery,
+      return_charge: totalReturn,
+      return_discount: returnDiscount,
+      setup_fee: setupFee,
+      setup_label: setupLabel || null,
+      event_crew: maxCrew,
+      event_hours: maxHours,
+      same_day: false,
+      includes: eventIncludes,
+    },
+    labour: {
+      crewSize: maxCrew,
+      estimatedHours: maxHours,
+      hoursRange: `${maxHours}hr`,
+      truckSize: maxTruck,
+    },
   };
 }
 
@@ -1721,8 +1828,58 @@ export async function POST(req: NextRequest) {
     input = { ...input, to_address: input.from_address };
   }
 
+  if (input.service_type === "event" && input.event_mode === "multi") {
+    if (!Array.isArray(input.event_legs) || input.event_legs.length < 2) {
+      return NextResponse.json({ error: "Multi-event requires at least 2 event legs" }, { status: 400 });
+    }
+  }
+
+  /** Multi-event: ≥2 legs, each with origin/venue/dates; first leg fills primary quote row */
+  const isEventMulti =
+    input.service_type === "event" &&
+    input.event_mode === "multi" &&
+    Array.isArray(input.event_legs) &&
+    input.event_legs.length >= 2;
+
+  if (isEventMulti) {
+    for (let i = 0; i < input.event_legs!.length; i++) {
+      const leg = input.event_legs![i];
+      if (!leg.from_address?.trim() || !leg.to_address?.trim() || !leg.move_date) {
+        return NextResponse.json(
+          { error: `Event ${i + 1}: origin, venue, and delivery date are required` },
+          { status: 400 },
+        );
+      }
+      if (!leg.event_same_day && !leg.event_return_date?.trim()) {
+        return NextResponse.json(
+          { error: `Event ${i + 1}: return date is required unless same-day is selected` },
+          { status: 400 },
+        );
+      }
+    }
+    const first = input.event_legs![0];
+    input = {
+      ...input,
+      from_address: first.from_address,
+      to_address: first.to_address,
+      from_access: first.from_access ?? input.from_access,
+      to_access: first.to_access ?? input.to_access,
+      move_date: first.move_date,
+      event_return_date: first.event_same_day ? first.move_date : (first.event_return_date || first.move_date),
+      event_same_day: !!first.event_same_day,
+    };
+  }
+
   const sb = createAdminClient();
   const config = await loadConfig(sb);
+
+  // Per-leg distances for multi-event (Mapbox)
+  let legDistances: ({ distance_km: number; drive_time_min: number } | null)[] | null = null;
+  if (isEventMulti) {
+    legDistances = await Promise.all(
+      input.event_legs!.map((leg) => getDistance(leg.from_address, leg.to_address)),
+    );
+  }
 
   // Section 5: Batch all Mapbox distance calls (job route + deadhead + return trip)
   const isResidential = input.service_type === "local_move" || input.service_type === "long_distance";
@@ -1906,10 +2063,17 @@ export async function POST(req: NextRequest) {
       break;
     }
     case "event": {
-      const res = await calcEvent(sb, input, config, distInfo, addonResult);
-      custom_price = res.custom_price;
-      factors = res.factors;
-      labour = res.labour;
+      if (isEventMulti && legDistances && legDistances.length >= 2) {
+        const res = calcMultiEvent(input, config, legDistances, addonResult);
+        custom_price = res.custom_price;
+        factors = res.factors;
+        labour = res.labour;
+      } else {
+        const res = await calcEvent(sb, input, config, distInfo, addonResult);
+        custom_price = res.custom_price;
+        factors = res.factors;
+        labour = res.labour;
+      }
       break;
     }
     case "labour_only": {

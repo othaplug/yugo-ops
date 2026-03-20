@@ -418,7 +418,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} weight="regular" />
         </button>
         <div>
           <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">Re-Quote</div>

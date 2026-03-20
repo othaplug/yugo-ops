@@ -22,8 +22,8 @@ function getHeatColor(count: number): string {
 
 export default function YearView({ year, heatData, todayKey, onDayClick, onMonthClick }: Props) {
   return (
-    <div className="px-6 pb-6">
-      <div className="grid grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="px-3 sm:px-5 pb-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
         {MONTH_NAMES.map((name, monthIdx) => {
           const firstDay = new Date(year, monthIdx, 1).getDay();
           const adjusted = firstDay === 0 ? 6 : firstDay - 1;
@@ -39,7 +39,7 @@ export default function YearView({ year, heatData, todayKey, onDayClick, onMonth
               <button
                 type="button"
                 onClick={() => onMonthClick(monthIdx)}
-                className="text-[12px] font-bold text-[var(--tx)] mb-2 hover:text-[var(--gold)] transition-colors"
+                className="text-[11px] font-bold text-[var(--tx)] mb-1 hover:text-[var(--gold)] transition-colors block"
               >
                 {name}
               </button>
@@ -74,7 +74,7 @@ export default function YearView({ year, heatData, todayKey, onDayClick, onMonth
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-6 justify-center">
+      <div className="flex items-center gap-2 mt-3 justify-center">
         <span className="text-[9px] text-[var(--tx3)]">Less</span>
         {[0, 1, 2, 4].map((n) => (
           <div key={n} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: getHeatColor(n) }} />

@@ -68,7 +68,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[18px] font-bold text-[var(--tx)] font-hero">Share Tracking Link</h2>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)]">
-              <X size={18} />
+              <X size={18} weight="regular" />
             </button>
           </div>
 

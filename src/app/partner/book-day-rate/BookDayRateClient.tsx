@@ -22,7 +22,7 @@ export default function BookDayRateClient({ orgId, orgType, defaultPickupAddress
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} weight="regular" />
           Back
         </button>
       </div>

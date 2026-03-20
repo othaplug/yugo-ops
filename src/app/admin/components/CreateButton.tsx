@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
 
-const PlusIcon = () => <Plus size={16} className="text-current" aria-hidden />;
+const PlusIcon = () => <Plus size={16} weight="regular" className="text-current" aria-hidden />;
 
 /** Shared premium 3D round styling for gold create buttons (used by CreateButton and dropdown triggers) */
 export const createButtonBaseClass =

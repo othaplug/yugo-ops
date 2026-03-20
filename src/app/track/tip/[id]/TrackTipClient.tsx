@@ -318,7 +318,7 @@ export default function TrackTipClient({
               style={{ color: `${FOREST}60` }}
               aria-label="Close"
             >
-              <X size={18} className="text-current" />
+              <X size={18} weight="regular" className="text-current" />
             </button>
             {formContent}
           </div>

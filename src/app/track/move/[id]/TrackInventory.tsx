@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
-import { CaretDown, X, Package, Plus, DownloadSimple } from "@phosphor-icons/react";
+import { CaretDown, X, ClipboardText, Plus, DownloadSimple } from "@phosphor-icons/react";
 
 const GOLD = "#C9A962";
 const FOREST = "#2C3B2D";
@@ -200,7 +200,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               onClick={() => setAddExtraOpen(false)}
               className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#666] hover:bg-[#EEECEA] transition-colors"
             >
-              <X size={10} className="text-current" />
+              <X size={10} weight="regular" className="text-current" />
             </button>
           </div>
         </div>
@@ -287,7 +287,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <div className="px-5 py-10 text-center">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${GOLD}14` }}>
-            <Package size={20} color={GOLD} />
+            <ClipboardText size={20} color={GOLD} />
           </div>
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
           <p className="text-[11px] text-[#888] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
@@ -297,7 +297,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               onClick={() => setAddExtraOpen(true)}
               className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
             >
-              <Plus size={11} className="text-current" />
+              <Plus size={11} weight="regular" className="text-current" />
               Request extra item
             </button>
           )}
@@ -363,6 +363,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                   </span>
                   <CaretDown
                     size={9}
+                    weight="regular"
                     color="#999"
                     className="transition-transform duration-200"
                     style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
@@ -435,7 +436,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
             }}
           >
-            <Plus size={11} className="text-current" />
+            <Plus size={11} weight="regular" className="text-current" />
             Request extra item
           </button>
         </div>

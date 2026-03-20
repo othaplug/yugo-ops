@@ -273,7 +273,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
                 aria-label="Previous day"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft weight="regular" className="w-3.5 h-3.5" />
               </button>
 
               {/* Date display / picker */}
@@ -283,7 +283,7 @@ export default function DispatchBoardClient({ today }: Props) {
                   onClick={() => dateInputRef.current?.showPicker?.()}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation text-[11px] font-semibold whitespace-nowrap"
                 >
-                  <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                  <CalendarDays weight="regular" className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden sm:inline">{shortDate}</span>
                   <span className="sm:hidden">
                     {displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -316,7 +316,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
                 aria-label="Next day"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight weight="regular" className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -337,7 +337,7 @@ export default function DispatchBoardClient({ today }: Props) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:text-[var(--gold)] hover:border-[var(--gold)]/50 transition-all touch-manipulation text-[11px] font-semibold ${loading ? "opacity-60" : ""}`}
               aria-label="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw weight="regular" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
               {lastFetch > 0 && <span className="hidden sm:inline text-[9px] text-[var(--tx3)] font-normal">{formatLastUpdated(Date.now() - lastFetch)}</span>}
             </button>
@@ -345,7 +345,7 @@ export default function DispatchBoardClient({ today }: Props) {
               href="/admin/crew"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--gold2)] transition-all touch-manipulation"
             >
-              <Crosshair size={13} className="text-current shrink-0" aria-hidden />
+              <Crosshair size={13} weight="regular" className="text-current shrink-0" aria-hidden />
               Live Map
             </Link>
           </div>
@@ -497,7 +497,7 @@ export default function DispatchBoardClient({ today }: Props) {
                     className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                   >
                     <div className="w-9 h-9 rounded-full bg-[var(--grn)]/15 flex items-center justify-center shrink-0">
-                      <Phone className="w-4 h-4 text-[var(--grn)]" />
+                      <Phone weight="regular" className="w-4 h-4 text-[var(--grn)]" />
                     </div>
                     <div>
                       <p className="text-[13px] font-semibold">Call</p>
@@ -509,7 +509,7 @@ export default function DispatchBoardClient({ today }: Props) {
                     className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-4 h-4 text-[#3B82F6]" />
+                      <MessageSquare weight="regular" className="w-4 h-4 text-[#3B82F6]" />
                     </div>
                     <div>
                       <p className="text-[13px] font-semibold">SMS</p>
@@ -524,7 +524,7 @@ export default function DispatchBoardClient({ today }: Props) {
                   className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                 >
                   <div className="w-9 h-9 rounded-full bg-[var(--gold)]/15 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-[var(--gold)]" />
+                    <Mail weight="regular" className="w-4 h-4 text-[var(--gold)]" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold">Email</p>
@@ -585,7 +585,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors text-left touch-manipulation disabled:opacity-60"
               >
                 <div className="w-9 h-9 rounded-full bg-[var(--gdim)] flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-[var(--tx3)]" />
+                  <Users weight="regular" className="w-4 h-4 text-[var(--tx3)]" />
                 </div>
                 <span className="text-[13px] font-semibold text-[var(--tx2)]">Remove crew assignment</span>
               </button>

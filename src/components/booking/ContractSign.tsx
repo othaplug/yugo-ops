@@ -36,6 +36,7 @@ export interface ContractQuoteData {
   fromAccess: string | null;
   toAccess: string | null;
   moveDate: string | null;
+  preferredTime: string | null;
   moveSize: string | null;
   distanceKm: number | null;
   driveTimeMin: number | null;
@@ -412,6 +413,14 @@ export default function ContractSign({
                     <Calendar className="w-3.5 h-3.5" style={{ color: GOLD }} />
                     <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
                       {fmtDate(q.moveDate)}
+                    </span>
+                  </div>
+                )}
+                {q.preferredTime && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                    <span className="text-[12px] font-medium" style={{ color: FOREST }}>
+                      Arrival: {q.preferredTime}
                     </span>
                   </div>
                 )}

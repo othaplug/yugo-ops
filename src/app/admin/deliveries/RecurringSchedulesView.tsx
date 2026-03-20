@@ -126,7 +126,7 @@ function AdminScheduleModal({
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[14px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
-            <X size={16} className="text-current" />
+            <X size={16} weight="regular" className="text-current" />
           </button>
         </div>
 
@@ -321,7 +321,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
 
       {/* Search */}
       <div className="relative max-w-[360px]">
-        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" />
+        <MagnifyingGlass size={14} weight="regular" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -406,7 +406,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           onClick={() => setEditTarget(s)}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
                         >
-                          <PencilSimple size={13} className="text-current" />
+                          <PencilSimple size={13} weight="regular" className="text-current" />
                         </button>
                         <button
                           title={s.is_paused ? "Resume" : "Pause"}
@@ -415,9 +415,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors disabled:opacity-40"
                         >
                           {s.is_paused ? (
-                            <Play size={13} className="text-current" />
+                            <Play size={13} weight="regular" className="text-current" />
                           ) : (
-                            <Pause size={13} className="text-current" />
+                            <Pause size={13} weight="regular" className="text-current" />
                           )}
                         </button>
                         <button
@@ -426,7 +426,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           disabled={deleting === s.id}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
                         >
-                          <Trash size={13} className="text-current" />
+                          <Trash size={13} weight="regular" className="text-current" />
                         </button>
                       </div>
                     </td>

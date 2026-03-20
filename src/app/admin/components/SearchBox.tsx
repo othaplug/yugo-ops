@@ -198,7 +198,7 @@ export default function SearchBox() {
             onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
             className="text-[var(--tx3)] hover:text-[var(--tx)] shrink-0"
           >
-            <X size={12} className="text-current" aria-hidden />
+            <X size={12} weight="regular" className="text-current" aria-hidden />
           </button>
         ) : (
           <kbd className="hidden sm:inline-flex items-center gap-px px-1.5 py-0.5 rounded border border-[var(--brd)] bg-transparent text-[9px] font-mono text-[var(--tx3)] shrink-0 leading-none">

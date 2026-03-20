@@ -91,8 +91,13 @@ export default function CalendarView() {
       )}
 
       {!cal.loading && !cal.fetchError && cal.counts && cal.view !== "year" && (
-        <div className="mx-6 mt-2 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[11px] text-[var(--tx3)]">
-          In range: {cal.counts.moves} moves, {cal.counts.deliveries} deliveries, {cal.counts.phases ?? 0} project phases
+        <div className="mx-3 sm:mx-5 mt-1 px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] flex items-center gap-2">
+          <span className="text-[var(--tx3)]/50">Range:</span>
+          <span>{cal.counts.moves} moves</span>
+          <span className="text-[var(--tx3)]/30">·</span>
+          <span>{cal.counts.deliveries} deliveries</span>
+          <span className="text-[var(--tx3)]/30">·</span>
+          <span>{cal.counts.phases ?? 0} phases</span>
         </div>
       )}
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { createButtonBaseClass } from "./CreateButton";
-import { BookOpen, CalendarBlank, Plus, Truck, UsersThree } from "@phosphor-icons/react";
+import { BookOpen, CalendarBlank, Handshake, Plus, Truck, UsersThree } from "@phosphor-icons/react";
 
 interface CreateDeliveryDropdownProps {
   /** Partner type for URL param (designer, hospitality, retail, gallery) */
@@ -49,7 +49,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
         aria-haspopup="true"
         className={createButtonBaseClass}
       >
-        <Plus size={16} className="text-current" aria-hidden />
+        <Plus size={16} weight="regular" className="text-current" aria-hidden />
       </button>
 
       {open && (
@@ -62,7 +62,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <Truck size={14} className="text-current" aria-hidden />
+              <Truck size={14} weight="regular" className="text-current" aria-hidden />
             </span>
             Delivery
           </Link>
@@ -71,7 +71,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <CalendarBlank size={14} className="text-current" aria-hidden />
+              <CalendarBlank size={14} weight="regular" className="text-current" aria-hidden />
             </span>
             Day Rate
           </Link>
@@ -80,7 +80,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <Truck size={14} className="text-current" aria-hidden />
+              <Handshake size={14} weight="regular" className="text-current" aria-hidden />
             </span>
             B2B One-Off
           </Link>
@@ -92,7 +92,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors w-full text-left first:rounded-t-xl last:rounded-b-xl"
               >
                 <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                  <BookOpen size={14} className="text-current" aria-hidden />
+                  <BookOpen size={14} weight="regular" className="text-current" aria-hidden />
                 </span>
                 Project
               </button>
@@ -102,7 +102,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
               >
                 <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                  <BookOpen size={14} className="text-current" aria-hidden />
+                  <BookOpen size={14} weight="regular" className="text-current" aria-hidden />
                 </span>
                 Project
               </Link>
@@ -114,7 +114,7 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
               className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
             >
               <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                <UsersThree size={14} className="text-current" aria-hidden />
+                <UsersThree size={14} weight="regular" className="text-current" aria-hidden />
               </span>
               Add Partner
             </Link>

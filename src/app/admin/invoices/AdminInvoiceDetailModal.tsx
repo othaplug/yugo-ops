@@ -240,7 +240,7 @@ export default function AdminInvoiceDetailModal({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--gold)]/15 border border-[var(--gold)]/30 text-[var(--gold)] font-semibold text-[12px] hover:bg-[var(--gold)]/25 transition-colors"
                 >
-                  <ArrowSquareOut size={14} className="text-current" />
+                  <ArrowSquareOut size={14} weight="regular" className="text-current" />
                   View in Square
                 </a>
               )}
@@ -251,7 +251,7 @@ export default function AdminInvoiceDetailModal({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] font-semibold text-[12px] hover:bg-[#22C55E]/25 transition-colors"
                 >
-                  <FileText size={14} className="text-current" />
+                  <FileText size={14} weight="regular" className="text-current" />
                   View Payment Receipt (Square)
                 </a>
               )}

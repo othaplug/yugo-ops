@@ -16,7 +16,7 @@ export default function RealtorPartnersSection({ partners }: { partners: Realtor
           href="/admin/clients/new?type=partner&partnerType=realtor"
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap"
         >
-          <UserPlus size={14} className="text-current shrink-0" aria-hidden />
+          <UserPlus size={14} weight="regular" className="text-current shrink-0" aria-hidden />
           Add Realtor Partner
         </Link>
       </div>

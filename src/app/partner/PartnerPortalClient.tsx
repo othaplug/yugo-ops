@@ -1112,12 +1112,12 @@ function PartnerNotificationBell({ open, onToggle, onClose }: { open: boolean; o
 
 function PartnerNotifIcon({ name }: { name: string }) {
   const map: Record<string, React.ReactNode> = {
-    check:         <Check size={14} />,
-    x:             <X size={14} />,
-    dollar:        <CurrencyDollar size={14} />,
-    clipboard:     <ClipboardText size={14} />,
-    calendar:      <Calendar size={14} />,
-    alertTriangle: <Warning size={14} />,
+    check:         <Check size={14} weight="regular" />,
+    x:             <X size={14} weight="regular" />,
+    dollar:        <CurrencyDollar size={14} weight="regular" />,
+    clipboard:     <ClipboardText size={14} weight="regular" />,
+    calendar:      <Calendar size={14} weight="regular" />,
+    alertTriangle: <Warning size={14} weight="regular" />,
   };
   return <>{map[name] ?? <Bell size={14} />}</>;
 }

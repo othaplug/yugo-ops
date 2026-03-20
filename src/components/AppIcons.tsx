@@ -9,7 +9,7 @@
 import {
   MagnifyingGlass, Check, X, Lock, Plug, Bell, CreditCard, Envelope,
   Phone, ClipboardText, Warning, Truck, Confetti, File, FileText,
-  CurrencyDollar, PaintBrush, ToggleRight, Gear, Users, Package,
+  CurrencyDollar, PaintBrush, ToggleRight, Gear, Users,
   House, Buildings, Armchair, Palette, Image, Handshake, Eye,
   Clock, Flag, Target, Calendar, MapPin, ChatText, Gift, Camera,
   Star, Link, CircleNotch, Pulse, CaretRight, User, UserMinus,
@@ -43,7 +43,7 @@ const ICON_MAP: Record<string, PhosphorIcon> = {
   toggleRight:      ToggleRight,
   settings:         Gear,
   users:            Users,
-  package:          Package,
+  package:          Truck,
   projects:         ClipboardText,
   home:             House,
   building:         Buildings,

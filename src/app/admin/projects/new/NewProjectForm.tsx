@@ -241,7 +241,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             onClick={addPhase}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors w-full justify-center"
           >
-            <Plus size={14} />
+            <Plus size={14} weight="regular" />
             Add Phase
           </button>
         </div>

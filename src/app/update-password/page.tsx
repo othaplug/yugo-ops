@@ -161,9 +161,9 @@ export default function UpdatePasswordPage() {
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide" : "Show"}
                       style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {showPassword ? (
-                        <Eye size={14} className="text-current" />
+                        <Eye size={14} weight="regular" className="text-current" />
                       ) : (
-                        <EyeSlash size={14} className="text-current" />
+                        <EyeSlash size={14} weight="regular" className="text-current" />
                       )}
                     </button>
                   </div>

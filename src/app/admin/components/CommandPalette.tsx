@@ -198,7 +198,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
           {searching ? (
             <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin shrink-0" />
           ) : (
-            <MagnifyingGlass className="w-4 h-4 text-[var(--tx3)] shrink-0" />
+            <MagnifyingGlass weight="regular" className="w-4 h-4 text-[var(--tx3)] shrink-0" />
           )}
           <input
             ref={inputRef}
@@ -229,10 +229,10 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                     className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center text-[11px]"
                     style={{ background: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18`, color: TYPE_COLORS[r.type] ?? "var(--tx3)" }}
                   >
-                    {r.type === "Client" ? <User className="w-3 h-3 text-current" /> :
-                      r.type === "Move" || r.type === "Delivery" ? <Truck className="w-3 h-3 text-current" /> :
-                      r.type === "Quote" || r.type === "Invoice" ? <FileText className="w-3 h-3 text-current" /> :
-                      <MagnifyingGlass className="w-3 h-3 text-current" />}
+                    {r.type === "Client" ? <User weight="regular" className="w-3 h-3 text-current" /> :
+                      r.type === "Move" || r.type === "Delivery" ? <Truck weight="regular" className="w-3 h-3 text-current" /> :
+                      r.type === "Quote" || r.type === "Invoice" ? <FileText weight="regular" className="w-3 h-3 text-current" /> :
+                      <MagnifyingGlass weight="regular" className="w-3 h-3 text-current" />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
@@ -274,7 +274,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                           <ItemIcon />
                         </span>
                         <span className="text-[12px] font-medium flex-1">{item.name}</span>
-                        <CaretRight className="w-3 h-3 opacity-25 shrink-0 text-current" />
+                        <CaretRight weight="regular" className="w-3 h-3 opacity-25 shrink-0 text-current" />
                       </div>
                     );
                   })}

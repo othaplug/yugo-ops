@@ -117,7 +117,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-[var(--card)] transition-all"
                 aria-label="Actions"
               >
-                <DotsThreeVertical size={14} className="text-[var(--tx3)]" aria-hidden />
+                <DotsThreeVertical size={14} weight="regular" className="text-[var(--tx3)]" aria-hidden />
               </button>
               {menuOpenId === c.id && (
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">

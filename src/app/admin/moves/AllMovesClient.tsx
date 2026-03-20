@@ -564,7 +564,7 @@ export default function AllMovesClient({
           className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-lg shadow-[var(--gold)]/25 active:scale-95 transition-transform touch-manipulation"
           aria-label="Create new move"
         >
-          <Plus size={22} className="text-current" aria-hidden />
+          <Plus size={22} weight="regular" className="text-current" aria-hidden />
         </Link>
       </div>
     </div>

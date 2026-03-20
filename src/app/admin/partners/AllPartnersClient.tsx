@@ -7,6 +7,7 @@ import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { Icon } from "@/components/AppIcons";
+import InvitePartnerModal from "@/app/admin/platform/InvitePartnerModal";
 
 interface Partner {
   id: string;
@@ -164,6 +165,7 @@ export default function AllPartnersClient() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [healthStats, setHealthStats] = useState<{ at_risk: number; cold: number } | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -239,18 +241,32 @@ export default function AllPartnersClient() {
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
           <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">B2B Partners</h1>
         </div>
-        <Link
-          href="/admin/partners/health"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-        >
-          <Icon name="activity" className="w-3.5 h-3.5" />
-          Partner Health
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            href="/admin/partners/health"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          >
+            <Icon name="activity" className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Partner Health</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-[var(--btn-text-on-accent)] transition-all active:scale-95
+              bg-[var(--gold)]
+              shadow-[0_1px_0_0_rgba(0,0,0,0.35),0_4px_12px_rgba(201,169,98,0.45),inset_0_1px_0_rgba(255,255,255,0.22)]
+              hover:shadow-[0_1px_0_0_rgba(0,0,0,0.35),0_6px_18px_rgba(201,169,98,0.55),inset_0_1px_0_rgba(255,255,255,0.22)]
+              hover:brightness-110"
+          >
+            <span className="text-[16px] leading-none font-black">+</span>
+            <span className="hidden sm:inline">Add Partner</span>
+          </button>
+        </div>
       </div>
 
       {healthStats && (healthStats.at_risk + healthStats.cold) > 0 && (
@@ -308,6 +324,18 @@ export default function AllPartnersClient() {
         onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
         emptyMessage="No partners found"
         emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}
+      />
+
+      <InvitePartnerModal
+        open={inviteOpen}
+        onClose={() => {
+          setInviteOpen(false);
+          // Refresh partner list after onboarding
+          fetch("/api/admin/partners/list")
+            .then((r) => r.json())
+            .then((d) => { if (Array.isArray(d.partners)) setPartners(d.partners); })
+            .catch(() => {});
+        }}
       />
     </div>
   );

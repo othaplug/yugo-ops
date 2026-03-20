@@ -1369,7 +1369,7 @@ export default function TrackMoveClient({
                       style={{ color: GOLD }}
                     >
                       {(dashboardInventory?.items?.length ?? 0) + (dashboardInventory?.extraItems?.length ?? 0)} items
-                      <CaretRight size={10} className="text-current" />
+                      <CaretRight size={10} weight="regular" className="text-current" />
                     </button>
                   )}
                 </div>
@@ -1492,7 +1492,7 @@ export default function TrackMoveClient({
                   className="text-[11px] font-semibold opacity-40 hover:opacity-70 transition-opacity flex items-center gap-1.5"
                   style={{ color: FOREST }}
                 >
-                  <Plus size={10} className="text-current" />
+                  <Plus size={10} weight="regular" className="text-current" />
                   Request a Change
                 </button>
               </div>
@@ -1826,7 +1826,7 @@ export default function TrackMoveClient({
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[16px] font-bold" style={{ color: FOREST }}>Pay Balance</h2>
                   <button type="button" onClick={() => setPaymentModalOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F0F0F0] transition-colors">
-                    <X size={16} color={FOREST} />
+                    <X size={16} weight="regular" color={FOREST} />
                   </button>
                 </div>
 

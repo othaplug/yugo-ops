@@ -334,10 +334,10 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero" suppressHydrationWarning>{headerLabel}</h3>
           <div className="flex items-center gap-0.5">
             <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <CaretLeft size={14} color="#888" />
+              <CaretLeft size={14} weight="regular" color="#888" />
             </button>
             <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <CaretRight size={14} color="#888" />
+              <CaretRight size={14} weight="regular" color="#888" />
             </button>
             <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#666] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
               Today

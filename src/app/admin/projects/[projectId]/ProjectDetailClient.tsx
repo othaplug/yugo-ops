@@ -9,7 +9,7 @@ import CreateButton from "../../components/CreateButton";
 import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
-import { Plus, Truck, Clock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Camera, FileText, PaperPlaneTilt as Send, Pulse as Activity, Cube as Boxes, Package as PackageCheck, Trash as Trash2, Lock, MapPin, Warning as AlertTriangle, CaretDown as ChevronDown, CaretRight as ChevronRight, PencilSimple as Pencil, ArrowSquareOut } from "@phosphor-icons/react";
+import { Plus, Truck, Clock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Camera, FileText, PaperPlaneTilt as Send, Pulse as Activity, Trash as Trash2, Lock, MapPin, Warning as AlertTriangle, CaretDown as ChevronDown, CaretRight as ChevronRight, PencilSimple as Pencil, ArrowSquareOut } from "@phosphor-icons/react";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
@@ -390,18 +390,18 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           <div className="flex flex-wrap gap-2">
           {data.status === "draft" && (
             <button onClick={() => updateStatus("proposed")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors disabled:opacity-40">
-              <Send size={12} className="inline mr-1" /> Send Proposal
+              <Send size={12} weight="regular" className="inline mr-1" /> Send Proposal
             </button>
           )}
           {data.status === "proposed" && (
             <button onClick={() => updateStatus("active")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-40">
-              <CheckCircle2 size={12} className="inline mr-1" /> Mark Active
+              <CheckCircle2 size={12} weight="regular" className="inline mr-1" /> Mark Active
             </button>
           )}
           {data.status === "active" && (
             <>
               <button onClick={() => updateStatus("completed")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors disabled:opacity-40">
-                <CheckCircle2 size={12} className="inline mr-1" /> Complete
+                <CheckCircle2 size={12} weight="regular" className="inline mr-1" /> Complete
               </button>
               <button onClick={() => updateStatus("on_hold")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 transition-colors disabled:opacity-40">
                 Hold
@@ -410,15 +410,15 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           )}
           {data.status === "completed" && (
             <button onClick={() => updateStatus("invoiced")} disabled={statusUpdating} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-colors disabled:opacity-40">
-              <FileText size={12} className="inline mr-1" /> Mark Invoiced
+              <FileText size={12} weight="regular" className="inline mr-1" /> Mark Invoiced
             </button>
           )}
           </div>
           <button type="button" onClick={() => setShowEditProject(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] transition-colors shrink-0">
-            <Pencil size={12} className="inline mr-1" /> Edit
+            <Pencil size={12} weight="regular" className="inline mr-1" /> Edit
           </button>
           <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-colors shrink-0">
-            <Trash2 size={12} className="inline mr-1" /> Delete
+            <Trash2 size={12} weight="regular" className="inline mr-1" /> Delete
           </button>
         </div>
       </div>
@@ -429,7 +429,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
       {/* Upsell Banner */}
       {manualItemsExist && (
         <div className="mb-4 flex items-start gap-3 p-4 rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5">
-          <Boxes size={16} className="text-[var(--gold)] mt-0.5 shrink-0" />
+          <Truck size={16} className="text-[var(--gold)] mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-semibold text-[var(--tx)]">
               {data.inventory.filter((i) => i.handled_by && i.handled_by !== "yugo").length} items are being tracked manually
@@ -759,7 +759,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                   href={`/admin/deliveries/new?choice=single&org=${data.partner_id}&projectId=${projectId}&phaseId=${phase.id}`}
                   className="px-3 py-1 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors flex items-center gap-1"
                 >
-                  <Truck size={11} /> New Delivery
+                  <Truck size={11} weight="regular" /> New Delivery
                 </Link>
                 {phase.status === "pending" && (
                   <button onClick={() => updatePhaseStatus(phase.id, "active")} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20">Start Phase</button>
@@ -808,7 +808,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                 {phaseDeliveries.map((d) => (
                   <Link key={d.id} href={`/admin/deliveries/${d.id}`} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[var(--bg)] transition-colors">
                     <div className="flex items-center gap-2">
-                      <Truck size={14} className="text-[var(--gold)]" />
+                      <Truck size={14} weight="regular" className="text-[var(--gold)]" />
                       <span className="text-[12px] font-medium text-[var(--tx)]">{d.delivery_number || "Delivery"}</span>
                       <span className="text-[10px] text-[var(--tx3)]">{d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</span>
                     </div>
@@ -837,7 +837,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
         </div>
       ) : (
         <button onClick={() => setShowAddPhase(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors">
-          <Plus size={14} /> Add Phase
+          <Plus size={14} weight="regular" /> Add Phase
         </button>
       )}
       </section>
@@ -1293,7 +1293,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
             return (
               <div className="mt-6 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-5">
                 <div className="flex items-start gap-3">
-                  <Boxes className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
+                  <Truck className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <div className="text-[13px] font-semibold text-[var(--tx)]">{nonYugoCount} item{nonYugoCount > 1 ? "s" : ""} tracked manually this month</div>
                     <p className="text-[11px] text-[var(--tx3)] mt-1">
@@ -1303,7 +1303,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                       href={`/admin/deliveries/new?choice=single&org=${data.partner_id}&projectId=${projectId}`}
                       className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
                     >
-                      <Truck size={13} /> Schedule these with Yugo
+                      <Truck size={13} weight="regular" /> Schedule these with Yugo
                     </Link>
                   </div>
                 </div>
@@ -1477,7 +1477,7 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
     <div className="divide-y divide-[var(--brd)]/50">
       <section className="py-5 first:pt-0">
       <button onClick={() => setShowAddNote(!showAddNote)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
-        <Plus size={13} /> Add Note
+        <Plus size={13} weight="regular" /> Add Note
       </button>
       </section>
 
@@ -2199,7 +2199,7 @@ function TimelineIcon({ type }: { type: string }) {
       return <div className={`${baseClass} bg-blue-500/10`}><Plus {...iconProps} className="text-blue-500" /></div>;
     case "item_received":
     case "item_inspected":
-      return <div className={`${baseClass} bg-emerald-500/10`}><PackageCheck {...iconProps} className="text-emerald-500" /></div>;
+      return <div className={`${baseClass} bg-emerald-500/10`}><CheckCircle2 {...iconProps} className="text-emerald-500" /></div>;
     case "phase_started":
     case "phase_completed":
     case "phase_added":

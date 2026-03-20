@@ -186,7 +186,7 @@ function EditableCostCell({
           disabled={saving}
         />
         <button onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-0.5" disabled={saving}>
-          <Check className="w-3 h-3" />
+          <Check weight="regular" className="w-3 h-3" />
         </button>
         <button onClick={cancel} className="text-[var(--tx3)] hover:text-red-400 p-0.5">
           <X className="w-3 h-3" />
@@ -452,7 +452,7 @@ function OverheadEditor({
           disabled={!newLabel.trim() || !newAmount}
           className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-lg bg-[var(--gold)]/15 text-[var(--gold)] hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <Plus className="w-3 h-3" /> Add
+          <Plus weight="regular" className="w-3 h-3" /> Add
         </button>
       </div>
 
@@ -470,7 +470,7 @@ function OverheadEditor({
               : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90"
           } disabled:opacity-50`}
         >
-          {saved ? <><Check className="w-3.5 h-3.5" /> Saved</> : saving ? "Saving…" : "Save Changes"}
+          {saved ? <><Check weight="regular" className="w-3.5 h-3.5" /> Saved</> : saving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </div>
@@ -760,7 +760,7 @@ export default function ProfitabilityClient() {
           <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Profitability</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Cost, profit, and margin from labour, truck, fuel, and supplies</p>
           <Link href="/admin/finance/forecast" className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
-            <TrendingUp size={10} className="text-current shrink-0" aria-hidden />
+            <TrendingUp size={10} weight="regular" className="text-current shrink-0" aria-hidden />
             View Revenue Forecast →
           </Link>
         </div>
@@ -774,7 +774,7 @@ export default function ProfitabilityClient() {
             ))}
           </div>
           <button onClick={exportCSV} className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] border border-[var(--brd)] rounded-lg px-3 py-1.5 hover:bg-[var(--bg)] transition-colors">
-            <Download className="w-3 h-3" /> Export CSV
+            <Download weight="regular" className="w-3 h-3" /> Export CSV
           </button>
         </div>
       </div>
@@ -975,7 +975,7 @@ export default function ProfitabilityClient() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
+                  <Search weight="regular" className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
                   <input type="text" placeholder="Search client or ID..." value={search} onChange={(e) => setSearch(e.target.value)}
                     className="pl-8 pr-3 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none w-52" />
                 </div>
@@ -1064,7 +1064,7 @@ export default function ProfitabilityClient() {
                   </span>
                 )}
               </div>
-              <ChevronDown className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${showOverhead ? "rotate-180" : ""}`} />
+              <ChevronDown weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform shrink-0 ${showOverhead ? "rotate-180" : ""}`} />
             </button>
 
             {showOverhead && (

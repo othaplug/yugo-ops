@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
-import { CaretLeft, CheckCircle, FileText, Package, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
+import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -372,7 +372,7 @@ export default function CrewJobPage({
             href="/crew/dashboard"
             className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
           >
-            <CaretLeft size={15} />
+            <CaretLeft size={15} weight="regular" />
             Jobs
           </Link>
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
@@ -401,7 +401,7 @@ export default function CrewJobPage({
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "status", label: "Status", icon: <CheckCircle size={14} /> },
     { id: "details", label: "Details", icon: <FileText size={14} /> },
-    { id: "items", label: itemsLabel, icon: <Package size={14} /> },
+    { id: "items", label: itemsLabel, icon: <ClipboardText size={14} /> },
     { id: "photos", label: "Photos", icon: <Image size={14} /> },
   ];
 
@@ -416,7 +416,7 @@ export default function CrewJobPage({
           href="/crew/dashboard"
           className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
         >
-          <CaretLeft size={15} />
+          <CaretLeft size={15} weight="regular" />
           Jobs
         </Link>
         <div className="flex items-center gap-1.5">
@@ -764,7 +764,7 @@ export default function CrewJobPage({
       {activeTab === "items" && !hasInventory && (
         <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
           <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-            <Package size={18} color="var(--gold)" />
+            <ClipboardText size={18} color="var(--gold)" />
           </div>
           <p className="text-[12px] text-[var(--tx3)]">No inventory for this job</p>
         </div>

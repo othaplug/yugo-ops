@@ -286,7 +286,7 @@ export default function ReportsClient({
                   {[filterJobType !== "all", filterTeamId !== "all"].filter(Boolean).length}
                 </span>
               )}
-              <CaretDown size={12} className={`shrink-0 transition-transform text-current ${filterOpen ? "rotate-180" : ""}`} />
+              <CaretDown size={12} weight="regular" className={`shrink-0 transition-transform text-current ${filterOpen ? "rotate-180" : ""}`} />
             </button>
             {filterOpen && (
               <div className="absolute top-full right-0 mt-1.5 w-[280px] rounded-lg bg-[var(--card)] shadow-xl z-50 overflow-hidden">

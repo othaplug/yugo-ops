@@ -336,7 +336,7 @@ export default function AllDeliveriesView({
             onClick={() => setFilterOpen(!filterOpen)}
             className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
           >
-            <Funnel size={14} className="text-current" />
+            <Funnel size={14} weight="regular" className="text-current" />
             Filters
             {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
           </button>

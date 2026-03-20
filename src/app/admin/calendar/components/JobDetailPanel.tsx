@@ -126,7 +126,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] transition-colors"
           >
-            <X size={18} className="text-current" aria-hidden />
+            <X size={18} weight="regular" className="text-current" aria-hidden />
           </button>
         </div>
 
@@ -235,6 +235,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                 </span>
                 <CaretDown
                   size={14}
+                  weight="regular"
                   className={`text-[var(--tx3)] transition-transform ${showReassign ? "rotate-180" : ""}`}
                   aria-hidden
                 />

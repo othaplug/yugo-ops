@@ -6,7 +6,7 @@ import React from "react";
 import {
   Target, Truck, SquaresFour, UserCheck, Tag, ChartLineUp, ClipboardText,
   Calendar, MapPin, Armchair, Palette, Buildings, Image, Handshake, FileText,
-  CurrencyDollar, Users, ChatText, ChartBar, Lock, Package,
+  CurrencyDollar, Users, ChatText, ChartBar, Lock,
   CreditCard, TrendUp, Shield, Lightning, Gear, Gift, House,
 } from "@phosphor-icons/react";
 
@@ -47,5 +47,4 @@ export const Icons = {
   settings:       ic(Gear),
   gift:           ic(Gift),
   home:           ic(House),
-  package2:       ic(Package),
 };

@@ -338,7 +338,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             )}
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)] shrink-0" aria-label="Close">
-            <X size={18} />
+            <X size={18} weight="regular" />
           </button>
         </div>
 

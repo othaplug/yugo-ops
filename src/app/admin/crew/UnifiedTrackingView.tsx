@@ -413,7 +413,7 @@ function CrewPopup({
           </div>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">
-          <X size={16} className="text-current" />
+          <X size={16} weight="regular" className="text-current" />
         </button>
       </div>
 

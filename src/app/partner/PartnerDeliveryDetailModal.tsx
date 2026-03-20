@@ -264,7 +264,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               Share
             </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">
-              <X size={18} />
+              <X size={18} weight="regular" />
             </button>
           </div>
         </div>

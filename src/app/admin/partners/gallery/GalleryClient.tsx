@@ -122,7 +122,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             {/* Search + filter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
-                <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
+                <MagnifyingGlass size={15} weight="regular" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -193,6 +193,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                         <Badge status={p.status} />
                         <CaretDown
                           size={14}
+                          weight="regular"
                           className={`text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`}
                         />
                       </div>
@@ -270,7 +271,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                     <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
                     <div className="text-[11px] text-[var(--tx3)]">{[p.contact_name, p.email].filter(Boolean).join(" · ") || "—"}</div>
                   </div>
-                  <CaretRight size={14} className="text-[var(--tx3)]" />
+                  <CaretRight size={14} weight="regular" className="text-[var(--tx3)]" />
                 </Link>
               ))}
             </div>

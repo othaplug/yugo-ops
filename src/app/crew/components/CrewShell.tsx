@@ -89,7 +89,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                 aria-label="Close menu"
               >
-                <X size={16} />
+                <X size={16} weight="regular" />
               </button>
             </div>
 

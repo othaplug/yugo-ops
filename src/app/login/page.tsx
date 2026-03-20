@@ -133,9 +133,9 @@ export default function AdminLoginPage() {
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
                       style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#4A4A4E" }}>
                       {showPassword ? (
-                        <Eye size={14} className="text-[#4A4A4E]" />
+                        <Eye size={14} weight="regular" className="text-[#4A4A4E]" />
                       ) : (
-                        <EyeSlash size={14} className="text-[#4A4A4E]" />
+                        <EyeSlash size={14} weight="regular" className="text-[#4A4A4E]" />
                       )}
                     </button>
                   </div>

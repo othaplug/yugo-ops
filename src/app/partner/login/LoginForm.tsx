@@ -158,7 +158,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
 
               {error && (
                 <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                  <X size={14} />
+                  <X size={14} weight="regular" />
                   {error}
                 </div>
               )}
@@ -176,9 +176,9 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
                       style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#999" }}>
                       {showPassword ? (
-                        <Eye size={16} />
+                        <Eye size={16} weight="regular" />
                       ) : (
-                        <EyeSlash size={16} />
+                        <EyeSlash size={16} weight="regular" />
                       )}
                     </button>
                   </div>

@@ -171,7 +171,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               htmlFor="job-photos-file-input"
               className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
             >
-              <Plus size={16} color="var(--tx3)" />
+              <Plus size={16} weight="regular" color="var(--tx3)" />
             </label>
           )}
         </div>

@@ -7,7 +7,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
-  Cube as Boxes,
+  Truck as Boxes,
   Plus,
   X,
   CaretDown as ChevronDown,
@@ -1059,14 +1059,14 @@ export default function PartnerB2BProjectsTab({
             className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.max(0, i - 1)); }}
           >
-            <CaretLeft size={20} />
+            <CaretLeft size={20} weight="regular" />
           </button>
           <button
             type="button"
             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
             onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.min(viewPhotos.length - 1, i + 1)); }}
           >
-            <CaretRight size={20} />
+            <CaretRight size={20} weight="regular" />
           </button>
         </>
       )}
@@ -1463,7 +1463,7 @@ export default function PartnerB2BProjectsTab({
           {/* Back */}
           <button onClick={() => setSelectedProject(null)}
             className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] mb-4 transition-colors">
-            <CaretLeft size={14} />
+            <CaretLeft size={14} weight="regular" />
             Back to Projects
           </button>
 
@@ -1727,7 +1727,7 @@ export default function PartnerB2BProjectsTab({
                   {p.end_client_name && <p className="text-[12px] text-[var(--tx3)] mt-0.5">{p.end_client_name}</p>}
                   {p.site_address && <p className="text-[11px] text-[var(--tx3)]">{p.site_address}</p>}
                 </div>
-                <CaretRight size={16} color="var(--tx3)" className="shrink-0 mt-1" />
+                <CaretRight size={16} weight="regular" color="var(--tx3)" className="shrink-0 mt-1" />
               </div>
 
               <div className="relative h-2 bg-[var(--bg)] rounded-full overflow-hidden mb-2">

@@ -133,7 +133,7 @@ export default function InvoicesTable({
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
           >
-            <ArrowSquareOut size={10} className="text-current shrink-0" aria-hidden />
+            <ArrowSquareOut size={10} weight="regular" className="text-current shrink-0" aria-hidden />
             View
           </a>
         ) : null,

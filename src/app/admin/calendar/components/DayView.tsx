@@ -3,9 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS } from "@/lib/calendar/types";
-import { Icon } from "@/components/AppIcons";
-
-const HOUR_HEIGHT = 60;
+const HOUR_HEIGHT = 48;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
 const TOTAL_HOURS = DAY_END_HOUR - DAY_START_HOUR;
@@ -243,7 +241,7 @@ export default function DayView({
   ];
 
   return (
-    <div className={`px-2 sm:px-6 pb-6 ${draggingEvent ? "select-none" : ""}`}>
+    <div className={`px-2 sm:px-4 pb-3 ${draggingEvent ? "select-none" : ""}`}>
       {/* Horizontal scroll wrapper — headers + unscheduled strip + timeline all scroll together */}
       <div className="overflow-x-auto">
         {/* Column headers */}
@@ -301,7 +299,7 @@ export default function DayView({
         {/* Timeline grid — vertical scroll only; horizontal handled by parent */}
         <div
           ref={containerRef}
-          className="overflow-y-auto max-h-[calc(100vh-200px)] sm:max-h-[calc(100vh-240px)] relative"
+          className="overflow-y-auto max-h-[calc(100vh-170px)] sm:max-h-[calc(100vh-200px)] relative"
         >
           <div className="flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
             {/* Time labels */}
@@ -422,11 +420,7 @@ export default function DayView({
                               {ev.name}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[9px] text-[var(--tx3)] truncate">
-                            <Icon
-                              name={TYPE_ICON_MAP[ev.type] || "calendar"}
-                              className="w-3 h-3 shrink-0 stroke-[1.75] stroke-current"
-                            />
+                          <div className="flex items-center text-[9px] text-[var(--tx3)] truncate">
                             <span className="truncate">{ev.description}</span>
                           </div>
                           {height > 60 && ev.truckName && (

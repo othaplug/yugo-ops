@@ -11,12 +11,6 @@ export const MOVE_DATE_OPTIONS: { value: string; label: string; group: string }[
   { value: "this_month", label: "This month", group: "Months" },
   { value: "last_month", label: "Last month", group: "Months" },
   { value: "next_month", label: "Next month", group: "Months" },
-  { value: "this_quarter", label: "This quarter", group: "Quarter" },
-  { value: "last_quarter", label: "Last quarter", group: "Quarter" },
-  { value: "next_quarter", label: "Next quarter", group: "Quarter" },
-  { value: "this_year", label: "This year", group: "Years" },
-  { value: "last_year", label: "Last year", group: "Years" },
-  { value: "next_year", label: "Next year", group: "Years" },
 ];
 
 function startOfDay(d: Date): string {

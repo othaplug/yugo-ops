@@ -130,7 +130,7 @@ function ScheduleModal({
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
-            <X size={18} />
+            <X size={18} weight="regular" />
           </button>
         </div>
 
@@ -362,7 +362,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
           onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
         >
-          <Plus size={13} />
+          <Plus size={13} weight="regular" />
           Create Schedule
         </button>
       </div>

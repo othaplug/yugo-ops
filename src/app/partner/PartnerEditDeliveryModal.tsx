@@ -112,7 +112,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">{d.delivery_number}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">
-            <X size={18} />
+            <X size={18} weight="regular" />
           </button>
         </div>
 

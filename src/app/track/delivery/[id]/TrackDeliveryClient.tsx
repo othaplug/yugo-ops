@@ -17,7 +17,7 @@ import {
   Lightning,
   MagnifyingGlass,
   MapPin,
-  Package,
+  House as HomeDelivery,
   Phone,
   Star,
   Sun,
@@ -69,7 +69,7 @@ function DeliveryProgressStepIcon({ label, isCurrent }: { label: string; isCurre
   const size = 12;
   if (label === "En route to pick up") return <MapPin size={size} color={c} aria-hidden />;
   if (label === "On the way to you") return <Truck size={size} color={c} aria-hidden />;
-  if (label === "Delivering") return <Package size={size} color={c} aria-hidden />;
+  if (label === "Delivering") return <HomeDelivery size={size} color={c} aria-hidden />;
   if (label === "Complete") return <Check size={size} color={c} aria-hidden />;
   return null;
 }
@@ -554,7 +554,7 @@ export default function TrackDeliveryClient({
           </div>
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <Package size={13} color={GOLD} aria-hidden />
+              <Truck size={13} color={GOLD} aria-hidden />
               <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Items</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>

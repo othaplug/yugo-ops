@@ -306,7 +306,7 @@ export default function PartnersManagement() {
         {/* Filters */}
         <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-wrap gap-2 items-center">
           <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] pointer-events-none" aria-hidden />
+            <MagnifyingGlass size={14} weight="regular" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] pointer-events-none" aria-hidden />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -384,6 +384,7 @@ export default function PartnersManagement() {
                   >
                     <CaretRight
                       size={14}
+                      weight="regular"
                       className={`text-[var(--tx3)] transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}
                       aria-hidden
                     />

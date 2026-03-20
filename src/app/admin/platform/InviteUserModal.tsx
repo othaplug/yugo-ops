@@ -149,9 +149,9 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <EyeSlash size={16} className="text-current" />
+                    <EyeSlash size={16} weight="regular" className="text-current" />
                   ) : (
-                    <Eye size={16} className="text-current" />
+                    <Eye size={16} weight="regular" className="text-current" />
                   )}
                 </button>
               </div>

@@ -38,6 +38,18 @@ interface AddonSelection {
   tier_index: number;
 }
 
+/** One delivery + return pair in a multi-event quote */
+interface EventLegForm {
+  label: string;
+  from_address: string;
+  to_address: string;
+  from_access: string;
+  to_access: string;
+  move_date: string;
+  event_return_date: string;
+  event_same_day: boolean;
+}
+
 interface TierResult {
   price: number;
   deposit: number;
@@ -179,6 +191,14 @@ const SPECIALTY_BASE_PRICES: Record<string, { min: number; max: number }> = {
   trade_show:      { min: 500,  max: 2000 },
   medical_lab:     { min: 600,  max: 2500 },
   other:           { min: 300,  max: 2000 },
+};
+
+const SPECIALTY_WEIGHT_PREVIEW_MULT: Record<string, number> = {
+  under_100: 0.94,
+  100_250: 0.97,
+  250_500: 1,
+  500_1000: 1.06,
+  over_1000: 1.12,
 };
 
 const ITEM_CATEGORIES = [
@@ -338,6 +358,31 @@ function roundTo(n: number, nearest: number) {
   return Math.round(n / nearest) * nearest;
 }
 
+/** Live specialty preview: base band × weight + Mapbox distance surcharge (matches generate/route calcSpecialty style) + surcharges */
+function specialtyPreviewBand(
+  config: Record<string, string>,
+  range: { min: number; max: number },
+  opts: {
+    weightClass: string;
+    distanceKm: number | null;
+    craneRigging: boolean;
+    climateControlled: boolean;
+    cratingSum: number;
+  },
+) {
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  const distBaseKm = cfgNum(config, "distance_base_km", 30);
+  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
+  const wMult = SPECIALTY_WEIGHT_PREVIEW_MULT[opts.weightClass] ?? 1;
+  const km = opts.distanceKm ?? 0;
+  const distSur = km > distBaseKm ? Math.round((km - distBaseKm) * distRateKm) : 0;
+  const extras =
+    (opts.craneRigging ? 750 : 0) + (opts.climateControlled ? 150 : 0) + opts.cratingSum;
+  const min = roundTo(range.min * wMult + distSur + extras, rounding);
+  const max = roundTo(range.max * wMult + distSur + extras, rounding);
+  return { min, max, distSur, km };
+}
+
 function fmtPrice(n: number) {
   return n.toLocaleString("en-CA", { style: "currency", currency: "CAD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
@@ -422,6 +467,15 @@ export default function QuoteFormClient({
   const [eventPickupTimeAfter, setEventPickupTimeAfter] = useState("Evening 6–9 PM");
   const [eventItems, setEventItems] = useState<{ name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[]>([]);
   const [eventAdditionalServices, setEventAdditionalServices] = useState<string[]>([]);
+  const [eventMulti, setEventMulti] = useState(false);
+  const [eventLegs, setEventLegs] = useState<EventLegForm[]>(() => [
+    { label: "Event 1", from_address: "", to_address: "", from_access: "", to_access: "", move_date: "", event_return_date: "", event_same_day: false },
+    { label: "Event 2", from_address: "", to_address: "", from_access: "", to_access: "", move_date: "", event_return_date: "", event_same_day: false },
+  ]);
+
+  /** Mapbox driving distance for specialty suggested range (km) */
+  const [specialtyRouteKm, setSpecialtyRouteKm] = useState<number | null>(null);
+  const [specialtyRouteLoading, setSpecialtyRouteLoading] = useState(false);
 
   // B2B One-Off fields
   const [b2bBusinessName, setB2bBusinessName] = useState("");
@@ -616,6 +670,44 @@ export default function QuoteFormClient({
     });
   }, [serviceType, allAddons]);
 
+  useEffect(() => {
+    if (serviceType !== "event") setEventMulti(false);
+  }, [serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "specialty") {
+      setSpecialtyRouteKm(null);
+      return;
+    }
+    const from = fromAddress.trim();
+    const to = toAddress.trim();
+    if (from.length < 8 || to.length < 8) {
+      setSpecialtyRouteKm(null);
+      return;
+    }
+    const handle = window.setTimeout(async () => {
+      setSpecialtyRouteLoading(true);
+      try {
+        const res = await fetch("/api/quotes/preview-distance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from_address: from, to_address: to }),
+        });
+        const data = await res.json();
+        if (res.ok && typeof data.distance_km === "number") {
+          setSpecialtyRouteKm(data.distance_km);
+        } else {
+          setSpecialtyRouteKm(null);
+        }
+      } catch {
+        setSpecialtyRouteKm(null);
+      } finally {
+        setSpecialtyRouteLoading(false);
+      }
+    }, 750);
+    return () => clearTimeout(handle);
+  }, [serviceType, fromAddress, toAddress]);
+
   // ── Add-on subtotal ───────────────────────
   const addonSubtotal = useMemo(() => {
     let total = 0;
@@ -639,6 +731,37 @@ export default function QuoteFormClient({
     }
     return total;
   }, [selectedAddons, allAddons]);
+
+  /** Specialty suggested $ range: base band × weight + distance (Mapbox) + crane/climate/crating */
+  const specialtyLivePreview = useMemo(() => {
+    if (serviceType !== "specialty" || !specialtyType) return null;
+    const range = SPECIALTY_BASE_PRICES[specialtyType];
+    if (!range) return null;
+    const priceMap = parseCfgJson<Record<string, number>>(config, "crating_prices", CRATING_SIZE_FALLBACK);
+    const cratingSum =
+      cratingRequired && cratingItems.length > 0
+        ? cratingItems.reduce((sum, p) => sum + (priceMap[p.size] ?? CRATING_SIZE_FALLBACK[p.size] ?? 250), 0)
+        : 0;
+    const band = specialtyPreviewBand(config, range, {
+      weightClass: specialtyWeightClass,
+      distanceKm: specialtyRouteKm,
+      craneRigging: specialtyRequirements.includes("crane_rigging"),
+      climateControlled: specialtyRequirements.includes("climate_controlled"),
+      cratingSum,
+    });
+    const typeLabel = SPECIALTY_TYPES.find((t) => t.value === specialtyType)?.label ?? specialtyType;
+    const weightLabel = SPECIALTY_WEIGHT_OPTIONS.find((w) => w.value === specialtyWeightClass)?.label;
+    return { ...band, typeLabel, weightLabel };
+  }, [
+    serviceType,
+    specialtyType,
+    config,
+    specialtyWeightClass,
+    specialtyRouteKm,
+    specialtyRequirements,
+    cratingRequired,
+    cratingItems,
+  ]);
 
   // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
@@ -802,18 +925,40 @@ export default function QuoteFormClient({
       base.specialty_dimensions = dims.length === 3 ? `${specialtyDimL}×${specialtyDimW}×${specialtyDimH} in` : undefined;
     }
     if (serviceType === "event") {
-      // from_address = origin, to_address = venue
-      base.from_address = fromAddress;
-      base.to_address = venueAddress || toAddress;
       base.event_name = eventName.trim() || undefined;
-      base.event_return_date = eventSameDay ? moveDate : (eventReturnDate || undefined);
       base.event_setup_required = eventSetupRequired;
       base.event_setup_hours = eventSetupRequired ? eventSetupHours : undefined;
       base.event_setup_instructions = eventSetupInstructions.trim() || undefined;
-      base.event_same_day = eventSameDay;
-      base.event_pickup_time_after = eventSameDay ? eventPickupTimeAfter : undefined;
       base.event_items = eventItems.length > 0 ? eventItems : undefined;
       base.event_additional_services = eventAdditionalServices.length > 0 ? eventAdditionalServices : undefined;
+      if (eventMulti && eventLegs.length >= 2) {
+        base.event_mode = "multi";
+        base.event_legs = eventLegs.map((leg) => ({
+          label: leg.label.trim() || undefined,
+          from_address: leg.from_address.trim(),
+          to_address: leg.to_address.trim(),
+          from_access: leg.from_access || undefined,
+          to_access: leg.to_access || undefined,
+          move_date: leg.move_date,
+          event_return_date: leg.event_same_day ? leg.move_date : leg.event_return_date,
+          event_same_day: leg.event_same_day,
+        }));
+        const first = eventLegs[0];
+        base.from_address = first.from_address.trim();
+        base.to_address = first.to_address.trim();
+        base.from_access = first.from_access || undefined;
+        base.to_access = first.to_access || undefined;
+        base.move_date = first.move_date;
+        base.event_return_date = first.event_same_day ? first.move_date : first.event_return_date;
+        base.event_same_day = first.event_same_day;
+        base.event_pickup_time_after = first.event_same_day ? eventPickupTimeAfter : undefined;
+      } else {
+        base.from_address = fromAddress;
+        base.to_address = venueAddress || toAddress;
+        base.event_return_date = eventSameDay ? moveDate : (eventReturnDate || undefined);
+        base.event_same_day = eventSameDay;
+        base.event_pickup_time_after = eventSameDay ? eventPickupTimeAfter : undefined;
+      }
     }
     if (serviceType === "labour_only") {
       // from_address = to_address = work address
@@ -842,7 +987,7 @@ export default function QuoteFormClient({
     specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
     firstName, lastName, email, phone, cratingRequired, cratingItems,
     eventName, venueAddress, eventReturnDate, eventSetupRequired, eventSetupHours, eventSetupInstructions,
-    eventSameDay, eventPickupTimeAfter, eventItems, eventAdditionalServices,
+    eventSameDay, eventPickupTimeAfter, eventItems, eventAdditionalServices, eventMulti, eventLegs,
     workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
     labourVisits, labourSecondVisitDate, labourContext,
     b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions,
@@ -851,13 +996,31 @@ export default function QuoteFormClient({
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
   const handleGenerate = async () => {
     if (serviceType === "event") {
-      if (!fromAddress || !venueAddress || !moveDate) {
-        toast("Please fill Origin, Venue address and Delivery date", "alertTriangle");
-        return;
-      }
-      if (!eventSameDay && !eventReturnDate) {
-        toast("Please fill Return date (or check Same Day)", "alertTriangle");
-        return;
+      if (eventMulti) {
+        if (eventLegs.length < 2) {
+          toast("Multi-event needs at least 2 events", "alertTriangle");
+          return;
+        }
+        for (let i = 0; i < eventLegs.length; i++) {
+          const leg = eventLegs[i];
+          if (!leg.from_address?.trim() || !leg.to_address?.trim() || !leg.move_date) {
+            toast(`Event ${i + 1}: fill origin, venue, and delivery date`, "alertTriangle");
+            return;
+          }
+          if (!leg.event_same_day && !leg.event_return_date?.trim()) {
+            toast(`Event ${i + 1}: return date or same-day required`, "alertTriangle");
+            return;
+          }
+        }
+      } else {
+        if (!fromAddress || !venueAddress || !moveDate) {
+          toast("Please fill Origin, Venue address and Delivery date", "alertTriangle");
+          return;
+        }
+        if (!eventSameDay && !eventReturnDate) {
+          toast("Please fill Return date (or check Same Day)", "alertTriangle");
+          return;
+        }
       }
     } else if (serviceType === "labour_only") {
       if (!workAddress || !moveDate) {
@@ -1137,11 +1300,24 @@ export default function QuoteFormClient({
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
                 <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-                  {serviceType === "event" ? "Origin" : serviceType === "labour_only" ? "Work Location" : serviceType === "b2b_delivery" ? "Pickup & Delivery" : "Addresses"}
+                  {serviceType === "event" && eventMulti
+                    ? "Addresses (per event below)"
+                    : serviceType === "event"
+                      ? "Origin"
+                      : serviceType === "labour_only"
+                        ? "Work Location"
+                        : serviceType === "b2b_delivery"
+                          ? "Pickup & Delivery"
+                          : "Addresses"}
                 </h3>
+                {serviceType === "event" && eventMulti && (
+                  <p className="text-[11px] text-[var(--tx2)] -mt-1 mb-1">
+                    Each event has its own origin and venue in the Event section.
+                  </p>
+                )}
 
-                {/* Event / Labour Only addresses are handled in their own sections below */}
-                {serviceType !== "labour_only" && (
+                {/* Event single: origin here; multi: per-leg below. Labour Only: own section. */}
+                {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
@@ -1646,92 +1822,318 @@ export default function QuoteFormClient({
               {/* ── Event fields ── */}
               {serviceType === "event" && (
                 <div className="space-y-4">
-                  {/* Event Details */}
                   <div className="space-y-2">
                     <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
                     <Field label="Event Name">
                       <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. L'Oréal Beauty Event" className={fieldInput} />
                     </Field>
-                    <AddressAutocomplete
-                      value={venueAddress}
-                      onRawChange={setVenueAddress}
-                      onChange={(r) => setVenueAddress(r.fullAddress)}
-                      placeholder="Restaurant XYZ, 100 King St W"
-                      label="Venue / Event Address *"
-                      required
-                      className={fieldInput}
-                    />
-                  </div>
-
-                  {/* Delivery (Day 1) */}
-                  <div className="space-y-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Field label="Delivery Date *">
-                        <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
-                      </Field>
-                      <Field label="Delivery Time">
-                        <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
-                          <option value="morning">Morning (7 AM – 12 PM)</option>
-                          <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
-                          <option value="evening">Evening (5 PM – 9 PM)</option>
-                        </select>
-                      </Field>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
-                      <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
-                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
-                      </button>
-                    </div>
-                    {eventSetupRequired && (
-                      <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                        <Field label="Setup Duration">
-                          <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                            <option value={1}>1 hour — $150</option>
-                            <option value={2}>2 hours — $275</option>
-                            <option value={3}>3 hours — $400</option>
-                            <option value={99}>Half day — $600</option>
-                          </select>
-                        </Field>
-                        <Field label="Setup Instructions">
-                          <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
-                        </Field>
+                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                      <input
+                        type="checkbox"
+                        checked={eventMulti}
+                        onChange={(e) => {
+                          const on = e.target.checked;
+                          if (on) {
+                            setEventLegs([
+                              {
+                                label: "Event 1",
+                                from_address: fromAddress,
+                                to_address: venueAddress,
+                                from_access: fromAccess,
+                                to_access: toAccess,
+                                move_date: moveDate,
+                                event_return_date: eventSameDay ? moveDate : eventReturnDate,
+                                event_same_day: eventSameDay,
+                              },
+                              {
+                                label: "Event 2",
+                                from_address: "",
+                                to_address: "",
+                                from_access: fromAccess,
+                                to_access: toAccess,
+                                move_date: "",
+                                event_return_date: "",
+                                event_same_day: false,
+                              },
+                            ]);
+                          } else if (eventLegs[0]) {
+                            const z = eventLegs[0];
+                            setFromAddress(z.from_address);
+                            setVenueAddress(z.to_address);
+                            setFromAccess(z.from_access);
+                            setToAccess(z.to_access);
+                            setMoveDate(z.move_date);
+                            setEventReturnDate(z.event_return_date);
+                            setEventSameDay(z.event_same_day);
+                          }
+                          setEventMulti(on);
+                        }}
+                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                      />
+                      <div>
+                        <span className="text-[11px] font-semibold text-[var(--tx)]">Multi-event quote</span>
+                        <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
+                          Bundle 2+ delivery & return pairs (different venues or dates) into one quote and one total.
+                        </p>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Return (Day 2+) */}
-                  <div className="space-y-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
-                      <span className="text-[11px] text-[var(--tx2)]">Same Day Event — delivery and return on same day</span>
                     </label>
-                    {!eventSameDay ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Field label="Return Date *">
-                          <input type="date" value={eventReturnDate} onChange={(e) => setEventReturnDate(e.target.value)} required={!eventSameDay} className={fieldInput} />
-                        </Field>
-                        <Field label="Return Time">
-                          <select value={preferredTime || "morning"} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput}>
-                            <option value="morning">Morning (7 AM – 12 PM)</option>
-                            <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
-                            <option value="evening">Evening (5 PM – 9 PM)</option>
-                          </select>
-                        </Field>
+                  </div>
+
+                  {!eventMulti && (
+                    <>
+                      <div className="space-y-2">
+                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
+                        <AddressAutocomplete
+                          value={venueAddress}
+                          onRawChange={setVenueAddress}
+                          onChange={(r) => setVenueAddress(r.fullAddress)}
+                          placeholder="Restaurant XYZ, 100 King St W"
+                          label="Venue / Event Address *"
+                          required
+                          className={fieldInput}
+                        />
                       </div>
-                    ) : (
-                      <Field label="Pickup Time After Event">
-                        <select value={eventPickupTimeAfter} onChange={(e) => setEventPickupTimeAfter(e.target.value)} className={`${fieldInput} w-56`}>
+
+                      <div className="space-y-2">
+                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Field label="Delivery Date *">
+                            <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
+                          </Field>
+                          <Field label="Delivery Time">
+                            <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
+                              <option value="morning">Morning (7 AM – 12 PM)</option>
+                              <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
+                              <option value="evening">Evening (5 PM – 9 PM)</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
+                          <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
+                          </button>
+                        </div>
+                        {eventSetupRequired && (
+                          <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                            <Field label="Setup Duration">
+                              <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                <option value={1}>1 hour — $150</option>
+                                <option value={2}>2 hours — $275</option>
+                                <option value={3}>3 hours — $400</option>
+                                <option value={99}>Half day — $600</option>
+                              </select>
+                            </Field>
+                            <Field label="Setup Instructions">
+                              <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
+                          <span className="text-[11px] text-[var(--tx2)]">Same Day Event — delivery and return on same day</span>
+                        </label>
+                        {!eventSameDay ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Field label="Return Date *">
+                              <input type="date" value={eventReturnDate} onChange={(e) => setEventReturnDate(e.target.value)} required={!eventSameDay} className={fieldInput} />
+                            </Field>
+                            <Field label="Return Time">
+                              <select value={preferredTime || "morning"} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput}>
+                                <option value="morning">Morning (7 AM – 12 PM)</option>
+                                <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
+                                <option value="evening">Evening (5 PM – 9 PM)</option>
+                              </select>
+                            </Field>
+                          </div>
+                        ) : (
+                          <Field label="Pickup Time After Event">
+                            <select value={eventPickupTimeAfter} onChange={(e) => setEventPickupTimeAfter(e.target.value)} className={`${fieldInput} w-56`}>
+                              <option value="Evening 6–9 PM">Evening 6–9 PM</option>
+                              <option value="Evening 8–10 PM">Evening 8–10 PM</option>
+                              <option value="After midnight">After midnight</option>
+                              <option value="Next morning">Next morning</option>
+                            </select>
+                          </Field>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {eventMulti && (
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <p className="text-[11px] text-[var(--tx2)] leading-snug">
+                          Each row is one round trip (origin → venue → return). Event items below apply to all legs unless you add per-leg items later.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEventLegs((prev) => [
+                              ...prev,
+                              {
+                                label: `Event ${prev.length + 1}`,
+                                from_address: "",
+                                to_address: "",
+                                from_access: fromAccess,
+                                to_access: toAccess,
+                                move_date: "",
+                                event_return_date: "",
+                                event_same_day: false,
+                              },
+                            ])
+                          }
+                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 shrink-0"
+                        >
+                          <Plus className="w-3 h-3" /> Add event
+                        </button>
+                      </div>
+                      {eventLegs.map((leg, idx) => (
+                        <div key={idx} className="rounded-xl border border-[var(--brd)] p-3 space-y-3 bg-[var(--card)]/30">
+                          <div className="flex items-start justify-between gap-2">
+                            <Field label="Label">
+                              <input
+                                value={leg.label}
+                                onChange={(e) =>
+                                  setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, label: e.target.value } : L)))
+                                }
+                                placeholder={`Event ${idx + 1}`}
+                                className={fieldInput}
+                              />
+                            </Field>
+                            {eventLegs.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => setEventLegs((prev) => prev.filter((_, i) => i !== idx))}
+                                className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                                aria-label={`Remove event ${idx + 1}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          <AddressAutocomplete
+                            value={leg.from_address}
+                            onRawChange={(v) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, from_address: v } : L)))}
+                            onChange={(r) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, from_address: r.fullAddress } : L)))}
+                            placeholder="Origin / warehouse"
+                            label="Origin *"
+                            required
+                            className={fieldInput}
+                          />
+                          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
+                            <Field label="Origin access">
+                              <select
+                                value={leg.from_access}
+                                onChange={(e) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, from_access: e.target.value } : L)))}
+                                className={fieldInput}
+                              >
+                                {ACCESS_OPTIONS.map((o) => (
+                                  <option key={o.value || "empty"} value={o.value}>
+                                    {o.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                            <Field label="Venue access">
+                              <select
+                                value={leg.to_access}
+                                onChange={(e) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_access: e.target.value } : L)))}
+                                className={fieldInput}
+                              >
+                                {ACCESS_OPTIONS.map((o) => (
+                                  <option key={`v-${o.value || "empty"}`} value={o.value}>
+                                    {o.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          </div>
+                          <AddressAutocomplete
+                            value={leg.to_address}
+                            onRawChange={(v) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: v } : L)))}
+                            onChange={(r) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, to_address: r.fullAddress } : L)))}
+                            placeholder="Venue address"
+                            label="Venue *"
+                            required
+                            className={fieldInput}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Field label="Delivery date *">
+                              <input
+                                type="date"
+                                value={leg.move_date}
+                                onChange={(e) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, move_date: e.target.value } : L)))}
+                                className={fieldInput}
+                              />
+                            </Field>
+                          </div>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leg.event_same_day}
+                              onChange={(e) =>
+                                setEventLegs((prev) =>
+                                  prev.map((L, i) => (i === idx ? { ...L, event_same_day: e.target.checked } : L)),
+                                )
+                              }
+                              className="accent-[var(--gold)] w-3.5 h-3.5"
+                            />
+                            <span className="text-[11px] text-[var(--tx2)]">Same-day return</span>
+                          </label>
+                          {!leg.event_same_day ? (
+                            <Field label="Return date *">
+                              <input
+                                type="date"
+                                value={leg.event_return_date}
+                                onChange={(e) => setEventLegs((prev) => prev.map((L, i) => (i === idx ? { ...L, event_return_date: e.target.value } : L)))}
+                                className={fieldInput}
+                              />
+                            </Field>
+                          ) : null}
+                        </div>
+                      ))}
+
+                      <div className="space-y-2">
+                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
+                        <p className="text-[10px] text-[var(--tx3)]">One setup fee for the bundled program (not per venue).</p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-medium text-[var(--tx)]">Setup Required</span>
+                          <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
+                          </button>
+                        </div>
+                        {eventSetupRequired && (
+                          <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
+                            <Field label="Setup Duration">
+                              <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
+                                <option value={1}>1 hour — $150</option>
+                                <option value={2}>2 hours — $275</option>
+                                <option value={3}>3 hours — $400</option>
+                                <option value={99}>Half day — $600</option>
+                              </select>
+                            </Field>
+                            <Field label="Setup Instructions">
+                              <textarea value={eventSetupInstructions} onChange={(e) => setEventSetupInstructions(e.target.value)} rows={2} placeholder="Arrange display tables, hang banners, etc." className={`${fieldInput} resize-none`} />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+
+                      <Field label="Pickup time after event (same-day legs)">
+                        <select value={eventPickupTimeAfter} onChange={(e) => setEventPickupTimeAfter(e.target.value)} className={`${fieldInput} max-w-xs`}>
                           <option value="Evening 6–9 PM">Evening 6–9 PM</option>
                           <option value="Evening 8–10 PM">Evening 8–10 PM</option>
                           <option value="After midnight">After midnight</option>
                           <option value="Next morning">Next morning</option>
                         </select>
                       </Field>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Event Items */}
                   <div className="space-y-2">
@@ -2237,34 +2639,33 @@ export default function QuoteFormClient({
                   <>
                     {liveEstimate && "curated" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} isLongDistance={serviceType === "long_distance"} />
-                    ) : serviceType === "specialty" && specialtyType ? (
-                      (() => {
-                        const range = SPECIALTY_BASE_PRICES[specialtyType];
-                        const craneAdd = specialtyRequirements.includes("crane_rigging") ? 750 : 0;
-                        const cratingAdd = specialtyRequirements.includes("custom_crating") ? 300 : 0;
-                        const min = (range?.min ?? 300) + craneAdd + cratingAdd;
-                        const max = (range?.max ?? 2000) + craneAdd + cratingAdd;
-                        const typeLabel = SPECIALTY_TYPES.find((t) => t.value === specialtyType)?.label ?? specialtyType;
-                        const weightLabel = SPECIALTY_WEIGHT_OPTIONS.find((w) => w.value === specialtyWeightClass)?.label;
-                        return (
-                          <div className="space-y-2">
-                            <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
-                              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Suggested Range</p>
-                              <p className="text-[18px] font-bold text-[var(--gold)]">
-                                {fmtPrice(min)} – {fmtPrice(max)}
-                              </p>
-                              <p className="text-[10px] text-[var(--tx3)] mt-1">
-                                Based on: {typeLabel}{weightLabel ? `, ${weightLabel}` : ""}
-                                {craneAdd > 0 ? " + crane/rigging" : ""}
-                                {cratingAdd > 0 ? " + custom crating" : ""}
-                              </p>
-                            </div>
-                            <p className="text-[9px] text-[var(--tx3)] leading-snug">
-                              Click Generate for a final price. Coordinator sets the custom quote amount.
-                            </p>
-                          </div>
-                        );
-                      })()
+                    ) : specialtyLivePreview ? (
+                      <div className="space-y-2">
+                        <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
+                          <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Suggested Range</p>
+                          <p className="text-[18px] font-bold text-[var(--gold)]">
+                            {fmtPrice(specialtyLivePreview.min)} – {fmtPrice(specialtyLivePreview.max)}
+                          </p>
+                          <p className="text-[10px] text-[var(--tx3)] mt-1 leading-snug">
+                            Based on: {specialtyLivePreview.typeLabel}
+                            {specialtyLivePreview.weightLabel ? `, ${specialtyLivePreview.weightLabel}` : ""}
+                            {specialtyRouteKm != null
+                              ? `, ${specialtyRouteKm} km route`
+                              : specialtyRouteLoading
+                                ? " — calculating distance…"
+                                : " — add addresses for distance adjustment"}
+                            {specialtyLivePreview.distSur > 0
+                              ? ` (+${fmtPrice(specialtyLivePreview.distSur)} distance)`
+                              : ""}
+                            {specialtyRequirements.includes("crane_rigging") ? " + crane/rigging" : ""}
+                            {specialtyRequirements.includes("climate_controlled") ? " + climate" : ""}
+                            {cratingRequired && cratingItems.length > 0 ? " + crating" : ""}
+                          </p>
+                        </div>
+                        <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                          Click Generate for the final priced quote (includes timeline and server pricing rules).
+                        </p>
+                      </div>
                     ) : (
                       <div className="text-center py-5">
                         <div className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center mx-auto mb-2">

@@ -1359,7 +1359,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   onClick={() => setShowInactiveStaff(!showInactiveStaff)}
                   className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
                 >
-                  <CaretDown size={12} className={`shrink-0 transition-transform text-current ${showInactiveStaff ? "rotate-180" : ""}`} />
+                  <CaretDown size={12} weight="regular" className={`shrink-0 transition-transform text-current ${showInactiveStaff ? "rotate-180" : ""}`} />
                   Former / Inactive ({inactiveStaff.length})
                 </button>
                 {showInactiveStaff && (
@@ -1496,7 +1496,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                               className="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-red-500/20 text-[var(--tx3)] hover:text-red-400 transition-colors"
                               title={`Remove ${member} from team`}
                             >
-                              <X size={10} className="text-current" />
+                              <X size={10} weight="regular" className="text-current" />
                             </button>
                           </span>
                         ))}

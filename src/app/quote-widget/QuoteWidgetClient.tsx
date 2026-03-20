@@ -455,7 +455,7 @@ export default function QuoteWidgetClient() {
               className="flex items-center gap-1 text-[12px] font-semibold tracking-wide uppercase transition-opacity hover:opacity-70"
               style={{ color: FOREST, opacity: 0.5 }}
             >
-              <CaretLeft size={14} className="text-current" />
+              <CaretLeft size={14} weight="regular" className="text-current" />
               Back
             </button>
           )}
@@ -808,7 +808,7 @@ export default function QuoteWidgetClient() {
                             style={{ borderColor: `${FOREST}15` }}
                             aria-label="Remove"
                           >
-                            <X size={14} className="text-current" />
+                            <X size={14} weight="regular" className="text-current" />
                           </button>
                         </div>
                       ))}
@@ -818,7 +818,7 @@ export default function QuoteWidgetClient() {
                         className="text-[12px] font-semibold flex items-center gap-1"
                         style={{ color: FOREST }}
                       >
-                        <Plus size={14} className="text-current" />
+                        <Plus size={14} weight="regular" className="text-current" />
                         Add item
                       </button>
                     </div>
@@ -950,14 +950,14 @@ export default function QuoteWidgetClient() {
                             className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-20"
                             style={{ borderColor: `${FOREST}12` }}
                           >
-                            <CaretLeft size={14} color={FOREST} />
+                            <CaretLeft size={14} weight="regular" color={FOREST} />
                           </button>
                           <button
                             onClick={() => handleCalendarNav(1)}
                             className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors"
                             style={{ borderColor: `${FOREST}12` }}
                           >
-                            <CaretRight size={14} color={FOREST} />
+                            <CaretRight size={14} weight="regular" color={FOREST} />
                           </button>
                         </div>
                       </div>

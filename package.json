@@ -6,6 +6,7 @@
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "start": "next start",
+    "db:push": "npx supabase db push --include-all",
     "migrate:rate-templates": "npx tsx scripts/run-migration.ts",
     "seed:messages": "npx tsx scripts/seed-messages.ts",
     "seed:crew": "npx tsx scripts/seed-crew-member.ts",
