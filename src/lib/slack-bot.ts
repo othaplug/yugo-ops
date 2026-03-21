@@ -26,6 +26,13 @@ export function formatSlackApiError(data: { ok?: boolean; error?: string; needed
   if (code === "not_allowed_token_type") {
     return "Wrong token type — use the Bot User OAuth Token (xoxb-…), not a user or legacy token.";
   }
+  if (code === "not_in_channel") {
+    return (
+      "The bot is not a member of this channel. In Slack, open that channel, type /invite @ and pick your app’s bot, " +
+      "or use /invite @YourBotDisplayName. For private channels the bot must be invited by a member. " +
+      "Confirm SLACK_ADMIN_CHANNEL / SLACK_CHANNEL_ID matches that channel (C… for public, G… for private), then Refresh."
+    );
+  }
   if (code === "channel_not_found") {
     return "Channel not found or the bot isn’t a member. Invite the bot (/invite @YourApp) and verify SLACK_ADMIN_CHANNEL / SLACK_CHANNEL_ID.";
   }
